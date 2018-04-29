@@ -253,7 +253,6 @@ contains
     integer :: i, j
     real(dp) :: rtmp
     logical :: err, bool
-    character(len=200) :: chars
 
     if ( N_mu == 0 ) call die('read_tbt_elecs: error in programming')
 
@@ -274,8 +273,7 @@ contains
        Elecs(2)%ID = 2
        ! if they do-not exist, the user will be told
        if ( IONode ) then
-          chars = '(''tbtrans: ***'',a)'
-          write(*,chars) 'No electrode names were found, &
+          write(*,'(/,''tbt: *** '',a)') 'No electrode names were found, &
                &default Left/Right are expected'
        end if
     end if

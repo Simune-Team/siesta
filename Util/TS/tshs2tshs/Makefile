@@ -152,7 +152,7 @@ class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
-class_TriMat.o: alloc.o
+class_TriMat.o: alloc.o intrinsic_missing.o
 geom_helper.o: intrinsic_missing.o
 geom_helper.o: intrinsic_missing.o
 io.o: local_sys.o

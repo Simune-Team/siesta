@@ -43,7 +43,7 @@
       use atomlist,          only: iphorb, iphkb, indxua,
      &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
      &                             lastkb, lasto, superc, indxuo,
-     &                             no_u, no_s, no_l, iza
+     &                             no_u, no_s, no_l, iza, qtots
       use alloc,             only: re_alloc, de_alloc
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
@@ -56,7 +56,7 @@
       use m_iotdxv,          only: iotdxv
       use m_steps
       use parallel,          only: IOnode, node, nodes, BlockSize
-      use m_spin,            only: spin, qs
+      use m_spin,            only: spin
       use m_rmaxh
       use m_mixing,          only: mixers_history_init
       use m_mixing_scf,      only: scf_mixs, scf_mix
@@ -97,6 +97,9 @@
       use class_dData2D
 #ifdef TEST_IO
       use m_test_io
+#endif
+#ifdef SIESTA__FLOOK
+      use siesta_dicts, only : dict_repopulate_MD
 #endif
 
       implicit none
@@ -294,6 +297,9 @@
 !     Do not move from here, as the coordinates might have changed
 !     even if not the unit cell
       call superc(ucell, scell, nsc)
+#ifdef SIESTA__FLOOK
+      call dict_repopulate_MD()
+#endif
 
 !     Print unit cell and compute cell volume
 !     Possible BUG: 
@@ -379,7 +385,7 @@
       if (isolve == SOLVE_CHESS) then
           call CheSS_init(node, nodes, maxnh, maxnh_kernel, maxnh_mult, 
      &         no_u, no_l, no_l_kernel, no_l_mult, BlockSize, 
-     &         spin%spinor, qs, listh, listh_kernel, listh_mult, 
+     &         spin%spinor, qtots, listh, listh_kernel, listh_mult, 
      &         numh, numh_kernel, numh_mult)
           deallocate(listh_kernel)
           deallocate(numh_kernel)

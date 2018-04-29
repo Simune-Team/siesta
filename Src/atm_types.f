@@ -48,8 +48,8 @@
 !             We keep track of just one orbital for each
 !             "nl" family
 !
-         integer                         ::  n_orbnl    ! num of nl orbs
-         integer                         ::  lmax_basis ! basis l cutoff
+         integer                         ::  n_orbnl=0  ! num of nl orbs
+         integer                         ::  lmax_basis=0 ! basis l cutoff
          integer, dimension(maxn_orbnl)  ::  orbnl_l    ! l of each nl orb
          integer, dimension(maxn_orbnl)  ::  orbnl_n    ! n of each nl orb
          integer, dimension(maxn_orbnl)  ::  orbnl_z    ! z of each nl orb
@@ -66,8 +66,8 @@
 !             1 to the total number of projectors at that l.
 !             
 !
-         integer                         ::  n_pjnl     ! num of "nl" projs
-         integer                         ::  lmax_projs ! l cutoff for projs
+         integer                         ::  n_pjnl=0   ! num of "nl" projs
+         integer                         ::  lmax_projs=0 ! l cutoff for projs
          integer, dimension(maxn_pjnl)   ::  pjnl_l     ! l of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjnl_n     ! n of each nl proj
          real(dp), dimension(maxn_pjnl)
@@ -79,7 +79,7 @@
 !        which "nl" family they belong to, and their n, l, and m (to avoid
 !        a further dereference)
 !
-         integer                         ::  norbs
+         integer                         ::  norbs=0
          integer, dimension(maxnorbs)    ::  orb_index
          integer, dimension(maxnorbs)    ::  orb_n
          integer, dimension(maxnorbs)    ::  orb_l
@@ -88,7 +88,7 @@
          real(dp),
      $            dimension(maxnorbs)    ::  orb_pop   ! pop. of nl orb
 
-         integer                         ::  nprojs
+         integer                         ::  nprojs=0
          integer, dimension(maxnprojs)   ::  pj_index
          integer, dimension(maxnprojs)   ::  pj_n
          integer, dimension(maxnprojs)   ::  pj_l
@@ -98,10 +98,10 @@
 !        LDA+U Projectors
 !        Here we follow the scheme used for the KB projectors
 !        
-         integer                         ::  n_pjldaunl 
+         integer                         ::  n_pjldaunl=0
                                              ! num of "nl" projs
                                              ! not counting the "m copies"
-         integer                         ::  lmax_ldau_projs 
+         integer                         ::  lmax_ldau_projs=0
                                              ! l cutoff for LDA+U proj
          integer, dimension(maxn_pjnl)   ::  pjldaunl_l ! l of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjldaunl_n ! n of each nl proj
@@ -114,7 +114,7 @@
          real(dp), dimension(maxn_pjnl)  ::  pjldaunl_U ! U of each nl projector
          real(dp), dimension(maxn_pjnl)  ::  pjldaunl_J ! J of each nl projector
 
-         integer                         ::  nprojsldau
+         integer                         ::  nprojsldau=0
                                              ! Total number of LDA+U proj.
                                              ! counting the "m copies"
                                              ! (including the (2l + 1) factor))
@@ -128,7 +128,7 @@
          type(rad_func), dimension(:), pointer       ::  pjnl
          type(rad_func), dimension(:), pointer       ::  pjldau
          type(rad_func)                              ::  vna
-         integer                                     ::  vna_gindex
+         integer                                     ::  vna_gindex=0
          type(rad_func)                              ::  chlocal
          type(rad_func)                              ::  reduced_vlocal
          logical                                     ::  there_is_core

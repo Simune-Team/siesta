@@ -309,10 +309,11 @@ contains
 
   end subroutine cdf_precision_cmplx
 
-  subroutine init_cdf_save(fname,TSHS,r,btd,ispin,N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE, &
-       a_Dev, a_Buf, sp_dev_sc, &
-       save_DATA ) 
+  subroutine init_cdf_save(fname,TSHS,r,btd,ispin, &
+      N_Elec, Elecs, rEl, btd_El, &
+      nkpt, kpt, wkpt, NE, &
+      a_Dev, a_Buf, sp_dev_sc, &
+      save_DATA ) 
 
     use parallel, only : Node
 
@@ -344,6 +345,7 @@ contains
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
+    type(tRgn), intent(in) :: rEl(N_Elec), btd_El(N_Elec)
     integer, intent(in) :: nkpt
     real(dp), intent(in), target :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
@@ -459,9 +461,9 @@ contains
              !call ncdf_open(ncdf,fname,mode=NF90_WRITE)
              !call ncdf_put_var(ncdf,'wkpt',wkpt,start=(/1/))
              !call ncdf_close(ncdf)
-             write(*,'(a)') 'tbtrans: Continuation run on old TBT.nc file'
-             write(*,'(a)') 'tbtrans: *** WARNING ***'
-             write(*,'(a)') 'tbtrans: *** You need to make sure all &
+             write(*,'(a)') 'tbt: Continuation run on old TBT.nc file'
+             write(*,'(a)') 'tbt: *** WARNING ***'
+             write(*,'(a)') 'tbt: *** You need to make sure all &
                   &energy-points are fully contained in your current &
                   &energy range ***'
           end if
@@ -479,7 +481,7 @@ contains
     else
        
        if ( Node == 0 ) then
-          write(*,'(2a)')'tbtrans: Initializing data file: ',trim(fname)
+          write(*,'(2a)')'tbt: Initializing data file: ',trim(fname)
        end if
 
     end if
@@ -684,15 +686,24 @@ contains
 
        call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
+       call ncdf_def_dim(grp,'n_btd',btd_El(iEl)%n)
+       call ncdf_def_dim(grp,'no_down',rEl(iEl)%n)
+
        ! Save generic information about electrode
        dic = ('info'.kv.'Bloch expansion')
-       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), &
-            atts = dic)
+       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), atts = dic)
        call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+
+       dic = dic // ('info'.kv.'Downfolding region orbital pivot table')
+       call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_down'/), atts = dic)
+       call ncdf_put_var(grp,'pivot',rEl(iEl)%r)
+
+       dic = dic // ('info'.kv.'Blocks in BTD downfolding for the pivot table')
+       call ncdf_def_var(grp,'btd',NF90_INT,(/'n_btd'/), atts = dic)
+       call ncdf_put_var(grp,'btd',btd_El(iEl)%r)
        
        dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
-       call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
-            atts = dic)
+       call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
 
 #ifdef TBT_PHONON
@@ -700,13 +711,11 @@ contains
 #else
        dic = dic//('info'.kv.'Electronic temperature')
 #endif
-       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
-            atts = dic)
+       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), atts = dic)
        call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
        dic = dic//('info'.kv.'Imaginary part for self-energies')
-       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), &
-            atts = dic)
+       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
        call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
 
        call delete(dic)
@@ -1498,7 +1507,7 @@ contains
     real(dp), parameter :: hbar_eVs = 0.6582119514e-15_dp
     real(dp), parameter :: hbar_eVfs = 0.6582119514_dp
     real(dp) :: Current, eRy
-    
+
 #ifdef TBT_PHONON
     real(dp) :: dT, kappa
 #else
@@ -1521,17 +1530,19 @@ contains
     ! First we read in all dimensions
     call ncdf_inq_dim(ncdf,'ne',len=NE)
     if ( NE /= N_E ) call die('Error when re-reading the number of &
-         &energy-points')
+        &energy-points')
     call ncdf_inq_dim(ncdf,'nkpt',len=nkpt)
     call ncdf_inq_dim(ncdf,'no_d',len=no_d)
     call ncdf_inq_dim(ncdf,'neig',exist=exist,len=N_eigen)
     if ( .not. exist ) then
-       N_eigen = 0
+      N_eigen = 0
     end if
 
     ! Allocate space
     allocate(rE(NE),pvt(NE))
     allocate(rkpt(3,nkpt),rwkpt(nkpt))
+    ! Nearly all quantities are like this...
+    allocate(r2(NE,nkpt))
 
     ! Read in common information
     call ncdf_get_var(ncdf,'E',rE)
@@ -1539,317 +1550,286 @@ contains
     rE = rE / eV
     ! Create pivot table
     call crt_pivot(NE,rE,pvt)
-    
+
     call ncdf_inq_var(ncdf,'kpt',exist=exist)
     if ( exist ) then
-       call ncdf_get_var(ncdf,'kpt',rkpt)
-       call ncdf_get_var(ncdf,'wkpt',rwkpt)
+      call ncdf_get_var(ncdf,'kpt',rkpt)
+      call ncdf_get_var(ncdf,'wkpt',rwkpt)
     else
-       ! It MUST be a Gamma calculation
-       rkpt = 0._dp
-       rwkpt = 1._dp
+      ! It MUST be a Gamma calculation
+      rkpt = 0._dp
+      rwkpt = 1._dp
     end if
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
-       allocate(r3(no_d,NE,nkpt))
+      ! Get (orbital summed) DOS (in /eV)
+      call get_DOS(ncdf, 'DOS', no_d, r2)
 
-       ! Get DOS
-       call ncdf_get_var(ncdf,'DOS',r3)
-
-       ! Correct unit, from 1/Ry to 1/eV
-!$OMP parallel workshare default(shared)
-       r3 = r3 * eV
-!$OMP end parallel workshare
-       
-       if ( nkpt > 1 ) then
-          call name_save(ispin,nspin,ascii_file,end='DOS')
-          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS', &
-               '# DOS calculated from the Green function, k-resolved')
-       end if
-       call name_save(ispin,nspin,ascii_file,end='AVDOS')
-       call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS', &
-            '# DOS calculated from the Green function, k-averaged')
-
-       deallocate(r3)
+      if ( nkpt > 1 ) then
+        call name_save(ispin,nspin,ascii_file,end='DOS')
+        call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+            '# DOS calculated from the Green function, k-resolved')
+      end if
+      call name_save(ispin,nspin,ascii_file,end='AVDOS')
+      call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+          '# DOS calculated from the Green function, k-averaged')
 
     end if
 
 #ifdef TBT_PHONON
     if ( Node == 0 .and. N_Elec > 1 ) then
-       write(*,'(/,a)')'Heatflow (ensure frequency range covers temperature tails):'
+      write(*,'(/,a)')'Heatflow (ensure frequency range covers temperature tails):'
     end if
 #else
     if ( Node == 0 .and. N_Elec > 1 ) then
-       write(*,'(/,a)')'Currents (ensure entire Fermi function window):'
+      write(*,'(/,a)')'Currents (ensure entire Fermi function window):'
     end if
 #endif
 
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
-       
 
-       if ( 'DOS-Elecs' .in. save_DATA ) then
 
+      if ( 'DOS-Elecs' .in. save_DATA ) then
+
+        call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
+
+
+        ! Get bulk-transmission
+        call ncdf_get_var(grp,'T',r2)
+        if ( nkpt > 1 ) then
+          call name_save(ispin,nspin,ascii_file,end='BTRANS',El1=Elecs(iEl))
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'T',&
+              '# Bulk transmission, k-resolved')
+        end if
+        call name_save(ispin,nspin,ascii_file,end='AVBTRANS',El1=Elecs(iEl))
+        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'T', &
+            '# Bulk transmission, k-averaged')
+
+        ! Bulk DOS
+        call get_DOS(grp, 'DOS', Elecs(iEl)%no_u, r2)
+        if ( nkpt > 1 ) then
+          call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS',&
+              '# Bulk DOS, k-resolved')
+        end if
+        call name_save(ispin,nspin,ascii_file,end='AVBDOS',El1=Elecs(iEl))
+        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+            '# Bulk DOS, k-averaged')
+
+      end if
+
+      ! We do not calculate the last electrode
+      ! unless requested
+      if ( iEl == N_Elec ) then
+        ! check if all are calculated
+        if ( ('DOS-A-all' .nin. save_DATA) .and. &
+            ('T-all'.nin. save_DATA) ) cycle
+      end if
+
+      if ( 'DOS-Elecs' .nin. save_DATA ) &
           call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-          allocate(r2(NE,nkpt))
+      if ( 'DOS-A' .in. save_DATA ) then
 
-          ! Get bulk-transmission
-          call ncdf_get_var(grp,'T',r2)
+        ! Spectral DOS
+        call get_DOS(grp, 'ADOS', no_d, r2)
+        if ( nkpt > 1 ) then
+          call name_save(ispin,nspin,ascii_file,end='ADOS',El1=Elecs(iEl))
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS',&
+              '# DOS calculated from the spectral function, k-resolved')
+        end if
+        call name_save(ispin,nspin,ascii_file,end='AVADOS',El1=Elecs(iEl))
+        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+            '# DOS calculated from the spectral function, k-averaged')
+
+      end if
+
+      if ( N_eigen > 0 ) allocate(r3(N_eigen,NE,nkpt))
+
+      do jEl = 1 , N_Elec
+        ! Calculating iEl -> jEl is the
+        ! same as calculating jEl -> iEl, hence if we
+        ! do not wish to assert this is true, we do not
+        ! calculate this.
+        if ( ('T-all' .nin. save_DATA ) .and. &
+            jEl < iEl ) cycle
+        if ( ('T-sum-out' .nin. save_DATA ) .and. &
+            iEl == jEl ) cycle
+
+        if ( iEl == jEl ) then
+          call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.C',r2)
+          ! Save the variable to ensure the correct sum in the transmission
           if ( nkpt > 1 ) then
-             call name_save(ispin,nspin,ascii_file,end='BTRANS',El1=Elecs(iEl))
-             call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'T',&
-                  '# Bulk transmission, k-resolved')
+            call name_save(ispin,nspin,ascii_file,end='CORR', El1=Elecs(iEl))
+            call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'Correction',&
+                '# Out transmission correction, k-resolved')
           end if
-          call name_save(ispin,nspin,ascii_file,end='AVBTRANS',El1=Elecs(iEl))
-          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'T', &
-               '# Bulk transmission, k-averaged')
+          call name_save(ispin,nspin,ascii_file,end='AVCORR', El1=Elecs(iEl))
+          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'Correction',&
+              '# Out transmission correction, k-averaged')
 
-          deallocate(r2)
-          
-          no_e = Elecs(iEl)%no_u
-          allocate(r3(no_e,NE,nkpt))
-          call ncdf_get_var(grp,'DOS',r3)
-
-          ! Correct unit, from 1/Ry to 1/eV
-!$OMP parallel workshare default(shared)
-          r3 = r3 * eV
-!$OMP end parallel workshare
-          
-          if ( nkpt > 1 ) then
-             call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
-             call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,no_e,r3,'DOS',&
-                  '# Bulk DOS, k-resolved')
+          if ( N_eigen > 0 ) then
+            call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.C.Eig',r3)
+            if ( nkpt > 1 ) then
+              call name_save(ispin,nspin,ascii_file,end='CEIG', El1=Elecs(iEl) )
+              call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                  '# Out transmission correction eigenvalues, k-resolved')
+            end if
+            call name_save(ispin,nspin,ascii_file,end='AVCEIG', El1=Elecs(iEl) )
+            call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                '# Out transmission correction eigenvalues, k-averaged')
           end if
-          call name_save(ispin,nspin,ascii_file,end='AVBDOS',El1=Elecs(iEl))
-          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_e,r3,'DOS', &
-               '# Bulk DOS, k-averaged')
 
-          deallocate(r3)
-
-       end if
-
-       ! We do not calculate the last electrode
-       ! unless requested
-       if ( iEl == N_Elec ) then
-          ! check if all are calculated
-          if ( ('DOS-A-all' .nin. save_DATA) .and. &
-               ('T-all'.nin. save_DATA) ) cycle
-       end if
-
-       if ( 'DOS-Elecs' .nin. save_DATA ) &
-            call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
-
-       if ( 'DOS-A' .in. save_DATA ) then
-
-          allocate(r3(no_d,NE,nkpt))
-          call ncdf_get_var(grp,'ADOS',r3)
-
-          ! Correct unit, from 1/Ry to 1/eV
-!$OMP parallel workshare default(shared)
-          r3 = r3 * eV
-!$OMP end parallel workshare
-          
-          if ( nkpt > 1 ) then
-             call name_save(ispin,nspin,ascii_file,end='ADOS',El1=Elecs(iEl))
-             call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS',&
-                  '# DOS calculated from the spectral function, k-resolved')
-          end if
-          call name_save(ispin,nspin,ascii_file,end='AVADOS',El1=Elecs(iEl))
-          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,no_d,r3,'DOS', &
-               '# DOS calculated from the spectral function, k-averaged')
-
-          deallocate(r3)
-          
-       end if
-
-       allocate(r2(NE,nkpt))
-       
-       if ( N_eigen > 0 ) allocate(r3(N_eigen,NE,nkpt))
-
-       do jEl = 1 , N_Elec
-          ! Calculating iEl -> jEl is the
-          ! same as calculating jEl -> iEl, hence if we
-          ! do not wish to assert this is true, we do not
-          ! calculate this.
-          if ( ('T-all' .nin. save_DATA ) .and. &
-               jEl < iEl ) cycle
-          if ( ('T-sum-out' .nin. save_DATA ) .and. &
-               iEl == jEl ) cycle
-
-          if ( iEl == jEl ) then
-             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.C',r2)
-             ! Save the variable to ensure the correct sum in the transmission
-             if ( nkpt > 1 ) then
-                call name_save(ispin,nspin,ascii_file,end='CORR', El1=Elecs(iEl))
-                call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Correction',&
-                     '# Out transmission correction, k-resolved')
-             end if
-             call name_save(ispin,nspin,ascii_file,end='AVCORR', El1=Elecs(iEl))
-             call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Correction',&
-                  '# Out transmission correction, k-averaged')
-
-             if ( N_eigen > 0 ) then
-                call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.C.Eig',r3)
-                if ( nkpt > 1 ) then
-                   call name_save(ispin,nspin,ascii_file,end='CEIG', El1=Elecs(iEl) )
-                   call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                        '# Out transmission correction eigenvalues, k-resolved')
-                end if
-                call name_save(ispin,nspin,ascii_file,end='AVCEIG', El1=Elecs(iEl) )
-                call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                     '# Out transmission correction eigenvalues, k-averaged')
-             end if
-
-             ! The transmission is now the total incoming wave 
-             ! [G-G^\dagger].\Gamma
-             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
-          else
-             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
-             if ( N_eigen > 0 ) then
-                call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T.Eig',r3)
-                if ( nkpt > 1 ) then
-                   call name_save(ispin,nspin,ascii_file,end='TEIG', &
-                        El1=Elecs(iEl), El2=Elecs(jEl))
-                   call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                        '# Transmission eigenvalues, k-resolved')
-                end if
-                call name_save(ispin,nspin,ascii_file,end='AVTEIG', &
-                     El1=Elecs(iEl), El2=Elecs(jEl))
-                call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
-                     '# Transmission eigenvalues, k-averaged')
-             end if
-          end if
-          
-          ! Save transmission
-          if ( nkpt > 1 ) then
-             call name_save(ispin,nspin,ascii_file,end='TRANS', &
+          ! The transmission is now the total incoming wave 
+          ! [G-G^\dagger].\Gamma
+          call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
+        else
+          call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T',r2)
+          if ( N_eigen > 0 ) then
+            call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.T.Eig',r3)
+            if ( nkpt > 1 ) then
+              call name_save(ispin,nspin,ascii_file,end='TEIG', &
                   El1=Elecs(iEl), El2=Elecs(jEl))
-             call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
-                  '# Transmission, k-resolved')
+              call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                  '# Transmission eigenvalues, k-resolved')
+            end if
+            call name_save(ispin,nspin,ascii_file,end='AVTEIG', &
+                El1=Elecs(iEl), El2=Elecs(jEl))
+            call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+                '# Transmission eigenvalues, k-averaged')
           end if
-          call name_save(ispin,nspin,ascii_file,end='AVTRANS', &
-               El1=Elecs(iEl), El2=Elecs(jEl))
-          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,1,r2,'Transmission',&
-               '# Transmission, k-averaged')
+        end if
 
-          ! The array r2 now contains the k-averaged transmission.
+        ! Save transmission
+        if ( nkpt > 1 ) then
+          call name_save(ispin,nspin,ascii_file,end='TRANS', &
+              El1=Elecs(iEl), El2=Elecs(jEl))
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'Transmission',&
+              '# Transmission, k-resolved')
+        end if
+        call name_save(ispin,nspin,ascii_file,end='AVTRANS', &
+            El1=Elecs(iEl), El2=Elecs(jEl))
+        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'Transmission',&
+            '# Transmission, k-averaged')
+
+        ! The array r2 now contains the k-averaged transmission.
 #ifdef TBT_PHONON
-          ! Now we calculate the thermal current
-          ! nb function is: nb(E-E1) - nb(E-E2) IMPORTANT
-          !   \int d\omega 1/(2\pi) \hbar \omega [nb_1-nb_2] T(\omega)
-          ! ==\int d\omega h \omega [nb_1-nb_2] T(\omega)
-          Current = 0._dp
-          ! Thermal conductance:
-          !   \kappa = hbar ^2 / (2\pi kB T ^2)
-          !            \int d \omega  \omega^2 e^{kB T \omega / \hbar}
-          !              / ( e^{kB T \omega / \hbar} - 1 )^2
-          kappa = 0._dp
+        ! Now we calculate the thermal current
+        ! nb function is: nb(E-E1) - nb(E-E2) IMPORTANT
+        !   \int d\omega 1/(2\pi) \hbar \omega [nb_1-nb_2] T(\omega)
+        ! ==\int d\omega h \omega [nb_1-nb_2] T(\omega)
+        Current = 0._dp
+        ! Thermal conductance:
+        !   \kappa = hbar ^2 / (2\pi kB T ^2)
+        !            \int d \omega  \omega^2 e^{kB T \omega / \hbar}
+        !              / ( e^{kB T \omega / \hbar} - 1 )^2
+        kappa = 0._dp
 !$OMP parallel do default(shared), private(i,eRy), &
-!$OMP&reduction(+:Current,kappa)
+!$OMP&  reduction(+:Current,kappa)
+        do i = 1 , NE
+          ! We have rE in eV, hence the conversion
+          eRy = rE(i) * eV
+          Current = Current + r2(i,1) * rW(i) * rE(i) * nb2(eRy, &
+              Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
+              Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
+          kappa = kappa + r2(i,1) * rW(i) * rE(i) ** 2 * &
+              dnb(eRy, Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT)
+        end do
+!$OMP end parallel do
+
+        ! 'Current' is now in [Ry] [eV]
+
+        ! rE is already in eV, r2 and nb are unit-less.
+        ! rW is in Ry => / eV
+        Current = Current / eV
+        ! Change from \omega -> \hbar\omega yields:
+        !   \hbar d\omega -> d (\hbar\omega) = d E
+        ! Hence we need to divide by:
+        !  \hbar == 2pi h in [eV fs]
+        Current = Current / h_eVfs
+
+        ! 'kappa' is now in [Ry] [eV]**2
+        ! (also the conversion from \omega->\hbar\omega introduces division by hbar
+        !   hbar = 2\pi h
+        kappa = kappa / eV / h_eVfs
+        ! 'kappa' in [eV] ** 2 / [fs]
+        kappa = kappa / (Elecs(iEl)%mu%kT/eV * Elecs(iEl)%mu%kT/Kelvin)
+        dT = ( Elecs(iEl)%mu%kT - Elecs(jEl)%mu%kT ) / Kelvin
+
+        if ( Node == 0 ) then
+          write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+              ' -> ',trim(Elecs(jEl)%name),', dT [K] / J [eV/fs]: ', &
+              dT, ' K / ',Current,' eV/fs'
+          if ( abs(dT) < 10._dp ) then
+            ! Only calculate kappa for small dT < 10 Kelvin
+            ! Possibly we should calculate kappa(T)
+            ! and save to a file.
+            ! We advocate this to be calculated off-site.
+            write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+                ' -> ',trim(Elecs(jEl)%name),', T+dT [K] / kappa [eV/(fs K)]: ', &
+                Elecs(iEl)%mu%kT / Kelvin, ' K / ',kappa,' eV/(fs K)'
+          end if
+        end if
+#else
+        ! Now we calculate the current
+        ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
+        Current = 0._dp
+        Power = 0._dp
+        if ( iEl == jEl ) then
+          ! Do nothing
+        else
+!$OMP parallel do default(shared), private(i,dd,eRy), &
+!$OMP&  reduction(+:Current,Power)
           do i = 1 , NE
-             ! We have rE in eV, hence the conversion
-             eRy = rE(i) * eV
-             Current = Current + r2(i,1) * rW(i) * rE(i) * nb2(eRy, &
-                  Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
-                  Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
-             kappa = kappa + r2(i,1) * rW(i) * rE(i) ** 2 * &
-                  dnb(eRy, Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT)
+            eRy = rE(i) * eV
+            ! We have rE in eV, hence the conversion
+            dd = r2(i,1) * rW(i) * nf2(eRy, &
+                Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
+                Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
+            Current = Current + dd
+            ! rE is in eV, mu is in Ry
+            Power = Power + dd * ( rE(i) - Elecs(iEl)%mu%mu / eV )
           end do
 !$OMP end parallel do
+        end if
 
-          ! 'Current' is now in [Ry] [eV]
-          
-          ! rE is already in eV, r2 and nb are unit-less.
-          ! rW is in Ry => / eV
-          Current = Current / eV
-          ! Change from \omega -> \hbar\omega yields:
-          !   \hbar d\omega -> d (\hbar\omega) = d E
-          ! Hence we need to divide by:
-          !  \hbar == 2pi h in [eV fs]
-          Current = Current / h_eVfs
+        ! 'Current' is now in [Ry]
 
-          ! 'kappa' is now in [Ry] [eV]**2
-          ! (also the conversion from \omega->\hbar\omega introduces division by hbar
-          !   hbar = 2\pi h
-          kappa = kappa / eV / h_eVfs
-          ! 'kappa' in [eV] ** 2 / [fs]
-          kappa = kappa / (Elecs(iEl)%mu%kT/eV * Elecs(iEl)%mu%kT/Kelvin)
-          dT = ( Elecs(iEl)%mu%kT - Elecs(jEl)%mu%kT ) / Kelvin
+        ! rW is in Ry => / eV
+        Current = Current / eV
+        ! G0 = e^2 / h        ! no spin degeneracy
+        !   e = 1 C = 1.602...e-19
+        !   h = [eV s]
+        Current = Current * Coulomb ** 2 / (h_eVs * eV2J)
 
-          if ( Node == 0 ) then
-             write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
-                  ' -> ',trim(Elecs(jEl)%name),', dT [K] / J [eV/fs]: ', &
-                  dT, ' K / ',Current,' eV/fs'
-             if ( abs(dT) < 10._dp ) then
-                ! Only calculate kappa for small dT < 10 Kelvin
-                ! Possibly we should calculate kappa(T)
-                ! and save to a file.
-                ! We advocate this to be calculated off-site.
-                write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
-                     ' -> ',trim(Elecs(jEl)%name),', T+dT [K] / kappa [eV/(fs K)]: ', &
-                     Elecs(iEl)%mu%kT / Kelvin, ' K / ',kappa,' eV/(fs K)'
-             end if
-          end if
-#else
-          ! Now we calculate the current
-          ! nf function is: nF(E-E1) - nF(E-E2) IMPORTANT
-          Current = 0._dp
-          Power = 0._dp
-          if ( iEl == jEl ) then
-             ! Do nothing
-          else
-!$OMP parallel do default(shared), private(i,dd,eRy), &
-!$OMP&reduction(+:Current,Power)
-             do i = 1 , NE
-                eRy = rE(i) * eV
-                ! We have rE in eV, hence the conversion
-                dd = r2(i,1) * rW(i) * nf2(eRy, &
-                     Elecs(iEl)%mu%mu, Elecs(iEl)%mu%kT, &
-                     Elecs(jEl)%mu%mu, Elecs(jEl)%mu%kT )
-                Current = Current + dd
-                ! rE is in eV, mu is in Ry
-                Power = Power + dd * ( rE(i) - Elecs(iEl)%mu%mu / eV )
-             end do
-!$OMP end parallel do
-          end if
+        ! 'Power' is now in [Ry] [eV]
 
-          ! 'Current' is now in [Ry]
+        ! rW is in Ry => / eV
+        !  and apply 1 / h [eV s]
+        Power = Power / eV / h_eVs
+        ! Power is now in [eV] / [s]
+        !   [eV] => [J] 
+        Power = Power * eV2J
 
-          ! rW is in Ry => / eV
-          Current = Current / eV
-          ! G0 = e^2 / h        ! no spin degeneracy
-          !   e = 1 C = 1.602...e-19
-          !   h = [eV s]
-          Current = Current * Coulomb ** 2 / (h_eVs * eV2J)
+        ! Calculate applied bias
+        V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
 
-          ! 'Power' is now in [Ry] [eV]
-
-          ! rW is in Ry => / eV
-          !  and apply 1 / h [eV s]
-          Power = Power / eV / h_eVs
-          ! Power is now in [eV] / [s]
-          !   [eV] => [J] 
-          Power = Power * eV2J
-
-          ! Calculate applied bias
-          V = ( Elecs(iEl)%mu%mu - Elecs(jEl)%mu%mu ) / eV
-
-          if ( Node == 0 .and. iEl /= jEl ) then
-             write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
-                  ' -> ',trim(Elecs(jEl)%name),', V [V] / I [A]: ', &
-                  V, ' V / ',Current,' A'
-             write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
-                  ' -> ',trim(Elecs(jEl)%name),', V [V] / P [W]: ', &
-                  V, ' V / ',Power,' W'
-          end if
+        if ( Node == 0 .and. iEl /= jEl ) then
+          write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+              ' -> ',trim(Elecs(jEl)%name),', V [V] / I [A]: ', &
+              V, ' V / ',Current,' A'
+          write(*,'(4a,2(g12.6,a))') trim(Elecs(iEl)%name), &
+              ' -> ',trim(Elecs(jEl)%name),', V [V] / P [W]: ', &
+              V, ' V / ',Power,' W'
+        end if
 #endif
 
-       end do
-       
-       deallocate(r2)
-       if ( allocated(r3) ) deallocate(r3)
+      end do
+
+      ! Clean-up TEIG variable
+      if ( allocated(r3) ) deallocate(r3)
 
     end do
 
@@ -1857,30 +1837,60 @@ contains
 
     ! Clean-up
     deallocate(rE,rkpt,rwkpt,pvt)
+    deallocate(r2)
 
     call ncdf_close(ncdf)
 
     call timer('cdf2ascii',2)
 
   contains
-    
-    subroutine save_DAT(fname,nkpt,kpt,wkpt,NE,E,ipiv,no,DAT,value,header)
+
+    subroutine get_DOS(grp, var, no, r2)
+      type(hNCDF), intent(inout) :: grp
+      character(len=*), intent(in) :: var
+      integer, intent(in) :: no
+      real(dp), intent(out) :: r2(NE, nkpt)
+
+      integer :: io, ie, ik
+      real(dp) :: DOS
+
+      allocate(r3(no,NE,nkpt))
+
+      call ncdf_get_var(grp, var, r3)
+
+      ! Immediately sum all orbitals and convert to 1/eV
+!$OMP parallel do default(shared), collapse(2), &
+!$OMP&  private(ik,ie,io,DOS)
+      do ik = 1, nkpt
+        do ie = 1, NE
+          DOS = 0._dp
+          do io = 1, no
+            DOS = DOS + r3(io,ie,ik)
+          end do
+          r2(ie,ik) = DOS * eV / no
+        end do
+      end do
+!$OMP end parallel do
+
+      deallocate(r3)
+
+    end subroutine get_DOS
+
+    subroutine save_DAT(fname,nkpt,kpt,wkpt,NE,E,ipiv,DAT,value,header)
       character(len=*), intent(in) :: fname
-      integer, intent(in) :: nkpt, NE, no, ipiv(NE)
+      integer, intent(in) :: nkpt, NE, ipiv(NE)
       real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt), E(NE)
-      real(dp), intent(inout) :: DAT(no,NE,nkpt)
+      real(dp), intent(inout) :: DAT(NE,nkpt)
       character(len=*), intent(in) :: value, header
+
       integer :: iu, ik, i
-      real(dp) :: rno
-      if ( no == 1 ) then
-         rno = 1._dp
-      else
-         rno = 1._dp / no
-      end if
-      
+
+!$OMP parallel default(shared)
+
+!$OMP master
       call io_assign(iu)
       open( iu, file=trim(fname), form='formatted', status='unknown' ) 
-      
+
       write(iu,'(a)') trim(header)
       write(iu,'(a)') '# Date: '//trim(tmp)
 #ifdef TBT_PHONON
@@ -1888,31 +1898,39 @@ contains
 #else
       write(iu,'(a,a9,tr1,a16)')"#","E [eV]", value
 #endif
+!$OMP end master ! no implicit barrier
+
       do ik = 1 , nkpt 
-         if ( nkpt > 1 ) then
-            write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-                 '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
-         end if
-         do i = 1 , NE
-            ! We sum the orbital contributions
-            write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)),sum(DAT(:,ipiv(i),ik)) * rno
-         end do
-         if ( nkpt > 1 ) then
-            ! Update the average values in the first entry
-            if ( ik == 1 ) then
-!$OMP parallel workshare default(shared)
-               DAT(:,:,1) = DAT(:,:,1) * wkpt(ik)
-!$OMP end parallel workshare
-            else
-!$OMP parallel workshare default(shared)
-               DAT(:,:,1) = DAT(:,:,1) + DAT(:,:,ik) * wkpt(ik)
-!$OMP end parallel workshare
-            end if
-         end if
+!$OMP master
+        if ( nkpt > 1 ) then
+          write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
+              '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
+        end if
+        do i = 1 , NE
+          ! We sum the orbital contributions
+          write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)),DAT(ipiv(i),ik)
+        end do
+!$OMP end master ! no implicit barrier
+        if ( nkpt > 1 ) then
+          ! Update the average values in the first entry
+          if ( ik == 1 ) then
+!$OMP workshare
+            DAT(:,1) = DAT(:,1) * wkpt(ik)
+!$OMP end workshare
+          else
+!$OMP workshare
+            DAT(:,1) = DAT(:,1) + DAT(:,ik) * wkpt(ik)
+!$OMP end workshare
+          end if
+        end if
       end do
 
+!$OMP master
       call io_close(iu)
-      
+!$OMP end master ! no implicit barrier
+
+!$OMP end parallel
+
     end subroutine save_DAT
 
     subroutine save_EIG(fname,nkpt,kpt,wkpt,NE,E,ipiv,neig,EIG,value,header)
@@ -1925,11 +1943,14 @@ contains
       integer :: iu, ik, i
       character(len=20) :: fmt
 
+!$OMP parallel default(shared)
+
+!$OMP master
       ! Create format
       write(fmt,'(a,i0,a)')'(f10.5,tr1,',neig,'e16.8)'
       call io_assign(iu)
       open( iu, file=trim(fname), form='formatted', status='unknown' ) 
-      
+
       write(iu,'(a)') trim(header)
       write(iu,'(a)') '# Date: '//trim(tmp)
 #ifdef TBT_PHONON
@@ -1937,31 +1958,38 @@ contains
 #else
       write(iu,'(a,a9,tr1,a16)')"#","E [eV]", value
 #endif
+!$OMP end master ! no implicit barrier
       do ik = 1 , nkpt 
-         if ( nkpt > 1 ) then
-            write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-                 '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
-         end if
-         do i = 1 , NE
-            ! We sum the orbital contributions
-            write(iu,fmt) E(ipiv(i)),EIG(:,ipiv(i),ik)
-         end do
-         if ( nkpt > 1 ) then
-            ! Update the average values in the first entry
-            if ( ik == 1 ) then
-!$OMP parallel workshare default(shared)
-               EIG(:,:,1) = EIG(:,:,1) * wkpt(ik)
-!$OMP end parallel workshare
-            else
-!$OMP parallel workshare default(shared)
-               EIG(:,:,1) = EIG(:,:,1) + EIG(:,:,ik) * wkpt(ik)
-!$OMP end parallel workshare
-            end if
-         end if
+!$OMP master
+        if ( nkpt > 1 ) then
+          write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
+              '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
+        end if
+        do i = 1 , NE
+          ! We sum the orbital contributions
+          write(iu,fmt) E(ipiv(i)),EIG(:,ipiv(i),ik)
+        end do
+!$OMP end master
+        if ( nkpt > 1 ) then
+          ! Update the average values in the first entry
+          if ( ik == 1 ) then
+!$OMP workshare
+            EIG(:,:,1) = EIG(:,:,1) * wkpt(ik)
+!$OMP end workshare
+          else
+!$OMP workshare
+            EIG(:,:,1) = EIG(:,:,1) + EIG(:,:,ik) * wkpt(ik)
+!$OMP end workshare
+          end if
+        end if
       end do
 
+!$OMP master
       call io_close(iu)
-      
+!$OMP end master
+
+!$OMP end parallel
+
     end subroutine save_EIG
 
 #ifdef TBT_PHONON

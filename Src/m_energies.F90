@@ -22,6 +22,7 @@ module m_energies
   real(dp):: Dxc        ! Integral((epsxc-Vxc)*Rho), calculated  in dhscf (not used)
   real(dp):: Ecorrec    ! Energy term eta*DeltaQ, calculated in  ordern
   real(dp):: ef         ! Fermi energy
+  real(dp):: efs(2)     ! Fermi energies (only for fixed spin calculations)
   real(dp):: Eharrs     ! Harris-functional total energy
   real(dp):: Eions      ! Self-energy of isolated ions
   real(dp):: Ekin       ! Kinetic energy of electrons,  calculated in kinefsm
@@ -60,6 +61,7 @@ contains
     Dxc = 0._dp
     Ecorrec = 0._dp
     ef = 0._dp
+    efs = 0._dp
     Eharrs = 0._dp
     Eions = 0._dp
     Ekin = 0._dp

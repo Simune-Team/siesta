@@ -43,15 +43,16 @@ contains
     integer :: cur_n, no_max
 
     ! calculate the maximum electrode size
-    no_max = maxval(TotUsedOrbs(Elecs))
 #ifdef TBTRANS
     ! The work size needed for the electrodes
     ! depends on the size of the connecting region
     ! Hence we need to check the connecting region
     ! size
     do io = 1 , N_Elec
-       no_max = max(no_max,Elecs(io)%o_inD%n)
+      no_max = max(no_max,Elecs(io)%o_inD%n)
     end do
+#else
+    no_max = maxval(TotUsedOrbs(Elecs))
 #endif
 
     ! We just need to find the maximum overlap of

@@ -82,8 +82,6 @@ clean:
 	rm -f pi3 blacs_prb pblas_prb newcomm
 	rm -rf MPI $(MPI_INTERFACE)
 
-#
-# DO NOT DELETE THIS LINE - used by make depend
-#
+# Manual dependencies
 m_mpi_utils.o: sys.o
 sys.o: parallel.o

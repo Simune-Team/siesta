@@ -77,7 +77,7 @@ contains
     type(Sparsity) :: tmp_Sp
     character(len=len(pvt_str)) :: str_tmp, from_elec
 
-    integer :: i, iEl, n, n_pvt
+    integer :: i, iEl, n, n_pvt, j
     
     ! Regions used for sorting the device region
     type(tRgn) :: r_tmp, r_tmp2, c_pvt
@@ -88,7 +88,15 @@ contains
     ! This pvt_option decides whether a
     !   fan, fan2d/front
     ! pivoting scheme is used.
+    integer, parameter :: PVT_NONE = 0
+    integer, parameter :: PVT_FAN = 1
+    integer, parameter :: PVT_FRONT = 2
+    integer, parameter :: PVT_FAN_NONE = -2
+    integer, parameter :: PVT_FAN_MEAN = 0
+    integer, parameter :: PVT_FAN_MIN = -1
+    integer, parameter :: PVT_FAN_MAX = 1
     integer :: pvt_option
+    logical, allocatable :: r_logical(:)
     logical :: pvt_orb, orb_1, is_rev, is_priority
     integer :: fan_option
     integer :: fan1, fan2
@@ -97,31 +105,33 @@ contains
     ! For linear-least-squares problem
     real(dp) :: llsA(3,2), llsB(3), work(20)
 
+    call timer('pivot', 1)
+
     ! We keep this copy and edit this to
     ! create the correct pivoting string
     lextend = .true.
     if ( present(extend) ) lextend = extend
 
     ! If there is a fan option, grab it
-    pvt_option = 0
+    pvt_option = PVT_NONE
     fan_option = -2
     if ( str_contain(pvt_str,'fan-mean') ) then
-       pvt_option = 1
-       fan_option = 0
+       pvt_option = PVT_FAN
+       fan_option = PVT_FAN_MEAN
     else if ( str_contain(pvt_str,'fan-min') ) then
-       pvt_option = 1
-       fan_option = -1
+       pvt_option = PVT_FAN
+       fan_option = PVT_FAN_MIN
     else if ( str_contain(pvt_str,'fan-max') ) then
-       pvt_option = 1
-       fan_option = 1
+       pvt_option = PVT_FAN
+       fan_option = PVT_FAN_MAX
     else if ( str_contain(pvt_str,'front') ) then
        ! This forces the pvt_option
        ! to only consider the normal vector to the
        ! first electrode plane
-       pvt_option = 2
-       fan_option = 1
+       pvt_option = PVT_FRONT
+       fan_option = PVT_FAN_MAX
     else if ( str_contain(pvt_str, 'fan') ) then
-       pvt_option = 1
+       pvt_option = PVT_FAN
     end if
 
     ! If the electrode is specified, then add it
@@ -191,7 +201,7 @@ contains
     ! Create priority list for electrodes
     call rgn_init(priority,n)
     call crt_El_priority(N_Elec, Elecs, priority, &
-         na_u, lasto, is_orb = pvt_orb .or. orb_1 )
+         na_u, lasto, is_orb = pvt_orb )
 
     ! Sort the pivoting region
     call rgn_sort(c_pvt)
@@ -316,8 +326,7 @@ contains
 
 #endif
 
-    else if ( str_contain(pvt_str,'CG') .or. pvt_option == 0 ) then
-       ! pvt_option == 0 means different from fan/front/mean
+    else if ( str_contain(pvt_str,'CG') .or. pvt_option == PVT_NONE ) then
 
        is_rev = str_contain(pvt_str, 'rev-')
        is_priority = str_contain(pvt_str, '+priority')
@@ -326,48 +335,66 @@ contains
        if ( is_priority ) &
             str_tmp = trim(str_tmp)//'+priority'
 
-       call rgn_delete(r_Els)
+       call rgn_delete(r_Els, r_tmp)
 
+       ! Allocate logical for all the elements
+       allocate(r_logical(n))
+       r_logical = .false.
+       
        ! Collect the electrode orbitals
        iEl = 0
        if ( N_Elec >= 1 ) then
+         
+         do i = 1 , N_Elec
+           if ( .not. str_contain(pvt_str,Elecs(i)%name) ) cycle
+           str_tmp = trim(str_tmp)//'+'//trim(Elecs(i)%name)
 
-          do i = 1 , N_Elec
-             if ( .not. str_contain(pvt_str,Elecs(i)%name) ) cycle
-             str_tmp = trim(str_tmp)//'+'//trim(Elecs(i)%name)
-             
-             if ( pvt_orb .or. orb_1 ) then
-                call rgn_copy(Elecs(i)%o_inD,r_tmp)
-             else
-                call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
-             end if
+           if ( pvt_orb ) then
+             call rgn_assoc(r_tmp, Elecs(i)%o_inD)
+           else
+             call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
+           end if
 
-             call rgn_append(r_Els, r_tmp, r_Els)
-             
-             ! Sort this region
-             call rgn_sp_sort(r_Els, dit, tmp_Sp, r_tmp, &
-                  R_SORT_MAX_FRONT )
-             
-             iEl = iEl + 1
-          end do
+           do j = 1, r_tmp%n
+             r_logical(r_tmp%r(j)) = .true.
+           end do
+
+           call rgn_append(r_Els, r_tmp, r_Els)
+
+           ! Sort this region
+           call rgn_sp_sort(r_Els, tmp_Sp, r_tmp, R_SORT_MAX_FRONT, r_logical=r_logical)
+
+           iEl = iEl + 1
+         end do
+
+         if ( pvt_orb ) then
+           call rgn_nullify(r_tmp)
+         else
+           call rgn_delete(r_tmp)
+         end if
 
        end if
-
+       
        if ( iEl == 0 ) then
-          ! Default to the first electrode
-          str_tmp = trim(str_tmp)//'+'//trim(Elecs(1)%name)
-          
-          if ( pvt_orb .or. orb_1 ) then
-             call rgn_copy(Elecs(1)%o_inD,r_Els)
-          else
-             call rgn_orb2atom(Elecs(1)%o_inD,na_u,lasto,r_Els)
-          end if
-          
-          ! Sort this region
-          call rgn_sp_sort(r_Els, dit, tmp_Sp, r_Els, &
-               R_SORT_MAX_FRONT )
+         ! Default to the first electrode
+         str_tmp = trim(str_tmp)//'+'//trim(Elecs(1)%name)
+
+         if ( pvt_orb ) then
+           call rgn_copy(Elecs(1)%o_inD, r_Els)
+         else
+           call rgn_orb2atom(Elecs(1)%o_inD,na_u,lasto,r_Els)
+         end if
+
+         do j = 1, r_Els%n
+           r_logical(r_Els%r(j)) = .true.
+         end do
+
+         ! Sort this region
+         call rgn_sp_sort(r_Els, tmp_Sp, r_Els, R_SORT_MAX_FRONT, r_logical=r_logical)
 
        end if
+
+       deallocate(r_logical)
 
        ! do pivoting
        i = PVT_CONNECT
@@ -392,6 +419,12 @@ contains
        call rgn_range(priority,1,n)
        call rgn_complement(c_pvt,priority,priority)
 
+       ! Allocate logical for all the elements
+       allocate(r_logical(n))
+       r_logical(:) = .false.
+
+       call rgn_delete(r_tmp)
+       
        ! Figure out which electrode(s) has been given
        ! as a starting point
        ! Note that for several electrodes one could
@@ -405,8 +438,8 @@ contains
              str_tmp = trim(str_tmp)//'+'//trim(Elecs(i)%name)
              if ( fan1 == 0 ) fan1 = i
 
-             if ( pvt_orb .or. orb_1 ) then
-                call rgn_copy(Elecs(i)%o_inD,r_tmp)
+             if ( pvt_orb ) then
+                call rgn_assoc(r_tmp, Elecs(i)%o_inD)
              else
                 call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
              end if
@@ -415,16 +448,25 @@ contains
                 call die('ts_pivot: programming error -- 1')
              end if
              
+             do j = 1, r_tmp%n
+               r_logical(r_tmp%r(j)) = .true.
+             end do
+
              ! Sort this region
-             call rgn_sp_sort(r_pvt, dit, tmp_Sp, r_tmp, &
-                  R_SORT_MAX_FRONT )
+             call rgn_sp_sort(r_pvt, tmp_Sp, r_tmp, R_SORT_MAX_FRONT, r_logical=r_logical)
              
              iEl = iEl + 1
           else
              if ( fan2 == 0 .and. fan1 /= 0 ) fan2 = i
           end if
        end do
-       
+
+       if ( pvt_orb ) then
+         call rgn_nullify(r_tmp)
+       else
+         call rgn_delete(r_tmp)
+       end if
+
        if ( iEl == 0 ) then
           print *,'Currently assembled options: ',trim(str_tmp)
           print *,'Remaining option string: ',trim(pvt_str)
@@ -446,7 +488,7 @@ contains
           p_n(:,1) = -p_n(:,1)
        end if
        
-       ! Find the middle of the electrode atoms
+       ! Find the middle of the electrode atoms (in the device region)!
        call rgn_orb2atom(Elecs(fan1)%o_inD,na_u,lasto,r_tmp)
        llsB = 0._dp
        do i = 1 , r_tmp%n
@@ -492,8 +534,7 @@ contains
        call rgn_delete(r_tmp)
 
 
-       ! Set the second fan value in case it hasn't been
-       ! set.
+       ! Set the second fan value in case it hasn't been set
        if ( fan2 == 0 ) then
           ! Correct fan2 index
           if ( fan1 < N_Elec ) then
@@ -521,37 +562,37 @@ contains
        ! Then we remove the pivoting option.
        ! We do the pivoting check later...
 
-       if ( VNORM(p_cr) > 1.e-6_dp .and. pvt_option == 1 ) then
+       if ( VNORM(p_cr) > 1.e-6_dp .and. pvt_option == PVT_FAN ) then
 
           ! Default to mean
-          if ( fan_option == -2 ) fan_option = 0
+          if ( fan_option == PVT_FAN_NONE ) fan_option = PVT_FAN_MEAN
 
        else
 
           ! The electrodes are parallel
           ! so we might as well only use the frontal search
-          pvt_option = 2
+          pvt_option = PVT_FRONT
 
           ! Default to max
-          if ( fan_option == -2 ) fan_option = 1
+          if ( fan_option == PVT_FAN_NONE ) fan_option = PVT_FAN_MAX
 
        end if
 
        select case ( pvt_option )
-       case ( 1 )
+       case ( PVT_FAN )
           select case ( fan_option )
-          case ( -1 )
+          case ( PVT_FAN_MIN )
              str_tmp = trim(str_tmp)//'+fan-min'
-          case (  0 ) 
+          case (  PVT_FAN_MEAN ) 
              str_tmp = trim(str_tmp)//'+fan-mean'
-          case (  1 )
+          case ( PVT_FAN_MAX )
              str_tmp = trim(str_tmp)//'+fan-max'
           end select
-       case ( 2 )
+       case ( PVT_FRONT )
           str_tmp = trim(str_tmp)//'+front'
        end select
        
-       if ( pvt_option == 1 ) then
+       if ( pvt_option == PVT_FAN ) then
 
           ! Normalize vector for line
           p_cr = p_cr / VNORM(p_cr)
@@ -675,12 +716,13 @@ contains
 
              if ( r_tmp%n /= 0 ) then
 
-                if ( pvt_orb ) then
-                   ! get the atomic index to create atomic range
-                   i = iaorb(r_tmp%r(1),lasto)
-                   call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
+                if ( pvt_orb .and. .not. orb_1 ) then
+                  ! get the atomic index to create atomic range of all orbitals
+                  ! on the given atom
+                  i = iaorb(r_tmp%r(1),lasto)
+                  call rgn_range(r_tmp,lasto(i-1)+1,lasto(i))
                 else
-                   i = r_tmp%r(1)
+                  i = r_tmp%r(1)
                 end if
                 if ( IONode ) then
                    write(*,'(/,a,i0,a)')'WARNING: &
@@ -699,6 +741,10 @@ contains
                            &it cannot figure out what to do.')
                    end if
                 end do
+                
+                do j = 1, r_tmp%n
+                  r_logical(r_tmp%r(j)) = .true.
+                end do
 
                 if ( .not. rgn_push(r_pvt, r_tmp) ) then
                    call die('ts_pivot: programming error -- 2')
@@ -715,26 +761,25 @@ contains
           ! We want to add the 'fan' atoms
           
           if ( pvt_orb .and. .not. orb_1 ) then
-             call rgn_orb2atom(r_tmp,na_u,lasto,r_Els)
+            call rgn_orb2atom(r_tmp,na_u,lasto,r_Els)
           else
-             r_Els%n =  r_tmp%n
-             r_Els%r => r_tmp%r
+            call rgn_assoc(r_Els, r_tmp)
           end if
 
-          if ( pvt_option == 1 ) then
+          if ( pvt_option == PVT_FAN ) then
 
              ! Calculate max angle between plane and vector 'C'-xa
              select case ( fan_option ) 
-             case ( -1 )
+             case ( PVT_FAN_MIN )
                 ! minimum
                 work(1) = huge(1._dp)
-                work(2) = 0._dp
-             case ( 0 )
+                work(2) = -huge(1._dp)
+             case ( PVT_FAN_MEAN )
                 ! mean
                 work(1:2) = 0._dp
-             case ( 1 )
+             case ( PVT_FAN_MAX )
                 ! maximum
-                work(1) = 0._dp
+                work(1) = -huge(1._dp)
                 work(2) = huge(1._dp)
              end select
              do i = 1 , r_Els%n
@@ -763,32 +808,34 @@ contains
                 !print *,work(3:4)/3.1415926353_dp*180._dp
 
                 select case( fan_option )
-                case ( -1 ) 
+                case ( PVT_FAN_MIN )
                    work(1) = min(work(1),work(3))
                    work(2) = max(work(2),work(4))
-                case (  0 )
+                case ( PVT_FAN_MEAN )
                    work(1) = work(1) + work(3)
                    work(2) = work(2) + work(4)
-                case (  1 ) 
+                case ( PVT_FAN_MAX )
                    work(1) = max(work(1),work(3))
                    work(2) = min(work(2),work(4))
                 end select
 
              end do
-             if ( fan_option == 0 ) work(1:2) = work(1:2) / r_Els%n
+             if ( fan_option == PVT_FAN_MEAN ) then
+               work(1:2) = work(1:2) / r_Els%n
+             end if
 
              ! Now we need to find all atoms below those angles
-             if ( .not. pvt_orb .or. orb_1 ) call rgn_nullify(r_Els)
+             if ( .not. (pvt_orb .and. .not. orb_1) ) call rgn_nullify(r_Els)
 
              ! Create the list of atoms that we should search as 
              ! possible candidates for adding based on the 'fan'
              call rgn_append(r_pvt, r_tmp, r_tmp2)
-             call rgn_complement(r_tmp2,c_pvt,r_Els)
+             call rgn_complement(r_tmp2, c_pvt, r_Els)
              if ( pvt_orb .and. .not. orb_1 ) &
                   call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
 
              ! Pre-allocate maximum size of the added atoms
-             call rgn_init(r_tmp2,r_Els%n)
+             call rgn_init(r_tmp2, r_Els%n)
              r_tmp2%n = 0 ! allows doing rgn_push
 
              ! 'r_Els' is now the list of atoms that hasn't been processed yet
@@ -827,46 +874,45 @@ contains
 !!$             ! Debugging
 !!$             print *,'Currently applying: ',work(1:2) / 3.1415926353_dp * 180._dp,r_tmp2%n
 
-          else if ( pvt_option == 2 ) then
+          else if ( pvt_option == PVT_FRONT ) then
 
              ! Calculate the plane that we wish to fan about
              select case ( fan_option ) 
-             case ( -1 )
-                ! minimum
-                work(1) = huge(1._dp)
-             case ( 0 )
-                ! mean
-                work(1) = 0._dp
-             case ( 1 )
-                ! maximum
-                work(1) = 0._dp
+             case ( PVT_FAN_MIN )
+               ! minimum
+               work(1) = huge(1._dp)
+             case ( PVT_FAN_MEAN )
+               ! mean
+               work(1) = 0._dp
+             case ( PVT_FAN_MAX )
+               ! maximum
+               work(1) = -huge(1._dp)
              end select
+              
              do i = 1 , r_Els%n
 
                 ! Get elec-center -> xa vector,
                 tmp3 = xa(:,r_Els%r(i)) - p_center(:,1)
-                ! Project onto vector
-                tmp3 = VEC_PROJ(p_n(:,1), tmp3)
-                ! Get the length of this projected vector
-                work(2) = VNORM(tmp3)
+                ! Scalar projection onto vector
+                work(2) = VEC_PROJ_SCA(p_n(:,1), tmp3)
                 
                 select case ( fan_option ) 
-                case ( -1 )
+                case ( PVT_FAN_MIN )
                    ! minimum
                    work(1) = min(work(1),work(2))
-                case ( 0 )
+                case ( PVT_FAN_MEAN )
                    ! mean
                    work(1) = work(1) + work(2)
-                case ( 1 )
+                case ( PVT_FAN_MAX )
                    ! maximum
                    work(1) = max(work(1),work(2))
                 end select
                 
              end do
-             if ( fan_option == 0 ) work(1) = work(1) / r_Els%n
+             if ( fan_option == PVT_FAN_MEAN ) work(1) = work(1) / r_Els%n
 
              ! Now we need to find all atoms below the coordinate
-             if ( .not. pvt_orb ) call rgn_nullify(r_Els)
+             if ( .not. (pvt_orb .and. .not. orb_1) ) call rgn_nullify(r_Els)
 
              ! Create the list of atoms that we should search as 
              ! possible candidates for adding based on the 'fan'
@@ -885,10 +931,10 @@ contains
                 ! Get elec-center -> xa vector,
                 tmp3 = xa(:,r_Els%r(i)) - p_center(:,1)
                 ! Project onto vector
-                tmp3 = VEC_PROJ(p_n(:,1),tmp3)
+                work(2) = VEC_PROJ_SCA(p_n(:,1), tmp3)
 
                 ! Check whether the atom should be added
-                if ( work(1) >= vnorm(tmp3) ) then
+                if ( work(1) >= work(2) ) then
                    if ( .not. rgn_push(r_tmp2,r_Els%r(i)) ) then
                       call die('Error in programming')
                    end if
@@ -911,7 +957,11 @@ contains
           
           ! Clean-up
           call rgn_delete(r_Els,r_tmp2)
-             
+
+          do j = 1, r_tmp%n
+            r_logical(r_tmp%r(j)) = .true.
+          end do
+          
           ! Append the newly found region that is connecting out to the
           ! full region
           if ( .not. rgn_push(r_pvt, r_tmp) ) then
@@ -919,9 +969,11 @@ contains
           end if
           
           ! we sort the newly attached region
-          call rgn_sp_sort(r_pvt, dit, tmp_Sp, r_tmp, R_SORT_MAX_BACK )
+          call rgn_sp_sort(r_pvt, tmp_Sp, r_tmp, R_SORT_MAX_BACK, r_logical=r_logical)
 
        end do
+
+       deallocate(r_logical)
 
     end if
 
@@ -938,7 +990,7 @@ contains
             &removal is erroneous')
     end if
 
-    if ( .not. (pvt_orb .or. orb_1) ) then
+    if ( .not. pvt_orb ) then
 
        ! re-create the orbital pivoting
        call rgn_copy(r_pvt,r_tmp)
@@ -950,8 +1002,7 @@ contains
     if ( r_pvt%n /= size(r_pvt%r) ) then
        call rgn_copy(r_pvt, r_tmp)
        call rgn_delete(r_pvt)
-       r_pvt%n = r_tmp%n
-       r_pvt%r => r_tmp%r
+       call rgn_assoc(r_pvt, r_tmp)
        call rgn_nullify(r_tmp)
     end if
 
@@ -960,6 +1011,8 @@ contains
     call rgn_delete(r_Els,priority)
 
     pvt_str = str_tmp
+
+    call timer('pivot', 2)
 
   contains
 
@@ -1035,15 +1088,15 @@ contains
     integer :: con
     integer :: i_Elec, io, idx_Elec, idx, no
 
-    idx = El%idx_o
+    idx = El%idx_o - 1
     no = TotUsedOrbs(El)
 
     ! Create the pivoting table for the electrodes
     call rgn_init(r_tmp,no)
-    do io = 0 , no - 1
+    do io = 1 , no
        ! equals the io'th orbital index in the 
        !           TS region.  io == ts_i
-       r_tmp%r(io+1) = rgn_pivot(r,idx+io)
+       r_tmp%r(io) = rgn_pivot(r,idx+io)
     end do
        
     ! Sort it to be able to gather the indices

@@ -5,7 +5,7 @@
 SHELL=/bin/bash
 
 MPI=mpirun -np 2
-TS=../../../../transiesta
+TS = ../../../../siesta
 
 
 # Make compatibility layer for old test-runs

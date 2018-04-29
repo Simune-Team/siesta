@@ -1,12 +1,12 @@
 module m_ts_method
 
   use m_region
-  
+
   implicit none
 
   public
   save
-  
+
   ! This is the transiesta version utilizing the 
   ! full sparsity pattern of SIESTA.
   integer, parameter :: TS_FULL = 1
@@ -81,14 +81,14 @@ contains
     type(tRgn) :: r_tmp
 
     no_u_TS = lasto(na_u)
-    
+
     ! allocate regions
     if ( allocated(a_type) ) then
 
-       deallocate(a_type,a_offset,o_type,o_offset)
+      deallocate(a_type,a_offset,o_type,o_offset)
 
-       ! Clean regions
-       call rgn_delete(r_aBuf,r_oBuf,r_aC,r_oC,r_pvt)
+      ! Clean regions
+      call rgn_delete(r_aBuf,r_oBuf,r_aC,r_oC,r_pvt)
 
     end if
 
@@ -98,7 +98,7 @@ contains
     a_offset(:) = 0
     o_type(:)   = TYP_DEVICE
     o_offset(:) = 0
-    
+
     ! old options for buffer atoms
     call fdf_obsolete('TS.BufferAtomsLeft')
     call fdf_obsolete('TS.BufferAtomsRight')
@@ -107,43 +107,52 @@ contains
     bName = trim(prefix)//'.Atoms.Buffer'
     ! Read in buffer region via the block or list
     if ( fdf_islist(bName) ) then
-       
-       ! Query size of list
-       i = -1
-       call fdf_list(bName, i, r_aBuf%r)
-       call rgn_init(r_aBuf, i)
-       call fdf_list(bName, r_aBuf%n, r_aBuf%r)
-       
+
+      ! Query size of list
+      i = -1
+      call rgn_init(r_aBuf, 1)
+      call fdf_list(bName, i, r_aBuf%r)
+      call rgn_init(r_aBuf, i)
+      call fdf_list(bName, r_aBuf%n, r_aBuf%r)
+      do i = 1 , r_aBuf%n
+        if ( r_aBuf%r(i) < 0 ) then
+          r_aBuf%r(i) = r_aBuf%r(i) + na_u + 1
+        end if
+      end do
+
     else if ( fdf_block(bName,bfdf) ) then
-    
-       ! read by line and set them to be buffer atoms
-       do while ( fdf_bline(bfdf,pline) ) 
-          ! empty line
-          if ( fdf_bnnames(pline) == 0 ) cycle
-       
-          g = fdf_bnames(pline,1)
-          if ( leqi(g,'atom') .or. leqi(g,'position') ) then
 
-             call fdf_brange(pline,r_tmp, 1, na_u)
-             if ( r_aBuf%n == 0 ) then
-                call rgn_copy(r_tmp,r_aBuf)
-             else if ( r_tmp%n > 0 ) then
-                call rgn_union(r_aBuf,r_tmp,r_aBuf)
-             end if
-             
+      ! read by line and set them to be buffer atoms
+      do while ( fdf_bline(bfdf,pline) ) 
+        ! empty line
+        if ( fdf_bnnames(pline) == 0 ) cycle
+
+        g = fdf_bnames(pline,1)
+        if ( leqi(g,'atom') .or. leqi(g,'position') ) then
+
+          call fdf_brange(pline,r_tmp, 1, na_u)
+          if ( r_aBuf%n == 0 ) then
+            call rgn_copy(r_tmp,r_aBuf)
+          else if ( r_tmp%n > 0 ) then
+            call rgn_union(r_aBuf,r_tmp,r_aBuf)
           end if
-          
-       end do
 
-       if ( r_aBuf%n > 0 ) then
-          call rgn_init(r_tmp,1,val=0)
-          call rgn_complement(r_tmp,r_aBuf,r_aBuf)
-          call rgn_uniq(r_aBuf)
-          do i = 1 , r_aBuf%n
-             call set_type(TYP_BUFFER,r_aBuf%r(i),na_u,lasto)
-          end do
-       end if
+        end if
 
+      end do
+
+    end if
+
+    if ( r_aBuf%n > 0 ) then
+      ! Remove all 0 entries
+      ! This is a "helper" because the user may
+      ! request -10 -- 10
+      call rgn_init(r_tmp,1,val=0)
+      call rgn_complement(r_tmp,r_aBuf,r_aBuf)
+      call rgn_uniq(r_aBuf)
+      do i = 1 , r_aBuf%n
+        call set_type(TYP_BUFFER,r_aBuf%r(i),na_u,lasto)
+      end do
     end if
 
     ! Sort the atoms
@@ -165,9 +174,10 @@ contains
     call rgn_init(r_pvt,lasto(na_u)-r_oBuf%n)
     ia = 0
     do i = 1 , lasto(na_u)
-       if ( orb_type(i) == TYP_BUFFER ) cycle
-       ia = ia + 1
-       r_pvt%r(ia) = i
+      if ( orb_type(i) == TYP_BUFFER ) cycle
+      ia = ia + 1
+      if ( ia > r_pvt%n ) call die('Error in programming!')
+      r_pvt%r(ia) = i
     end do
 
     ! Name the regions
@@ -190,9 +200,9 @@ contains
     integer :: iE, ia
 
     do iE = 1 , N_Elec
-       do ia = 1 , TotUsedAtoms(Elecs(iE))
-          call set_type(iE,Elecs(iE)%idx_a - 1 + ia,na_u,lasto)
-       end do
+      do ia = 1 , TotUsedAtoms(Elecs(iE))
+        call set_type(iE,Elecs(iE)%idx_a - 1 + ia,na_u,lasto)
+      end do
     end do
 
   end subroutine ts_init_electrodes
@@ -201,25 +211,25 @@ contains
     integer, intent(in) :: typ, ia, na_u,lasto(0:na_u)
     integer :: i, no
     if ( a_type(ia) /= TYP_DEVICE ) then
-       write(*,'(2(a,i0))') 'Trying to set atom ',ia,' to type: ',typ
-       write(*,'(2(a,i0))') 'Atom ',ia,' is already: ',a_type(ia)
+      write(*,'(2(a,i0))') 'Trying to set atom ',ia,' to type: ',typ
+      write(*,'(2(a,i0))') 'Atom ',ia,' is already: ',a_type(ia)
 
-       call die('Error in setup. Atoms are having two types, check for &
-            &electrode and buffer atom overlap...')
+      call die('Error in setup. Atoms are having two types, check for &
+          &electrode and buffer atom overlap...')
     end if
     a_type(ia) = typ
     o_type(lasto(ia-1)+1:lasto(ia)) = typ
     if ( typ == TYP_BUFFER ) then
-       do i = ia , na_u
-          a_offset(i) = a_offset(i) + 1
-       end do
-       no = lasto(ia) - lasto(ia-1)
-       do i = lasto(ia-1) + 1 , lasto(na_u)
-          o_offset(i) = o_offset(i) + no
-       end do
+      do i = ia , na_u
+        a_offset(i) = a_offset(i) + 1
+      end do
+      no = lasto(ia) - lasto(ia-1)
+      do i = lasto(ia-1) + 1 , lasto(na_u)
+        o_offset(i) = o_offset(i) + no
+      end do
     end if
   end subroutine set_type
-  
+
   elemental function orb_type(io) result(typ)
     use geom_helper, only : UCORB
     integer, intent(in) :: io
@@ -238,8 +248,8 @@ contains
     integer, intent(in) :: io
     integer :: off
     do off = io , no_u_TS
-       if ( o_type(off) == TYP_BUFFER ) cycle ! the buffer atoms are NOT transiesta
-       if ( off - o_offset(off) == io ) return
+      if ( o_type(off) == TYP_BUFFER ) cycle ! the buffer atoms are NOT transiesta
+      if ( off - o_offset(off) == io ) return
     end do
   end function ts2s_orb
 
@@ -273,6 +283,6 @@ contains
     logical :: typ
     typ = a_type(ia) == TYP_DEVICE
   end function a_isDev
-    
+
 end module m_ts_method
-  
+

@@ -68,10 +68,11 @@ C **********************************************************************
       use alloc,        only : re_alloc, de_alloc
       use units,        only : eV
       use files,        only : slabel, label_length
+      use m_energies, only: Ef
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
-      use m_diag_option, only: ParallelOverK
+      use m_diag_option, only: ParallelOverK, Serial
 
       implicit none
 
@@ -100,7 +101,9 @@ C Internal variables ---------------------------------------------------
 
       integer iat, spec, ii, iorb
 
-      real(dp), dimension(:), pointer  :: tmp
+      logical :: orig_ParallelOverK, orig_Serial
+
+      real(dp), dimension(:), pointer :: tmp
 
       character*40 pos_string
 
@@ -121,8 +124,21 @@ C Internal variables ---------------------------------------------------
 
       call timer( 'pdos', 1)
 
+      orig_Serial = Serial
+      orig_ParallelOverK = ParallelOverK
+
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
+
+      ! Ensure we only use paralleloverk for
+      ! spin-(un)polarized calculations
+      if ( nspin > 2 ) ParallelOverK = .false.
+      ! Reset for Gamma-only PDOS calculations
+      if ( Gamma ) ParallelOverK = .false.
+
+      if ( Nodes > 1 .and. .not. ParallelOverK ) then
+         Serial = .false.
+      end if
 
 C Find number of orbitals per unit cell 
 #ifdef MPI
@@ -262,12 +278,21 @@ C New writing
         call xml_EndElement(xf,"nspin")
 
         write(iunit2,'(a)') '<pdos>'
-        write(iunit2,'(a,i1,a)') 
-     .               '<nspin>', spin%EDM,'</nspin>'
-        write(iunit2,'(a,i4,a)') '<norbitals>', no_u, '</norbitals>'
+        write(iunit2,'(a,i1,a)') '<nspin>', spin%EDM, '</nspin>'
+        write(iunit2,'(a,i0,a)') '<norbitals>', no_u, '</norbitals>'
+
+        ! Write fermi-level
+        call xml_NewElement(xf,"fermi_energy")
+        call xml_AddAttribute(xf,"units","eV")
+        call xml_AddPCData(xf, Ef / eV)
+        call xml_EndElement(xf,"fermi_energy")
+        write(iunit2,'(a,f20.5,a)') '<fermi_energy units="eV">',
+     &       Ef / eV, '</fermi_energy>'
+
+        ! Write sampled energies
+        write(iunit2,'(a)') '<energy_values units="eV">'
         call xml_NewElement(xf,"energy_values")
         call xml_AddAttribute(xf,"units","eV")
-        write(iunit2,'(a)') '<energy_values units="eV">'
 
         nullify( tmp )
         call re_alloc( tmp, 1, spin%EDM*nhist, 'tmp', 'pdos' )
@@ -359,6 +384,10 @@ C Free local workspace array
 C Free local arrays ----------------------------------------------------
       call de_alloc( dpr, 'dpr', 'pdos' )
       call de_alloc( dtot, 'dtot', 'pdos' )
+
+      ! Restore the paralleloverk options
+      ParallelOverK = orig_ParallelOverK
+      Serial = orig_Serial
 
       call timer( 'pdos', 2)
 

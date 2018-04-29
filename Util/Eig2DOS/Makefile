@@ -47,6 +47,6 @@ Eig2DOS: $(OBJS) Eig2DOS.o
 clean:
 	rm -f *.o *.mod Eig2DOS
 
-# DO NOT DELETE THIS LINE - used by make depend
+# Dependecies
 m_getopts.o: f2kcli.o
 Eig2DOS.o: m_getopts.o f2kcli.o

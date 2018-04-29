@@ -62,7 +62,9 @@ C real*8 qa(na)             : Neutral atom charge of each atom
       real(dp), save, public          :: rmaxkb   ! Max cuoff for KB proj.
       real(dp), save, public          :: rmaxldau ! Max cuoff for LDAU proj.
 
-      real(dp), save, public          :: qtot   ! Total number of elect.
+      real(dp), save, public          :: qtot ! Total number of elect.
+      real(dp), save, public          :: qtots(2) ! Total number of electrons per spin
+
       real(dp), save, public          :: zvaltot
                                          ! Total number of pseudoprotons
                                          ! (excluding those of ghost atoms)

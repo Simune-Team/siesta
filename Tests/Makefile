@@ -73,7 +73,7 @@ tests = ag anneal-cont ar2_vdw \
 	si_bandpoints si_coop si_fatbands \
 	sic-slab \
 	sih sih_fire sih_op_broyden \
-	si-optical si_pdos_kgrid \
+	si-optical si_pdos_kgrid si_pdos_gamma \
 	sinw sinw_2 \
 	var_cell \
 	wannier \

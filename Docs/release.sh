@@ -55,7 +55,7 @@ function popd {
 
 # This may actually not be changed, but is useful
 # throughout.
-main_dir=`bzr root`
+main_dir=$(bzr root)
 shared_dir=$(dirname $main_dir)
 # Ensure we are at the root of this file
 pushd $main_dir
@@ -68,9 +68,9 @@ _reldir=$(dirname $main_dir)/siesta-releases
 _sign=1
 
 # Get the previous major release tag
-_prev_tag=`bzr tags --sort=time | grep -e '^v' | grep -v '-' | tail -2 | head -1 | awk '{print $1}'`
+_prev_tag=$(bzr tags --sort=time | grep -e '^v' | grep -v '-' | tail -2 | head -1 | awk '{print $1}')
 # Get the latest tag
-_tag=`bzr tags --sort=time | grep -e '^v' | tail -1 | awk '{print $1}'`
+_tag=$(bzr tags --sort=time | grep -e '^v' | tail -1 | awk '{print $1}')
 
 # Get default output file (siesta-<>.tar.gz)
 _out=
@@ -80,7 +80,7 @@ function has_tag {
     local tag=$1
     shift
     local ret=1
-    for T in `bzr tags | awk '{print $1}'`
+    for T in $(bzr tags | awk '{print $1}')
     do
 	if [ "$tag" == "$T" ]; then
 	    ret=0
@@ -95,13 +95,13 @@ function help {
 
     echo "$0 creates a release of the SIESTA code at the tip-tag"
     echo ""
-    echo "These options may be used to control the archive."
+    echo "The following options may be used to control the archive."
     echo ""
     echo "  --prev-tag instead of selecting the second-latest tag, choose this tag as the"
     echo "             reference tag for creating a diff with regards to the --tag tag [bzr tags --sort=time]"
     echo "  --tag      instead of selecting the latest tag, choose this tag as the"
     echo "             reference tag for creating a release archive [bzr tags --sort=time]"
-    echo "  --out      the default output file is siesta-<tag>.tar.gz."
+    echo "  --out      the default output file is siesta-<tag>.tar.gz. Do *not* specify tar.gz, "
     echo "  --no-sign  do not sign the output files (useful for test-runs)"
     echo "  --help|-h  show this help."
     exit $ret
@@ -116,14 +116,27 @@ function sign {
 	if [ $_sign -eq 1 ]; then
 	    echo "Sign file: gpg --armor --sign --detach-sig $file"
 	    gpg --armor --sign --detach-sig $file
-	fi
-	store $file
-	if [ $_sign -eq 1 ]; then
 	    store $file.asc
 	    rm -f $file.asc
 	fi
     fi
 }
+
+# Calculate, md5, sha256, sha512 and store it in the sha256.txt file
+_checksum=checksums.txt
+function checksums {
+    local file=$1
+    shift
+    if [ -e $file ]; then
+	# We move to the directory to ensure the
+	# file names are as short as possible.
+	openssl md5 $file >> $_reldir/$_checksum
+	openssl sha256 $file >> $_reldir/$_checksum
+	openssl sha512 $file >> $_reldir/$_checksum
+    fi
+}
+    
+
 
 # Save file in the $_tag-files folder
 function store {
@@ -133,7 +146,6 @@ function store {
 	cp $file $_reldir/$_tag-files/
     fi
 }
-    
 
 
 # First we check whether the release-manager has
@@ -175,7 +187,7 @@ while [ $# -gt 0 ]; do
 	    ;;
 	
 	--out)
-	    _out=$1
+	    _out=${1//.tar.gz/}
 	    shift
 	    ;;
 	
@@ -204,7 +216,7 @@ echo "  $_out.tar.gz"
 echo ""
 echo "Waiting 1 second before creating release... (Ctrl^C kills the sequence)"
 sleep 1
-	    
+
 # The current procedure of releasing a SIESTA
 # version is the following:
 #  0. Create the necessary directories
@@ -212,20 +224,33 @@ sleep 1
 #  2. Make the proper documentation
 #  3. Go out of the top-directory to create the repository.
 
+_check_dir_fail=0
+function check_dir {
+    local d=$1
+    shift
+    if [ -d $d ]; then
+	echo ""
+	echo "Please delete this folder before re-running the script:"
+	echo "  rm -rf $d"
+	_check_dir_fail=1
+    fi
+}
+
 # Top release directories, in case it is not already
 # created.
 mkdir -p $_reldir
-# The final directory with ALL release files, possibly
-# signed.
-mkdir -p $_reldir/$_tag-files
 
-# If the release already exists... Tell the user and quit
-if [ -d $_reldir/$_out ]; then
-    echo "The release has already been processed."
-    echo "Delete this folder:"
-    echo "  rm -rf $_reldir/$_tag"
+# Check directories
+check_dir $_reldir/$_tag-files
+check_dir $_reldir/$_out
+if [ $_check_dir_fail -ne 0 ]; then
     exit 1
 fi
+# ensure the checksum file is "clean" on entry.
+rm -f $_reldir/$_checksum
+
+# The final directory with ALL release files, possibly signed.
+mkdir -p $_reldir/$_tag-files
 
 
 # Create a temporary work-directory
@@ -264,7 +289,7 @@ pushd Docs
 
 # First we need to change the date to the current
 # date. This makes it automatic.
-_date=`date +"%B %d, %Y"`
+_date=$(date +"%B %d, %Y")
 for f in siesta.tex tbtrans.tex
 do
     sed -i -e "s/\\date{.*}/\\date{$_date}/" $f
@@ -284,6 +309,8 @@ rm release.sh
 # Create signatures and move files
 for f in *.pdf ; do
     sign $f
+    store $f
+    checksums $f
 done
 
 # Go out of the documentation directory...
@@ -301,6 +328,13 @@ popd
 # Create the archive... (without any .bzr files)
 tar -czf $_out.tar.gz $_out
 sign $_out.tar.gz
+store $_out.tar.gz
+checksums $_out.tar.gz
 rm $_out.tar.gz
+
+# Be sure to store the checksums.txt file
+sign $_checksum
+store $_checksum
+rm $_checksum
 
 popd

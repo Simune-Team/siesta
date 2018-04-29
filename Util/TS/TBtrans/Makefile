@@ -324,8 +324,11 @@ dep:
 	@sfmakedepend --depend=obj --modext=o \
 		$(addprefix $(VPATH)/,$(DEP_OBJS:.o=.f) $(DEP_OBJS:.o=.f90)) \
 		$(addprefix $(VPATH)/,$(DEP_OBJS:.o=.F) $(DEP_OBJS:.o=.F90)) \
+		$(VPATH)/class*.T90 \
 		$(TBTOBJS:.o=.f90) $(TBTOBJS:.o=.F90) \
 		$(TBTOBJS:.o=.f) $(TBTOBJS:.o=.F) || true
+
+	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
 # Assert that FDF is compiled on before hand
 $(DEP_OBJS): $(FDF)
@@ -333,16 +336,21 @@ $(DEP_OBJS): $(FDF)
 # DO NOT DELETE THIS LINE - used by make depend
 cellsubs.o: precision.o
 cellsubs.o: precision.o
+class_Data1D.o: alloc.o
+class_Data2D.o: alloc.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
+class_TriMat.o: alloc.o intrinsic_missing.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o

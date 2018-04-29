@@ -73,23 +73,29 @@ dep:
 	@sfmakedepend --depend=obj --modext=o \
 		$(addprefix $(VPATH)/,$(SIESTA_OBJS:.o=.f) $(SIESTA_OBJS:.o=.f90)) \
 		$(addprefix $(VPATH)/,$(SIESTA_OBJS:.o=.F) $(SIESTA_OBJS:.o=.F90)) \
+		$(VPATH)/class*.T90 \
 		$(LOCAL_OBJS:.o=.f90) $(LOCAL_OBJS:.o=.F90) \
 		$(LOCAL_OBJS:.o=.f) $(LOCAL_OBJS:.o=.F) || true
 
-# Remove the link to ncdf
 	@sed -i -e "/^m_ts_io.o:/s/m_ncdf_io.o//" Makefile
+	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
 # DO NOT DELETE THIS LINE - used by make depend
+class_Data1D.o: alloc.o
+class_Data2D.o: alloc.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
+class_TriMat.o: alloc.o intrinsic_missing.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 geom_helper.o: intrinsic_missing.o

@@ -632,7 +632,11 @@ socket, one may do:
 If using only 1 thread per MPI core it is advised to compile \siesta\
 without OpenMP. As such it may be advantageous to compile \siesta\ in
 3 variants; OpenMP-only (small systems), MPI-only (medium to large
-systems) and MPI$+$OpenMP (large$+$ systems).
+systems) and MPI$+$OpenMP (large$>$ systems).
+
+The variable \shell{OMP\_PROC\_BIND} may heavily influence the
+performance of the executable! Please perform tests for the
+architecture used.
 
 
 \subsection{Library dependencies}
@@ -3530,7 +3534,7 @@ of States sections.
   fields or spin-orbit interaction.
 
   Note this defaults to \fdffalse\ if \fdf{Spin} is
-  \fdf*{non-colinear}, \fdf*{spin-orbit} or \fdf{Spin!Spiral} is  used.
+  \fdf*{non-colinear}, \fdf*{spin-orbit} or \fdf{Spin!Spiral} is used.
 
 \end{fdflogicalT}
 
@@ -4079,11 +4083,12 @@ by potentially saving many self-consistency steps in production runs.
     \index{SCF!mixing!Charge}
     Mix the real-space charge density. Note this is an experimental
     feature.
-    
+
   \end{fdfoptions}
   
   \note Real-space charge density does not follow the regular options
-  that adhere to density-matrix or Hamiltonian mixing.
+  that adhere to density-matrix or Hamiltonian mixing. Also it is not
+  recommended to use real-space charge density mixing with \tsiesta.
 
 \end{fdfentry}
 
@@ -8431,6 +8436,11 @@ or interpolation of bands), can be downloaded from
   This will default to \fdftrue\ if an external field is applied to a
   slab calculation, otherwise it will default to \fdffalse.
 
+  For \tsiesta\ calculations an additional step is added. For more
+  than 1 electrode, the dipole moments along the semi-infinite
+  directions are removed. Otherwise, for 1 electrode, the dipole is
+  \emph{only} allowed along the semi-infinite direction.
+
 \end{fdflogicalF}
 
 
@@ -9245,55 +9255,56 @@ implemented, selected by
   \begin{fdfoptions}
     
     \option[CG]%
-    \fdfindex*{MD.TypeOfRun!CG}%
+    \fdfindex*{MD.TypeOfRun:CG}%
+
     Coordinate optimization by conjugate gradients). Optionally (see
     variable \fdf{MD.VariableCell} below), the optimization can include the
     cell vectors.
 
     \option[Broyden]%
-    \fdfindex*{MD.TypeOfRun!Broyden}%
+    \fdfindex*{MD.TypeOfRun:Broyden}%
     Coordinate optimization by a modified Broyden scheme). Optionally,
     (see variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[FIRE]%
-    \fdfindex*{MD.TypeOfRun!FIRE}%
+    \fdfindex*{MD.TypeOfRun:FIRE}%
     Coordinate optimization by Fast Inertial Relaxation Engine (FIRE)
     (E. Bitzek et al, PRL 97, 170201, (2006)).  Optionally, (see
     variable \fdf{MD.VariableCell} below), the optimization can
     include the cell vectors.
 
     \option[Verlet]%
-    \fdfindex*{MD.TypeOfRun!Verlet}%
+    \fdfindex*{MD.TypeOfRun:Verlet}%
     Standard Verlet algorithm MD
 
     \option[Nose]%
-    \fdfindex*{MD.TypeOfRun!Nose}%
+    \fdfindex*{MD.TypeOfRun:Nose}%
     MD with temperature controlled  by means of a Nos\'e
     thermostat
 
     \option[ParrinelloRahman]%
-    \fdfindex*{MD.TypeOfRun!ParrinelloRahman}%
+    \fdfindex*{MD.TypeOfRun:ParrinelloRahman}%
     MD with pressure controlled by the Parrinello-Rahman method
 
     \option[NoseParrinelloRahman]%
-    \fdfindex*{MD.TypeOfRun!NoseParrinelloRahman}%
+    \fdfindex*{MD.TypeOfRun:NoseParrinelloRahman}%
     MD with temperature controlled by means of a Nos\'e thermostat and
     pressure controlled by the Parrinello-Rahman method
 
     \option[Anneal]%
-    \fdfindex*{MD.TypeOfRun!Anneal}%
+    \fdfindex*{MD.TypeOfRun:Anneal}%
     MD with annealing to a desired temperature and/or pressure (see
     variable \fdf{MD.AnnealOption} below)
 
     \option[FC]%
-    \fdfindex*{MD.TypeOfRun!FC}%
+    \fdfindex*{MD.TypeOfRun:FC}%
     Compute force constants matrix\index{Force Constants Matrix} for
     phonon calculations.
 
     \option[Master|Forces]%
-    \fdfindex*{MD.TypeOfRun!Master}%
-    \fdfindex*{MD.TypeOfRun!Forces}%
+    \fdfindex*{MD.TypeOfRun:Master}%
+    \fdfindex*{MD.TypeOfRun:Forces}%
     Receive coordinates from, and return forces to, an external
     driver program, using MPI, Unix pipes, or Inet sockets for
     communication. The routines in module \program{fsiesta} allow the
@@ -10254,7 +10265,8 @@ involving molecules.
   constraining the $x$ Cartesian vector
   \begin{fdfexample}
     %block Geometry.Constraints
-      Z 6 1. 0. 0.
+      Z 6 # constrain Carbon
+      Z 1 1. 0. 0. # constrain Hydrogen along x Cartesian vector
     %endblock
   \end{fdfexample}
   Note that you \emph{must} append a ``.'' to denote it a real. The
@@ -10262,7 +10274,8 @@ involving molecules.
   be constrained along the $x$-$y$ vector you may do
   \begin{fdfexample}
     %block Geometry.Constraints
-      Z 6 1. 1. 0.
+      Z 6
+      Z 1 1. 1. 0.
     %endblock
   \end{fdfexample}
   
@@ -10805,6 +10818,53 @@ end
   
 \end{fdflogicalF}
 
+\begin{fdflogicalF}{Lua!Interactive}
+
+  Start an interactive Lua session at all the states in the program
+  and ask for user-input.
+  %
+  This is primarily intended for debugging purposes. The interactive
+  session is executed just \emph{before} the \code{siesta\_comm}
+  function call (if the script is used).
+  
+  For serial runs \code{siesta.send} may be used. For parallel runs do
+  \emph{not} use \code{siesta.send} as the code is only
+  executed on the first MPI node.
+
+  There are various commands that are caught if they are the only
+  content on a line:
+  \begin{fdfoptions}
+    \option[/debug]%
+    Turn on/off debugging information.
+
+    \option[/show]%
+    Show the currently collected lines of code.
+
+    \option[/clear]%
+    Clears the currently collected lines of code.
+
+    \option[;]%
+    Run the currently collected lines of code and continue collecting
+    lines.
+
+    \option[/run]%
+    Same as \code{;}.
+
+    \option[/cont]%
+    Run the currently collected lines of code and continue \siesta.
+
+    \option[/stop]%
+    Run the currently collected lines of code and stop all future
+    interactive Lua sessions.
+
+  \end{fdfoptions}
+
+  Currently this only works if \fdf{Lua!Script} is having a valid Lua
+  file (note the file may be empty).
+  
+\end{fdflogicalF}
+
+
 
 \subsection{Examples of Lua programs}
 
@@ -10863,6 +10923,9 @@ Guide.
 
 Starting from 4.1 \tsiesta\ is intrinsic to the \siesta\ executable
 and thus there is no need for two separate executables.
+
+An accompanying Python toolbox is available which will assist with
+\tsiesta\ calculations. Please use (and cite) \sisl\cite{sisl}.
 
 
 \subsection{Source code structure}
@@ -11029,7 +11092,7 @@ To run an electrode calculation one should do:
   siesta --electrode RUN.fdf
 \end{shellexample}
 or define these options in the electrode fdf files:
-\fdf{TS!HS.Save:true} and \fdf{TS!DE.Save:true} (the above
+\fdf{TS!HS.Save} and \fdf{TS!DE.Save} to \fdf*{true} (the above
 \code{--electrode} is a shorthand for setting the two options).
 
 \paragraph{Principal layer interactions} %
@@ -11491,8 +11554,9 @@ TS.BTD.Pivot atom+GGPS
 \subsubsection{Algorithm specific options}
 
 These options adhere to the specific solution methods available for
-\tsiesta. For instance the \fdf*{TS.BTD.*} options adhere when using
-\fdf{TS.SolutionMethod:btd}, and similarly for \fdf*{MUMPS}.
+\tsiesta. For instance the \fdf*{TS.BTD.*} options adhere only when
+using \fdf{TS!SolutionMethod:BTD}, similarly for options with
+\fdf*{MUMPS}.
 
 \begin{fdfentry}{TS!BTD!Pivot}[string]<\nonvalue{first electrode}>
 
@@ -11529,6 +11593,8 @@ These options adhere to the specific solution methods available for
     Use the generalized Gibbs-Poole-Stockmeyer algorithm for reducing
     the bandwidth.
 
+    \note this algorithm does not work on dis-connected graphs.
+
     \option[PCG] %
     Use the perphiral connectivity graph algorithm for reducing the
     bandwidth.
@@ -11560,6 +11626,36 @@ These options adhere to the specific solution methods available for
   \note often both methods provide \emph{exactly} the same BTD matrix
   due to constraints on the matrix.
   
+\end{fdfentry}
+
+\begin{fdfentry}{TS!BTD!Guess1.Min}[int]<\nonvalue{empirically determined}>
+  \fdfdepend{TS!BTD!Guess1.Max}
+  
+  Constructing the blocks for the BTD starts by \emph{guessing} the
+  first block size. One could guess on all different block sizes, but
+  to speed up the process one can define a smaller range of guesses by
+  defining \fdf{TS!BTD!Guess1.Min} and \fdf{TS!BTD!Guess1.Max}.
+
+  The initial guessed block size will be between the two values.
+
+  By default this is $1/4$ of the minimum bandwidth for a selected
+  first set of orbitals.
+
+  \note setting this to 1 may sometimes improve the final BTD matrix
+  blocks.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!BTD!Guess1.Max}[int]<\nonvalue{empirically determined}>
+  \fdfdepend{TS!BTD!Guess1.Min}
+
+  See \fdf{TS!BTD!Guess1.Min}.
+
+  \note for improved initialization performance setting Min/Max flags
+  to the first block size for a given pivoting scheme will drastically
+  reduce the search space and make initialization much
+  faster.
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!BTD!Spectral}[string]<propagation|column>
@@ -11658,15 +11754,43 @@ intricate and important detail.
     applied bias. This is encouraged to use for $N>2$ electrode
     calculations but may also be used when an \emph{a priori}
     potential profile is know.
+
+    The file should contain something similar to this output
+    (\code{ncdump -h}):
+    \begin{shellexample}
+netcdf <file> {
+dimensions:
+	one = 1 ;
+	a = 43 ;
+	b = 451 ;
+	c = 350 ;
+variables:
+	double Vmin(one) ;
+		Vmin:unit = "Ry" ;
+	double Vmax(one) ;
+		Vmax:unit = "Ry" ;
+	double V(c, b, a) ;
+		V:unit = "Ry" ;
+}
+    \end{shellexample}
+    Note that the units should be in Ry. \code{Vmax}/\code{Vmin}
+    should contain the maximum/minimum fixed boundary conditions in
+    the Poisson solution. This is used internally by \tsiesta\ to
+    scale the potential to arbitrary $V$. This enables the Poisson
+    solution to only be solved \emph{once} independent on subsequent
+    calculations For some chemical potential configurations the
+    Poisson solution cannot be linearly extrapolated, in which case a
+    separate file is required for each applied bias.
+
     
     \option[elec-box]%
     \fdfindex*{TS!Poisson:elec-box}%
 
     The default potential profile for $N>2$, or when the electrodes
-    does are not aligned (in terms of their transport direction). When
-    this is the case you are highly encouraged to try with an external
-    solution (\fdf*{<file>}).
-
+    does are not aligned (in terms of their transport direction).
+    
+    \note usage of this Poisson solution is \emph{highly}
+    discouraged. Please see \fdf{TS!Poisson:<file>}.
 
     \option[ramp-cell]%
     \fdfindex*{TS!Poisson:ramp-cell}%
@@ -11675,7 +11799,6 @@ intricate and important detail.
     be used for testing against older versions of \tsiesta.
 
   \end{fdfoptions}
-
   
 \end{fdfentry}
 
@@ -11698,6 +11821,26 @@ intricate and important detail.
 
   \note this is an experimental feature!
 
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Elec.<>!Hartree.Extend}[length]<$0.\,\mathrm{Ang}$>
+  \fdfdepend{TS!Poisson:ramp-central,TS!Poisson:ramp-cell}
+
+  The potential profile will by default be terminated at the interface
+  between the electrode and the device. However, as one requires a
+  screening region between the electrode and the actual scattering
+  region one may argue that the electrode potential will extend
+  further into the device.
+  %
+  This flag increases the electrode potentials extend into the device
+  region.
+
+  It may help convergence but should not be so large it extends into
+  the scattering region.
+
+  \note This only affects $2$ electrode calculations when
+  \fdf{TS!Poisson:ramp-central} or \fdf{TS!Poisson:ramp-cell}.
+  
 \end{fdfentry}
 
 
