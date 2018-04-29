@@ -19,9 +19,7 @@
       use parallel,     only : IOnode
       use neighbour,    only : jna=>jan, r2ij, mneighb,
      &                         reset_neighbour_arrays
-#ifdef TRANSIESTA
       use m_ts_global_vars, only : onlyS
-#endif
       implicit none
       real(dp), intent(in)  :: rmax
       integer :: ii, jj, jamin, idxneighJ, nneigbI, isel, nna
@@ -52,11 +50,7 @@
         enddo
         rmin = sqrt( r2min )
         if (IOnode) then
-#ifdef TRANSIESTA
           if (( rmin .lt. rijmin ) .and. (.not. onlyS))
-#else
-          if ( rmin .lt. rijmin )
-#endif
      &      write(6,'(a,2i6,a,f12.6,a)') 'siesta: WARNING: Atoms', ii,
      &                    jamin, ' too close: rij =', rmin/Ang, ' Ang'
         endif

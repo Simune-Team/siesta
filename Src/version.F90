@@ -80,9 +80,6 @@ write(6,'(a)') 'SERIAL version'
 !$OMP end master
 !$OMP end parallel
 
-#ifdef TRANSIESTA
-write(6,'(a)') 'TRANSIESTA support'
-#endif
 #ifdef USE_GEMM3M
 write(6,'(a)') 'GEMM3M support'
 #endif
@@ -97,6 +94,11 @@ write(6,'(a)') 'NetCDF-4 MPI-IO support'
 #endif
 #if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
 write(6,'(a)') 'METIS ordering support'
+#endif
+#ifdef TRANSIESTA
+write(6,'(a)') '******************************************************'
+write(6,'(a)') 'transiesta executable is deprecated, please use siesta'
+write(6,'(a)') '******************************************************'
 #endif
 
 end subroutine prversion

@@ -663,9 +663,8 @@ contains
     end if
 #endif
 
-    ! If the user will not use bulk, and haven't set DM-update,
-    ! default to 'all'
-    if ( .not. info(5) .and. .not. this%Bulk ) then
+    ! If the user will not use bulk, set DM_update to 'all'
+    if ( .not. this%Bulk ) then
        this%DM_update = 2 ! set 'all'
     end if
     

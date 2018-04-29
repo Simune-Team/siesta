@@ -20,7 +20,7 @@ MAIN_OBJDIR=.
 AR ?= ar
 RANLIB ?= ranlib
 
-default: what siesta
+default: siesta
 
 ARCH_MAKE?=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
@@ -67,7 +67,7 @@ INCFLAGS:= $(NETCDF_INCFLAGS)  $(PSML_INCFLAGS) $(NCPS_INCFLAGS) \
 IPO_FLAG?= -ipo
 
 
-.PHONY: .siesta .transiesta what version
+.PHONY: what version
 
 what:
 	@echo
@@ -300,6 +300,7 @@ libmpi_f90.a:
 	@(cd MPI ; $(MAKE) -j 1 \
                     "VPATH=$(VPATH)/MPI" \
 	             MAIN_OBJDIR=$(MAIN_OBJDIR) \
+		    "FPPFLAGS=$(FPPFLAGS)" \
                     "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" )
 
 #--------------------------------------------------------------
@@ -370,15 +371,6 @@ $(NCDF): $(FDICT)
 cranknic_evolk.o: $(FDF)
 cranknic_evolg.o: $(FDF)
 sankey_change_basis.o iotdxv.o: $(FDF)
-# Create all objects
-ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
-
-# All objects require the FDF library (in theory)
-# In practice they do not but it greatly simplifies the logic
-# here.
-# This will setup the correct compilation sequence as
-# FDF => MPI
-$(ALL_OBJS): $(FDF) $(COMP_LIBS)
 
 #
 # Linear algebra routines
@@ -449,35 +441,6 @@ version: version.F90
 	@mv compinfo.o version.o
 	@echo
 
-check-siesta:
-	@if [ -f .transiesta ]; then \
-              echo "** You were building transiesta in this directory." ;\
-              echo "** Please type 'make clean' first " ;\
-              false ;\
-	fi
-	@touch .siesta
-
-siesta: check-siesta what version \
-                $(MPI_INTERFACE) $(FDF) $(MS) $(NCPS) $(PSOP) \
-                $(COMP_LIBS) $(ALL_OBJS) 
-	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MS)  \
-               $(XC) $(MPI_INTERFACE) \
-               $(COMP_LIBS) $(LIBS) \
-	       $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
-	       $(LIBS)
-	@echo "--- reference section "
-	@echo "PSML-related libs: $(PSML_LIBS)"
-	@echo "XMLf90 libs: $(XMLF90_LIBS)"
-	@echo "GRIDXC libs: $(GRIDXC_LIBS)"
-	@echo "--- end of reference section "
-libSiestaForces.a: $(OBJS) $(SYSOBJ)
-	$(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
-	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
-            $(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
-	-$(RANLIB) libSiestaForces.a
-#
-
 
 #----------------------------------------------------------------------------
 # TranSIESTA objects needed for siesta
@@ -513,30 +476,42 @@ TS_OBJS += m_ts_tri_init.o m_ts_tri_common.o \
 # MUMPS method
 TS_OBJS += m_ts_mumps_init.o m_ts_mumpsg.o m_ts_mumpsk.o m_ts_mumps_scat.o
 
-ts: transiesta
-transiesta: FPPFLAGS += -DTRANSIESTA 
-check-ts:
-	@if [ -f .siesta ]; then \
-              echo "** You were building plain siesta in this directory." ;\
-              echo "** Please type 'make clean' first" ;\
-              false ;\
-	fi
-	@touch .transiesta
+OBJS += $(TS_OBJS)
 
-transiesta: check-ts what version \
-            $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) $(MS) \
-            $(NCPS) $(PSOP) \
-            $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
-	$(FC) -o transiesta \
-               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MS) \
+# Create all objects
+ALL_OBJS=$(OBJS) $(SYSOBJ) $(MAIN_OBJ)
+
+# All objects require the FDF library (in theory)
+# In practice they do not but it greatly simplifies the logic
+# here.
+# This will setup the correct compilation sequence as
+# FDF => MPI
+$(ALL_OBJS): $(FDF) $(COMP_LIBS)
+
+libSiestaForces.a: $(OBJS) $(SYSOBJ)
+	$(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a $(OBJS) $(SYSOBJ)
+	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
+            $(AR) $(ARFLAGS_EXTRA) cru libSiestaForces.a MPI/*.o ; fi
+	-$(RANLIB) libSiestaForces.a
+#
+siesta: what version \
+                $(MPI_INTERFACE) $(FDF) $(MS) $(NCPS) $(PSOP) \
+                $(COMP_LIBS) $(ALL_OBJS) 
+	$(FC) -o siesta \
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MS)  \
                $(XC) $(MPI_INTERFACE) \
                $(COMP_LIBS) $(LIBS) \
-               $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
-               $(LIBS)
+	       $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
+	       $(LIBS)
+	@echo "--- reference section "
+	@echo "PSML-related libs: $(PSML_LIBS)"
+	@echo "XMLf90 libs: $(XMLF90_LIBS)"
+	@echo "GRIDXC libs: $(GRIDXC_LIBS)"
+	@echo "--- end of reference section "
+
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta transiesta *.o  *.a *.pcl *.pc
-	rm -f .siesta .transiesta
+	rm -f siesta *.o  *.a *.pcl *.pc
 	rm -f *.mod
 	rm -f compinfo.F90 tmp.F90
 	rm -f *.bck *~
@@ -1029,8 +1004,9 @@ m_ts_io_contour.o: precision.o units.o
 m_ts_io_ctype.o: parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_iodm.o: m_io_s.o m_os.o parallel.o precision.o
-m_ts_kpoints.o: files.o find_kgrid.o m_ts_global_vars.o m_ts_tdir.o minvec.o
-m_ts_kpoints.o: parallel.o precision.o siesta_cml.o siesta_options.o sys.o
+m_ts_kpoints.o: files.o find_kgrid.o kpoint_grid.o m_ts_global_vars.o
+m_ts_kpoints.o: m_ts_tdir.o minvec.o parallel.o precision.o siesta_cml.o
+m_ts_kpoints.o: siesta_options.o sys.o
 m_ts_method.o: alloc.o fdf_extra.o geom_helper.o m_region.o m_ts_electype.o
 m_ts_mumps_init.o: class_OrbitalDistribution.o class_Sparsity.o
 m_ts_mumps_init.o: create_Sparsity_Union.o m_ts_electype.o m_ts_method.o
@@ -1333,10 +1309,10 @@ state_init.o: m_eo.o m_gamma.o m_mixing.o m_mixing_scf.o m_mpi_utils.o
 state_init.o: m_new_dm.o m_os.o m_pivot_methods.o m_rmaxh.o m_sparse.o
 state_init.o: m_sparsity_handling.o m_spin.o m_steps.o m_supercell.o
 state_init.o: m_test_io.o m_ts_charge.o m_ts_electype.o m_ts_global_vars.o
-state_init.o: m_ts_io.o m_ts_options.o m_ts_sparse.o m_ts_tri_init.o
-state_init.o: normalize_dm.o overlap.o parallel.o proximity_check.o
-state_init.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
-state_init.o: units.o write_subs.o zmatrix.o
+state_init.o: m_ts_io.o m_ts_kpoints.o m_ts_options.o m_ts_sparse.o
+state_init.o: m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
+state_init.o: proximity_check.o siesta_cml.o siesta_geom.o siesta_options.o
+state_init.o: sparse_matrices.o units.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iotdxv.o ioxv.o
 struct_init.o: m_exp_coord.o m_iostruct.o m_mpi_utils.o m_steps.o parallel.o
 struct_init.o: periodic_table.o siesta_cml.o siesta_geom.o siesta_master.o
