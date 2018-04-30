@@ -97,7 +97,7 @@
      .                       rco,lambda_in,atm_label,npolorb,semic,
      .                       nsemic,cnfigmx,charge_in,smass,basistype, 
      .                       ISIN,RINN,VCTE,qcoe,qyuk,qwid,
-     .                       split_norm,filtercut_in,basp, spp)
+     .                       split_norm,filtercut_in,basp,spp,lj_projs)
 
         use atm_types, only: species_info
         
@@ -105,6 +105,7 @@
 
         type(basis_def_t), pointer   :: basp
         type(species_info), intent(inout)  :: spp
+        logical, intent(in)                :: lj_projs
 
         integer, intent(in) :: izin  
 !       Atomic number (if IZ is negative it will be regarded as a set of 
@@ -242,6 +243,7 @@
         real(dp)
      .    rofi(nrmax), drdi(nrmax), s(nrmax),
      .    vps(nrmax,0:lmaxd), rphi(nrmax,0:lmaxd,nsemx),
+     .    vps_u(nrmax,0:lmaxd),
      .    vlocal(nrmax), vxc(nrmax), ve(nrmax),
      .    rho(nrmax), chcore(nrmax), rho_PAO(nrmax), auxrho(nrmax),
      .    vePAO(nrmax), qPAO(0:lmaxd,nsemx), chlocal(nrmax),
@@ -329,7 +331,7 @@
 !
 ! Reading pseudopotentials
 ! 
-          call read_vps(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps,
+          call read_vps(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps,vps_u,
      .        rho, chcore, zval, chgvps, nicore, irel, icorr,basp) 
 
           do ir=1,nrval
@@ -569,8 +571,8 @@ c    .          'atom: The above configuration will be used ',
 ! Calculation of the Kleinman-Bylander projector functions
 ! 
             call KBgen(is, a,b,rofi,drdi,s,
-     .                 vps, vlocal, ve, nrval, Zval, lmxkb, 
-     .                 nkbl, erefkb, nkb, spp) 
+     .                 vps, vps_u, vlocal, ve, nrval, Zval, lmxkb, 
+     .                 nkbl, erefkb, nkb, spp, lj_projs) 
 
           elseif(flting.lt.0.0d0) then 
 !
@@ -1856,7 +1858,7 @@ c     write(6,*) 'GHOST: First excited state for L=',l,elocal2
 
 
       subroutine KBproj(ikb,rofi,drdi,vps,vlocal,nrwf,l,rphi,
-     .    dkbcos,ekb,proj,nrc)  
+     .    dkbcos,ekb,proj,nrc,rphi2,vii)  
 C
 C  This routine calculates the Kleinman-Bylander projector
 C  with angular momentum l.
@@ -1872,6 +1874,7 @@ C
      .                           rphi(*), vlocal(*)
         real(dp), intent(out) :: proj(*), dkbcos, ekb
         integer, intent(out)  :: nrc
+        real(dp), intent(inout) :: rphi2(:,:), vii(:)
 C
 C Internal variables
 C
@@ -1879,8 +1882,6 @@ C
         real(dp) 
      .    dnrm, vl, vphi, avgv, r, phi, dknrm,
      .    dincv, rc, sum, vij(nkbmx)
-
-        real(dp), save :: rphi2(nrmax,nkbmx), vii(nkbmx)
 
         integer   ir, jkb
 
@@ -2702,7 +2703,7 @@ C
 
 !
         subroutine read_vps(lmxo, lmxkb,
-     .             nrval,a,b,rofi,drdi,s,vps,
+     .             nrval,a,b,rofi,drdi,s,vps, vps_u,
      .             rho, chcore, zval, chgvps,
      .             nicore, irel, icorr,basp)
 
@@ -2718,14 +2719,14 @@ C
       
         real(dp)
      .    rofi(nrmax), drdi(nrmax), s(nrmax), vps(nrmax,0:lmaxd),
+     .    vps_u(nrmax,0:lmaxd),
      .    rho(nrmax), chcore(nrmax) 
 
         real(dp)
      .    a, b, zval
-           
         integer  nrval, lmxo, lmxkb 
-
         character nicore*4, irel*3, icorr*2
+        integer :: nup_end
 C
 C Internal variables
 C
@@ -2736,12 +2737,14 @@ C
      .    ea, rpb, chgvps
 
         integer  
-     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i
+     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i, nup
 
         character method(6)*10,text*70
 
         type(pseudopotential_t), pointer :: vp
 
+        real(dp) :: so_strength
+        
         vp => basp%pseudopotential
 
         icorr = vp%icorr
@@ -2792,12 +2795,8 @@ C
         write(6,'(7a)')   
      .    'read_vps: ',method(1),(method(i),i=3,6)
           
-C We are going to find the charge configuration
-C used for the pseudopotential generation using the information given in
-C the 'text' variable.
-
+        !Total charge density used for the pseudopotential generation
         chgvps = vp%gen_zval
-
         write(6,'(a,f10.5)') 'Total valence charge: ', chgvps
 
         if (nicore.ne.'nc  ') then
@@ -2842,9 +2841,9 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
         enddo 
 
 
-!       Ionic pseudopotentials   (Only 'down' used)
+!       Ionic pseudopotentials (down and up)
 
-        do 20 ndown=1,lmax+1
+        do ndown=1,lmax+1
           l = vp%ldown(ndown) 
           if (l.ne.ndown-1) then
             write(6,'(a)')
@@ -2858,40 +2857,51 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
           enddo
           vps(1,l) = vps(2,l)     ! AG
 
-  20    continue
+       enddo
+       
+       vps_u = 0.0_dp
+       ! For backward compatibility with original OSSO branch,
+       ! put 'keep-npotu-bug T' in fdf file
+       ! To be removed altogether for releases
+       if (fdf_get('keep-npotu-bug',.false.))  then
+          nup_end =  min(lmax,npotu-1)
+          write(6,'(a)') 'atom: *** Buggy code in highest-l ' //
+     $                   'SO component setup enabled ***'
+       else
+          nup_end = npotu
+       endif
 
+       ! Allow an overall factor for the SO part (for debugging only!)
+       ! Note that (notably for the lj-based SO implementation) this
+       ! trick is based on the availability of a semilocal pseudo.  Care
+       ! should also be taken with the onward use of any .ion files
+       ! produced.
+       
+       so_strength = fdf_get('spin-orbit-strength', 1.0_dp)
+       if (so_strength /= 1.0_dp)  then
+          write(6,'(a,f10.6)') 'atom: *** SO enhancement factor: ',
+     $         so_strength
+       endif
+
+       do nup=1,nup_end
+          l = vp%lup(nup)
+          vp%vup(nup,1:nrval) = so_strength * vp%vup(nup,1:nrval)
+          vps_u(1:nrval,l) = vp%vup(nup,1:nrval)
+          do ir=2,nrval
+            vps_u(ir,l)=vps_u(ir,l)/rofi(ir)
+          enddo
+          vps_u(1,l) = vps_u(2,l)    
+       enddo
 
 !       Core and valence charge density
 
         chcore(1:nrval) = vp%chcore(1:nrval)
         rho(1:nrval) = vp%chval(1:nrval)
-C
-C Obtain an ionic-pseudopotential if core correction for Hartree
-C potential
-!
-! AG: OBSOLETE, as the program will stop in this case.
 
-        if ((nicore.eq.'pche').or.(nicore.eq.'fche')) then
-          call vhrtre(chcore,ve,rofi,drdi,s,nrval,a)
-          do l=0,lmax
-            do ir=2,nrval
-              vps(ir,l)=vps(ir,l)+ve(ir)
-            enddo
-            vps(1,l) = vps(2,l)    ! AG
-          enddo
-        endif
-
-        return
-
- 5000   continue
-        write(6,*)
-     .      'ERROR: You are using an old pseudopotential file.',
-     .      ' Siesta needs a newer version.'
-        call die
-          
         end subroutine read_vps
 !
-        subroutine comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc,spp)
+        subroutine comKB(is,a,b,rofi,proj,l,lj_projs,jk,
+     $                   ikb,rc,ekb,nrc,spp)
 C
 C  Creates the common block with all the information about the 
 C  Kleinman-Bylander projectors.
@@ -2906,6 +2916,8 @@ C
         integer, intent(in)  :: l, nrc,is, ikb 
         real(dp), intent(in) :: rc, ekb, proj(nrmax), a, b,
      .       rofi(nrmax)
+        logical, intent(in)  :: lj_projs
+        integer, intent(in)  :: jk
         type(species_info), intent(inout)  :: spp
         
         character(len=40) filename
@@ -2932,10 +2944,17 @@ C
         
         spp%pjnl_n(n) = ikb
         spp%pjnl_l(n) = l
+        if (lj_projs) then
+           spp%pjnl_j(n) = l + (2*jk-3)*0.5_dp ! l -/+ 1/2
+           if (l == 0 ) spp%pjnl_j(n) = 0.5_dp ! special case: only jk=1
+        else
+           spp%pjnl_j(n) = 0.0_dp
+        endif
         do m = -l, l
            ntot = ntot + 1
            spp%pj_index(ntot) = n
            spp%pj_l(ntot) = l
+           spp%pj_j(ntot) = spp%pjnl_j(n)
            spp%pj_m(ntot) = m
         enddo
         spp%nprojs = ntot
@@ -2983,8 +3002,8 @@ C
        end subroutine comkb
 !
         subroutine KBgen(is, a,b,rofi,drdi,s, 
-     .         vps, vlocal, ve, nrval, Zval, lmxkb, 
-     .         nkbl, erefkb, nkb, spp)
+     .         vps, vps_u, vlocal, ve, nrval, Zval, lmxkb, 
+     .         nkbl, erefkb, nkb, spp, lj_projs)
 
         use basis_specs, only: restricted_grid
         use atom_options, only: new_kb_reference_orbitals
@@ -3002,28 +3021,34 @@ C
 
         implicit none
 
-        real(dp) 
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+        real(dp), intent(in) ::
+     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd), vps_u(nrmax,0:lmaxd),
      .    drdi(nrmax), s(nrmax), ve(nrmax),vlocal(nrmax),
      .    Zval, erefkb(nkbmx,0:lmaxd)
 
-        integer
+        integer, intent(in) ::
      .    nrval, lmxkb, nkb, is, nkbl(0:lmaxd)
 
         type(species_info), intent(inout)  :: spp
+        real(dp), allocatable :: rphi2(:,:,:), vii(:,:)
+        real(dp), allocatable :: rphi(:,:,:)
+        real(dp), allocatable :: eref(:,:)
+
+        logical, intent(in) :: lj_projs
 C
 C Internal variables
 C
         integer 
      .    l,nprin, nnodes, ighost, nrwf, ikb, ir,
-     .    nrc, nrlimit, n_pjnl, nkbs_tot
-        real(dp)
-     .    rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
-     .    ekb(nkbmx,0:lmaxd)
+     .    nrc, nrlimit, n_pjnl, nkbs_tot, jk, nj
+        real(dp) :: rc, dkbcos, ekb
                
         real(dp)
-     .    rphi(nrmax,nkbmx), rmax, dnrm, 
-     .    proj(nrmax)
+     .    rmax, dnrm, 
+     .    proj(nrmax), vp(nrmax)
+
+        character(len=2) :: jstr
+        logical :: multiple_projectors
                  
 C  The atomic wavefunctions and/or its energy derivatives are
 C  calculated only inside a sphere of radius Rmax. To define the
@@ -3056,13 +3081,20 @@ C
 
         spp%lmax_projs = lmxkb
         
-        ! Generalize this for lj projectors
         nkbs_tot = 0
         n_pjnl = 0
         do l = 0, lmxkb
-           n_pjnl = n_pjnl + nkbl(l)
-           nkbs_tot = nkbs_tot + nkbl(l)*(2*l+1)
+           do ikb = 1, nkbl(l)
+              n_pjnl = n_pjnl + 1
+              nkbs_tot = nkbs_tot + (2*l+1)
+              if (lj_projs .and. l>0) then  ! j=l+1/2 and j=l-1/2 shells
+                 n_pjnl = n_pjnl + 1
+                 nkbs_tot = nkbs_tot + (2*l+1)
+              endif
+           enddo
         enddo
+
+        spp%lj_projs = lj_projs
         
         ! Eventually will make the arrays allocatable
         if (n_pjnl > maxn_pjnl) then
@@ -3076,88 +3108,128 @@ C
         ! zero out for build-up in comkb
         spp%n_pjnl = 0   
         spp%nprojs = 0
+
+        write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
+
+        multiple_projectors = .false.
+
+        if (lj_projs) then
+           nj = 2
+        else
+           nj = 1
+        endif
         
+        ! Some output related to ghosts might be changed
+        ! Note ordering of projectors
+        ! Independent projector stacks for different j's
+        allocate (rphi2(nrmax,nkbmx,nj), vii(nkbmx,nj))
+        ! For the derivative option, we need a previous projector 
+        ! and the previous reference energy
+        allocate (rphi(nrmax,nkbmx,nj))
+        allocate (eref(nkbmx,nj))
         do l=0,lmxkb
-          do ir=1,nrmax
-            do ikb=1,nkbmx
-              rphi(ir,ikb)=0.0d0
-            enddo 
-            proj(ir)=0.0d0
-          enddo
+          rphi(:,:,:) = 0.0_dp
           do ikb= 1, nkbl(l)
-C
-C Atomic wavefunctions and eigenvalues
-C for the construction of the KB projectors
-C
-C If the reference energies have not been specifed, the eigenstates
-C with the condition of being zero at r(nrval) will be used.
-C       
+            do jk = 1, nj      ! j-, j+
+                
+             if (jk == 2 .and. l==0) CYCLE  ! only one proj for l=0
+             if (lj_projs .and. l>0 ) then
+              ! Set up the appropriate potential and label
+              if (jk == 1) then
+                 ! V(l-j/2) = Vdn - (l+1)/2 Vup = Vion - (l+1)/2 Vso
+                 vp(:) = vps(:,l) - 0.5_dp*(l+1)*vps_u(:,l)
+                 jstr = 'j-'
+              else
+                 ! V(l+1/2) = Vdn + l/2 Vup = Vion + l/2 Vso
+                 vp(:) = vps(:,l) + 0.5_dp*l*vps_u(:,l)
+                 jstr = 'j+'
+              endif
+             else
+              vp(:) = vps(:,l)
+              jstr = '  '
+             endif
+             proj(:) = 0.0_dp
+           
+! Atomic wavefunctions and eigenvalues
+! for the construction of the KB projectors
+
+           ! We use the same user-entered reference energies for both j's
+
            if (erefkb(ikb,l).ge.1.0d3) then             
+             ! If the reference energies have not been specifed, the
+             ! eigenstates with the condition of being zero at r(nrval)
+             ! will be used.
              nnodes=ikb
              nprin=l+1
-
-             call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+             ! use eref to avoid overwriting erefkb(,) for next j
+             call schro_eq(Zval,rofi,vp,ve,s,drdi,
      .                     nrlimit,l,a,b,nnodes,nprin,
-     .                     erefkb(ikb,l),rphi(1,ikb)) 
+     .                     eref(ikb,jk),rphi(1,ikb,jk)) 
 C Normalization of the eigenstates inside a sphere of radius Rmax
              dnrm=0.0d0
              do ir=1,nrwf
-               dnrm=dnrm+drdi(ir)*rphi(ir,ikb)**2
+               dnrm=dnrm+drdi(ir)*rphi(ir,ikb,jk)**2
              enddo 
              dnrm=sqrt(dnrm)
              do ir=1,nrwf
-               rphi(ir,ikb)=rphi(ir,ikb)/dnrm
+               rphi(ir,ikb,jk)=rphi(ir,ikb,jk)/dnrm
              enddo 
 C
            elseif((erefkb(ikb,l).le.-1.0d3).and.
      .       (ikb.gt.1) ) then 
-C If the energy is specified to be 1000 Ry, the energy derivative
-C of the previous wavefunction will be used
-C
-             call energ_deriv(a,rofi,rphi(1,ikb-1),vps(1,l),
-     .                        ve,drdi,nrwf,l,erefkb(ikb-1,l),
-     .                        rphi(1,ikb),nrval)
-             erefkb(ikb,l)=0.0d0
-C
+             ! If the energy is specified to be 1000 Ry, the energy
+             ! derivative of the previous wavefunction will be used
+             call energ_deriv(a,rofi,rphi(1,ikb-1,jk),vp(1),
+     .                        ve,drdi,nrwf,l,eref(ikb-1,jk),
+     .                        rphi(1,ikb,jk),nrval)
+             eref(ikb,jk)=0.0_dp
+
            else 
-C If the reference energies have been specified, we just use them
-C
-             call rphi_vs_e(a,b,rofi,vps(1,l),
+             ! If the reference energies have been specified, we just
+             ! use them
+             call rphi_vs_e(a,b,rofi,vp(1),
      .                      ve,nrval,l,erefkb(ikb,l),
-     .                      rphi(1,ikb),Rmax)
-C
+     .                      rphi(1,ikb,jk),Rmax)
+             eref(ikb,jk) = erefkb(ikb,l)
            endif 
-C
-C Ghost analysis
-C 
+
+           ! Ghost analysis
+
            if (nkbl(l).eq.1) then
-             call ghost(Zval,rofi,vps(:,l),vlocal,
+             call ghost(Zval,rofi,vp(:),vlocal,
      .                  ve,s,drdi,nrlimit,l,a,b,nrwf,
-     .                  erefkb(ikb,l),rphi(:,ikb),ighost)
+     .                  eref(ikb,jk),rphi(:,ikb,jk),ighost)
            else 
-             if (ikb.eq.1)
-     .         write(6,'(a,i3,/a)') 
-     .         'KBgen: More than one KB projector for l=',l,
-     .         'KBgen: ghost states analysis will be not performed'
+              multiple_projectors = .true.
            endif
-C
-C KB Projectors
-C
-           call KBproj(ikb,rofi,drdi,vps(1,l),vlocal,nrwf,l,
-     .                rphi(1,ikb),dkbcos(ikb,l),ekb(ikb,l),proj,nrc)
 
-C
-           rc(ikb,l)=rofi(nrc)
-C
-C Common block with the information about the  KB projectors
-C
-          call comKB(is,a,b,rofi,proj,
-     .                 l,ikb,rc(ikb,l),ekb(ikb,l),nrc, spp)
-C
+           ! The projector stack and vii are passed as arguments
+           ! to enable the needed loop ordering
+           call KBproj(ikb,rofi,drdi,vp,vlocal,nrwf,l,
+     .                rphi(1,ikb,jk),dkbcos,ekb,proj,nrc,
+     .                rphi2(:,:,jk),vii(:,jk))
 
-          enddo 
-         enddo   
+           rc = rofi(nrc)
+
+          ! Store KB projectors in data structure
+
+          call comKB(is,a,b,rofi,proj,l,lj_projs,jk,
+     .               ikb,rc,ekb,nrc, spp)
+
+          write(6,'(a2,1x,a,i2,4(3x,a,f10.6))') jstr,
+     .        'l=',l, 'rc=',rc, 'el=',eref(ikb,jk), 
+     .        'Ekb=',ekb,'kbcos=',dkbcos
+
+          enddo ! jk
+         enddo  ! ikb:1,nkbl
+        enddo   ! l
+        deallocate(rphi,rphi2,vii,eref)
         
+        if (multiple_projectors) then
+         write(6,'(a,/a)') 
+     .  'KBgen: More than one KB projector for some l shell(s)',
+     .  'KBgen: ghost-state analysis will not be performed'
+        endif
          if (ighost.eq.1) then
             write(6,"(2a)")'KBgen: WARNING: ',
      .            'Ghost states have been detected'
@@ -3169,34 +3241,14 @@ C
                write(6,"(a)") " KBgen: *** Warning Ignored by User"
                ighost = 0
             else
-               call die
+               call die("Ghost states detected")
             endif
          endif
 
-         write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
-         do l=0,lmxkb
-           do ikb=1, nkbl(l)
-              write(6,'(3x,a,i2,4(3x,a,f10.6))')
-     .        'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
-     .        'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
-           enddo
-         enddo
-C
-C Total number of Kleinman-Bylander projectors
-C
-           nkb=0
-           do l=0,lmxkb
-              do ikb=1,nkbl(l)
-                 nkb=nkb+(2*l+1) 
-              enddo 
-           enddo 
-           write(6,'(/,a, i4)')
-     .'KBgen: Total number of  Kleinman-Bylander projectors: ', nkb
-           if (nkb /= spp%nprojs) then
-              print *, "spp%nprojs: ", spp%nprojs
-              call die("Mismatch nkb spp%nprojs")
-           endif
-C     
+         write(6,'(/,a, i4)')
+     .'KBgen: Total number of  Kleinman-Bylander projectors: ',
+     $          spp%nprojs
+
         end subroutine KBgen
 !
         subroutine Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,

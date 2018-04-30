@@ -17,8 +17,11 @@ C     and initializes data structures on the grid.
       
       USE siesta_options,  only: g2cut
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
-      use sparse_matrices, only: H_so_2D
+      use sparse_matrices, only: H_so_on_2D, H_so_off_2D
       use sparse_matrices, only: Dscf
+
+      use m_nlefsm,        only: nlefsm_SO_off
+      use m_spin,          only: spin
 
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use siesta_geom
@@ -40,6 +43,7 @@ C     and initializes data structures on the grid.
       use alloc, only: re_alloc, de_alloc
       use class_dSpData1D, only: val
       use class_dSpData2D, only: val
+      use class_zSpData2D, only: val
 
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
@@ -52,7 +56,16 @@ C     and initializes data structures on the grid.
       real(dp) :: dummy_E
       integer  :: ia, is
 
-      real(dp), pointer :: H_val(:), H_so(:,:)
+      real(dp)    :: dummy_Eso
+      integer     :: ispin, i, j 
+      complex(dp) :: Dc
+#ifdef MPI
+      real(dp) :: buffer1
+#endif
+
+      real(dp), pointer :: H_val(:), H_so_on(:,:)
+      complex(dp), pointer :: H_so_off(:,:)
+
 
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
@@ -113,15 +126,59 @@ C     Add on force field contribution to energy
 !$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
 !$OMP end parallel workshare
-      call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
-     &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
-     &            numh, listhptr, listh, numh, listhptr, listh, 
-     &            1,
-     &            dummy_dm, dummy_E, dummy_fa, dummy_stress,
-     &            H_val,
-     &            matrix_elements_only=.true.) 
+
+      Eso = 0.0d0
+
+      if ( .not.spin%SO_offsite ) then
+       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
+     &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
+     &             numh, listhptr, listh, numh, listhptr, listh, 
+     &             1,
+     &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
+     &             H_val,
+     &             matrix_elements_only=.true.) 
+      else
+        H_so_off => val(H_so_off_2D)
+        H_so_off = dcmplx(0._dp, 0._dp)
+        call nlefsm_SO_off(scell, na_u, na_s, isa, xa, indxua,
+     &                 maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
+     &                 numh, listhptr, listh, numh, listhptr, listh,
+     &                 spin%Grid,
+     &                 dummy_E, dummy_Eso, dummy_fa,
+     &                 dummy_stress, H_val, H_so_off,
+     &                 matrix_elements_only=.true.)
 
 
+!
+!  Dc IS NOT the dense matrix, it is just a complex number 
+! (per each io index) used as an artifact to multiply the 
+! elements of the H_SO times the corresponding elements of 
+! DM in a such way that the result gives Re{Tr[H_SO*DM]}.
+!
+
+        do i = 1, maxnh
+
+!-------- Eso(u,u)
+          Dc = cmplx(Dscf(i,1),Dscf(i,5), dp)
+          Eso = Eso + real( H_so_off(i,1)*Dc, dp)
+!-------- Eso(d,d)
+          Dc = cmplx(Dscf(i,2),Dscf(i,6),dp)
+          Eso = Eso + real( H_so_off(i,2)*Dc, dp)
+!-------- Eso(u,d)
+          Dc = cmplx(Dscf(i,3),Dscf(i,4), dp)
+          Eso = Eso + real( H_so_off(i,4)*Dc, dp)
+!-------- Eso(d,u)
+          Dc = cmplx(Dscf(i,7),-Dscf(i,8), dp)
+          Eso = Eso + real( H_so_off(i,3)*Dc, dp)
+
+        enddo
+
+#ifdef MPI
+! Global reduction of Eso 
+      call globalize_sum(Eso,buffer1)
+      Eso = buffer1
+#endif
+      endif
 ! ..................
 
 ! If in the future the spin-orbit routine is able to compute
@@ -129,17 +186,14 @@ C     Add on force field contribution to energy
 ! computing forces and stresses, calling it in the first iteration
 ! should be enough
 !
-      if ( spin%SO ) then
-         H_so => val(H_so_2D)
+      if ( spin%SO_onsite ) then
+         H_so_on => val(H_so_on_2D)
 !$OMP parallel workshare default(shared)
-         H_so = 0._dp
+         H_so_on(:,:) = 0._dp
 !$OMP end parallel workshare
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
-     &        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
-      else
-         Eso = 0._dp
+     &        maxnh,numh,listhptr,listh,Dscf,H_so_on,Eso)
       end if
-      
 
 C     This will take care of possible changes to the mesh and atomic-related
 C     mesh structures for geometry changes
@@ -150,7 +204,7 @@ C     mesh structures for geometry changes
      &                 mscell, G2max, ntm,
      &                 maxnh, numh, listhptr, listh, datm,
      &                 dummy_fa, dummy_stress)
-  
+
       call timer('Setup_H0',2)
 
 #ifdef DEBUG

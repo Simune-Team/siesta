@@ -9,6 +9,7 @@
       use precision
       use class_dSpData1D
       use class_dSpData2D
+      use class_zSpData2D
       use class_Sparsity
       use class_OrbitalDistribution
       use class_Fstack_Pair_Geometry_dSpData2D
@@ -31,12 +32,16 @@
 
       real(dp), public, pointer :: xijo(:,:)=>null()
 
+      complex(dp), public, pointer :: H0_offsiteSO(:,:) => null()
 
       ! Pieces of H that do not depend on the SCF density matrix
       ! Formerly there was a single array H0 for this
       type(dSpData1D), public, save :: H_vkb_1D, H_kin_1D
       ! LDA+U and spin-orbit coupling Hamiltonian
-      type(dSpData2D), public, save :: H_ldau_2D, H_so_2D
+      type(dSpData2D), public, save :: H_ldau_2D, H_so_on_2D
+      ! Spin-orbit off-site
+      type(zSpData2D), public, save :: H_so_off_2D
+
 
       !  New interface data
       type(Sparsity), public, save :: sparse_pattern
@@ -54,7 +59,7 @@
       CONTAINS
 
       subroutine resetSparseMatrices( )
-      use alloc, only : de_alloc
+      use alloc,  only : de_alloc
 
       implicit none
 
@@ -65,7 +70,8 @@
       call delete( H_kin_1D )
       call delete( H_vkb_1D )
       call delete( H_ldau_2D )
-      call delete( H_so_2D )
+      call delete( H_so_on_2D )
+      call delete( H_so_off_2D )
 
       call delete( DM_2D ) ; nullify(Dscf)
       call delete( EDM_2D ) ; nullify(Escf)
