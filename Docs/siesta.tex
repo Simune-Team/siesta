@@ -214,7 +214,8 @@ Eduardo Anglada,
 Thomas Archer,
 Luis C. Balbas,
 Xavier Blase,
-Ramon Cuadrado,
+Jorge I. Cerd\'a,
+Ram\'on Cuadrado,
 Michele Ceriotti,
 Raul de la Cruz,
 Gabriel Fabricius,
@@ -1536,8 +1537,11 @@ where \textit{Chemical\_label} corresponds to the label defined in the
 
 \index{PSML format}\index{pseudopotential!PSML format}
 Siesta can handle pseudopotential files in the PSML format
-designed by Garcia, Junquera, and Verstraete (to be published), which
-enables interoperability with other codes. In particular, Siesta can:
+(García, A., Verstraete, M. J., Pouillon, Y., and Junquera, J. ``The
+PSML format and library for norm-conserving pseudopotential data
+curation and interoperability'', Computer Physics Communications 227
+51-71 (2018), \url{https://doi.org/10.1016/j.cpc.2018.02.011}).
+In particular, Siesta can:
 \begin{itemize}
 \item Read the semilocal potentials from the PSML file and proceed as
   usual, generating the PAOs, the Siesta-style local potential, and
@@ -1551,7 +1555,7 @@ enables interoperability with other codes. In particular, Siesta can:
   semi-local potentials. In the future there will be an option to
   generate the PAOs directly from the complete pseudopotential operator. For
   this, the options \fdf{use-psml-vlocal} and
-  \fdf{use-psml-kb-projectors} must be set to \fdftrue.
+  \fdf{use-psml-kb-projectors} must be set to \fdftrue (the default).
 \end{itemize}
 Currently, PSML files can be produced in a form fully compatible with
 the Siesta procedures to generate the non-local pseudopotential
@@ -2292,6 +2296,13 @@ with the presence of ghost states.
 
 The default is \emph{one} KB projector from each angular momentum,
 constructed from the nodeless eigenfunction.
+
+For full spin-orbit calculations, the program generates $lj$
+projectors using the $l+1/2$ and $l-1/2$ components of the
+(relativistic) pseudopotentials. In this case the specification of the
+reference energies for projectors is not changed: only $l$ is
+relevant. Fully relativistic projectors can also be read from a
+suitably generated PSML file.
 
 \end{fdfentry}  
 
@@ -3303,7 +3314,7 @@ structural information (maybe too many).
     coordinates rigidly to have them positive, by using
     \fdf{AtomicCoordinatesOrigin}.  See the
     \program{Sies2arc}\index{Sies2arc@\textsc{Sies2arc}} utility in the
-    \program{Util/} directory for generating \sysfile*{.arc} files for CERIUS animation.
+    \program{Util/} directory for generating \sysfile*{arc} files for CERIUS animation.
 
   \end{fdflogicalF}
 
@@ -3533,8 +3544,9 @@ are paired as (k,-k) and only one member of the pair is retained. This
 symmetry is valid in the absence of external magnetic fields or
 non-collinear/spin-orbit interaction.
 
-This flag should be used with care, as the code will produce wrong
-results if there is no support for the appropriate symmetrization.
+This flag is only honored for spinless or collinear-spin calculations,
+as the code will produce wrong results if there is no support for the
+appropriate symmetrization.
 
 The default value is \fdftrue unless: a) the option \fdf{Spin!Spiral} 
 is used. In this case time-reversal-symmetry is broken explicitly. b)
@@ -3808,10 +3820,12 @@ information is read from the fdf variables above.
 
     \option[spin-orbit]%
     \fdfindex*{Spin:spin-orbit}%
-    Perform a calculation with spin-orbit coupling.  This requires the
+    Performs calculations including the spin-orbit coupling. By default the 
+    off-site SO option is set to \fdftrue. To perform an on-site SO calculations 
+    this option has to be \fdf*{spin-orbit+onsite}. This requires the
     pseudopotentials to be relativistic.
 
-    See Sect.~\ref{sec:spin-orbit}.
+    See Sect.~\ref{sec:spin-orbit} for further specific spin-orbit options.
 
   \end{fdfoptions}
 
@@ -3856,101 +3870,135 @@ information is read from the fdf variables above.
 \end{fdflogicalF}
 
 
-\subsection{Spin--Orbit coupling}
+\subsection{Spin-Orbit coupling}
 \label{sec:spin-orbit}
 
 \siesta\ includes the posibility to perform fully relativistic
 calculations by means of the inclusion in the total Hamiltonian not
 only the Darwin and velocity correction terms~(Scalar--Relativistic
-calculations), but also the spin-orbit~(SO) contribution. The
-implementation is based on the on-site SO approximation, where only
-the intra-SO contribution of each atom is taken into account. See
-\fdf{Spin} on how to turn on the spin-orbit coupling.
+calculations), but also the spin-orbit~(SO) contribution. There are
+two approaches regarding the SO formalism: on-site and off-site.
+Within the on-site approximation only the intra-atomic SO
+contribution is taken into account. In the off-site scheme additional
+neighboring interactions are also included in the SO term. By default,
+the off-site SO formalism is switched on, being necessary to change
+the \fdf{Spin} flag in the input file if the on-site approximation
+wants to be used. See \fdf{Spin} on how to handle the spin-orbit
+coupling.
 
-The current implementation in \siesta\ has been implemented by
+The on-site spin-orbit scheme in this version of \siesta\ has been implemented by
 Dr. Ram\'on Cuadrado based on the original on-site SO formalism and
-implementation developed by Prof. Jaime Ferrer, \textit{et al}~(L
+implementation developed by Prof. Jaime Ferrer and his collaborators \textit{et al}~(L
 Fern\'andez--Seivane, M Oliveira, S Sanvito, and J Ferrer, Journal of
-Physics: Condensed Matter, 2006 vol. 18 pp. 7999; L
-Fern\'andez--Seivane and Jaime Ferrer, Phys. Rev. Lett. 99, 2007,
-183401).
+Physics: Condensed Matter, \textbf{18}, 7999 (2006); L Fern\'andez--Seivane 
+and Jaime Ferrer, Phys. Rev. Lett. \textbf{99}, 183401 (2007)).
 
-The inclusion of the SO term in the Hamiltonian~(and in the Density
-Matrix) will involve the increase of non-zero elements in their
-off-diagonal parts, i.e., for some $\mu\nu$ orbitals,
-H$^{\sigma\sigma'}_{\mu\nu}$(DM$^{\sigma\sigma'}_{\mu\nu}$)
-[$\sigma,\sigma'$=$\uparrow,\downarrow$] will be $\neq$0. This is
+The off-site scheme has been implemented by
+Dr. Ram\'on Cuadrado and Dr. Jorge I. Cerd\'a based on their initial 
+work~(R. Cuadrado and J. I. Cerd\'a ``Fully relativistic pseudopotential 
+formalism under an atomic orbital basis: spin-orbit splittings and 
+magnetic anisotropies'', J. Phys.: Condens. Matter \textbf{24}, 086005 (2012); 
+``In-plane/out-of-plane disorder influence on the magnetic anisotropy of 
+Fe$_{1-y}$Mn$_y$Pt-L1(0) bulk alloy'', R. Cuadrado, Kai Liu, Timothy 
+J. Klemmer and R. W. Chantrell, Applied Physics Letters, \textbf{108}, 
+123102 (2016)).  
+
+The inclusion of the SO term in the Hamiltonian (and in the Density
+Matrix) causes an increase in the number of non-zero elements in their
+off-diagonal parts, i.e., for some $(\mu,\nu)$ pair of basis
+orbitals, $\mathbf H^{\sigma\sigma'}_{\mu\nu}$ ($\mathbf{DM}^{\sigma\sigma'}_{\mu\nu}$)
+[$\sigma,\sigma'=\uparrow,\downarrow$] will be $\neq0$. This is
 mainly due to the fact that the $\mathbf L\cdot\mathbf S$ operator
-will promote the mixing between different spin-up/down components. The
-terms responsible of this matrices expansion are the
-exchange-correlation potential and the SO. The remaining terms such as
-the kinetic energy or Hartree contribution do not depend of the spin
-orientations and hence will be only added to the total
-Hamiltonian~(and DM) to their diagonal parts.
+will promote the mixing between different spin-up/down components.
+In addition, these $\mathbf H^{\sigma\sigma'}_{\mu\nu}$ (and
+$\mathbf{DM}^{\sigma\sigma'}_{\mu\nu}$) elements will be complex, in contrast
+with typical polarized/non-polarized calculations where these
+matrices are purely real. Since the spin-up and spin-down manifolds
+are essentially mixed, the solver has to deal with matrices whose
+dimensions are twice as large as for the collinear (unmixed) spin
+problem. Due to this, we advise to take special
+attention to the memory needed to perform a spin-orbit calculation.
 
-The current SO formalism enables the possibility of several types of calculations:
+
+Unless explicitly advised the following type of calculation can be carried out 
+regardless of whether on-site or off-site approximation is employed: 
 \begin{itemize}
   % 
   \item Selfconsistent calculations for gamma point as well as for
-  bulks~(Not yet implemented for optimizations).
+  bulks.
+  %
+  \item Structure optimizations 
+  %
+  %%% *** Incompatible... \item LDA+U calculations~(See Sect.\ref{sec:lda+u} for further info).
   % 
-  \item Magnetic Anisotropy Energy~(MAE) can be easily calculated. From
-  first principles calculations, MAE is obtained after subtract the
-  total selfconsistent energy in two different orientations, usually the
-  total energy associated with easy axis from the hard axis. In \siesta\
-  it is possible to perform several self-consistent calculations for
-  different magnetization orientations using the specific block
-  \fdf{DM.InitSpin} in the fdf file. In doing so one will be able to
-  include the initial orientation angles of the magnetization for each
-  atom, as well as an initial value of their net magnetic moments.
+  \item Magnetic Anisotropy Energy~(MAE) can be easily
+    calculated. From first principles it is obtained after subtracting
+    the total selfconsistent energy calculated for two different
+    magnetic orientations. In \siesta\ it is possible to perform
+    calculations with different initial magnetic orderings
+    by means of the use of the block \fdf{DM.InitSpin} in the fdf
+    file. In doing so one will be able to include the initial
+    orientation angles of the magnetization for each atom, as well as
+    an initial value of its net magnetic moments.
   % 
-  \item By means of Mulliken analysis, after the self-consistent
+  \item By means of Mulliken analysis, after the selfconsistent
   procedure, local spin and orbital moments can be calculated by means
   of the flags \fdf{WriteMullikenPop} and \fdf{WriteOrbMom}.
+  % 
 \end{itemize}
 
-Note: Due to the small SO energy value contribution to the total
-energy, the level of precision requiered to perform a proper fully
-relativistic calculation during the selfconsistent process is quite
-demanding. The following values must be carefully converged and
-checked for each specific system to assure that the results are
-accurate enough: \fdf{SCF.H!Tolerance} during the
-selfconsistency~(typically <10$^{-5}$eV), \fdf{ElectronicTemperature},
-\textbf{k}-point sampling and high values of
-\fdf{MeshCutoff}~(specifically for extended solids). In general, one
-can say that a good calculation will have high number of k--points,
-low \fdf{ElectronicTemperature}, extremely small \fdf{SCF.H!Tolerance}
-and high values of \fdf{MeshCutoff}.  We encourage the user to test
-carefully these options for each system. An additional point to take
-into account when the spin--orbit contribution is included is the
-mixing scheme employed. You are encouraged to use \fdf{SCF.Mix}
-\fdf*{hamiltonian} instead of the density matrix, due to the fact that
-the convergence speed increases considerably for the first case. In
-addition, the pseudopotentials have to be well generated and tested
-for each specific system and they have to be generated in their fully
-relativistic form and use the non-linear core corrections.
- 
+Note: Due to the small SO contribution to the total energy, the level
+of precision required to perform a proper fully relativistic
+calculation during the selfconsistent process is quite demanding. The
+following values must be carefully converged and checked for each
+specific system to assure that the results are accurate enough:
+\fdf{SCF.H!Tolerance} during the selfconsistency (typically between
+$10^{-3}\,\mathrm{eV}$ -- $10^{-4}\,\mathrm{eV}$),
+\fdf{ElectronicTemperature}, \textbf{k}--point sampling and high
+values of \fdf{MeshCutoff}~(specifically for extended solids). In
+general, one can say that a good calculation will have high number of
+\textbf{k}--points, low \fdf{ElectronicTemperature}, extremely small
+\fdf{SCF.H!Tolerance} and high values of \fdf{MeshCutoff}.  We
+encourage the user to test carefully these options for each system. An
+additional point to take into account is the mixing scheme
+employed. You are encouraged to use \fdf{SCF.Mix:hamiltonian}
+(currently is set up by default) instead of density matrix mixing,
+since it speeds up the convergence.  The pseudopotentials have to be
+properly generated and tested for each specific system and they have
+to be in their fully relativistic form, together with the non-linear
+core corrections. Finally it is worth to mention that the
+selfconsistent convergence for some non-highly symmetric
+magnetizations directions with respect to the physical symmetry axis
+could still be difficult.
+
 \begin{fdfentry}{Spin!OrbitStrength}[real]<1.0>
 
-  It allows to vary the strength of the spin-orbit interaction from
-  zero to any positive value, including the physical value. This flag
-  is only active when \fdf{Spin} is set to \fdf*{spin-orbit}.
-
+  It allows to vary the strength of the 
+  spin-orbit interaction from zero to any positive value. It can be
+  used for both the on-site and off-site SOC flavors, but only for
+  debugging and testing purposes, as the only physical value is 1.0.
+  Note that this feature is currently implemented by modifying the SO parts of the
+  semilocal potentials read from a \code{.psf} file. It will not work
+  when reading the $lj$ projectors directly from a PSML file (or from
+  a previous run's \code{.ion} file). Care must be
+  taken when re-using any \code{.ion} files produced.
+  
 \end{fdfentry}
 
 \begin{fdflogicalF}{WriteOrbMom}
 
-  If \fdftrue, a table is provided in the main output file, which
+  If \fdftrue, a table is provided in the output file that
   includes an estimation of the vector orbital magnetic
-  moments, in units of the Bohr magneton, projected onto each orbital
-  and also onto each atom. The estimation for the orbital moments is
-  based on a two-center approximation, and makes use of the Mulliken
-  population analysis.
+  moments, in units of the Bohr magneton, projected 
+  onto each orbital and also onto each atom. The estimation for the 
+  orbital moments is based on a two-center approximation, and makes use 
+  of the Mulliken population analysis.
 
   If \fdf{MullikenInScf} is \fdftrue, this information is printed at
   every scf step.
 
 \end{fdflogicalF}
+
 
 
 \subsection{The self-consistent-field loop}
@@ -5075,7 +5123,7 @@ The Density matrix can be:
   \index{reading saved data!density matrix}
   
   Instructs to read the density matrix stored in file
-  \sysfile{.DM} by a previous run.
+  \sysfile{DM} by a previous run.
   
   \siesta\ will continue even if \sysfile*{DM} is not found.
 
@@ -9101,8 +9149,8 @@ always include all arrays.
 Enable an experimental timer which is based on wall time on the master
 node and is aware of the tree-structure of the timed sections. At the
 end of the program, a report is generated in the output file, and a
-{\tt time.json} file in JSON format is also written. \index{JSON
-  timing report@{\bf JSON timing report}} This file can be used by
+\file{time.json} file in JSON format is also written. \index{JSON
+  timing report@\textbf{JSON timing report}} This file can be used by
 third-party scripts to process timing data.
 
   \note, if used with the PEXSI solver (see Sec.~\ref{SolverPEXSI})
@@ -10654,9 +10702,9 @@ time step are calculated and stored in the file
 
 \begin{fdflogicalF}{TDED.Saverho}
 
-If \fdftrue\ the instantaneous time-dependent density is saved to
-\texttt{ <istep>}.\texttt{TDRho}\index{TDRho@{\bf TDRho}} after every
-\fdf{TDED.Nsaverho} number of steps.
+  If \fdftrue\ the instantaneous time-dependent density is saved to
+  \file{<istep>.TDRho} after every \fdf{TDED.Nsaverho} number of
+  steps.
 
 \end{fdflogicalF}
 

@@ -77,6 +77,10 @@ If the file is not present, the default is to generate multiple
 projectors for semicore shells, and just one for normal shells, with
 the default reference energies used in Siesta.
 
+To generate fully relativistic KB projectors (in lj form, as needed
+for example by the new 'offsite' spin-orbit implementation in Siesta),
+use the flag '-r'. 
+
 * Other options
 
 Some programs (notably oncvpsp) produce semi-local potentials with

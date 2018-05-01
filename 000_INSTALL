@@ -11,7 +11,8 @@ https://launchpad.net/libpsml/trunk/1.1/+download/libpsml-1.1.6.tgz
 https://launchpad.net/libgridxc/trunk/0.8/+download/libgridxc-0.8.0.tgz
 
 
-NOTE: You need at least version 1.5.3 of the xmlf90 library,
+NOTE: You need version 1.5.3 of the xmlf90 library,
+          (1.5.4 won't work due to some interface changes)
       at least version 0.8.0 of the libgridxc library, and
       at least version 1.1.6 of the libpsml library.
 

@@ -20,6 +20,8 @@ C     different chemical species in the calculation:
       use atm_types
       use radial, only: rad_get, rad_func
       use spher_harm, only: rlylm
+ 
+
 
       implicit none 
 !

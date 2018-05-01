@@ -120,10 +120,7 @@ subroutine get_ps_conf(irel,lmax,text,chgvps, &
                'Pseudopotential generated from a ', &
                       'relativistic atomic calculation'
                   write(6,'(2a)')   &
-               'There are spin-orbit pseudopotentials available'
-                  write(6,'(2a)')  &
-               'Spin-orbit interaction is not included in ', &
-                      'this calculation'
+               'There are spin-orbit semi-local pseudopotentials available'
                endif
  
                write(6,'(/,a)') 'Valence configuration '// &

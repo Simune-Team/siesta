@@ -402,8 +402,14 @@
 ! KBs
          read(lun,*)
          do i=1,spp%n_pjnl
-            read(lun,*)
+            if (spp%lj_projs) then
+               read(lun,*)
+     $           spp%pjnl_l(i), spp%pjnl_j(i), spp%pjnl_n(i),
+     $           spp%pjnl_ekb(i)
+            else
+               read(lun,*)
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
+            endif
             call radial_read_ascii(spp%pjnl(i),lun,
      $                             yp1=0.0_dp,ypn=huge(1.0_dp))
          enddo
@@ -418,6 +424,7 @@
                nk = nk+1
                spp%pj_n(nk) = spp%pjnl_n(i)
                spp%pj_l(nk) = spp%pjnl_l(i)
+               spp%pj_j(nk) = spp%pjnl_j(i)
                spp%pj_m(nk) = m
                spp%pj_index(nk) = i
             enddo
@@ -451,6 +458,7 @@
       integer, intent(in)         :: unit
       
       character(len=78) line
+      integer :: iostat
 
       read(unit,'(a)') line
       if (trim(line) .eq. '<preamble>') then
@@ -466,7 +474,12 @@
       read(unit,*) p%mass
       read(unit,*) p%self_energy
       read(unit,*) p%lmax_basis, p%n_orbnl
-      read(unit,*) p%lmax_projs, p%n_pjnl
+      read(unit,fmt=*,iostat=iostat) p%lmax_projs, p%n_pjnl, p%lj_projs
+      if (iostat /=0 ) then
+         backspace(unit)
+         read(unit,*) p%lmax_projs, p%n_pjnl
+         p%lj_projs = .false.
+      endif
 
       allocate(p%orbnl(p%n_orbnl))
       allocate(p%pjnl(p%n_pjnl))
@@ -818,9 +831,16 @@
          do i=1,spp%n_pjnl
             zeta = spp%pjnl_n(i)
             l = spp%pjnl_l(i)
-            write(lun,'(2i3,f22.16,2x,a)')
+            if (spp%lj_projs) then
+               write(lun,'(i3,f4.1,i3,f22.16,2x,a)')
+     $           spp%pjnl_l(i), spp%pjnl_j(i), spp%pjnl_n(i),
+     $           spp%pjnl_ekb(i),
+     $           " #kb l, j, n (sequence number), Reference energy"
+            else
+               write(lun,'(2i3,f22.16,2x,a)')
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
      $           " #kb l, n (sequence number), Reference energy"
+            endif
             call radial_dump_ascii(spp%pjnl(i),lun)
 
            if (write_ion_plot_files) then
@@ -950,8 +970,14 @@
          write(unit,'(g22.12,4x,a)') p%self_energy, "# Self energy "
          write(unit,'(2i4,22x,a)') p%lmax_basis, p%n_orbnl,
      $        "# Lmax for basis, no. of nl orbitals "
-         write(unit,'(2i4,22x,a)') p%lmax_projs, p%n_pjnl,
-     $        "# Lmax for projectors, no. of nl KB projectors "
+         if (p%lj_projs) then
+            write(unit,'(2i4,1x,l1,20x,a)') p%lmax_projs, p%n_pjnl,
+     $       p%lj_projs,
+     $       "# Lmax for projectors, no. of nl KB projectors, LJ projs?"
+         else
+            write(unit,'(2i4,22x,a)') p%lmax_projs, p%n_pjnl,
+     $           "# Lmax for projectors, no. of nl KB projectors"
+         endif
 
          end subroutine write_header
 

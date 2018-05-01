@@ -96,7 +96,7 @@ SIESTA_OBJS += precision.o parallel.o debugmpi.o m_io.o alloc.o listsc.o  \
          schecomm.o sparse_matrices.o\
          files.o interpolation.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         spatial.o 
+         spatial.o m_spin.o m_cite.o reclat.o units.o
 
 # Additional class objects
 SIESTA_OBJS += m_uuid.o object_debug.o class_Sparsity.o \
@@ -199,6 +199,8 @@ iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 listsc.o: alloc.o
 listsc.o: alloc.o
+m_spin.o: alloc.o files.o local_sys.o m_cite.o parallel.o precision.o units.o
+m_spin.o: alloc.o files.o local_sys.o m_cite.o parallel.o precision.o units.o
 memory.o: memory_log.o parallel.o
 memory.o: memory_log.o parallel.o
 memory_log.o: m_io.o parallel.o precision.o
@@ -215,14 +217,18 @@ schecomm.o: alloc.o
 schecomm.o: alloc.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
 sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
-sparse_matrices.o: class_SpData2D.o class_Sparsity.o precision.o
+sparse_matrices.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o
+sparse_matrices.o: precision.o
 sparse_matrices.o: alloc.o class_Fstack_Pair_Geometry_SpData2D.o
 sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
-sparse_matrices.o: class_SpData2D.o class_Sparsity.o precision.o
+sparse_matrices.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o
+sparse_matrices.o: precision.o
 spatial.o: precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o local_sys.o precision.o
 spher_harm.o: alloc.o local_sys.o precision.o
+units.o: precision.o
+units.o: precision.o
 xml.o: precision.o
 xml.o: precision.o
 atompla.o: local_sys.o precision.o
@@ -302,3 +308,4 @@ m_radfft.o: radfft.o
 mtprng.o: m_uuid.o
 printmat.o: printmatrix.o
 sys.o: local_sys.o
+t_spin.o: m_spin.o

@@ -1,4 +1,4 @@
-      program psop
+program psop
 
 ! Stand alone program to:
 ! 1. Read the pseudopotential files
@@ -16,8 +16,7 @@
 
 !     The number of KB projectors per angular momentum shell is
 !     based on whether there are semicore states or not. There is
-!     currently no support for extra "precision" projectors.
-
+!     some support for extra projectors.
 !     The reference energy for the calculation of the KB projectors
 !     is fixed to the Siesta defaults (i.e.: eigenvalue of a bound
 !     state)
@@ -47,12 +46,14 @@
       use m_getopts
 
       use xmlf90_wxml, only: str
-      use m_kb, only: kb_t, nprojs, kbprojs
+      use m_kb, only: kb_t, kbprojs
+      use m_kb, only: init_kbproj_structs
+      use m_kb, only: store_proj_psml
 
       implicit none
 
       character(len=*), parameter :: PSML_VERSION = "1.1"
-      character(len=*), parameter :: PSML_CREATOR = "psop-1.1"
+      character(len=*), parameter :: PSML_CREATOR = "psop-1.2"
 
       
       integer, parameter :: dp = selected_real_kind(10,100)
@@ -131,10 +132,13 @@
 !
 !     VARIABLE USED TO STORE THE SEMILOCAL COMPONENTS OF THE PSEUDOPOTENTIAL
 !
-      real(dp), allocatable    :: vps(:,:)   ! Semilocal components of the
+      real(dp), allocatable    :: vps(:,:)   ! Semilocal "average" components of the
                                              !   pseudopotentials 
                                              !   (directly read from the 
                                              !   pseudopotential file)
+      real(dp), allocatable    :: vps_u(:,:) ! Semilocal SO components of the
+                                             !   pseudopotentials 
+                                             !
 !
 !     Local variables
 !  
@@ -220,6 +224,8 @@
 !
 !     LOCAL VARIABLES
 !
+      logical       :: lj_projs     ! Generate relativistic projectors?
+      integer       :: nup
       integer                  :: ndown, ir  ! Counters for the do loops
       integer                  :: l          ! Angular momentum of the channel
                                              !   that is read 
@@ -253,7 +259,7 @@
       character(len=40) keyname, line
       
 
-      external :: store_proj_psml, check_grid
+      external :: check_grid
 !
 !     Process options
 !
@@ -275,12 +281,16 @@
       proj_file_exists = .false.
       output_filename = "PSOP_PSML"
 
+      lj_projs = .false.
+
       do
-         call getopts('hdgpKF:R:C:3fcvo:',opt_name,opt_arg,n_opts,iostat)
+         call getopts('hdrgpKF:R:C:3fcvo:',opt_name,opt_arg,n_opts,iostat)
          if (iostat /= 0) exit
          select case(opt_name)
            case ('d')
               debug_kb_generation = .true.
+           case ('r')
+              lj_projs = .true.
            case ('g')
               restricted_grid = .false.
            case ('p')
@@ -429,11 +439,9 @@
       endif
          
 ! 
-!     STORE THE IONIC PSEUDOPOTENTIALS IN A LOCAL VARIABLE 
-!     Only the 'down'/major component is used in this version
-!     (This will change when we implement "lj" operation)
+!     STORE THE IONIC PSEUDOPOTENTIALS IN LOCAL VARIABLES 
 !
-      allocate( vps(nrmax,0:lmxkb) )
+      allocate( vps(nrmax,0:lmxkb), vps_u(nrmax,0:lmxkb) )
 
       do ndown = 1, lmxkb + 1
          l = psr%ldown(ndown)
@@ -451,7 +459,25 @@
          enddo
          vps(1,l) = vps(2,l)     ! AG
       enddo
+      !
+      ! SO-parts, if available
+      !
+      vps_u = 0.0_dp
+      do nup=1,psr%npotu
+         l = psr%lup(nup)
+         psr%vup(nup,1:nrval) = psr%vup(nup,1:nrval)
+         vps_u(1:nrval,l) = psr%vup(nup,1:nrval)
+         do ir=2,nrval
+            vps_u(ir,l)=vps_u(ir,l)/rofi(ir)
+         enddo
+         vps_u(1,l) = vps_u(2,l)    
+      enddo
 
+      if (lj_projs .and. (psr%npotu==0)) then
+         ! Die here; no degenerate cases in this program
+         call die("The pseudo is not relativistic. Cannot generate lj projs")
+      endif
+     
 !     Storing locally other variables
       Zval   = psr%zval
       nicore = psr%nicore
@@ -572,8 +598,12 @@
       ! tell apart a scalar-relativistic calculation from a fully-relativistic one.
         
       if (psr%irel == "rel") then
-         ! For now, psop will generate only the scalar-relativistic set 
-         set = SET_SREL
+         if (lj_projs) then
+            set = SET_LJ
+         else
+            ! Generate only the scalar-relativistic set
+            set = SET_SREL
+         endif
       else if (psr%irel == "isp") then
          ! Use the spin-averaged pseudos
          set = SET_SPINAVE
@@ -582,13 +612,14 @@
       endif
 
       call KBgen( is, a, b, rofi, drdi, s, &
-                 vps, vlocal, ve, nrval, Zval, lmxkb, &
+                 vps, vps_u, vlocal, ve, nrval, Zval, lmxkb, &
                  nkbl, erefkb, nkb,     &
                  new_kb_reference_orbitals, &
                  restricted_grid,   &
                  debug_kb_generation, &
                  ignore_ghosts,       &
-                 kb_rmax,             &
+                 kb_rmax, lj_projs,           &
+                 kbgen_preamble= init_kbproj_structs, &
                  process_proj=store_proj_psml,&
                  shifted_erefkb=shifted_erefkb)
 
@@ -625,10 +656,10 @@
          if (ps_HasProjectors(psml_handle)) then
             call ps_Delete_NonLocalProjectors(psml_handle)
             call insert_annotation_pair(ann,"action-cont","replaced-nonlocal-projectors",status)
-            if (status /= 0) call die("Cannot insert nl record")
+            if (status /= 0) call die("Cannot insert non-local record")
          else
             call insert_annotation_pair(ann,"action-cont","inserted-nonlocal-projectors",status)
-            if (status /= 0) call die("Cannot insert nl record")
+            if (status /= 0) call die("Cannot insert non-local record")
          endif
 
          call get_uuid(uuid)
@@ -671,14 +702,14 @@
 
          call ps_AddNonLocalProjectors(psml_handle,grid=r0(1:nrl), &
               grid_annotation=ann, annotation=EMPTY_ANNOTATION, set=set, &
-              nprojs=nprojs,kbprojs=kbprojs)
+              nprojs=size(kbprojs),kbprojs=kbprojs)
 
          call ps_DumpToPSMLFile(psml_handle,trim(output_filename))
 
       deallocate( rofi    )
       deallocate( drdi    )
       deallocate( s       )
-      deallocate( vps     )
+      deallocate( vps, vps_u )
       deallocate( vlocal  )
       deallocate( chlocal )
       deallocate( ve      )
@@ -985,6 +1016,7 @@ subroutine manual()
   write(0,*) " FILE: A PSML file"
   write(0,*) " Options: "
   write(0,*) " -d                                debug"
+  write(0,*) " -r     Generate relativistic (lj) projs"
   write(0,*) " -p                 write_ion_plot_files"
   write(0,*) " -F  PROJ_SPEC"
   write(0,*) "     Read number of projectors and      "

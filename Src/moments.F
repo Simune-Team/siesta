@@ -296,4 +296,3 @@ C Deallocate local memory
       deallocate(l_orb)
 
       end subroutine moments
-

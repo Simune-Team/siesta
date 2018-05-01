@@ -66,9 +66,11 @@
 !             1 to the total number of projectors at that l.
 !             
 !
+         logical                         ::  lj_projs = .false.
          integer                         ::  n_pjnl=0   ! num of "nl" projs
          integer                         ::  lmax_projs=0 ! l cutoff for projs
          integer, dimension(maxn_pjnl)   ::  pjnl_l     ! l of each nl proj
+         real(dp), dimension(maxn_pjnl)  ::  pjnl_j     ! j of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjnl_n     ! n of each nl proj
          real(dp), dimension(maxn_pjnl)
      $                                   ::  pjnl_ekb   ! energy of
@@ -92,9 +94,10 @@
          integer, dimension(maxnprojs)   ::  pj_index
          integer, dimension(maxnprojs)   ::  pj_n
          integer, dimension(maxnprojs)   ::  pj_l
+         real(dp), dimension(maxnprojs)  ::  pj_j
          integer, dimension(maxnprojs)   ::  pj_m
          integer, dimension(maxnprojs)   ::  pj_gindex
-!
+!----------------------------
 !        LDA+U Projectors
 !        Here we follow the scheme used for the KB projectors
 !        

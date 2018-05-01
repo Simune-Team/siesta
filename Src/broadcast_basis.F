@@ -104,9 +104,13 @@
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%lmax_projs,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%lj_projs,1,MPI_logical,
+     $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pjnl_l,maxn_pjnl,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pjnl_n,maxn_pjnl,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pjnl_j,maxn_pjnl,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pjnl_ekb,maxn_pjnl,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
@@ -133,6 +137,8 @@
         call MPI_Bcast(spp%pj_n,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pj_l,maxnprojs,MPI_integer,
+     $                 0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(spp%pj_j,maxnprojs,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)

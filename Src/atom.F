@@ -112,7 +112,7 @@
      .                       rco,lambda_in,atm_label,npolorb,semic,
      .                       nsemic,cnfigmx,charge_in,smass,basistype, 
      .                       ISIN,RINN,VCTE,qcoe,qyuk,qwid,
-     .                       split_norm,filtercut_in,basp, spp)
+     .                       split_norm,filtercut_in,basp,spp,lj_projs)
 
         use atm_types, only: species_info
         
@@ -127,6 +127,7 @@
 
         type(basis_def_t), pointer   :: basp
         type(species_info), intent(inout)  :: spp
+        logical, intent(in)                :: lj_projs
 
         integer, intent(in) :: izin  
 !       Atomic number (if IZ is negative it will be regarded as a set of 
@@ -262,7 +263,8 @@
 ! Internal variables
 
         real(dp), target :: vps(nrmax,0:lmaxd)
-        
+        real(dp)         :: vps_u(nrmax,0:lmaxd)   !! Target??
+
         real(dp)
      .    rofi(nrmax), drdi(nrmax), s(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx),
@@ -359,7 +361,7 @@
 !
 ! Reading pseudopotentials
 ! 
-          call read_vps(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps,
+          call read_vps(lmxo, lmxkb, nrval,a,b,rofi,drdi,s,vps,vps_u,
      .        rho, chcore, zval, chgvps, nicore, irel, icorr,basp) 
 
           ! drdi(:) : derivative of the r(i) function, or equivalently
@@ -650,7 +652,7 @@ c    .          'atom: The above configuration will be used ',
 
                call get_psml_kbprojs(is,basp%psml_handle,atm_label,
      $                               a,b,rofi,nrval,Zval,
-     $                               lmxkb_true,spp)
+     $                               lmxkb_true,lj_projs,spp)
 
             else
 
@@ -659,19 +661,21 @@ c    .          'atom: The above configuration will be used ',
 ! 
             ignore_ghosts = fdf_boolean('Atom.Ignore.Ghosts',.false.)
             kb_rmax = fdf_physical("KB.Rmax", 0.0_dp, "Bohr")
-            
+
                call KBgen(is, a,b,rofi,drdi,s,
-     .                 vps, vlocal, ve, nrval, Zval, lmxkb, 
+     .                 vps, vps_u, vlocal, ve, nrval, Zval, lmxkb, 
      .                 nkbl, erefkb, nkb,
      $                 new_kb_reference_orbitals,
      $                 restricted_grid,
      $                 debug_kb_generation,
      $                 ignore_ghosts,
-     $                 kb_rmax,
+     $                 kb_rmax, lj_projs,
      $                 kbgen_preamble=init_kbproj_structs,
      $                 process_proj=store_kbproj)
 
-               spp%nprojs = nkb  
+               spp%nprojs = nkb
+               spp%lmax_projs = lmxkb
+               spp%lj_projs = lj_projs
             endif
 
           elseif(flting.lt.0.0d0) then 
@@ -836,27 +840,31 @@ c    .          'atom: The above configuration will be used ',
 !
 !
 !------------------------------------------------------------------
-      subroutine  init_kbproj_structs(n_pjnl)
+      subroutine  init_kbproj_structs(n_pjnl,nkbtot)
       !     Prepares the data structures before sequentially
       !     calling 'store_kbproj'
 
       use aux_proj, only: is
-      use atm_types, only: species_info, species
+      use atm_types, only: species_info, species, maxnprojs
 
-      integer, intent(in)  :: n_pjnl
+      integer, intent(in)  :: n_pjnl  ! number of "nl" projectors 
+      integer, intent(in)  :: nkbtot  ! number of projectors (incl m quantum number)
       
       type(species_info),  pointer :: spp
 
       spp => species(is)
 
       allocate(spp%pjnl(n_pjnl))
+      if (nkbtot > maxnprojs) then
+         call die("Increase maxnprojs in atm_types")
+      endif
       ! zero out for build-up in comkb
       spp%n_pjnl = 0
       spp%nprojs = 0
 
       end subroutine init_kbproj_structs
       
-      subroutine  store_kbproj(l,ikb,ekb,nrc,erefkb,dkbcos,
+      subroutine  store_kbproj(l,lj_projs,jk,ikb,ekb,nrc,erefkb,dkbcos,
      $                       nrval,rofi,proj)
 
       use aux_proj, only: a, b, is
@@ -868,6 +876,8 @@ c    .          'atom: The above configuration will be used ',
 ! This version for classic Siesta
 !
       integer, intent(in)  :: l
+      logical, intent(in)  :: lj_projs
+      integer, intent(in)  :: jk
       integer, intent(in)  :: ikb
       integer, intent(in)  :: nrc
       real(dp), intent(in) :: ekb
@@ -886,8 +896,8 @@ c    .          'atom: The above configuration will be used ',
       rc = rofi(nrc)
 
 ! Common block with the information about the  KB projectors
-
-      call comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc,spp)
+      
+      call comKB(is,a,b,rofi,proj,l,lj_projs,jk,ikb,rc,ekb,nrc,spp)
 !
       end subroutine store_kbproj
 
@@ -2204,7 +2214,7 @@ C
 
 !
         subroutine read_vps(lmxo, lmxkb,
-     .             nrval,a,b,rofi,drdi,s,vps,
+     .             nrval,a,b,rofi,drdi,s,vps,vps_u,
      .             rho, chcore, zval, chgvps,
      .             nicore, irel, icorr,basp)
 
@@ -2220,13 +2230,12 @@ C
       
         real(dp)
      .    rofi(nrmax), drdi(nrmax), s(nrmax), vps(nrmax,0:lmaxd),
+     .    vps_u(nrmax,0:lmaxd),
      .    rho(nrmax), chcore(nrmax) 
 
         real(dp)
      .    a, b, zval
-           
         integer  nrval, lmxo, lmxkb 
-
         character nicore*4, irel*3, icorr*2
 C
 C Internal variables
@@ -2238,12 +2247,14 @@ C
      .    ea, rpb, chgvps
 
         integer  
-     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i
+     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i, nup
+        integer :: nup_end
 
         character method(6)*10,text*70
 
         type(pseudopotential_t), pointer :: vp
-
+        real(dp) :: so_strength
+        
         vp => basp%pseudopotential
 
         icorr = vp%icorr
@@ -2344,10 +2355,9 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
           rpb=rpb*ea
         enddo 
 
+!       Ionic pseudopotentials (down and up)
 
-!       Ionic pseudopotentials   (Only 'down' used)
-
-        do 20 ndown=1,lmax_ps+1
+        do ndown=1,lmax+1
           l = vp%ldown(ndown) 
           if (l.ne.ndown-1) then
             write(6,'(a)')
@@ -2361,40 +2371,51 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
           enddo
           vps(1,l) = vps(2,l)     ! AG
 
-  20    continue
+       enddo
+       
+       vps_u = 0.0_dp
+       ! For backward compatibility with original OSSO branch,
+       ! put 'keep-npotu-bug T' in fdf file
+       ! To be removed altogether for releases
+       if (fdf_get('keep-npotu-bug',.false.))  then
+          nup_end =  min(lmax,npotu-1)
+          write(6,'(a)') 'atom: *** Buggy code in highest-l ' //
+     $                   'SO component setup enabled ***'
+       else
+          nup_end = npotu
+       endif
 
+       ! Allow an overall factor for the SO part (for debugging only!)
+       ! Note that (notably for the lj-based SO implementation) this
+       ! trick is based on the availability of a semilocal pseudo.  Care
+       ! should also be taken with the onward use of any .ion files
+       ! produced.
+       
+       so_strength = fdf_get('spin-orbit-strength', 1.0_dp)
+       if (so_strength /= 1.0_dp)  then
+          write(6,'(a,f10.6)') 'atom: *** SO enhancement factor: ',
+     $         so_strength
+       endif
+
+       do nup=1,nup_end
+          l = vp%lup(nup)
+          vp%vup(nup,1:nrval) = so_strength * vp%vup(nup,1:nrval)
+          vps_u(1:nrval,l) = vp%vup(nup,1:nrval)
+          do ir=2,nrval
+            vps_u(ir,l)=vps_u(ir,l)/rofi(ir)
+          enddo
+          vps_u(1,l) = vps_u(2,l)    
+       enddo
 
 !       Core and valence charge density
 
         chcore(1:nrval) = vp%chcore(1:nrval)
         rho(1:nrval) = vp%chval(1:nrval)
-C
-C Obtain an ionic-pseudopotential if core correction for Hartree
-C potential
-!
-! AG: OBSOLETE, as the program will stop in this case.
-
-        if ((nicore.eq.'pche').or.(nicore.eq.'fche')) then
-          call vhrtre(chcore,ve,rofi,drdi,s,nrval,a)
-          do l=0,lmax_ps
-            do ir=2,nrval
-              vps(ir,l)=vps(ir,l)+ve(ir)
-            enddo
-            vps(1,l) = vps(2,l)    ! AG
-          enddo
-        endif
-
-        return
-
- 5000   continue
-        write(6,*)
-     .      'ERROR: You are using an old pseudopotential file.',
-     .      ' Siesta needs a newer version.'
-        call die
           
         end subroutine read_vps
 !
-        subroutine comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc,spp)
+        subroutine comKB(is,a,b,rofi,proj,l,lj_projs,jk,
+     $                   ikb,rc,ekb,nrc,spp)
 C
 C  Creates the common block with all the information about the 
 C  Kleinman-Bylander projectors.
@@ -2409,6 +2430,8 @@ C
         integer, intent(in)  :: l, nrc,is, ikb 
         real(dp), intent(in) :: rc, ekb, proj(nrmax), a, b,
      .       rofi(nrmax)
+        logical, intent(in)  :: lj_projs
+        integer, intent(in)  :: jk
         type(species_info), intent(inout)  :: spp
         
         character(len=40) filename
@@ -2435,11 +2458,17 @@ C
         
         spp%pjnl_n(n) = ikb
         spp%pjnl_l(n) = l
-
+        if (lj_projs) then
+           spp%pjnl_j(n) = l + (2*jk-3)*0.5_dp ! l -/+ 1/2
+           if (l == 0 ) spp%pjnl_j(n) = 0.5_dp ! special case: only jk=1
+        else
+           spp%pjnl_j(n) = 0.0_dp
+        endif
         do m = -l, l
            ntot = ntot + 1
            spp%pj_index(ntot) = n
            spp%pj_l(ntot) = l
+           spp%pj_j(ntot) = spp%pjnl_j(n)
            spp%pj_m(ntot) = m
         enddo
         spp%nprojs = ntot
@@ -2826,7 +2855,7 @@ C
       end subroutine chlocal_from_vlocal
       
       subroutine get_psml_kbprojs(is,ps,atm_label,a,b,rofi,nrval,Zval,
-     $                            lmxkb_true,spp)
+     $                            lmxkb_true,lj_projs,spp)
       use m_psml, psml_t => ps_t
       use atm_types, only : species_info
       
@@ -2839,20 +2868,24 @@ C
       integer, intent(in)           :: nrval
       real(dp), intent(in)          :: Zval
       integer, intent(inout)        :: lmxkb_true
-
+      logical, intent(in)           :: lj_projs
+      
       type(species_info), intent(inout) :: spp
       
-      integer    :: ir, l, ikb, nrc, nscalar, nkbl, nlj
+      integer    :: l, ikb, nrc, nscalar, nkbl, nlj, ir
       integer    :: lmxkb, n_pjnl
-      integer, allocatable  :: idx(:), idxl(:)
+      integer, allocatable  :: idx(:), idxl(:), idxshell(:)
       real(dp), allocatable :: proj(:)
       real(dp)   :: ekb, rc
       
-      real(dp), parameter  :: eps_kb=1.0d-6 ! From kbproj
-
       real(dp) :: zpseudo
       character(len=10) :: relativity
       logical :: spin_polarized
+
+      integer :: jk, pjk, ij, seq, nshells, n_within_shell
+      real(dp) :: j
+      character(len=2) :: jstr
+      !------------------------
 
       write(6,"(a)") "Reading KB projs from "
      $                    // trim(atm_label)// " psml data"
@@ -2864,48 +2897,77 @@ C
          call die("Zval mismatch in psml file")
       endif
 
-      select case (trim(relativity))
+      if (lj_projs) then
+         select case (trim(relativity))
+         case ("no", "scalar")
+            call die("The PSML file does not contain lj projs")
+         case ("dirac")
+            call ps_Projector_Filter(ps,set=SET_LJ,number=nlj,
+     $           indexes=idx)
+            if (nlj == 0) then
+               call die("The PSML file does not contain lj projs")
+            endif
+            write(6,"(a)") "Using lj projectors in PSML file"
 
-      case ("scalar")
-          call ps_Projector_Filter(ps,set=SET_SREL,number=nscalar,
-     $                                indexes=idx)
-          if (nscalar == 0)
-     $         call die("Cannot find scalar-relativistic projectors")
+         end select
 
-       case ("dirac")
-          call ps_Projector_Filter(ps,set=SET_SREL,number=nscalar,
-     $                                indexes=idx)
-          if (nscalar == 0) then
-             call ps_Projector_Filter(ps,set=SET_LJ,number=nlj,
-     $            indexes=idx)
-             if (nlj > 0) then
-                call die("LJ projectors available in PSML file, " //
-     $               "but generation of scalar-relativistic part" //
-     $               "is not available yet.")
-             else
-                call die("Cannot find scalar-relativistic projectors")
-             endif
-          endif
+      else   ! we want only "spatial" projectors
+      
+         select case (trim(relativity))
+
+         case ("scalar")
+            call ps_Projector_Filter(ps,set=SET_SREL,number=nscalar,
+     $           indexes=idx)
+            if (nscalar == 0)
+     $           call die("Cannot find scalar-relativistic projectors")
+            write(6,"(a)")
+     $           "Using scalar-relativistic projectors in PSML file"
+         case ("dirac")
+            call ps_Projector_Filter(ps,set=SET_SREL,number=nscalar,
+     $           indexes=idx)
+            if (nscalar == 0) then
+               call ps_Projector_Filter(ps,set=SET_LJ,number=nlj,
+     $              indexes=idx)
+               if (nlj > 0) then
+                  call die("LJ projectors available in PSML file, " //
+     $                 "but generation of scalar-relativistic part" //
+     $                 "is not available yet.")
+               else
+                  call die("Cannot find scalar-relativistic projectors")
+               endif
+            endif
+            write(6,"(a)")
+     $           "Using (derived) scalar-relativistic " //
+     $           "projectors in PSML file"
                 
-       case ("no")
-          if (spin_polarized) then
-             call ps_Projector_Filter(ps,set=SET_SPINAVE,
-     $                                indexes=idx,number=nscalar)
-             if (nscalar == 0)
-     $         call die("Cannot find spin-averaged projectors")
-          else
-             call ps_Projector_Filter(ps,set=SET_NONREL,
-     $                                indexes=idx,number=nscalar)
-             if (nscalar == 0)
-     $            call die("Cannot find non-relativistic projectors")
-          endif
-       end select
-          
-       write(6,'(/,a)') 'PSML: Kleinman-Bylander projectors: '
+         case ("no")
+            if (spin_polarized) then
+               call ps_Projector_Filter(ps,set=SET_SPINAVE,
+     $              indexes=idx,number=nscalar)
+               if (nscalar == 0)
+     $              call die("Cannot find spin-averaged projectors")
+               write(6,"(a)")
+     $           "Using spin-averaged " //
+     $           "projectors in PSML file"
+            else
+               call ps_Projector_Filter(ps,set=SET_NONREL,
+     $              indexes=idx,number=nscalar)
+               if (nscalar == 0)
+     $              call die("Cannot find non-relativistic projectors")
+               write(6,"(a)")
+     $           "Using non-relativistic " //
+     $           "projectors in PSML file"
+            endif
+         end select
+         
+      endif
 
-       lmxkb = lmxkb_true       ! set to 'in' value
-       n_pjnl = 0
-       do l = 0, lmxkb
+      ! Now 'idx' contains the set of projectors we want
+
+      lmxkb = lmxkb_true        ! set to 'in' value
+      n_pjnl = 0
+
+      do l = 0, lmxkb
           call ps_Projector_Filter(ps,indexes_in=idx,l=l,
      $                             indexes=idxl,number=nkbl)
           if (nkbl > nkbmx) then
@@ -2922,24 +2984,96 @@ C
           write(6,'(/,a, i4)') 'PSML: lmxkb redefined to: ', lmxkb_true
        endif
 
+       write(6,'(/,a)') 'PSML: Kleinman-Bylander projectors: '
+
        ! Prepare data structures
        allocate(spp%pjnl(n_pjnl))   
        ! zero out for build-up in comkb
        spp%n_pjnl = 0
        spp%nprojs = 0
+       spp%lj_projs = lj_projs
 
        allocate(proj(nrval))
 
        do l = 0, lmxkb
           call ps_Projector_Filter(ps,indexes_in=idx,l=l,
-     $                             indexes=idxl,number=nkbl)
+     $         indexes=idxl,number=nkbl)
+
+          ! Find out how many shells for this l
+          nshells = 0
           do ikb = 1, nkbl
-             call ps_Projector_Get(ps,idxl(ikb),ekb=ekb)
-             ekb = 2.0_dp * ekb
+             call ps_Projector_Get(ps,idxl(ikb),seq=seq)
+             nshells = max(nshells,seq)
+          enddo
+
+          ikb = 0
+          do seq = 1, nshells
+             call ps_Projector_Filter(ps,indexes_in=idxl,seq=seq,
+     $            indexes=idxshell,number=n_within_shell)
+             ! This loop would be effectively over different js
+             ! for the lj case, or will have extent one for the normal case.
+             do ij = 1, n_within_shell
+
+                ikb = ikb + 1   ! Update counter
+
+                call ps_Projector_Get(ps,idxshell(ij),ekb=ekb)
+                ekb = 2.0_dp * ekb
+
+                jstr = " "
+                if (lj_projs) then
+                   call ps_Projector_Get(ps,idxshell(ij),j=j)
+                   pjk = nint(2*(j-l)) !  -1 for l-1/2; +1 for l+1/2
+                   jk = 1 + ( pjk + 1 ) / 2 ! 1 or 2
+                   if (jk == 1) then
+                      jstr = "j-"
+                   elseif (jk == 2) then
+                      jstr = "j+"
+                   endif
+                   if (l==0) then
+                      jk = 1    ! special case
+                      jstr = " "
+                   endif
+                endif
+
+                do ir = 2, nrval
+                   proj(ir) =
+     $                  ps_Projector_Value(ps,idxshell(ij),rofi(ir))
+                enddo
+
+                call get_normalized_proj(l,nrc,rc,proj)
+
+                !     Print info
+                write(6,'(a2,1x,a,i2,2(3x,a,f10.6))') jstr,
+     .               'l=',l, 'rc=',rc, 'Ekb=',ekb
+
+                ! Store in common block
+                call comKB(is,a,b,rofi,proj,l,lj_projs,jk,ikb,
+     $               rc,ekb,nrc,spp)
+
+             enddo     ! "j" values within shell 
+          enddo    ! shells with the given l
+       enddo    ! l
+       
+       write(6,'(/,a, i4)')
+     .'PSML: Total number of  Kleinman-Bylander projectors:', spp%nprojs
+
+       deallocate(proj)
+
+       CONTAINS
+
+       subroutine get_normalized_proj(l,nrc,rc,proj)
+       integer, intent(in)   :: l
+       integer, intent(out)  :: nrc
+       real(dp), intent(out) :: rc
+       real(dp), intent(inout) :: proj(:)
+       
+       integer :: ir
+       real(dp), parameter  :: eps_kb=1.0d-6 ! From kbproj
+
+       
              ! Projs are stored as P/r**l in the tables
              do ir = 2, nrval
-                proj(ir) = ps_Projector_Value(ps,idxl(ikb),rofi(ir))
-     $                        / (rofi(ir)**l)
+                proj(ir) = proj(ir) / (rofi(ir)**l)
              enddo
              ! Since we have divided by r**l, proj should go
              ! as a + b*r^2 near the origin.
@@ -2954,34 +3088,21 @@ C
              enddo
              nrc = ir + 1
              rc = rofi(nrc)
+       end subroutine get_normalized_proj
+      
+       end subroutine get_psml_kbprojs
 
-             ! Print info
-             write(6,'(3x,a,i2,2(3x,a,f10.6))')
-     .                  'l=',l, 'rc=',rc, 'Ekb=',ekb
-             ! Store in common block
-             call comKB(is,a,b,rofi,proj,l,ikb,rc,ekb,nrc,spp)
-          enddo
-       enddo
-
-       
-       write(6,'(/,a, i4)')
-     .'PSML: Total number of  Kleinman-Bylander projectors:', spp%nprojs
-
-       deallocate(proj)
-
-       CONTAINS
-
-        function extrapolate_to_zero(x,f) result (val)
+       function extrapolate_to_zero(x,f) result (val)
         real(dp), intent(in), dimension(:)  :: x, f
         real(dp)                            :: val
 
         ! Simple linear extrapolation
         val = f(2) + (f(3)-f(2))*(x(1)-x(2))/(x(3)-x(2))
 
-        end function extrapolate_to_zero
-       end subroutine get_psml_kbprojs
-
-!
+       end function extrapolate_to_zero
+!----------------------------------------------------------------
+!----------------------------------------------------------------
+!     
         subroutine Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                       vps, ve, vePAO, nrval, lmxo,nsemic, 
      .                       nzeta, rco, lambda, polorb, basis_type,

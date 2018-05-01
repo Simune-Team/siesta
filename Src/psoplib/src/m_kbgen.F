@@ -17,13 +17,14 @@
 ! ----------------------------------------------------------------------
 
       subroutine KBgen( is, a, b, rofi, drdi, s, 
-     .                  vps, vlocal, ve, nrval, Zval, lmxkb, 
+     .                  vps, vps_u, vlocal, ve, nrval, Zval, lmxkb, 
      .                  nkbl, erefkb, nkb,
      $                  new_kb_reference_orbitals,
      $                  restricted_grid,
      $                  debug_kb_generation,
      $                  ignore_ghosts,
      $                  kb_rmax,
+     $                  lj_projs,
      $                  kbgen_preamble,
      $                  process_proj,
      $                  shifted_erefkb)
@@ -51,6 +52,9 @@
       real(dp), intent(in) :: rofi(nrmax)   ! Radial logarithmic grid
       real(dp), intent(in) :: vps(nrmax,0:lmaxd)  
                                             ! Semilocal components of the 
+                                            !   pseudopotential (average)
+      real(dp), intent(in) :: vps_u(nrmax,0:lmaxd)  
+                                            ! SO semilocal components of the 
                                             !   pseudopotential
       real(dp), intent(in) :: drdi(nrmax)   ! Distance between consecutive 
                                             !   points of the logarithmic grid. 
@@ -76,16 +80,19 @@
       logical, intent(in)  :: debug_kb_generation
       logical, intent(in)  :: ignore_ghosts
       real(dp), intent(in) :: kb_rmax
+      logical, intent(in)  :: lj_projs      ! Generate fully relativistic projs
       logical, intent(in), optional :: shifted_erefkb(nkbmx,0:lmaxd)
       
       interface
-         subroutine process_proj(l,ikb,ekb,nrc,erefkb,dkbcos,
-     $                           nrval,rofi,proj)
+         subroutine process_proj(l,lj_projs,jk,ikb,ekb,nrc,
+     $                           erefkb,dkbcos,nrval,rofi,proj)
 
          ! Custom routine to process the information about each projector
 
          integer, parameter   :: dp = selected_real_kind(10,100)
          integer, intent(in)  :: l
+         logical, intent(in)  :: lj_projs
+         integer, intent(in)  :: jk
          integer, intent(in)  :: ikb
          integer, intent(in)  :: nrc
          real(dp), intent(in) :: ekb
@@ -99,26 +106,28 @@
       end interface
 
       interface
-         subroutine kbgen_preamble(n_pjnl)
+         subroutine kbgen_preamble(n_pjnl,nkbs_tot)
          integer, intent(in) :: n_pjnl
+         integer, intent(in) :: nkbs_tot
          end subroutine kbgen_preamble
       end interface
 
 
 !     Internal variables
-      integer 
-     .  l,nprin, nnodes, ighost, nrwf, ikb, ir,
-     .  nrc, nrlimit, n_pjnl
-      real(dp)
-     .  rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
-     .  ekb(nkbmx,0:lmaxd)
-               
-      real(dp)
-     .  rphi(nrmax,nkbmx), rmax, dnrm, 
-     .  proj(nrmax)
 
-      character(len=20) :: filename = ""
-                
+      real(dp), allocatable :: rphi2(:,:,:), vii(:,:)
+      real(dp), allocatable :: rphi(:,:,:)
+      real(dp), allocatable :: eref(:,:)
+        
+      integer 
+     .  l,nprin, nnodes, ighost, nrwf, ikb, ir, jk, nj, nkbs_tot,
+     .  nrc, nrlimit, n_pjnl
+      real(dp) :: rc, dkbcos, ekb
+               
+      real(dp) :: rmax, dnrm, proj(nrmax), vp(nrmax)
+      character(len=2) :: jstr
+      logical :: multiple_projectors
+
 !     The atomic wavefunctions and/or its energy derivatives are
 !     calculated only inside a sphere of radius Rmax. To define the
 !     KB projectors they will not be needed very far from the nucleus,
@@ -174,29 +183,76 @@
      .    ' nrwf, nrval, nrlimit = ', nrwf, nrval, nrlimit
       endif
 
+      nkbs_tot = 0
       n_pjnl = 0
-      do l = 0, lmxkb
-         n_pjnl = n_pjnl + nkbl(l)
-      enddo
-      call kbgen_preamble(n_pjnl)
-         
-!     Compute the atomic wavefunctions and eigenvalues
-!     for the construction of the KB projectors
-!
+        do l = 0, lmxkb
+           do ikb = 1, nkbl(l)
+              n_pjnl = n_pjnl + 1
+              nkbs_tot = nkbs_tot + (2*l+1)
+              if (lj_projs .and. l>0) then  ! j=l+1/2 and j=l-1/2 shells
+                 n_pjnl = n_pjnl + 1
+                 nkbs_tot = nkbs_tot + (2*l+1)
+              endif
+           enddo
+        enddo
+
+      call kbgen_preamble(n_pjnl,nkbs_tot)
+
+      
+      
+        write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
+
+        multiple_projectors = .false.
+
+        if (lj_projs) then
+           nj = 2
+        else
+           nj = 1
+        endif
+
+        ! Some output related to ghosts might be changed
+        ! Note ordering of projectors
+        ! Independent projector stacks for different j's
+        allocate (rphi2(nrmax,nkbmx,nj), vii(nkbmx,nj))
+        ! For the derivative option, we need a previous projector
+        ! and the previous reference energy
+        allocate (rphi(nrmax,nkbmx,nj))
+        allocate (eref(nkbmx,nj))
+        
 !     Loop over all the angular momenta for which we are going to compute
 !     a KB projector
-      do l = 0, lmxkb  
-!       Initialize the atomic wavefunction and the KB projector
-        do ir = 1, nrmax
-          do ikb = 1, nkbmx
-            rphi(ir,ikb) = 0.0d0
-          enddo 
-          proj(ir) = 0.0d0
-        enddo
+      do l = 0, lmxkb
+         rphi(:,:,:) = 0.0_dp
+
 !       For a given angular momentum, more than one KB projector 
 !       might be generated
-        do ikb = 1, nkbl(l)
- 
+         do ikb = 1, nkbl(l)
+            
+           do jk = 1, nj        ! j-, j+
+
+             if (jk == 2 .and. l==0) CYCLE  ! only one proj for l=0
+             if (lj_projs .and. l>0 ) then
+              ! Set up the appropriate potential and label
+              if (jk == 1) then
+                 ! V(l-j/2) = Vdn - (l+1)/2 Vup = Vion - (l+1)/2 Vso
+                 vp(:) = vps(:,l) - 0.5_dp*(l+1)*vps_u(:,l)
+                 jstr = 'j-'
+              else
+                 ! V(l+1/2) = Vdn + l/2 Vup = Vion + l/2 Vso
+                 vp(:) = vps(:,l) + 0.5_dp*l*vps_u(:,l)
+                 jstr = 'j+'
+              endif
+             else
+              vp(:) = vps(:,l)
+              jstr = '  '
+             endif
+             proj(:) = 0.0_dp
+
+! Atomic wavefunctions and eigenvalues
+! for the construction of the KB projectors
+
+! We use the same user-entered reference energies for both j's
+             
 !         If the reference energies have not been specifed, the eigenstates
 !         with the condition of being zero at 'nrlimit' will be used.
 !         If the 'new-convention' is used, 'nrlimit' will by default be moved
@@ -210,43 +266,52 @@
           if( erefkb(ikb,l) .ge. 1.0d3 ) then             
             nnodes = ikb
             nprin  = l+1
-            call schro_eq( Zval, rofi, vps(1,l), ve, s, drdi,
-     .                     nrlimit, l, a, b, nnodes, nprin,
-     .                     erefkb(ikb,l), rphi(1,ikb) ) 
+            ! use eref to avoid overwriting erefkb(,) for next j
+            call schro_eq(Zval,rofi,vp,ve,s,drdi,
+     .                     nrlimit,l,a,b,nnodes,nprin,
+     .                     eref(ikb,jk),rphi(1,ikb,jk))
 
 !     Normalization of the eigenstates inside a sphere of radius Rmax
 !     This should be 'nrlimit', but really the sphere used for the
 !     KB calculations is arbitrary, as long as it is large enough.
 !     Below, in the call to 'kbproj', nrwf is used
-            
-            dnrm = 0.0d0
-            do ir = 1, nrwf
-              dnrm =dnrm + drdi(ir) * rphi(ir,ikb)**2
-            enddo 
-            dnrm = sqrt(dnrm)
-            do ir = 1, nrwf
-              rphi(ir,ikb) = rphi(ir,ikb)/dnrm
-            enddo 
 
-!           If the energy is specified to be 1000 Ry, the energy derivative
-!           of the previous wavefunction will be used
-          elseif( (erefkb(ikb,l) .le. -1.0d3) .and. (ikb .gt. 1) ) then 
-            call energ_deriv( a, rofi, rphi(1,ikb-1), vps(1,l),
-     .                        ve, drdi, nrwf, l, erefkb(ikb-1,l),
-     .                        rphi(1,ikb), nrval )
-            erefkb(ikb,l) = 0.0d0
-!         If the reference energies have been specified, we just use them
-          else 
+             dnrm=0.0d0
+             do ir=1,nrwf
+               dnrm=dnrm+drdi(ir)*rphi(ir,ikb,jk)**2
+             enddo
+             dnrm=sqrt(dnrm)
+             do ir=1,nrwf
+               rphi(ir,ikb,jk)=rphi(ir,ikb,jk)/dnrm
+             enddo
+C
+           elseif((erefkb(ikb,l).le.-1.0d3).and.
+     .       (ikb.gt.1) ) then
+             ! If the energy is specified to be 1000 Ry, the energy
+             ! derivative of the previous wavefunction will be used
+             call energ_deriv(a,rofi,rphi(1,ikb-1,jk),vp(1),
+     .                        ve,drdi,nrwf,l,eref(ikb-1,jk),
+     .                        rphi(1,ikb,jk),nrval)
+             eref(ikb,jk)=0.0_dp
+
+           else
+             ! If the reference energies have been specified, we just
+             ! use them
              if (present(shifted_erefkb)) then
                 if (shifted_erefkb(ikb,l)) then
                    ! Reference energies are given as deltas with respect to
                    ! the first shell
-                   erefkb(ikb,l) = erefkb(1,l) + erefkb(ikb,l)
+                   if (jk == 1) then   ! change only for the first j and keep
+                      erefkb(ikb,l) = erefkb(1,l) + erefkb(ikb,l)
+                   endif
                 endif
              endif
-             call rphi_vs_e( a, b, rofi, vps(1,l),
-     .                      ve, nrval, l, erefkb(ikb,l),
-     .                      rphi(1,ikb), Rmax )
+
+             call rphi_vs_e(a,b,rofi,vp(1),
+     .                      ve,nrval,l,erefkb(ikb,l),
+     .                      rphi(1,ikb,jk),Rmax)
+             eref(ikb,jk) = erefkb(ikb,l)
+
           endif 
 
 !         Search for the existence of ghost states
@@ -254,77 +319,69 @@
 !         Here nrwf is introduced as a variable instead of nrval
 !         (only if using the 'new-style' KB generation)          
 
-          if( nkbl(l) .eq. 1) then
-            call ghost( Zval, rofi, vps(:,l), vlocal,
-     .                  ve, s, drdi, nrlimit, l, a, b, nrwf,
-     .                  erefkb(ikb,l), rphi(:,ikb), ighost )
-          else 
-            if (ikb.eq.1)
-     .        write(6,'(a,i3,/a)') 
-     .          'KBgen: More than one KB projector for l=',l,
-     .          'KBgen: ghost states analysis will be not performed'
-          endif
+           if (nkbl(l).eq.1) then
+             call ghost(Zval,rofi,vp(:),vlocal,
+     .                  ve,s,drdi,nrlimit,l,a,b,nrwf,
+     .                  eref(ikb,jk),rphi(:,ikb,jk),ighost)
+           else
+              multiple_projectors = .true.
+           endif
 
-!         Compute the KB projectors
-          call KBproj( ikb, rofi, drdi, vps(1,l), vlocal, nrwf, l,
-     .                rphi(1,ikb), dkbcos(ikb,l), ekb(ikb,l), proj, nrc)      
+           ! Compute the KB projectors
+           ! The projector stack and vii are passed as arguments
+           ! to enable the needed loop ordering
+           call KBproj(ikb,rofi,drdi,vp,vlocal,nrwf,l,
+     .                rphi(1,ikb,jk),dkbcos,ekb,proj,nrc,
+     .                rphi2(:,:,jk),vii(:,jk))
 
-          rc(ikb,l)=rofi(nrc)
+
+           rc = rofi(nrc)
 
           ! User provided routine 
-          call process_proj(l,ikb,ekb(ikb,l),nrc,erefkb(ikb,l),
-     $                      dkbcos(ikb,l),nrval,rofi,proj)
+          call process_proj(l,lj_projs,jk,ikb,ekb,nrc,
+     $                      eref(ikb,jk),
+     $                      dkbcos,nrval,rofi,proj)
+          ! Also write
+          write(6,'(a2,1x,a,i2,4(3x,a,f10.6))') jstr,
+     .        'l=',l, 'rc=',rc, 'el=',eref(ikb,jk),
+     .         'Ekb=',ekb,'kbcos=',dkbcos
 
-!       End of the loop for all the KB projectors for a given angular shell
-        enddo 
-!     End of the loop over angular momenta shell
-      enddo   
-        
+       enddo                    ! jk
+      enddo                     ! ikb:1,nkbl
+      enddo                     ! l
+      deallocate(rphi,rphi2,vii,eref)
 
-!
-!     Write in the output information regarding the KB projector
-!
-      write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
-      do l = 0, lmxkb
-        do ikb = 1, nkbl(l)
-          write(6,'(3x,a,i2,4(3x,a,f10.6))')
-     .      'l=',l, 'rc=',rc(ikb,l), 'el=',erefkb(ikb,l), 
-     .      'Ekb=',ekb(ikb,l),'kbcos=',dkbcos(ikb,l)
-        enddo
-      enddo
-
-      if ( ighost .eq. 1 ) then
-         write(6,"(2a)")'KBgen: WARNING: ',
-     .     'Ghost states have been detected'
-         write(6,"(2a)")'KBgen: WARNING: ',
-     .     'Some parameter should be changed in the '
-         write(6,"(2a)")'KBgen: WARNING: ',
-     .     'pseudopotential generation procedure.'
-         if (ignore_ghosts) then
-           write(6,"(a)") " KBgen: *** Warning Ignored by User"
-           ighost = 0
-         else
-           call die("Found ghost states")
+        if (multiple_projectors) then
+         write(6,'(a,/a)')
+     .  'KBgen: More than one KB projector for some l shell(s)',
+     .  'KBgen: ghost-state analysis will not be performed'
+        endif
+         if (ighost.eq.1) then
+            write(6,"(2a)")'KBgen: WARNING: ',
+     .            'Ghost states have been detected'
+            write(6,"(2a)")'KBgen: WARNING: ',
+     .            'Some parameter should be changed in the '
+            write(6,"(2a)")'KBgen: WARNING: ',
+     .            'pseudopotential generation procedure.'
+            if (ignore_ghosts) then
+               write(6,"(a)") " KBgen: *** Warning Ignored by User"
+               ighost = 0
+            else
+               call die("Ghost states detected")
+            endif
          endif
-      endif
 !
-!     Compute the total number of Kleinman-Bylander projectors     
-!
-      nkb = 0
-      do l = 0, lmxkb
-        do ikb = 1, nkbl(l)
-          nkb = nkb + ( 2*l + 1 ) 
-        enddo 
-      enddo 
+      ! Set output value
+      nkb = nkbs_tot
       write(6,'(/,a, i4)')
-     .  'KBgen: Total number of  Kleinman-Bylander projectors: ', nkb
+     . 'KBgen: Total number of Kleinman-Bylander projectors:', nkb
 
       end  subroutine KBgen
 
 ! ----------------------------------------------------------------------
 
       subroutine KBproj( ikb, rofi, drdi, vps, vlocal, nrwf, l, rphi,
-     .                   dkbcos, ekb, proj, nrc )
+     .                   dkbcos, ekb, proj, nrc, rphi2, vii )
 
 !  This routine calculates the Kleinman-Bylander projector
 !  with angular momentum l.
@@ -362,16 +419,16 @@
       real(dp), intent(out) :: ekb       ! "KB energy" that explicitly 
                                          !   characterizes the strength of the 
                                          !   KB potential
-      integer,  intent(out) :: nrc       ! Cutoff radii of the KB projector
+      integer,  intent(out) :: nrc ! Cutoff radii of the KB projector
+      
+      real(dp), intent(inout) :: rphi2(:,:), vii(:)  ! Stack data
 
-! Internal variables
+!     Internal variables
       integer   ir, jkb
 
       real(dp)
      .  dnrm, vl, vphi, avgv, r, phi, dknrm,
      .  dincv, rc, sum, vij(nkbmx)
-
-      real(dp), save ::   rphi2(nrmax,nkbmx), vii(nkbmx)
 
       real(dp), parameter  :: eps=1.0d-6
 

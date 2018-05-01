@@ -30,7 +30,8 @@ Eduardo Anglada
 Thomas Archer
 Luis C. Balbas
 Xavier Blase
-Ramon Cuadrado
+Jorge I. Cerda,
+Ramon Cuadrado,
 Michele Ceriotti
 Raul de la Cruz
 Gabriel Fabricius

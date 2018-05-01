@@ -49,7 +49,7 @@ SIESTA_OBJS= bye.o precision.o m_io.o alloc.o memory_log.o memory.o pxf.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
              diag.o diag_option.o \
-	     debugmpi.o find_kgrid.o units.o
+	     debugmpi.o find_kgrid.o units.o m_cite.o
 
 # Siesta timings
 SIESTA_OBJS += m_walltime.o timer_tree.o m_timer.o timer.o
@@ -437,8 +437,8 @@ m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
 m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
 m_sparsity_handling.o: precision.o
-m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
-m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
+m_spin.o: alloc.o files.o local_sys.o m_cite.o parallel.o precision.o units.o
+m_spin.o: alloc.o files.o local_sys.o m_cite.o parallel.o precision.o units.o
 m_timer.o: local_sys.o m_io.o m_walltime.o moreParallelSubs.o parallel.o
 m_timer.o: precision.o
 m_timer.o: local_sys.o m_io.o m_walltime.o moreParallelSubs.o parallel.o

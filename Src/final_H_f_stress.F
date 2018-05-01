@@ -21,8 +21,9 @@
       use siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
       use sparse_matrices, only: H, S, Dscf, Escf, maxnh, xijo
-      use sparse_matrices, only: H_ldau_2D
+      use sparse_matrices, only: H_ldau_2D, H_so_off_2D
       use class_dSpData2D, only: val
+      use class_zSpData2D, only: val
 
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
@@ -30,7 +31,7 @@
      &                    rmaxo, no_l, iza
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
-      use m_nlefsm,     only: nlefsm
+      use m_nlefsm,     only: nlefsm, nlefsm_SO_off
       use m_overfsm,    only: overfsm
       use m_kinefsm,    only: kinefsm
       use m_naefs,      only: naefs
@@ -46,8 +47,8 @@
       use m_energies
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: spin
-      use spinorbit,      only: spinorb
+      use m_spin,          only: spin
+      use spinorbit,       only: spinorb
       use m_dipol
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
@@ -91,6 +92,8 @@
       real(dp), pointer     :: H_tmp(:,:) => null()
       real(dp), pointer     :: S_tmp(:) => null()  
       real(dp), pointer     :: H_ldau(:,:)
+      complex(dp), pointer  :: H_so_off(:,:)
+
 #ifdef FINAL_CHECK_HS
       real(dp) :: diff_H, diff_S
 #endif
@@ -98,6 +101,7 @@
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
       real(dp)              :: buffer1
+      integer               :: MPIerror 
 #endif
       character(len=label_length+13) :: fname
       integer :: io_istep, io_ia1
@@ -106,6 +110,8 @@
       type(dict) :: dic_save
 #endif
 #endif
+
+
 !------------------------------------------------------------------------- BEGIN
 
 !     Initialize Hamiltonian ........................................
@@ -158,28 +164,42 @@
 ! ..................
 
 ! Non-local-pseudop: energy, forces, stress and matrix elements .......
-      call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
-     &             maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
-     &             numh, listhptr, listh, numh, listhptr, listh, 
-     &             spin%spinor, Dscf, Enl, fal, stressl, H_tmp,
-     &             matrix_elements_only=.false. ) 
+
+      Eso = 0.0_dp
+      
+      if ( .not.spin%SO_offsite ) then
+       call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
+     &              maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
+     &              numh, listhptr, listh, numh, listhptr, listh, 
+     &              spin%spinor, Dscf, Enl, fal, stressl, H_tmp,
+     &              matrix_elements_only=.false. ) 
 
 #ifdef MPI
 ! Global reduction of energy terms
-      call globalize_sum(Enl,buffer1)
-      Enl = buffer1
+       call globalize_sum(Enl,buffer1)
+       Enl = buffer1
 #endif
+      else
+        H_so_off => val(H_so_off_2D)
+       call nlefsm_SO_off(scell, na_u, na_s, isa, xa, indxua,
+     &                maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
+     &                numh, listhptr, listh, numh, listhptr, listh,
+     &                spin%Grid,
+     &                Enl, Eso, fal,
+     &                stressl, H_tmp, H_so_off,
+     &                matrix_elements_only=.false.)
+#ifdef MPI
+! Global reduction of energy terms
+       call globalize_sum(Enl,buffer1)
+       Enl = buffer1
+       call globalize_sum(Eso,buffer1)
+       Eso = buffer1
+#endif
+      endif
 
-! If in the future the spin-orbit routine is able to compute
-! forces and stresses, then "last" will be needed. If we are not
-! computing forces and stresses, calling it in the first iteration
-! should be enough
-!
-      if ( spin%SO ) then
+      if ( spin%SO_onsite ) then
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_tmp(:,3:),Eso)
-      else
-         Eso = 0._dp
       endif
       
 !     Non-SCF part of total energy
@@ -276,7 +296,8 @@
      &        diff_S
       end if
 #endif
-      
+
+      ! TODO I am not sure this works with SO_offsite?
       if (recompute_H_after_scf) then
          if (ionode) then
             write(6,"(a)") ":!: Updating H after scf cycle" //

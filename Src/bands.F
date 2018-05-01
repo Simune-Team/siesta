@@ -366,7 +366,7 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use writewave,    only : wfs_filename
 
-      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
+      use m_spin,       only: spin 
 
       use m_diag_option, only: ParallelOverK, Serial
       use m_diag, only: diag_init
@@ -459,7 +459,7 @@ C     Allocate local arrays - only aux is relevant here
       endif
 
 C Find the band energies
-      if (NoMagn .or. SPpol) then
+      if ( spin%none .or. spin%Col ) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
         qs(1) = 0.0_dp
         qs(2) = 0.0_dp
@@ -488,7 +488,7 @@ C Handle parallel over K points option which is not allowed for here
         ParallelOverK = SaveParallelOverK
         if ( ParallelOverK ) Serial = .true.
 
-      elseif ( NonCol ) then
+      elseif ( spin%NCol ) then
          if (getPSI) then
             if (node==0) then
                write(6,*) "No WFS for non-colinear spin, yet..."
@@ -503,7 +503,7 @@ C Handle parallel over K points option which is not allowed for here
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              no_u, occtol, 1, no_u )
 
-      elseif ( SpOrb ) then
+      elseif ( spin%SO ) then
         if (getPSI) then
            if (node==0) then
               write(6,*) "No WFS for spin-orbit, yet..."
