@@ -124,7 +124,13 @@ A list of the currently implemented features are:
   \item Projected transmission of eigenstates
 
   \item Orbital resolved ``bond-currents'' which may subsequently be
-  analyzed to yield actual bond-currents.
+  analyzed to yield actual bond-currents
+
+  \item Density matrices using the Green function and/or the
+  spectral density
+  
+  \item COOP and COHP curves using the Green function and/or the
+  spectral density.
   
 \end{itemize}
 
@@ -800,7 +806,30 @@ region via this simple expression
 \end{equation}
 where the sum is over all electrodes, $\mathbf G$ and $\mathbf A$ are
 the Green and spectral function, respectively. Note that typically
-$\rho_{\mathrm{bound-states}}=0$. 
+$\rho_{\mathrm{bound-states}}=0$.
+
+The below two options enables the calculation of the energy resolved
+density matrices. In effect they may be used to construct
+$\mathrm{LDOS}(E)$ profiles using \sisl.
+
+\begin{fdflogicalF}{TBT.DM!Gf}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate the energy and $k$-resolved density matrix for the Green
+  function. The density matrix may be used to construct 
+  real-space LDOS profiles.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.DM!A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate the energy and $k$-resolved density matrix for the
+  electrode spectral functions. The density matrix may be used to
+  construct real-space LDOS profiles.
+  
+\end{fdflogicalF}
+
 
 In addition to the DOS analysis of the Green and spectral functions,
 the Crystal Orbital Overlap Population and Crystal Orbital Hamilton
@@ -1934,23 +1963,17 @@ Several fdf-flags control how \tbtrans\ performs IO.
 
   Specify the precision used for storing DOS in NetCDF4.
 
-  See \fdf{TBT.CDF!Precision}.
-  
 \end{fdfentry}
 
 \begin{fdfentry}{TBT.CDF!T.Precision}[string]<{<\fdf{TBT.CDF!Precision}>}>
 
   Specify the precision used for storing transmission function in NetCDF4.
 
-  See \fdf{TBT.CDF!Precision}.
-  
 \end{fdfentry}
 
 \begin{fdfentry}{TBT.CDF!T.Eig.Precision}[string]<{<\fdf{TBT.CDF!Precision}>}>
 
   Specify the precision used for storing transmission eigenvalues in NetCDF4.
-
-  See \fdf{TBT.CDF!Precision}.
   
 \end{fdfentry}
 
@@ -1958,7 +1981,23 @@ Several fdf-flags control how \tbtrans\ performs IO.
 
   Specify the precision used for storing orbital current in NetCDF4.
 
-  See \fdf{TBT.CDF!Precision}.
+  \note This is heavily advised to be in single precision as this may
+  easily use large amounts of disk-space if in double precision.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TBT.CDF!DM.Precision}[string]<{<\fdf{TBT.CDF!Precision}>}>
+
+  Specify the precision used for storing density matrices in NetCDF4.
+
+  \note This is heavily advised to be in single precision as this may
+  easily use large amounts of disk-space if in double precision.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TBT.CDF!COOP.Precision}[string]<{<\fdf{TBT.CDF!Precision}>}>
+
+  Specify the precision used for storing COOP and COHP curves in NetCDF4.
 
   \note This is heavily advised to be in single precision as this may
   easily use large amounts of disk-space if in double precision.
@@ -1978,7 +2017,9 @@ Several fdf-flags control how \tbtrans\ performs IO.
   NetCDF4 file using:
 \begin{shellexample}
    nccopy -d 3 siesta.TBT.nc newsiesta.TBT.nc
-\end{shellexample}
+ \end{shellexample}
+
+ \note one \emph{can not} do parallel I/O together with compression.
   
 \end{fdfentry}
 
@@ -1988,7 +2029,7 @@ Several fdf-flags control how \tbtrans\ performs IO.
   MPI processors this may increase performance. 
 
   \note this automatically sets the compression to 0 (one cannot
-  compress and perform parallel IO)
+  compress and perform parallel IO).
 
 \end{fdflogicalF}
 

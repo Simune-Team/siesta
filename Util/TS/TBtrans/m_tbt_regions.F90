@@ -774,8 +774,10 @@ contains
     use mpi_siesta, only : MPI_Comm_Self
 #endif
     use m_sparsity_handling, only : Sp_retain_region, Sp_sort, Sp_union
+#ifdef NCDF_4
     use m_tbt_delta, only: read_delta_Sp
     use m_tbt_dH, only: use_dH, dH
+#endif
 
     type(Sparsity), intent(inout) :: sp
     type(dict), intent(in) :: save_DATA
@@ -792,6 +794,7 @@ contains
 #ifdef NCDF_4
     if ( ('orb-current' .in. save_DATA) .or. &
          ('proj-orb-current' .in. save_DATA) .or. &
+         ('DM-Gf' .in. save_DATA) .or. ('DM-A' .in. save_DATA) .or. &
          ('COOP-Gf' .in. save_DATA) .or. ('COHP-Gf' .in. save_DATA) .or. &
          ('COOP-A' .in. save_DATA) .or. ('COHP-A' .in. save_DATA) ) then
 

@@ -47,6 +47,7 @@ module m_tbt_tri_scat
   public :: GF_COHP_add_dH, A_COHP_add_dH
   public :: orb_current
   public :: orb_current_add_dH
+  public :: GF_DM, A_DM
 #endif
 
   ! Used for BLAS calls (local variables)
@@ -87,7 +88,7 @@ contains
     real(dp) :: lDOS
 
 #ifdef TBTRANS_TIMING
-    call timer('GF-DOS',1)
+    call timer('Gf-DOS',1)
 #endif
 
     np = parts(Gf_tri)
@@ -146,7 +147,7 @@ contains
 !$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
-    call timer('GF-DOS',2)
+    call timer('Gf-DOS',2)
 #endif
 
   contains
@@ -291,7 +292,7 @@ contains
     integer :: no_u, br, io, ind, iind, bc
 
 #ifdef TBTRANS_TIMING
-    call timer('GF-COP',1)
+    call timer('Gf-COP',1)
 #endif
 
 #ifdef TBT_PHONON
@@ -371,7 +372,7 @@ contains
     deallocate(ph)
     
 #ifdef TBTRANS_TIMING
-    call timer('GF-COP',2)
+    call timer('Gf-COP',2)
 #endif
 
   contains
@@ -446,9 +447,9 @@ contains
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
-       ph(i-1) = cdexp(dcmplx(0._dp, &
-            k(1) * sc_off(1,i) + &
-            k(2) * sc_off(2,i) + &
+       ph(i-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,i) - &
+            k(2) * sc_off(2,i) - &
             k(3) * sc_off(3,i))) / (2._dp * Pi)
     end do
 
@@ -590,7 +591,7 @@ contains
 
     ! The COOP calculation can be written as
     !
-    !   COOP(io,jo) = - Im{ A(io,jo) * S(jo,io) * e^(ik.R) } / 2Pi
+    !   COOP(io,jo) = Re{ A(io,jo) * S(jo,io) * e^(ik.R) } / 2Pi
     ! Here we want:
     !   ADOS(io) = \sum_jo COOP(io,jo)
     ! since we know that COOP(io,jo) is the io -> jo ADOS.
@@ -706,7 +707,7 @@ contains
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
-       ph(i-1) = cdexp(dcmplx(0._dp, &
+       ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
             k(2) * sc_off(2,i) + &
             k(3) * sc_off(3,i))) / (2._dp * Pi)
@@ -1615,12 +1616,10 @@ contains
     J    => val (orb_J)
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
-    ! We do not initialize J as every entry is overwritten
-
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
-       ph(i-1) = cdexp(dcmplx(0._dp, &
+       ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
             k(2) * sc_off(2,i) + &
             k(3) * sc_off(3,i)))
@@ -1739,7 +1738,7 @@ contains
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
-       ph(i-1) = cdexp(dcmplx(0._dp, &
+       ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
             k(2) * sc_off(2,i) + &
             k(3) * sc_off(3,i)))
@@ -1851,6 +1850,165 @@ contains
     end function TO
     
   end subroutine orb_current_add_dH
+
+
+  subroutine GF_DM(sc_off,k,Gf_tri,r,pvt,spDM)
+
+    use class_Sparsity
+    use class_dSpData1D
+    use geom_helper,       only : UCORB
+
+    real(dp), intent(in) :: sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(zTriMat), intent(inout) :: Gf_tri
+    ! The region that specifies the size of spDM
+    type(tRgn), intent(in) :: r
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
+    type(dSpData1D), intent(inout) :: spDM
+
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+
+    type(Sparsity), pointer :: sp
+    complex(dp), allocatable :: ph(:)
+    complex(dp), pointer :: Gf(:)
+    real(dp), pointer :: DM(:)
+    integer :: no_u, iu, io, ind, i, ju, idx
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-DM',1)
+#endif
+
+    sp => spar(spDM)
+    DM => val(spDM)
+    call attach(sp, nrows_g=no_u, n_col=ncol, list_ptr=l_ptr, list_col=l_col)
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,i) - &
+            k(2) * sc_off(2,i) - &
+            k(3) * sc_off(3,i))) / (2._dp * Pi)
+    end do
+
+    Gf => val(Gf_tri)
+!$OMP parallel default(shared), private(iu,io,ind,i,ju,idx)
+
+    ! we need this in case the device region gets enlarged due to dH
+!$OMP workshare
+    DM(:) = 0._dp
+!$OMP end workshare
+    
+!$OMP do
+    do iu = 1, r%n
+       io = r%r(iu)
+
+#ifndef TS_NOCHECKS
+       if ( ncol(io) == 0 ) call die('Gf_DM: DM has zero columns &
+            &for at least one row')
+#endif
+
+       ! Loop on DM entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+         i = (l_col(ind) - 1) / no_u
+         ju = pvt%r(ucorb(l_col(ind), no_u))
+         idx = index(Gf_tri, iu, ju)
+         ju = index(Gf_tri, ju, iu)
+         DM(ind) = - aimag( (Gf(idx) - conjg(Gf(ju))) * ph(i) )
+
+       end do
+    end do
+!$OMP end do
+!$OMP end parallel
+
+    deallocate(ph)
+
+#ifdef TBTRANS_TIMING
+    call timer('Gf-DM',2)
+#endif
+
+  end subroutine GF_DM
+
+  subroutine A_DM(sc_off,k,A_tri,r,pvt,spDM)
+
+    use class_Sparsity
+    use class_dSpData1D
+    use geom_helper,       only : UCORB
+
+    real(dp), intent(in) :: sc_off(:,:)
+    real(dp), intent(in) :: k(3)
+    type(zTriMat), intent(inout) :: A_tri
+    ! The region that specifies the size of spDM
+    type(tRgn), intent(in) :: r
+    ! The pivoting region that transfers r%r(iu) to io
+    type(tRgn), intent(in) :: pvt
+    type(dSpData1D), intent(inout) :: spDM
+
+    integer, pointer :: ncol(:), l_ptr(:), l_col(:)
+
+    type(Sparsity), pointer :: sp
+    complex(dp), allocatable :: ph(:)
+    complex(dp), pointer :: A(:)
+    real(dp), pointer :: DM(:)
+    integer :: no_u, iu, io, ind, i, ju
+
+#ifdef TBTRANS_TIMING
+    call timer('A-DM',1)
+#endif
+
+    sp => spar(spDM)
+    DM => val(spDM)
+    call attach(sp, nrows_g=no_u, n_col=ncol, list_ptr=l_ptr, list_col=l_col)
+
+    ! Create the phases
+    allocate( ph(0:size(sc_off,dim=2)-1) )
+    do i = 1 , size(sc_off, dim=2)
+       ph(i-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,i) - &
+            k(2) * sc_off(2,i) - &
+            k(3) * sc_off(3,i))) / (2._dp * Pi)
+    end do
+
+    A => val(A_tri)
+!$OMP parallel default(shared), private(iu,io,ind,i,ju)
+
+    ! we need this in case the device region gets enlarged due to dH
+!$OMP workshare
+    DM(:) = 0._dp
+!$OMP end workshare
+    
+!$OMP do
+    do iu = 1, r%n
+       io = r%r(iu)
+
+#ifndef TS_NOCHECKS
+       if ( ncol(io) == 0 ) call die('A_DM: DM has zero columns &
+            &for at least one row')
+#endif
+
+       ! Loop on DM entries here...
+       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
+
+         i = (l_col(ind) - 1) / no_u
+         ju = pvt%r(ucorb(l_col(ind), no_u))
+         ju = index(A_tri, iu, ju)
+         DM(ind) = real(A(ju) * ph(i), dp)
+
+       end do
+    end do
+!$OMP end do
+!$OMP end parallel
+
+    deallocate(ph)
+
+#ifdef TBTRANS_TIMING
+    call timer('A-DM',2)
+#endif
+
+  end subroutine A_DM
+
 #endif
 
   subroutine insert_Self_energy(n1,n2,M,r,El,off1,off2)
@@ -1998,7 +2156,7 @@ contains
     real(dp) :: lDOS
 
 #ifdef TBTRANS_TIMING
-    call timer('GF-DOS',1)
+    call timer('Gf-DOS',1)
 #endif
 
     S  => val(S_1D)
@@ -2079,7 +2237,7 @@ contains
     end do
 
 #ifdef TBTRANS_TIMING
-    call timer('GF-DOS',2)
+    call timer('Gf-DOS',2)
 #endif
 
   end subroutine GF_DOS_loop_BTD
