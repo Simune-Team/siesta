@@ -773,7 +773,9 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
-    use m_sparsity_handling, only : Sp_retain_region, Sp_sort
+    use m_sparsity_handling, only : Sp_retain_region, Sp_sort, Sp_union
+    use m_tbt_delta, only: read_delta_Sp
+    use m_tbt_dH, only: use_dH, dH
 
     type(Sparsity), intent(inout) :: sp
     type(dict), intent(in) :: save_DATA
@@ -781,6 +783,7 @@ contains
     type(OrbitalDistribution) :: fdit
 
     integer :: no_u
+    type(Sparsity) :: sp_dH
 #endif
 
     ! Make sure to initialize the device region
@@ -798,8 +801,15 @@ contains
 #else
        call newDistribution(no_u,-1           ,fdit,name='TBT-fake dist')
 #endif
-
        call Sp_retain_region(fdit,sp,r_oDev,sp_dev_sc)
+       ! Note that the delta-Sigma is not necessary because
+       ! the self-energy does not add to bond-currents, etc.
+       if ( use_dH ) then
+         call read_delta_Sp(dH,no_u,sp_dH)
+         call Sp_retain_region(fdit,sp_dH,r_oDev,sp_dH)
+         call Sp_union(fdit,sp_dev_sc,sp_dH,sp_dev_sc)
+         call delete(sp_dH)
+       end if
        call Sp_sort(sp_dev_sc)
        call delete(fdit)
 
