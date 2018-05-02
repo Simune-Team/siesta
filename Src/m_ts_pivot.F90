@@ -314,18 +314,41 @@ contains
        call sp_pvt(n,tmp_Sp,r_pvt, PVT_PCG, c_pvt, start = r_Els, only_sub = .not. lextend )
 
 #ifdef SIESTA__METIS
-    else if ( str_contain(pvt_str,'metis+priority') ) then
-       str_tmp = trim(str_tmp)//'+metis+priority'
+    else if ( str_contain(pvt_str,'metis+priority') .or. &
+        str_contain(pvt_str,'nodend+priority') ) then
+       str_tmp = trim(str_tmp)//'+nodend+priority'
 
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt, &
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS_NODEND, c_pvt, &
             priority = priority%r)
-    else if ( str_contain(pvt_str,'metis') ) then
-       str_tmp = trim(str_tmp)//'+metis'
+    else if ( str_contain(pvt_str,'metis') .or. &
+        str_contain(pvt_str,'nodend') ) then
+       str_tmp = trim(str_tmp)//'+nodend'
 
-       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS, c_pvt)
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS_NODEND, c_pvt)
+
+     else if ( str_contain(pvt_str,'partgraphkway+priority') ) then
+       str_tmp = trim(str_tmp)//'+partgraphkway+priority'
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS_PARTGRAPHKWAY, c_pvt, &
+           priority = priority%r)
+       
+    else if ( str_contain(pvt_str,'partgraphkway') ) then
+       str_tmp = trim(str_tmp)//'+partgraphkway'
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS_PARTGRAPHKWAY, c_pvt)
+
+    else if ( str_contain(pvt_str,'partgraphrecursive+priority') ) then
+       str_tmp = trim(str_tmp)//'+partgraphrecursive+priority'
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS_PARTGRAPHRECURSIVE, c_pvt, &
+           priority = priority%r)
+       
+    else if ( str_contain(pvt_str,'partgraphrecursive') ) then
+       str_tmp = trim(str_tmp)//'+partgraphrecursive'
+
+       call sp_pvt(n,tmp_Sp,r_pvt, PVT_METIS_PARTGRAPHRECURSIVE, c_pvt)
 
 #endif
-
     else if ( str_contain(pvt_str,'CG') .or. pvt_option == PVT_NONE ) then
 
        is_rev = str_contain(pvt_str, 'rev-')

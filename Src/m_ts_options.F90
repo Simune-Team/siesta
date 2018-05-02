@@ -182,7 +182,7 @@ contains
        ts_method = TS_MUMPS
 #endif
     else
-       call die('Unrecognized Transiesta solution method: '//trim(chars))
+       call die('Unrecognized TranSiesta solution method: '//trim(chars))
     end if
 
     ! currently this does not work
@@ -251,7 +251,7 @@ contains
 
     ts_kT = fdf_get('TS.ElectronicTemperature',kT,'Ry')
     if ( ts_kT / Kelvin < 10._dp ) then
-       call die('transiesta electronic temperature *must* &
+       call die('TranSiesta electronic temperature *must* &
             &be larger than 10 kT')
     end if
     
@@ -277,7 +277,7 @@ contains
        ! We do not allow the electronic temperature
        ! to be below 10 kT
        if ( mus(i)%kT / Kelvin < 10._dp ) then
-          call die('transiesta electronic temperature *must* &
+          call die('TranSiesta electronic temperature *must* &
                &be larger than 10 kT')
        end if
        
@@ -1023,7 +1023,7 @@ contains
        end select
     end if
     if ( .not. Calc_Forces ) then
-       write(*,f11) '*** TranSIESTA will NOT update forces ***'
+       write(*,f11) '*** TranSiesta will NOT update forces ***'
     end if
 
     if ( TS_RHOCORR_METHOD == 0 ) then
@@ -1112,17 +1112,17 @@ contains
 
     write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
     if ( FixSpin .and. (TS_HS_save .or. TSmode) ) then
-       write(*,'(a)') 'Fixed spin not possible with TranSIESTA!'
+       write(*,'(a)') 'Fixed spin not possible with TranSiesta!'
        write(*,'(a)') 'Disable TS.HS.Save or FixSpin'
-       write(*,'(a)') 'Electrodes with fixed spin is not possible with Transiesta!'
-       call die('Fixing spin is not possible in transiesta')
+       write(*,'(a)') 'Electrodes with fixed spin is not possible with TranSiesta!'
+       call die('Fixing spin is not possible in TranSiesta')
     end if
 
     if ( .not. TSmode ) then
        if ( TS_HA == TS_HA_ELEC ) then
-          call die('Hartree potiental cannot use electrodes without transiesta')
+          call die('Hartree potiental cannot use electrodes without TranSiesta')
        else if ( TS_HA == TS_HA_ELEC_BOX ) then
-          call die('Hartree potiental cannot use electrodes without transiesta')
+          call die('Hartree potiental cannot use electrodes without TranSiesta')
        end if
     end if
 
@@ -1148,7 +1148,7 @@ contains
     end if
 
     if ( TS_HA == TS_HA_NONE ) then
-       write(*,'(a)') 'Hartree potiental fix REQUIRED when running transiesta'
+       write(*,'(a)') 'Hartree potiental fix REQUIRED when running TranSiesta'
        err = .true.
     end if
 
@@ -1310,17 +1310,17 @@ contains
     call contour_nEq_warnings()
     
     if ( .not. Calc_Forces ) then
-       write(*,f11) '***       TranSIESTA will NOT update forces       ***'
+       write(*,f11) '***       TranSiesta will NOT update forces       ***'
        write(*,f11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
        if ( Nmove > 0 ) then
-          write(*,'(a)')'Relaxation with transiesta *REQUIRES* an update of &
+          write(*,'(a)')'Relaxation with TranSiesta *REQUIRES* an update of &
                &the energy density matrix. Will continue at your request.'
           err = .true.
        end if
     end if
 
     if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
-       write(*,'(a)') 'transiesta relaxation is only allowed if you also &
+       write(*,'(a)') 'TranSiesta relaxation is only allowed if you also &
             &update, at least, the cross terms, please set: &
             &TS.Elecs.DM.Update [cross-terms|all]'
        err = .true.
@@ -1382,7 +1382,7 @@ contains
 
     if ( ts_tidx < 1 ) then
 
-       write(*,'(a)') '*** TranSIESTA semi-infinite directions are individual ***'
+       write(*,'(a)') '*** TranSiesta semi-infinite directions are individual ***'
        write(*,'(a)') '*** It is heavily adviced to have any electrodes with no &
             &periodicity'
        write(*,'(a)') '    in the transverse directions be located as far from any &
@@ -1626,7 +1626,7 @@ contains
        write(*,'(tr19,a)') 'TRANSIESTA REPORTED ERRORS'
        write(*,'(tr18,a)') repeat('*',30)
 
-       call die('One or more errors have occured doing transiesta &
+       call die('One or more errors have occured doing TranSiesta &
             &initialization, check the output')
     end if
     
@@ -1654,13 +1654,13 @@ contains
 
     if ( onlyS .or. .not. TSmode ) return
 
-    write(*,'(/,a,/)') '>>> Transiesta block information for FDF-file START <<<'
+    write(*,'(/,a,/)') '>>> TranSiesta block information for FDF-file START <<<'
     
     call print_mus_block( 'TS' , N_mu , mus)
     
     call print_contour_block( 'TS' , IsVolt )
     
-    write(*,'(/,a,/)') '>>> Transiesta block information for FDF-file END <<<'
+    write(*,'(/,a,/)') '>>> TranSiesta block information for FDF-file END <<<'
 
     ! write out the contour
     call io_contour(IsVolt, mus, slabel)
