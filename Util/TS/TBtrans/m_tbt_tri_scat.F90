@@ -109,8 +109,8 @@ contains
     call calc(np-1,np)
 
     ! At this point we have calculated all Green function matrices
-    ! All diagonal elements are in Gf_tri,
-    ! all off-diagonal elements are in work_tri
+    ! All diagonal elements are in Gfd_tri,
+    ! all off-diagonal elements are in Gfo_tri
 
     ! The DOS per orbital is calculated like this (.=matrix multiplication):
     !   DOS(io) = - Im[ (Gf-Gf^\dagger) . S ](io,io) / Pi
@@ -266,7 +266,7 @@ contains
   ! This routine utilizes the sparse matrix as a loop, instead of looping
   ! all BTD matrix elements.
   ! This turns out to be much faster for (at least tight-binding calculations).
-  subroutine GF_COP(r,Gfd_tri,Gfo_tri,pvt,sp,M,sc_off,k,COP)
+  subroutine GF_COP(r,Gfd_tri,Gfo_tri,pvt,sp,M,sc_off,k,ph,COP)
     use class_Sparsity
     use class_dSpData1D
     use intrinsic_missing, only : SFIND
@@ -279,12 +279,12 @@ contains
     real(dp), intent(in) :: M(:) ! S for COOP, H for COHP
     real(dp), intent(in) :: sc_off(:,:)
     real(dp), intent(in) :: k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(dSpData1D), intent(inout) :: COP ! COOP or COHP
 
     type(Sparsity), pointer :: c_sp
     real(dp), pointer :: C(:)
     complex(dp) :: GfGfd
-    complex(dp), allocatable :: ph(:)
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
     integer :: no_u, br, io, ind, iind, bc
@@ -316,7 +316,6 @@ contains
     ! Since we have to do Gf.S we simply
     ! create S(-k) (which is S^T)
     ! and thus get the correct values.
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
        ph(io-1) = cdexp(dcmplx(0._dp, - &
             k(1) * sc_off(1,io) - &
@@ -366,9 +365,6 @@ contains
 !$OMP end do
 !$OMP end parallel
 
-    ! Clean-up phases
-    deallocate(ph)
-    
 #ifdef TBTRANS_TIMING
     call timer('Gf-COP',2)
 #endif
@@ -399,7 +395,7 @@ contains
 
   end subroutine GF_COP
 
-  subroutine Gf_COHP_add_dH(dH_1D,sc_off,k,Gfd_tri,Gfo_tri,r,COHP,pvt)
+  subroutine Gf_COHP_add_dH(dH_1D,sc_off,k,ph,Gfd_tri,Gfo_tri,r,COHP,pvt)
 
     use class_Sparsity
     use class_zSpData1D
@@ -409,6 +405,7 @@ contains
 
     type(zSpData1D), intent(in) :: dH_1D
     real(dp), intent(in) :: sc_off(:,:), k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
     type(tRgn), intent(in) :: r
     type(dSpData1D), intent(inout) :: COHP
@@ -421,7 +418,6 @@ contains
     integer, pointer :: cncol(:), cptr(:), ccol(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
 
-    complex(dp), allocatable :: ph(:)
     complex(dp) :: GfGfd
     real(dp), pointer :: C(:)
     integer :: no_u, br, io, jo, i, ind, iind
@@ -441,7 +437,6 @@ contains
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
        ph(i-1) = cdexp(dcmplx(0._dp, - &
             k(1) * sc_off(1,i) - &
@@ -486,8 +481,6 @@ contains
        
     end do
 !$OMP end parallel do
-
-    deallocate(ph)
 
 #ifdef TBTRANS_TIMING
     call timer('COHP-Gf-dH',2)
@@ -548,7 +541,7 @@ contains
   ! This routine utilizes the sparse matrix as a loop, instead of looping
   ! all BTD matrix elements.
   ! This turns out to be much faster for (at least tight-binding calculations).
-  subroutine A_COP(r,A_tri,pvt,sp,M,sc_off,k,COP)
+  subroutine A_COP(r,A_tri,pvt,sp,M,sc_off,k,ph,COP)
     use class_Sparsity
     use class_dSpData1D
     use intrinsic_missing, only : SFIND
@@ -561,12 +554,12 @@ contains
     real(dp), intent(in) :: M(:) ! S for COOP, H for COHP
     real(dp), intent(in) :: sc_off(:,:)
     real(dp), intent(in) :: k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(dSpData1D), intent(inout) :: COP ! COOP or COHP
 
     type(Sparsity), pointer :: c_sp
     real(dp), pointer :: C(:)
     complex(dp), pointer :: A(:)
-    complex(dp), allocatable :: ph(:)
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
     integer :: no_u, br, io, ind, iind, bc
@@ -596,7 +589,6 @@ contains
     ! Since we have to do A.S we simply
     ! create the S(-k) (which is S^T)
     ! and thus get the correct values.
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
        ph(io-1) = cdexp(dcmplx(0._dp, - &
             k(1) * sc_off(1,io) - &
@@ -648,16 +640,13 @@ contains
 !$OMP end do
 !$OMP end parallel
 
-    ! Clean-up phases
-    deallocate(ph)
-    
 #ifdef TBTRANS_TIMING
     call timer('A-COP',2)
 #endif
 
   end subroutine A_COP
 
-  subroutine A_COHP_add_dH(dH_1D,sc_off,k,A_tri,r,COHP,pvt)
+  subroutine A_COHP_add_dH(dH_1D,sc_off,k,ph,A_tri,r,COHP,pvt)
 
     use class_Sparsity
     use class_zSpData1D
@@ -667,6 +656,7 @@ contains
 
     type(zSpData1D), intent(in) :: dH_1D
     real(dp), intent(in) :: sc_off(:,:), k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(zTriMat), intent(inout) :: A_tri
     type(tRgn), intent(in) :: r
     type(dSpData1D), intent(inout) :: COHP
@@ -679,7 +669,6 @@ contains
     integer, pointer :: cncol(:), cptr(:), ccol(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
 
-    complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: C(:)
     integer :: no_u, iu, io, i, ind, iind, jo, iA
@@ -699,7 +688,6 @@ contains
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
        ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
@@ -744,8 +732,6 @@ contains
        
     end do
 !$OMP end parallel do
-
-    deallocate(ph)
 
 #ifdef TBTRANS_TIMING
     call timer('COHP-A-dH',2)
@@ -1563,7 +1549,7 @@ contains
 
 
 #ifdef NCDF_4
-  subroutine orb_current(sp,H,S,sc_off,k,cE,A_tri,r,orb_J,pvt)
+  subroutine orb_current(sp,H,S,sc_off,k,ph,cE,A_tri,r,orb_J,pvt)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1577,6 +1563,7 @@ contains
     ! We require that the input Hamiltonian is Hermitian
     real(dp), intent(in) :: H(:), S(:), sc_off(:,:)
     real(dp), intent(in) :: k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(ts_c_idx) :: cE
     type(zTriMat), intent(inout) :: A_tri
     ! The region that specifies the size of orb_J
@@ -1589,7 +1576,6 @@ contains
     integer, pointer :: i_ncol(:), i_ptr(:), i_col(:), icol(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
-    complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: A(:)
     complex(dp) :: Hi
     real(dp), pointer :: J(:)
@@ -1611,7 +1597,6 @@ contains
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
        ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
@@ -1678,15 +1663,13 @@ contains
 !$OMP end do
 !$OMP end parallel
 
-    deallocate(ph)
-
 #ifdef TBTRANS_TIMING
     call timer('orb-current',2)
 #endif
 
   end subroutine orb_current
   
-  subroutine orb_current_add_dH(dH_1D,sc_off,k,A_tri,r,orb_J,pvt)
+  subroutine orb_current_add_dH(dH_1D,sc_off,k,ph,A_tri,r,orb_J,pvt)
 
     use class_Sparsity
     use class_zSpData1D
@@ -1696,6 +1679,7 @@ contains
 
     type(zSpData1D), intent(in) :: dH_1D
     real(dp), intent(in) :: sc_off(:,:), k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(zTriMat), intent(inout) :: A_tri
     ! The region that specifies the size of orb_J
     type(tRgn), intent(in) :: r
@@ -1709,7 +1693,6 @@ contains
     integer, pointer :: i_ncol(:), i_ptr(:), i_col(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
 
-    complex(dp), allocatable :: ph(:)
     complex(dp) :: p
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
@@ -1730,7 +1713,6 @@ contains
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do i = 1 , size(sc_off, dim=2)
        ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
@@ -1810,8 +1792,6 @@ contains
     end do
 !$OMP end parallel do
 
-    deallocate(ph)
-
 #ifdef TBTRANS_TIMING
     call timer('orb-current-dH',2)
 #endif
@@ -1846,7 +1826,7 @@ contains
   end subroutine orb_current_add_dH
 
 
-  subroutine GF_DM(sc_off,k,Gfd_tri,Gfo_tri,r,pvt,spDM)
+  subroutine GF_DM(sc_off,k,ph,Gfd_tri,Gfo_tri,r,pvt,spDM)
 
     use class_Sparsity
     use class_dSpData1D
@@ -1854,6 +1834,7 @@ contains
 
     real(dp), intent(in) :: sc_off(:,:)
     real(dp), intent(in) :: k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
     ! The region that specifies the size of spDM
     type(tRgn), intent(in) :: r
@@ -1864,7 +1845,6 @@ contains
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
     type(Sparsity), pointer :: sp
-    complex(dp), allocatable :: ph(:)
     real(dp), pointer :: DM(:)
     complex(dp) :: GfGfd
 
@@ -1879,7 +1859,6 @@ contains
     call attach(sp, nrows_g=no_u, n_col=ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
        ph(io-1) = cdexp(dcmplx(0._dp, - &
             k(1) * sc_off(1,io) - &
@@ -1915,8 +1894,6 @@ contains
 !$OMP end do
 !$OMP end parallel
 
-    deallocate(ph)
-
 #ifdef TBTRANS_TIMING
     call timer('Gf-DM',2)
 #endif
@@ -1947,7 +1924,7 @@ contains
     
   end subroutine GF_DM
 
-  subroutine A_DM(sc_off,k,A_tri,r,pvt,spDM)
+  subroutine A_DM(sc_off,k,ph,A_tri,r,pvt,spDM)
 
     use class_Sparsity
     use class_dSpData1D
@@ -1955,6 +1932,7 @@ contains
 
     real(dp), intent(in) :: sc_off(:,:)
     real(dp), intent(in) :: k(3)
+    complex(dp), intent(inout) :: ph(0:)
     type(zTriMat), intent(inout) :: A_tri
     ! The region that specifies the size of spDM
     type(tRgn), intent(in) :: r
@@ -1965,7 +1943,6 @@ contains
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
 
     type(Sparsity), pointer :: sp
-    complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: DM(:)
     integer :: no_u, iu, io, ind, ju
@@ -1979,7 +1956,6 @@ contains
     call attach(sp, nrows_g=no_u, n_col=ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
     do io = 1 , size(sc_off, dim=2)
        ph(io-1) = cdexp(dcmplx(0._dp, - &
             k(1) * sc_off(1,io) - &
@@ -2015,8 +1991,6 @@ contains
     end do
 !$OMP end do
 !$OMP end parallel
-
-    deallocate(ph)
 
 #ifdef TBTRANS_TIMING
     call timer('A-DM',2)

@@ -200,7 +200,7 @@ contains
     integer :: nGFGGF ! For the triple-product
     complex(dp), pointer :: GFGGF_work(:) => null()
     integer :: ntt_work
-    complex(dp), pointer :: tt_work(:), eig(:)
+    complex(dp), pointer :: tt_work(:), eig(:), phase(:)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -446,14 +446,6 @@ contains
     end if
 
     
-    ! Note that padding is the extra size to be able to calculate
-    ! the spectral function in the BTD format
-
-    ! We allocate for the matrix
-    call print_memory('LHS',pad_LHS)
-    call newzTriMat(zwork_tri,DevTri%n,DevTri%r,'GFinv', &
-         padding = pad_LHS )
-
     ! The RHS will be the array that retains the 
     ! self-energies and nothing more.
     ! Here we pad with the missing elements to contain
@@ -470,10 +462,25 @@ contains
     ! this is only preferred in tbtrans as there might be 
     ! padding any-way.
     pad_RHS = max(pad_RHS,nGFGGF)
+
+    ! Ensure that at least one of the work arrays has
+    ! elements for the few supercells
+    io = product(TSHS%nsc)
+    if ( pad_LHS < io .and. pad_RHS < io ) then
+      pad_LHS = io
+    end if
     
+    ! Note that padding is the extra size to be able to calculate
+    ! the spectral function in the BTD format
+
+    ! We allocate for the matrix
+    call print_memory('LHS',pad_LHS)
+    call newzTriMat(zwork_tri,DevTri%n,DevTri%r,'GFinv', &
+         padding = pad_LHS )
+
     call print_memory('RHS',pad_RHS)
     call newzTriMat(GF_tri,DevTri%n,DevTri%r,'GF', &
-         padding = pad_RHS )
+        padding = pad_RHS )
 
     ! Create the work-array...
     zwork   => val(zwork_tri,all=.true.)
@@ -481,12 +488,23 @@ contains
     Gfwork  => val(Gf_tri,all=.true.)
     nGfwork =  size(Gfwork)
     if ( nGfwork > nzwork ) then
-       nmaxwork = nGfwork
-       maxwork => Gfwork(:)
+      nmaxwork = nGfwork
+      maxwork => Gfwork(:)
     else
-       nmaxwork = nzwork
-       maxwork => zwork(:)
+      nmaxwork = nzwork
+      maxwork => zwork(:)
     end if
+
+    ! Create phase array
+    io = product(TSHS%nsc)
+    if ( pad_LHS >= io ) then
+      phase => zwork(nzwork-io+1:)
+    else if ( pad_RHS >= io ) then
+      phase => Gfwork(nGfwork-io+1:)
+    else
+      call die('Error in coding! Phase size!')
+    end if
+
 
     ! Point the work-array for eigenvalue calculation
     if ( N_eigen > 0 ) then
@@ -1022,20 +1040,20 @@ contains
              
 #ifdef NCDF_4
              if ( calc_DM_Gf ) then
-               call Gf_DM(TSHS%sc_off,kpt,Gf_tri,zwork_tri,r_oDev,pvt, dev_M)
+               call Gf_DM(TSHS%sc_off,kpt,phase,Gf_tri,zwork_tri,r_oDev,pvt, dev_M)
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M)
              end if
              if ( calc_COOP_Gf ) then
                 call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
-                     TSHS%sp,S,TSHS%sc_off, kpt, dev_M)
+                     TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
                 call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M)
              end if
              if ( calc_COHP_Gf ) then
                 call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
-                     TSHS%sp,H,TSHS%sc_off, kpt, dev_M)
+                     TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
                 if ( dH%lvl > 0 ) then
-                   call GF_COHP_add_dH(dH%d, TSHS%sc_off, &
-                        kpt, Gf_tri, zwork_tri, r_oDev, dev_M, pvt)
+                   call GF_COHP_add_dH(dH%d, TSHS%sc_off, kpt, &
+                       phase, Gf_tri, zwork_tri, r_oDev, dev_M, pvt)
                 end if
                 call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M)
              end if
@@ -1128,22 +1146,22 @@ contains
                 
 #ifdef NCDF_4
                 if ( calc_DM_A ) then
-                   call A_DM(TSHS%sc_off,kpt,zwork_tri,r_oDev,pvt, dev_M)
+                   call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
                    call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M, &
                          Elecs(iEl))
                 end if
                 if ( calc_COOP_A ) then
                    call A_COP(r_oDev,zwork_tri,pvt, &
-                        TSHS%sp,S,TSHS%sc_off, kpt, dev_M)
+                        TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
                    call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M, &
                         Elecs(iEl))
                 end if
                 if ( calc_COHP_A ) then
                    call A_COP(r_oDev,zwork_tri,pvt, &
-                        TSHS%sp,H,TSHS%sc_off, kpt, dev_M)
+                        TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
                    if ( dH%lvl > 0 ) then
                       call A_COHP_add_dH(dH%d, TSHS%sc_off, &
-                           kpt, zwork_tri, r_oDev, dev_M, pvt)
+                           kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                    end if
                    call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M, &
                         Elecs(iEl))
@@ -1153,16 +1171,16 @@ contains
 
 #ifdef TBT_PHONON
                    call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                        kpt, &
+                        kpt, phase, &
                         cOmega,zwork_tri,r_oDev,dev_M,pvt)
 #else
                    call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                        kpt, &
+                        kpt, phase, &
                         cE,zwork_tri,r_oDev,dev_M,pvt)
 #endif
                    if ( dH%lvl > 0 ) then
                       call orb_current_add_dH(dH%d, TSHS%sc_off, &
-                           kpt, zwork_tri, r_oDev, dev_M, pvt)
+                           kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                    end if
 
                    ! We need to save it immediately, we
@@ -1353,16 +1371,16 @@ contains
 
 #ifdef TBT_PHONON
                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                       kpt, &
+                       kpt, phase, &
                        cOmega,zwork_tri,r_oDev,dev_M,pvt)
 #else
                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                       kpt, &
+                       kpt, phase, &
                        cE,zwork_tri,r_oDev,dev_M,pvt)
 #endif
                   if ( dH%lvl > 0 ) then
                      call orb_current_add_dH(dH%d, TSHS%sc_off, &
-                          kpt, zwork_tri, r_oDev, dev_M, pvt)
+                          kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                   end if
                      
                   ! We need to save it immediately, we
