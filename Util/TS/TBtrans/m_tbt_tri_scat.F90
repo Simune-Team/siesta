@@ -1873,7 +1873,7 @@ contains
     complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: Gf(:)
     real(dp), pointer :: DM(:)
-    integer :: no_u, iu, io, ind, i, ju, idx
+    integer :: no_u, iu, io, ind, ju, idx
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-DM',1)
@@ -1885,15 +1885,15 @@ contains
 
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
-    do i = 1 , size(sc_off, dim=2)
-       ph(i-1) = cdexp(dcmplx(0._dp, - &
-            k(1) * sc_off(1,i) - &
-            k(2) * sc_off(2,i) - &
-            k(3) * sc_off(3,i))) / (2._dp * Pi)
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
+            k(3) * sc_off(3,io))) / (2._dp * Pi)
     end do
 
     Gf => val(Gf_tri)
-!$OMP parallel default(shared), private(iu,io,ind,i,ju,idx)
+!$OMP parallel default(shared), private(iu,io,ind,ju,idx)
 
     ! we need this in case the device region gets enlarged due to dH
 !$OMP workshare
@@ -1912,11 +1912,10 @@ contains
        ! Loop on DM entries here...
        do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
 
-         i = (l_col(ind) - 1) / no_u
          ju = pvt%r(ucorb(l_col(ind), no_u))
          idx = index(Gf_tri, iu, ju)
          ju = index(Gf_tri, ju, iu)
-         DM(ind) = - aimag( (Gf(idx) - conjg(Gf(ju))) * ph(i) )
+         DM(ind) = - aimag( (Gf(idx) - conjg(Gf(ju))) * ph((l_col(ind) - 1) / no_u) )
 
        end do
     end do
@@ -1952,7 +1951,7 @@ contains
     complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: A(:)
     real(dp), pointer :: DM(:)
-    integer :: no_u, iu, io, ind, i, ju
+    integer :: no_u, iu, io, ind, ju
 
 #ifdef TBTRANS_TIMING
     call timer('A-DM',1)
@@ -1964,15 +1963,15 @@ contains
 
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
-    do i = 1 , size(sc_off, dim=2)
-       ph(i-1) = cdexp(dcmplx(0._dp, - &
-            k(1) * sc_off(1,i) - &
-            k(2) * sc_off(2,i) - &
-            k(3) * sc_off(3,i))) / (2._dp * Pi)
+    do io = 1 , size(sc_off, dim=2)
+       ph(io-1) = cdexp(dcmplx(0._dp, - &
+            k(1) * sc_off(1,io) - &
+            k(2) * sc_off(2,io) - &
+            k(3) * sc_off(3,io))) / (2._dp * Pi)
     end do
 
     A => val(A_tri)
-!$OMP parallel default(shared), private(iu,io,ind,i,ju)
+!$OMP parallel default(shared), private(iu,io,ind,ju)
 
     ! we need this in case the device region gets enlarged due to dH
 !$OMP workshare
@@ -1991,10 +1990,9 @@ contains
        ! Loop on DM entries here...
        do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
 
-         i = (l_col(ind) - 1) / no_u
          ju = pvt%r(ucorb(l_col(ind), no_u))
          ju = index(A_tri, iu, ju)
-         DM(ind) = real(A(ju) * ph(i), dp)
+         DM(ind) = real(A(ju) * ph((l_col(ind) - 1) / no_u), dp)
 
        end do
     end do
@@ -2125,203 +2123,5 @@ contains
 #endif
 
   end subroutine insert_Self_energy_Dev
-
-
-#ifdef THESE_HAVE_BEEN_SUPERSEEDED
-  
-  ! A simple routine to calculate the DOS
-  ! from a partially calculated GF
-  ! When entering this routine Gf_tri
-  ! should contain:
-  ! all GF_nn
-  ! all Yn/Bn-1 and all Xn/Cn+1
-  ! This lets us calculate all entries
-  subroutine GF_DOS_loop_BTD(r,Gf_tri,S_1D,DOS,nwork,work)
-    use intrinsic_missing, only : SFIND
-    use class_Sparsity
-    use class_zSpData1D
-
-    type(tRgn), intent(in) :: r
-    type(zTriMat), intent(inout) :: Gf_tri
-    type(zSpData1D), intent(inout) :: S_1D
-    real(dp), intent(out) :: DOS(r%n)
-    integer, intent(in) :: nwork
-    complex(dp), intent(inout), target :: work(nwork)
-
-    type(Sparsity), pointer :: sp
-    complex(dp), pointer :: S(:), Gf(:), Mnn(:), XY(:)
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
-    integer :: off1, off2, n, in
-    integer :: jo, i, j, no_o, no_i, ind, np
-    real(dp) :: lDOS
-
-#ifdef TBTRANS_TIMING
-    call timer('Gf-DOS',1)
-#endif
-
-    S  => val(S_1D)
-    sp => spar(S_1D)
-    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
-    
-    ! Initialize DOS to 0
-!$OMP parallel workshare default(shared)
-    DOS(:) = 0._dp
-!$OMP end parallel workshare
-
-    off2 = 0
-    np = parts(Gf_tri)
-    do n = 1 , np
-
-       no_o = nrows_g(Gf_tri,n)
-
-       do in = max(1,n-1) , min(n+1,np)
-
-          no_i = nrows_g(Gf_tri,in)
-
-          if ( in < n ) then
-             off1 = off2 - no_i
-          else if ( n < in ) then
-             off1 = off2 + no_o
-          else
-             off1 = off2
-          end if
-
-          if ( in == n ) then
-             ! Retrieve the central part of the
-             ! matrix
-             Gf => val(Gf_tri,n,n)
-
-          else
-
-             XY  => val(Gf_tri,in,n)
-             Mnn => val(Gf_tri,n,n)
-
-             Gf  => work(1:no_o*no_i)
-
-             ! We need to calculate the 
-             ! Mnm1n/Mnp1n Green's function
-#ifdef USE_GEMM3M
-             call zgemm3m( &
-#else
-             call zgemm( &
-#endif
-                  'N','N',no_i,no_o,no_o, &
-                  zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
-
-          end if
-
-!$OMP parallel do default(shared), private(j,jo,ind,i,lcol,lDOS)
-          do j = 1 , no_o
-             jo = r%r(off2+j)
-             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
-             ! get the equivalent one in the
-             ! overlap matrix
-             ! REMEMBER, S is transposed!
-             ! Hence we do not need conjg :)
-             lDOS = 0._dp
-             do i = 1 , no_i
-                ind = SFIND(lcol,r%r(off1+i))
-                if ( ind == 0 ) cycle
-                ind = l_ptr(jo) + ind
-                lDOS = lDOS - dimag( Gf(j+(i-1)*no_i) * S(ind) )
-             end do
-             DOS(off2+j) = DOS(off2+j) + lDOS / Pi
-          end do
-!$OMP end parallel do
-
-       end do
-
-       ! Update the offset
-       off2 = off2 + no_o
-
-    end do
-
-#ifdef TBTRANS_TIMING
-    call timer('Gf-DOS',2)
-#endif
-
-  end subroutine GF_DOS_loop_BTD
-
-  ! A simple routine to calculate the DOS
-  ! from a full calculated spectral function
-  ! This loops over entries in the BTD matrix.
-  subroutine A_DOS_loop_BTD(r,A_tri,S_1D,DOS)
-    use intrinsic_missing, only : SFIND
-    use class_Sparsity
-    use class_zSpData1D
-
-    type(tRgn), intent(in) :: r
-    type(zTriMat), intent(inout) :: A_tri
-    type(zSpData1D), intent(inout) :: S_1D
-    real(dp), intent(out) :: DOS(r%n)
-
-    type(Sparsity), pointer :: sp
-    complex(dp), pointer :: S(:), A(:)
-    integer, pointer :: ncol(:), l_ptr(:), l_col(:), lcol(:)
-    integer :: off1, off2, n, in
-    integer :: jo, i, j, no_o, no_i, ind, np
-    real(dp) :: lDOS
-
-#ifdef TBTRANS_TIMING
-    call timer('A-DOS',1)
-#endif
-
-    S  => val(S_1D)
-    sp => spar(S_1D)
-    call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
-
-    off2 = 0
-    np = parts(A_tri)
-    do n = 1 , np
-
-       no_o = nrows_g(A_tri,n)
-
-       do in = max(1,n-1) , min(n+1,np)
-
-          A => val(A_tri,in,n)
-
-          no_i = nrows_g(A_tri,in)
-
-          if ( in < n ) then
-             off1 = off2 - no_i
-          else if ( n < in ) then
-             off1 = off2 + no_o
-          else
-             off1 = off2
-          end if
-
-!$OMP parallel do default(shared), private(j,jo,ind,i,lcol,lDOS)
-          do j = 1 , no_o
-             jo = r%r(off2+j)
-             lcol => l_col(l_ptr(jo)+1:l_ptr(jo)+ncol(jo))
-             ! get the equivalent one in the
-             ! overlap matrix
-             ! REMEMBER, S is transposed!
-             ! Hence we are doing it correctly
-             lDOS = 0._dp
-             do i = 1 , no_i
-                ind = SFIND(lcol,r%r(off1+i))
-                if ( ind == 0 ) cycle
-                ind = l_ptr(jo) + ind
-                lDOS = lDOS + dreal( A(j+(i-1)*no_i) * S(ind) )
-             end do
-             DOS(off2+j) = DOS(off2+j) + lDOS / (2._dp * Pi)
-          end do
-!$OMP end parallel do
-
-       end do
-
-       ! Update the offset
-       off2 = off2 + no_o
-
-    end do
-
-#ifdef TBTRANS_TIMING
-    call timer('A-DOS',2)
-#endif
-
-  end subroutine A_DOS_loop_BTD
-  
-#endif
 
 end module m_tbt_tri_scat
