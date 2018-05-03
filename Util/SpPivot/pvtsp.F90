@@ -144,9 +144,15 @@ program pvtsp
         fmethod = 'Scramble'
         
 #ifdef SIESTA__METIS
-      case ( '-metis' )
-        method = PVT_METIS
-        fmethod = 'Metis'
+      case ( '-metis', '-nodend' )
+        method = PVT_METIS_NODEND
+        fmethod = 'metis-NodeND'
+      case ( '-partgraphkway' )
+        method = PVT_METIS_PARTGRAPHKWAY
+        fmethod = 'metis-PartGraphKway'
+      case ( '-partgraphrecursive' )
+        method = PVT_METIS_PARTGRAPHRECURSIVE
+        fmethod = 'metis-PartGraphRecursive'
 #endif
 
       case ( '-w', '-weight' )
@@ -388,9 +394,9 @@ contains
 
   subroutine help()
     character(len=20), parameter :: gf = '(tr3,a,'':'',/,tr8,a)'
-    character(len=10), parameter :: nf = '(tr8,a)'
+    character(len=*), parameter :: nf = '(tr8,a)'
 
-    character(len=10), parameter :: fm = '(tr11,a)'
+    character(len=*), parameter :: fm = '(tr11,a18,": ",a)'
 
     write(*,'(a)') 'The following options are available for pvtsp:'
     write(*,'(a)') 
@@ -401,18 +407,20 @@ contains
     write(*,gf) '--metis-stdout','make METIS output (on STDOUT)'
     write(*,gf) '--pvt <method>','pivot according to a specific method'
     write(*,nf) '--<method> can be one of the following:'
-    write(*,fm) '      cm: Cuthill-Mckee'
-    write(*,fm) '  rev-cm: reverse Cuthill-Mckee'
-    write(*,fm) '     gps: Gibbs-Poole-Stockmeyer'
-    write(*,fm) ' rev-gps: reverse Gibbs-Poole-Stockmeyer'
-    write(*,fm) '     pcg: Peripheral connectivity graph'
-    write(*,fm) ' rev-pcg: reverse Peripheral connectivity graph'
-    write(*,fm) '    ggps: General Gibbs-Poole-Stockmeyer'
-    write(*,fm) 'rev-ggps: reverse General Gibbs-Poole-Stockmeyer'
+    write(*,fm) 'cm', 'Cuthill-Mckee'
+    write(*,fm) 'rev-cm', 'reverse Cuthill-Mckee'
+    write(*,fm) 'gps', 'Gibbs-Poole-Stockmeyer'
+    write(*,fm) 'rev-gps', 'reverse Gibbs-Poole-Stockmeyer'
+    write(*,fm) 'pcg', 'Peripheral connectivity graph'
+    write(*,fm) 'rev-pcg', 'reverse Peripheral connectivity graph'
+    write(*,fm) 'ggps', 'General Gibbs-Poole-Stockmeyer'
+    write(*,fm) 'rev-ggps', 'reverse General Gibbs-Poole-Stockmeyer'
 #ifdef SIESTA__METIS
-    write(*,fm) '   metis: Metis pivoting'
+    write(*,fm) 'nodend', 'Metis NodeND pivoting'
+    write(*,fm) 'partgraphkway', 'Metis PartGraphKway pivoting'
+    write(*,fm) 'partgraphrecursive', 'Metis PartGraphRecursive pivoting'
 #endif
-    write(*,fm) 'scramble: Scramble the sparsity pattern'
+    write(*,fm) 'scramble', 'Scramble the sparsity pattern'
     write(*,'(a)')
     write(*,gf) '--unit-cell|-uc','convert to unit-cell sparsity pattern'
     write(*,gf) '--a|-a <i>','use only ith supercell as connectivity graph (in A direction)'
