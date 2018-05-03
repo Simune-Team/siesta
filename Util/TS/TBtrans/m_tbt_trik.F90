@@ -1022,7 +1022,7 @@ contains
              
 #ifdef NCDF_4
              if ( calc_DM_Gf ) then
-               call Gf_DM(TSHS%sc_off,kpt,zwork_tri,r_oDev,pvt, dev_M)
+               call Gf_DM(TSHS%sc_off,kpt,Gf_tri,zwork_tri,r_oDev,pvt, dev_M)
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M)
              end if
              if ( calc_COOP_Gf ) then

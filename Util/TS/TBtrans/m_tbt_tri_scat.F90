@@ -69,12 +69,12 @@ contains
   ! This routine utilizes the sparse matrix as a loop, instead of looping
   ! all BTD matrix elements.
   ! This turns out to be much faster for (at least tight-binding calculations).
-  subroutine GF_DOS(r,Gf_tri,work_tri,S_1D,pvt,DOS)
+  subroutine GF_DOS(r,Gfd_tri,Gfo_tri,S_1D,pvt,DOS)
     use class_Sparsity
     use class_zSpData1D
     
     type(tRgn), intent(in) :: r
-    type(zTriMat), intent(inout) :: Gf_tri, work_tri
+    type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
     type(zSpData1D), intent(inout) :: S_1D ! (transposed S(k))
     type(tRgn), intent(in) :: pvt
     real(dp), intent(out) :: DOS(r%n)
@@ -91,21 +91,21 @@ contains
     call timer('Gf-DOS',1)
 #endif
 
-    np = parts(Gf_tri)
+    np = parts(Gfd_tri)
     
     ! First calculate all off-diagonal green-function elements
-    no_o = nrows_g(Gf_tri,1)
-    no_i = nrows_g(Gf_tri,2)
+    no_o = nrows_g(Gfd_tri,1)
+    no_i = nrows_g(Gfd_tri,2)
     call calc(2,1)
     do n = 2, np - 1
-       no_o = nrows_g(Gf_tri,n)
-       no_i = nrows_g(Gf_tri,n + 1)
+       no_o = nrows_g(Gfd_tri,n)
+       no_i = nrows_g(Gfd_tri,n + 1)
        call calc(n+1,n)
-       no_i = nrows_g(Gf_tri,n - 1)
+       no_i = nrows_g(Gfd_tri,n - 1)
        call calc(n-1,n)
     end do
-    no_o = nrows_g(Gf_tri,np)
-    no_i = nrows_g(Gf_tri,np-1)
+    no_o = nrows_g(Gfd_tri,np)
+    no_i = nrows_g(Gfd_tri,np-1)
     call calc(np-1,np)
 
     ! At this point we have calculated all Green function matrices
@@ -136,7 +136,7 @@ contains
        do ind = l_ptr(io) + 1, l_ptr(io) + ncol(io)
           bc = pvt%r(l_col(ind))
           if ( bc > 0 ) then
-             call index_GfGfd(br, bc, GfGfd)
+             call calc_GfGfd(br, bc, GfGfd)
              lDOS = lDOS + dimag( GfGfd * S(ind) )
           end if
        end do
@@ -156,9 +156,9 @@ contains
       integer, intent(in) :: m,n
       complex(dp), pointer :: Gf(:), Mnn(:), XY(:)
 
-      XY  => val(Gf_tri,m,n)
-      Mnn => val(Gf_tri,n,n)
-      Gf  => val(work_tri,m,n)
+      XY  => val(Gfd_tri,m,n)
+      Mnn => val(Gfd_tri,n,n)
+      Gf  => val(Gfo_tri,m,n)
       
       ! We need to calculate the 
       ! Mnm1n/Mnp1n Green's function
@@ -172,29 +172,27 @@ contains
       
     end subroutine calc
 
-    subroutine index_GfGfd(br, bc, G)
+    subroutine calc_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
       complex(dp), intent(out) :: G
       complex(dp), pointer :: Gf(:)
       integer :: p_r, i_r, p_c, i_c
-
-      call part_index(work_tri, br, p_r, i_r)
-      call part_index(work_tri, bc, p_c, i_c)
-
+      
+      call part_index(Gfo_tri, br, p_r, i_r)
+      call part_index(Gfo_tri, bc, p_c, i_c)
+      
       if ( p_r == p_c ) then
-         Gf => val(Gf_tri, p_r, p_c)
+        Gf => val(Gfd_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       else
-         Gf => val(work_tri, p_r, p_c)
+        Gf => val(Gfo_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        Gf => val(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       end if
-      G = Gf(i_r + (i_c-1) * work_tri%data%tri_nrows(p_r))
 
-      ! Immediate subtract G^\dagger element
-      if ( p_r /= p_c ) then
-         Gf => val(work_tri, p_c, p_r)
-      end if
-      G = G - conjg(Gf(i_c + (i_r-1) * work_tri%data%tri_nrows(p_c)))
-
-    end subroutine index_GfGfd
+    end subroutine calc_GfGfd
 
   end subroutine GF_DOS
 
@@ -358,7 +356,7 @@ contains
 
           ! COOP(iind) = - Im[ (G(io,jo) - G^\dagger(io,jo)) * S(jo,io) ] / 2Pi
           bc = pvt%r(ucorb(l_col(ind),no_u)) ! pivoted orbital index in tri-diagonal matrix
-          call index_GfGfd(br, bc, GfGfd)
+          call calc_GfGfd(br, bc, GfGfd)
           
           C(iind) = -aimag( GfGfd * M(ind) * ph( (l_col(ind)-1)/no_u ))
 
@@ -377,29 +375,27 @@ contains
 
   contains
 
-    subroutine index_GfGfd(br, bc, G)
+    subroutine calc_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
       complex(dp), intent(out) :: G
       complex(dp), pointer :: Gf(:)
       integer :: p_r, i_r, p_c, i_c
-
+      
       call part_index(Gfo_tri, br, p_r, i_r)
       call part_index(Gfo_tri, bc, p_c, i_c)
-
+      
       if ( p_r == p_c ) then
-         Gf => val(Gfd_tri, p_r, p_c)
+        Gf => val(Gfd_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       else
-         Gf => val(Gfo_tri, p_r, p_c)
+        Gf => val(Gfo_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        Gf => val(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       end if
-      G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
 
-      ! Immediate subtract G^\dagger element
-      if ( p_r /= p_c ) then
-         Gf => val(Gfo_tri, p_c, p_r)
-      end if
-      G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
-
-    end subroutine index_GfGfd
+    end subroutine calc_GfGfd
 
   end subroutine GF_COP
 
@@ -477,7 +473,7 @@ contains
           
              if ( ind > l_ptr(jo) ) then
                 
-                call index_GfGfd(br, pvt%r(jo), GfGfd)
+                call calc_GfGfd(br, pvt%r(jo), GfGfd)
                 ! COHP(iind) += - Im[ (G(io,jo) - G^\dagger(io,jo)) * dH(jo,io)] / 2Pi
                 C(iind) = C(iind) &
                      - aimag( GfGfd * dH(ind) * ph( (l_col(ind)-1)/no_u ))
@@ -499,29 +495,27 @@ contains
 
   contains
 
-    subroutine index_GfGfd(br, bc, G)
+    subroutine calc_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
       complex(dp), intent(out) :: G
       complex(dp), pointer :: Gf(:)
       integer :: p_r, i_r, p_c, i_c
-
+      
       call part_index(Gfo_tri, br, p_r, i_r)
       call part_index(Gfo_tri, bc, p_c, i_c)
-
+      
       if ( p_r == p_c ) then
-         Gf => val(Gfd_tri, p_r, p_c)
+        Gf => val(Gfd_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       else
-         Gf => val(Gfo_tri, p_r, p_c)
+        Gf => val(Gfo_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        Gf => val(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       end if
-      G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
 
-      ! Immediate subtract G^\dagger element
-      if ( p_r /= p_c ) then
-         Gf => val(Gfo_tri, p_c, p_r)
-      end if
-      G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
-
-    end subroutine index_GfGfd
+    end subroutine calc_GfGfd
 
     function TO(io) result(jo)
       integer, intent(in) :: io
@@ -1852,7 +1846,7 @@ contains
   end subroutine orb_current_add_dH
 
 
-  subroutine GF_DM(sc_off,k,Gf_tri,r,pvt,spDM)
+  subroutine GF_DM(sc_off,k,Gfd_tri,Gfo_tri,r,pvt,spDM)
 
     use class_Sparsity
     use class_dSpData1D
@@ -1860,7 +1854,7 @@ contains
 
     real(dp), intent(in) :: sc_off(:,:)
     real(dp), intent(in) :: k(3)
-    type(zTriMat), intent(inout) :: Gf_tri
+    type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
     ! The region that specifies the size of spDM
     type(tRgn), intent(in) :: r
     ! The pivoting region that transfers r%r(iu) to io
@@ -1871,9 +1865,10 @@ contains
 
     type(Sparsity), pointer :: sp
     complex(dp), allocatable :: ph(:)
-    complex(dp), pointer :: Gf(:)
     real(dp), pointer :: DM(:)
-    integer :: no_u, iu, io, ind, ju, idx
+    complex(dp) :: GfGfd
+
+    integer :: no_u, iu, io, ind, ju
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-DM',1)
@@ -1892,8 +1887,7 @@ contains
             k(3) * sc_off(3,io))) / (2._dp * Pi)
     end do
 
-    Gf => val(Gf_tri)
-!$OMP parallel default(shared), private(iu,io,ind,ju,idx)
+!$OMP parallel default(shared), private(iu,io,ind,ju,GfGfd)
 
     ! we need this in case the device region gets enlarged due to dH
 !$OMP workshare
@@ -1913,9 +1907,8 @@ contains
        do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
 
          ju = pvt%r(ucorb(l_col(ind), no_u))
-         idx = index(Gf_tri, iu, ju)
-         ju = index(Gf_tri, ju, iu)
-         DM(ind) = - aimag( (Gf(idx) - conjg(Gf(ju))) * ph((l_col(ind) - 1) / no_u) )
+         call calc_GfGfd(iu, ju, GfGfd)
+         DM(ind) = - aimag( GfGfd * ph((l_col(ind) - 1) / no_u) )
 
        end do
     end do
@@ -1927,7 +1920,31 @@ contains
 #ifdef TBTRANS_TIMING
     call timer('Gf-DM',2)
 #endif
+    
+  contains
+    
+    subroutine calc_GfGfd(br, bc, G)
+      integer, intent(in) :: br, bc
+      complex(dp), intent(out) :: G
+      complex(dp), pointer :: Gf(:)
+      integer :: p_r, i_r, p_c, i_c
+      
+      call part_index(Gfo_tri, br, p_r, i_r)
+      call part_index(Gfo_tri, bc, p_c, i_c)
+      
+      if ( p_r == p_c ) then
+        Gf => val(Gfd_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+      else
+        Gf => val(Gfo_tri, p_r, p_c)
+        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        Gf => val(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+      end if
 
+    end subroutine calc_GfGfd
+    
   end subroutine GF_DM
 
   subroutine A_DM(sc_off,k,A_tri,r,pvt,spDM)
