@@ -631,6 +631,69 @@ contains
        call tri(r_El)
     end if
 
+#ifdef SIESTA__METIS
+    fmethod = trim(corb)//'+NodeND+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'NodeND+priority'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS_NODEND, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+      call tri(r_tmp)
+    else
+      call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+      call tri(r_El)
+    end if
+    
+    fmethod = trim(corb)//'+rev-NodeND+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'rev-NodeND+priority'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+      call tri(r_tmp)
+    else
+      call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+      call tri(r_El)
+    end if
+    
+    fmethod = trim(corb)//'+PartGraphKway+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'PartGraphKway+priority'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS_PARTGRAPHKWAY, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+      call tri(r_tmp)
+    else
+      call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+      call tri(r_El)
+    end if
+    
+    fmethod = trim(corb)//'+rev-PartGraphKway+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'rev-PartGraphKway+priority'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+      call tri(r_tmp)
+    else
+      call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+      call tri(r_El)
+    end if
+
+    fmethod = trim(corb)//'+PartGraphRecursive+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'PartGraphRecursive+priority'
+    call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS_PARTGRAPHRECURSIVE, sub = full, priority = priority%r)
+    if ( orb_atom == 1 ) then
+      call tri(r_tmp)
+    else
+      call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+      call tri(r_El)
+    end if
+    
+    fmethod = trim(corb)//'+rev-PartGraphRecursive+priority'
+    if ( IONode ) write(*,fmt) trim(corb),'rev-PartGraphRecursive+priority'
+    call rgn_reverse(r_tmp)
+    if ( orb_atom == 1 ) then
+      call tri(r_tmp)
+    else
+      call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
+      call tri(r_El)
+    end if
+
+#endif
+    
     end do orb_atom_switch
 
     call rgn_delete(r_tmp,r_El,full,priority)

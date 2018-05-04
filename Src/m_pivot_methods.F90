@@ -30,7 +30,9 @@ module m_pivot_methods
   public :: rev_connectivity_graph
 
 #ifdef SIESTA__METIS
-  public :: metis_pvt
+  public :: metis_PartGraphKway_pvt
+  public :: metis_PartGraphRecursive_pvt
+  public :: metis_NodeND_pvt
 #endif
 
   public :: bandwidth, profile
@@ -1446,7 +1448,87 @@ contains
 
 
 #ifdef SIESTA__METIS
-  subroutine metis_pvt(n,nnzs,n_col,l_ptr,l_col,sub,pvt, priority)
+
+  subroutine metis_adjacency_graph(n,nnzs,n_col,l_ptr,l_col,sub, &
+      xadj, adjncy, w, priority)
+    use iso_c_binding, only: c_int
+    integer, intent(in) :: n, nnzs
+    integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
+    type(tRgn), intent(in) :: sub
+    integer(c_int), intent(inout), allocatable :: xadj(:), adjncy(:), w(:)
+    integer, intent(in), optional :: priority(n)
+    
+    integer :: io, i, ptr, ind, nc, j, nadj
+
+    ! Allocate adjacency graphs
+    allocate(xadj(0:sub%n), w(sub%n) )
+    
+    ! First count adjacencies
+    xadj(0) = 0 ! + 1 : fortran-style
+    do i = 1 , sub%n
+
+      io = sub%r(i)
+      ptr = l_ptr(io)
+      nc = n_col(io)
+
+      ! Count number of elements in 
+      ! the sub-space
+      nadj = 0
+      do ind = ptr + 1 , ptr + nc
+        if ( in_rgn(sub,l_col(ind)) ) then
+          ! Skip "on-site" connections
+          if ( l_col(ind) /= io ) then
+            nadj = nadj + 1
+          end if
+        end if
+      end do
+
+      xadj(i) = xadj(i-1) + nadj
+      
+      if ( present(priority) ) then
+        w(i) = priority(io) + 1
+      else
+        w(i) = 1
+      end if
+      
+    end do
+
+    ! transfer to local adjacency graph
+    allocate( adjncy(xadj(sub%n)) )
+    
+    ! Create adjncy 
+    nadj = 0
+    do i = 1 , sub%n
+      
+      io = sub%r(i)
+      ptr = l_ptr(io)
+      nc = n_col(io)
+      
+      ! Count number of elements in 
+      ! the sub-space
+      do ind = ptr + 1 , ptr + nc
+        j = rgn_pivot(sub,l_col(ind))
+        if ( j > 0 ) then
+          ! Skip "on-site" connections
+          if ( l_col(ind) /= io ) then
+            nadj = nadj + 1
+            adjncy(nadj) = j - 1 ! + 1 : fortran style
+          end if
+        end if
+      end do
+      
+      if ( nadj /= xadj(i) ) then
+        print *,i,nadj, xadj(i)
+        call die('metis_adjacency_graph: Error in creating &
+            &adjacency graph.')
+      end if
+      
+    end do
+    
+  end subroutine metis_adjacency_graph
+
+  
+  subroutine metis_NodeND_pvt(n,nnzs,n_col,l_ptr,l_col,sub,pvt, priority)
     use iso_c_binding, only: c_int, c_ptr, c_loc
     integer, intent(in) :: n, nnzs
     integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
@@ -1460,7 +1542,6 @@ contains
     integer(c_int), allocatable, target :: w(:)
     integer(c_int) :: iret, nvtxs, opts(100) ! In 5.0.1 it is 40, but ...
     type(c_ptr) :: wp
-    integer :: nadj
     
     interface
        integer(c_int) function METIS_SetDefaultOptions(opts) &
@@ -1480,8 +1561,7 @@ contains
        end function METIS_NodeND
     end interface
 
-    ! variables for the loop
-    integer :: io, i, ptr, ind, nc, j
+    integer :: i
 
     call rgn_delete(pvt)
 
@@ -1494,7 +1574,7 @@ contains
     if ( iret /= 1 ) then
        opts(6) = 256 ! increase debug level and re-run for full dbg-lvl
        iret = METIS_setdefaultoptions(opts)
-       call die('metis_pvt: Error on initializing default options.')
+       call die('metis_NodeND: Error on initializing default options.')
     end if
 
     ! set options
@@ -1504,74 +1584,15 @@ contains
     opts(8)  =  1 ! NCUT == Number of cuts
     opts(10) =  1 ! NO2HOP == does not use 2 hop
     opts(11) =  1 ! MINCONN == Explicitly minimize the maximum connectivity
-    opts(12) =  1 ! CONTIG == Forces contiguous 
+    opts(12) =  0 ! CONTIG == Forces contiguous 
     opts(13) =  1 ! COMPRESS == compress similar adjacency nodes
     opts(16) =  1 ! NSEPS(1) == tries in the separator
 
-    ! Allocate adjacency graphs
-    allocate(xadj(0:sub%n), perm(sub%n), iperm(sub%n) , w(sub%n) )
-
-    ! First count adjacencies
-    xadj(0) = 0 ! + 1 : fortran-style
-    do i = 1 , sub%n
-
-       io = sub%r(i)
-       ptr = l_ptr(io)
-       nc = n_col(io)
-
-       ! Count number of elements in 
-       ! the sub-space
-       nadj = 0
-       do ind = ptr + 1 , ptr + nc
-          if ( in_rgn(sub,l_col(ind)) ) then
-             ! Skip "on-site" connections
-             if ( l_col(ind) /= io ) then
-                nadj = nadj + 1
-             end if
-          end if
-       end do
-       
-       xadj(i) = xadj(i-1) + nadj
-
-       if ( present(priority) ) then
-          w(i) = priority(io) + 1
-       else
-          w(i) = 1
-       end if
-       
-    end do
-
-    ! transfer to local adjacency graph
-    allocate( adjncy(xadj(sub%n)) )
-
-    ! Create adjncy 
-    nadj = 0
-    do i = 1 , sub%n
-
-       io = sub%r(i)
-       ptr = l_ptr(io)
-       nc = n_col(io)
-
-       ! Count number of elements in 
-       ! the sub-space
-       do ind = ptr + 1 , ptr + nc
-          j = rgn_pivot(sub,l_col(ind))
-          if ( j > 0 ) then
-             ! Skip "on-site" connections
-             if ( l_col(ind) /= io ) then
-                nadj = nadj + 1
-                adjncy(nadj) = j - 1 ! + 1 : fortran style
-             end if
-          end if
-       end do
-       
-       if ( nadj /= xadj(i) ) then
-          print *,i,nadj, xadj(i)
-          call die('metis_pvt: Error in creating &
-               &adjacency graph.')
-       end if
-
-    end do
+    ! Setup the adjacency graph
+    call metis_adjacency_graph(n,nnzs,n_col,l_ptr,l_col,sub, &
+        xadj, adjncy, w, priority)
+    
+    allocate(perm(sub%n), iperm(sub%n))
 
     ! Call metis
     wp = c_loc(w(1))
@@ -1583,14 +1604,13 @@ contains
        opts(6) = 256
        iret = METIS_NodeND(nvtxs, xadj, adjncy, wp, opts, perm, iperm)
        print *,iret
-       call die('pivot_method: metis, error in pivoting.')
+       call die('metis_NodeND: error in pivoting.')
     end if
 
     ! Clean-up
-    deallocate(xadj,adjncy,iperm)
+    deallocate(xadj,adjncy,w,iperm)
 
     call rgn_init(pvt,sub%n)
-
 
     ! Transfer pivoting to actual pivoting index
     do i = 1 , sub%n
@@ -1598,11 +1618,259 @@ contains
     end do
 
     ! Clean-up
-    deallocate(perm,w)
+    deallocate(perm)
 
-    if ( pvt%n /= sub%n ) call die('metis: Error in algorithm')
+    if ( pvt%n /= sub%n ) call die('metis_NodeND: Error in algorithm')
 
-  end subroutine metis_pvt
+  end subroutine metis_NodeND_pvt
+
+  subroutine metis_PartGraphKway_pvt(n,nnzs,n_col,l_ptr,l_col,sub,pvt, priority)
+    use iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
+    integer, intent(in) :: n, nnzs
+    integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
+    type(tRgn), intent(in) :: sub
+    type(tRgn), intent(inout) :: pvt
+    integer, intent(in), optional :: priority(n)
+
+    ! METIS variables
+    integer(c_int), allocatable :: xadj(:), adjncy(:)
+    integer(c_int), allocatable :: part(:)
+    integer(c_int), allocatable, target :: w(:)
+    integer(c_int) :: iret, nvtxs, ncon, nparts, old_objval, objval, opts(100) ! In 5.0.1 it is 40, but ...
+    type(c_ptr) :: wp
+    
+    interface
+       integer(c_int) function METIS_SetDefaultOptions(opts) &
+            bind(C, name="METIS_SetDefaultOptions")
+         use iso_c_binding, only: c_int
+         implicit none
+         integer(c_int), dimension(*) :: opts
+       end function METIS_SetDefaultOptions
+       integer(c_int) function METIS_PartGraphKway(nvtxs,ncon,xadj,adjncy,vwgt, &
+           vsize,adjwgt,nparts,tpwgts,ubvec,opts,objval,part) bind(C, name="METIS_PartGraphKway")
+         use iso_c_binding, only: c_int, c_ptr
+         implicit none
+         integer(c_int) :: nvtxs, ncon, nparts, objval
+         integer(c_int), dimension(*) :: xadj, adjncy, opts, part
+         type(c_ptr), value :: vwgt, vsize, adjwgt, tpwgts, ubvec
+       end function METIS_PartGraphKway
+    end interface
+
+    ! variables for the loop
+    integer :: i, ip, j
+    integer :: old_bw, bw
+    type(tRgn) :: next_pvt
+
+    call rgn_delete(pvt)
+
+    ! The following does C-style indexing 
+    ! as the internal METIS structure is a simple offset
+
+!   call METIS_setdefaultoptions(opts)
+    iret = METIS_setdefaultoptions(opts)
+    ! METIS_OK == 1
+    if ( iret /= 1 ) then
+       opts(6) = 256 ! increase debug level and re-run for full dbg-lvl
+       iret = METIS_setdefaultoptions(opts)
+       call die('metis_PartGraphKway: Error on initializing default options.')
+    end if
+
+    ! set options
+    opts(2)  =  0 ! OBJTYPE == edge-cut minimization
+    opts(3)  =  1 ! CTYPE == Sorted heavy-edge matching
+!    opts(5)  =  1 ! RTYPE == Greedy-based cut and volume refinement
+    opts(7)  = 20 ! NITER(10) == Number of iterations
+    opts(8)  =  1 ! NCUTS == Number of cuts
+    opts(10) =  1 ! NO2HOP == does not use 2 hop
+    opts(11) =  1 ! MINCONN == Explicitly minimize the maximum connectivity
+    opts(12) =  0 ! CONTIG == Forces contiguous 
+
+    ! Allocate adjacency graphs
+    call metis_adjacency_graph(n,nnzs,n_col,l_ptr,l_col,sub, &
+        xadj, adjncy, w, priority)
+    
+    allocate(part(sub%n))
+
+    ! Initialize the pivoting array
+    call rgn_init(pvt,sub%n)
+    call rgn_init(next_pvt,sub%n)
+
+    iret = 1
+    nvtxs = sub%n
+    ncon = 1
+    nparts = 1
+    old_bw = huge(1)
+    wp = c_loc(w(1))
+    do nparts = 2 , min(nvtxs / 2 + 1, nvtxs)
+
+      ! Call metis
+      iret = METIS_PartGraphKway(nvtxs, ncon, xadj, adjncy, wp, &
+          C_NULL_PTR, C_NULL_PTR, &
+          nparts, & ! number of parts
+          C_NULL_PTR, C_NULL_PTR, opts, objval, part)
+
+      ! An error forces us to exit loop
+      if ( iret /= 1 ) exit
+
+      j = 0
+      do ip = 0, nparts - 1
+        do i = 1 , sub%n
+          if ( part(i) == ip ) then
+            j = j + 1
+            next_pvt%r(j) = sub%r(i)
+          end if
+        end do
+      end do
+
+      ! Transfer pivoting to actual pivoting index
+      bw = bandwidth(n,nnzs,n_col,l_ptr,l_col,next_pvt)
+      if ( bw == old_bw ) then
+        if ( profile(n,nnzs,n_col,l_ptr,l_col,next_pvt) &
+            < profile(n,nnzs,n_col,l_ptr,l_col,pvt) ) then
+          pvt%r(:) = next_pvt%r(:)
+        end if
+      else if ( bw < old_bw ) then
+        pvt%r(:) = next_pvt%r(:)
+      end if
+
+    end do
+
+    if ( iret /= 1 ) then ! METIS_OK == 1
+      print *,iret
+      call die('metis_PartGraphKway: error in pivoting.')
+    end if
+
+    ! Clean-up
+    deallocate(xadj,adjncy,w,part)
+    call rgn_delete(next_pvt)
+
+    if ( pvt%n /= sub%n ) call die('metis_PartGraphKway: Error in algorithm')
+
+  end subroutine metis_PartGraphKway_pvt
+
+  subroutine metis_PartGraphRecursive_pvt(n,nnzs,n_col,l_ptr,l_col,sub,pvt, priority)
+    use iso_c_binding, only: c_int, c_ptr, c_loc, c_null_ptr
+    integer, intent(in) :: n, nnzs
+    integer, intent(in) :: n_col(n), l_ptr(n), l_col(nnzs)
+    type(tRgn), intent(in) :: sub
+    type(tRgn), intent(inout) :: pvt
+    integer, intent(in), optional :: priority(n)
+
+    ! METIS variables
+    integer(c_int), allocatable :: xadj(:), adjncy(:)
+    integer(c_int), allocatable :: part(:)
+    integer(c_int), allocatable, target :: w(:)
+    integer(c_int) :: iret, nvtxs, ncon, nparts, old_objval, objval, opts(100) ! In 5.0.1 it is 40, but ...
+    type(c_ptr) :: wp
+    
+    interface
+       integer(c_int) function METIS_SetDefaultOptions(opts) &
+            bind(C, name="METIS_SetDefaultOptions")
+         use iso_c_binding, only: c_int
+         implicit none
+         integer(c_int), dimension(*) :: opts
+       end function METIS_SetDefaultOptions
+       integer(c_int) function METIS_PartGraphRecursive(nvtxs,ncon,xadj,adjncy,vwgt, &
+           vsize,adjwgt,nparts,tpwgts,ubvec,opts,objval,part) bind(C, name="METIS_PartGraphRecursive")
+         use iso_c_binding, only: c_int, c_ptr
+         implicit none
+         integer(c_int) :: nvtxs, ncon, nparts, objval
+         integer(c_int), dimension(*) :: xadj, adjncy, opts, part
+         type(c_ptr), value :: vwgt, vsize, adjwgt, tpwgts, ubvec
+       end function METIS_PartGraphRecursive
+    end interface
+
+    ! variables for the loop
+    integer :: i, ip, j
+    integer :: old_bw, bw
+    type(tRgn) :: next_pvt
+
+    call rgn_delete(pvt)
+
+    ! The following does C-style indexing 
+    ! as the internal METIS structure is a simple offset
+
+!   call METIS_setdefaultoptions(opts)
+    iret = METIS_setdefaultoptions(opts)
+    ! METIS_OK == 1
+    if ( iret /= 1 ) then
+       opts(6) = 256 ! increase debug level and re-run for full dbg-lvl
+       iret = METIS_setdefaultoptions(opts)
+       call die('metis_PartGraphRecursive: Error on initializing default options.')
+    end if
+
+    ! set options
+    opts(2)  =  0 ! OBJTYPE == edge-cut minimization
+    opts(3)  =  1 ! CTYPE == Sorted heavy-edge matching
+!    opts(5)  =  1 ! RTYPE == Greedy-based cut and volume refinement
+    opts(7)  = 20 ! NITER(10) == Number of iterations
+    opts(8)  =  1 ! NCUTS == Number of cuts
+    opts(10) =  1 ! NO2HOP == does not use 2 hop
+    opts(11) =  1 ! MINCONN == Explicitly minimize the maximum connectivity
+    opts(12) =  0 ! CONTIG == Forces contiguous 
+
+    ! Allocate adjacency graphs
+    call metis_adjacency_graph(n,nnzs,n_col,l_ptr,l_col,sub, &
+        xadj, adjncy, w, priority)
+    
+    allocate(part(sub%n))
+
+    ! Initialize the pivoting array
+    call rgn_init(pvt,sub%n)
+    call rgn_init(next_pvt,sub%n)
+
+    iret = 1
+    nvtxs = sub%n
+    ncon = 1
+    nparts = 1
+    old_bw = huge(1)
+    wp = c_loc(w(1))
+    do nparts = 2 , min(nvtxs / 2 + 1, nvtxs)
+
+      ! Call metis
+      iret = METIS_PartGraphRecursive(nvtxs, ncon, xadj, adjncy, wp, &
+          C_NULL_PTR, C_NULL_PTR, &
+          nparts, & ! number of parts
+          C_NULL_PTR, C_NULL_PTR, opts, objval, part)
+
+      ! An error forces us to exit loop
+      if ( iret /= 1 ) exit
+
+      j = 0
+      do ip = 0, nparts - 1
+        do i = 1 , sub%n
+          if ( part(i) == ip ) then
+            j = j + 1
+            next_pvt%r(j) = sub%r(i)
+          end if
+        end do
+      end do
+
+      ! Transfer pivoting to actual pivoting index
+      bw = bandwidth(n,nnzs,n_col,l_ptr,l_col,next_pvt)
+      if ( bw == old_bw ) then
+        if ( profile(n,nnzs,n_col,l_ptr,l_col,next_pvt) &
+            < profile(n,nnzs,n_col,l_ptr,l_col,pvt) ) then
+          pvt%r(:) = next_pvt%r(:)
+        end if
+      else if ( bw < old_bw ) then
+        pvt%r(:) = next_pvt%r(:)
+      end if
+
+    end do
+
+    if ( iret /= 1 ) then ! METIS_OK == 1
+      print *,iret
+      call die('metis_PartGraphRecursive: error in pivoting.')
+    end if
+
+    ! Clean-up
+    deallocate(xadj,adjncy,w,part)
+    call rgn_delete(next_pvt)
+
+    if ( pvt%n /= sub%n ) call die('metis_PartGraphRecursive: Error in algorithm')
+
+  end subroutine metis_PartGraphRecursive_pvt
 #endif
 
 
@@ -2126,30 +2394,27 @@ contains
   function bandwidth(n,nnzs,n_col,l_ptr,l_col,sub) result(beta)
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
     type(tRgn), intent(in) :: sub
-    type(tRgn) :: s_sub, pvt
+    type(tRgn) :: pvt
     integer :: beta
     integer :: i, j, ind, idx
-    beta = 0
 
-    call rgn_copy(sub,s_sub)
-    call rgn_sort(s_sub)
-    call rgn_init(pvt,sub%n)
-    do i = 1 , sub%n
-       j = rgn_pivot(s_sub,sub%r(i))
-       pvt%r(j) = i
+    call rgn_init(pvt, n, val=0)
+    do i = 1, sub%n
+      pvt%r(sub%r(i)) = i
     end do
-    
+
+    beta = 0
     do i = 1 , sub%n
        idx = sub%r(i)
        do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
           ! figure out the pivoting place
-          j = rgn_pivot(s_sub,l_col(ind))
+          j = pvt%r(l_col(ind))
           if ( j <= 0 ) cycle
-          beta = max(beta,i-pvt%r(j))
+          beta = max(beta,i-j)
        end do
     end do
 
-    call rgn_delete(s_sub,pvt)
+    call rgn_delete(pvt)
 
   end function bandwidth
 
@@ -2157,32 +2422,29 @@ contains
     integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
     type(tRgn), intent(in) :: sub
     integer(i8b) :: p
-    type(tRgn) :: s_sub, pvt
+    type(tRgn) :: pvt
     integer :: beta
     integer :: i, j, ind, idx
-    p = 0
 
-    call rgn_copy(sub,s_sub)
-    call rgn_sort(s_sub)
-    call rgn_init(pvt,sub%n)
-    do i = 1 , sub%n
-       j = rgn_pivot(s_sub,sub%r(i))
-       pvt%r(j) = i
+    call rgn_init(pvt, n, val=0)
+    do i = 1, sub%n
+      pvt%r(sub%r(i)) = i
     end do
-    
+
+    p = 0
     do i = 1 , sub%n
        idx = sub%r(i)
        beta = 0
        do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
           ! figure out the pivoting place
-          j = rgn_pivot(s_sub,l_col(ind))
+          j = pvt%r(l_col(ind))
           if ( j <= 0 ) cycle
-          beta = max(beta,i-pvt%r(j))
+          beta = max(beta,i-j)
        end do
        p = p + beta
     end do
 
-    call rgn_delete(s_sub,pvt)
+    call rgn_delete(pvt)
 
   end function profile
 
@@ -2558,8 +2820,19 @@ contains
           ! We will not follow the graph
           if ( lonly_sub ) exit
 
-          idx = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub, skip = skip, &
+          ! Fake the skipping region
+          ! This is just to skip the first couple of zeros
+          call rgn_delete(con)
+          do idx = 1, skip%n
+            if ( skip%r(idx) > 0 ) then
+              con%n = skip%n - idx + 1
+              con%r => skip%r(idx:)
+              exit
+            end if
+          end do
+          idx = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col,sub, skip = con, &
                priority = priority)
+          call rgn_nullify(con)
           etr = sub%r(idx)
           
           ! Push the queue and the skip table
@@ -2576,7 +2849,7 @@ contains
 
        ! Since the sort-degree is sorting into the same array, we have
        ! to ensure con to have the correct size
-       call rgn_init(con, sub%n - pvt%n)
+       call rgn_grow(con, sub%n - pvt%n)
 
        ! 3. Create the connectivity graph from idx (this will remove "back" 
        !    connected entries, hence no dublicates needs to be taken into 

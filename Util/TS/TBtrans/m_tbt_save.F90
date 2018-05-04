@@ -311,7 +311,7 @@ contains
 
   subroutine init_cdf_save(fname,TSHS,r,btd,ispin, &
       N_Elec, Elecs, rEl, btd_El, &
-      nkpt, kpt, wkpt, NE, &
+      nkpt, kpt, wkpt, NE, Eta, &
       a_Dev, a_Buf, sp_dev_sc, &
       save_DATA )
 
@@ -349,6 +349,7 @@ contains
     integer, intent(in) :: nkpt
     real(dp), intent(in), target :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
+    real(dp), intent(in) :: Eta
     type(tRgn), intent(in) :: a_Dev
     ! In case the system has some buffer atoms.
     type(tRgn), intent(in) :: a_Buf
@@ -362,7 +363,7 @@ contains
     type(dict) :: dic
     logical :: exist, sme, isGamma
     integer :: iEl, jEl, i, nnzs_dev, N_eigen
-    integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP
+    integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP, prec_DM
     type(OrbitalDistribution) :: fdit
     real(dp) :: mem
     character(len=2) :: unit
@@ -383,6 +384,7 @@ contains
     call tbt_cdf_precision('T.Eig','single',prec_Teig)
     call tbt_cdf_precision('Current','single',prec_J)
     call tbt_cdf_precision('COOP','single',prec_COOP)
+    call tbt_cdf_precision('DM','single',prec_DM)
 
     isGamma = all(TSHS%nsc(:) == 1)
 
@@ -579,6 +581,7 @@ contains
     dic = dic // ('info'.kv.'Blocks in BTD for the pivot table')
     call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
          atts = dic)
+    mem = mem + calc_mem(NF90_INT, btd%n)
 
     dic = dic // ('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
@@ -613,10 +616,14 @@ contains
 #else
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
-    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
-         atts = dic, chunks = (/1/) )
-    call delete(dic)
+    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
     mem = mem + calc_mem(NF90_DOUBLE, NE)
+
+    dic = dic//('info'.kv.'Imaginary part for device')
+    call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+
+    ! Clean-up dictionary
+    call delete(dic)
 
     call ncdf_put_var(ncdf,'nsc',TSHS%nsc)
     call ncdf_put_var(ncdf,'isc_off',TSHS%isc_off)
@@ -646,11 +653,15 @@ contains
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
 
+    call ncdf_put_var(ncdf,'eta',Eta)
+
     sme = 'orb-current' .in. save_DATA
     sme = sme .or. ('COOP-Gf' .in. save_DATA)
     sme = sme .or. ('COOP-A' .in. save_DATA)
     sme = sme .or. ('COHP-Gf' .in. save_DATA)
     sme = sme .or. ('COHP-A' .in. save_DATA)
+    sme = sme .or. ('DM-Gf' .in. save_DATA)
+    sme = sme .or. ('DM-A' .in. save_DATA)
     if ( sme ) then
        
        ! In case we need to save the device sparsity pattern
@@ -683,6 +694,12 @@ contains
 
     end if
 
+    if ( 'DM-Gf' .in. save_DATA ) then
+       dic = dic // ('info'.kv.'Green function density matrix')
+       call ncdf_def_var(ncdf,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
+           atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+       mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
+    end if
     if ( 'COOP-Gf' .in. save_DATA ) then
        dic = dic // ('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
@@ -747,15 +764,18 @@ contains
           dic = ('info'.kv.'Last orbitals of the equivalent atom')
           call ncdf_def_var(grp,'lasto',NF90_INT,(/'na_u'/), &
                atts = dic)
+          mem = mem + calc_mem(NF90_INT, Elecs(iEl)%na_u)
+          
           dic = dic//('info'.kv.'Bulk transmission')
           call ncdf_def_var(grp,'T',prec_T,(/'ne  ','nkpt'/), &
-              atts = dic)
+               atts = dic)
           mem = mem + calc_mem(prec_T, NE, nkpt)
 
           dic = dic//('info'.kv.'Unit cell')
           dic = dic//('unit'.kv.'Bohr')
           call ncdf_def_var(grp,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
                atts = dic)
+          
           dic = dic//('info'.kv.'Atomic coordinates')
           call ncdf_def_var(grp,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
                atts = dic , chunks = (/3, Elecs(iEl)%na_u/) )
@@ -773,7 +793,7 @@ contains
           mem = mem + calc_mem(prec_DOS, Elecs(iEl)%no_u, NE, nkpt)
 
        end if
-
+       call delete(dic)
        
        ! Now we will only add information that is calculated
        if ( iEl == N_Elec ) then
@@ -782,6 +802,12 @@ contains
                ('T-all'.nin. save_DATA) ) cycle
        end if
 
+       if ( 'DM-A' .in. save_DATA ) then
+          dic = dic // ('info'.kv.'Spectral function density matrix')
+          call ncdf_def_var(grp,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
+              atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
+          mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
+       end if
 
        if ( 'DOS-A' .in. save_DATA ) then
           dic = dic//('info'.kv.'Spectral function density of states')// &
@@ -1162,7 +1188,7 @@ contains
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-DTJ',1)
+    call timer('cdf-w-DOS-T',1)
 #endif
 
     NDOS = size(DOS,dim=1)
@@ -1308,7 +1334,7 @@ contains
 #endif
 
 #ifdef TBTRANS_TIMING
-    call timer('cdf-w-DTJ',2)
+    call timer('cdf-w-DOS-T',2)
 #endif
 
   end subroutine state_cdf_save
