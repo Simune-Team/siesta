@@ -944,13 +944,14 @@ m_ts_contour.o: precision.o
 m_ts_contour_eq.o: m_gauss_fermi_17.o m_gauss_fermi_18.o m_gauss_fermi_19.o
 m_ts_contour_eq.o: m_gauss_fermi_20.o m_gauss_fermi_22.o m_gauss_fermi_24.o
 m_ts_contour_eq.o: m_gauss_fermi_26.o m_gauss_fermi_28.o m_gauss_fermi_30.o
-m_ts_contour_eq.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_ts_aux.o
-m_ts_contour_eq.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o
+m_ts_contour_eq.o: m_gauss_fermi_inf.o m_gauss_quad.o m_integrate.o m_io.o
+m_ts_contour_eq.o: m_ts_aux.o m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o
 m_ts_contour_eq.o: m_ts_io_contour.o m_ts_io_ctype.o parallel.o precision.o
 m_ts_contour_eq.o: units.o
-m_ts_contour_neq.o: m_gauss_quad.o m_integrate.o m_ts_aux.o m_ts_cctype.o
-m_ts_contour_neq.o: m_ts_chem_pot.o m_ts_electype.o m_ts_io_contour.o
-m_ts_contour_neq.o: m_ts_io_ctype.o parallel.o precision.o units.o
+m_ts_contour_neq.o: m_gauss_quad.o m_integrate.o m_io.o m_ts_aux.o
+m_ts_contour_neq.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o
+m_ts_contour_neq.o: m_ts_io_contour.o m_ts_io_ctype.o parallel.o precision.o
+m_ts_contour_neq.o: units.o
 m_ts_debug.o: class_Sparsity.o class_TriMat.o geom_helper.o parallel.o
 m_ts_debug.o: precision.o
 m_ts_dm_update.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
@@ -993,7 +994,7 @@ m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
 m_ts_io.o: m_os.o m_sparse.o parallel.o precision.o sys.o
 m_ts_io_contour.o: precision.o units.o
-m_ts_io_ctype.o: parallel.o precision.o units.o
+m_ts_io_ctype.o: m_io.o parallel.o precision.o units.o
 m_ts_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_iodm.o: m_io_s.o m_os.o parallel.o precision.o
 m_ts_kpoints.o: files.o find_kgrid.o kpoint_grid.o m_ts_global_vars.o
