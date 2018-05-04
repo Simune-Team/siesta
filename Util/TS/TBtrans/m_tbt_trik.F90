@@ -151,8 +151,12 @@ contains
     real(dp), pointer :: H2D(:,:), S(:), H(:)
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
-    logical :: calc_DOS_Gf, calc_DOS_A, calc_orb_current
+    logical :: calc_T_Gf, calc_T_out
+    logical :: calc_DOS_Elecs
+    logical :: calc_DOS_Gf, calc_DOS_A
 #ifdef NCDF_4
+    logical :: calc_orb_current
+    logical :: calc_DM_Gf, calc_DM_A
     logical :: calc_COOP_Gf, calc_COOP_A
     logical :: calc_COHP_Gf, calc_COHP_A
 #endif
@@ -188,7 +192,7 @@ contains
     type(tLvlMolEl), pointer :: p_E
     real(dp), allocatable :: pDOS(:,:,:)
     real(dp), allocatable :: bTk(:,:), bTkeig(:,:,:)
-    type(dSpData1D) :: orb_J
+    type(dSpData1D) :: dev_M
 #endif
 ! ************************************************************
 
@@ -196,7 +200,7 @@ contains
     integer :: nGFGGF ! For the triple-product
     complex(dp), pointer :: GFGGF_work(:) => null()
     integer :: ntt_work
-    complex(dp), pointer :: tt_work(:), eig(:)
+    complex(dp), pointer :: tt_work(:), eig(:), phase(:)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -242,12 +246,17 @@ contains
     real :: last_progress, cur_progress
 ! ************************************************************
 
+    calc_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
+    calc_T_Gf = 'T-Gf' .in. save_DATA
+    calc_T_out = 'T-sum-out' .in. save_DATA
     calc_DOS_Gf = 'DOS-Gf' .in. save_DATA
     calc_DOS_A = 'DOS-A' .in. save_DATA
-    calc_orb_current = 'orb-current' .in. save_DATA
     T_all = 'T-all' .in. save_DATA
     ADOS_all = 'DOS-A-all' .in. save_DATA
 #ifdef NCDF_4
+    calc_orb_current = 'orb-current' .in. save_DATA
+    calc_DM_Gf = 'DM-Gf' .in. save_DATA
+    calc_DM_A = 'DM-A' .in. save_DATA
     calc_COOP_Gf = 'COOP-Gf' .in. save_DATA
     calc_COOP_A = 'COOP-A' .in. save_DATA
     calc_COHP_Gf = 'COHP-Gf' .in. save_DATA
@@ -437,14 +446,6 @@ contains
     end if
 
     
-    ! Note that padding is the extra size to be able to calculate
-    ! the spectral function in the BTD format
-
-    ! We allocate for the matrix
-    call print_memory('LHS',pad_LHS)
-    call newzTriMat(zwork_tri,DevTri%n,DevTri%r,'GFinv', &
-         padding = pad_LHS )
-
     ! The RHS will be the array that retains the 
     ! self-energies and nothing more.
     ! Here we pad with the missing elements to contain
@@ -461,10 +462,25 @@ contains
     ! this is only preferred in tbtrans as there might be 
     ! padding any-way.
     pad_RHS = max(pad_RHS,nGFGGF)
+
+    ! Ensure that at least one of the work arrays has
+    ! elements for the few supercells
+    io = product(TSHS%nsc)
+    if ( pad_LHS < io .and. pad_RHS < io ) then
+      pad_LHS = io
+    end if
     
+    ! Note that padding is the extra size to be able to calculate
+    ! the spectral function in the BTD format
+
+    ! We allocate for the matrix
+    call print_memory('LHS',pad_LHS)
+    call newzTriMat(zwork_tri,DevTri%n,DevTri%r,'GFinv', &
+         padding = pad_LHS )
+
     call print_memory('RHS',pad_RHS)
     call newzTriMat(GF_tri,DevTri%n,DevTri%r,'GF', &
-         padding = pad_RHS )
+        padding = pad_RHS )
 
     ! Create the work-array...
     zwork   => val(zwork_tri,all=.true.)
@@ -472,12 +488,23 @@ contains
     Gfwork  => val(Gf_tri,all=.true.)
     nGfwork =  size(Gfwork)
     if ( nGfwork > nzwork ) then
-       nmaxwork = nGfwork
-       maxwork => Gfwork(:)
+      nmaxwork = nGfwork
+      maxwork => Gfwork(:)
     else
-       nmaxwork = nzwork
-       maxwork => zwork(:)
+      nmaxwork = nzwork
+      maxwork => zwork(:)
     end if
+
+    ! Create phase array
+    io = product(TSHS%nsc)
+    if ( pad_LHS >= io ) then
+      phase => zwork(nzwork-io+1:)
+    else if ( pad_RHS >= io ) then
+      phase => Gfwork(nGfwork-io+1:)
+    else
+      call die('Error in coding! Phase size!')
+    end if
+
 
     ! Point the work-array for eigenvalue calculation
     if ( N_eigen > 0 ) then
@@ -601,8 +628,7 @@ contains
        ! The first partition is whether we want
        ! certain quantities from all electrodes
        A_parts(:) = .false.
-       if ( T_all .or. &
-            ('T-sum-out' .in. save_DATA) ) then
+       if ( T_all .or. calc_T_out ) then
 
           ! We need _all_ diagonal blocks of the spectral function
           do iEl = 1 , N_Elec
@@ -651,10 +677,11 @@ contains
 
 #ifdef NCDF_4
     if ( calc_orb_current .or. ('proj-orb-current'.in.save_DATA) .or. &
+         calc_DM_Gf .or. calc_DM_A .or. & 
          calc_COOP_Gf .or. calc_COOP_A .or. & 
          calc_COHP_Gf .or. calc_COHP_A ) then
        
-       call newdSpData1D(sp_dev_sc,fdist,orb_J,name='TBT sparse')
+       call newdSpData1D(sp_dev_sc,fdist,dev_M,name='TBT sparse')
        
     end if
 #endif
@@ -845,7 +872,7 @@ contains
           ! We have reduced the electrode sizes to only one spin-channel
           ! Hence, it will ALWAYS be the first index
           if ( n_k == 0 ) then
-             if ( 'DOS-Elecs' .in. save_DATA ) then
+             if ( calc_DOS_Elecs ) then
                 call read_next_GS(1, ikpt, bkpt, &
                      cE, N_Elec, uGF, Elecs, &
                      nzwork, zwork, .false., forward = .false. , &
@@ -997,7 +1024,7 @@ contains
           if ( .not. only_proj ) then
 #endif
 
-          call timer('DOS-Gf-A-T',1)
+          call timer('analysis',1)
 
           ! We have now calculated all block diagonal entries
           ! of the Green's function.
@@ -1012,19 +1039,23 @@ contains
              end if
              
 #ifdef NCDF_4
+             if ( calc_DM_Gf ) then
+               call Gf_DM(TSHS%sc_off,kpt,phase,Gf_tri,zwork_tri,r_oDev,pvt, dev_M)
+               call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M)
+             end if
              if ( calc_COOP_Gf ) then
                 call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
-                     TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
-                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', orb_J)
+                     TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
+                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M)
              end if
              if ( calc_COHP_Gf ) then
                 call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
-                     TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
+                     TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
                 if ( dH%lvl > 0 ) then
-                   call GF_COHP_add_dH(dH%d, TSHS%sc_off, &
-                        kpt, Gf_tri, zwork_tri, r_oDev, orb_J, pvt)
+                   call GF_COHP_add_dH(dH%d, TSHS%sc_off, kpt, &
+                       phase, Gf_tri, zwork_tri, r_oDev, dev_M, pvt)
                 end if
-                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', orb_J)
+                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M)
              end if
 #endif
 
@@ -1033,7 +1064,7 @@ contains
           ! ****************
           ! * Column Gf    *
           ! ****************
-          if ( 'T-Gf' .in. save_DATA ) then
+          if ( calc_T_Gf ) then
 
              ! We are allowed to calculate the transmission
              ! only by using the diagonal
@@ -1070,7 +1101,7 @@ contains
                  call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                       r_oDev, pvt, Elecs(iEl)%o_inD)
  
-                 if ( 'T-sum-out' .in. save_DATA ) then
+                 if ( calc_T_out ) then
                     call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
                  end if
  
@@ -1092,7 +1123,7 @@ contains
               ! * calc A-matrix *
               ! *****************
               if ( .not. cE%fake ) then
-                 if ( 'T-sum-out' .in. save_DATA ) then
+                 if ( calc_T_out ) then
                     call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                          Elecs(iEl), A_parts, &
                          TrGfG = T(N_Elec+1,iEl))
@@ -1114,20 +1145,25 @@ contains
                 end if
                 
 #ifdef NCDF_4
+                if ( calc_DM_A ) then
+                   call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
+                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M, &
+                         Elecs(iEl))
+                end if
                 if ( calc_COOP_A ) then
                    call A_COP(r_oDev,zwork_tri,pvt, &
-                        TSHS%sp,S,TSHS%sc_off, kpt, orb_J)
-                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', orb_J, &
+                        TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
+                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M, &
                         Elecs(iEl))
                 end if
                 if ( calc_COHP_A ) then
                    call A_COP(r_oDev,zwork_tri,pvt, &
-                        TSHS%sp,H,TSHS%sc_off, kpt, orb_J)
+                        TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
                    if ( dH%lvl > 0 ) then
                       call A_COHP_add_dH(dH%d, TSHS%sc_off, &
-                           kpt, zwork_tri, r_oDev, orb_J, pvt)
+                           kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                    end if
-                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', orb_J, &
+                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M, &
                         Elecs(iEl))
                 end if
                 
@@ -1135,21 +1171,21 @@ contains
 
 #ifdef TBT_PHONON
                    call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                        kpt, &
-                        cOmega,zwork_tri,r_oDev,orb_J,pvt)
+                        kpt, phase, &
+                        cOmega,zwork_tri,r_oDev,dev_M,pvt)
 #else
                    call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                        kpt, &
-                        cE,zwork_tri,r_oDev,orb_J,pvt)
+                        kpt, phase, &
+                        cE,zwork_tri,r_oDev,dev_M,pvt)
 #endif
                    if ( dH%lvl > 0 ) then
                       call orb_current_add_dH(dH%d, TSHS%sc_off, &
-                           kpt, zwork_tri, r_oDev, orb_J, pvt)
+                           kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                    end if
 
                    ! We need to save it immediately, we
                    ! do not want to have several arrays in memory
-                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'J', orb_J, &
+                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'J', dev_M, &
                         Elecs(iEl))
 
                 end if
@@ -1163,8 +1199,7 @@ contains
                 ! calculate this.
                 if ( (.not. T_all) .and. &
                      jEl < iEl ) cycle
-                if ( ('T-sum-out' .nin. save_DATA ) .and. &
-                     iEl == jEl ) cycle
+                if ( (.not. calc_T_out) .and. iEl == jEl ) cycle
 
                 ! Notice that the Gf.G1.Gf.G2 can be performed
                 ! for all other electrodes as long as we
@@ -1210,7 +1245,7 @@ contains
                save_DATA )
 #endif
 
-          call timer('DOS-Gf-A-T',2)
+          call timer('analysis',2)
 #ifdef NCDF_4
           end if ! .not. proj-only
           end if ! .not. Sigma-only
@@ -1221,7 +1256,7 @@ contains
 
           if ( N_proj_T > 0 ) then
 
-          call timer('T-proj',1)
+          call timer('analysis-proj',1)
 
           ! Calculate the projections
           do ipt = 1 , N_proj_T
@@ -1236,7 +1271,7 @@ contains
                 ! superfluous checks in the following block
                 if ( ('proj-orb-current' .in. save_DATA) .and. p_E%idx > 0 ) then
 
-                   call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, orb_J)
+                   call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, dev_M)
 
                 end if
 #endif
@@ -1305,7 +1340,7 @@ contains
                         bTk(1+size(proj_T(ipt)%R),ipt))
                 end if
                else
-                if ( 'T-sum-out' .in. save_DATA ) then
+                if ( 'proj-T-sum-out' .in. save_DATA ) then
                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         Elecs(iEl), proj_parts, &
                         TrGfG = bTk(1+size(proj_T(ipt)%R),ipt))
@@ -1336,22 +1371,22 @@ contains
 
 #ifdef TBT_PHONON
                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                       kpt, &
-                       cOmega,zwork_tri,r_oDev,orb_J,pvt)
+                       kpt, phase, &
+                       cOmega,zwork_tri,r_oDev,dev_M,pvt)
 #else
                   call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                       kpt, &
-                       cE,zwork_tri,r_oDev,orb_J,pvt)
+                       kpt, phase, &
+                       cE,zwork_tri,r_oDev,dev_M,pvt)
 #endif
                   if ( dH%lvl > 0 ) then
                      call orb_current_add_dH(dH%d, TSHS%sc_off, &
-                          kpt, zwork_tri, r_oDev, orb_J, pvt)
+                          kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                   end if
                      
                   ! We need to save it immediately, we
                   ! do not want to have several arrays in the
                   ! memory
-                  call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, orb_J)
+                  call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, dev_M)
 
                end if
 #endif
@@ -1426,7 +1461,7 @@ contains
                ikpt,nE,N_proj_T,proj_T, &
                pDOS, bTk, N_eigen, bTkeig, save_DATA )
 
-          call timer('T-proj',2)
+          call timer('analysis-proj',2)
           
           end if
 #endif
@@ -1514,7 +1549,7 @@ contains
        deallocate(bTkeig)
     end if
 
-    call delete(orb_J)
+    call delete(dev_M)
 
     ! Before we delete the Gf tri-diagonal matrix
     ! we need to create the sigma mean if requested.
