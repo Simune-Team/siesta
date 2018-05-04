@@ -77,7 +77,7 @@
   public :: NEW_TYPE, print_type, init_val
 
   public :: val
-  public :: index, index_sub, part_index
+  public :: index, index_sub, index_block, part_index
   public :: cum_rows
   public :: nrows_g
   public :: parts, which_part

@@ -81,6 +81,7 @@ contains
 
     type(Sparsity), pointer :: sp
     complex(dp), pointer :: S(:)
+    complex(dp), pointer :: Gfd(:), Gfo(:)
     complex(dp) :: GfGfd
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer :: np, n, no_o, no_i
@@ -126,6 +127,9 @@ contains
     sp => spar(S_1D)
     S => val(S_1D)
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
+
+    Gfd => val(Gfd_tri)
+    Gfo => val(Gfo_tri)
 
 !$OMP parallel do default(shared), private(br,io,lDOS,ind,bc,GfGfd)
     do br = 1, r%n
@@ -174,22 +178,21 @@ contains
 
     subroutine calc_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
-      complex(dp), intent(out) :: G
-      complex(dp), pointer :: Gf(:)
-      integer :: p_r, i_r, p_c, i_c
-      
+      complex(dp), intent(inout) :: G
+      integer :: p_r, i_r, p_c, i_c, i
+
       call part_index(Gfo_tri, br, p_r, i_r)
       call part_index(Gfo_tri, bc, p_c, i_c)
       
       if ( p_r == p_c ) then
-        Gf => val(Gfd_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfd(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gfd(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       else
-        Gf => val(Gfo_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        Gf => val(Gfo_tri, p_c, p_r)
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfo(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        i = index_block(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gfo(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       end if
 
     end subroutine calc_GfGfd
@@ -284,6 +287,7 @@ contains
 
     type(Sparsity), pointer :: c_sp
     real(dp), pointer :: C(:)
+    complex(dp), pointer :: Gfd(:), Gfo(:)
     complex(dp) :: GfGfd
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
@@ -329,6 +333,9 @@ contains
     C => val(COP)
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
+    Gfd => val(Gfd_tri)
+    Gfo => val(Gfo_tri)
+
 !$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc,GfGfd)
 
 !$OMP workshare
@@ -373,22 +380,21 @@ contains
 
     subroutine calc_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
-      complex(dp), intent(out) :: G
-      complex(dp), pointer :: Gf(:)
-      integer :: p_r, i_r, p_c, i_c
+      complex(dp), intent(inout) :: G
+      integer :: p_r, i_r, p_c, i_c, i
       
       call part_index(Gfo_tri, br, p_r, i_r)
       call part_index(Gfo_tri, bc, p_c, i_c)
       
       if ( p_r == p_c ) then
-        Gf => val(Gfd_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfd(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gfd(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       else
-        Gf => val(Gfo_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        Gf => val(Gfo_tri, p_c, p_r)
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfo(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        i = index_block(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gfo(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       end if
 
     end subroutine calc_GfGfd
@@ -418,6 +424,7 @@ contains
     integer, pointer :: cncol(:), cptr(:), ccol(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
 
+    complex(dp), pointer :: Gfd(:), Gfo(:)
     complex(dp) :: GfGfd
     real(dp), pointer :: C(:)
     integer :: no_u, br, io, jo, i, ind, iind
@@ -443,6 +450,9 @@ contains
             k(2) * sc_off(2,i) - &
             k(3) * sc_off(3,i))) / (2._dp * Pi)
     end do
+
+    Gfd => val(Gfd_tri)
+    Gfo => val(Gfo_tri)
 
 !$OMP parallel do default(shared), private(br,io,iind,jo,ind,col,GfGfd)
     do br = 1, r%n
@@ -490,22 +500,21 @@ contains
 
     subroutine calc_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
-      complex(dp), intent(out) :: G
-      complex(dp), pointer :: Gf(:)
-      integer :: p_r, i_r, p_c, i_c
-      
+      complex(dp), intent(inout) :: G
+      integer :: p_r, i_r, p_c, i_c, i
+
       call part_index(Gfo_tri, br, p_r, i_r)
       call part_index(Gfo_tri, bc, p_c, i_c)
       
       if ( p_r == p_c ) then
-        Gf => val(Gfd_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfd(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gfd(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       else
-        Gf => val(Gfo_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        Gf => val(Gfo_tri, p_c, p_r)
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfo(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        i = index_block(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gfo(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       end if
 
     end subroutine calc_GfGfd
@@ -1846,6 +1855,7 @@ contains
 
     type(Sparsity), pointer :: sp
     real(dp), pointer :: DM(:)
+    complex(dp), pointer :: Gfd(:), Gfo(:)
     complex(dp) :: GfGfd
 
     integer :: no_u, iu, io, ind, ju
@@ -1866,6 +1876,9 @@ contains
             k(3) * sc_off(3,io))) / (2._dp * Pi)
     end do
 
+    Gfd => val(Gfd_tri)
+    Gfo => val(Gfo_tri)
+    
 !$OMP parallel default(shared), private(iu,io,ind,ju,GfGfd)
 
     ! we need this in case the device region gets enlarged due to dH
@@ -1902,22 +1915,21 @@ contains
     
     subroutine calc_GfGfd(br, bc, G)
       integer, intent(in) :: br, bc
-      complex(dp), intent(out) :: G
-      complex(dp), pointer :: Gf(:)
-      integer :: p_r, i_r, p_c, i_c
-      
+      complex(dp), intent(inout) :: G
+      integer :: p_r, i_r, p_c, i_c, i
+
       call part_index(Gfo_tri, br, p_r, i_r)
       call part_index(Gfo_tri, bc, p_c, i_c)
       
       if ( p_r == p_c ) then
-        Gf => val(Gfd_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfd(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        G = G - conjg(Gfd(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       else
-        Gf => val(Gfo_tri, p_r, p_c)
-        G = Gf(i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
-        Gf => val(Gfo_tri, p_c, p_r)
-        G = G - conjg(Gf(i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
+        i = index_block(Gfo_tri, p_r, p_c)
+        G = Gfo(i + i_r + (i_c-1) * Gfo_tri%data%tri_nrows(p_r))
+        i = index_block(Gfo_tri, p_c, p_r)
+        G = G - conjg(Gfo(i + i_c + (i_r-1) * Gfo_tri%data%tri_nrows(p_c)))
       end if
 
     end subroutine calc_GfGfd
