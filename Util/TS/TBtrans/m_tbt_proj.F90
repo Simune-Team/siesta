@@ -1306,7 +1306,7 @@ contains
 
   ! Initialize the TBT.Proj.nc file
   subroutine init_proj_save( fname, TSHS , r, btd, ispin, N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE , a_Dev, a_Buf, sp_dev_sc, save_DATA )
+       nkpt, kpt, wkpt, NE , Eta, a_Dev, a_Buf, sp_dev_sc, save_DATA )
 
     use parallel, only : Node, Nodes, IONode
     use units, only: eV
@@ -1341,6 +1341,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: nkpt, NE
+    real(dp), intent(in) :: Eta
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     type(tRgn), intent(in) :: a_Dev
     type(tRgn), intent(in) :: a_Buf
@@ -1684,8 +1685,11 @@ contains
 #else
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
-    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
-         atts = dic)
+    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
+
+    dic = dic//('info'.kv.'Imaginary part for device')
+    call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+
     call delete(dic)
 
     call ncdf_put_var(ncdf,'nsc',TSHS%nsc)
@@ -1715,6 +1719,8 @@ contains
     call ncdf_put_var(ncdf,'kpt',rv)
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(rv)
+
+    call ncdf_put_var(ncdf,'eta',Eta)
 
     if ( 'proj-orb-current' .in. save_DATA ) then
 

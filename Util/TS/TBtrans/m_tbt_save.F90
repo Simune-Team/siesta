@@ -311,7 +311,7 @@ contains
 
   subroutine init_cdf_save(fname,TSHS,r,btd,ispin, &
       N_Elec, Elecs, rEl, btd_El, &
-      nkpt, kpt, wkpt, NE, &
+      nkpt, kpt, wkpt, NE, Eta, &
       a_Dev, a_Buf, sp_dev_sc, &
       save_DATA )
 
@@ -349,6 +349,7 @@ contains
     integer, intent(in) :: nkpt
     real(dp), intent(in), target :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
+    real(dp), intent(in) :: Eta
     type(tRgn), intent(in) :: a_Dev
     ! In case the system has some buffer atoms.
     type(tRgn), intent(in) :: a_Buf
@@ -615,10 +616,14 @@ contains
 #else
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
-    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
-         atts = dic, chunks = (/1/) )
-    call delete(dic)
+    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
     mem = mem + calc_mem(NF90_DOUBLE, NE)
+
+    dic = dic//('info'.kv.'Imaginary part for device')
+    call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+
+    ! Clean-up dictionary
+    call delete(dic)
 
     call ncdf_put_var(ncdf,'nsc',TSHS%nsc)
     call ncdf_put_var(ncdf,'isc_off',TSHS%isc_off)
@@ -647,6 +652,8 @@ contains
     call ncdf_put_var(ncdf,'kpt',r2)
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
+
+    call ncdf_put_var(ncdf,'eta',Eta)
 
     sme = 'orb-current' .in. save_DATA
     sme = sme .or. ('COOP-Gf' .in. save_DATA)
@@ -688,7 +695,7 @@ contains
     end if
 
     if ( 'DM-Gf' .in. save_DATA ) then
-       dic = dic // ('info'.kv.'Density matrix')
+       dic = dic // ('info'.kv.'Green function density matrix')
        call ncdf_def_var(ncdf,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
            atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
        mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
@@ -796,7 +803,7 @@ contains
        end if
 
        if ( 'DM-A' .in. save_DATA ) then
-          dic = dic // ('info'.kv.'Spectral density matrix')
+          dic = dic // ('info'.kv.'Spectral function density matrix')
           call ncdf_def_var(grp,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)

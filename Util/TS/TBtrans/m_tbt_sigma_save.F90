@@ -139,7 +139,7 @@ contains
 
   ! Save the self-energies of the electrodes and
   subroutine init_Sigma_save(fname, TSHS, r, btd, ispin, N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE, &
+       nkpt, kpt, wkpt, NE, Eta, &
        a_Dev, a_Buf)
 
     use parallel, only : IONode
@@ -168,6 +168,8 @@ contains
     integer, intent(in) :: nkpt
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
+    real(dp), intent(in) :: Eta
+
     ! Device atoms
     type(tRgn), intent(in) :: a_Dev
     ! Buffer atoms
@@ -379,8 +381,11 @@ contains
 #else
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
-    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
-         atts = dic)
+    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
+
+    dic = dic//('info'.kv.'Imaginary part for device')
+    call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+
     call delete(dic)
 
     call ncdf_put_var(ncdf,'pivot',r%r)
@@ -411,6 +416,8 @@ contains
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
     mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt)
+
+    call ncdf_put_var(ncdf,'eta',Eta)
 
     do iEl = 1 , N_Elec
 
