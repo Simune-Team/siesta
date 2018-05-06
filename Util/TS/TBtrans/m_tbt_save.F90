@@ -695,7 +695,7 @@ contains
     end if
 
     if ( 'DM-Gf' .in. save_DATA ) then
-       dic = dic // ('info'.kv.'Green function density matrix')
+       dic = dic // ('info'.kv.'Green function density matrix')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
            atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
        mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
@@ -803,7 +803,7 @@ contains
        end if
 
        if ( 'DM-A' .in. save_DATA ) then
-          dic = dic // ('info'.kv.'Spectral function density matrix')
+          dic = dic // ('info'.kv.'Spectral function density matrix')//('unit'.kv.'1/Ry')
           call ncdf_def_var(grp,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
