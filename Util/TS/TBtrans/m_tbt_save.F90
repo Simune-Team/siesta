@@ -1670,7 +1670,7 @@ contains
     if ( 'DOS-Gf' .in. save_DATA ) then
 
       ! Get (orbital summed) DOS (in /eV)
-      call get_DOS(ncdf, 'DOS', no_d, r2)
+      call get_DOS(ncdf, 'DOS', no_d, NE, nkpt, r2)
 
       if ( nkpt > 1 ) then
         call name_save(ispin,nspin,ascii_file,end='DOS')
@@ -1696,11 +1696,10 @@ contains
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
 
+      ! Always open the group...
+      call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
       if ( 'DOS-Elecs' .in. save_DATA ) then
-
-        call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
-
 
         ! Get bulk-transmission
         call ncdf_get_var(grp,'T',r2)
@@ -1714,7 +1713,7 @@ contains
             '# Bulk transmission, k-averaged')
 
         ! Bulk DOS
-        call get_DOS(grp, 'DOS', Elecs(iEl)%no_u, r2)
+        call get_DOS(grp, 'DOS', Elecs(iEl)%no_u, NE, nkpt, r2)
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
           call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS',&
@@ -1734,13 +1733,10 @@ contains
             ('T-all'.nin. save_DATA) ) cycle
       end if
 
-      if ( 'DOS-Elecs' .nin. save_DATA ) &
-          call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
-
       if ( 'DOS-A' .in. save_DATA ) then
 
         ! Spectral DOS
-        call get_DOS(grp, 'ADOS', no_d, r2)
+        call get_DOS(grp, 'ADOS', no_d, NE, nkpt, r2)
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='ADOS',El1=Elecs(iEl))
           call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS',&
@@ -1951,10 +1947,10 @@ contains
 
   contains
 
-    subroutine get_DOS(grp, var, no, r2)
+    subroutine get_DOS(grp, var, no, NE, nkpt, r2)
       type(hNCDF), intent(inout) :: grp
       character(len=*), intent(in) :: var
-      integer, intent(in) :: no
+      integer, intent(in) :: no, NE, nkpt
       real(dp), intent(out) :: r2(NE, nkpt)
 
       integer :: io, ie, ik

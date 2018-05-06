@@ -1597,6 +1597,12 @@ contains
     deallocate(iounits, iounits_El)
 #endif
 
+#ifdef MPI
+    ! Ensure that we are finished will ALL IO before we
+    ! proceed. Otherwise some routines may finalized before actual end...
+    call MPI_Barrier(MPI_Comm_World, io)
+#endif
+
   contains
 
     subroutine print_memory(name,padding)
