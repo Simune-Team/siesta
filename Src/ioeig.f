@@ -45,14 +45,14 @@ c -------------------------------------------------------------------
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      
 
-      write(iu,"(f14.4)") ef/eV
+      write(iu,"(e17.9)") ef/eV
       if ( ns > 2 ) then
-         write(iu,"(3i6)")   no*2, 1, nk
+        write(iu,"(tr1,i10,i2,tr1,i10)")   no*2, 1, nk
       else
-         write(iu,"(3i6)")   no, min(ns,2), nk
+        write(iu,"(tr1,i10,i2,tr1,i10)")   no, min(ns,2), nk
       end if
       do ik = 1,nk
-        write(iu,"(i5,10f12.5,/,(5x,10f12.5))")
+        write(iu,"(i10,10(tr1,e17.9),/,(tr10,10(tr1,e17.9)))")
      .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,nspin)
       enddo
 

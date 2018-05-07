@@ -227,7 +227,7 @@ C New writing
         call xml_AddAttribute(xf,"units","eV")
         call xml_AddCharacters(xf,Ef / eV)
         call xml_EndElement(xf,"fermi_energy")
-        write(iunit2,'(a,f20.5,a)') '<fermi_energy units="eV">',
+        write(iunit2,'(a,e17.9,a)') '<fermi_energy units="eV">',
      &       Ef / eV, '</fermi_energy>'
 
         ! Write sampled energies
@@ -240,7 +240,7 @@ C New writing
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
-           write(iunit2,'(f20.5)') tmp(ihist)
+           write(iunit2,'(e17.9)') tmp(ihist)
         enddo
         write(iunit2,'(a)') '</energy_values>'
 
@@ -283,14 +283,14 @@ C New writing
           if (nspin.eq.1) then
              do ihist = 1, nhist
                 tmp(ihist) = dpr(ihist,i,1) * eV
-                write(iunit2,'(f10.5)') tmp(ihist)
+                write(iunit2,'(e17.9)') tmp(ihist)
              end do
              call xml_AddCharacters(xf,tmp(1:nhist))
           elseif (nspin .eq. 2) then
              do ihist = 1, nhist
                 tmp(ihist*2-1) = dpr(ihist,i,1) * eV
                 tmp(ihist*2) = dpr(ihist,i,2) * eV
-                write(iunit2,'(2f10.5)') tmp(ihist*2-1:ihist*2)
+                write(iunit2,'(2(tr1,e17.9))') tmp(ihist*2-1:ihist*2)
              end do
              call xml_AddCharacters(xf,tmp(1:2*nhist))
           endif
