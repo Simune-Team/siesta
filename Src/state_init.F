@@ -69,6 +69,7 @@
       integer            :: i, ix, iadispl, ixdispl
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
+      logical            :: diag_folding, diag_folding1
       logical            :: foundxv  ! dummy for call to ioxv
       real(dp)           :: dummy_qspin(8)
       external           ::  madelung, timer
@@ -256,8 +257,20 @@
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
      $              set_xijo=.true., folding=folding1,
+     $              diagonal_folding=diag_folding1,
      $              debug_folding=fdf_get('debug-folding',.false.))
 !
+      call globalize_or(diag_folding1,diag_folding)
+      if (diag_folding .and. gamma) then
+         if (IOnode) then
+            write(6,"(a)") "Gamma-point calculation " //
+     $         "with interaction between periodic images!"
+            write(6,"(a)") "Some features might not work optimally"
+         endif
+         if (harrisfun) call die("Harris functional run needs " //
+     $                              "'force-aux-cell T'")
+      endif
+      !
       call globalize_or(folding1,folding)
       if (folding) then
          if (gamma) then
@@ -271,6 +284,7 @@
             write(6,"(a,/,a)") "Non Gamma-point calculation " //
      $           "with multiply-connected orbital pairs " //
      $           "in auxiliary supercell.",
+     $           "Possible internal error. " //
      $           "Use 'debug-folding T' to debug."
             call die("Inadequate auxiliary supercell")
          endif

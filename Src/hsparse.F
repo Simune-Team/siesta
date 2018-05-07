@@ -48,7 +48,8 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
      &                    nlhmax, gamma,
-     $                    set_xijo, folding, debug_folding)
+     $                    set_xijo, folding,
+     $                    diagonal_folding, debug_folding)
 
       use precision
       use parallel,        only : Node, Nodes
@@ -76,6 +77,7 @@ C
       logical, intent(in)           :: gamma
       logical, intent(in)     :: set_xijo
       logical, intent(out)    :: folding
+      logical, intent(out)    :: diagonal_folding
       logical, intent(in), optional    :: debug_folding
 
       external               timer
@@ -195,6 +197,7 @@ C     Initialize vector switch only once
       enddo
 
       folding = .false.
+      diagonal_folding = .false.
 
 C------------------------------------C
 C     Find number of non-zeros in H  C
@@ -402,6 +405,9 @@ C Find if jo overlaps with a KB projector
                    if (connected) then
                       if (conect(jo)) then
                          folding = .true.
+                         if (io == indxuo(jo)) then
+                            diagonal_folding = .true.
+                         endif
 
                          ! If already connected and using supercell, the
                          ! latter might not be big enough...  We defer
@@ -444,9 +450,6 @@ C           Restore conect array for next orbital io
        enddo                    ! io
       enddo                     ! ia
 
-!!        print "(a5,i3,a40,3i8)",
-!!     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
-!!     $         nuo, nuotot, nlhmax
 
 C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )
