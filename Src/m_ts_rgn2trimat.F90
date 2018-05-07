@@ -12,7 +12,7 @@
 ! Module for converting a sparsity pattern to an
 ! "optimal" tri-diagonal matrix...
 
-! Routine for converting a TranSIESTA sparsity pattern to a tri-diagonal form
+! Routine for converting a TranSiesta sparsity pattern to a tri-diagonal form
 ! It requires that the sparsity pattern is fully contained in the current
 ! processor.
 
@@ -295,7 +295,7 @@ contains
     i = valid_tri(no,mm_col,parts, n_part,last_eq)
     if ( i /= VALID ) then
        write(*,'(2a)') 'Running on region: ',trim(r%name)
-       write(*,'(a,i0)') 'TranSIESTA system size: ',no
+       write(*,'(a,i0)') 'TranSiesta system size: ',no
        write(*,'(a,i0)') 'Current parts: ',parts
        write(*,'(10000000(tr1,i0))') n_part
        write(*,'(a,i0)') 'Current part size: ',sum(n_part(:))

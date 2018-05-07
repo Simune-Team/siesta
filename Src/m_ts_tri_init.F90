@@ -98,10 +98,10 @@ contains
     ! This is probably the crudest way of doing it.
 #ifdef MPI
     call newDistribution(nrows_g(sparse_pattern),MPI_Comm_Self,fdit, &
-         name='TranSIESTA UC distribution')
+         name='TranSiesta UC distribution')
 #else    
     call newDistribution(nrows_g(sparse_pattern),-1,fdit, &
-         name='TranSIESTA UC distribution')
+         name='TranSiesta UC distribution')
 #endif
 
     ! We need to regenerate the sparsity pattern without the 
@@ -325,10 +325,10 @@ contains
     ! This is probably the crudest way of doing it.
 #ifdef MPI
     call newDistribution(nrows_g(sparse_pattern),MPI_Comm_Self,fdit, &
-         name='TranSIESTA UC distribution')
+         name='TranSiesta UC distribution')
 #else    
     call newDistribution(nrows_g(sparse_pattern),-1,fdit, &
-         name='TranSIESTA UC distribution')
+         name='TranSiesta UC distribution')
 #endif
 
     ! We need to regenerate the sparsity pattern without the 

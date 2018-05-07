@@ -695,7 +695,7 @@ contains
     end if
 
     if ( 'DM-Gf' .in. save_DATA ) then
-       dic = dic // ('info'.kv.'Green function density matrix')
+       dic = dic // ('info'.kv.'Green function density matrix')//('unit'.kv.'1/Ry')
        call ncdf_def_var(ncdf,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
            atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
        mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
@@ -803,7 +803,7 @@ contains
        end if
 
        if ( 'DM-A' .in. save_DATA ) then
-          dic = dic // ('info'.kv.'Spectral function density matrix')
+          dic = dic // ('info'.kv.'Spectral function density matrix')//('unit'.kv.'1/Ry')
           call ncdf_def_var(grp,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
@@ -1670,15 +1670,15 @@ contains
     if ( 'DOS-Gf' .in. save_DATA ) then
 
       ! Get (orbital summed) DOS (in /eV)
-      call get_DOS(ncdf, 'DOS', no_d, r2)
+      call get_DOS(ncdf, 'DOS', no_d, NE, nkpt, r2)
 
       if ( nkpt > 1 ) then
         call name_save(ispin,nspin,ascii_file,end='DOS')
-        call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+        call save_DAT(ascii_file,nkpt,rkpt,rwkpt,no_d,NE,rE,pvt,r2,'DOS [1/eV]', &
             '# DOS calculated from the Green function, k-resolved')
       end if
       call name_save(ispin,nspin,ascii_file,end='AVDOS')
-      call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+      call save_DAT(ascii_file,1,rkpt,rwkpt,no_d,NE,rE,pvt,r2,'DOS [1/eV]', &
           '# DOS calculated from the Green function, k-averaged')
 
     end if
@@ -1696,32 +1696,33 @@ contains
     ! We should now be able to create all the files
     do iEl = 1 , N_Elec
 
+      ! Always open the group...
+      call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
       if ( 'DOS-Elecs' .in. save_DATA ) then
-
-        call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
-
 
         ! Get bulk-transmission
         call ncdf_get_var(grp,'T',r2)
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='BTRANS',El1=Elecs(iEl))
-          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'T',&
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'T',&
               '# Bulk transmission, k-resolved')
         end if
         call name_save(ispin,nspin,ascii_file,end='AVBTRANS',El1=Elecs(iEl))
-        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'T', &
+        call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'T', &
             '# Bulk transmission, k-averaged')
 
         ! Bulk DOS
-        call get_DOS(grp, 'DOS', Elecs(iEl)%no_u, r2)
+        call get_DOS(grp, 'DOS', Elecs(iEl)%no_u, NE, nkpt, r2)
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
-          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS',&
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt, &
+              Elecs(iEl)%no_u,NE,rE,pvt,r2,'DOS [1/eV]',&
               '# Bulk DOS, k-resolved')
         end if
         call name_save(ispin,nspin,ascii_file,end='AVBDOS',El1=Elecs(iEl))
-        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+        call save_DAT(ascii_file,1,rkpt,rwkpt, &
+            Elecs(iEl)%no_u,NE,rE,pvt,r2,'DOS [1/eV]',&
             '# Bulk DOS, k-averaged')
 
       end if
@@ -1734,20 +1735,17 @@ contains
             ('T-all'.nin. save_DATA) ) cycle
       end if
 
-      if ( 'DOS-Elecs' .nin. save_DATA ) &
-          call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
-
       if ( 'DOS-A' .in. save_DATA ) then
 
         ! Spectral DOS
-        call get_DOS(grp, 'ADOS', no_d, r2)
+        call get_DOS(grp, 'ADOS', no_d, NE, nkpt, r2)
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='ADOS',El1=Elecs(iEl))
-          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'DOS',&
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,no_d,NE,rE,pvt,r2,'DOS [1/eV]',&
               '# DOS calculated from the spectral function, k-resolved')
         end if
         call name_save(ispin,nspin,ascii_file,end='AVADOS',El1=Elecs(iEl))
-        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'DOS', &
+        call save_DAT(ascii_file,1,rkpt,rwkpt,no_d,NE,rE,pvt,r2,'DOS [1/eV]', &
             '# DOS calculated from the spectral function, k-averaged')
 
       end if
@@ -1769,11 +1767,11 @@ contains
           ! Save the variable to ensure the correct sum in the transmission
           if ( nkpt > 1 ) then
             call name_save(ispin,nspin,ascii_file,end='CORR', El1=Elecs(iEl))
-            call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'Correction',&
+            call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'Correction',&
                 '# Out transmission correction, k-resolved')
           end if
           call name_save(ispin,nspin,ascii_file,end='AVCORR', El1=Elecs(iEl))
-          call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'Correction',&
+          call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'Correction',&
               '# Out transmission correction, k-averaged')
 
           if ( N_eigen > 0 ) then
@@ -1812,12 +1810,12 @@ contains
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='TRANS', &
               El1=Elecs(iEl), El2=Elecs(jEl))
-          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,r2,'Transmission',&
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'Transmission',&
               '# Transmission, k-resolved')
         end if
         call name_save(ispin,nspin,ascii_file,end='AVTRANS', &
             El1=Elecs(iEl), El2=Elecs(jEl))
-        call save_DAT(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,r2,'Transmission',&
+        call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'Transmission',&
             '# Transmission, k-averaged')
 
         ! The array r2 now contains the k-averaged transmission.
@@ -1951,10 +1949,10 @@ contains
 
   contains
 
-    subroutine get_DOS(grp, var, no, r2)
+    subroutine get_DOS(grp, var, no, NE, nkpt, r2)
       type(hNCDF), intent(inout) :: grp
       character(len=*), intent(in) :: var
-      integer, intent(in) :: no
+      integer, intent(in) :: no, NE, nkpt
       real(dp), intent(out) :: r2(NE, nkpt)
 
       integer :: io, ie, ik
@@ -1982,9 +1980,9 @@ contains
 
     end subroutine get_DOS
 
-    subroutine save_DAT(fname,nkpt,kpt,wkpt,NE,E,ipiv,DAT,value,header)
+    subroutine save_DAT(fname,nkpt,kpt,wkpt,N,NE,E,ipiv,DAT,value,header)
       character(len=*), intent(in) :: fname
-      integer, intent(in) :: nkpt, NE, ipiv(NE)
+      integer, intent(in) :: nkpt, NE, ipiv(NE), N
       real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt), E(NE)
       real(dp), intent(inout) :: DAT(NE,nkpt)
       character(len=*), intent(in) :: value, header
@@ -1999,6 +1997,9 @@ contains
 
       write(iu,'(a)') trim(header)
       write(iu,'(a)') '# Date: '//trim(tmp)
+      if ( N > 0 ) then
+        write(iu,'(a,tr1,i0)')"# Normalization:", N
+      end if
 #ifdef TBT_PHONON
       write(iu,'(a,a9,tr1,a16)')"#","Omega [eV]", value
 #else
@@ -2222,7 +2223,7 @@ contains
        open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
        write(iu,'(a)') '# DOS calculated from the Greens function, k-resolved'
        write(iu,'(a)') '# Date: '//trim(tmp)
-       write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS'
+       write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
        
        iounits(cu) = iu
 
@@ -2248,7 +2249,7 @@ contains
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
           write(iu,'(a)') '# DOS calculated from the spectral function, k-resolved'
           write(iu,'(a)') '# Date: '//trim(tmp)
-          write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS'
+          write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
 
           iounits(cu) = iu
           
@@ -2371,7 +2372,7 @@ contains
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
           write(iu,'(a)') '# Bulk DOS, k-resolved'
           write(iu,'(a)') '# Date: '//trim(tmp)
-          write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS'
+          write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
 
           iounits(cu) = iu
           
