@@ -369,6 +369,11 @@ contains
     character(len=2) :: unit
     real(dp), allocatable :: r2(:,:)
     type(tRgn) :: a_Dev_sort
+#ifdef TBT_PHONON
+    character(len=*), parameter :: T_unit = 'g0'
+#else
+    character(len=*), parameter :: T_unit = 'G0'
+#endif
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -766,13 +771,12 @@ contains
                atts = dic)
           mem = mem + calc_mem(NF90_INT, Elecs(iEl)%na_u)
           
-          dic = dic//('info'.kv.'Bulk transmission')
+          dic = dic//('info'.kv.'Bulk transmission')//('unit'.kv.T_unit)
           call ncdf_def_var(grp,'T',prec_T,(/'ne  ','nkpt'/), &
                atts = dic)
           mem = mem + calc_mem(prec_T, NE, nkpt)
 
-          dic = dic//('info'.kv.'Unit cell')
-          dic = dic//('unit'.kv.'Bohr')
+          dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
           call ncdf_def_var(grp,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
                atts = dic)
           
@@ -831,14 +835,15 @@ contains
           mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
        end if
 
-       call delete(dic)
-       
        if ( 'orb-current' .in. save_DATA ) then
-          dic = ('info'.kv.'Orbital current')
+          dic = dic//('info'.kv.'Orbital transmission')//('unit'.kv.T_unit)
           call ncdf_def_var(grp,'J',prec_J,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_J, nnzs_dev, NE, nkpt)
        end if
+
+       ! All quantities here are transmissions.
+       dic = dic//('unit'.kv.T_unit)
 
        tmp = trim(Elecs(iEl)%name)
        do jEl = 1 , N_Elec
