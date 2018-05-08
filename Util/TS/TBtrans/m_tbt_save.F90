@@ -1615,8 +1615,10 @@ contains
     real(dp) :: Current, eRy
 
 #ifdef TBT_PHONON
+    character(len=*), parameter :: T_unit = ' [g0]'
     real(dp) :: dT, kappa
 #else
+    character(len=*), parameter :: T_unit = ' [G0]'
     real(dp) :: Power, V, dd
 #endif
     integer, allocatable :: pvt(:)
@@ -1705,11 +1707,11 @@ contains
         call ncdf_get_var(grp,'T',r2)
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='BTRANS',El1=Elecs(iEl))
-          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'T',&
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'T'//T_unit,&
               '# Bulk transmission, k-resolved')
         end if
         call name_save(ispin,nspin,ascii_file,end='AVBTRANS',El1=Elecs(iEl))
-        call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'T', &
+        call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'T'//T_unit, &
             '# Bulk transmission, k-averaged')
 
         ! Bulk DOS
@@ -1767,22 +1769,22 @@ contains
           ! Save the variable to ensure the correct sum in the transmission
           if ( nkpt > 1 ) then
             call name_save(ispin,nspin,ascii_file,end='CORR', El1=Elecs(iEl))
-            call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'Correction',&
+            call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'TC'//T_unit,&
                 '# Out transmission correction, k-resolved')
           end if
           call name_save(ispin,nspin,ascii_file,end='AVCORR', El1=Elecs(iEl))
-          call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'Correction',&
+          call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'TC'//T_unit,&
               '# Out transmission correction, k-averaged')
 
           if ( N_eigen > 0 ) then
             call ncdf_get_var(grp,trim(Elecs(jEl)%name)//'.C.Eig',r3)
             if ( nkpt > 1 ) then
               call name_save(ispin,nspin,ascii_file,end='CEIG', El1=Elecs(iEl) )
-              call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+              call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'TCeig'//T_unit,&
                   '# Out transmission correction eigenvalues, k-resolved')
             end if
             call name_save(ispin,nspin,ascii_file,end='AVCEIG', El1=Elecs(iEl) )
-            call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+            call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'TCeig'//T_unit,&
                 '# Out transmission correction eigenvalues, k-averaged')
           end if
 
@@ -1796,12 +1798,12 @@ contains
             if ( nkpt > 1 ) then
               call name_save(ispin,nspin,ascii_file,end='TEIG', &
                   El1=Elecs(iEl), El2=Elecs(jEl))
-              call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+              call save_EIG(ascii_file,nkpt,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Teig'//T_unit,&
                   '# Transmission eigenvalues, k-resolved')
             end if
             call name_save(ispin,nspin,ascii_file,end='AVTEIG', &
                 El1=Elecs(iEl), El2=Elecs(jEl))
-            call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Eigenvalues',&
+            call save_EIG(ascii_file,1,rkpt,rwkpt,NE,rE,pvt,N_eigen,r3,'Teig'//T_unit,&
                 '# Transmission eigenvalues, k-averaged')
           end if
         end if
@@ -1810,12 +1812,12 @@ contains
         if ( nkpt > 1 ) then
           call name_save(ispin,nspin,ascii_file,end='TRANS', &
               El1=Elecs(iEl), El2=Elecs(jEl))
-          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'Transmission',&
+          call save_DAT(ascii_file,nkpt,rkpt,rwkpt,0,NE,rE,pvt,r2,'T'//T_unit,&
               '# Transmission, k-resolved')
         end if
         call name_save(ispin,nspin,ascii_file,end='AVTRANS', &
             El1=Elecs(iEl), El2=Elecs(jEl))
-        call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'Transmission',&
+        call save_DAT(ascii_file,1,rkpt,rwkpt,0,NE,rE,pvt,r2,'T'//T_unit,&
             '# Transmission, k-averaged')
 
         ! The array r2 now contains the k-averaged transmission.
@@ -1851,12 +1853,12 @@ contains
         ! Change from \omega -> \hbar\omega yields:
         !   \hbar d\omega -> d (\hbar\omega) = d E
         ! Hence we need to divide by:
-        !  \hbar == 2pi h in [eV fs]
+        !   \hbar == 2pi h in [eV fs]
         Current = Current / h_eVfs
 
         ! 'kappa' is now in [Ry] [eV]**2
         ! (also the conversion from \omega->\hbar\omega introduces division by hbar
-        !   hbar = 2\pi h
+        !    hbar = 2\pi h
         kappa = kappa / eV / h_eVfs
         ! 'kappa' in [eV] ** 2 / [fs]
         kappa = kappa / (Elecs(iEl)%mu%kT/eV * Elecs(iEl)%mu%kT/Kelvin)
@@ -2010,12 +2012,16 @@ contains
       do ik = 1 , nkpt 
 !$OMP master
         if ( nkpt > 1 ) then
-          write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
+          write(iu,'(/,a6,3(f10.6,'', ''),a,e13.6)') &
               '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
         end if
         do i = 1 , NE
           ! We sum the orbital contributions
+#ifdef TBT_PHONON
+          write(iu,'(f10.6,tr1,e16.8)') E(ipiv(i)),DAT(ipiv(i),ik)
+#else
           write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)),DAT(ipiv(i),ik)
+#endif
         end do
 !$OMP end master ! no implicit barrier
         if ( nkpt > 1 ) then
