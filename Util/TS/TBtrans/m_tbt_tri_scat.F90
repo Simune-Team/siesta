@@ -444,10 +444,11 @@ contains
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
     ! Create the phases
+    ! We are using the explicit H(j, i) and thus the phases are consistent with +
     do i = 1 , size(sc_off, dim=2)
-       ph(i-1) = cdexp(dcmplx(0._dp, - &
-            k(1) * sc_off(1,i) - &
-            k(2) * sc_off(2,i) - &
+       ph(i-1) = cdexp(dcmplx(0._dp, + &
+            k(1) * sc_off(1,i) + &
+            k(2) * sc_off(2,i) + &
             k(3) * sc_off(3,i))) / (2._dp * Pi)
     end do
 
@@ -697,6 +698,7 @@ contains
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
     ! Create the phases
+    ! We are using the explicit H(j, i) and thus the phases are consistent with +
     do i = 1 , size(sc_off, dim=2)
        ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
@@ -1606,6 +1608,9 @@ contains
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
     ! Create the phases
+    ! We are using the symmetric H(j, i) = H(i, j) relation.
+    ! So since we are taking the complex part on the first entry we retrieve the H(j,i) (in k-space)
+    ! component.
     do i = 1 , size(sc_off, dim=2)
        ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
@@ -1722,6 +1727,7 @@ contains
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
     ! Create the phases
+    ! We are using the explicit H(j, i) and thus the phases are consistent with +
     do i = 1 , size(sc_off, dim=2)
        ph(i-1) = cdexp(dcmplx(0._dp, + &
             k(1) * sc_off(1,i) + &
@@ -1869,6 +1875,8 @@ contains
     call attach(sp, nrows_g=no_u, n_col=ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! Create the phases
+    ! Since we have to do Gf.exp(ikR) we simply
+    ! create exp(-ikR) for the supercell connections.
     do io = 1 , size(sc_off, dim=2)
        ph(io-1) = cdexp(dcmplx(0._dp, - &
             k(1) * sc_off(1,io) - &
@@ -1968,6 +1976,8 @@ contains
     call attach(sp, nrows_g=no_u, n_col=ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! Create the phases
+    ! Since we have to do Gf.exp(ikR) we simply
+    ! create exp(-ikR) for the supercell connections.
     do io = 1 , size(sc_off, dim=2)
        ph(io-1) = cdexp(dcmplx(0._dp, - &
             k(1) * sc_off(1,io) - &
