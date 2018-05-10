@@ -529,7 +529,6 @@ grdsam.o: alloc.o dhscf.o files.o m_mpi_utils.o m_partial_charges.o parallel.o
 grdsam.o: precision.o siesta_geom.o siesta_options.o sys.o units.o
 hsparse.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mneighb.o
 hsparse.o: parallel.o parallelsubs.o precision.o sorting.o sparse_matrices.o
-hsparse.o: sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atmparams.o atom.o atom_options.o basis_io.o basis_specs.o
 initatom.o: basis_types.o electrostatic.o old_atmfuncs.o precision.o

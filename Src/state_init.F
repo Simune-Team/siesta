@@ -49,6 +49,7 @@
       use m_mpi_utils,       only: globalize_sum
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use fdf,               only: fdf_get
+      use sys,               only: message, die
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS
       use sys, only : bye
@@ -261,25 +262,24 @@
      $              debug_folding=fdf_get('debug-folding',.false.))
 !
       call globalize_or(diag_folding1,diag_folding)
+      call globalize_or(folding1,folding)
       if (diag_folding .and. gamma) then
-         if (IOnode) then
-            write(6,"(a)") "Gamma-point calculation " //
-     $         "with interaction between periodic images!"
-            write(6,"(a)") "Some features might not work optimally"
-         endif
+         call message("WARNING","Gamma-point calculation " //
+     $         "with interaction between periodic images")
+         call message("WARNING",
+     $           "Some features might not work optimally:")
+         call message("WARNING",
+     $           "e.g. DM initialization from atomic data")
          if (harrisfun) call die("Harris functional run needs " //
      $                              "'force-aux-cell T'")
-      endif
-      !
-      call globalize_or(folding1,folding)
-      if (folding) then
+
+      else if (folding) then
          if (gamma) then
-            if (IOnode) then
-               write(6,"(a)") "Gamma-point calculation " //
-     $                        "with multiply-connected orbital pairs"
-               write(6,"(a)") "Folding of H and S implicitly performed"
+               call message("INFO","Gamma-point calculation " //
+     $                      "with multiply-connected orbital pairs")
+               call message("INFO",
+     $              "Folding of H and S implicitly performed")
                call check_cohp()
-            endif
          else
             write(6,"(a,/,a)") "Non Gamma-point calculation " //
      $           "with multiply-connected orbital pairs " //
@@ -417,18 +417,15 @@
 
       subroutine check_cohp()
       use siesta_options, only: write_coop
-
+      use sys,            only: message
+      
       if (write_coop) then
-         write(6,'(/,a,a,/,a)')
-     .     'NOTE: There are multiply-connected orbitals.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.',
-     .     'NOTE: Use "force-aux-cell T" or k-point sampling'
-         write(0,'(/,a,a,/,a)')
-     .     'NOTE: There are multiply-connected orbitals.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.',
-     .     'NOTE: Use "force-aux-cell T" or k-point sampling'
+         call message("WARNING","There are multiply-connected "//
+     $                          "orbitals.")
+         call message("WARNING","Your COOP/COHP analysis might " //
+     $                          "be affected by folding.")
+         call message("WARNING",'Use "force-aux-cell T "' //
+     $                          'or k-point sampling')
       endif
       end subroutine check_cohp
 

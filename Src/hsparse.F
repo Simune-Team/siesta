@@ -60,7 +60,6 @@ C
       use sorting
       use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
       use neighbour,       only : mneighb, reset_neighbour_arrays
-      use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
       use atomlist,        only : no_l, indxuo
       use sparse_matrices, only : listhptr, numh, listh, xijo
