@@ -54,8 +54,10 @@ contains
 #ifdef NCDF_4
 
     sigma_save = fdf_get('TBT.CDF.SelfEnergy.Save',.false.)
+    sigma_save = fdf_get('TBT.SelfEnergy.Save',sigma_save)
     if ( sigma_save ) then
-       sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
+      sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
+      sigma_mean_save = fdf_get('TBT.SelfEnergy.Save.Mean',sigma_mean_save)
     end if
     cmp_lvl = fdf_get('CDF.Compress',0)
     cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
@@ -63,7 +65,8 @@ contains
     if ( cmp_lvl < 0 ) cmp_lvl = 0
     if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
-    sigma_parallel = fdf_get('TBT.CDF.SelfEnergy.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.SelfEnergy.MPI',sigma_parallel)
     if ( sigma_parallel ) then
        cmp_lvl = 0
     end if

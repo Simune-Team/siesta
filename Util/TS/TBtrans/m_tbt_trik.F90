@@ -333,30 +333,38 @@ contains
     pad_LHS = 0
     do iEl = 1 , N_Elec
        if ( ElTri(iEl)%n < 2 ) &
-            call die('All regions must be at least 2 blocks big. Error')
+           call die('All regions must be at least 2 blocks big. Error')
+
+       ! Down-folding work-arrays
        pad_LHS = max(pad_LHS,fold_elements(ElTri(iEl)%n,ElTri(iEl)%r))
-       ! In case we are doing in-core calculations, 
-       ! we need a certain size for the electrode calculation.
-       ! Sadly this is "pretty" big.
+       
        if ( .not. Elecs(iEl)%out_of_core ) then
-          no = Elecs(iEl)%no_u ** 2
-          ! Determine work array size
-          ! H00, H01, S00 and S01 in the work array
-          io = no * 4
-          if ( Elecs(iEl)%no_u /= Elecs(iEl)%no_used ) io = io + no
-          io = io + no * 8
-          if ( 'DOS-Elecs' .in. save_DATA ) then
-             io = io + no
-          end if
-          pad_LHS = max(pad_LHS,io)
-       else if ( sum(Elecs(iEl)%Bloch) > 3 ) then
-          ! ensure enough space for the expansion of the
-          ! self-energies, etc.
-          ! TODO when bulk vs. non-bulk the below can
-          ! probably be halved... see m_ts_elec_se.F90
-          no = TotUsedOrbs(Elecs(iEl)) ** 2 * 2
-          pad_LHS = max(pad_LHS,no)
+         ! In case we are doing in-core calculations, 
+         ! we need a certain size for the electrode calculation.
+         ! Sadly this is "pretty" big.
+         
+         ! In this part we calculate the necessary size needed to calculate
+         ! the self-energies (plus possibly DOS)
+         no = Elecs(iEl)%no_u ** 2
+         ! Determine work array size
+         ! H00, H01, S00 and S01 in the work array
+         io = no * 4
+         ! For the Lopez-Sancho algorithm
+         io = io + no * 8
+         ! One more array is requred when we need to invert the matrix
+         if ( Elecs(iEl)%no_u /= Elecs(iEl)%no_used ) io = io + no
+         if ( 'DOS-Elecs' .in. save_DATA ) io = io + no
+         
        end if
+
+       ! These are work-arrays required for expansion of the self-energy
+       if ( Elecs(iEl)%Bulk ) then
+         no = TotUsedOrbs(Elecs(iEl)) ** 2 ! We already have H, S
+       else
+         no = TotUsedOrbs(Elecs(iEl)) ** 2 * 2
+       end if
+
+       pad_LHS = max(pad_LHS,io,no)
     end do
 
     ! Correct the actual padding by subtracting the 
@@ -918,9 +926,7 @@ contains
              ! create the Gamma.
              ! Hence it is a waste of time if this is done in this
              ! loop....
-             call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
-                  non_Eq = .false. ) 
-
+             call UC_expansion(cE, Elecs(iEl), nzwork, zwork, non_Eq = .false. ) 
 
              ! Down-fold immediately :)
 #ifdef TBT_PHONON

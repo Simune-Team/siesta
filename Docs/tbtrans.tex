@@ -2069,7 +2069,10 @@ Several fdf-flags control how \tbtrans\ performs IO.
 \begin{fdflogicalF}{TBT.CDF!MPI}
 
   Whether the IO is performed in parallel. If using a large amount of
-  MPI processors this may increase performance. 
+  MPI processors this may increase performance.
+
+  \note the actual performance increase is \emph{very} dependent on
+  your hardware support for parallel IO.
 
   \note this automatically sets the compression to 0 (one cannot
   compress and perform parallel IO).
@@ -2088,7 +2091,7 @@ This feature enables one to easily use self-energies in Python for
 subsequent analysis etc. It is only available if compiled against
 NetCDF4. 
 
-\begin{fdflogicalF}{TBT.CDF!SelfEnergy.Save}
+\begin{fdflogicalF}{TBT!SelfEnergy.Save}
 
   Store the self-energies of the electrodes. The self-energies are
   first down-folded into the device region (see
@@ -2096,15 +2099,15 @@ NetCDF4.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{TBT.CDF!SelfEnergy.Precision}[string]<{<\fdf{TBT.CDF!Precision}>}>
+\begin{fdflogicalF}{TBT!SelfEnergy.Save.Mean}
 
-  Specify the precision used for storing the self-energies in NetCDF4.
+  If \fdftrue\ the down-folded self-energies will be $k$-averaged
+  after \tbtrans\ has finished.
+  
+\end{fdflogicalF}
 
-  See \fdf{TBT.CDF!Precision}.
 
-\end{fdfentry}
-
-\begin{fdflogicalF}{TBT.CDF!SelfEnergy.Only}
+\begin{fdflogicalF}{TBT!SelfEnergy.Only}
   
   If \fdftrue\ this will \emph{only} calculate and store the
   down-folded self-energies. No physical quantities will be calculated
@@ -2112,14 +2115,31 @@ NetCDF4.
   
 \end{fdflogicalF}
 
+
+\begin{fdfentry}{TBT.CDF!SelfEnergy.Precision}[string]<{<\fdf{TBT.CDF!Precision}>}>
+  \fdfdepend{TBT.CDF!Precision}
+
+  Specify the precision used for storing the self-energies in NetCDF4.
+
+\end{fdfentry}
+
+
 \begin{fdfentry}{TBT.CDF!SelfEnergy.Compress}[integer]%
   <{<\fdf{TBT.CDF!Compress}>}>
-  
+  \fdfdepend{TBT.CDF!Compress}
+
   Specify the compression of the self-energies in NetCDF4.
   
-  See \fdf{TBT.CDF!Compress}.
-  
 \end{fdfentry}
+
+
+\begin{fdflogicalF}{TBT.CDF!SelfEnergy.MPI}%
+  \fdfdepend{TBT.CDF!MPI}
+
+  If \fdftrue\ \tbtrans\ will use MPI when writing the NetCDF files
+  containing the downfolded self-energies.
+
+\end{fdflogicalF}
 
 
 \subsubsection{Projected transmissions}

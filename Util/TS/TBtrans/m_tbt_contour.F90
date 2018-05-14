@@ -91,7 +91,7 @@ contains
     end if
 
     ! Bias-window setup
-    call my_setup(' ',N_tbt,tbt_c,tbt_io,max_kT)
+    call my_setup(N_tbt,tbt_c,tbt_io,max_kT)
 
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
@@ -149,8 +149,7 @@ contains
 
   contains 
 
-    subroutine my_setup(suffix,N_tbt,tbt_c,tbt_io,max_kT)
-      character(len=*), intent(in) :: suffix
+    subroutine my_setup(N_tbt,tbt_c,tbt_io,max_kT)
       integer, intent(inout) :: N_tbt
       type(ts_cw), pointer :: tbt_c(:)
       type(ts_c_io), pointer :: tbt_io(:)
@@ -161,14 +160,14 @@ contains
       character(len=C_N_NAME_LEN), allocatable :: tmp(:)
       logical :: connected
 
-      N_tbt = fdf_nc_iotype('TBT',suffix)
+      N_tbt = fdf_nc_iotype('TBT',' ')
       if ( N_tbt < 1 ) return
 
       allocate(tmp(N_tbt))
 
-      tmp(1) = fdf_name_c_iotype('TBT',suffix,1)
+      tmp(1) = fdf_name_c_iotype('TBT',' ',1)
       do i = 2 , N_tbt
-         tmp(i) = fdf_name_c_iotype('TBT',suffix,i)
+         tmp(i) = fdf_name_c_iotype('TBT',' ',i)
          do j = 1 , i - 1
             if ( leqi(tmp(j),tmp(i)) ) then
                call neq_die('You cannot have two names from the window &
@@ -186,7 +185,7 @@ contains
          ! assign pointer
          tbt_c(i)%c_io => tbt_io(i)
          ! read in the contour
-         call ts_read_contour_block('TBT',suffix,tmp(i),tbt_io(i), max_kT, Volt)
+         call ts_read_contour_block('TBT',' ',tmp(i),tbt_io(i), max_kT, Volt)
 
          ! transport type contour
          tbt_c(i)%c_io%type = 'tran'
