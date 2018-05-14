@@ -48,7 +48,8 @@
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_sum
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
-
+      use fdf,               only: fdf_get
+      use sys,               only: message, die
 #ifdef TRANSIESTA
       use m_ts_options, only : onlyS
       use sys, only : bye
@@ -69,6 +70,7 @@
       integer            :: i, ix, iadispl, ixdispl
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
+      logical            :: diag_folding, diag_folding1
       logical            :: foundxv  ! dummy for call to ioxv
       real(dp)           :: dummy_qspin(8)
       external           ::  madelung, timer
@@ -255,7 +257,38 @@
 !           analyses.
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
-     $                 set_xijo=.true., folding=folding1)
+     $              set_xijo=.true., folding=folding1,
+     $              diagonal_folding=diag_folding1,
+     $              debug_folding=fdf_get('debug-folding',.false.))
+!
+      call globalize_or(diag_folding1,diag_folding)
+      call globalize_or(folding1,folding)
+      if (diag_folding .and. gamma) then
+         call message("WARNING","Gamma-point calculation " //
+     $         "with interaction between periodic images")
+         call message("WARNING",
+     $           "Some features might not work optimally:")
+         call message("WARNING",
+     $           "e.g. DM initialization from atomic data")
+         if (harrisfun) call die("Harris functional run needs " //
+     $                              "'force-aux-cell T'")
+
+      else if (folding) then
+         if (gamma) then
+               call message("INFO","Gamma-point calculation " //
+     $                      "with multiply-connected orbital pairs")
+               call message("INFO",
+     $              "Folding of H and S implicitly performed")
+               call check_cohp()
+         else
+            write(6,"(a,/,a)") "Non Gamma-point calculation " //
+     $           "with multiply-connected orbital pairs " //
+     $           "in auxiliary supercell.",
+     $           "Possible internal error. " //
+     $           "Use 'debug-folding T' to debug."
+            call die("Inadequate auxiliary supercell")
+         endif
+      endif
 !
       call globalize_sum(maxnh,nnz)
       if (cml_p) then
@@ -269,12 +302,6 @@
          call cmlEndPropertyList(mainXML)
       endif
       !
-      call globalize_or(folding1,folding)
-      if (folding) then
-         if (IOnode) then
-            print *, "Folding of H and S is implicitly performed"
-         endif
-      endif
       !
       ! If using domain decomposition, redistribute orbitals
       ! for this geometry, based on the hsparse info. 
@@ -387,4 +414,19 @@
 
 !--------------------------------------------------------------------------- END
       END subroutine state_init
+
+      subroutine check_cohp()
+      use siesta_options, only: write_coop
+      use sys,            only: message
+      
+      if (write_coop) then
+         call message("WARNING","There are multiply-connected "//
+     $                          "orbitals.")
+         call message("WARNING","Your COOP/COHP analysis might " //
+     $                          "be affected by folding.")
+         call message("WARNING",'Use "force-aux-cell T "' //
+     $                          'or k-point sampling')
+      endif
+      end subroutine check_cohp
+
       END module m_state_init
