@@ -31,5 +31,3 @@ MM.Cutoff 20.0 Ang
 kgrid_cutoff 4.0 Ang
 
 ElectronicTemperature 0 K
-
-HarrisFunctional T

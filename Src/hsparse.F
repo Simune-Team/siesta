@@ -48,7 +48,8 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
      &                    nlhmax, gamma,
-     $                    set_xijo, folding)
+     $                    set_xijo, folding,
+     $                    diagonal_folding, debug_folding)
 
       use precision
       use parallel,        only : Node, Nodes
@@ -59,9 +60,8 @@ C
       use sorting
       use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
       use neighbour,       only : mneighb, reset_neighbour_arrays
-      use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
-      use atomlist,        only : no_l
+      use atomlist,        only : no_l, indxuo
       use atomlist,        only : in_kb_orb_u_range
       use sparse_matrices, only : listhptr, numh, listh, xijo
       use radial,          only : rad_func
@@ -82,6 +82,8 @@ C
       logical, intent(in)           :: gamma
       logical, intent(in)           :: set_xijo
       logical, intent(out)    :: folding
+      logical, intent(out)    :: diagonal_folding
+      logical, intent(in), optional    :: debug_folding
 
       external               timer
 
@@ -106,8 +108,6 @@ C
      &  rci, rcj, rck, rij, rik, rjk,
      &  rmax, rmaxkb, rmaxo, rmaxldau
 
-      logical, save :: warn1 = .false.
-
       real(dp), dimension(:), pointer :: rckb
       logical, dimension(:),  pointer :: conect
       integer, dimension(:),  pointer :: index
@@ -117,17 +117,18 @@ C
       logical :: connected
       type(species_info), pointer :: spp
       type(rad_func),     pointer :: pp
-
+      logical :: debug
+      integer :: nprints   ! for debugging
 C -------------------------------------
-#ifdef DEBUG
-      call write_debug( '    PRE hsparse' )
-#endif
+
 C     Start time counter
       call timer( 'hsparse', 1 )
 
-      ! Reduce check to only IONode
-      if ( .not. warn1 ) warn1 = Node /= 0
-
+      debug = .false.
+      if (present(debug_folding)) then
+         debug = debug_folding
+      endif
+      
 C     Check size of internal arrays
       ncells = nsc(1) * nsc(2) * nsc(3)
       nua = na / ncells
@@ -217,6 +218,7 @@ C     Initialize vector switch only once
       end do
       
       folding = .false.
+      diagonal_folding = .false.
 
 C------------------------------------C
 C     Find number of non-zeros in H  C
@@ -373,6 +375,7 @@ C     Set up listhptr
 C------------------------------------C
 C     Find full H sparsity pattern   C
 C------------------------------------C
+      nprints = 0
 C     Loop on atoms in unit cell
       do ia = 1,nua
 C       Find neighbour atoms within maximum range
@@ -462,59 +465,53 @@ C           through a KB or LDA+U projector
                 end if
 
                 if (connected) then
-                  if (conect(jo)) then
-                    folding = .true.
+                      if (conect(jo)) then
+                         folding = .true.
+                         if (io == indxuo(jo)) then
+                            diagonal_folding = .true.
+                         endif
                        
-                    ! This test is now deferred to be able
-                    ! to catch multiple images while avoiding
-                    ! false positives (i.e., we test first
-                    ! whether there is indeed a connection).
+                         ! If already connected and using supercell, the
+                         ! latter might not be big enough...  We defer
+                         ! the decision on whether to kill the program
+                         ! to the caller.  Here keep the first instance
 
-                    ! If already connected and using supercell, 
-                    ! the latter might not be big enough...
-                    ! We warn the user and keep the first instance
-                    ! of xij (same behavior as the old xijorb, as
-                    ! earlier jnats are closer)
-                    ! Warn also if Gamma-point calculation, just
-                    ! in case
-                    if (.not.warn1) then
-                      if ( gamma ) then
-                        call check_cohp(io,jo)
-                      else
-                        write(6,'(/,a,2i6,a,/,a)')
-     .                        'WARNING: orbital pair ',io,jo,
+                         if (debug) then
+                            ! This might not be pretty in
+                            ! parallel. Better to build a list of a few
+                            ! cases, and pass it to the caller.
+                            if (nprints <= 20) then
+                               print "(a,2i6,a)",
+     .                           'WARNING: orbital pair ',io,indxuo(jo),
      .                        ' is multiply connected'
-                      endif
-                      warn1 = .true.
-                    endif
+                               nprints = nprints + 1
+                            endif
+                         endif
                        
-                  else
+                      else
                      
-                    conect(jo) = .true.
-                    numh(iio) = numh(iio) + 1
-                    ind = listhptr(iio)+numh(iio)
-                    listh(ind) = jo
-                    if (set_xijo) then
-                      xijo(1:3,ind) = xij(1:3,jnat)
-                    endif
-                  endif
-                endif
-              enddo
-            enddo
+                         conect(jo) = .true.
+                         numh(iio) = numh(iio) + 1
+                         ind = listhptr(iio)+numh(iio)
+                         listh(ind) = jo
+                         if (set_xijo) then
+                            xijo(1:3,ind) = xij(1:3,jnat)
+                         endif
+                      endif
+                   endif
+                enddo
+             enddo
           
             ! Restore conect array for next orbital io
-            do j = 1,numh(iio)
-              jo = listh(listhptr(iio)+j)
-              conect(jo) = .false.
-            end do
+             do j = 1,numh(iio)
+                jo = listh(listhptr(iio)+j)
+                conect(jo) = .false.
+             enddo
            
           end if                 ! iio > 0
         end do                   ! io
       end do                     ! ia
 
-!!        print "(a5,i3,a40,3i8)",
-!!     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
-!!     $         nuo, nuotot, nlhmax
 
 C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )
@@ -530,9 +527,6 @@ C     Deallocate local arrays
       call de_alloc( rckb, 'rckb', 'hsparse' )
 
       call timer( 'hsparse', 2 )
-#ifdef DEBUG
-      call write_debug( '    POS hsparse' )
-#endif
 
       contains
 
@@ -563,25 +557,7 @@ C     Deallocate local arrays
       rckb(nnkb)  = rck
       end subroutine add_projector
       
-      end subroutine hsparse
-      
-      subroutine check_cohp(io,jo)
-      use siesta_options, only: write_coop
 
-      integer, intent(in) :: io, jo
- 
-      if (write_coop) then
-         write(6,'(/,a,2i6,a,/,a)')
-     .     'NOTE: orbital pair ',io,jo,
-     .     ' (at least) is multiply connected.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.'
-         write(0,'(/,a,2i6,a,/,a)')
-     .     'NOTE: orbital pair ',io,jo,
-     .     ' (at least) is multiply connected.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.'
-      endif
-      end subroutine check_cohp
+      end subroutine hsparse
 
       end module m_hsparse

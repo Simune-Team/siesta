@@ -3909,6 +3909,7 @@ The current version introduces several changes:
   DM for restarting an interrupted loop, but a ``good'' DM will be
   used for any other post-processing.
 
+
 \end{itemize}
 
 
@@ -4909,7 +4910,7 @@ the DIIS history. There is no provision yet for any other kind of
 
 NOTE: The conditions and options for density-matrix re-use are quite
 varied and not completely orthogonal at this point. For further
-information, see routine \texttt{Src/m\_new\_dm.F}. What follows is a
+information, see routine \file{Src/m\_new\_dm.F}. What follows is a
 summary.
 
 The Density matrix can be:
@@ -5751,10 +5752,21 @@ When using k-points, this auxiliary supercell is needed to compute properly
 the matrix elements involving orbitals in different unit cells.
 It is computed automatically by the program at every geometry step.
 
-\begin{fdflogicalF}{FixAuxiliaryCell}
-  
-  Logical variable to control whether the auxiliary cell is changed
-  during a variable cell optimization.
+Note that for gamma-point-only calculations there is an implicit
+``folding'' of matrix elements corresponding to the images of orbitals
+outside the unit cell. If information about the specific values of
+these matrix elements is needed (as for COOP/COHP analysis), one has
+to make sure that the unit cell is large enough, or force the use
+of an aunxiliary supercell.
+\index{COOP/COHP curves!Folding in Gamma-point calculations}
+
+ 
+\begin{fdflogicalF}{FixAuxiliaryCell} 
+
+ Logical variable to control whether the auxiliary cell is changed
+during a variable cell optimization. If this option is used, care
+should be taken that the supercell is appropriate for the whole
+duration of the run.
 
 \end{fdflogicalF}
 
@@ -5770,12 +5782,26 @@ It is computed automatically by the program at every geometry step.
 
   Only small numerical differences in the results are to be expected.
   
-  Note that for gamma-point-only calculations there is an implicit
-  ``folding'' of matrix elements corresponding to the images of orbitals
-  outside the unit cell. If information about the specific values of
-  these matrix elements is needed (as for COOP/COHP analysis), one has
-  to make sure that the unit cell is large enough.  
-  \index{COOP/COHP curves!Folding in Gamma-point calculations}
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{ForceAuxCell}
+
+
+If \fdftrue, the program uses an auxiliary cell even for gamma-point-only
+calculations. This might be needed for COOP/COHP calculations, as
+noted above, \index{COOP/COHP curves!Folding in Gamma-point
+  calculations} or in degenerate cases, such as when the cell is so
+small that a given orbital ``self-interacts'' with its own images (via
+direct overlap or through a KB projector). In this case, the diagonal
+value of the overlap matrix S for this orbital is different from 1, and an
+initialization of the DM via atomic data would be faulty. The
+program corrects the problem to zeroth-order by dividing the DM value
+by the corresponding overlap matrix entry, but the initial charge
+density would exhibit distortions from a true atomic superposition
+(See routine \file{m\_new\_dm.F}). The distortion of the charge density
+is a serious problem for Harris functional calculations, so this
+option must be enabled for them if self-folding is present. (Note that
+this should not happen in any serious calculation...)
 
 \end{fdflogicalF}
 
