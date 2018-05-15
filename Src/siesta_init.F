@@ -628,8 +628,9 @@ C     Initialise MPI and set processor number
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
           nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
         end do
-        if ( .not. naiveauxcell ) 
-     &       call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+        ! The above is kept for historical reasons,
+        ! but a tight supercell can be found from the atom-graph info:
+        call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
       end if
 
       mscell = 0.0_dp

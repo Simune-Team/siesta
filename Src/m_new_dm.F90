@@ -788,6 +788,7 @@ contains
 
     use fdf
     use parsing
+    use sparse_matrices, only: S  ! Note direct import of (associated now) pointer
 
 #ifdef MPI
     use mpi_siesta
@@ -822,6 +823,7 @@ contains
     type(dData2D) :: arr_2D
     ! The pointers for the sparse pattern
     integer :: no_l, nnz
+    integer :: io, gio, i, ind, jo
     integer, pointer :: ncol(:), ptr(:), col(:)
     real(dp), pointer :: DM(:,:)
     
@@ -851,10 +853,29 @@ contains
        call init_user()
     end if
 
+    ! We have initialized with atomic information. Correct in case we
+    ! are using such a small cell that there are direct interactions
+    ! of orbitals with their own images, and we insist on using the
+    ! Gamma-point only. Otherwise S(diagonal) is always 1.0 and the
+    ! simple atomic-orbital superposition works as intended.
+
+      do io = 1, no_l
+         ! Retrieve global orbital index
+         gio = index_local_to_global(dit, io)
+         do i = 1 , ncol(io)
+            ind = ptr(io) + i
+            jo = col(ind)
+            ! Check for diagonal element
+            if ( gio == jo ) then
+               DM(ind,:) = DM(ind,:) / S(ind)
+            endif
+         end do
+      end do
+
   contains
 
     subroutine init_atomic()
-
+      
       integer :: io, gio, i, ind, jo, i1, i2
       ! This subroutine initializes the DM based on
       ! the anti_ferro

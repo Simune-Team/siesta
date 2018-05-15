@@ -9,7 +9,7 @@
 ! Nick Papior Andersen, 2013, nickpapior@gmail.com
 ! Please conctact the author, prior to re-using this code.
 
-! A module that supplements the reduced memory TranSIESTA version.
+! A module that supplements the reduced memory TranSiesta version.
 ! It greatly reduces the memory requirement of transiesta, as well
 ! as making the code more clearer in intent.
 ! This module is probably the most *hard* to understand part.
@@ -60,7 +60,7 @@ module m_ts_sparse
 contains
 
 ! This routine setups what-ever is needed to do the
-! memory reduced TranSIESTA code.
+! memory reduced TranSiesta code.
 ! This means collecting information about which region needs
 ! update, etc.
   subroutine ts_sparse_init(slabel, &
@@ -124,7 +124,7 @@ contains
     logical :: bool
     integer :: no_u_TS, i
 
-    ! Number of orbitals in TranSIESTA
+    ! Number of orbitals in TranSiesta
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
 
     ! Do a crude check of the sizes
@@ -164,7 +164,7 @@ contains
             ltsup_sp_sc)
        
        if ( IONode ) then
-          write(*,'(/,a)') 'Created the TranSIESTA local update sparsity pattern:'
+          write(*,'(/,a)') 'transiesta: created local update sparsity pattern:'
           call print_type(ltsup_sp_sc)
        end if
 
@@ -191,7 +191,7 @@ contains
          ( all(.not. Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 2) )
 
     if ( IONode .and. .not. bool ) then
-       write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern:'
+       write(*,'(/,a)') 'transiesta: created H and S sparsity pattern:'
        call print_type(ts_sp_uc)
     end if
 
@@ -207,10 +207,10 @@ contains
     ! This is probably the crudest way of doing it.
 #ifdef MPI
     call newDistribution(nrows_g(ts_sp_uc),MPI_Comm_Self,fdit, &
-         name='TranSIESTA UC distribution')
+         name='TranSiesta UC distribution')
 #else    
     call newDistribution(nrows_g(ts_sp_uc),-1,fdit, &
-         name='TranSIESTA UC distribution')
+         name='TranSiesta UC distribution')
 #endif
 
     if ( bool ) then
@@ -220,9 +220,7 @@ contains
 
        tsup_sp_uc = ts_sp_uc
        if ( IONode ) then
-          write(*,'(/,a)') 'Created the TranSIESTA H,S sparsity pattern.'
-          call print_type(ts_sp_uc)
-          write(*,'(/a)') 'TranSIESTA global update sparsity pattern same as H,S'
+          write(*,'(/a)') 'transiesta: update sparsity pattern same as H and S.'
        end if
 
     else
@@ -251,7 +249,7 @@ contains
        call Sp_to_Spglobal(dit,tmp_sp,tsup_sp_uc)
        
        if ( IONode ) then
-          write(*,'(/,a)') 'Created the TranSIESTA global update sparsity pattern:'
+          write(*,'(/,a)') 'transiesta: created update sparsity pattern:'
           call print_type(tsup_sp_uc)
        end if
        
@@ -468,7 +466,7 @@ contains
     call attach(sp_uc,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nnzs=n_nzsg)
 
-    ! allocate space for the MASK to create the TranSIESTA GLOBAL region
+    ! allocate space for the MASK to create the TranSiesta GLOBAL region
     allocate(l_HS(n_nzsg))
     call memory('A','L',n_nzsg,'transiesta')
 
@@ -535,8 +533,8 @@ contains
     end do
 !$OMP end parallel do
 
-    ! We now have a MASK of the actual needed TranSIESTA sparsity pattern
-    ! We create the TranSIESTA sparsity pattern
+    ! We now have a MASK of the actual needed TranSiesta sparsity pattern
+    ! We create the TranSiesta sparsity pattern
     call crtSparsity_SC(sp_uc,ts_sp,MASK=l_HS)
 
     ! Ensure that it is sorted
@@ -613,7 +611,7 @@ contains
 
     call attach(s_sp,nrows=no_l,nrows_g=no_u,nnzs=n_nzs)
 
-    ! allocate space for the MASK to create the TranSIESTA UPDATE region
+    ! allocate space for the MASK to create the TranSiesta UPDATE region
     allocate(lup_DM(n_nzs))
     call memory('A','L',n_nzs,'transiesta')
 
@@ -700,8 +698,8 @@ contains
     end do
 !$OMP end parallel do
 
-    ! We now have a MASK of the actual needed TranSIESTA sparsity pattern
-    ! We create the TranSIESTA sparsity pattern
+    ! We now have a MASK of the actual needed TranSiesta sparsity pattern
+    ! We create the TranSiesta sparsity pattern
     call crtSparsity_SC(s_sp,tsup_sp,MASK=lup_DM)
 
     call memory('D','L',n_nzs,'transiesta')

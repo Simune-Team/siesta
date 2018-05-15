@@ -74,7 +74,8 @@
       use m_mpi_utils,       only: globalize_sum
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use ldau_specs,        only: switch_ldau, ldau_init
-
+      use fdf,               only: fdf_get
+      use sys,               only: message, die
       use m_sparse, only : xij_offset
 
       use m_ts_kpoints, only: setup_ts_kpoint_grid
@@ -116,6 +117,7 @@
       integer            :: i, ix, iadispl, ixdispl
       logical            :: auxchanged   ! Auxiliary supercell changed?
       logical            :: folding, folding1
+      logical            :: diag_folding, diag_folding1
       logical            :: foundxv  ! dummy for call to ioxv
 
       external           :: madelung, timer
@@ -273,15 +275,14 @@
 !       Find required supercell
         if (gamma) then
            nsc(1:3) = 1
-        else if (fixauxcell) then
-           nsc(1:3) = nscold(1:3)
         else
            do i = 1 , 3
               veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
               nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
            end do
-           if ( .not. naiveauxcell )
-     &          call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+           ! The above is kept for historical reasons,
+           ! but a tight supercell can be found from the atom-graph info:
+           call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
         endif
 
         mscell = 0.0_dp
@@ -354,6 +355,7 @@
           call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma, 
      &              set_xijo=.true., folding=folding1,
+     $              diagonal_folding=diag_folding1,
      $              buffer=chess_value)
           maxnh_kernel = maxnh
           no_l_kernel = no_l
@@ -366,6 +368,7 @@
           call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &                  lastkb, iphorb, iphKB, maxnh, gamma,
      &                  set_xijo=.true., folding=folding1,
+     $                  diagonal_folding=diag_folding1,
      $                  buffer=chess_value)
           maxnh_mult = maxnh
           no_l_mult = no_l
@@ -386,7 +389,38 @@
       nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
      &              lastkb, iphorb, iphKB, maxnh, gamma,
-     $              set_xijo=.true., folding=folding1)
+     $              set_xijo=.true., folding=folding1,
+     $              diagonal_folding=diag_folding1,
+     $              debug_folding=fdf_get('debug-folding',.false.))
+!
+      call globalize_or(diag_folding1,diag_folding)
+      call globalize_or(folding1,folding)
+      if (diag_folding .and. gamma) then
+         call message("WARNING","Gamma-point calculation " //
+     $         "with interaction between periodic images")
+         call message("WARNING",
+     $           "Some features might not work optimally:")
+         call message("WARNING",
+     $           "e.g. DM initialization from atomic data")
+         if (harrisfun) call die("Harris functional run needs " //
+     $                              "'force-aux-cell T'")
+
+      else if (folding) then
+         if (gamma) then
+               call message("INFO","Gamma-point calculation " //
+     $                      "with multiply-connected orbital pairs")
+               call message("INFO",
+     $              "Folding of H and S implicitly performed")
+               call check_cohp()
+         else
+            write(6,"(a,/,a)") "Non Gamma-point calculation " //
+     $           "with multiply-connected orbital pairs " //
+     $           "in auxiliary supercell.",
+     $           "Possible internal error. " //
+     $           "Use 'debug-folding T' to debug."
+            call die("Inadequate auxiliary supercell")
+         endif
+      endif
 !
       call globalize_sum(maxnh,nnz)
       if (cml_p) then
@@ -412,12 +446,6 @@
           deallocate(numh_mult)
       end if
 #endif /* CHESS */
-      call globalize_or(folding1,folding)
-      if (folding) then
-         if (IOnode) then
-            print *, "Folding of H and S is implicitly performed"
-         endif
-      endif
       !
       ! If using domain decomposition, redistribute orbitals
       ! for this geometry, based on the hsparse info. 
@@ -670,4 +698,19 @@
       call timer( 'state_init', 2 )
 
       END subroutine state_init
+
+      subroutine check_cohp()
+      use siesta_options, only: write_coop
+      use sys,            only: message
+      
+      if (write_coop) then
+         call message("WARNING","There are multiply-connected "//
+     $                          "orbitals.")
+         call message("WARNING","Your COOP/COHP analysis might " //
+     $                          "be affected by folding.")
+         call message("WARNING",'Use "force-aux-cell T "' //
+     $                          'or k-point sampling')
+      endif
+      end subroutine check_cohp
+
       END module m_state_init

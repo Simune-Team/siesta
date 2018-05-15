@@ -210,6 +210,10 @@ contains
   subroutine set_type(typ,ia,na_u,lasto)
     integer, intent(in) :: typ, ia, na_u,lasto(0:na_u)
     integer :: i, no
+    if ( ia > na_u ) then
+      call die('Error in specifying the type of an atom!. &
+          &Atoms specified is above the total number of atoms!')
+    end if
     if ( a_type(ia) /= TYP_DEVICE ) then
       write(*,'(2(a,i0))') 'Trying to set atom ',ia,' to type: ',typ
       write(*,'(2(a,i0))') 'Atom ',ia,' is already: ',a_type(ia)

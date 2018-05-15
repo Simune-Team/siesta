@@ -34,14 +34,12 @@ MODULE siesta_options
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: dumpcharge    ! Write electron density?
   logical :: fire_mix      ! SCF mixing with FIRE method
-  logical :: fixauxcell    ! Keep the auxiliary supercell fixed?
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: init_anti_ferro ! Antiferro spin ordering in initdm?
   logical :: initdmaux     ! Re-initialize DM when auxiliary supercell changes?        
   logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
-  logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?

@@ -189,7 +189,7 @@ contains
     use m_mesh_node, only : offset_r, dMesh, dL
     use parallel, only : IONode
 #ifdef MPI
-    use mpi_siesta, only : MPI_AllReduce, MPI_Sum
+    use mpi_siesta, only : MPI_AllReduce, MPI_Sum, MPI_Barrier
     use mpi_siesta, only : MPI_Comm_World, MPI_integer
 #endif
 
@@ -319,13 +319,18 @@ contains
           write(*,'(a)') 'ts: Please move structure so this point is &
                &inside unit cell (Ang):'
           write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', &
-               VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
-          write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
-          write(*,'(a)') 'ts: to easily move the entire structure.'
+              2 * VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
+          write(*,'(a)') 'ts: The following block will most likely be usable (otherwise try different displacements)'
+          write(*,'(/,a)') '%block AtomicCoordinatesOrigin'
+          write(*,'(tr2,3(tr1,f13.5))') -2 * VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
+          write(*,'(a,/)') '%endblock'
        end if
     end if
 
     if ( nlp == 0 ) then
+#ifdef MPI
+       call MPI_Barrier(MPI_Comm_World, MPIerror)
+#endif
        call die('The partitioning of the basal plane went wrong. &
             &No points are encapsulated.')
     end if

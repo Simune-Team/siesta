@@ -61,6 +61,7 @@ module m_ts_cctype
   integer, parameter :: CC_BOOLE_MIX        = 103
   integer, parameter :: CC_MID              = 104
   integer, parameter :: CC_CONTINUED_FRAC   = 105
+  integer, parameter :: CC_USER             = 106
 
 
   ! Converts a method to a string format
@@ -116,7 +117,9 @@ contains
     case ( CC_MID )
        str = 'Mid-rule'
     case ( CC_CONTINUED_FRAC )
-       str = 'Continued fraction'
+       str = 'Continued-fraction'
+    case ( CC_USER )
+       str = 'User'
     case default
        call die('Unknown method for the contour')
     end select
@@ -139,7 +142,9 @@ contains
     case ( CC_MID )
        str = 'Mid-rule'
     case ( CC_CONTINUED_FRAC )
-       str = 'Continued fraction'
+       str = 'Continued-fraction'
+    case ( CC_USER )
+       str = 'User defined'
     case default
        call die('Unknown method for the contour')
     end select
@@ -175,6 +180,8 @@ contains
        str = 'Mid-rule'
     case ( CC_CONTINUED_FRAC )
        str = 'Continued fraction'
+    case ( CC_USER )
+       str = 'User defined'
     case default
        call die('Unknown method for the contour')
     end select
@@ -203,6 +210,9 @@ contains
          leqi(str,'continued-fraction') .or. &
          leqi(str,'cont-frac') ) then
        method = CC_CONTINUED_FRAC
+    else if ( leqi(str,'file') .or. &
+         leqi(str,'user') ) then
+       method = CC_USER
     else if ( leqi(str,'g-fermi') ) then
        method = CC_G_NF_0kT
        do i = G_NF_MIN_kT , G_NF_MAX_kT

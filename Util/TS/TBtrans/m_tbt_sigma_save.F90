@@ -54,8 +54,10 @@ contains
 #ifdef NCDF_4
 
     sigma_save = fdf_get('TBT.CDF.SelfEnergy.Save',.false.)
+    sigma_save = fdf_get('TBT.SelfEnergy.Save',sigma_save)
     if ( sigma_save ) then
-       sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
+      sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
+      sigma_mean_save = fdf_get('TBT.SelfEnergy.Save.Mean',sigma_mean_save)
     end if
     cmp_lvl = fdf_get('CDF.Compress',0)
     cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
@@ -63,7 +65,8 @@ contains
     if ( cmp_lvl < 0 ) cmp_lvl = 0
     if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
-    sigma_parallel = fdf_get('TBT.CDF.SelfEnergy.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.SelfEnergy.MPI',sigma_parallel)
     if ( sigma_parallel ) then
        cmp_lvl = 0
     end if
@@ -139,7 +142,7 @@ contains
 
   ! Save the self-energies of the electrodes and
   subroutine init_Sigma_save(fname, TSHS, r, btd, ispin, N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE, &
+       nkpt, kpt, wkpt, NE, Eta, &
        a_Dev, a_Buf)
 
     use parallel, only : IONode
@@ -168,6 +171,8 @@ contains
     integer, intent(in) :: nkpt
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
+    real(dp), intent(in) :: Eta
+
     ! Device atoms
     type(tRgn), intent(in) :: a_Dev
     ! Buffer atoms
@@ -379,8 +384,11 @@ contains
 #else
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
-    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
-         atts = dic)
+    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
+
+    dic = dic//('info'.kv.'Imaginary part for device')
+    call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+
     call delete(dic)
 
     call ncdf_put_var(ncdf,'pivot',r%r)
@@ -411,6 +419,8 @@ contains
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
     mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt)
+
+    call ncdf_put_var(ncdf,'eta',Eta)
 
     do iEl = 1 , N_Elec
 

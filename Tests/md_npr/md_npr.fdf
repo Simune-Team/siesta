@@ -1,7 +1,7 @@
 #
-# MgCO3 in primitive cell. SZ. Nose-Parrinello-Rahman. Harris
+# MgCO3 in primitive cell. SZ. Nose-Parrinello-Rahman.
 #
-SystemName	MgCo3 R-3c Harris -- SZ, 50 R -- NPR at 10 Gpa, 500K
+SystemName	MgCo3 R-3c -- SZ, 50 R -- NPR at 10 Gpa, 500K
 SystemLabel	md_npr
 NumberOfSpecies		3
 NumberOfAtoms	       10
@@ -51,7 +51,6 @@ MaxSCFIterations       20
 
 WriteCoorStep      .true.
 WriteForces        .true.
-HarrisFunctional T
 
 WriteMDHistory     .true.
 MD.UseSaveXV       T

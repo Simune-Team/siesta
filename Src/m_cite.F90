@@ -180,7 +180,7 @@ contains
        
     case ( "10.1103/PhysRevB.65.165401" )
        ! transiesta paper
-       cit%comment = "Primary TranSIESTA paper"
+       cit%comment = "Primary TranSiesta paper"
        cit%doi = "10.1103/PhysRevB.65.165401"
        cit%journal = "Physical Review B"
        cit%year = 2002
@@ -224,7 +224,7 @@ contains
 
     case ( "10.1016/j.cpc.2016.09.022" )
        ! new transiesta article
-       cit%comment = "TranSIESTA N-electrode"
+       cit%comment = "TranSiesta N-electrode"
        cit%doi = "10.1016/j.cpc.2016.09.022"
        cit%journal = "Computer Physics Communications"
        cit%year = 2017

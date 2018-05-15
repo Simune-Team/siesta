@@ -602,6 +602,26 @@ contains
             &apply.','Set TBT.DOS.A T to calculate orbital currents.'
     end if
 
+    ! Options for density-matrix calculations
+    ltmp = fdf_get('TBT.DM.Gf', .false.)
+    if ( ltmp .and. ('DOS-Gf'.in.save_DATA)) then
+      save_DATA = save_DATA // ('DM-Gf'.kv.1)
+    else if ( ltmp .and. IONode ) then
+      write(*,'(2(/,a))')'WARNING: Will not calculate the density matrix (Gf), &
+          &the Green function DOS needs to be calculated for this to &
+          &apply.','Set TBT.DOS.Gf T to calculate density matrix (Gf).'
+    end if
+
+    ltmp = fdf_get('TBT.DM.A', .false.)
+    if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
+       save_DATA = save_DATA // ('DM-A'.kv.1)
+    else if ( ltmp .and. IONode ) then
+       write(*,'(2(/,a))')'WARNING: Will not calculate the density matrix (A), &
+            &the spectral function DOS needs to be calculated for this to &
+            &apply.','Set TBT.DOS.A T to calculate density matrix (A).'
+    end if
+
+    
     ! Options for COOP and COHP curves.
     ! These are orbital (energy) populations that can be used to determine the
     ! bonding nature of the material.
@@ -619,7 +639,7 @@ contains
        save_DATA = save_DATA // ('COOP-A'.kv.1)
     else if ( ltmp .and. IONode ) then
        write(*,'(2(/,a))')'WARNING: Will not calculate the COOP (A) curve, &
-            &the Green function DOS needs to be calculated for this to &
+            &the spectral function DOS needs to be calculated for this to &
             &apply.','Set TBT.DOS.A T to calculate COOP (A) curves.'
     end if
 
@@ -637,7 +657,7 @@ contains
        save_DATA = save_DATA // ('COHP-A'.kv.1)
     else if ( ltmp .and. IONode ) then
        write(*,'(2(/,a))')'WARNING: Will not calculate the COHP (A) curve, &
-            &the Green function DOS needs to be calculated for this to &
+            &the spectral function DOS needs to be calculated for this to &
             &apply.','Set TBT.DOS.A T to calculate COHP (A) curves.'
     end if
 
@@ -748,6 +768,10 @@ contains
        write(*,f1) 'Saving DOS from spectral functions',('DOS-A' .in. save_DATA)
     end if
     write(*,f1) 'Saving bond currents (orb-orb)',('orb-current'.in.save_DATA)
+
+    ! DM
+    write(*,f1) 'Saving DM from Green function',('DM-Gf'.in.save_DATA)
+    write(*,f1) 'Saving DM from spectral functions',('DM-A'.in.save_DATA)
 
     ! COOP/COHP curves
     write(*,f1) 'Saving COOP from Green function',('COOP-Gf'.in.save_DATA)
@@ -874,7 +898,7 @@ contains
        has = has .or. ('COOP-A' .in. save_DATA)
        has = has .or. ('COHP-Gf' .in. save_DATA)
        has = has .or. ('COHP-A' .in. save_DATA)
-       if ( IONode .and. ltmp .and. has) then
+       if ( IONode .and. ltmp .and. has ) then
           write(*,'(a,/,a)') 'WARNING: k-averaging COOP/COHP with &
                &time-reversal symmetry will not reproduce','the correct &
                &populations. Set TBT.Symmetry.TimeReversal F'
