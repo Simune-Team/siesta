@@ -39,8 +39,6 @@ LatticeConstant     5.430 Ang
 
 MeshCutoff          40.0 Ry
 
-Harris_Functional
-
 MaxSCFIterations    50  
 DM.MixingWeight      0.3 
 DM.NumberPulay       3  
