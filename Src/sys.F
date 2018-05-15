@@ -35,7 +35,7 @@
          end subroutine message_external
       end interface
 
-      call die_external(level,str)
+      call message_external(level,str)
 
       end subroutine message
 !
