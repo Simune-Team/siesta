@@ -260,15 +260,14 @@
 !       Find required supercell
         if (gamma) then
            nsc(1:3) = 1
-        else if (fixauxcell) then
-           nsc(1:3) = nscold(1:3)
         else
            do i = 1 , 3
               veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
               nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
            end do
-           if ( .not. naiveauxcell )
-     &          call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+           ! The above is kept for historical reasons,
+           ! but a tight supercell can be found from the atom-graph info:
+           call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
         endif
 
         mscell = 0.0_dp

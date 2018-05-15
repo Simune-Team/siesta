@@ -5759,31 +5759,7 @@ these matrix elements is needed (as for COOP/COHP analysis), one has
 to make sure that the unit cell is large enough, or force the use
 of an aunxiliary supercell.
 \index{COOP/COHP curves!Folding in Gamma-point calculations}
-
  
-\begin{fdflogicalF}{FixAuxiliaryCell} 
-
- Logical variable to control whether the auxiliary cell is changed
-during a variable cell optimization. If this option is used, care
-should be taken that the supercell is appropriate for the whole
-duration of the run.
-
-\end{fdflogicalF}
-
-\begin{fdflogicalF}{NaiveAuxiliaryCell}
-  
-  If \fdftrue, the program does not check whether the auxiliary cell
-  constructed with a naive algorithm is appropriate. This variable is
-  only useful if one wishes to reproduce calculations done with
-  previous versions of the program in which the auxiliary cell was not
-  large enough, as indicated by warnings such as:
-
-  \texttt{WARNING: orbital pair 1 341 is multiply connected}
-
-  Only small numerical differences in the results are to be expected.
-  
-\end{fdflogicalF}
-
 \begin{fdflogicalF}{ForceAuxCell}
 
 

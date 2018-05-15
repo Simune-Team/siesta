@@ -1581,8 +1581,6 @@ subroutine read_options( na, ns, nspin )
 
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   savehs                 = fdf_get( 'SaveHS', .false. )
-  fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )
-  naiveauxcell           = fdf_get( 'NaiveAuxiliaryCell', .false. )
   initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )
   allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
   allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )
