@@ -93,6 +93,7 @@ C
       real(dp), allocatable     :: rkbmax(:) ! maximum KB radius of each species
       real(dp), allocatable     :: rorbmax(:) ! maximum ORB radius of each species
       real(dp), allocatable     :: rldaumax(:)! maximum LDA+U radius of each species
+      real(dp), allocatable     :: rmax_projectors(:) ! maximum projector radius of each species
       integer      :: maxnkb  = 500          ! max no. of atoms with
                                              ! KB projectors which 
                                              ! overlap another
@@ -115,6 +116,8 @@ C
       integer, dimension(:),  pointer :: listhtmp
 
       logical :: connected
+      logical :: third_centers ! Whether we need to consider interactions mediated
+                               ! by projectors at third centers
       type(species_info), pointer :: spp
       type(rad_func),     pointer :: pp
       logical :: debug
@@ -143,10 +146,6 @@ C     Allocate local arrays
       call re_alloc( conect, 1, no, 'conect', 'hsparse' )
       call re_alloc( listhtmp, 1, no, 'listhtmp', 'hsparse' )
 
-      ! We force nnkb == 0
-      ! for the case where no LDAU and negl == .true.
-      nnkb = 0
-      
 C     Allocate local arrays that depend on parameters
       nullify( knakb, rckb, index )
       call re_alloc( knakb, 1, maxnkb, 'knakb', 'hsparse' )
@@ -157,6 +156,7 @@ C     Allocate local arrays that depend on parameters
 !     Also for orbitals (for possible future extra optimizations)
 !     
       allocate(rkbmax(nspecies),rorbmax(nspecies),rldaumax(nspecies))
+      allocate(rmax_projectors(nspecies))
       rmaxo    = 0.0_dp
       rmaxkb   = 0.0_dp
       rmaxldau = 0.0_dp
@@ -190,11 +190,21 @@ C     Allocate local arrays that depend on parameters
       enddo
 
       
-      ! Now calculate the actual extend of the basis orbitals
+      ! Now calculate an approximate range for the neighbor search
       if ( negl ) then
+         ! If we neglect the KB projectors in the interaction scheme
+         ! we might still have to worry about the LDAU projectors
          rmax = rmaxo + rmaxldau
+         do is = 1, nspecies
+            rmax_projectors(is) = rldaumax(is)
+         enddo
+         third_centers = switch_ldau  
       else
          rmax = rmaxo + max(rmaxkb, rmaxldau)
+         do is = 1, nspecies
+            rmax_projectors(is) = max(rldaumax(is),rkbmax(is))
+         enddo
+         third_centers = .true.
       end if
       rmax = rmax * 2._dp
 
@@ -257,36 +267,16 @@ C       Loop on orbitals of atom ia
                endif
             enddo
 
-            if ( negl .and. switch_ldau ) then
-              ! We ONLY add the LDAU projectors
-              nnkb = 0
+            ! Create a list of mediating projectors
+            nnkb = 0
+            if ( third_centers ) then
               do kna = 1,nna
                 ka = jna(kna)
                 rik = sqrt( r2ij(kna) )
                 ks = isa(ka)
-                rck = rldaumax(ks)
+                rck = rmax_projectors(ks)
                 if ( rci + rck > rik ) then
                   call extend_projector(nnkb, kna, rck)
-                end if
-              end do
-            else if ( .not. negl ) then
-              ! Find overlaping KB and LDA+U projectors
-              nnkb = 0
-              do kna = 1,nna
-                ka = jna(kna)
-                rik = sqrt( r2ij(kna) )
-                ks = isa(ka)
-                ! It is only necessary to check with
-                ! the *largest* KB projector
-                rck = rkbmax(ks)
-                if ( rci + rck > rik ) then
-                  call extend_projector(nnkb, kna, rck)
-                endif
-                if( switch_ldau ) then
-                  rck = rldaumax(ks)
-                  if ( rci + rck > rik ) then
-                    call extend_projector(nnkb, kna, rck)
-                  end if
                 end if
               end do
             end if
@@ -399,37 +389,17 @@ C       Loop on orbitals of atom ia
             rci = rcut(is,ioa)
 
 C           Find overlaping KB and LDA+U projectors
-            if ( negl .and. switch_ldau ) then
-              ! We ONLY add the LDAU projectors
-              nnkb = 0
+            nnkb = 0
+            if ( third_centers ) then
               do kna = 1,nna
                 ka = jna(kna)
                 rik = sqrt( r2ij(kna) )
                 ks = isa(ka)
-                rck = rldaumax(ks)
+                rck = rmax_projectors(ks)
                 if ( rci + rck > rik ) then
-                  call add_projector(nnkb, kna, rck)
+                  call add_projector(nnkb, kna, rck)  ! No need to check sizes
                 end if
               end do
-            else if ( .not. negl ) then
-              nnkb = 0
-              do kna = 1,nna
-                ka = jna(kna)
-                rik = sqrt( r2ij(kna) )
-                ks = isa(ka)
-                ! It is only necessary to check with
-                ! the *largest* KB/LDAU projector
-                rck = rkbmax(ks)
-                if ( rci + rck > rik ) then
-                   call add_projector(nnkb, kna, rck)
-                end if
-                if( switch_ldau ) then
-                   rck = rldaumax(ks)
-                   if ( rci + rck > rik ) then
-                      call add_projector(nnkb, kna, rck)
-                   endif
-                endif
-              enddo
             endif
         
 C           Find orbitals connected by direct overlap or
@@ -448,8 +418,8 @@ C           through a KB or LDA+U projector
                 
                 if ( .not. connected ) then
 
-! Find if jo overlaps with a KB projector
-! nnkb is zero if no KB/LDAU projector exists
+                   ! Find if jo overlaps with a projector
+                   ! nnkb is zero if no KB/LDAU projector exists
                    do inkb = 1,nnkb
                     rck = rckb(inkb)
                     kna = knakb(inkb)
@@ -530,9 +500,8 @@ C     Deallocate local arrays
 
       contains
 
-      ! Possibly increase the arrays used for creating
-      ! the data arrays
-      ! ALSO add data to the arrays
+      ! Add to the list of third_center projectors
+      ! that might mediate interactions
       subroutine extend_projector(nnkb, kna, rck)
       integer, intent(inout) :: nnkb
       integer, intent(in)    :: kna
