@@ -930,8 +930,8 @@
                endif            ! (write_ion_plot_files)
                
             enddo 
+            call io_close(lun_ldau)
          endif  ! there are LDAU projectors
-         call io_close(lun_ldau)
 
 
          CONTAINS
