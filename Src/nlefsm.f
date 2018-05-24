@@ -15,6 +15,8 @@
 
       private
 
+      logical :: split_sr_so
+      
       CONTAINS
 
       subroutine nlefsm( scell, nua, na, isa, xa, indxua,
@@ -515,7 +517,9 @@ C
       use m_new_matel,     only : new_matel
       use atm_types,       only: species_info, species
       use sparse_matrices, only: Dscf, xijo
-     
+
+      use fdf
+      
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
 
@@ -568,14 +572,17 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       logical, dimension(:), pointer ::  listed, listedall
 
       complex(dp) :: E_offsiteSO(4)
-
+      
       type(species_info), pointer        :: spp
 
       integer :: nd, ndn
+      real(dp) :: Vit_saved
 
 C ------------------------------------------------------------
 
-C Start time counte
+      split_sr_so = fdf_get('soc-split-sr-so',.true.)
+      
+C Start time counter
       call timer( 'nlefsm', 1 )
 
 C Find unit cell volume
@@ -663,7 +670,10 @@ C     Initialize neighb subroutine
       Enl = 0.0d0; E_offsiteSO(1:4)=dcmplx(0.0d0,0.0d0)
       Enl_offsiteSO = 0.0d0
 C     Loop on atoms with KB projectors      
-      do ka = 1,na      ! Supercell atoms
+
+      ! Use info from hsparse to remove "far" atoms, as in nlefsm
+
+      do ka = 1,na              ! Supercell atoms
        kua = indxua(ka) ! Equivalent atom in the UC
        ks = isa(ka)     ! Specie index of atom ka
        nkb = lastkb(ka) - lastkb(ka-1) ! number of KB projs of atom ka
@@ -678,7 +688,9 @@ C      Find neighbour orbitals
         ia = iana(ina) ! Atom index of ina (the neighbour to ka)
         is = isa(ia)   ! Specie index of atom ia
         rki = sqrt(r2ki(ina)) ! Square distance
- 
+
+        ! Use this to further filter
+        !!     if (rki - rkbmax(ks) - rorbmax(is) > 0.d0) CYCLE
         do io = lasto(ia-1)+1,lasto(ia) ! Orbitals of atom ia
 
 C        Only calculate if needed locally
@@ -756,7 +768,8 @@ C        Valid orbital
             do ispin = 1,min(2,nspin) ! Only diagonal parts 
              Di(jo) = Di(jo) + Dscf(ind,ispin)
             enddo
-            Ds(1,1,jo) = dcmplx(Dscf(ind,1), Dscf(ind,5))  ! D(ju,iu)
+            ! Should we *add to* Ds, as above for Di?
+            Ds(1,1,jo) = dcmplx(Dscf(ind,1), Dscf(ind,5)) ! D(ju,iu)
             Ds(2,2,jo) = dcmplx(Dscf(ind,2), Dscf(ind,6))  ! D(jd,id)
             Ds(1,2,jo) = dcmplx(Dscf(ind,3), Dscf(ind,4))  ! D(ju,id)
             Ds(2,1,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(jd,iu)
@@ -789,10 +802,24 @@ C---------- Loop on KB projectors
 c----------- Compute Vion
              if ( l.eq.0 ) then
               epsk(1) = epskb(ks,koa)
-              Vit = epsk(1) * Ski(koa,ino) * Ski(koa,jno)
+              Vit_saved = epsk(1) * Ski(koa,ino) * Ski(koa,jno)
+              if (split_sr_so) then
+                 Vit = Vit_saved
+              else
+                 ! Move 'ionic' part to V_so diagonal
+                 V_so(1,1,jo)= V_so(1,1,jo) + Vit_saved
+                 V_so(2,2,jo)= V_so(2,2,jo) + Vit_saved
+                 Vit = 0.0_dp
+              endif
               Vi(jo) = Vi(jo) + Vit
               if (.not. matrix_elements_only) then
-               Enl = Enl +  Di(jo) * Vit
+               if (split_sr_so) then
+                  Enl = Enl +  Di(jo) * Vit
+               else
+                  ! Move energy contribution to "Eso"
+                  E_offsiteSO(1) = E_offsiteSO(1) + Vit_saved*Ds(1,1,jo) 
+                  E_offsiteSO(2) = E_offsiteSO(2) + Vit_saved*Ds(2,2,jo) 
+               endif
                CVj  = epsk(1) * Ski(koa,jno)
                Cijk = 2.0_dp * Di(jo) * CVj
                do ix = 1,3
@@ -808,8 +835,10 @@ c----------- Compute Vion
               ko = ko + 1 
 
 c----------- Compute Vion from j+/-1/2 and V_so
-             else
+             else  ! l /= 0
+              ! First proj of l-1/2 block
               koa1 = -iphKB(ko+1)
+              ! Last proj of l+1/2 block
               koa2 = -iphKB(ko+2*(2*l+1))
               epsk(1) = epskb(ks,koa1)
               epsk(2) = epskb(ks,koa2)
@@ -843,7 +872,7 @@ c------------ Forces & SO contribution to E_NL
                 enddo
                enddo
               endif
-              ko = ko+2*(2*l+1)
+              ko = ko+2*(2*l+1)    ! Point to next group of l-/+ 1/2 blocks
              endif
              if ( ko.ge.lastkb(ka) ) exit KB_loop
             enddo KB_loop
@@ -910,6 +939,17 @@ c-----------------------------------------------------------------------
 
       implicit none
 
+      ! Constructs the NL operator from the l+/- 1/2 information, which
+      ! is passed in two blocks. Hence the re-dimensioning of the dummy
+      ! arguments:
+      !      Ski(-l:l,2) means that there are '2' blocks of 2l+1 values
+      !      and so on.
+      ! The two epskb values correspond to the l-1/2 and l+1/2 blocks, 
+      ! respectively (all the projectors in a block have the same value)
+
+      ! On output, V_so and V_sr (V_ion) are separated
+      ! The force contributions are not separated
+
       integer     , intent(in)  :: l
       real(dp)    , intent(in)  :: epskb(2)
       real(dp)    , intent(in)  :: Ski(-l:l,2), Skj(-l:l,2)
@@ -939,7 +979,8 @@ c---- load Clebsch-Gordan coefficients; cg(J,+-)
       cg(:,:) = 0.0_dp
       do ij = 1, 2
        aj = al + (2*ij-3)*0.5d0        ! j(ij=1)=l-1/2; j(ij=2)=l+1/2
-       facpm= (-1.0d0)**(aj-al-0.5d0)  ! +/- sign
+       ! This is very fragile. Better: facpm = 2*ij-3
+       facpm= (-1.0d0)**(aj-al-0.5d0) ! +/- sign: j=l-1/2: (-1)**(-1)=-1 ;  j = l+1/2: (-1)**0 = 1
        do imj = 1, nint(2*aj)+1        ! Degeneracy for j
         amj = -aj + dfloat(imj-1)      ! mj value
         J = J+1                        ! (j,mj) index
@@ -1005,6 +1046,8 @@ c        select correct m
          endif
         enddo ! is
 
+        ! Note that these involve just one epskb at a time.
+        
 c       up-up = <i,+|V,J><V,J|j,+>
         V_so(1,1)  = V_so(1,1)  + SVi(1) * epskb(ij) * conjg(SVj(1))
         F_so(:,1,1)= F_so(:,1,1)+ grSVi(:,1) * epskb(ij) * conjg(SVj(1))
@@ -1031,10 +1074,29 @@ cc--- debugging
        call die('calc_Vj_LS: ERROR')
       endif
 
+      if (split_sr_so) then
+
 c---- substract out V_ion
-      epskpm = sqrt( epskb(1)*epskb(2) )
-      epskpm = sign(epskpm,epskb(1))
- 
+      !
+      ! Note that this is some kind of average of the l+/- 1/2
+      ! components. (In contrast to Hamann's more involved procedure)
+
+      ! Following Hemstreet:
+      !  v_sr = ( (l+1) v_j+ + l v_j- ) / (2l+1)
+      !  and the v_j+ and v_j- are "square roots" of the KB projectors      
+
+      !!  epskpm = sqrt( epskb(1)*epskb(2) ) ! This sqrt should be guarded with an abs()
+      !!  epskpm = sign(epskpm,epskb(1))   ! The value of epskpm with the sign of epskb(1) WHY?
+
+      ! This is the only acceptable solution from symmetry arguments
+      ! (and within the fragility of the approach)
+      epskpm  = sqrt(abs(epskb(1)*epskb(2)))
+      if (epskb(1)*epskb(2) > 0) then
+         epskpm  = epskpm * sign(1.0_dp,epskb(1)) 
+      else
+         epskpm  = - epskpm
+      endif
+      
       V_ion = 0.0d0
       do M = -l, l
        V_iont = ( l**2     * Ski(M,1)*epskb(1)*Skj(M,1)
@@ -1047,7 +1109,10 @@ c---- substract out V_ion
       V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
 
-      return
+      else
+         V_ion = 0.0_dp
+      endif
+
       end subroutine calc_Vj_offsiteSO
 
       end module m_nlefsm
