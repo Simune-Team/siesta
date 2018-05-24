@@ -13,7 +13,9 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use Kpoint_grid,       only: setup_Kpoint_grid, nkpnt
+      use kpoint_scf_m,      only: setup_kpoint_scf, kpoints_scf
+      use kpoint_t_m, only: kpoint_delete
+
       use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
@@ -78,7 +80,7 @@
       use sys,               only: message, die
       use m_sparse, only : xij_offset
 
-      use m_ts_kpoints, only: setup_ts_kpoint_grid
+      use ts_kpoint_scf_m, only: setup_ts_kpoint_scf, ts_kpoints_scf
       use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
       use m_ts_options, only : BTD_method
       use m_ts_options, only : TS_Analyze
@@ -263,14 +265,16 @@
      &     (istep.ne.inicoor) .and. (.not.gamma) ) then
 
 !       Will print k-points also
-        call setup_Kpoint_grid( ucell )
+        call kpoint_delete(kpoints_scf)
+        call setup_kpoint_scf( ucell )
 
-        call setup_ts_kpoint_grid( ucell )
+        call kpoint_delete(ts_kpoints_scf)
+        call setup_ts_kpoint_scf( ucell )
 
-        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'eo',
-     &                 'state_init')
-        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'qo',
-     &                 'state_init' )
+        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N,
+     &                 'eo', 'state_init')
+        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N, 
+     &                 'qo', 'state_init' )
 
 !       Find required supercell
         if (gamma) then

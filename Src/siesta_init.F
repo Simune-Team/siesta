@@ -12,8 +12,9 @@
       CONTAINS
 
       subroutine siesta_init()
-      use Kpoint_grid,        only: setup_Kpoint_grid, gamma_scf, nkpnt
-      USE Kpoint_pdos,        only: gamma_pdos
+      use kpoint_scf_m,       only: setup_kpoint_scf, kpoints_scf
+      use kpoint_scf_m,       only: gamma_scf
+      use kpoint_pdos_m,      only: gamma_pdos
       use Band,               only: gamma_bands, setup_bands
       use m_ksvinit,          only: gamma_polarization,
      &                              estimate_pol_kpoints
@@ -568,15 +569,8 @@ C     Initialise MPI and set processor number
 !     NOTE: We need to know whether gamma is .true. or
 !     not early, in order to decide whether to use an 
 !     auxiliary supercell for the calculation of matrix elements.
-      call setup_Kpoint_grid( ucell )
+      call setup_kpoint_scf( ucell )
       gamma = gamma_scf
-
-      ! Read in diagonalization routines
-      ! Note that only the sampled BZ is responsible for
-      ! ParallelOverK option, the remaning options are
-      ! taking care of this option
-      call read_diag(Gamma_scf, spin%H)
-      call print_diag()
 
 !     Call initialisation of PDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation
@@ -585,10 +579,17 @@ C     Initialise MPI and set processor number
         gamma = gamma .and. gamma_pdos
       endif
 
+      ! Read in diagonalization routines
+      ! Note that only the sampled BZ is responsible for
+      ! ParallelOverK option, the remaning options are
+      ! taking care of this option
+      call read_diag(Gamma_scf, spin%H)
+      call print_diag()
+
       nullify(eo,qo)
-      call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'eo', 
+      call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N, 'eo', 
      &              'siesta_init')
-      call re_alloc(qo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'qo', 
+      call re_alloc(qo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N, 'qo', 
      &              'siesta_init')
 
       call setup_bands( )

@@ -693,7 +693,7 @@ C This is the only exit point
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use units,        only : eV
-      use kpoint_grid,  only : kweight
+      use kpoint_scf_m, only: kpoints_scf
 
 #ifdef MPI
       use mpi_siesta
@@ -788,7 +788,7 @@ C First print the index and value of k-point
      $                   // "wavefunction coefficients from WFSX file"
         endif
         if (scf_set) then
-           kpoint_weight = kweight(ik)
+           kpoint_weight = kpoints_scf%w(ik)
         else
            kpoint_weight = 1.0_dp
         endif
