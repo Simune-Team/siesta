@@ -664,6 +664,10 @@ C     Modules
       use m_ts_voltage, only: ts_voltage
       use m_ts_hartree, only: ts_hartree_fix
 
+#ifdef SIESTA__ELSI
+      use m_elsi_interface, only: elsi_save_potential
+#endif
+
       implicit none
 
       integer
@@ -1592,6 +1596,10 @@ C ----------------------------------------------------------------------
      &       Vscf, "TotalPotential")
 #endif
       endif
+
+#ifdef SIESTA__ELSI
+      call elsi_save_potential(ntpl,nspin,Vscf)
+#endif
 
 C ----------------------------------------------------------------------
 C Print vacuum level

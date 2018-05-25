@@ -148,9 +148,8 @@
      $               "non-coll spins or Spin-orbit yet")
          endif
          call elsi_solver(iscf, no_u, no_l, spin%spinor,
-     $              maxnh, listhptr, listh,
-     $              qtot, temp, H, S, Dscf, Escf,
-     $              ef, Entropy)
+     $              maxnh, listhptr, listh, qtot, temp,
+     $              H, S, Dscf, Escf, ef, Entropy)
       endif
       if (.not. SIESTA_worker) RETURN
 #endif

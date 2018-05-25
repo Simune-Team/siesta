@@ -292,7 +292,7 @@ $(FDF): $(MPI_INTERFACE)
 		    "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module )
 
 #--------------------------------------------------------------
-MS=MatrixSwitch.a
+MS?=MatrixSwitch.a
 $(MS): $(MPI_INTERFACE)
 	(cd MatrixSwitch/src ; \
 	 $(MAKE) -j 1 \

@@ -13,23 +13,18 @@
 ! The same idea can be used for the diagonalization mode, with (more extensive)
 ! appropriate changes.
 !
-! The module also exports the 'elsi_finalize_scfloop' routine, to be called from
+! The module also exports the "elsi_finalize_scfloop" routine, to be called from
 ! the appropriate place. Some variables are kept at the module level for this.
 !
 ! Usage: Compile Siesta with -DSIESTA__ELSI
 !        Define
-!             SolutionMethod ELSI
+!           SolutionMethod ELSI
 !        in the fdf file
 ! TODO:
-!        -  PEXSI (delta_mu_min and delta_mu_max)
 !        -  Do not get EDM in every SCF step
-!        -  MPI.Nprocs.SIESTA
+!        -  MPI.Nprocs.SIESTA is not working
 !        -  Spin (and k-point?)
 !        -  Add documentation
-! Optionally, use
-!            MPI.Nprocs.SIESTA NpSiesta
-! to request fewer nodes for Siesta non-solver operations (which might have
-! worse scalability than the solver).
 !
 module m_elsi_interface
 
@@ -39,6 +34,8 @@ module m_elsi_interface
   use elsi
 
   implicit none
+
+  private
 
   integer, parameter :: ELPA_SOLVER       = 1 ! solver
   integer, parameter :: OMM_SOLVER        = 2 ! solver
@@ -52,20 +49,24 @@ module m_elsi_interface
   integer, parameter :: METHFESSEL_PAXTON = 2 ! broadening
   integer, parameter :: CUBIC             = 3 ! broadening
   integer, parameter :: COLD              = 4 ! broadening
+  integer, parameter :: ELSI_NOT_SET      = -910910
 
   type(elsi_handle) :: elsi_h
 
   integer :: elsi_global_comm
+  integer :: which_solver
+
+  real(dp), allocatable :: v_old(:,:)
 
   public :: elsi_solver
   public :: elsi_finalize_scfloop
-
-  private
+  public :: elsi_save_potential
 
 CONTAINS
 
 ! This version uses separate distributions for Siesta (setup_H et al) and ELSI
-! operations. ELSI uses 1D block or block-cyclic distributed CSC.
+! operations.  ELSI tasks 1D block-cyclic distributed CSC/CSR matrices as its
+! input/output.
 !
 subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   col_idx, qtot, temp, ham, ovlp, dm, edm, ef, ets)
@@ -76,7 +77,6 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 #ifdef MPI
   use mpi_siesta
 #endif
-  use elsi
 
   implicit none
 
@@ -89,18 +89,17 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer,  intent(in)    :: col_idx(nnz_l)
   real(dp), intent(in)    :: qtot
   real(dp), intent(in)    :: temp
-  real(dp), intent(inout) :: ham(nnz_l, n_spin)
+  real(dp), intent(inout) :: ham(nnz_l,n_spin)
   real(dp), intent(inout) :: ovlp(nnz_l)
-  real(dp), intent(out)   :: dm(nnz_l, n_spin)
-  real(dp), intent(out)   :: edm(nnz_l, n_spin)
+  real(dp), intent(out)   :: dm(nnz_l,n_spin)
+  real(dp), intent(out)   :: edm(nnz_l,n_spin)
   real(dp), intent(out)   :: ef        ! Fermi energy
-  real(dp), intent(out)   :: ets       ! Entropy/k, dimensionless TODO
+  real(dp), intent(out)   :: ets       ! Entropy/k, dimensionless
 
   integer :: mpirank
   integer :: ierr
   integer :: n_state
   integer :: nnz_g
-  integer :: which_solver
   integer :: which_broad
   integer :: mp_order
   integer :: out_level
@@ -127,7 +126,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   call die("This ELSI solver interface needs MPI")
 #endif
 
-  ! Global communicator is a duplicate of the passed communicator
+  ! Global communicator is a duplicate of passed communicator
   call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
   call MPI_Comm_Rank(elsi_global_comm, mpirank, ierr)
 
@@ -137,52 +136,52 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   if (iscf == 1) then
 
     ! Get ELSI options
-    solver_string        = fdf_get('ELSISolver', 'elpa')
-    out_level            = fdf_get('ELSIOutputLevel', 0)
-    out_json             = fdf_get('ELSIOutputJson', 1)
-    broad_string         = fdf_get('ELSIBroadeningMethod', 'fermi')
-    mp_order             = fdf_get('ELSIBroadeningMPOrder', 1)
-    elpa_flavor          = fdf_get('ELSIELPAFlavor', 2)
-    omm_flavor           = fdf_get('ELSIOMMFlavor', 0)
-    omm_n_elpa           = fdf_get('ELSIOMMELPASteps', 3)
-    omm_tol              = fdf_get('ELSIOMMTolerance', 1.0e-9_dp)
-    pexsi_tasks_per_pole = fdf_get('ELSIPEXSITasksPerPole', -910910)
-    pexsi_tasks_symbolic = fdf_get('ELSIPEXSITasksSymbolic', 1)
-    sips_n_slice         = fdf_get('ELSISIPSSlices', -910910)
-    sips_n_elpa          = fdf_get('ELSISIPSELPASteps', 2)
+    solver_string        = fdf_get("ELSISolver", "elpa")
+    out_level            = fdf_get("ELSIOutputLevel", 0)
+    out_json             = fdf_get("ELSIOutputJson", 1)
+    broad_string         = fdf_get("ELSIBroadeningMethod", "fermi")
+    mp_order             = fdf_get("ELSIBroadeningMPOrder", 1)
+    elpa_flavor          = fdf_get("ELSIELPAFlavor", 2)
+    omm_flavor           = fdf_get("ELSIOMMFlavor", 0)
+    omm_n_elpa           = fdf_get("ELSIOMMELPASteps", 3)
+    omm_tol              = fdf_get("ELSIOMMTolerance", 1.0e-9_dp)
+    pexsi_tasks_per_pole = fdf_get("ELSIPEXSITasksPerPole", ELSI_NOT_SET)
+    pexsi_tasks_symbolic = fdf_get("ELSIPEXSITasksSymbolic", 1)
+    sips_n_slice         = fdf_get("ELSISIPSSlices", ELSI_NOT_SET)
+    sips_n_elpa          = fdf_get("ELSISIPSELPASteps", 2)
 
     select case (solver_string)
-    case ('elpa')
+    case ("elpa")
       which_solver = ELPA_SOLVER
-    case ('omm')
+    case ("omm")
       which_solver = OMM_SOLVER
-    case ('pexsi')
+    case ("pexsi")
       which_solver = PEXSI_SOLVER
-    case ('sips')
+    case ("sips")
       which_solver = SIPS_SOLVER
     case default
       which_solver = ELPA_SOLVER
     end select
 
     select case (broad_string)
-    case ('gauss')
+    case ("gauss")
       which_broad = GAUSSIAN
-    case ('fermi')
+    case ("fermi")
       which_broad = FERMI
-    case ('mp')
+    case ("mp")
       which_broad = METHFESSEL_PAXTON
-    case ('cubic')
+    case ("cubic")
       which_broad = CUBIC
-    case ('cold')
+    case ("cold")
       which_broad = COLD
     case default
       which_broad = FERMI
     end select
 
     ! Number of states to solve when calling an eigensolver
-    n_state = min(n_basis, n_basis / 2 + 5)
+    n_state = min(n_basis, n_basis/2+5)
 
-    ! Now we have all the ingredients to initialize the ELSI interface
+    ! Now we have all ingredients to initialize ELSI
     call elsi_init(elsi_h, which_solver, MULTI_PROC, SIESTA_CSC, n_basis, &
       qtot, n_state)
 
@@ -220,7 +219,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_omm_n_elpa(elsi_h, omm_n_elpa)
     call elsi_set_omm_tol(elsi_h, omm_tol)
 
-    if (pexsi_tasks_per_pole /= -910910) then
+    if (pexsi_tasks_per_pole /= ELSI_NOT_SET) then
       call elsi_set_pexsi_np_per_pole(elsi_h, pexsi_tasks_per_pole)
     end if
 
@@ -228,18 +227,16 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_pexsi_temp(elsi_h, temp)
 !    call elsi_set_pexsi_gap(elsi_h, gap)
 !    call elsi_set_pexsi_delta_e(elsi_h, delta_e)
+    call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
+    call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
 
-    if (sips_n_slice /= -910910) then
+    if (sips_n_slice /= ELSI_NOT_SET) then
       call elsi_set_sips_n_slice(elsi_h, sips_n_slice)
     end if
 
     call elsi_set_sips_n_elpa(elsi_h, sips_n_elpa)
-    call elsi_set_sips_interval(elsi_h, -5.0_dp, 2.0_dp)
-  endif
-
-  ! Adjust chemical potential range in every SCF step
-  call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
-  call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
+    call elsi_set_sips_interval(elsi_h, -10.0_dp, 10.0_dp)
+  end if
 
   call timer("elsi-solver", 1)
 
@@ -249,7 +246,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   call elsi_get_mu(elsi_h, ef)
   call elsi_get_entropy(elsi_h, ets)
 
-  ets = ets / temp
+  ets = ets/temp
 
   call timer("elsi-solver", 2)
 
@@ -257,17 +254,75 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
 end subroutine elsi_solver
 
-! Clean up
+! Clean up:  Finalize ELSI instance and free MPI communicator.
 !
 subroutine elsi_finalize_scfloop()
 
   integer :: ierr
+
+  ! Make which_solver invalid
+  which_solver = ELSI_NOT_SET
+
+  if (allocated(v_old)) then
+    deallocate(v_old)
+  end if
 
   call elsi_finalize(elsi_h)
 
   call MPI_Comm_Free(elsi_global_comm, ierr)
 
 end subroutine elsi_finalize_scfloop
+
+! Save Hartree + XC potential and find minimum and maximum change of it between
+! two SCF iterations.
+!
+subroutine elsi_save_potential(n_pts, n_spin, v_scf)
+
+  use m_mpi_utils, only: globalize_min, globalize_max
+
+  integer,  intent(in) :: n_pts
+  integer,  intent(in) :: n_spin
+  real(dp), intent(in) :: v_scf(n_pts,n_spin)
+
+  real(dp) :: mu_min
+  real(dp) :: mu_max
+  real(dp) :: dv_min
+  real(dp) :: dv_max
+  real(dp) :: tmp
+
+  if (which_solver == PEXSI_SOLVER) then
+    if (.not. allocated(v_old)) then
+      allocate(v_old(n_pts,n_spin))
+
+      v_old = v_scf
+
+      mu_min = -10.0_dp
+      mu_max = 10.0_dp
+    else
+      call elsi_get_pexsi_mu_min(elsi_h, mu_min)
+      call elsi_get_pexsi_mu_max(elsi_h, mu_max)
+
+      v_old = v_scf-v_old
+
+      ! Get minimum and maximum of change of total potential
+      tmp = minval(v_old)
+
+      call globalize_min(tmp, dv_min, comm=elsi_global_comm)
+
+      tmp = maxval(v_old)
+
+      call globalize_max(tmp, dv_max, comm=elsi_global_comm)
+
+      mu_min = mu_min+dv_min
+      mu_max = mu_max+dv_max
+    end if
+
+    ! Adjust chemical potential range for PEXSI
+    call elsi_set_pexsi_mu_min(elsi_h, mu_min)
+    call elsi_set_pexsi_mu_max(elsi_h, mu_max)
+  end if
+
+end subroutine elsi_save_potential
 
 #endif  /* SIESTA__ELSI */
 

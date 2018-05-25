@@ -109,10 +109,10 @@ CONTAINS
    proc_in_set1 = (myrank1 /= MPI_UNDEFINED)
    proc_in_set2 = (myrank2 /= MPI_UNDEFINED)
  
-   if (proc_in_set1 .or. proc_in_set2) then
-     print "(a,3i6,2l2)", "world_rank, rank1, rank2, ing1?, ing2?", myid,  &
-        myrank1, myrank2, proc_in_set1, proc_in_set2
-   endif
+!   if (proc_in_set1 .or. proc_in_set2) then
+!     print "(a,3i6,2l2)", "world_rank, rank1, rank2, ing1?, ing2?", myid,  &
+!        myrank1, myrank2, proc_in_set1, proc_in_set2
+!   endif
  
    ! Figure out the communication needs
    call analyze_comms()
@@ -130,10 +130,10 @@ CONTAINS
       call re_alloc(m2%numcols,1,m2%no_l,"m2%numcols","redistribute_spmatrix")
    endif
  
-   if (myid == 0) print *, "About to transfer numcols..."
+!   if (myid == 0) print *, "About to transfer numcols..."
    call do_transfers_int(comms,m1%numcols,m2%numcols, &
         g1,g2,bridge_comm)
-   if (myid == 0) print *, "Transferred numcols."
+!   if (myid == 0) print *, "Transferred numcols."
  
    ! We need to tell the processes in set 2 how many
    ! "vals" to expect.
@@ -202,12 +202,12 @@ CONTAINS
  !!$            endif
  !!$         enddo
  
-   if (myid == 0) print *, "About to transfer cols..."
+!   if (myid == 0) print *, "About to transfer cols..."
    ! Transfer the cols arrays
    call do_transfers_int(commsnnz,m1%cols,m2%cols, &
         g1, g2, bridge_comm)
  
-   if (myid == 0) print *, "About to transfer values..."
+!   if (myid == 0) print *, "About to transfer values..."
    ! Transfer the values arrays
    do j=1, nvals
       if (proc_in_set1) data1 => m1%vals(j)%data
@@ -216,7 +216,7 @@ CONTAINS
            g1,g2,bridge_comm)
    enddo
    nullify(data1,data2)
-   if (myid == 0) print *, "Done transfers."
+!   if (myid == 0) print *, "Done transfers."
  
    deallocate(commsnnz)
    deallocate(comms)
@@ -312,9 +312,9 @@ CONTAINS
          if (myid == 0 .and. comms_not_printed) then
             do i = 1, ncomms
                c => comms(i)
-               write(6,"(a,i5,a,2i5,2i7,i5)") &
-                    "comm: ", i, " src, dst, i1, i2, n:", &
-                    c%src, c%dst, c%i1, c%i2, c%nitems
+!               write(6,"(a,i5,a,2i5,2i7,i5)") &
+!                    "comm: ", i, " src, dst, i1, i2, n:", &
+!                    c%src, c%dst, c%i1, c%i2, c%nitems
             enddo
             comms_not_printed = .false.
          endif
