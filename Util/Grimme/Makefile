@@ -865,9 +865,10 @@ timer.o: timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o local_sys.o parallel.o parallelsubs.o
 transition_rate.o: precision.o
-ts_init.o: m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o m_ts_electrode.o
-ts_init.o: m_ts_electype.o m_ts_gf.o m_ts_global_vars.o m_ts_method.o
-ts_init.o: m_ts_options.o parallel.o siesta_options.o ts_kpoint_scf.o
+ts_init.o: kpoint_scf.o m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o
+ts_init.o: m_ts_electrode.o m_ts_electype.o m_ts_gf.o m_ts_global_vars.o
+ts_init.o: m_ts_method.o m_ts_options.o parallel.o siesta_options.o
+ts_init.o: ts_kpoint_scf.o
 ts_kpoint_scf.o: kpoint_t.o m_spin.o m_ts_global_vars.o m_ts_tdir.o parallel.o
 ts_kpoint_scf.o: precision.o siesta_options.o
 ts_show_regions.o: m_region.o m_ts_electype.o m_ts_method.o parallel.o
