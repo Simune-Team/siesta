@@ -45,7 +45,9 @@ module kpoint_t_m
 
   end type kpoint_t
 
+  public :: kpoint_associated
   public :: kpoint_associate
+  public :: kpoint_nullify
   public :: kpoint_delete
   public :: kpoint_read
   
@@ -70,6 +72,25 @@ contains
     out%k_displ = in%k_displ
 
   end subroutine kpoint_associate
+
+  !< Figure out if two types are associated with each other
+  function kpoint_associated(a, b) result(assoc)
+    type(kpoint_t), intent(in) :: a, b
+    logical :: assoc
+
+    assoc = associated(a%k, b%k) .and. &
+        associated(a%w, b%w)
+
+  end function kpoint_associated
+
+  !< Nullify k-point list
+  subroutine kpoint_nullify(this)
+    type(kpoint_t), intent(inout) :: this
+
+    nullify(this%k, this%w)
+    call kpoint_delete(this)
+
+  end subroutine kpoint_nullify
 
   !< Delete the k-point list
   subroutine kpoint_delete(this)

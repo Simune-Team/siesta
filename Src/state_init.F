@@ -14,7 +14,7 @@
 
       subroutine state_init( istep )
       use kpoint_scf_m,      only: setup_kpoint_scf, kpoints_scf
-      use kpoint_t_m, only: kpoint_delete
+      use kpoint_t_m, only: kpoint_delete, kpoint_nullify
 
       use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
@@ -268,8 +268,12 @@
         call kpoint_delete(kpoints_scf)
         call setup_kpoint_scf( ucell )
 
-        call kpoint_delete(ts_kpoints_scf)
-        call setup_ts_kpoint_scf( ucell )
+        if ( TSmode ) then
+          call kpoint_delete( ts_kpoints_scf )
+        else
+          call kpoint_nullify( ts_kpoints_scf )
+        end if
+        call setup_ts_kpoint_scf( ucell, kpoints_scf )
 
         call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N,
      &                 'eo', 'state_init')

@@ -36,6 +36,7 @@ contains
     use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
     
+    use kpoint_scf_m, only : kpoints_scf
     use ts_kpoint_scf_m, only : setup_ts_kpoint_scf
     use ts_kpoint_scf_m, only : ts_kpoints_scf, ts_Gamma_scf
     use m_ts_cctype
@@ -90,7 +91,7 @@ contains
     call read_ts_elec( ucell, na_u, xa, lasto )
 
     ! Read in the k-points
-    call setup_ts_kpoint_scf( ucell )
+    call setup_ts_kpoint_scf( ucell, kpoints_scf )
 
     ! Read after electrode stuff
     call read_ts_after_Elec( ucell, nspin, na_u, xa, lasto, &

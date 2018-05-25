@@ -29,22 +29,29 @@ module ts_kpoint_scf_m
 
 contains
 
-  subroutine setup_ts_kpoint_scf( ucell)
+  subroutine setup_ts_kpoint_scf( ucell, kpoints_scf )
     use parallel, only: Node
     use siesta_options, only: writek
     use m_spin, only: TrSym
     use m_ts_global_vars, only : TSmode
 
     real(dp), intent(in) :: ucell(3,3)
+    type(kpoint_t), intent(in) :: kpoints_scf
 
     call kpoint_read(ts_kpoints_scf, 'TS', ucell, TrSym, process_k_cell=process_k_cell_displ)
 
     if ( ts_kpoints_scf%method == K_METHOD_NONE ) then
 
       call kpoint_delete(ts_kpoints_scf)
-      ! The user hasn't specified anything.
-      ! This means that we will use the default setting from siesta
-      call kpoint_read(ts_kpoints_scf, '', ucell, TrSym, process_k_cell=process_k_cell_displ)
+
+      if ( TSmode ) then
+        ! The user hasn't specified anything.
+        ! This means that we will use the default setting from siesta
+        call kpoint_read(ts_kpoints_scf, '', ucell, TrSym, process_k_cell=process_k_cell_displ)
+      else
+        ! To limit memory usage for very high number of k-points
+        call kpoint_associate(ts_kpoints_scf, kpoints_scf)
+      end if
 
     end if
 

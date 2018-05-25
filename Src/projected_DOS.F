@@ -23,7 +23,7 @@
       use fdf,         only: fdf_block, block_fdf
       ! This is to get the reference kpoints in case PDOS.kgrid* has not
       ! been specified
-      use Kpoint_pdos_m, only: setup_kpoint_pdos
+      use kpoint_pdos_m, only: setup_kpoint_pdos
       use parallel,    only: IOnode, Nodes
       use siesta_geom, only: ucell
       use m_spin,      only: spin
@@ -50,7 +50,7 @@
 
 !     Determine whether the projected density of states is to be computed
 !     on a different grid to the SCF calculation
-      call setup_Kpoint_pdos( ucell )
+      call setup_kpoint_pdos( ucell )
       
 !---------------------------------------------------------------------------END
       
@@ -108,9 +108,9 @@
          write(6,'(a,3(f8.2,a),2x,i5)')
      $        'siesta: e1, e2, sigma, nhist: ',
      $        e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
-      end if
+       end if
 
-! If the k points have been set specifically for the PDOS then use this set
+      ! If the k points have been set specifically for the PDOS then use this set
       if ( kpoints_pdos%N > kpoints_scf%N ) then
         call re_alloc(eo,1,no_u,1,spinor_dim,1,kpoints_pdos%N,name="eo",
      .      routine="projected_dos")

@@ -11565,6 +11565,34 @@ TS.BTD.Pivot atom+GGPS
   
 \end{fdflogicalF}
 
+\subsection{\texorpdfstring{$k$}{k}-point sampling}
+
+The options for $k$-point sampling are identical to the \siesta\
+options, \fdf{kgrid!MonkhorstPack}, \fdf{kgrid!Cutoff} or
+\fdf{kgrid!File}.
+
+One may however use specific \tsiesta\ $k$-points by using these
+options:
+
+\begin{fdfentry}{TS.kgrid!MonkhorstPack}[block]<\fdfvalue{kgrid!MonkhorstPack}>%
+
+  See \fdf{kgrid!MonkhorstPack} for details.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS.kgrid!Cutoff}[length]<$0.\,\mathrm{Bohr}$>
+
+  See \fdf{kgrid!Cutoff} for details.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS.kgrid!File}[string]<none>
+
+  See \fdf{kgrid!File} for details.
+  
+\end{fdfentry}
+
+
 \subsubsection{Algorithm specific options}
 
 These options adhere to the specific solution methods available for

@@ -575,7 +575,7 @@ C     Initialise MPI and set processor number
 !     Call initialisation of PDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation
       call init_projected_DOS( )
-      if (do_pdos) then
+      if ( do_pdos ) then
         gamma = gamma .and. gamma_pdos
       endif
 

@@ -40,9 +40,8 @@ contains
     call kpoint_read(kpoints_pdos, 'PDOS', ucell, TrSym)
 
     if ( kpoints_pdos%method == K_METHOD_NONE ) then
-      
-      ! The user hasn't specified anything.
-      ! This means that we will use the
+
+      ! The user hasn't specified a specific PDOS k-point sampling.
       call kpoint_delete(kpoints_pdos)
       call kpoint_read(kpoints_pdos, '', ucell, TrSym)
 
