@@ -18,6 +18,8 @@ Release notes for next Siesta
 
 *** New features
 
+ - Enabled custom k-points in PDOS and SCF calculations.
+
  - Added the CheSS solver as a new solution method. This is
    a linear scaling solver which calculates the density matrix and the
    energy density matrix.

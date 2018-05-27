@@ -52,9 +52,11 @@ for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile ); do
     cd $topdir
 done
 
-if [ ! -z "$failed" ]; then
-    echo "" #empty line
-    echo "" #empty line
+echo "" #empty line
+echo "" #empty line
+if [ -z "$failed" ]; then
+    echo " *** No failed directories"
+else
     echo " *** All failed directories:"
     echo " *** (Some programs have to be compiled after compiling Siesta)"
     for p in $failed ; do

@@ -99,7 +99,7 @@ contains
     use m_ts_charge,           only: TS_RHOCORR_FERMI
     use m_ts_charge,           only: TS_RHOCORR_FERMI_TOLERANCE
     use m_transiesta,          only: transiesta
-    use kpoint_grid, only : gamma_scf
+    use kpoint_scf_m, only : gamma_scf
     use m_energies, only : Ef
 
     use m_initwf, only: initwf

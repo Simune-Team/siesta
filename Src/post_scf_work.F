@@ -40,7 +40,7 @@
       use m_steps,        only : istp, inicoor
       use m_compute_dm,   only : PreviousCallDiagon
       use m_eo
-      use Kpoint_grid
+      use kpoint_scf_m, only: kpoints_scf
       use m_gamma
       implicit none
 
@@ -81,7 +81,8 @@
      &                no_l, maxnh, maxnh, no_u,
      &                numh, listhptr, listh, numh, listhptr, listh, 
      &                H, S, qtot, fixspin, qtots, temp, 1.0_dp, -1.0_dp,
-     &                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     &                gamma, xijo, indxuo,
+     &                kpoints_scf%N, kpoints_scf%k, kpoints_scf%w,
      &                eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &                occtol, iscf, neigwanted)
           Ecorrec = 0.0_dp
@@ -92,7 +93,8 @@
           else
             call zminim(.true., .false., iscf, istp, no_l, nspin, no_u,
      &                  maxnh, numh, listhptr, listh, Escf, eta, qtots,
-     &                  no_s, xijo, indxuo, nkpnt, kpoint, kweight)
+     &                  no_s, xijo, indxuo,
+     &                  kpoints_scf%N, kpoints_scf%k, kpoints_scf%w)
           end if
         endif
       endif

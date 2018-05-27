@@ -58,7 +58,7 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
 
-    use m_ts_kpoints, only : ts_nkpnt, ts_Gamma
+    use ts_kpoint_scf_m, only : ts_kpoints_scf, ts_gamma_scf
 
     use m_ts_electype
 
@@ -145,7 +145,7 @@ contains
        end if
 
        ! print out estimated memory usage...
-       call ts_print_memory(ts_Gamma)
+       call ts_print_memory(ts_gamma_scf)
 
        call ts_print_charges(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S)
@@ -247,7 +247,7 @@ contains
        call open_GF(N_Elec,Elecs,uGF,NEn,.false.)
 
        if ( ts_method == TS_FULL ) then
-          if ( ts_Gamma ) then
+          if ( ts_gamma_scf ) then
              call ts_fullg(N_Elec,Elecs, &
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
@@ -262,7 +262,7 @@ contains
                   H, S, DM, EDM, Ef, DE_NEGF)
           end if
        else if ( ts_method == TS_BTD ) then
-          if ( ts_Gamma ) then
+          if ( ts_gamma_scf ) then
              call ts_trig(N_Elec,Elecs, &
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
@@ -278,7 +278,7 @@ contains
           end if
 #ifdef SIESTA__MUMPS
        else if ( ts_method == TS_MUMPS ) then
-          if ( ts_Gamma ) then
+          if ( ts_gamma_scf ) then
              call ts_mumpsg(N_Elec,Elecs, &
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
@@ -335,7 +335,7 @@ contains
                 Ef = Ef + 0.01_dp * eV
              end if
           else if ( ts_method == TS_BTD ) then
-             if ( ts_Gamma ) then
+             if ( ts_gamma_scf ) then
                 call ts_trig_Fermi(N_Elec,Elecs, &
                      nq, uGF, nspin, na_u, lasto, &
                      sp_dist, sparse_pattern, &
@@ -588,7 +588,7 @@ contains
          end if
 
          if ( Elecs(iEl)%out_of_core ) then
-            call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn )
+            call read_Green(uGF(iEl),Elecs(iEl), ts_kpoints_scf%N, NEn )
          end if
          
       end do
