@@ -173,7 +173,7 @@ contains
     call kpoint_fdf_name(prefix, 'kgrid.MonkhorstPack', name_fdf)
     if ( fdf_block(name_fdf, bfdf) ) then
 
-      ! The method is a k-point grid
+      ! The method is a k-point MP grid
       this%method = K_METHOD_MONKHORST_PACK
 
       ! Now read data

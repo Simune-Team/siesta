@@ -3466,22 +3466,23 @@ and \ref{sec:dos}.
 
 \begin{fdfentry}{kgrid!File}[string]<none>
 
-  Specify a file from where the $k$-points are read in.
-  The format of the file is identical to the \sysfile{KP} file with
-  the exception that the k-points are given in units of the reciprocal
-  lattice vectors. I.e. the range of the k-points are $]-1/2 ; 1/2]$.
+  Specify a file from where the $k$-points are read in.  The format of
+  the file is identical to the \sysfile{KP} file with the exception
+  that the $k$-points are given in units of the reciprocal lattice
+  vectors. I.e. the range of the $k$-points are $]-1/2 ; 1/2]$.
 
   An example input may be (not physically justified in any sense):
   \begin{shellexample}
     4
-    0.0 0.0 0.0 0.25
-    0.5 0.5 0,5 0.25
-    0.2 0.2 0,2 0.25
-    0.3 0.3 0,3 0.25
+    1 0.0 0.0 0.0 0.25
+    2 0.5 0.5 0.5 0.25
+    3 0.2 0.2 0.2 0.25
+    4 0.3 0.3 0.3 0.25
   \end{shellexample}
-  The first 3 columns are the k-point specification for each of the
-  reciprocal lattice vectors while the fourth number is the weight for
-  the k-point.
+  The first integer specifies the total number of $k$-points in the
+  file.  The first column is an index; the next 3 columns are the
+  $k$-point specification for each of the reciprocal lattice vectors
+  while the fifth column is the weight for the $k$-point.
 
   \siesta\ checks whether the sum of weights equals 1. If not,
   \siesta\ will die.
