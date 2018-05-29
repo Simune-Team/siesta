@@ -25,6 +25,7 @@
 #ifdef TRACING_SOLVEONLY
       use extrae_module
 #endif
+      use m_io_yaml, only: siesta_write_yaml
 
       implicit none
 
@@ -90,6 +91,8 @@ C     End of coordinate-relaxation loop
 #ifdef SIESTA__PEXSI
       if (ionode) call memory_snapshot("after siesta_analysis")
 #endif
+
+      if (ionode) call siesta_write_yaml()
 
       call siesta_end()
 #ifdef SIESTA__PEXSI

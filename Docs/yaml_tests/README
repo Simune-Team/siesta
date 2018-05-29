@@ -1,0 +1,4 @@
+You need sphinx to re-create the documentation.
+(Type 'make help' for the various options)
+
+A precompiled version is in directory _build/html (load 'index.html').

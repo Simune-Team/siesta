@@ -1,0 +1,215 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Analyzing tests using the YAML output of SIESTA &#8212; YAML Tests in SIESTA 0.1.0 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Implementation of the YAML variable dumper" href="implementation.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="analyzing-tests-using-the-yaml-output-of-siesta">
+<h1>Analyzing tests using the YAML output of SIESTA<a class="headerlink" href="#analyzing-tests-using-the-yaml-output-of-siesta" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="minimum-requirements">
+<h2>Minimum requirements<a class="headerlink" href="#minimum-requirements" title="Permalink to this headline">¶</a></h2>
+<p>Performing the analysis of the YAML data produced by SIESTA requires the
+following packages:</p>
+<ul class="simple">
+<li>Python 3.4 or later;</li>
+<li>The <em>ruamel.yaml</em> Python package.</li>
+</ul>
+<p>Optionally, the <em>termcolor</em> Python package can be installed to provide
+colorized on-screen output (recommended).</p>
+<p>To install Python, please refer to the documentation of your system
+distribution. Once Python is installed, you can install in turn the additional
+Python packages using PIP:</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">ruamel</span><span class="o">.</span><span class="n">yaml</span> <span class="n">termcolor</span>
+</pre></div>
+</div>
+<p>Depending on how you have installed Python, the PIP executable may have a
+different name, e.g. <em>pip3</em> or <em>pip3.6</em>.</p>
+</div>
+<div class="section" id="data-workflow">
+<h2>Data workflow<a class="headerlink" href="#data-workflow" title="Permalink to this headline">¶</a></h2>
+<p>The data of every test case goes through two steps: generation by a SIESTA
+executable and post-processing by a Python script. The workflow is open to
+further post-processing thanks to the generation of a YAML report of the
+analysis.</p>
+<p>The following diagram illustrates how the data is processed when running a
+YAML-enabled SIESTA executable:</p>
+<img src="_images/graphviz-b5facf0c7b7c08fbacf89a860c127294249984f9.png" alt="digraph yaml_workflow {
+
+  graph [fontname=&quot;Helvetica&quot;];
+  node [fontname=&quot;Helvetica&quot;];
+  edge [fontname=&quot;Helvetica&quot;];
+
+  node [shape=&quot;box&quot;, style=&quot;filled&quot;, fillcolor=&quot;skyblue&quot;];
+  siesta [label=&quot;SIESTA&quot;];
+  yaml_cmp [label=&quot;yaml_compare.py&quot;];
+
+  node [shape=&quot;oval&quot;, style=&quot;filled&quot;, fillcolor=&quot;gold&quot;];
+  config [label=&quot;siesta-testsuite.yml&quot;];
+  input [label=&quot;Input file&quot;, fillcolor=&quot;mistyrose&quot;];
+  outvars [label=&quot;OUTVARS.yml&quot;];
+  refs [label=&quot;YAML_Refs/&quot;];
+  report [label=&quot;tests-report.yml&quot;];
+
+  node [shape=&quot;octagon&quot;, style=&quot;filled&quot;, fillcolor=&quot;white&quot;];
+  summary [label=&quot;Screen summary&quot;];
+
+  input -&gt; siesta;
+  siesta -&gt; outvars;
+  config -&gt; yaml_cmp;
+  outvars -&gt; yaml_cmp;
+  refs -&gt; yaml_cmp;
+  yaml_cmp -&gt; report;
+  yaml_cmp -&gt; summary;
+}" />
+<p>At the end of the calculation, SIESTA writes down a file named <em>OUTVARS.yml</em>,
+which contains information about both the build parameters of SIESTA and the
+values of selected variables (energies for the moment). The <em>yaml_compare.py</em>
+script then analyzes the content of <em>OUTVARS.yml</em> for each test case and
+compares it to the corresponding reference file located in the
+<em>Tests/YAML_Refs/</em> directory. The behaviour of the script can be tuned by
+editing the <em>siesta-testuite.yml</em> configuration file, which contains the full
+specifications of the SIESTA Test Suite, including fine-grained tolerances for
+the comparisons. Once the output of all tests has been processed, the
+<em>yaml_compare.py</em> script generates a detailed report in YAML format,
+<em>tests-report.yml</em>, as well as a condensed summary on the terminal.</p>
+<p>The YAML report can be read by humans but is optimized for further automated
+analysis and problem diagnosis, while the on-screen summary is intended
+primarily for the user and can be colorized if the terminal allows it (see the
+<em>--fancy</em> option of <em>yaml_compare.py</em>).</p>
+</div>
+<div class="section" id="how-to-use-yaml-compare-py">
+<h2>How to use yaml_compare.py<a class="headerlink" href="#how-to-use-yaml-compare-py" title="Permalink to this headline">¶</a></h2>
+<p>The <em>yaml_compare.py</em> script is loacted in <em>Tests/Scripts/</em> and expected to
+run from the top directory of the SIESTA Test Suite (<em>Tests/</em>), through the
+following command: <em>./Scripts/yaml_compare.py [options]</em>. It goes through all
+test cases described in <em>siesta-testsuite.yml</em> and follows the specifications
+available therein.</p>
+<p>Several parameters of the scripts can be tuned through command-line options.
+For detailed information about them, just run:</p>
+<div class="code highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">./</span><span class="n">Scripts</span><span class="o">/</span><span class="n">yaml_compare</span><span class="o">.</span><span class="n">py</span> <span class="o">--</span><span class="n">help</span>
+</pre></div>
+</div>
+<p>The <em>termcolor</em> Python package is necessary to get fancy colorized output
+through the <em>--fancy</em> option, which will simply be ignored otherwise. If this
+option is not used, the on-screen summary displayed by <em>yaml_compare.py</em> is
+valid RestructuredText and can be further processed to produce HTML and/or PDF
+summaries.</p>
+</div>
+<div class="section" id="configuring-the-tests">
+<h2>Configuring the tests<a class="headerlink" href="#configuring-the-tests" title="Permalink to this headline">¶</a></h2>
+<p>All configuration parameters related to the processing of the tests are stored
+in the self-documented <em>Tests/siesta-testsuite.yml</em> file. All information on
+how to tune the various parameters can thus be found in the file itself.</p>
+</div>
+<div class="section" id="generating-new-references">
+<h2>Generating new references<a class="headerlink" href="#generating-new-references" title="Permalink to this headline">¶</a></h2>
+<p>The procedure to generate new references is the following:</p>
+<ol class="arabic simple">
+<li>Build SIESTA using the reference configuration specifications.</li>
+<li>Run the test case and carefully check the output, both on screen and in
+<em>OUTVARS.yml</em>.</li>
+<li>Copy <em>OUTVARS.yml</em> to <em>~siesta/Tests/YAML_Refs/test_name.yml</em>, where you
+replace <em>test_name</em> by the actual name of the test.</li>
+<li>Add the test case specifications into <em>~siesta/Tests/siesta-testsuite.yml</em>.</li>
+<li>Run <em>yaml_compare.py</em> and check that the reference passes the test against
+itself.</li>
+</ol>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">TODO: Define the reference specifications for the build of SIESTA.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="index.html">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Analyzing tests using the YAML output of SIESTA</a><ul>
+<li><a class="reference internal" href="#minimum-requirements">Minimum requirements</a></li>
+<li><a class="reference internal" href="#data-workflow">Data workflow</a></li>
+<li><a class="reference internal" href="#how-to-use-yaml-compare-py">How to use yaml_compare.py</a></li>
+<li><a class="reference internal" href="#configuring-the-tests">Configuring the tests</a></li>
+<li><a class="reference internal" href="#generating-new-references">Generating new references</a></li>
+</ul>
+</li>
+</ul>
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="implementation.html" title="previous chapter">Implementation of the YAML variable dumper</a></li>
+  </ul></li>
+</ul>
+</div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/analysis.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Yann Pouillon.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.7.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.10</a>
+      
+      |
+      <a href="_sources/analysis.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
