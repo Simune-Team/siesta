@@ -1,4 +1,5 @@
-You need sphinx to re-create the documentation.
+You need sphinx to re-create the documentation in html or other formats.
 (Type 'make help' for the various options)
 
-A precompiled version is in directory _build/html (load 'index.html').
+The source .rst files themselves are quite readable.
+
