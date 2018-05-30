@@ -144,7 +144,7 @@ OBJS =  automatic_cell.o atom_options.o \
         setup_ordern_indexes.o\
         m_iodm.o m_iodm_old.o \
 	m_filter.o \
-        m_io.o \
+        m_io.o m_io_yaml.o \
 	m_timer.o \
 	extrae_module.o extrae_eventllist.o\
 	moreParallelSubs.o \
@@ -839,6 +839,7 @@ m_integrate.o: precision.o
 m_io.o: sys.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_io_s.o: class_Sparsity.o parallel.o precision.o
+m_io_yaml.o: m_energies.o precision.o version.o
 m_iodm.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_iodm.o: m_io_s.o m_os.o parallel.o
 m_iodm_old.o: alloc.o files.o m_matio.o m_mpi_utils.o parallel.o parallelsubs.o
@@ -1219,9 +1220,9 @@ setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
-siesta.o: alloc.o extrae_module.o m_mpi_utils.o m_steps.o parallel.o
-siesta.o: siesta_analysis.o siesta_end.o siesta_forces.o siesta_init.o
-siesta.o: siesta_move.o
+siesta.o: alloc.o extrae_module.o m_io_yaml.o m_mpi_utils.o m_steps.o
+siesta.o: parallel.o siesta_analysis.o siesta_end.o siesta_forces.o
+siesta.o: siesta_init.o siesta_move.o
 siesta2wannier90.o: files.o m_digest_nnkp.o m_spin.o m_trialorbitalclass.o
 siesta2wannier90.o: parallel.o precision.o siesta_options.o sys.o
 siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
