@@ -98,13 +98,6 @@ contains
 #endif
     write(unit=yaml_fd, fmt='(2X,A,":",1X,3(A))') "openmp", &
 &     CH34, trim(yesno(trigger)), CH34
-#ifdef TRANSIESTA
-    trigger = .true.
-#else
-    trigger = .false.
-#endif
-    write(unit=yaml_fd, fmt='(2X,A,":",1X,3(A))') "transiesta", &
-&     CH34, trim(yesno(trigger)), CH34
 #ifdef USE_GEMM3M
     trigger = .true.
 #else
@@ -181,9 +174,7 @@ contains
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DEna", DEna
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DUscf", DUscf
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DUext", DUext
-#ifdef TRANSIESTA
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Enegf", DE_NEGF
-#endif
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Exc", Exc
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Ecorrec", Ecorrec
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Emadel", Emad
