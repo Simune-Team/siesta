@@ -3453,37 +3453,9 @@ See the ``Forces'' option in \fdf{MD!TypeOfRun}. Note that
 
 \subsection{\texorpdfstring{$k$}{k}-point sampling}
 
-These are options for the k-point grid used in the SCF cycle. For
-other specialized grids, see the Macroscopic Polarization and Density
-of States sections.
-
-\begin{fdfentry}{kgrid!Cutoff}[length]<$0.\,\mathrm{Bohr}$>
-
-  Parameter which determines the fineness of the k-grid used for
-  Brillouin zone sampling.  It is half the length of the smallest
-  lattice vector of the supercell required to obtain the same sampling
-  precision with a single k point.  Ref: Moreno and Soler, PRB 45,
-  13891 (1992).
-
-  \textit{Use:} If it is zero, only the gamma point is used.  The resulting
-  k-grid is chosen in an optimal way, according to the method of Moreno
-  and Soler (using an effective supercell which is as spherical as
-  possible, thus minimizing the number of k-points for a given
-  precision). The grid is displaced for even numbers of effective mesh
-  divisions.  This parameter is not used if \fdf{kgrid!MonkhorstPack}
-  is specified. If the unit cell changes during the calculation (for
-  example, in a cell-optimization run, the k-point
-  grid will change accordingly (see \fdf{ChangeKgridInMD} for the case
-  of variable-cell molecular-dynamics runs, such as Parrinello-Rahman).
-  This is analogous to the changes in the
-  real-space grid, whose fineness is specified by an energy cutoff. If
-  sudden changes in the number of k-points are not desired, then the
-  Monkhorst-Pack data block should be used instead. In this case there
-  will be an implicit change in the quality of the sampling as the cell
-  changes. Both methods should be equivalent for a well-converged
-  sampling.
-  
-\end{fdfentry}
+These are options for the $k$-point grid used in the SCF cycle. For
+other specialized grids, see Secs.~\ref{sec:macroscopic-polarization}
+and \ref{sec:dos}.
 
 \begin{fdfentry}{kgrid!MonkhorstPack}[block]<$\Gamma$-point>
   
@@ -3517,6 +3489,59 @@ of States sections.
   \fdf{LatticeVectors} block.  If \texttt{Mk} is the identity matrix
   and \texttt{dk} is zero, only the $\Gamma$ point of the
   \textbf{unit} cell is used.  Overrides \fdf{kgrid!Cutoff}
+
+\end{fdfentry}
+
+\begin{fdfentry}{kgrid!Cutoff}[length]<$0.\,\mathrm{Bohr}$>
+
+  Parameter which determines the fineness of the $k$-grid used for
+  Brillouin zone sampling. It is half the length of the smallest
+  lattice vector of the supercell required to obtain the same sampling
+  precision with a single k point.  Ref: Moreno and Soler, PRB 45,
+  13891 (1992).
+
+  \textit{Use:} If it is zero, only the gamma point is used.  The resulting
+  k-grid is chosen in an optimal way, according to the method of Moreno
+  and Soler (using an effective supercell which is as spherical as
+  possible, thus minimizing the number of k-points for a given
+  precision). The grid is displaced for even numbers of effective mesh
+  divisions.  This parameter is not used if \fdf{kgrid!MonkhorstPack}
+  is specified. If the unit cell changes during the calculation (for
+  example, in a cell-optimization run, the k-point
+  grid will change accordingly (see \fdf{ChangeKgridInMD} for the case
+  of variable-cell molecular-dynamics runs, such as Parrinello-Rahman).
+  This is analogous to the changes in the
+  real-space grid, whose fineness is specified by an energy cutoff. If
+  sudden changes in the number of k-points are not desired, then the
+  Monkhorst-Pack data block should be used instead. In this case there
+  will be an implicit change in the quality of the sampling as the cell
+  changes. Both methods should be equivalent for a well-converged
+  sampling.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{kgrid!File}[string]<none>
+
+  Specify a file from where the $k$-points are read in.  The format of
+  the file is identical to the \sysfile{KP} file with the exception
+  that the $k$-points are given in units of the reciprocal lattice
+  vectors. I.e. the range of the $k$-points are $]-1/2 ; 1/2]$.
+
+  An example input may be (not physically justified in any sense):
+  \begin{shellexample}
+    4
+    1 0.0 0.0 0.0 0.25
+    2 0.5 0.5 0.5 0.25
+    3 0.2 0.2 0.2 0.25
+    4 0.3 0.3 0.3 0.25
+  \end{shellexample}
+  The first integer specifies the total number of $k$-points in the
+  file.  The first column is an index; the next 3 columns are the
+  $k$-point specification for each of the reciprocal lattice vectors
+  while the fifth column is the weight for the $k$-point.
+
+  \siesta\ checks whether the sum of weights equals 1. If not,
+  \siesta\ will die.
 
 \end{fdfentry}
 
@@ -3961,8 +3986,8 @@ general, one can say that a good calculation will have high number of
 \fdf{SCF.H!Tolerance} and high values of \fdf{MeshCutoff}.  We
 encourage the user to test carefully these options for each system. An
 additional point to take into account is the mixing scheme
-employed. You are encouraged to use \fdf{SCF.Mix:hamiltonian}
-(currently is set up by default) instead of density matrix mixing,
+employed. You are encouraged to use \fdf{SCF.Mix:Hamiltonian}
+(currently this is the default) instead of density matrix mixing,
 since it speeds up the convergence.  The pseudopotentials have to be
 properly generated and tested for each specific system and they have
 to be in their fully relativistic form, together with the non-linear
@@ -4133,14 +4158,17 @@ by potentially saving many self-consistency steps in production runs.
 
   \begin{fdfoptions}
     \option[Hamiltonian]%
+    \fdfindex*{SCF.Mix:Hamiltonian}%
     \index{SCF!mixing!Hamiltonian}
     Mix the Hamiltonian matrix (default).
 
     \option[density]%
+    \fdfindex*{SCF.Mix:density}%
     \index{SCF!mixing!Density}
     Mix the density matrix.
 
     \option[charge]%
+    \fdfindex*{SCF.Mix:charge}%
     \index{SCF!mixing!Charge}
     Mix the real-space charge density. Note this is an experimental
     feature.
@@ -7651,7 +7679,8 @@ The \program{readwf}\index{readwf} and
 
 
 
-\subsection{Densities of states}
+\subsection{Density of states}
+\label{sec:dos}
 
 \subsubsection{Total density of states}
 There are several options to obtain the
@@ -8094,7 +8123,7 @@ References:
 
 
 \subsection{Macroscopic polarization}
-
+\label{sec:macroscopic-polarization}
 
 \begin{fdfentry}{PolarizationGrids}[block]
   \index{bulk polarization}%
@@ -10626,18 +10655,20 @@ self-consistency. This constitutes the first run.
 
 \begin{fdfentry}{MD.TypeOfRun}[string]<TDED>
 
-A new Molecular Dynamics option, \fdf{TDED}, has been
-included. The second run of \siesta\ uses this option with the files
-\sysfile{TDWF} and \sysfile{TDXV} present in the working directory.  In this option ions
-and electrons are assumed to move simultaneously.  The occupied
-electronic states are time-evolved instead of the usual SCF
-calculations in each step.  Choose this option even if you intend to
-do only-electron dynamics. If you want to do an electron dynamics-only
-calculation set \fdf{MD.FinalTimeStep} equal to $1$. For optical
-response calculations switch off the external field during the second
-run. The \fdf{MD.LengthTimeStep}, unlike in the standard MD simulation,
-is defined by mulitpilication of \fdf{TDED.TimeStep} and \fdf{TDED.Nsteps}.
-In TDDFT calculations, the user defined \fdf{MD.LengthTimeStep} is ignored.
+  A new Molecular Dynamics option, \fdf{TDED}, has been included. The
+  second run of \siesta\ uses this option with the files
+  \sysfile{TDWF} and \sysfile{TDXV} present in the working directory.
+  In this option ions and electrons are assumed to move
+  simultaneously. The occupied electronic states are time-evolved
+  instead of the usual SCF calculations in each step.  Choose this
+  option even if you intend to do only-electron dynamics. If you want
+  to do an electron dynamics-only calculation set
+  \fdf{MD.FinalTimeStep} equal to $1$. For optical response
+  calculations switch off the external field during the second
+  run. The \fdf{MD.LengthTimeStep}, unlike in the standard MD
+  simulation, is defined by mulitpilication of \fdf{TDED.TimeStep} and
+  \fdf{TDED.Nsteps}. In TDDFT calculations, the user defined
+  \fdf{MD.LengthTimeStep} is ignored.
 
 \end{fdfentry}
 
@@ -11627,6 +11658,34 @@ TS.BTD.Pivot atom+GGPS
   to be post-processed in Graphviz\footnote{\url{www.graphviz.org}}.
   
 \end{fdflogicalF}
+
+\subsection{\texorpdfstring{$k$}{k}-point sampling}
+
+The options for $k$-point sampling are identical to the \siesta\
+options, \fdf{kgrid!MonkhorstPack}, \fdf{kgrid!Cutoff} or
+\fdf{kgrid!File}.
+
+One may however use specific \tsiesta\ $k$-points by using these
+options:
+
+\begin{fdfentry}{TS.kgrid!MonkhorstPack}[block]<\fdfvalue{kgrid!MonkhorstPack}>%
+
+  See \fdf{kgrid!MonkhorstPack} for details.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS.kgrid!Cutoff}[length]<$0.\,\mathrm{Bohr}$>
+
+  See \fdf{kgrid!Cutoff} for details.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS.kgrid!File}[string]<none>
+
+  See \fdf{kgrid!File} for details.
+  
+\end{fdfentry}
+
 
 \subsubsection{Algorithm specific options}
 
@@ -12669,7 +12728,7 @@ device region. Note how repeating has different order of tiling.
   \sysfile{TSDE}. This file also contains geometry information
   etc. needed by \tsiesta\ and \tbtrans.
 
-  \item[\sysfile{TSKP}]: The $k$-points used in the \tsiesta\ calculation. See
+  \item[\sysfile{TS.KP}]: The $k$-points used in the \tsiesta\ calculation. See
   \siesta\ \sysfile{KP} file for formatting information.
 
   \item[\sysfile{TSCCEQ*}]: The equilibrium complex contour integration paths.

@@ -71,7 +71,7 @@
       use files,        only : label_length
       use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
-      use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
+      use ts_kpoint_scf_m, only: ts_kpoints_scf, ts_gamma_scf
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS, FC_index
 
 #ifdef FINAL_CHECK_HS
@@ -340,9 +340,9 @@
          ! This is "pure" MD and we only write consecutive numbers
          ! Together with this you cannot also save FC
          fname = fname_TSHS(slabel, istep = istep )
-         call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+         call ts_write_tshs(fname, .false., Gamma, ts_Gamma_scf,
      &        ucell, nsc, isc_off, na_u, no_s, spin%H, 
-     &        ts_kscell, ts_kdispl, 
+     &        ts_kpoints_scf%k_cell, ts_kpoints_scf%k_displ,
      &        xa, lasto, 
      &        H_2D, S_1D, indxuo,
      &        Ef, Qtot, Temp, istep, 0)
@@ -359,17 +359,17 @@
             !  6 = +z
             call FC_index(istep,ia1,io_istep,io_ia1)
             fname = fname_TSHS(slabel,istep = io_istep, ia1 = io_ia1)
-            call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+            call ts_write_tshs(fname, .false., Gamma, ts_Gamma_scf,
      &           ucell, nsc, isc_off, na_u, no_s, spin%H, 
-     &           ts_kscell, ts_kdispl, 
+     &           ts_kpoints_scf%k_cell, ts_kpoints_scf%k_displ,
      &           xa, lasto, 
      &           H_2D, S_1D, indxuo,
      &           Ef, Qtot, Temp, io_istep, io_ia1)
          else
             fname = fname_TSHS(slabel)
-            call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+            call ts_write_tshs(fname, .false., Gamma, ts_Gamma_scf,
      &           ucell, nsc, isc_off, na_u, no_s, spin%H,
-     &           ts_kscell, ts_kdispl, 
+     &           ts_kpoints_scf%k_cell, ts_kpoints_scf%k_displ,
      &           xa, lasto,
      &           H_2D, S_1D, indxuo,
      &           Ef, Qtot, Temp, 0, 0)
