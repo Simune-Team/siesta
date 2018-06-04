@@ -847,6 +847,7 @@ subroutine read_options( na, ns, nspin )
   ! the SO part of the energy.
   if (spin%SO) then
      split_sr_so = fdf_get('SOC.Split.SR.SO',.true.)
+     write(6,1) 'redata: Split SR and SO contributions', split_sr_so
      if (cml_p) then 
         call cmlAddParameter( xf=mainXML, name='Split-SR-SO', &
              value=split_sr_so, dictref='siesta:split_sr_so' )

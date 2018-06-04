@@ -507,13 +507,20 @@
         
       else !final
 !       Print out additional information in finalization.
+
+        if (spin%SO .and. (.not. split_sr_so)) then
+           eso_str = '     Eso(nil) ='
+        else
+           eso_str = '      Eso     ='
+        endif
+
         write(6,'(/,a)') 'siesta: Final energy (eV):'
         write(6,'(a,a15,f15.6)')
      .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
      .    'siesta: ',      'Eldau   =', Eldau/eV,
-     .    'siesta: ',      'Eso     =', Eso/eV,
+     .    'siesta: ',      eso_str    , Eso/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
      .    'siesta: ',      'Enegf   =', DE_NEGF/eV,
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
