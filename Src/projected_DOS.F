@@ -15,15 +15,15 @@
 
       public :: init_projected_DOS, projected_DOS
 
-      logical  :: different_pdos_grid    ! Indicates if the grid is the same as the SCF one or not
-
       CONTAINS
       
       subroutine init_projected_DOS()
 
       USE siesta_options
       use fdf,         only: fdf_block, block_fdf
-      use Kpoint_pdos
+      ! This is to get the reference kpoints in case PDOS.kgrid* has not
+      ! been specified
+      use kpoint_pdos_m, only: setup_kpoint_pdos
       use parallel,    only: IOnode, Nodes
       use siesta_geom, only: ucell
       use m_spin,      only: spin
@@ -50,7 +50,7 @@
 
 !     Determine whether the projected density of states is to be computed
 !     on a different grid to the SCF calculation
-      call setup_Kpoint_pdos( ucell, different_pdos_grid )
+      call setup_kpoint_pdos( ucell )
       
 !---------------------------------------------------------------------------END
       
@@ -64,8 +64,8 @@
       use atomlist,    only : indxuo, no_s, no_u, no_l
       use fdf
       use sys,         only : die
-      use Kpoint_grid
-      use Kpoint_pdos
+      use kpoint_scf_m, only: kpoints_scf
+      use Kpoint_pdos_m, only: kpoints_pdos, gamma_pdos
       use parallel,    only: IOnode
       use m_eo
       use m_spin,      only: h_spin_dim, spinor_dim
@@ -108,32 +108,19 @@
          write(6,'(a,3(f8.2,a),2x,i5)')
      $        'siesta: e1, e2, sigma, nhist: ',
      $        e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
+       end if
+
+      ! If the k points have been set specifically for the PDOS then use this set
+      if ( kpoints_pdos%N > kpoints_scf%N ) then
+        call re_alloc(eo,1,no_u,1,spinor_dim,1,kpoints_pdos%N,name="eo",
+     .      routine="projected_dos")
       end if
-
-! If the k points have been set specifically for the PDOS then use this set
-      if (different_pdos_grid) then
-
-! If the number of k points has increased then reallocate eo and qo
-         if (maxk_pdos.gt.nkpnt) then
-            call re_alloc(eo,1,no_u,1,spinor_dim,1,maxk_pdos,name="eo",
-     .           routine="projected_dos")
-         endif
-         
-         call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
-     .        maxnh,
-     .        no_u, numh, listhptr, listh, H, S,
-     .        e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
-     .        nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
-     .        no_u)
-      else
-! otherwise use the SCF grid 
-         call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
-     .        maxnh,
-     .        no_u, numh, listhptr, listh, H, S,
-     .        e1, e2, sigma, nhist,
-     .        gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
-     .        no_u)
-      endif
+      
+      call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
+     .    maxnh, no_u, numh, listhptr, listh, H, S,
+     .    e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
+     .    kpoints_pdos%N, kpoints_pdos%k, kpoints_pdos%w, eo,
+     .    no_u)
 
       end subroutine projected_DOS
 

@@ -68,7 +68,7 @@ do
   ln ../../${SCAT}.fdf .
   # Copy the electrode's .TSHS
   ln ../Elec/${ELEC}.TSHS .
-  $TS < ${SCAT}.fdf > ${SCAT}.out
+  $TS ${SCAT}.fdf > ${SCAT}.out
   RETVAL=$?
   if [ $RETVAL -ne 0 ]
       then

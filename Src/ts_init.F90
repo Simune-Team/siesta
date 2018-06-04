@@ -36,9 +36,9 @@ contains
     use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
     
-    use m_ts_kpoints, only : setup_ts_kpoint_grid
-    use m_ts_kpoints, only : ts_nkpnt, ts_kpoint, ts_kweight
-    use m_ts_kpoints, only : ts_kscell, ts_kdispl, ts_gamma
+    use kpoint_scf_m, only : kpoints_scf
+    use ts_kpoint_scf_m, only : setup_ts_kpoint_scf
+    use ts_kpoint_scf_m, only : ts_kpoints_scf, ts_Gamma_scf
     use m_ts_cctype
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
@@ -91,17 +91,17 @@ contains
     call read_ts_elec( ucell, na_u, xa, lasto )
 
     ! Read in the k-points
-    call setup_ts_kpoint_grid( ucell )
+    call setup_ts_kpoint_scf( ucell, kpoints_scf )
 
     ! Read after electrode stuff
     call read_ts_after_Elec( ucell, nspin, na_u, xa, lasto, &
-         ts_kscell, ts_kdispl)
+        ts_kpoints_scf%k_cell, ts_kpoints_scf%k_displ)
 
     ! Print the options
     call print_ts_options( ucell )
 
     ! Print all warnings
-    call print_ts_warnings( ts_Gamma, ucell, na_u, xa, Nmove )
+    call print_ts_warnings( ts_Gamma_scf, ucell, na_u, xa, Nmove )
 
     ! If we actually have a transiesta run we need to process accordingly!
     if ( .not. TSmode ) return
@@ -188,13 +188,13 @@ contains
           call init_Electrode_HS(Elecs(i))
 
           call do_Green(Elecs(i), &
-               ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
+               ucell,ts_kpoints_scf%N,ts_kpoints_scf%k,ts_kpoints_scf%w, &
                Elecs_xa_Eps, .false. )
 
           if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
              
              call do_Green_Fermi(mean_kT, Elecs(i), &
-                  ucell,ts_nkpnt,ts_kpoint,ts_kweight, &
+                  ucell,ts_kpoints_scf%N,ts_kpoints_scf%k,ts_kpoints_scf%w, &
                   Elecs_xa_Eps, .false. )
 
           end if
