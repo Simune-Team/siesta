@@ -15,7 +15,6 @@
 
       private
 
-      logical :: split_sr_so
       
       CONTAINS
 
@@ -517,7 +516,8 @@ C
       use m_new_matel,     only : new_matel
       use atm_types,       only: species_info, species
       use sparse_matrices, only: Dscf, xijo
-
+      use siesta_options,  only: split_sr_so
+      
       use fdf
       
       integer, intent(in) ::
@@ -580,8 +580,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
 
 C ------------------------------------------------------------
 
-      split_sr_so = fdf_get('soc-split-sr-so',.true.)
-      
 C Start time counter
       call timer( 'nlefsm', 1 )
 
@@ -845,7 +843,8 @@ c----------- Compute Vion from j+/-1/2 and V_so
 
               call calc_Vj_offsiteSO( l, epsk, Ski(koa1:koa2,ino), 
      &                       Ski(koa1:koa2,jno), grSki(:,koa1:koa2,ino),
-     &                       grSki(:,koa1:koa2,jno), Vit, V_sot, F_so )
+     &                       grSki(:,koa1:koa2,jno), Vit, V_sot, F_so,
+     &                       split_sr_so)
               Vi(jo) = Vi(jo) + Vit
               V_so(1:2,1:2,jo)= V_so(1:2,1:2,jo) + V_sot(1:2,1:2)
          
@@ -935,7 +934,7 @@ c
 c
 c-----------------------------------------------------------------------
       subroutine calc_Vj_offsiteSO( l, epskb, Ski, Skj, grSki, grSkj,
-     &                       V_ion, V_so, F_so )
+     &                       V_ion, V_so, F_so, split_sr_so )
 
       implicit none
 
@@ -947,7 +946,7 @@ c-----------------------------------------------------------------------
       ! The two epskb values correspond to the l-1/2 and l+1/2 blocks, 
       ! respectively (all the projectors in a block have the same value)
 
-      ! On output, V_so and V_sr (V_ion) are separated
+      ! On output, V_so and V_sr (V_ion) are separated, unless split_sr_so is .false.
       ! The force contributions are not separated
 
       integer     , intent(in)  :: l
@@ -957,7 +956,7 @@ c-----------------------------------------------------------------------
       real(dp)    , intent(out) :: V_ion
       complex(dp) , intent(out) :: F_so(3,2,2)
       complex(dp) , intent(out) :: V_so(2,2)
-
+      logical     , intent(in)  :: split_sr_so
 
       integer    :: J, ij, imj, m, is
       real(dp)   :: aj, amj, al, a2l1, fac, facm,

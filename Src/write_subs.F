@@ -304,7 +304,8 @@
       real(dp), intent(in) :: dHmax ! Max. change in H elements
 
       character(len=64) :: fmt
-      character(len=6) :: scf_name
+      character(len=6)  :: scf_name
+      character(len=17) :: enl_str, eso_str
 
       logical              :: first_scf_step
       integer              :: i
@@ -313,6 +314,16 @@
       if ( TSrun ) then
          scf_name = 'ts-scf'
       end if
+
+      if (spin%SO .and. (.not. split_sr_so)) then
+         Enl = Enl + Eso 
+         Eso = 0.0_dp
+         enl_str = 'siesta: Enl(+so)='
+         eso_str = 'siesta: Eso(nil)='
+      else
+         enl_str = 'siesta: Enl     ='
+         eso_str = 'siesta: Eso     ='
+      endif
       
       first_scf_step = (iscf == 1)
       ! Only print out full decomposition at very beginning and end.
@@ -323,8 +334,8 @@
      .     'siesta: Eions   =', Eions/eV,
      .     'siesta: Ena     =', Ena/eV,
      .     'siesta: Ekin    =', Ekin/eV,
-     .     'siesta: Enl     =', Enl/eV,
-     .     'siesta: Eso     =', Eso/eV,
+     .      enl_str, Enl/eV,
+     .      eso_str, Eso/eV,
      .     'siesta: Eldau   =', Eldau/eV,
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
