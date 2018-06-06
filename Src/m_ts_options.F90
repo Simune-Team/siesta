@@ -1600,13 +1600,9 @@ contains
        if ( sum(Elecs(iEl)%pvt) /= 6 .or. count(Elecs(iEl)%pvt==2) /= 1 ) then
           write(*,'(a,/,a)') 'The pivoting table for the electrode unit-cell, &
                &onto the simulation unit-cell is not unique: '//trim(Elecs(iEl)%name), &
-               '  Please check your electrode and device cell parameters.'
-          if ( .not. Gamma ) then
-             err = .true.
-          else
-             warn = .true.
-             write(*,'(a)') '  Combining this with electric fields or dipole-corrections is ill-adviced!'
-          end if
+               '  Please check your electrode and device cell parameters!'
+          write(*,'(a)') '  Combining this with electric fields or dipole-corrections is ill-adviced!'
+          warn = .true.
        end if
     end do
 

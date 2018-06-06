@@ -825,25 +825,27 @@ contains
     ! Calculate the pivoting table
     do i = 1 , 3
 
-       ! We just want to find the cell vector
-       ! which is closests to 1, that ensures a parallel
-       ! cell vector
-       ! Note that here we do not enforce the direction
-       ! of the cell vector.
-       ! This is because it _can_ be opposite for directions
-       ! without k-point samplings.
-       p = SPC_PROJ(cell, this%cell(:,i))
-       p = p / VNORM(this%cell(:,i))
-       if ( abs(abs(p(1)) - 1._dp) < cell_unit_align ) then
-          this%pvt(i) = 1
-       else if ( abs(abs(p(2)) - 1._dp) < cell_unit_align ) then
-          this%pvt(i) = 2
-       else if ( abs(abs(p(3)) - 1._dp) < cell_unit_align ) then
-          this%pvt(i) = 3
-       else
-          ! We simply take the largest one
-          this%pvt(i) = IDX_SPC_PROJ(cell,this%cell(:,i), mag=.true.)
-       end if
+      ! We just want to find the cell vector
+      ! which is closests to 1, that ensures a parallel
+      ! cell vector
+      ! Note that here we do not enforce the direction
+      ! of the cell vector.
+      ! This is because it _can_ be opposite for directions
+      ! without k-point samplings.
+      p = SPC_PROJ(cell, this%cell(:,i))
+      p = p / VNORM(this%cell(:,i))
+      if ( abs(abs(p(1)) - 1._dp) < cell_unit_align ) then
+        this%pvt(i) = 1
+      else if ( abs(abs(p(2)) - 1._dp) < cell_unit_align ) then
+        this%pvt(i) = 2
+      else if ( abs(abs(p(3)) - 1._dp) < cell_unit_align ) then
+        this%pvt(i) = 3
+      else
+        ! We simply take the largest one
+        ! TODO we should probably always take one direction which is not
+        ! aligned along any others.
+        this%pvt(i) = IDX_SPC_PROJ(cell,this%cell(:,i), mag=.true.)
+      end if
        
     end do
     
@@ -950,7 +952,7 @@ contains
 
     use parallel, only : IONode
     use units, only : Pi, Ang
-    use intrinsic_missing, only : VNORM
+    use intrinsic_missing, only : VNORM, VEC_PROJ_SCA
 
     use m_ts_io, only: ts_read_TSHS_opt
 
@@ -973,9 +975,9 @@ contains
     real(dp), intent(in), optional :: kdispl(3)
     
     ! Local variables
-    integer :: this_kcell(3,3)
+    integer :: this_kcell(3,3), this_nsc(3)
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
-    real(dp) :: max_xa(3), cur_xa(3)
+    real(dp) :: max_xa(3), cur_xa(3), p
     real(dp), pointer :: this_xa(:,:)
     integer :: i, j, k, ia, na, pvt(3), iaa, idir(3)
     logical :: ldie, er, Gamma, orbs
@@ -1059,75 +1061,104 @@ contains
     end if
 
     er = .false.
-    if ( present(kcell) .and. this%kcell_check ) then
-       
-       call ts_read_TSHS_opt(this%HSfile, &
-            kscell=this_kcell,kdispl=this_kdispl, &
-            Gamma=Gamma, Bcast=.true.)
+    if ( present(kcell) ) then
 
-       ! Check that there is actually k-points in the transport direction
-       j = this%t_dir
-       i = this_kcell(j,j)
-       if ( i < 20 .and. IONode ) then
-          write(*,'(a)') 'Electrode: '//trim(this%name)//' has very few &
-               &k-points in the semi-infinite direction, at least 20 is recommended.'
-       else if ( i < 5 .and. IONode ) then
-          write(*,'(a)') 'Electrode: '//trim(this%name)//' has exceptionally few &
-               &k-points in the semi-infinite direction, at least 5 is required.'
+      call ts_read_TSHS_opt(this%HSfile, &
+          kscell=this_kcell,kdispl=this_kdispl, nsc=this_nsc, &
+          Gamma=Gamma, Bcast=.true.)
+
+      ! Check that the pivoting directions have a unique k-point alignment.
+      do j = 1, 3
+        
+        ! TODO check the off-diagonal components of the kcell
+        if ( kcell(j, j) == 1 ) cycle
+        
+        ! If there is no periodicity along this direction, we don't care anyway
+        if ( this_nsc(j) == 1 ) cycle
+
+        ! Figure out if we need to worry about the pivoting
+        p = VEC_PROJ_SCA(s_cell(:,this%pvt(j)), this%cell(:, j))
+        p = p / VNORM(this%cell(:, j))
+        
+        if ( abs(abs(p) - 1._dp) > cell_unit_align .and. IONode ) then
+          write(*,'(a)') 'ERROR: Electrode: '//trim(this%name)
+          write(*,'(a,i0)') 'Electrode direction = ',j
+          write(*,'(a,i0)') 'Projected direction = ',this%pvt(j)
+          write(*,'(2(a,i0),a,e10.4)') '|elec_cell(:, ', j, ') . cell(:,', this%pvt(j), ')| - 1 = ', abs(p) - 1._dp
+          
           ldie = .true.
-       end if
+          
+        end if
+        
+      end do
 
-       ! If the system is not a Gamma calculation, then the file must
-       ! not be either (the Bloch expansion will only increase the number of
-       ! k-points, hence the above)
-       do j = 1 , 3
+      if ( this%kcell_check ) then
+
+        ! Check that there is actually k-points in the transport direction
+        j = this%t_dir
+        i = this_kcell(j,j)
+        if ( i < 20 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has very few &
+              &k-points in the semi-infinite direction, at least 20 is recommended.'
+        else if ( i < 5 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has exceptionally few &
+              &k-points in the semi-infinite direction, at least 5 is required.'
+          ldie = .true.
+        end if
+
+        ! If the system is not a Gamma calculation, then the file must
+        ! not be either (the Bloch expansion will only increase the number of
+        ! k-points, hence the above)
+        do j = 1 , 3
           k = this%Bloch(j)
           ! The displacements are not allowed non-equivalent.
           er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
           if ( j == this%t_dir ) cycle
           do i = 1 , 3
-             if ( i == this%t_dir ) cycle
-             if ( j == i ) then
-                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
-             else 
-                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
-             end if
+            if ( i == this%t_dir ) cycle
+            if ( j == i ) then
+              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
+            else 
+              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
+            end if
           end do
-       end do
+        end do
 
-       if ( er .and. IONode ) then
-          
+        if ( er .and. IONode ) then
+
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), this_kdispl(j)
+            write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), this_kdispl(j)
           end do
           write(*,'(a)') 'System k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') kcell(:,j), kdispl(j)
+            write(*,'(3(i4,tr1),f8.4)') kcell(:,j), kdispl(j)
           end do
           write(*,'(a)') 'Electrode file k-grid should probably be:'
           ! Loop the electrode directions
           do j = 1 , 3
-             if ( j == this%t_dir ) then
-                ! ensure that we retain the semi-infinite
-                ! direction k-sampling, and suggest more k-points
-                ! if necessary
-                if ( this_kcell(j,j) < 20 ) then
-                   this_kcell(j,j) = 50
-                end if
-             else
-                this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
-             end if
-             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), kdispl(pvt(j))
+            if ( j == this%t_dir ) then
+              ! ensure that we retain the semi-infinite
+              ! direction k-sampling, and suggest more k-points
+              ! if necessary
+              if ( this_kcell(j,j) < 20 ) then
+                this_kcell(j,j) = 50
+              end if
+            else
+              this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
+            end if
+            write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), kdispl(pvt(j))
           end do
-          
-       end if
 
+        end if
+        
+      end if
+      
     else
-       
-       call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
-
+      
+      call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
+      
     end if
 
     ldie = ldie .or. er
