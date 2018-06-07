@@ -19,6 +19,7 @@
       use m_ksvinit,          only: gamma_polarization,
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
+      use units,              only: Kelvin
       use siesta_options
       use timer_options,      only: use_tree_timer, use_parallel_timer
       use sparse_matrices
@@ -531,8 +532,29 @@ C     Initialise MPI and set processor number
       numh        = 0
 
       ! Get number of eigenstates that need to be calculated
+      ! This generally needs to be set to halve the number of
+      ! charges plus some few states (such that the temperature
+      ! tail can be found).
       neigwanted = fdf_get('NumberOfEigenStates',no_u)
+
+      ! Calculate the number of eigenstates
+      ! dependent on the # of spin-components.
+      neigmin = 0
+      do is = 1 , spin%spinor
+        neigmin = max(neigmin, ceiling(qtots(is)))
+      end do
       
+      if ( spin%spinor == 1 ) then
+        ! Only take halve the number of states because the filling
+        ! is doubled. Otherwise the number of states is
+        ! correct. For NC and SOC the diag[23]* routines
+        ! intrinsically doubles neigwanted.
+        neigmin = neigmin / 2
+      end if
+      ! Always at least have one additional state per 100 K.
+      ! This choice is rather arbitrary.
+      neigmin = neigmin + ceiling((temp / Kelvin) / 100._dp)
+
       ! Correct the number of calculated eigenstates
       if ( neigwanted < 0 ) then
          
@@ -541,27 +563,18 @@ C     Initialise MPI and set processor number
          ! to be included.
          ! For very high temperatures this may be difficult to 
          ! choose, however, for moderate temperatures this
-         ! need not be somewhat more than say 10
+         ! need not be somewhat more than say 10.
 
-         ! Calculate the number of additional eigenstates
-         ! dependent on the # of spin-components
-         ! For spin-polarized calculations this is equivalent to
-         ! only half of the wanted eigenstates per spin-channel.
-         neigmin = ceiling(real(abs(neigwanted)) / spin%spinor)
-
-         do is = 1 , spin%spinor
-            neigwanted = max(neigwanted, ceiling(qtots(is)) + neigmin)
-         end do
+         ! Add the user requested states.
+         neigwanted = neigmin - neigwanted
 
       end if
 
       ! Check number of eigenstates - cannot be larger than number of
       ! basis functions or smaller than number of occupied states + 1
       ! so that the Fermi level can be estimated
-      do is = 1 , spin%spinor
-         neigmin = ceiling(qtots(is)) + 1
-         neigwanted = max(neigwanted, neigmin)
-      end do
+      neigwanted = max(neigwanted, neigmin)
+
       ! Truncate value
       neigwanted = min(neigwanted,no_u)
       

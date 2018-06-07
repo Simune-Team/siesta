@@ -1290,8 +1290,8 @@ siesta_init.o: m_new_dm.o m_rmaxh.o m_spin.o m_steps.o m_supercell.o m_timer.o
 siesta_init.o: m_wallclock.o metaforce.o molecularmechanics.o object_debug.o
 siesta_init.o: parallel.o parallelsubs.o projected_DOS.o siesta_cmlsubs.o
 siesta_init.o: siesta_dicts.o siesta_geom.o siesta_options.o sparse_matrices.o
-siesta_init.o: struct_init.o sys.o timer.o timestamp.o ts_init.o writewave.o
-siesta_init.o: zmatrix.o
+siesta_init.o: struct_init.o sys.o timer.o timestamp.o ts_init.o units.o
+siesta_init.o: writewave.o zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o

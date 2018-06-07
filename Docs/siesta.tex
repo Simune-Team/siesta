@@ -11504,8 +11504,11 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   \siesta. Upon exit it will also create the \sysfile{TSDE} file which
   may be used for initialization runs later.
 
-  This is mainly intended for test runs where one wishes to start
-  several calculations from the same initial density matrix.
+  This may be used to start several calculations from the same initial
+  density matrix, and it may also be used to rescale the Fermi level
+  of electrodes. The rescaling is primarily used for semi-conductors
+  where the Fermi levels of the device and electrodes may be
+  misaligned. 
 
 \end{fdflogicalF}
 
