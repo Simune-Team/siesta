@@ -3136,7 +3136,7 @@ C
              if (lj_projs .and. l>0 ) then
               ! Set up the appropriate potential and label
               if (jk == 1) then
-                 ! V(l-j/2) = Vdn - (l+1)/2 Vup = Vion - (l+1)/2 Vso
+                 ! V(l-1/2) = Vdn - (l+1)/2 Vup = Vion - (l+1)/2 Vso
                  vp(:) = vps(:,l) - 0.5_dp*(l+1)*vps_u(:,l)
                  jstr = 'j-'
               else
