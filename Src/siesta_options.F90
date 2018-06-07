@@ -126,6 +126,7 @@ MODULE siesta_options
   logical :: muldeb        ! Write Mulliken populations at every SCF step?
   logical :: spndeb        ! Write spin-polarization information at every SCF step?
   logical :: orbmoms       ! Write orbital moments?
+  logical :: split_sr_so   ! Cosmetic: split full lj NL energies into SR and SO parts
 
   ! Convergence options
   logical :: converge_FreeE   ! free Energy conv. to finish SCF iteration?

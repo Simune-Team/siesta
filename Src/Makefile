@@ -644,7 +644,7 @@ compute_dm.o: iodmhs_netcdf.o kpoint_scf.o m_chess.o m_dminim.o m_energies.o
 compute_dm.o: m_eo.o m_gamma.o m_hsx.o m_pexsi_driver.o m_rmaxh.o m_spin.o
 compute_dm.o: m_steps.o m_transiesta.o m_ts_global_vars.o m_zminim.o
 compute_dm.o: normalize_dm.o ordern.o parallel.o precision.o siesta_geom.o
-compute_dm.o: siesta_options.o sparse_matrices.o sys.o units.o
+compute_dm.o: siesta_options.o sparse_matrices.o units.o
 compute_ebs_shift.o: m_mpi_utils.o parallel.o precision.o
 compute_energies.o: atomlist.o class_SpData1D.o class_SpData2D.o
 compute_energies.o: class_SpData2D.o dhscf.o files.o m_dipol.o m_energies.o
@@ -1144,7 +1144,8 @@ naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
 new_matel.o: precision.o radfft.o spher_harm.o sys.o
 nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o mneighb.o
-nlefsm.o: new_matel.o parallel.o parallelsubs.o precision.o sparse_matrices.o
+nlefsm.o: new_matel.o parallel.o parallelsubs.o precision.o siesta_options.o
+nlefsm.o: sparse_matrices.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: siesta_options.o sparse_matrices.o sys.o
 obc.o: alloc.o precision.o
