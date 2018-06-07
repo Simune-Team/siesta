@@ -664,8 +664,10 @@ C Allocate local arrays that depend on saved parameters
 C     Initialize neighb subroutine
       call mneighb( scell, rmax, na, xa, 0, 0, nna )
 
-      nd= 0; ndn= 0
-      Enl = 0.0d0; E_offsiteSO(1:4)=dcmplx(0.0d0,0.0d0)
+      nd= 0
+      ndn= 0
+      Enl = 0.0d0
+      E_offsiteSO(1:4)=dcmplx(0.0d0,0.0d0)
       Enl_offsiteSO = 0.0d0
 C     Loop on atoms with KB projectors      
 
@@ -681,7 +683,9 @@ C      Find neighbour atoms
 
 C      Find neighbour orbitals
        Ski(:,:) = 0.0_dp
-       nno = 0; ; iano(:)=0; iono(:)=0
+       nno = 0
+       iano(:)=0
+       iono(:)=0
        do ina = 1,nna  ! Neighbour atoms
         ia = iana(ina) ! Atom index of ina (the neighbour to ka)
         is = isa(ia)   ! Specie index of atom ia
@@ -958,15 +962,15 @@ c-----------------------------------------------------------------------
       complex(dp) , intent(out) :: V_so(2,2)
       logical     , intent(in)  :: split_sr_so
 
-      integer    :: J, ij, imj, m, is
+      integer    :: J, ij, imj, m, is, facpm
       real(dp)   :: aj, amj, al, a2l1, fac, facm,
-     &              epskpm, V_iont, cp, cm, facpm
+     &              epskpm, V_iont, cp, cm
 
       real(dp)   :: cg(2*(2*l+1),2)
       complex(dp):: u(-l:l,-l:l)
       complex(dp):: SVi(2), SVj(2), grSVi(3,2)
 
-      external   :: die
+      external   :: die, message
 c-----------------------------------------------------------------------
 
 c---- set constants and factors
@@ -974,15 +978,29 @@ c---- set constants and factors
       a2l1 = dble( 2*l+1 )
 
 c---- load Clebsch-Gordan coefficients; cg(J,+-)
+      !
+      ! NOTE that this code will not work for l=0, since in this case
+      ! there is a single j subspace (j=0.5)
+      if ( l == 0 ) then
+         call die("Code in calc_Vj_offsiteSO does not work for l=0")
+      endif
+      
       J = 0
       cg(:,:) = 0.0_dp
+
+      ! ij ranges over the two j subspaces
+      ! The loop could have used: 'do ik = -1,1,2' for easier reading
+
       do ij = 1, 2
        aj = al + (2*ij-3)*0.5d0        ! j(ij=1)=l-1/2; j(ij=2)=l+1/2
-       ! This is very fragile. Better: facpm = 2*ij-3
-       facpm= (-1.0d0)**(aj-al-0.5d0) ! +/- sign: j=l-1/2: (-1)**(-1)=-1 ;  j = l+1/2: (-1)**0 = 1
-       do imj = 1, nint(2*aj)+1        ! Degeneracy for j
-        amj = -aj + dfloat(imj-1)      ! mj value
-        J = J+1                        ! (j,mj) index
+
+       ! This way of computing a sign is very fragile. Better below (and integer)
+       !facpm= (-1.0d0)**(aj-al-0.5d0) ! +/- sign: j=l-1/2: (-1)**(-1)=-1 ;  j = l+1/2: (-1)**0 = 1
+       facpm = 2*ij - 3
+
+       do imj = 1, nint(2*aj)+1 ! Degeneracy for j: 2j+1. Safe nint as aj is always half integer
+        amj = -aj + (imj-1)     ! mj value: -j, -j+1, ..., j-1, j
+        J = J+1                 ! Combined (j,mj) index  (great notation!)
 
         cp = sqrt( (al+0.5d0+amj)/a2l1 )
         cm = sqrt( (al+0.5d0-amj)/a2l1 )
@@ -1009,26 +1027,28 @@ c---- Ski(M)= <l,M|i> ; Si(m)= <l,m|i> = u(m,-M)*Ski(-M) + u(m,M)*Ski(M)
       enddo
 
 c---- Load V_so
-      V_so= cmplx(0.0d0,0.0d0); F_so= cmplx(0.0d0,0.0d0)
+      V_so= cmplx(0.0d0,0.0d0)
+      F_so= cmplx(0.0d0,0.0d0)
       J = 0
       do ij = 1, 2
        aj = al + (2*ij-3)*0.5d0        ! j value
        do imj = 1, nint(2*aj)+1        ! Degeneracy for j
-        amj = -aj + dfloat(imj-1)      ! mj value
-        J = J+1                        ! (j,mj) index
+        amj = -aj + imj-1              ! mj value
+        J = J+1                        ! Combined (j,mj) index
 
-        SVi(1:2)= cmplx(0.0d0,0.0d0); SVj(1:2)= cmplx(0.0d0,0.0d0)
+        SVi(1:2)= cmplx(0.0d0,0.0d0)
+        SVj(1:2)= cmplx(0.0d0,0.0d0)
         grSVi(1:3,1:2)= cmplx(0.0d0,0.0d0)
         do is = 1, 2  ! spin loop
 
-c        select correct m
+         ! select correct m. Safe nint as amj is always a half-integer
          if ( is.eq.1 ) then
           m = nint(amj-0.5d0)    ! up   => m=mj-1/2
          else
           m = nint(amj+0.5d0)    ! down => m=mj+1/2
          endif
      
-         if ( iabs(m).le.l ) then
+         if ( abs(m).le.l ) then
           SVi(is)= Ski(+M,ij)*u(+m,M)
           SVj(is)= Skj(+M,ij)*u(+m,M)
           grSVi(1:3,is)= grSki(1:3,+M,ij)*u(+m,M)
@@ -1075,12 +1095,13 @@ cc--- debugging
 
       if (split_sr_so) then
 
-c---- substract out V_ion
-      !
-      ! Note that this is some kind of average of the l+/- 1/2
+      ! Attempt to get SR and SO parts of the total lj non-local contribution
+      ! (Note that there is an extra contribution to SR coming from l=0, computed
+      ! directly in the caller routine)
+
+      ! This is some kind of average, following Hemstreet, of the l+/- 1/2 
       ! components. (In contrast to Hamann's more involved procedure)
 
-      ! Following Hemstreet:
       !  v_sr = ( (l+1) v_j+ + l v_j- ) / (2l+1)
       !  and the v_j+ and v_j- are "square roots" of the KB projectors      
 
@@ -1091,9 +1112,15 @@ c---- substract out V_ion
       ! (and within the fragility of the approach)
       epskpm  = sqrt(abs(epskb(1)*epskb(2)))
       if (epskb(1)*epskb(2) > 0) then
+         ! same sign
          epskpm  = epskpm * sign(1.0_dp,epskb(1)) 
       else
+         ! different sign: this possibility was not taken into account in previous versions,
+         ! and probably implies that the Hemstreet ansatz is ill-defined
+         ! We should flag this instead of accepting this heuristic blindly.
          epskpm  = - epskpm
+         call message("WARNING",
+     $        "The Enl-Eso split in energies might not be accurate")
       endif
       
       V_ion = 0.0d0
@@ -1105,10 +1132,12 @@ c---- substract out V_ion
        V_ion = V_ion + V_iont
       enddo
    
+      !---- substract out V_ion from V_so
       V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
       V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
 
       else
+         !---- Keep all the NL contribution in V_so
          V_ion = 0.0_dp
       endif
 
