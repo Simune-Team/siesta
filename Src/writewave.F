@@ -13,7 +13,7 @@
       implicit none
 
       private
-      character(len=200), save, public :: wfs_filename
+      character(len=192), save, public :: wfs_filename
 
       integer,    save :: nwf = 1
       logical,    save :: wwf = .false.
@@ -294,7 +294,9 @@ C Bad syntax
           endif
         enddo
 
-
+        ! Minimize to the maximum number of eigenvalues
+        nwf = min(nwf, norb)
+        
 C Allocate nwflist, iwf and kpoints structures according to nk and nwf
         call re_alloc( nwflist, 1, nk, 'nwflist', 'initwave' )
         call re_alloc( iwf, 1, nk, 1, nwf, 'iwf', 'initwave' )
@@ -337,6 +339,8 @@ C #X.XXX #Y.YYY #Z.ZZZ from #start to #end [step] #step
             iw2 = fdf_bintegers(pline,2)
             if (iw1 .lt. 0) iw1 = norb + iw1 + 1
             if (iw2 .lt. 0) iw2 = norb + iw2 + 1
+            ! Reduce to maximally the number of orbitals
+            iw2 = min(iw2, norb)
             if (nn .eq. 3) then
               iw3 = abs(fdf_bintegers(pline,3))
             else
@@ -357,10 +361,11 @@ C #X.XXX #Y.YYY #Z.ZZZ #eigen1 [#eigen2 ...]
             do i= 1, ni
               iw = fdf_bintegers(pline,i)
               if (iw .lt. 0) then
-                iwf(nk,i) = norb + iw + 1
-              else
-                iwf(nk,i) = iw
+                iw = norb + iw + 1
               endif
+              if ( iw <= norb ) then
+                iwf(nk,i) = iw
+              end if
             enddo
 
 C #X.XXX #Y.YYY #Z.ZZZ
@@ -780,7 +785,6 @@ C First print the index and value of k-point
       if (Node .eq. 0) then
         if (wwf) then
           write(6,*)
-          write(6,'(a72)')     ' ******'
           write(6,'(a22,2x,i6,2x,3f10.6)') 'k-point = ',ik, k(1:3)
           write(6,'(a22,2x,i6)') 'Spin component = ',ispin
           write(6,'(a22,2x,i6)') 'Num. wavefunctions = ',nwflist(ik)
