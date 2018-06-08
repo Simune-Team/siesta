@@ -27,7 +27,7 @@
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
-     &                    rmaxo, no_l, iza
+     &                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
@@ -44,7 +44,6 @@
                                               !   Hubbard terms
       use m_stress
       use m_energies
-      use m_steps, only: istp
       use m_ntm
       use m_spin,         only: spin
       use spinorbit,      only: spinorb
@@ -68,7 +67,6 @@
       use siesta_options, only : idyn, ia1, write_tshs_history
       use sparse_matrices, only: H_2D, S_1D
       use files,        only : label_length
-      use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
       use m_ts_kpoints, only : ts_Gamma, ts_kscell, ts_kdispl
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS, FC_index
@@ -91,7 +89,7 @@
       real(dp), pointer     :: H_tmp(:,:) => null()
       real(dp), pointer     :: H_ldau(:,:)
 #ifdef FINAL_CHECK_HS
-      real(dp) :: diff_H, diff_S
+      real(dp) :: diff_H
 #endif
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
@@ -258,7 +256,7 @@
       ! We also print-out the max-difference between the
       ! final H after SCF and the final computed H used for
       ! the forces.
-      ! These values should correspond to the dHmax and diff_S == 0.
+      ! This value should correspond to dHmax
       call compute_max_diff(H, H_tmp, diff_H)
       if ( IONode ) then
          ! Print out the final differences

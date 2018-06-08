@@ -49,10 +49,10 @@ contains
     ! integer listdptr(no_u)   : Pointer to start of rows (-1) of Escf
     ! integer listd(maxnd)     : Column indexes of the nonzero elements  
     !                            of each row of Escf
-    ! integer spin            : Number of spin components of Escf
+    ! type(tSpin) spin         : Spin configuration
     ! integer Escf(maxnd,spin%EDM): Energy-Density matrix
     ! ********************** INPUT and OUTPUT *****************************
-    ! real*8  fa(3,na_u)        : Atomic forces (Orthog. part added to input)
+    ! real*8  fa(3,na_u)       : Atomic forces (Orthog. part added to input)
     ! real*8  stress(3,3)      : Stress tensor (Orthog. part added to input)
     ! *********************************************************************
     
