@@ -23,7 +23,7 @@ module m_overfsm
   
 contains
   
-  subroutine overfsm(na_u, na_s, no_u, no_s, scell, xa, indxua, rmaxo, &
+  subroutine overfsm(na_u, na_s, no_l, no_s, scell, xa, indxua, rmaxo, &
       lasto, iphorb, isa, maxnd, numd, listdptr, listd, &
       spin, Escf, fa, stress)
     
@@ -34,7 +34,7 @@ contains
     ! **************************** INPUT **********************************
     ! integer na_u             : Number of atoms in unit cell
     ! integer na_s             : Number of atoms in supercell
-    ! integer no_u             : Number of orbitals in unit-cell
+    ! integer no_l             : Number of orbitals in unit-cell (local)
     ! integer no_s             : Number of orbitals in supercell
     ! real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
     ! real*8  xa(3,na_s)       : Atomic positions in cartesian coordinates
@@ -42,11 +42,11 @@ contains
     ! real*8  rmaxo            : Maximum cutoff for atomic orbitals
     ! integer maxnd            : First dimension of Escf and listd
     ! integer lasto(0:na_s)    : Last orbital index of each atom
-    ! integer iphorb(no)       : Orbital index of each orbital in its atom
+    ! integer iphorb(no_s)     : Orbital index of each orbital in its atom
     ! integer isa(na_s)        : Species index of each atom
-    ! integer numd(no_u)       : Number of nonzero elements of each row
+    ! integer numd(no_l)       : Number of nonzero elements of each row
     !                            of Escf
-    ! integer listdptr(no_u)   : Pointer to start of rows (-1) of Escf
+    ! integer listdptr(no_l)   : Pointer to start of rows (-1) of Escf
     ! integer listd(maxnd)     : Column indexes of the nonzero elements  
     !                            of each row of Escf
     ! type(tSpin) spin         : Spin configuration
@@ -57,10 +57,10 @@ contains
     ! *********************************************************************
     
     
-    integer, intent(in) :: na_u, na_s, no_u, no_s
-    integer, intent(in) :: indxua(na_s), iphorb(no_u), isa(na_s), lasto(0:na_s)
+    integer, intent(in) :: na_u, na_s, no_l, no_s
+    integer, intent(in) :: indxua(na_s), iphorb(no_s), isa(na_s), lasto(0:na_s)
     integer, intent(in) :: maxnd
-    integer, intent(in) :: listd(maxnd), numd(no_u), listdptr(no_u)
+    integer, intent(in) :: listd(maxnd), numd(no_l), listdptr(no_l)
     
     real(dp), intent(inout) :: fa(3,na_u), stress(3,3)
     type(tSpin), intent(in) :: spin

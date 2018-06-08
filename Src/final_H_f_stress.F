@@ -218,7 +218,7 @@
      &             Exc, Dxc, dipol, stress, fal, stressl )
 
       ! Orthonormalization forces
-      call overfsm( na_u, na_s, no_u, no_s, scell, xa, indxua, rmaxo,
+      call overfsm( na_u, na_s, no_l, no_s, scell, xa, indxua, rmaxo,
      &              lasto, iphorb, isa, maxnh, numh, listhptr, listh,
      &              spin, Escf, fal, stressl ) 
 
