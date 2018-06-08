@@ -154,7 +154,8 @@ subroutine coordsFromSocket( na, xa, cell )
         end if
         
         if (trim(header)/='STATUS') exit ! do loop
-        call writebuffer(socket, "READY", IPI_MSGLEN)
+        message = 'READY'
+        call writebuffer(socket, message, IPI_MSGLEN)
       elseif (leqi(master,'fsiesta')) then
         call readbuffer(socket, header)
 
