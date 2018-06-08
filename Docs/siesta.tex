@@ -4024,7 +4024,35 @@ could still be difficult.
 
 \end{fdflogicalF}
 
+\begin{fdflogicalT}{SOC.Split.SR.SO}
 
+  In calculations with spin-orbit-coupling (SOC) the program carries
+  out a splitting of the contributions to the Hamiltonian and energies
+  into scalar-relativistic (SR) and spin-orbit (SO) parts. The
+  splitting procedure for the off-site flavor of SOC (involving full
+  lj projectors) can sometimes be ill-defined, and in those cases the
+  program relies on a heuristic to compute the two contributions. A
+  warning is printed.
+  
+  If this option is set to \fdffalse, it will prevent the program from
+  attempting the splitting (but it still will be able to detect a
+  possible problem and report an informational message).
+  
+  For the onsite flavor of SOC this problem does not appear, but the
+  option is also available for generality.
+  
+  When the SO contribution is not split, the relevant energy
+  contributions in the output file are tagged 
+  \code{Enl(+so)} and \code{Eso(nil)}.
+  
+  The CML file is not thus changed (but there is a new parameter
+  \code{Split-SR-SO}).
+  
+  Note that this is only a cosmetic change affecting the reporting of
+  some components of the energy. All the other results should be
+  unchanged.
+
+\end{fdflogicalT}
 
 \subsection{The self-consistent-field loop}
 
@@ -11597,8 +11625,11 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   \siesta. Upon exit it will also create the \sysfile{TSDE} file which
   may be used for initialization runs later.
 
-  This is mainly intended for test runs where one wishes to start
-  several calculations from the same initial density matrix.
+  This may be used to start several calculations from the same initial
+  density matrix, and it may also be used to rescale the Fermi level
+  of electrodes. The rescaling is primarily used for semi-conductors
+  where the Fermi levels of the device and electrodes may be
+  misaligned. 
 
 \end{fdflogicalF}
 

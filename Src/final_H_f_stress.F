@@ -28,7 +28,7 @@
       use siesta_geom
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      &                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
-     &                    rmaxo, no_l, iza
+     &                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm, nlefsm_SO_off
@@ -45,7 +45,6 @@
                                               !   Hubbard terms
       use m_stress
       use m_energies
-      use m_steps, only: istp
       use m_ntm
       use m_spin,          only: spin
       use spinorbit,       only: spinorb
@@ -69,7 +68,6 @@
       use siesta_options, only : idyn, ia1, write_tshs_history
       use sparse_matrices, only: H_2D, S_1D
       use files,        only : label_length
-      use m_ts_global_vars, only : TSrun
       use m_ts_options, only : TS_HS_save
       use ts_kpoint_scf_m, only: ts_kpoints_scf, ts_gamma_scf
       use m_ts_io,      only : ts_write_TSHS,fname_TSHS, FC_index
@@ -90,12 +88,11 @@
       real(dp)              :: g2max
       ! To avoid overwriting the current Hamiltonian and S
       real(dp), pointer     :: H_tmp(:,:) => null()
-      real(dp), pointer     :: S_tmp(:) => null()  
       real(dp), pointer     :: H_ldau(:,:)
       complex(dp), pointer  :: H_so_off(:,:)
 
 #ifdef FINAL_CHECK_HS
-      real(dp) :: diff_H, diff_S
+      real(dp) :: diff_H
 #endif
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
@@ -105,6 +102,7 @@
 #endif
       character(len=label_length+13) :: fname
       integer :: io_istep, io_ia1
+      logical :: dummy_logical
 #ifdef CDF
 #ifdef NCDF_4
       type(dict) :: dic_save
@@ -117,14 +115,11 @@
 !     Initialize Hamiltonian ........................................
       call re_alloc(H_tmp, 1,maxnh, 1, spin%H,
      $             'H_tmp','final_H_f_stress')
-      call re_alloc(S_tmp, 1,maxnh,
-     $             'S_tmp','final_H_f_stress')
 
 !$OMP parallel default(shared)
 
 !$OMP workshare
       H_tmp = 0.0_dp
-      S_tmp = 0.0_dp
 !$OMP end workshare nowait
 
 !$OMP single
@@ -187,7 +182,8 @@
      &                spin%Grid,
      &                Enl, Eso, fal,
      &                stressl, H_tmp, H_so_off,
-     &                matrix_elements_only=.false.)
+     &                matrix_elements_only=.false.,
+     $                ill_defined_sr_so_split=dummy_logical)
 #ifdef MPI
 ! Global reduction of energy terms
        call globalize_sum(Enl,buffer1)
@@ -243,13 +239,10 @@
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, stress, fal, stressl )
 
-!     Orthonormalization forces ...........................................
-!     **Note that this will re-calculate S also, but should get 
-!     the same result
-      call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     &              maxnh, maxnh, lasto, iphorb, isa, 
-     &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              spin%spinor, Escf, fal, stressl, S_tmp ) 
+      ! Orthonormalization forces
+      call overfsm( na_u, na_s, no_u, no_s, scell, xa, indxua, rmaxo,
+     &              lasto, iphorb, isa, maxnh, numh, listhptr, listh,
+     &              spin, Escf, fal, stressl ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -285,15 +278,12 @@
       ! We also print-out the max-difference between the
       ! final H after SCF and the final computed H used for
       ! the forces.
-      ! These values should correspond to the dHmax and diff_S == 0.
+      ! This value should correspond to dHmax
       call compute_max_diff(H, H_tmp, diff_H)
-      call compute_max_diff(S, S_tmp, diff_S)
       if ( IONode ) then
          ! Print out the final differences
          write(*,"(a,f10.6)") ":!: Final H_scf - H_force (eV) : ",
      &        diff_H/eV
-         write(*,"(a,f10.6)") ":!: Final S_scf - S_force      : ",
-     &        diff_S
       end if
 #endif
 
@@ -308,7 +298,6 @@
 
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
       call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
-      call de_alloc( S_tmp, 'S_tmp', 'final_H_f_stress' )
 
       ! Determine whether anything should be saved
       ! If not, return immediately

@@ -1,4 +1,4 @@
-Siesta Version  : trunk-soc
+Siesta Version  : trunk-703
 Architecture    : gfortran-macosx64-openmpi
 Compiler version: GNU Fortran (Homebrew GCC 7.2.0) 7.2.0
 Compiler flags  : mpif90 -O2 -fbacktrace -g
@@ -8,7 +8,7 @@ PARALLEL version
 NetCDF support
 
 * Running on 2 nodes in parallel
->> Start of run:  24-APR-2018  15:14:13
+>> Start of run:   8-JUN-2018  17:06:27
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -442,6 +442,7 @@ redata: Neglect nonoverlap interactions             =   F
 redata: Method of Calculation                       = Diagonalization
 redata: Electronic Temperature                      =   299.9869 K
 redata: Fix the spin of the system                  =   F
+redata: Split SR and SO contributions               =   T
 redata: Max. number of TDED Iter                    =        1
 redata: Number of TDED substeps                     =        3
 redata: Dynamics option                             = Single-point calculation
@@ -482,9 +483,10 @@ Total ionic charge:    18.000000
 
 Time-reversal symmetry not used.
 
-siesta: k-grid: Number of k-points =    75
-siesta: k-grid: Cutoff (effective) =     4.190 Ang
-siesta: k-grid: Supercell and displacements
+siesta: k-grid: Number of k-points =        75
+siesta: k-points from Monkhorst-Pack grid
+siesta: k-cutoff (effective) =     4.190 Ang
+siesta: k-point supercell and displacements
 siesta: k-grid:    3   0   0      0.000
 siesta: k-grid:    0   5   0      0.000
 siesta: k-grid:    0   0   5      0.000
@@ -565,123 +567,123 @@ PhiOnMesh: nlist on node 0 =               286791
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -84.539984
+siesta: Ebs     =       -84.543358
 siesta: Eions   =      1473.891997
-siesta: Ena     =        24.598454
-siesta: Ekin    =      1696.415019
-siesta: Enl     =     -1243.413310
-siesta: Eso     =        -0.897258
+siesta: Ena     =        24.598493
+siesta: Ekin    =      1696.405829
+siesta: Enl     =     -1243.404254
+siesta: Eso     =        -0.897241
 siesta: Eldau   =         0.000000
-siesta: DEna    =        17.606907
-siesta: DUscf   =        27.338958
+siesta: DEna    =        17.606756
+siesta: DUscf   =        27.337868
 siesta: DUext   =         0.000000
 siesta: Enegf   =         0.000000
-siesta: Exc     =     -1249.952885
+siesta: Exc     =     -1249.952471
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2165.131936
-siesta: Etot    =     -2202.196113
-siesta: FreeEng =     -2202.200682
+siesta: Eharris =     -2165.134898
+siesta: Etot    =     -2202.197018
+siesta: FreeEng =     -2202.201585
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1    -2165.131936    -2202.196113    -2202.200682  0.614752 -1.477397 18.525092
-     spin moment: S , {S} =    2.02295   0.00000   2.02295   0.00000
-timer: Routine,Calls,Time,% = IterSCF        1       1.882  22.38
-   scf:    2    -2211.325534    -2206.917014    -2206.921655  0.028358 -1.462066 16.697276
-     spin moment: S , {S} =    2.11701   0.00000   2.11701   0.00000
-   scf:    3    -2224.224454    -2220.031592    -2220.038617  0.163123 -1.473378  6.857987
-     spin moment: S , {S} =    2.83092   0.00000   2.83092   0.00000
-   scf:    4    -2223.062822    -2221.639513    -2221.646535  0.051355 -2.076597  5.181388
-     spin moment: S , {S} =    2.99148   0.00000   2.99148  -0.00000
-   scf:    5    -2223.926874    -2223.291006    -2223.294748  0.102069 -3.337008  1.383096
-     spin moment: S , {S} =    3.33727   0.00000   3.33727  -0.00000
-   scf:    6    -2222.897188    -2223.215538    -2223.219039  0.023332 -2.967084  2.384404
-     spin moment: S , {S} =    3.38171   0.00000   3.38171  -0.00000
+   scf:    1    -2165.134898    -2202.197018    -2202.201585  0.614676 -1.477385 18.524765
+     spin moment: S , {S} =    2.02303   0.00000   2.02303  -0.00000
+timer: Routine,Calls,Time,% = IterSCF        1       2.070  11.16
+   scf:    2    -2211.325554    -2206.917454    -2206.922097  0.028357 -1.462077 16.697065
+     spin moment: S , {S} =    2.11705   0.00000   2.11705   0.00000
+   scf:    3    -2224.224107    -2220.031464    -2220.038488  0.163139 -1.473425  6.857907
+     spin moment: S , {S} =    2.83088   0.00000   2.83088   0.00000
+   scf:    4    -2223.061645    -2221.638905    -2221.645929  0.051338 -2.076649  5.182541
+     spin moment: S , {S} =    2.99127   0.00000   2.99127   0.00000
+   scf:    5    -2223.926952    -2223.290843    -2223.294588  0.102098 -3.337072  1.382808
+     spin moment: S , {S} =    3.33722   0.00000   3.33722  -0.00000
+   scf:    6    -2222.895493    -2223.214893    -2223.218399  0.023357 -2.966815  2.388644
+     spin moment: S , {S} =    3.38178   0.00000   3.38178   0.00000
 SCF_NOT_CONV: SCF did not converge  in maximum number of steps.
-Geom step, scf iteration, dmax:    0     6     0.175249
+Geom step, scf iteration, dmax:    0     6     0.175561
 
 Using DM_out to compute the final energy and forces
 
-siesta: E_KS(eV) =            -2223.2155
+siesta: E_KS(eV) =            -2223.2149
 
-siesta: E_KS - E_eggbox =     -2223.2155
-     spin moment: S , {S} =    3.38171   0.00000   3.38171  -0.00000
+siesta: E_KS - E_eggbox =     -2223.2149
+     spin moment: S , {S} =    3.38178   0.00000   3.38178   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000015   -0.435506   -0.000000
-     2    0.000005    0.387237    0.000000
+     1   -0.000015   -0.430295    0.000000
+     2    0.000005    0.382021    0.000000
 ----------------------------------------
-   Tot   -0.000010   -0.048269   -0.000000
+   Tot   -0.000010   -0.048274    0.000000
 ----------------------------------------
-   Max    0.435506
-   Res    0.237914    sqrt( Sum f_i^2 / 3N )
+   Max    0.430295
+   Res    0.234909    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.435506    constrained
+   Max    0.430295    constrained
 
-Stress-tensor-Voigt (kbar):       43.56      -39.86      141.51       -0.00       -0.00        0.00
-(Free)E + p*V (eV/cell)    -2224.0830
-Target enthalpy (eV/cell)    -2223.2190
+Stress-tensor-Voigt (kbar):       43.64      -39.71      141.51       -0.00        0.00       -0.00
+(Free)E + p*V (eV/cell)    -2224.0837
+Target enthalpy (eV/cell)    -2223.2184
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -116.472122
+siesta: Ebs     =      -116.481246
 siesta: Eions   =      1473.891997
-siesta: Ena     =        24.598454
-siesta: Ekin    =      1681.743630
-siesta: Enl     =     -1200.543988
-siesta: Eso     =        -0.702690
+siesta: Ena     =        24.598493
+siesta: Ekin    =      1681.698647
+siesta: Enl     =     -1200.502082
+siesta: Eso     =        -0.702671
 siesta: Eldau   =         0.000000
-siesta: DEna    =         4.945368
-siesta: DUscf   =         1.650654
+siesta: DEna    =         4.944831
+siesta: DUscf   =         1.651274
 siesta: DUext   =         0.000000
 siesta: Enegf   =         0.000000
-siesta: Exc     =     -1261.014969
+siesta: Exc     =     -1261.011388
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2222.897188
-siesta: Etot    =     -2223.215538
-siesta: FreeEng =     -2223.219039
+siesta: Eharris =     -2222.895493
+siesta: Etot    =     -2223.214893
+siesta: FreeEng =     -2223.218399
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -116.472122
-siesta:       Kinetic =    1681.743630
-siesta:       Hartree =     178.932740
+siesta:  Band Struct. =    -116.481246
+siesta:       Kinetic =    1681.698647
+siesta:       Hartree =     178.923133
 siesta:       Eldau   =       0.000000
-siesta:       Eso     =      -0.702690
+siesta:       Eso     =      -0.702671
 siesta:    Ext. field =       0.000000
 siesta:       Enegf   =       0.000000
-siesta:   Exch.-corr. =   -1261.014969
-siesta:  Ion-electron =   -1750.740265
-siesta:       Ion-ion =   -1071.433984
+siesta:   Exch.-corr. =   -1261.011388
+siesta:  Ion-electron =   -1750.688669
+siesta:       Ion-ion =   -1071.433945
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -2223.215538
-siesta:         Fermi =      -2.967084
+siesta:         Total =   -2223.214893
+siesta:         Fermi =      -2.966815
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000015   -0.435506   -0.000000
-siesta:      2    0.000005    0.387237    0.000000
+siesta:      1   -0.000015   -0.430295    0.000000
+siesta:      2    0.000005    0.382021    0.000000
 siesta: ----------------------------------------
-siesta:    Tot   -0.000010   -0.048269   -0.000000
+siesta:    Tot   -0.000010   -0.048274    0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.027186   -0.000000    0.000000
-siesta:    -0.000000   -0.024877   -0.000000
-siesta:     0.000000   -0.000000    0.088322
+siesta:     0.027240   -0.000000   -0.000000
+siesta:    -0.000000   -0.024784    0.000000
+siesta:    -0.000000    0.000000    0.088322
 
 siesta: Cell volume =         28.596555 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00032903         -0.00025330  Ry/Bohr**3
-siesta:          -0.03021039         -0.02325730  eV/Ang**3
-siesta:         -48.40290528        -37.26271194  kBar
-(Free)E+ p_basis*V_orbitals  =       -2222.024044
-(Free)Eharris+ p_basis*V_orbitals  =       -2221.705693
-     spin moment: S , {S} =    3.38171   0.00000   3.38171  -0.00000
->> End of run:  24-APR-2018  15:14:32
+siesta:          -0.00032956         -0.00025479  Ry/Bohr**3
+siesta:          -0.03025935         -0.02339438  eV/Ang**3
+siesta:         -48.48135047        -37.48234108  kBar
+(Free)E+ p_basis*V_orbitals  =       -2222.023404
+(Free)Eharris+ p_basis*V_orbitals  =       -2221.704003
+     spin moment: S , {S} =    3.38178   0.00000   3.38178   0.00000
+>> End of run:   8-JUN-2018  17:06:55
 Job completed

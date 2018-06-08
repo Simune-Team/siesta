@@ -741,11 +741,10 @@ final_H_f_stress.o: alloc.o atomlist.o class_SpData2D.o class_SpData2D.o
 final_H_f_stress.o: compute_max_diff.o dnaefs.o files.o grdsam.o kinefsm.o
 final_H_f_stress.o: ldau.o ldau_specs.o m_dipol.o m_energies.o m_forces.o
 final_H_f_stress.o: m_gamma.o m_hsx.o m_mpi_utils.o m_ncdf_siesta.o m_ntm.o
-final_H_f_stress.o: m_spin.o m_steps.o m_stress.o m_ts_global_vars.o m_ts_io.o
-final_H_f_stress.o: m_ts_options.o metaforce.o molecularmechanics.o naefs.o
-final_H_f_stress.o: nlefsm.o overfsm.o parallel.o siesta_geom.o
-final_H_f_stress.o: siesta_options.o sparse_matrices.o spinorbit.o sys.o
-final_H_f_stress.o: ts_kpoint_scf.o units.o
+final_H_f_stress.o: m_spin.o m_stress.o m_ts_io.o m_ts_options.o metaforce.o
+final_H_f_stress.o: molecularmechanics.o naefs.o nlefsm.o overfsm.o parallel.o
+final_H_f_stress.o: siesta_geom.o siesta_options.o sparse_matrices.o
+final_H_f_stress.o: spinorbit.o sys.o ts_kpoint_scf.o units.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fire.o m_mpi_utils.o parallel.o precision.o
 fire_optim.o: siesta_options.o units.o
@@ -1158,8 +1157,8 @@ ordern.o: alloc.o cgwf.o chempot.o globalise.o m_mpi_utils.o onmod.o parallel.o
 ordern.o: precision.o siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o precision.o siesta_geom.o sys.o units.o
-overfsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
-overfsm.o: precision.o
+overfsm.o: alloc.o atmfuncs.o m_spin.o mneighb.o new_matel.o parallel.o
+overfsm.o: parallelsubs.o precision.o
 overlap.o: alloc.o atmfuncs.o atomlist.o m_iodm_old.o m_matio.o mneighb.o
 overlap.o: new_matel.o parallel.o parallelsubs.o precision.o
 parallelsubs.o: domain_decom.o parallel.o spatial.o sys.o
@@ -1297,7 +1296,7 @@ siesta_init.o: m_wallclock.o memory_log.o metaforce.o molecularmechanics.o
 siesta_init.o: object_debug.o parallel.o parallelsubs.o projected_DOS.o
 siesta_init.o: siesta_cmlsubs.o siesta_dicts.o siesta_geom.o siesta_options.o
 siesta_init.o: sparse_matrices.o struct_init.o timer.o timestamp.o ts_init.o
-siesta_init.o: writewave.o zmatrix.o
+siesta_init.o: units.o writewave.o zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
