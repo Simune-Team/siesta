@@ -649,8 +649,8 @@ ordern.o: alloc.o cgwf.o chempot.o globalise.o local_sys.o m_mpi_utils.o
 ordern.o: onmod.o parallel.o precision.o siesta_cml.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: alloc.o atmfuncs.o local_sys.o precision.o siesta_geom.o units.o
-overfsm.o: alloc.o atmfuncs.o mneighb.o new_matel.o parallel.o parallelsubs.o
-overfsm.o: precision.o
+overfsm.o: alloc.o atmfuncs.o m_spin.o mneighb.o new_matel.o parallel.o
+overfsm.o: parallelsubs.o precision.o
 overlap.o: alloc.o atmfuncs.o atomlist.o m_iodm_old.o m_matio.o mneighb.o
 overlap.o: new_matel.o parallel.o parallelsubs.o precision.o
 parallelsubs.o: domain_decom.o local_sys.o parallel.o spatial.o

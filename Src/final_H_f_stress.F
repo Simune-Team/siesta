@@ -89,7 +89,6 @@
       real(dp)              :: g2max
       ! To avoid overwriting the current Hamiltonian and S
       real(dp), pointer     :: H_tmp(:,:) => null()
-      real(dp), pointer     :: S_tmp(:) => null()  
       real(dp), pointer     :: H_ldau(:,:)
 #ifdef FINAL_CHECK_HS
       real(dp) :: diff_H, diff_S
@@ -111,14 +110,11 @@
 !     Initialize Hamiltonian ........................................
       call re_alloc(H_tmp, 1,maxnh, 1, spin%H,
      $             'H_tmp','final_H_f_stress')
-      call re_alloc(S_tmp, 1,maxnh,
-     $             'S_tmp','final_H_f_stress')
 
 !$OMP parallel default(shared)
 
 !$OMP workshare
       H_tmp = 0.0_dp
-      S_tmp = 0.0_dp
 !$OMP end workshare nowait
 
 !$OMP single
@@ -223,13 +219,10 @@
      &             Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      &             Exc, Dxc, dipol, stress, fal, stressl )
 
-!     Orthonormalization forces ...........................................
-!     **Note that this will re-calculate S also, but should get 
-!     the same result
-      call overfsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     &              maxnh, maxnh, lasto, iphorb, isa, 
-     &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              spin%spinor, Escf, fal, stressl, S_tmp ) 
+      ! Orthonormalization forces
+      call overfsm( na_u, na_s, no_u, no_s, scell, xa, indxua, rmaxo,
+     &              lasto, iphorb, isa, maxnh, numh, listhptr, listh,
+     &              spin, Escf, fal, stressl ) 
 
 !     Metadynamics forces
       if (lMetaForce) then
@@ -267,13 +260,10 @@
       ! the forces.
       ! These values should correspond to the dHmax and diff_S == 0.
       call compute_max_diff(H, H_tmp, diff_H)
-      call compute_max_diff(S, S_tmp, diff_S)
       if ( IONode ) then
          ! Print out the final differences
          write(*,"(a,f10.6)") ":!: Final H_scf - H_force (eV) : ",
      &        diff_H/eV
-         write(*,"(a,f10.6)") ":!: Final S_scf - S_force      : ",
-     &        diff_S
       end if
 #endif
       
@@ -287,7 +277,6 @@
 
       call de_alloc( fal, 'fal', 'final_H_f_stress' )
       call de_alloc( H_tmp, 'H_tmp', 'final_H_f_stress' )
-      call de_alloc( S_tmp, 'S_tmp', 'final_H_f_stress' )
 
       ! Determine whether anything should be saved
       ! If not, return immediately
