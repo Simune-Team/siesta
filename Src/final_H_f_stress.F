@@ -102,6 +102,7 @@
 #endif
       character(len=label_length+13) :: fname
       integer :: io_istep, io_ia1
+      logical :: dummy_logical
 #ifdef CDF
 #ifdef NCDF_4
       type(dict) :: dic_save
@@ -181,7 +182,8 @@
      &                spin%Grid,
      &                Enl, Eso, fal,
      &                stressl, H_tmp, H_so_off,
-     &                matrix_elements_only=.false.)
+     &                matrix_elements_only=.false.,
+     $                ill_defined_sr_so_split=dummy_logical)
 #ifdef MPI
 ! Global reduction of energy terms
        call globalize_sum(Enl,buffer1)

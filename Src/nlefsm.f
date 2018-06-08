@@ -142,7 +142,7 @@ C Find unit cell volume
 
 C Find maximum range and maximum number of KB projectors
       maxkba = 0
-      
+
       allocate(rorbmax(nspecies),rkbmax(nspecies))
       do is = 1, nspecies
 
@@ -450,7 +450,8 @@ C when Off-Site Spin Orbit is included in the calculation
      .                      iphKB, numd, listdptr, listd, numh, 
      .                      listhptr, listh, nspin, Enl, Enl_offsiteSO, 
      .                      fa, stress, H0 , H0_off,
-     &                      matrix_elements_only)
+     &                      matrix_elements_only,
+     &                      ill_defined_sr_so_split)
 
 
 C *********************************************************************
@@ -514,9 +515,11 @@ C
       use neighbour,       only : mneighb, reset_neighbour_arrays
       use alloc,           only : re_alloc, de_alloc
       use m_new_matel,     only : new_matel
-      use atm_types,       only: species_info, species
-      use sparse_matrices, only: Dscf, xijo
-      use siesta_options,  only: split_sr_so
+      use atm_types,       only : species_info, species
+      use sparse_matrices, only : Dscf, xijo
+      use siesta_options,  only : split_sr_so
+      use chemical,        only : is_floating
+      use atomlist,        only : in_kb_orb_u_range
       
       use fdf
       
@@ -535,6 +538,7 @@ C
                                            
       real(dp), intent(out)   :: Enl, Enl_offsiteSO 
       logical, intent(in)     :: matrix_elements_only
+      logical, intent(out)    :: ill_defined_sr_so_split
 
       real(dp) ::   volcel
       external ::   timer, volcel
@@ -664,6 +668,7 @@ C Allocate local arrays that depend on saved parameters
 C     Initialize neighb subroutine
       call mneighb( scell, rmax, na, xa, 0, 0, nna )
 
+      ill_defined_sr_so_split = .false.
       nd= 0
       ndn= 0
       Enl = 0.0d0
@@ -671,11 +676,16 @@ C     Initialize neighb subroutine
       Enl_offsiteSO = 0.0d0
 C     Loop on atoms with KB projectors      
 
-      ! Use info from hsparse to remove "far" atoms, as in nlefsm
 
       do ka = 1,na              ! Supercell atoms
-       kua = indxua(ka) ! Equivalent atom in the UC
-       ks = isa(ka)     ! Specie index of atom ka
+
+       ! Use info from hsparse to remove "far" atoms, as in nlefsm
+       if (.not. in_kb_orb_u_range(ka)) CYCLE
+
+       ks = isa(ka)             ! Specie index of atom ka
+       if (is_floating(ks)) CYCLE
+
+       kua = indxua(ka)         ! Equivalent atom in the UC
        nkb = lastkb(ka) - lastkb(ka-1) ! number of KB projs of atom ka
 
 C      Find neighbour atoms
@@ -735,10 +745,10 @@ C          Check maxno - if too small then increase array sizes
             ioa = iphorb(io)
             koa = iphKB(ko)            ! koa = -ikb 
 
-            if ( koa.ne.-ikb ) then
-             write(6,*) 'koa ERROR: koa,ikb=',koa,ikb
-             stop
-            endif
+            !if ( koa.ne.-ikb ) then
+            ! write(6,*) 'koa ERROR: koa,ikb=',koa,ikb
+            ! stop
+            !endif
             kg = kbproj_gindex(ks,koa)
             ig = orb_gindex(is,ioa)
             call new_MATEL( 'S', kg, ig, xki(1:3,ina),
@@ -844,6 +854,9 @@ c----------- Compute Vion from j+/-1/2 and V_so
               koa2 = -iphKB(ko+2*(2*l+1))
               epsk(1) = epskb(ks,koa1)
               epsk(2) = epskb(ks,koa2)
+              if (epsk(1)*epsk(2) < 0) then
+                 ill_defined_sr_so_split = .true.
+              endif
 
               call calc_Vj_offsiteSO( l, epsk, Ski(koa1:koa2,ino), 
      &                       Ski(koa1:koa2,jno), grSki(:,koa1:koa2,ino),
@@ -970,7 +983,7 @@ c-----------------------------------------------------------------------
       complex(dp):: u(-l:l,-l:l)
       complex(dp):: SVi(2), SVj(2), grSVi(3,2)
 
-      external   :: die, message
+      external   :: die
 c-----------------------------------------------------------------------
 
 c---- set constants and factors
@@ -1117,10 +1130,8 @@ cc--- debugging
       else
          ! different sign: this possibility was not taken into account in previous versions,
          ! and probably implies that the Hemstreet ansatz is ill-defined
-         ! We should flag this instead of accepting this heuristic blindly.
+         ! We now flag this as a warning (logic in caller) instead of accepting this heuristic blindly.
          epskpm  = - epskpm
-         call message("WARNING",
-     $        "The Enl-Eso split in energies might not be accurate")
       endif
       
       V_ion = 0.0d0

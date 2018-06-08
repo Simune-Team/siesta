@@ -15,7 +15,7 @@
 C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
       
-      USE siesta_options,  only: g2cut
+      USE siesta_options,  only: g2cut, split_sr_so
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_so_on_2D, H_so_off_2D
       use sparse_matrices, only: Dscf
@@ -66,7 +66,8 @@ C     and initializes data structures on the grid.
       real(dp), pointer :: H_val(:), H_so_on(:,:)
       complex(dp), pointer :: H_so_off(:,:)
 
-
+      logical :: ill_defined_sr_so_split
+      
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
 #endif
@@ -146,8 +147,19 @@ C     Add on force field contribution to energy
      &                 spin%Grid,
      &                 dummy_E, dummy_Eso, dummy_fa,
      &                 dummy_stress, H_val, H_so_off,
-     &                 matrix_elements_only=.true.)
+     &                 matrix_elements_only=.true.,
+     &                 ill_defined_sr_so_split=ill_defined_sr_so_split)
 
+        if (ill_defined_sr_so_split) then
+           if (split_sr_so) then
+              call message("WARNING",
+     $        "The Enl-Eso split in energies might not be accurate")
+           else
+              call message("INFO",
+     $        "The Enl-Eso split in energies " //
+     $        "would not have been accurate")
+           endif
+        endif
 
 !
 !  Dc IS NOT the dense matrix, it is just a complex number 
@@ -180,6 +192,7 @@ C     Add on force field contribution to energy
 #endif
       endif
 ! ..................
+
 
 ! If in the future the spin-orbit routine is able to compute
 ! forces and stresses, then "last" will be needed. If we are not
