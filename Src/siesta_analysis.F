@@ -52,7 +52,6 @@
       use m_dipol
       use m_eo
       use m_forces,          only: fa
-      use m_gamma 
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
@@ -275,7 +274,7 @@
         call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
      &              nwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     &              nwk, wfk, no_u, gamma, occtol )
+     &              nwk, wfk, no_u, occtol )
       endif
 
 
@@ -295,7 +294,7 @@
          call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
      .        nkpnt,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     .        nkpnt, kpoint, no_u, gamma, occtol)
+     .        nkpnt, kpoint, no_u, occtol)
       endif
 
 !     Compute bands

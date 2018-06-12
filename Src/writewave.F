@@ -386,7 +386,7 @@ C #X.XXX #Y.YYY #Z.ZZZ
       subroutine wwave( no, nspin, maxspn, maxo, maxuo, maxnh, 
      .                  maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
-     .                  nk, kpoint, nuotot, gamma, occtol)
+     .                  nk, kpoint, nuotot, occtol)
 C *********************************************************************
 C Finds wavefunctions at selected k-points.
 C Written by P. Ordejon, June 2003
@@ -418,7 +418,6 @@ C                               nuo the number of orbitals in unit cell
 C integer nk                  : Number of band k points
 C real*8  kpoint(3,maxk)      : k point vectors
 C integer nuotot              : Total number of orbitals in unit cell
-C logical gamma               : Indicates if this is a Gamma point run
 C real*8  occtol              : Occupancy threshold for DM build
 C *************************** OUTPUT **********************************
 C None; output is dumped to wave functions file SystemLabel.WFSX
@@ -452,7 +451,6 @@ C
      .                  h_spin_dim, spinor_dim, nspin, maxspn,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
-      logical           gamma
       real(dp)          ef, H(:,:), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
 
@@ -470,7 +468,6 @@ C *********************************************************************
      .  temp, wk, Entropy
 
 C Dynamic arrays
-      integer,  allocatable :: muo(:)
       logical, parameter :: getD = .false.
       logical, parameter :: getPSI = .true.
       real(dp), allocatable :: aux(:)
@@ -480,6 +477,7 @@ C Dynamic arrays
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
       logical :: SaveParallelOverK
+      logical           gamma
 
       h_spin_dim=size(H,dim=2)
 
@@ -494,6 +492,8 @@ C Get local number of orbitals
 C Start time counter 
       call timer( 'writewave', 1 )
 
+      gamma = ((nk == 1) .and. (sum(abs(kpoint(:,1))) == 0.0))
+      
 C Check parameter maxk 
       if (nk .gt. maxk) then
         if (Node.eq.0) then
@@ -525,45 +525,11 @@ C Allocate local arrays - only aux is relevant here
       call re_alloc(Saux,1,nhs,name='Saux',routine='densematrix')
       call re_alloc(psi,1,nhs,name='psi',routine='densematrix')
 
-CC RC  ek has different arguments here than in 3.1.1 version that it is:
-C      allocate(ek(maxspn,nuo,nuotot)) and the next call to memory
       allocate(ek(nuotot,maxspn,nk))
       call memory('A','D',maxspn*nk*nuotot,'writewave')
       naux = 2*nuotot*5
       allocate(aux(naux))
       call memory('A','D',naux,'writewave')
-      allocate(muo(nuotot))
-      call memory('A','I',nuotot,'writewave')
-
-C Check indxuo 
-      do iuo = 1,nuotot
-        muo(iuo) = 0
-      enddo
-      do io = 1,no
-        iuo = indxuo(io)
-        if (indxuo(io).le.0 .or. indxuo(io).gt.nuotot) then
-          if (Node.eq.0) then
-            write(6,*) 'writewave: invalid index: io, indxuo =',
-     .        io, indxuo(io)
-            call die('writewave: invalid indxuo')
-          else
-            call die()
-          endif
-        endif
-        muo(iuo) = muo(iuo) + 1
-      enddo
-      do iuo = 1,nuotot
-        if (muo(iuo) .ne. muo(1)) then
-          if (Node.eq.0) then
-          write(6,'(/,2a,3i6)') 'writewave: ERROR: inconsistent indxuo.'
-     .     ,' iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-            call die('writewave: ERROR: inconsistent indxuo.')
-          else
-            call die()
-          endif
-        endif
-      enddo
-
 
 C Open file
 
@@ -602,7 +568,6 @@ c fixspin and qs are not used in diagk, since getD=.false. ...
 
 C Call appropriate diagonalization routine
 
-CC RC Added for on-site SO
       if (NoMagn .or. SPpol) then
        if (gamma) then
          call diagg( h_spin_dim, nuo, maxuo, maxnh, maxnh, 
@@ -621,7 +586,7 @@ C Handle parallel over K points option which is not allowed for here
      &               "WF info generation"
              end if
              ParallelOverK = .false.
-             Serial = Nodes == 1
+             Serial = (Nodes == 1)
              call diag_init()
           end if
 
@@ -638,7 +603,7 @@ C Handle parallel over K points option which is not allowed for here
          if ( ParallelOverK ) Serial = .true.
          
        endif
-CC RC Added for on-site SO
+
       elseif (NonCol) then
         if (gamma) then
           call diag2g( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
@@ -677,8 +642,6 @@ CC RC Added for on-site SO
 
 
 C Free local arrays 
-      call memory('D','I',size(muo),'writewave')
-      deallocate(muo)
       call memory('D','D',size(aux),'writewave')
       deallocate(aux)
       call memory('D','D',size(ek),'writewave')
@@ -716,7 +679,7 @@ C This is the only exit point
       logical gamma
 
 C  Internal variables .............................................
-      integer  BNode, ntot, iie, iw, indwf, j, ind, iu
+      integer  BNode, iie, iw, indwf, j, ind, iu
 
       integer number_of_wfns
       integer, allocatable  :: ind_wfn(:)
@@ -745,21 +708,6 @@ C Find file name, and open for Node 0
         open(iu,file=wfs_filename,form="unformatted",position='append',
      .        status='old')
       endif
-
-C Check that the total number of orbitals is correct
-
-#ifdef MPI
-      if (Nodes.gt.1) then
-        call MPI_AllReduce(nuo,ntot,1,MPI_integer,MPI_sum,
-     .    MPI_Comm_World,MPIerror)
-      else
-        ntot = nuo
-      endif
-#else
-      ntot = nuo
-#endif
-
-      if (ntot .ne. nuotot) call die('Inconsistent number of orbitals')
 
       if (wfs_energy_window) then  
          allocate(ind_wfn(nwflist(ik)))
@@ -810,7 +758,10 @@ C Loop over wavefunctions that should be printed
       do iw = 1,nwflist(ik)
         indwf = iwf(ik,iw)
 
-C Determine which node handles this wavefunction
+        ! Determine which node handles this wavefunction
+        ! Note that the distribution is block cyclic,
+        ! so the same 'orbital' helper functions apply
+
         call WhichNodeOrb(indwf,Nodes,BNode)
 
         if (Node .eq. 0 .and. debug) then
@@ -820,7 +771,7 @@ C Determine which node handles this wavefunction
 
         if (Node.eq.BNode) then
 
-C Determine the index of the orbital in the local node
+C Determine the index of the wavefunction in the local node
 
           call GlobalToLocalOrb( indwf, BNode, Nodes, iie)
 
@@ -830,12 +781,12 @@ C psi has different structure in diagk and diagg, so the indexing
 C must be handled differently
 
           if (gamma) then
-            do j = 1,ntot
+            do j = 1,nuotot
               ind = j + (iie-1)*nuotot 
               aux(1,j) = real(psi(ind),kind=sp)
             enddo
           else
-            do j = 1,ntot
+            do j = 1,nuotot
               ind = 1+(j-1)*2+(iie-1)*2*nuotot
               aux(1,j) = real(psi(ind),kind=sp)
               aux(2,j) = real(psi(ind+1),kind=sp)
@@ -862,12 +813,12 @@ C Pass the wf to the master node
         endif
 #endif
 
-C eigenvector is now stored in aux in all processors, and can be printed
+C eigenvector is now stored in aux in Node 0, and can be printed
 
         if (Node .eq. 0) then
           write(iu) indwf
           write(iu) eo(indwf)/eV
-          write(iu) (aux(1:,j), j=1,ntot)
+          write(iu) (aux(1:,j), j=1,nuotot)
        endif
 
       enddo

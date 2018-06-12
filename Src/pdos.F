@@ -8,7 +8,7 @@
       subroutine pdos( NO, nspin, maxspn, NO_L, MAXNH, 
      .                 MAXO, NUMH, LISTHPTR, LISTH, H, S, 
      .                 E1, E2, SIGMA, NHIST,
-     .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO, NO_U )
+     .                 XIJ, INDXUO, NK, KPOINT, WK, EO, NO_U )
 C **********************************************************************
 C Subroutine to calculate the projected density of states on the
 C atomic orbitals for a given eigenvalue spectra
@@ -37,7 +37,6 @@ C                               (to find local density of states)
 C                               Not used if e1 > e2
 C REAL*8  SIGMA               : Width of the gaussian to expand the eigenvalues
 C INTEGER NHIST               : Number of subdivisions of the histogram
-C LOGICAL GAMMA               : Only gamma point?
 C REAL*8  XIJ(3,MAXNH)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C INTEGER INDXUO(NO)          : Index of equivalent orbital in unit cell
@@ -87,9 +86,6 @@ C **********************************************************************
      .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA,  
      .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), EO(MAXO,MAXSPN,NK)
 
-      logical
-     .  gamma
-
 C Dynamic arrays -------------------------------------------------------
       real(dp), dimension(:,:)  , pointer :: DTOT
       real(dp), dimension(:,:,:), pointer :: DPR
@@ -102,6 +98,7 @@ C Internal variables ---------------------------------------------------
       integer iat, spec, ii, iorb
 
       logical :: orig_ParallelOverK, orig_Serial
+      logical :: gamma
 
       real(dp), dimension(:), pointer :: tmp
 
@@ -123,6 +120,8 @@ C Internal variables ---------------------------------------------------
 #endif
 
       call timer( 'pdos', 1)
+
+      gamma = ((nk == 1) .and. (sum(abs(kpoint(:,1))) == 0.0))
 
       orig_Serial = Serial
       orig_ParallelOverK = ParallelOverK

@@ -360,7 +360,6 @@ C
       use densematrix,  only : Haux, Saux, psi
       use alloc,        only : re_alloc, de_alloc
       use files,        only : slabel, label_length
-      use m_gamma,      only : gamma
       use atomlist,     only : iaorb, iphorb
       use siesta_geom,  only : isa
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
@@ -396,7 +395,8 @@ C
       integer :: ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
 
       logical :: SaveParallelOverK
-
+      logical :: gamma
+      
       real(dp)
      .  Dnew, qs(2), e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot,
      .  path, temp, wk, Entropy
@@ -419,6 +419,9 @@ C Get number of local orbitals
 C Start time counter
       call timer( 'bands', 1 )
 
+      ! This routine always uses diag*k routines
+      gamma = .false.
+      
 C Check parameter maxk
       if (nk .gt. maxk) then
         if (Node.eq.0) then

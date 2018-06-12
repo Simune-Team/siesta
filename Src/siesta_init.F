@@ -57,7 +57,7 @@
       use m_rmaxh
       use m_forces 
       use m_eo
-      use m_gamma
+      use m_gamma,            only: not_using_auxcell => gamma
       use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
       use m_projected_DOS,    only: init_projected_DOS
@@ -567,7 +567,7 @@ C     Initialise MPI and set processor number
 !     not early, in order to decide whether to use an 
 !     auxiliary supercell for the calculation of matrix elements.
       call setup_Kpoint_grid( ucell )
-      gamma = gamma_scf
+      not_using_auxcell = gamma_scf
 
       ! Read in diagonalization routines
       ! Note that only the sampled BZ is responsible for
@@ -580,7 +580,7 @@ C     Initialise MPI and set processor number
 !     the auxiliary supercell is needed for a non-gamma calculation
       call init_projected_DOS( )
       if (do_pdos) then
-        gamma = gamma .and. gamma_pdos
+        not_using_auxcell = not_using_auxcell.and. gamma_pdos
       endif
 
       nullify(eo,qo)
@@ -590,13 +590,13 @@ C     Initialise MPI and set processor number
      &              'siesta_init')
 
       call setup_bands( )
-      gamma = gamma .and. gamma_bands
+      not_using_auxcell = not_using_auxcell .and. gamma_bands
 
       call setup_wf_kpoints( )
-      gamma = gamma .and. gamma_wavefunctions
+      not_using_auxcell = not_using_auxcell .and. gamma_wavefunctions
 
       call estimate_pol_kpoints( ucell )
-      gamma = gamma .and. gamma_polarization
+      not_using_auxcell = not_using_auxcell .and. gamma_polarization
 !      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
 !
 !     User can request that the calculation is done with an explicit
@@ -604,12 +604,12 @@ C     Initialise MPI and set processor number
 !     the gamma point
 !
       user_wants_supercell = fdf_get( 'ForceAuxCell', .false. )
-      if (user_wants_supercell) gamma = .false.
+      if (user_wants_supercell) not_using_auxcell = .false.
 
 !     Find required supercell
 !     2*rmaxh is used to guarantee that two given orbitals in the
 !     supercell can only overlap once
-      if (gamma) then
+      if (not_using_auxcell) then
         nsc(1:3) = 1
       else
         ! Discussion with Jose-Soler we get this size ! NPA

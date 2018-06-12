@@ -41,7 +41,7 @@
       use m_compute_dm,   only : PreviousCallDiagon
       use m_eo
       use Kpoint_grid
-      use m_gamma
+      use m_gamma,        only: not_using_auxcell => gamma
       implicit none
 
       ! MD-step, SCF-step
@@ -81,12 +81,12 @@
      &                no_l, maxnh, maxnh, no_u,
      &                numh, listhptr, listh, numh, listhptr, listh, 
      &                H, S, qtot, fixspin, qtots, temp, 1.0_dp, -1.0_dp,
-     &                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     &                xijo, indxuo, nkpnt, kpoint, kweight,
      &                eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &                occtol, iscf, neigwanted)
           Ecorrec = 0.0_dp
         else
-          if (gamma) then
+          if (not_using_auxcell) then
             call dminim(.true., .false., iscf, istp, no_l, nspin, no_u,
      &                  maxnh, numh, listhptr, listh, Escf, eta, qtots)
           else

@@ -155,18 +155,19 @@ C of referencing has been changed in several places to reflect this.
 ! needed
 ! in those cases. 
       
-      Saux = dcmplx(0.0_dp, 0.0_dp)
-      Haux = dcmplx(0.0_dp, 0.0_dp)
       do io = 1,nuo
+        Saux(:,:,:,io) = 0._dp
+        Haux(:,:,:,io) = 0._dp
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-           Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-           Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-           Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-           Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-           Haux(2,jo,1,io) = dcmplx(H(ind,3), H(ind,4))
-           Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
+          jo = mod(jo-1,nuotot) + 1
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1),   0.0_dp)
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2),   0.0_dp)
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,3), H(ind,4))
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
         enddo
       enddo
       
@@ -178,20 +179,22 @@ C of referencing has been changed in several places to reflect this.
       if (ierror.gt.0) then
         call die('Terminating due to failed diagonalisation')
       elseif (ierror.lt.0) then
-!       Repeat diagonalisation with increased memory to handle clustering
-        Saux = dcmplx(0.0_dp, 0.0_dp)
-        Haux = dcmplx(0.0_dp, 0.0_dp)
+!     Repeat diagonalisation with increased memory to handle clustering
+
         do io = 1,nuo
+          Saux(:,:,:,io) = 0._dp
+          Haux(:,:,:,io) = 0._dp
           do j = 1,numh(io)
-            ind = listhptr(io) + j
-            jo = listh(ind)
-             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1),   0.0_dp)
-             Haux(2,jo,2,io) = dcmplx(H(ind,2),   0.0_dp)
-             Haux(2,jo,1,io) = dcmplx(H(ind,3), H(ind,4))
-             Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-          enddo
+           ind = listhptr(io) + j
+           jo = listh(ind)
+           jo = mod(jo-1,nuotot) + 1
+           Saux(1,jo,1,io) = Saux(1,jo,1,io) +dcmplx( S(ind), 0.0_dp)
+           Saux(2,jo,2,io) = Saux(2,jo,2,io) +dcmplx( S(ind), 0.0_dp)
+           Haux(1,jo,1,io) = Haux(1,jo,1,io) +dcmplx(H(ind,1),   0.0_dp)
+           Haux(2,jo,2,io) = Haux(2,jo,2,io) +dcmplx(H(ind,2),   0.0_dp)
+           Haux(2,jo,1,io) = Haux(2,jo,1,io) +dcmplx(H(ind,3), H(ind,4))
+           Haux(1,jo,2,io) = Haux(1,jo,2,io) +dcmplx(H(ind,3),-H(ind,4))
+         enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
      .             2*neigwanted,iscf,ierror, 2*BlockSize)
@@ -264,6 +267,7 @@ C of referencing has been changed in several places to reflect this.
             do j = 1,numd(io)
               ind = listdptr(io) + j
               jo = listd(ind)
+              jo = mod(jo-1,nuotot) + 1 ! To allow auxiliary supercells
       
 !                 | ------- 1,1 -------     ------- 2,1 ------- |
 !                 | c_{j,up}^* c_{i,up}     c_{j,dn}^* c_{i,up) |

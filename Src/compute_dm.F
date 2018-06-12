@@ -30,7 +30,8 @@
       use m_eo
       use m_spin,   only: spin
       use m_diagon, only: diagon
-      use m_gamma
+      ! Keep the old flags, but use a more appropriate name
+      use m_gamma,  only: not_using_auxcell => gamma
       use parallel, only: IONode
       use parallel, only: SIESTA_worker
       use m_compute_ebs_shift, only: compute_ebs_shift
@@ -173,13 +174,14 @@ c$$$     &           S, 'S.matrix')
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qtots, temp, e1, e2,
-     &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     $              xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then
-        if (.not. gamma) call die("Cannot do O(N) with k-points.")
+        if ((nkpnt > 1) .or. (sum(abs(kpoint(:,1))) /= 0.0))
+     $        call die("Cannot do O(N) with k-points.")
         if ( spin%NCol .or. spin%SO )
      .      call die("Cannot do O(N) with non-coll spins or Spin-orbit")
         call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
@@ -193,7 +195,7 @@ c$$$     &           S, 'S.matrix')
      &      call die('ERROR: Non-collinear spin calculations
      &                       not yet implemented with OMM!')
         H_kin => val(H_kin_1D)
-        if (gamma) then
+        if (not_using_auxcell) then
           call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 spin%H, no_u, maxnh, numh, listhptr, listh, Dscf,
      &                 eta, qtots, H, S, H_kin)
@@ -211,7 +213,7 @@ c$$$     &           S, 'S.matrix')
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qtots, temp, e1, e2,
-     &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     $              xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
 
@@ -220,7 +222,8 @@ c$$$     &           S, 'S.matrix')
       else if (TSrun) then
 
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
-     &        Gamma, ucell, nsc, isc_off, no_u, na_u, lasto, xa, maxnh,
+     &        Not_Using_Auxcell, ucell, nsc, isc_off, no_u, na_u,
+     &        lasto, xa, maxnh,
      &        H, S, Dscf, Escf, Ef, Qtot, .false., DE_NEGF )
 
          Ecorrec = 0._dp

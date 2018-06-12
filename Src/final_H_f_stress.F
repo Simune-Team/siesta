@@ -50,7 +50,7 @@
       use m_dipol
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
-      use m_gamma
+      use m_gamma, only: not_using_auxcell => gamma
       use m_hsx, only: write_hsx
       use sys, only: die
       use fdf
@@ -288,7 +288,7 @@
 ! This call could be moved to a more appropriate place
 !
       if (savehs) then
-         call write_hsx( gamma, no_u, no_s, spin%H, indxuo,
+         call write_hsx( not_using_auxcell, no_u, no_s, spin%H, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, Qtot,
      &        Temp, xijo)
       endif
@@ -306,7 +306,7 @@
          ! This is "pure" MD and we only write consecutive numbers
          ! Together with this you cannot also save FC
          fname = fname_TSHS(slabel, istep = istep )
-         call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+         call ts_write_tshs(fname, .false., not_using_auxcell, ts_Gamma,
      &        ucell, nsc, isc_off, na_u, no_s, spin%H, 
      &        ts_kscell, ts_kdispl, 
      &        xa, lasto, 
@@ -325,7 +325,8 @@
             !  6 = +z
             call FC_index(istep,ia1,io_istep,io_ia1)
             fname = fname_TSHS(slabel,istep = io_istep, ia1 = io_ia1)
-            call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+            call ts_write_tshs(fname, .false.,
+     &           not_using_auxcell, ts_Gamma,
      &           ucell, nsc, isc_off, na_u, no_s, spin%H, 
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto, 
@@ -333,7 +334,8 @@
      &           Ef, Qtot, Temp, io_istep, io_ia1)
          else
             fname = fname_TSHS(slabel)
-            call ts_write_tshs(fname, .false., Gamma, ts_Gamma,
+            call ts_write_tshs(fname, .false.,
+     &           not_using_auxcell, ts_Gamma,
      &           ucell, nsc, isc_off, na_u, no_s, spin%H,
      &           ts_kscell, ts_kdispl, 
      &           xa, lasto,

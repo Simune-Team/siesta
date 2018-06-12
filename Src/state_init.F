@@ -13,7 +13,7 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use Kpoint_grid,       only: setup_Kpoint_grid, nkpnt
+      use Kpoint_grid,       only: setup_Kpoint_grid, nkpnt, gamma_scf
       use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
@@ -66,7 +66,7 @@
       use m_normalize_dm, only: normalize_dm
 
       use m_eo
-      use m_gamma
+      use m_gamma,           only: not_using_auxcell => gamma
       use files,             only: slabel
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_sum
@@ -245,7 +245,7 @@
       endif
 
       if ( cell_can_change .and.
-     &     (istep.ne.inicoor) .and. (.not.gamma) ) then
+     &     (istep.ne.inicoor) .and. (.not.gamma_scf) ) then
 
 !       Will print k-points also
         call setup_Kpoint_grid( ucell )
@@ -258,7 +258,7 @@
      &                 'state_init' )
 
 !       Find required supercell
-        if (gamma) then
+        if (not_using_auxcell) then
            nsc(1:3) = 1
         else
            do i = 1 , 3
@@ -340,14 +340,14 @@
       call delete(xij_2D) ! as xijo will be reallocated
       nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, maxnh, gamma,
+     &              lastkb, iphorb, iphKB, maxnh, not_using_auxcell,
      $              set_xijo=.true., folding=folding1,
      $              diagonal_folding=diag_folding1,
      $              debug_folding=fdf_get('debug-folding',.false.))
 !
       call globalize_or(diag_folding1,diag_folding)
       call globalize_or(folding1,folding)
-      if (diag_folding .and. gamma) then
+      if (diag_folding .and. not_using_auxcell) then
          call message("WARNING","Gamma-point calculation " //
      $         "with interaction between periodic images")
          call message("WARNING",
@@ -358,7 +358,7 @@
      $                              "'force-aux-cell T'")
 
       else if (folding) then
-         if (gamma) then
+         if (not_using_auxcell) then
                call message("INFO","Gamma-point calculation " //
      $                      "with multiply-connected orbital pairs")
                call message("INFO",
@@ -449,7 +449,7 @@
       xijo => val(xij_2D)
 
       ! Calculate the super-cell offsets...
-      if ( Gamma ) then
+      if ( not_using_auxcell ) then
          ! Here we create the super-cell offsets
          call re_alloc(isc_off,1,3,1,1)
          isc_off(:,:) = 0
@@ -467,7 +467,7 @@
          ! Force the creation of the full sparsity pattern
          call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
      &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
-     &        Gamma, isc_off)
+     &        not_using_auxcell, isc_off)
 
          ! create the tri-diagonal matrix
          call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
@@ -580,7 +580,7 @@
          ! We include H as S, well-knowing that we only write one of
          ! them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
-     &        .true., Gamma, ts_Gamma_file,
+     &        .true., not_using_auxcell, ts_Gamma_file,
      &        ucell, nsc, isc_off, na_u, no_s, spin%H,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, lasto, 

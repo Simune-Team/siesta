@@ -69,7 +69,6 @@
       use parallel,    only: IOnode
       use m_eo
       use m_spin,      only: h_spin_dim, spinor_dim
-      use m_gamma
       use units,       only: eV
       
       implicit none
@@ -122,7 +121,7 @@
          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
      .        maxnh,
      .        no_u, numh, listhptr, listh, H, S,
-     .        e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
+     .        e1, e2, sigma, nhist, xijo, indxuo, 
      .        nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
      .        no_u)
       else
@@ -131,7 +130,7 @@
      .        maxnh,
      .        no_u, numh, listhptr, listh, H, S,
      .        e1, e2, sigma, nhist,
-     .        gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
+     .        xijo, indxuo, nkpnt, kpoint, kweight, eo,
      .        no_u)
       endif
 

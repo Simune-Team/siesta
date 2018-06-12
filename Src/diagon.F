@@ -15,7 +15,7 @@
       subroutine diagon(no, nspin, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, 
      .                  listdptr, listd, H, S, qtot, fixspin, 
-     .                  qs, temp, e1, e2, gamma, xij, indxuo, nk, 
+     .                  qs, temp, e1, e2, xij, indxuo, nk, 
      .                  kpoint, wk, eo, qo, Dnew, Enew, ef, efs, 
      .                  Entropy, nuotot, occtol, iscf, neigwanted )
 C *********************************************************************
@@ -56,7 +56,6 @@ C real*8  temp                : Electronic temperature
 C real*8  e1, e2              : Energy range for density-matrix states
 C                               (to find local density of states)
 C                               Not used if e1 > e2
-C logical gamma               : Only gamma point?
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
@@ -133,7 +132,7 @@ C
      .  xij(3,maxnh), qs(:), efs(nspin)
      
       logical
-     .  fixspin, gamma, getD, getPSI
+     .  fixspin, getD, getPSI
 
       external
      .  diag2g, diag2k, diagsprl
@@ -146,12 +145,7 @@ C
 #endif
       integer            :: io, iuo, naux, nhs, npsi, nuo
       real(dp),  pointer :: aux(:)
-      integer,   pointer :: muo(:)
-
-#ifdef DEBUG
-      call write_debug( '    PRE diagon' )
-#endif
-
+      logical            :: gamma
 C  ....................
 
 C Get Node number and calculate local orbital range
@@ -164,7 +158,10 @@ C Get Node number and calculate local orbital range
 C Start time counter ................................................
       call timer( 'diagon', 1 )
 
-C Check internal dimensions ..........................................
+      gamma = ((nk == 1) .and. (sum(abs(kpoint(:,1))) == 0.0))
+
+C     Check internal dimensions ..........................................
+      
       if ( spin%none .or. spin%Col ) then
        if (gamma) then
         nhs  = nuotot * nuo
@@ -195,36 +192,9 @@ C Check internal dimensions ..........................................
 
 
 C Allocate local arrays
-      nullify(aux,muo)
+      nullify(aux)
       call re_alloc( aux,  1, naux, 'aux',  'diagon' )
-      call re_alloc( muo,  1, nuo,  'muo',  'diagon' )
 
-
-C Check indxuo
-      do iuo = 1,nuo
-        muo(iuo) = 0
-      enddo
-      do io = 1,no
-        iuo = indxuo(io)
-        if (iuo.le.0 .or. iuo.gt.nuotot) then
-          if (Node.eq.0)
-     $        write(6,*) 'diagon: ERROR: invalid index: io, indxuo =',
-     .                     io, indxuo(io)
-          call die()
-        endif
-        call GlobalToLocalOrb(indxuo(io),Node,Nodes,iuo)
-        if (iuo.gt.0) then
-          muo(iuo) = muo(iuo) + 1
-        endif
-      enddo
-      do iuo = 1,nuo
-        if (muo(iuo) .ne. muo(1)) then
-          if (Node.eq.0)
-     $      write(6,'(/,2a,3i6)') 'diagon: ERROR: inconsistent indxuo',
-     .             '. iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-          call die()
-        endif
-      enddo
 
 C Call apropriate routine
       getD = .true.
@@ -337,13 +307,10 @@ C Call apropriate routine
 
 C Free local arrays
       call de_alloc( aux, name='aux', routine='diagon' )
-      call de_alloc( muo, name='muo', routine='diagon' )
 
 C Stop time counter
       call timer( 'diagon', 2 )
-#ifdef DEBUG
-      call write_debug( '    POS diagon' )
-#endif
+
       CONTAINS
       
       subroutine output_kpoint_occupation() ! CC RC It seems ok for osSO

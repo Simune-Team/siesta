@@ -157,6 +157,7 @@ C Solve eigenvalue problem
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
+            jo = mod(jo-1,nuotot) + 1    ! To allow auxiliary supercells
             Saux(jo,io) = Saux(jo,io) + S(ind)
             Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
@@ -182,6 +183,7 @@ C Repeat diagonalisation with increased memory to handle clustering
             do j = 1,numh(io)
               ind = listhptr(io) + j
               jo = listh(ind)
+              jo = mod(jo-1,nuotot) + 1    ! To allow auxiliary supercells
               Saux(jo,io) = Saux(jo,io) + S(ind)
               Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
             enddo
@@ -298,6 +300,7 @@ C Global operation to form new density matrix
                 do j = 1,numd(io)
                   ind = listdptr(io) + j
                   jo  = listd(ind)
+                  jo = mod(jo-1,nuotot) + 1    ! To allow auxiliary supercells
                   Dnew(ind,ispin) = Dnew(ind,ispin) + qei*paux(jo)
                   Enew(ind,ispin) = Enew(ind,ispin) + eei*paux(jo)
                 enddo
