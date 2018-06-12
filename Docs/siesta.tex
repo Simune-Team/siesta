@@ -11789,8 +11789,10 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   electrode. This may be set to \fdf*{bulk} to forcefully set the bulk
   values.
 
-  \note this should only be set to \fdf*{bulk} for equilibrium
-  calculations. 
+  \note this will automatically be set to \fdf*{diagon} for
+  non-equilibrium calculations. If bulk density matrix elements are
+  wanted in the electrodes it is vital to have this option set to
+  \fdf*{bulk} when performing the equilibrium calculation.
   
 \end{fdfentry}
 
