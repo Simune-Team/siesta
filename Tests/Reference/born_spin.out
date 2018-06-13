@@ -1,12 +1,13 @@
-Siesta Version: siesta-4.0--527
-Architecture  : x86_64-linux-n-62-18-14
-Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
-PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR 
 PARALLEL version
 NetCDF support
 
 * Running on    8 nodes in parallel
->> Start of run:   2-JUL-2017  11:47:42
+>> Start of run:  10-JUN-2018  20:57:07
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -35,9 +36,6 @@ MeshCutoff 130.0 Ry
 #DM.MixingWeight  0.3
 #DM.NumberPulay    3
 #DM.Tolerance     1.0d-5
-# Here we use Harris since we are just interested in testing the displacement
-# logic
-HarrisFunctional T
 ************************** End of input data file *****************************
 
 reinit: -----------------------------------------------------------------------
@@ -210,7 +208,8 @@ redata: Long output                      =     T
 redata: Number of Atomic Species         =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   130.0000  Ry
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =   130.0000 Ry
 redata: Net charge of the system         =     0.0000 |e|
 redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =       50
@@ -288,8 +287,7 @@ outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     1
 Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+     spin moment: S , {S} =    4.00000       0.0       0.0   4.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -330,12 +328,12 @@ PhiOnMesh: nlist on node 0 =                 6710
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -55.194181
+siesta: Ebs     =       -55.194230
 siesta: Eions   =       380.802124
-siesta: Ena     =       115.502327
-siesta: Ekin    =        78.997046
-siesta: Enl     =        35.834927
-siesta: DEna    =         0.000000
+siesta: Ena     =       115.502488
+siesta: Ekin    =        78.997045
+siesta: Enl     =        35.834990
+siesta: DEna    =        -0.000000
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
 siesta: Exc     =       -66.512853
@@ -344,39 +342,42 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -193.422392
-siesta: Etot    =      -216.980676
-siesta: FreeEng =      -216.980676
+siesta: Eharris =      -193.422281
+siesta: Etot    =      -216.980453
+siesta: FreeEng =      -216.980453
 
-siesta: Eharris(eV) =    -193.422392
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -193.4223     -216.9805     -216.9805  0.72618 -2.3578
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+timer: Routine,Calls,Time,% =    IterSCF     1       0.036  16.07
+   scf:    2     -194.6963     -194.6963     -194.6963  0.00000 -1.3490
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
-
-siesta: Eharris(eV) =    -193.422392
-
-timer: Routine,Calls,Time,% =    IterSCF     1       0.037   9.34
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   0  1    0.726175
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00000009
+SCF cycle converged after    2 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: E_KS - E_eggbox =      -194.6964
+siesta: E_KS(eV) =             -194.6963
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000001
+siesta: E_KS - E_eggbox =      -194.6963
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000   -0.000000    0.000000
-     2   -0.000000    0.000000    0.000000
+     1   -0.000000   -0.000000   -0.000000
+     2    0.000000    0.000000    0.000000
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.000000
+   Tot    0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):     -422.60     -422.60     -422.60       -0.00       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -184.1390
-Target enthalpy (eV/cell)     -194.6964
+Stress-tensor-Voigt (kbar):     -515.35     -515.35     -515.35       -0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -181.8218
+Target enthalpy (eV/cell)     -194.6963
 
 mulliken: Atomic and Orbital Populations:
 
@@ -405,12 +406,12 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883664   10.883664   10.883664
-siesta: Along cartesian directions    15.391825   15.391825   15.391825
+siesta: Along the lattice vectors     10.883664    3.627888    3.627888
+siesta: Along cartesian directions     5.130608   10.261217   10.261217
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663534   27.663534   27.663534
-siesta: Along cartesian directions    39.122145   39.122145   39.122145
+siesta: Along the lattice vectors     27.663534    9.221178    9.221178
+siesta: Along cartesian directions    13.040715   26.081430   26.081430
 
 siesta: Macroscopic polarization for spin Down:
 
@@ -423,15 +424,15 @@ siesta: Along the lattice vectors      9.221178    9.221178    9.221178
 siesta: Along cartesian directions    13.040715   13.040715   13.040715
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522434   20.522434   20.522434
+siesta:    10.261217   15.391825   15.391825
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162860   52.162860   52.162860
+siesta:    26.081430   39.122145   39.122145
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883664   10.883664   10.883664
+obc:   10.883664    3.627888    3.627888
 
 obc: Macroscopic polarization for spin Down:
 
@@ -460,9 +461,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     2
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Re-using DM without extrapolation for lack of history
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -500,32 +501,37 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6708
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.6905     -194.6975     -194.6975  0.00953 -1.3493
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00050 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00009 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   1  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00009076
+SCF cycle converged after    3 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1    0.831804    0.000000    0.000000
-     2   -0.841812    0.000000    0.000000
+     1    0.785481   -0.000000   -0.000000
+     2   -0.795907    0.000000    0.000000
 ----------------------------------------
-   Tot   -0.010008    0.000000    0.000000
+   Tot   -0.010426   -0.000000   -0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00       21.92       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00       23.81       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -571,9 +577,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     3
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -611,32 +617,39 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6724
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7003     -194.6915     -194.6915  0.02861 -1.3436
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00229 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00038 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    4     -194.6893     -194.6893     -194.6893  0.00006 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   2  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00006356
+SCF cycle converged after    4 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.831804   -0.000000    0.000000
-     2    0.841812   -0.000000    0.000000
+     1   -0.785481   -0.000000   -0.000000
+     2    0.795907    0.000000    0.000000
 ----------------------------------------
-   Tot    0.010008   -0.000000    0.000000
+   Tot    0.010426    0.000000    0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00      -21.92       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00      -23.81       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -665,38 +678,38 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627954   10.883617   10.883617
-siesta: Along cartesian directions    15.391758   10.261230   10.261230
+siesta: Along the lattice vectors      3.627948   10.883622   10.883622
+siesta: Along cartesian directions    15.391765   10.261229   10.261229
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221345   27.663413   27.663413
-siesta: Along cartesian directions    39.121974   26.081463   26.081463
+siesta: Along the lattice vectors      9.221331   27.663426   27.663426
+siesta: Along cartesian directions    39.121992   26.081461   26.081461
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627952   10.883618   10.883618
-siesta: Along cartesian directions    15.391760   10.261229   10.261229
+siesta: Along the lattice vectors      3.627948   10.883622   10.883622
+siesta: Along cartesian directions    15.391765   10.261229   10.261229
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221340   27.663416   27.663416
-siesta: Along cartesian directions    39.121979   26.081462   26.081462
+siesta: Along the lattice vectors      9.221331   27.663426   27.663426
+siesta: Along cartesian directions    39.121992   26.081461   26.081461
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    30.783518   20.522459   20.522459
+siesta:    30.783531   20.522459   20.522459
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    78.243953   52.162924   52.162924
+siesta:    78.243984   52.162923   52.162923
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627954   10.883617   10.883617
+obc:    3.627948   10.883622   10.883622
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627952   10.883618   10.883618
+obc:    3.627948   10.883622   10.883622
 
                      ====================================
                         Begin FC step =      3
@@ -720,9 +733,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     4
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -760,32 +773,39 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6713
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6827     -194.6827  0.02861 -1.3404
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00091 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00019 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    4     -194.6893     -194.6893     -194.6893  0.00006 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   3  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00006080
+SCF cycle converged after    4 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.831804    0.000000
-     2    0.000000   -0.841812    0.000000
+     1   -0.000000    0.785481   -0.000000
+     2    0.000000   -0.795907    0.000000
 ----------------------------------------
-   Tot    0.000000   -0.010008    0.000000
+   Tot   -0.000000   -0.010426   -0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00       21.92
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00       23.81
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -831,9 +851,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     5
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -871,32 +891,37 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6720
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6940     -194.6940  0.02859 -1.3427
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00032 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00007 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   4  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00006849
+SCF cycle converged after    3 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000   -0.831804    0.000000
-     2   -0.000000    0.841812    0.000000
+     1   -0.000000   -0.785482    0.000000
+     2    0.000000    0.795907    0.000000
 ----------------------------------------
-   Tot   -0.000000    0.010008    0.000000
+   Tot   -0.000000    0.010425    0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456518    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00      -21.92
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00      -23.81
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -925,38 +950,38 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883617    3.627954   10.883617
-siesta: Along cartesian directions    10.261230   15.391758   10.261230
+siesta: Along the lattice vectors     10.883621    3.627948   10.883620
+siesta: Along cartesian directions    10.261228   15.391764   10.261229
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663413    9.221345   27.663413
-siesta: Along cartesian directions    26.081463   39.121974   26.081463
+siesta: Along the lattice vectors     27.663423    9.221331   27.663422
+siesta: Along cartesian directions    26.081459   39.121988   26.081460
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883618    3.627952   10.883618
-siesta: Along cartesian directions    10.261229   15.391760   10.261229
+siesta: Along the lattice vectors     10.883621    3.627948   10.883620
+siesta: Along cartesian directions    10.261228   15.391764   10.261229
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663416    9.221340   27.663416
-siesta: Along cartesian directions    26.081462   39.121979   26.081462
+siesta: Along the lattice vectors     27.663423    9.221331   27.663422
+siesta: Along cartesian directions    26.081459   39.121988   26.081460
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522459   30.783518   20.522459
+siesta:    20.522457   30.783527   20.522458
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162924   78.243953   52.162924
+siesta:    52.162918   78.243975   52.162920
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883617    3.627954   10.883617
+obc:   10.883621    3.627948   10.883620
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883618    3.627952   10.883618
+obc:   10.883621    3.627948   10.883620
 
                      ====================================
                         Begin FC step =      5
@@ -980,9 +1005,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     6
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1020,32 +1045,39 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6713
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6827     -194.6827  0.02862 -1.3404
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00121 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00023 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    4     -194.6893     -194.6893     -194.6893  0.00008 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   5  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00007784
+SCF cycle converged after    4 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000    0.831804
-     2   -0.000000   -0.000000   -0.841812
+     1   -0.000000   -0.000000    0.785481
+     2    0.000000    0.000000   -0.795907
 ----------------------------------------
-   Tot    0.000000    0.000000   -0.010008
+   Tot   -0.000000   -0.000000   -0.010426
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03       23.81       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1091,9 +1123,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     7
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1131,32 +1163,37 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6720
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6940     -194.6940  0.02860 -1.3427
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00016 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00004 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   6  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00003503
+SCF cycle converged after    3 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.831804
-     2   -0.000000   -0.000000    0.841812
+     1   -0.000000   -0.000000   -0.785482
+     2    0.000000    0.000000    0.795907
 ----------------------------------------
-   Tot    0.000000    0.000000    0.010008
+   Tot    0.000000   -0.000000    0.010425
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456518    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03      -23.81       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1185,38 +1222,38 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883617   10.883617    3.627954
-siesta: Along cartesian directions    10.261230   10.261230   15.391758
+siesta: Along the lattice vectors     10.883623   10.883624    3.627943
+siesta: Along cartesian directions    10.261227   10.261227   15.391768
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663413   27.663413    9.221345
-siesta: Along cartesian directions    26.081463   26.081463   39.121974
+siesta: Along the lattice vectors     27.663430   27.663431    9.221317
+siesta: Along cartesian directions    26.081456   26.081455   39.121999
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883618   10.883618    3.627952
-siesta: Along cartesian directions    10.261229   10.261229   15.391760
+siesta: Along the lattice vectors     10.883623   10.883624    3.627943
+siesta: Along cartesian directions    10.261227   10.261227   15.391768
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663416   27.663416    9.221340
-siesta: Along cartesian directions    26.081462   26.081462   39.121979
+siesta: Along the lattice vectors     27.663430   27.663431    9.221317
+siesta: Along cartesian directions    26.081456   26.081455   39.121999
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522459   20.522459   30.783518
+siesta:    20.522454   20.522454   30.783536
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162924   52.162924   78.243953
+siesta:    52.162912   52.162911   78.243998
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883617   10.883617    3.627954
+obc:   10.883623   10.883624    3.627943
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883618   10.883618    3.627952
+obc:   10.883623   10.883624    3.627943
 
                      ====================================
                         Begin FC step =      7
@@ -1240,9 +1277,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     8
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1280,32 +1317,37 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6721
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6827     -194.6827  0.02865 -1.3404
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00018 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00010 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   7  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00009528
+SCF cycle converged after    3 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.841812   -0.000000    0.000000
-     2    0.831804   -0.000000    0.000000
+     1   -0.795907   -0.000000   -0.000000
+     2    0.785481    0.000000    0.000000
 ----------------------------------------
-   Tot   -0.010008   -0.000000    0.000000
+   Tot   -0.010426   -0.000000    0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00      -21.92       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00      -23.81       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1351,9 +1393,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:     9
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1391,32 +1433,39 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6724
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6940     -194.6940  0.02861 -1.3427
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00090 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00017 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    4     -194.6893     -194.6893     -194.6893  0.00004 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   8  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00004338
+SCF cycle converged after    4 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1    0.841812    0.000000    0.000000
-     2   -0.831804    0.000000    0.000000
+     1    0.795907   -0.000000   -0.000000
+     2   -0.785481    0.000000    0.000000
 ----------------------------------------
-   Tot    0.010008    0.000000    0.000000
+   Tot    0.010426   -0.000000   -0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00       21.92       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00       23.81       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1445,38 +1494,38 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627935   10.883599   10.883599
-siesta: Along cartesian directions    15.391733   10.261204   10.261204
+siesta: Along the lattice vectors      3.627930   10.883605   10.883606
+siesta: Along cartesian directions    15.391743   10.261205   10.261205
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221299   27.663367   27.663367
-siesta: Along cartesian directions    39.121909   26.081397   26.081397
+siesta: Along the lattice vectors      9.221285   27.663384   27.663386
+siesta: Along cartesian directions    39.121934   26.081401   26.081400
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627934   10.883600   10.883600
-siesta: Along cartesian directions    15.391735   10.261205   10.261205
+siesta: Along the lattice vectors      3.627930   10.883605   10.883606
+siesta: Along cartesian directions    15.391743   10.261205   10.261205
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221296   27.663372   27.663372
-siesta: Along cartesian directions    39.121915   26.081398   26.081398
+siesta: Along the lattice vectors      9.221285   27.663384   27.663386
+siesta: Along cartesian directions    39.121934   26.081401   26.081400
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    30.783468   20.522409   20.522409
+siesta:    30.783485   20.522411   20.522410
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    78.243824   52.162796   52.162796
+siesta:    78.243868   52.162801   52.162800
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627935   10.883599   10.883599
+obc:    3.627930   10.883605   10.883606
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627934   10.883600   10.883600
+obc:    3.627930   10.883605   10.883606
 
                      ====================================
                         Begin FC step =      9
@@ -1500,9 +1549,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    10
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1540,32 +1589,39 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6717
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6827     -194.6827  0.02862 -1.3404
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00065 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00017 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    4     -194.6893     -194.6893     -194.6893  0.00005 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   9  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00004761
+SCF cycle converged after    4 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000   -0.841812    0.000000
-     2   -0.000000    0.831804    0.000000
+     1   -0.000000   -0.795907   -0.000000
+     2    0.000000    0.785481    0.000000
 ----------------------------------------
-   Tot   -0.000000   -0.010008    0.000000
+   Tot   -0.000000   -0.010426    0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00      -21.92
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00      -23.81
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1611,9 +1667,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    11
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1651,32 +1707,37 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6716
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6940     -194.6940  0.02860 -1.3427
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00012 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00004 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:  10  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00003603
+SCF cycle converged after    3 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.841812    0.000000
-     2    0.000000   -0.831804    0.000000
+     1   -0.000000    0.795907   -0.000000
+     2    0.000000   -0.785481    0.000000
 ----------------------------------------
-   Tot    0.000000    0.010008    0.000000
+   Tot   -0.000000    0.010426   -0.000000
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00       21.92
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00       23.81
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1705,38 +1766,38 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883599    3.627936   10.883599
-siesta: Along cartesian directions    10.261204   15.391733   10.261204
+siesta: Along the lattice vectors     10.883609    3.627929   10.883608
+siesta: Along cartesian directions    10.261206   15.391747   10.261207
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663367    9.221299   27.663367
-siesta: Along cartesian directions    26.081397   39.121909   26.081397
+siesta: Along the lattice vectors     27.663393    9.221281   27.663392
+siesta: Along cartesian directions    26.081403   39.121945   26.081404
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883600    3.627934   10.883600
-siesta: Along cartesian directions    10.261205   15.391735   10.261205
+siesta: Along the lattice vectors     10.883609    3.627929   10.883608
+siesta: Along cartesian directions    10.261206   15.391747   10.261207
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663372    9.221296   27.663372
-siesta: Along cartesian directions    26.081398   39.121915   26.081398
+siesta: Along the lattice vectors     27.663393    9.221281   27.663392
+siesta: Along cartesian directions    26.081403   39.121945   26.081404
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522409   30.783468   20.522409
+siesta:    20.522413   30.783494   20.522413
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162796   78.243824   52.162796
+siesta:    52.162806   78.243890   52.162807
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883599    3.627936   10.883599
+obc:   10.883609    3.627929   10.883608
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883600    3.627934   10.883600
+obc:   10.883609    3.627929   10.883608
 
                      ====================================
                         Begin FC step =     11
@@ -1760,9 +1821,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    12
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1800,32 +1861,39 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6717
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6827     -194.6827  0.02866 -1.3404
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00061 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00018 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    4     -194.6893     -194.6893     -194.6893  0.00004 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:  11  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00003749
+SCF cycle converged after    4 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000   -0.000000   -0.841812
-     2    0.000000   -0.000000    0.831804
+     1   -0.000000   -0.000000   -0.795907
+     2    0.000000    0.000000    0.785481
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.010008
+   Tot   -0.000000   -0.000000   -0.010426
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03      -23.81       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1871,9 +1939,9 @@ outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
 New_DM. Step:    13
-Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+Re-using DM from previous geometry...
+Extrapolating Density Matrix...
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 New grid distribution:   1
            1       1:   12    1:    6    1:    3
            2       1:   12    1:    6    4:    6
@@ -1911,32 +1979,37 @@ ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
 PhiOnMesh: Number of (b)points on node 0 =                  252
 PhiOnMesh: nlist on node 0 =                 6716
 
-siesta: Eharris(eV) =    -193.415802
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -194.7016     -194.6940     -194.6940  0.02860 -1.3427
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    2     -194.6893     -194.6893     -194.6893  0.00024 -1.3491
+     spin moment: S , {S} =   -0.00000       0.0       0.0  -0.00000
+   scf:    3     -194.6893     -194.6893     -194.6893  0.00006 -1.3491
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
-
-siesta: Eharris(eV) =    -193.415802
-
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:  12  1    0.726190
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00005967
+SCF cycle converged after    3 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
+siesta: E_KS(eV) =             -194.6893
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.000000    0.841812
-     2   -0.000000   -0.000000   -0.831804
+     1   -0.000000   -0.000000    0.795907
+     2    0.000000    0.000000   -0.785482
 ----------------------------------------
-   Tot   -0.000000   -0.000000    0.010008
+   Tot    0.000000    0.000000    0.010425
 ----------------------------------------
-   Max    0.841812
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+   Max    0.795907
+   Res    0.456517    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.841812    constrained
+   Max    0.795907    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
+Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03       23.81       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -181.7416
+Target enthalpy (eV/cell)     -194.6893
 
 mulliken: Atomic and Orbital Populations:
 
@@ -1965,96 +2038,95 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883599   10.883599    3.627936
-siesta: Along cartesian directions    10.261204   10.261204   15.391733
+siesta: Along the lattice vectors     10.883604   10.883605    3.627931
+siesta: Along cartesian directions    10.261206   10.261205   15.391741
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663367   27.663367    9.221299
-siesta: Along cartesian directions    26.081397   26.081397   39.121909
+siesta: Along the lattice vectors     27.663381   27.663383    9.221288
+siesta: Along cartesian directions    26.081401   26.081399   39.121930
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883600   10.883600    3.627934
-siesta: Along cartesian directions    10.261205   10.261205   15.391735
+siesta: Along the lattice vectors     10.883604   10.883605    3.627931
+siesta: Along cartesian directions    10.261206   10.261205   15.391741
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663372   27.663372    9.221296
-siesta: Along cartesian directions    26.081398   26.081398   39.121915
+siesta: Along the lattice vectors     27.663381   27.663383    9.221288
+siesta: Along cartesian directions    26.081401   26.081399   39.121930
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522409   20.522409   30.783468
+siesta:    20.522411   20.522410   30.783482
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162796   52.162796   78.243824
+siesta:    52.162802   52.162799   78.243860
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883599   10.883599    3.627936
+obc:   10.883604   10.883605    3.627931
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883600   10.883600    3.627934
+obc:   10.883604   10.883605    3.627931
 
 siesta: Eigenvalues (eV):
   ik is    eps
-   1  1 -17.17  -4.98  -4.86  -4.74  -2.03  -1.94  -1.84  -1.74
-   1  2 -15.12  -2.89  -2.77  -2.66  -0.02   0.07   0.17   0.27
-siesta: Fermi energy =      -2.347973 eV
+   1  1 -15.24  -2.84  -2.71  -2.58  -0.33  -0.23  -0.12   0.52
+   1  2 -15.24  -2.84  -2.71  -2.58  -0.33  -0.23  -0.12   0.52
+siesta: Fermi energy =      -1.349112 eV
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -55.191831
+siesta: Ebs     =       -46.736530
 siesta: Eions   =       380.802124
-siesta: Ena     =       115.501483
-siesta: Ekin    =       115.577905
-siesta: Enl     =        29.935836
-siesta: DEna    =        -8.120537
-siesta: DUscf   =         1.765891
+siesta: Ena     =       115.501633
+siesta: Ekin    =       115.577679
+siesta: Enl     =        29.935837
+siesta: DEna    =        -8.120435
+siesta: DUscf   =         1.765883
 siesta: DUext   =         0.000000
-siesta: Exc     =       -68.547872
+siesta: Exc     =       -68.547791
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -193.415802
-siesta: Etot    =      -194.689419
-siesta: FreeEng =      -194.689423
+siesta: Eharris =      -194.689318
+siesta: Etot    =      -194.689318
+siesta: FreeEng =      -194.689318
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =     -55.191831
-siesta:       Kinetic =     115.577905
-siesta:       Hartree =      23.678140
+siesta:  Band Struct. =     -46.736530
+siesta:       Kinetic =     115.577679
+siesta:       Hartree =      23.678106
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =     -68.547872
-siesta:  Ion-electron =    -120.258595
-siesta:       Ion-ion =    -145.138996
+siesta:   Exch.-corr. =     -68.547791
+siesta:  Ion-electron =    -120.258465
+siesta:       Ion-ion =    -145.138846
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -194.689419
+siesta:         Total =    -194.689318
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000000   -0.000000    0.841812
-siesta:      2   -0.000000   -0.000000   -0.831804
+siesta:      1   -0.000000   -0.000000    0.795907
+siesta:      2    0.000000    0.000000   -0.785482
 siesta: ----------------------------------------
-siesta:    Tot   -0.000000   -0.000000    0.010008
+siesta:    Tot    0.000000    0.000000    0.010425
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.265754    0.013680   -0.000000
-siesta:     0.013680   -0.265754   -0.000000
-siesta:    -0.000000   -0.000000   -0.265675
+siesta:    -0.323563    0.014858   -0.000000
+siesta:     0.014858   -0.323563   -0.000000
+siesta:    -0.000000   -0.000000   -0.323325
 
 siesta: Cell volume =         40.025752 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00289411          0.00299875  Ry/Bohr**3
-siesta:           0.26572733          0.27533515  eV/Ang**3
-siesta:         425.74672658        441.14030693  kBar
-(Free)E+ p_basis*V_orbitals  =        -194.112723
-(Free)Eharris+ p_basis*V_orbitals  =        -192.839106
-
-siesta: Total spin polarization (Qup-Qdown) =    0.000011
->> End of run:   2-JUL-2017  11:47:48
+siesta:           0.00352315          0.00362203  Ry/Bohr**3
+siesta:           0.32348385          0.33256221  eV/Ang**3
+siesta:         518.28387136        532.82915450  kBar
+(Free)E+ p_basis*V_orbitals  =        -194.112618
+(Free)Eharris+ p_basis*V_orbitals  =        -194.112618
+     spin moment: S , {S} =    0.00000       0.0       0.0   0.00000
+>> End of run:  10-JUN-2018  20:57:13
 Job completed

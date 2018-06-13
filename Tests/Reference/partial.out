@@ -1,0 +1,1474 @@
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR 
+PARALLEL version
+NetCDF support
+
+* Running on    8 nodes in parallel
+>> Start of run:  10-JUN-2018  21:52:10
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+SystemName          Oxypartial
+SystemLabel         oxypartial
+NumberOfAtoms       2
+NumberOfSpecies     1
+MeshCutoff 200 Ry
+%block ChemicalSpeciesLabel
+ 1  201  O-Fraction-0.50000      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+%block SyntheticAtoms
+ 1
+ 2 2 3 4
+ 1.0 2.0 0.0 0.0
+%endblock SyntheticAtoms
+%block PAO.basis
+O-Fraction-0.50000  2                 # Species label, number of l-shells
+ n=2   0   2                         # n, l, Nzeta
+ 0.0 0.0
+   1.000      1.000
+ n=2   1   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   4.139      2.740
+   1.000      1.000
+%endblock PAO.Basis
+DM.NumberPulay 4
+Spin.Polarized T
+AtomicCoordinatesFormat  Ang
+%block AtomicCoordinatesAndAtomicSpecies
+ 0.000  0.000  0.000  1
+ 0.000  0.000  1.200  1
+%endblock AtomicCoordinatesAndAtomicSpecies
+MD.TypeOfRun Broyden
+MD.NumCGSteps 40
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: Oxypartial
+reinit: -----------------------------------------------------------------------
+reinit: System Label: oxypartial                                                  
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: O-Fraction-0.50000 Atomic number:         201
+Reading pseudopotential information in formatted form from O-Fraction-0.50000.psf
+
+Valence configuration for pseudopotential generation:
+Ground state valence configuration (synthetic):   2s 1.00000  2p 2.00000
+Number of synthetic species:  1
+For O-Fraction-0.50000, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+O-Fraction-0.50000   Z= 201    Mass= -1.0000        Charge= 0.17977+309
+Lmxo=1 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    4.1390      2.7400    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for (synthetic) O-Fraction-0.50000    (Z = 201)
+
+read_vps: Pseudopotential generation method:
+read_vps: FRACT     19-FEB-98  ---       fraction  fraction 
+Total valence charge:    3.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  1.1278
+V l=1 = -2*Zval/r beyond r=  1.1278
+V l=2 = -2*Zval/r beyond r=  1.1278
+V l=3 = -2*Zval/r beyond r=  1.1138
+All V_l potentials equal beyond r=  1.1278
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.1278
+
+VLOCAL1: 99.0% of the norm of Vloc inside     34.126 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     77.774 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.36047
+atom: Maximum radius for r*vlocal+2*Zval:    1.15638
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.294105   el= -0.693307   Ekb=  4.664913   kbcos=  0.254299
+   l= 1   rc=  1.343567   el=  0.001447   Ekb= -4.466139   kbcos= -0.030125
+   l= 2   rc=  1.466454   el=  0.002386   Ekb= -1.010968   kbcos= -0.001863
+   l= 3   rc=  1.561052   el=  0.003508   Ekb= -0.392253   kbcos= -0.000249
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 2s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.243912
+                 energy =   -0.673179
+                kinetic =    0.971847
+    potential(screened) =   -1.645026
+       potential(ionic) =   -4.821659
+
+   izeta = 2
+                 rmatch =    3.388770
+              splitnorm =    0.150000
+                 energy =   -0.526416
+                kinetic =    1.507134
+    potential(screened) =   -2.033550
+       potential(ionic) =   -5.533769
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 2p
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.139122
+                 energy =    0.491454
+                kinetic =    1.445506
+    potential(screened) =   -0.954052
+       potential(ionic) =   -3.434023
+
+   izeta = 2
+                 rmatch =    2.774434
+              splitnorm =    0.627770
+                 energy =    1.483725
+                kinetic =    3.945497
+    potential(screened) =   -2.461771
+       potential(ionic) =   -5.835431
+
+POLgen: Perturbative polarization orbital with L=  2
+
+POLgen: Polarization orbital for state 2p
+
+   izeta = 1
+                     rc =    4.139122
+                 energy =    1.585617
+                kinetic =    2.166931
+    potential(screened) =   -0.581314
+       potential(ionic) =   -2.778294
+atom: Total number of Sankey-type orbitals: 13
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 2s( 1.00)                                                            
+ 2p( 2.00)                                                            
+Vna: chval, zval:    3.00000   3.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   4.243912
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1  201 O-Fraction-0.50000      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block SyntheticAtoms   # Valence config
+  1
+  2  2  3  4
+  1.00000  2.00000  0.00000  0.00000
+%endblock SyntheticAtoms
+
+%block PAO.Basis                 # Define Basis set
+O-Fraction-0.50000    2                    # Species label, number of l-shells
+ n=2   0   2                         # n, l, Nzeta 
+   4.244      3.389   
+   1.000      1.000   
+ n=2   1   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   4.139      2.774   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+Dumping basis to NetCDF file O-Fraction-0.50000.ion.nc
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1        1
+siesta:      0.00000   0.00000   2.26767  1        2
+
+siesta: Automatic unit cell vectors (Ang):
+siesta:    4.940717    0.000000    0.000000
+siesta:    0.000000    4.940717    0.000000
+siesta:    0.000000    0.000000    6.260717
+
+siesta: System type = molecule  
+
+initatomlists: Number of atoms, orbitals, and projectors:      2    26    32
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Non-Collinear-spin run           =     F
+redata: SpinPolarized (Up/Down) run      =     T
+redata: Number of spin components        =     2
+redata: Long output                      =     F
+redata: Number of Atomic Species         =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     NO
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =   200.0000 Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Min. number of SCF Iter          =        0
+redata: Max. number of SCF Iter          =       50
+redata: Mix DM or H after convergence    =     F
+redata: Recompute H after scf cycle      =     F
+redata: Performing Pulay mixing using    =     4 iterations
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: Discard 1st Pulay DM after  kick =     F
+redata: New DM Mixing Weight             =     0.2500
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000100
+redata: Require (free) Energy convergence in SCF =     F
+redata: DM (free)Energy tolerance for SCF =     0.000010 eV
+redata: Require Harris convergence for SCF =     F
+redata: DM Harris energy tolerance for SCF =     0.000010 eV
+redata: Antiferro initial spin density   =     F
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     F
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     T
+redata: Electronic Temperature           =     0.0019  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     Broyden coord. optimization
+redata: Variable cell                    =     F
+redata: Maximum number of CG moves       =       40
+redata: Force tolerance                  =     0.0016  Ry/Bohr
+redata: ***********************************************************************
+Total number of electrons:     6.000000
+Total ionic charge:     6.000000
+
+* ProcessorY, Blocksize:    2   3
+
+
+* Orbital distribution balance (max,min):     5     3
+
+ Kpoints in:            1 . Kpoints trimmed:            1
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =     2.470 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+
+                     ====================================
+                        Begin Broyden opt. move =      0
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:     1
+Initializing Density Matrix...
+     spin moment: S , {S} =    6.00000       0.0       0.0   6.00000
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24   10:   24    1:    6
+           2       1:    8    9:   24    7:   27
+           3      10:   24    1:    8    7:   27
+           4       1:    9   10:   24    1:    6
+           5       1:    9    1:    8    7:   27
+           6       9:   24    9:   24    7:   27
+           7      10:   24    1:    9    1:    6
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24    1:   10    1:   10
+           2       1:    9    1:    9   11:   27
+           3       1:   10   10:   24   11:   27
+           4      10:   24    1:    9   11:   27
+           5      11:   24   11:   24    1:   10
+           6       1:   10   11:   24    1:   10
+           7      11:   24   10:   24   11:   27
+           8       1:   10    1:   10    1:   10
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    59 x    46 =      160126
+PhiOnMesh: Number of (b)points on node 0 =                 1350
+PhiOnMesh: nlist on node 0 =                11939
+
+stepf: Fermi-Dirac step function
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -95.102777
+siesta: Eions   =       388.219918
+siesta: Ena     =       177.988368
+siesta: Ekin    =       105.068030
+siesta: Enl     =         7.661401
+siesta: DEna    =         0.000006
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =       -58.957041
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =      -176.604117
+siesta: Etot    =      -156.459154
+siesta: FreeEng =      -156.459154
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -176.6041     -156.4592     -156.4592  0.73922 -5.8524
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+timer: Routine,Calls,Time,% =    IterSCF     1       0.030   4.57
+   scf:    2     -184.4811     -181.9725     -181.9725  0.30285  1.5088
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -183.6641     -178.5210     -178.5210  0.11759 -0.0672
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -183.7370     -181.9565     -181.9565  0.06061 -0.0425
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    5     -183.7515     -183.5614     -183.5614  0.01308 -0.2187
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    6     -183.7494     -183.7244     -183.7244  0.00267 -0.1078
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    7     -183.7495     -183.7551     -183.7551  0.00109 -0.0975
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    8     -183.7494     -183.7617     -183.7617  0.00041 -0.1012
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    9     -183.7494     -183.7548     -183.7548  0.00025 -0.1023
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   10     -183.7494     -183.7486     -183.7486  0.00011 -0.1035
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   11     -183.7494     -183.7497     -183.7497  0.00001 -0.1041
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00001444
+SCF cycle converged after   11 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -183.7494
+
+siesta: E_KS - E_eggbox =      -183.7494
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000   -0.000000    0.012324
+----------------------------------------
+   Max   14.358962
+   Res    8.286594    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max   14.358962    constrained
+
+Stress-tensor-Voigt (kbar):       -0.11       -0.11     -180.52        0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -178.0030
+Target enthalpy (eV/cell)     -183.7494
+
+Broyden_optim: max_history for broyden:   5
+Broyden_optim: cycle on maxit: T
+Broyden_optim: initial inverse jacobian:   1.0000
+
+Broyden_optim: No of elements:      6
+
+                     ====================================
+                        Begin Broyden opt. move =      1
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+Gamma-point calculation with multiply-connected orbital pairs
+Folding of H and S implicitly performed
+New_DM. Step:     2
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Density Matrix sparsity pattern changed.
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          5.70379653
+     spin moment: S , {S} =    1.67087       0.0       0.0   1.67087
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10060
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.8729     -187.5515     -187.5521  0.29683  1.0340
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.7428     -185.4290     -185.4669  0.25873  0.6640
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.5780     -186.4217     -186.4520  0.12719  0.7766
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.6018     -185.5818     -185.6268  0.17464  0.6098
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    5     -185.5703     -185.5516     -185.6007  0.04086  0.5897
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    6     -185.5710     -185.5633     -185.6126  0.05335  0.6139
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    7     -185.5726     -185.5697     -185.6183  0.00650  0.6281
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    8     -185.5715     -185.5879     -185.6373  0.03067  0.6409
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    9     -185.5720     -185.5867     -185.6360  0.01259  0.6427
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   10     -185.5723     -185.5829     -185.6323  0.00750  0.6491
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   11     -185.5723     -185.5747     -185.6240  0.00381  0.6537
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   12     -185.5723     -185.5689     -185.6183  0.00171  0.6590
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   13     -185.5724     -185.5706     -185.6200  0.00147  0.6668
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   14     -185.5724     -185.5722     -185.6215  0.00030  0.6645
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:   15     -185.5724     -185.5723     -185.6216  0.00005  0.6650
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00005287
+SCF cycle converged after   15 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.5724
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.000000    0.000000   -0.091455
+----------------------------------------
+   Max    0.229282
+   Res    0.109214    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.229282    constrained
+
+Stress-tensor-Voigt (kbar):        0.00        0.00       -3.08        0.00       -0.00        0.00
+(Free)E + p*V (eV/cell)     -185.5240
+Target enthalpy (eV/cell)     -185.6217
+
+                     ====================================
+                        Begin Broyden opt. move =      2
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+Gamma-point calculation with multiply-connected orbital pairs
+Folding of H and S implicitly performed
+New_DM. Step:     3
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+     spin moment: S , {S} =    1.99822       0.0       0.0   1.99822
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10039
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.5768     -185.5873     -185.6351  0.03404  0.6776
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.5760     -185.5758     -185.6251  0.02709  0.7021
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.5756     -185.5798     -185.6284  0.00507  0.6912
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.5758     -185.5742     -185.6227  0.00245  0.6985
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    5     -185.5760     -185.5756     -185.6239  0.00294  0.6958
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    6     -185.5759     -185.5757     -185.6241  0.00036  0.6964
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    7     -185.5759     -185.5758     -185.6241  0.00007  0.6967
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00007354
+SCF cycle converged after    7 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.5759
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000   -0.000000   -0.112155
+----------------------------------------
+   Max    0.519210
+   Res    0.269342    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.519210    constrained
+
+Stress-tensor-Voigt (kbar):        0.00        0.00       -8.44        0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -185.3563
+Target enthalpy (eV/cell)     -185.6243
+
+                     ====================================
+                        Begin Broyden opt. move =      3
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:     4
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Density Matrix sparsity pattern changed.
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          6.03176715
+     spin moment: S , {S} =    2.01390       0.0       0.0   2.01390
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10241
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.6773     -185.4539     -185.4602  0.20006  0.6144
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.6772     -185.6554     -185.6702  0.02002  0.5438
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.6734     -185.6487     -185.6603  0.01497  0.5359
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.6801     -185.6828     -185.6880  0.00253  0.5303
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    5     -185.6796     -185.6801     -185.6854  0.00109  0.5447
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    6     -185.6796     -185.6801     -185.6855  0.00077  0.5454
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    7     -185.6796     -185.6799     -185.6853  0.00034  0.5452
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    8     -185.6797     -185.6796     -185.6849  0.00006  0.5442
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00005886
+SCF cycle converged after    8 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.6797
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000   -0.000000    0.032490
+----------------------------------------
+   Max    1.611833
+   Res    0.921261    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    1.611833    constrained
+
+Stress-tensor-Voigt (kbar):       -0.25       -0.25       28.88       -0.00        0.00       -0.00
+(Free)E + p*V (eV/cell)     -186.5876
+Target enthalpy (eV/cell)     -185.6850
+
+                     ====================================
+                        Begin Broyden opt. move =      4
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:     5
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          6.01018321
+     spin moment: S , {S} =    2.00637       0.0       0.0   2.00637
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10261
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.7040     -185.6387     -185.6413  0.00447  0.5263
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.7043     -185.7040     -185.7063  0.00095  0.5391
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.7043     -185.7029     -185.7053  0.00063  0.5385
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.7043     -185.7047     -185.7071  0.00004  0.5376
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00003827
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.7043
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.000000    0.000000    0.022210
+----------------------------------------
+   Max    1.523539
+   Res    0.873227    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    1.523539    constrained
+
+Stress-tensor-Voigt (kbar):       -0.30       -0.30       27.01       -0.00       -0.00        0.00
+(Free)E + p*V (eV/cell)     -186.5462
+Target enthalpy (eV/cell)     -185.7066
+
+                     ====================================
+                        Begin Broyden opt. move =      5
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:     6
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          6.00769684
+     spin moment: S , {S} =    2.00487       0.0       0.0   2.00487
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10297
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.7207     -185.6726     -185.6740  0.00335  0.5239
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.7208     -185.7206     -185.7219  0.00074  0.5337
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.7208     -185.7171     -185.7183  0.00046  0.5327
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.7208     -185.7208     -185.7220  0.00002  0.5325
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00002393
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.7208
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.000000    0.000000   -0.005528
+----------------------------------------
+   Max    1.430083
+   Res    0.824064    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    1.430083    constrained
+
+Stress-tensor-Voigt (kbar):       -0.29       -0.29       25.17        0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -186.5038
+Target enthalpy (eV/cell)     -185.7220
+
+                     ====================================
+                        Begin Broyden opt. move =      6
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:     7
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          6.00813826
+     spin moment: S , {S} =    2.00520       0.0       0.0   2.00520
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10291
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.7369     -185.6868     -185.6875  0.00315  0.5182
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.7369     -185.7368     -185.7374  0.00081  0.5287
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.7369     -185.7318     -185.7324  0.00046  0.5274
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.7369     -185.7366     -185.7372  0.00005  0.5274
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00004665
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.7369
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000   -0.000000   -0.005334
+----------------------------------------
+   Max    1.349149
+   Res    0.777393    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    1.349149    constrained
+
+Stress-tensor-Voigt (kbar):       -0.28       -0.28       24.04       -0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -186.4840
+Target enthalpy (eV/cell)     -185.7375
+
+                     ====================================
+                        Begin Broyden opt. move =      7
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:     8
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          6.03749417
+     spin moment: S , {S} =    2.02410       0.0       0.0   2.02410
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10369
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.7915     -185.5738     -185.5738  0.01961  0.4557
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.7907     -185.7903     -185.7903  0.00372  0.5068
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.7906     -185.7747     -185.7748  0.00254  0.5014
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.7906     -185.7903     -185.7904  0.00005  0.4998
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00005479
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.7906
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.000000    0.000000   -0.005475
+----------------------------------------
+   Max    0.803285
+   Res    0.462199    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.803285    constrained
+
+Stress-tensor-Voigt (kbar):       -0.27       -0.27       13.49        0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -186.2023
+Target enthalpy (eV/cell)     -185.7906
+
+                     ====================================
+                        Begin Broyden opt. move =      8
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:     9
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          6.03147606
+     spin moment: S , {S} =    2.02144       0.0       0.0   2.02144
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10400
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.8144     -185.6381     -185.6381  0.01544  0.4359
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.8137     -185.8134     -185.8134  0.00333  0.4836
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.8136     -185.7976     -185.7976  0.00202  0.4775
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.8136     -185.8133     -185.8133  0.00004  0.4764
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00003864
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.8136
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000   -0.000000    0.027365
+----------------------------------------
+   Max    0.253912
+   Res    0.138921    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.253912    constrained
+
+Stress-tensor-Voigt (kbar):       -0.28       -0.28        3.78       -0.00       -0.00        0.00
+(Free)E + p*V (eV/cell)     -185.9160
+Target enthalpy (eV/cell)     -185.8136
+
+                     ====================================
+                        Begin Broyden opt. move =      9
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:    10
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          6.01772830
+     spin moment: S , {S} =    2.01248       0.0       0.0   2.01248
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10425
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.8155     -185.7204     -185.7204  0.00949  0.4383
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.8152     -185.8151     -185.8151  0.00195  0.4666
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.8152     -185.8072     -185.8072  0.00123  0.4631
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.8152     -185.8150     -185.8150  0.00002  0.4623
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00002499
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.8152
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.000000    0.000000    0.006743
+----------------------------------------
+   Max    0.109923
+   Res    0.061548    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.109923    constrained
+
+Stress-tensor-Voigt (kbar):       -0.23       -0.23       -1.44       -0.00        0.00        0.00
+(Free)E + p*V (eV/cell)     -185.7551
+Target enthalpy (eV/cell)     -185.8152
+
+                     ====================================
+                        Begin Broyden opt. move =     10
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:    11
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+Note: For starting DM, Qtot, Tr[D*S] =          6.00000000          5.99129312
+     spin moment: S , {S} =    1.99375       0.0       0.0   1.99375
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10435
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.8156     -185.8627     -185.8627  0.00467  0.4803
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.8155     -185.8155     -185.8155  0.00096  0.4671
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.8155     -185.8194     -185.8194  0.00061  0.4686
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.8155     -185.8157     -185.8157  0.00004  0.4687
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00003611
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.8155
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000    0.000000    0.007497
+----------------------------------------
+   Max    0.062364
+   Res    0.033911    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.062364    constrained
+
+Stress-tensor-Voigt (kbar):       -0.26       -0.26        0.68       -0.00       -0.00        0.00
+(Free)E + p*V (eV/cell)     -185.8205
+Target enthalpy (eV/cell)     -185.8155
+
+                     ====================================
+                        Begin Broyden opt. move =     11
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        4.940717    0.000000    0.000000
+        0.000000    4.940717    0.000000
+        0.000000    0.000000    6.260717
+
+outcell: Cell vector modules (Ang)   :    4.940717    4.940717    6.260717
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    152.8284
+New_DM. Step:    12
+Re-using DM from previous geometry...
+Re-using DM without extrapolation (not allowed)
+     spin moment: S , {S} =    2.00334       0.0       0.0   2.00334
+New grid distribution:   1
+           1       1:   24    1:   12    1:    7
+           2       1:   24    1:   12    8:   14
+           3       1:   24    1:   12   15:   21
+           4       1:   24    1:   12   22:   27
+           5       1:   24   13:   24    1:    7
+           6       1:   24   13:   24    8:   14
+           7       1:   24   13:   24   15:   21
+           8       1:   24   13:   24   22:   27
+
+InitMesh: MESH =    48 x    48 x    54 =      124416
+InitMesh: (bp) =    24 x    24 x    27 =       15552
+InitMesh: Mesh cutoff (required, used) =   200.000   205.608 Ry
+ExtMesh (bp) on 0 =    68 x    56 x    47 =      178976
+New grid distribution:   2
+           1      10:   24    1:    9    1:    6
+           2      10:   24    1:    9    7:   27
+           3       1:    9    1:    9    7:   27
+           4       1:    9   10:   24    1:    6
+           5      10:   24   10:   24    1:    6
+           6      10:   24   10:   24    7:   27
+           7       1:    9   10:   24    7:   27
+           8       1:    9    1:    9    1:    6
+New grid distribution:   3
+           1      11:   24   11:   24    1:   11
+           2       1:   10    1:   10    1:   11
+           3      11:   24    1:   10   12:   27
+           4       1:   10    1:   10   12:   27
+           5      11:   24    1:   10    1:   11
+           6       1:   10   11:   24    1:   11
+           7      11:   24   11:   24   12:   27
+           8       1:   10   11:   24   12:   27
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    53 x    46 =      143842
+PhiOnMesh: Number of (b)points on node 0 =                  810
+PhiOnMesh: nlist on node 0 =                10430
+
+   scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
+   scf:    1     -185.8156     -185.7902     -185.7902  0.00249  0.4591
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    2     -185.8156     -185.8156     -185.8156  0.00053  0.4662
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    3     -185.8156     -185.8135     -185.8135  0.00032  0.4654
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+   scf:    4     -185.8156     -185.8154     -185.8154  0.00004  0.4653
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00004142
+SCF cycle converged after    4 iterations
+
+Using DM_out to compute the final energy and forces
+
+siesta: E_KS(eV) =             -185.8156
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.000000   -0.000000   -0.009897
+----------------------------------------
+   Max    0.037900
+   Res    0.019238    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.037900    constrained
+
+Stress-tensor-Voigt (kbar):       -0.25       -0.25       -0.63        0.00        0.00       -0.00
+(Free)E + p*V (eV/cell)     -185.7795
+Target enthalpy (eV/cell)     -185.8156
+
+outcoor: Relaxed atomic coordinates (Ang):                  
+    0.00000000    0.00000000   -0.36746286   1       1  O-Fraction-0.50000
+    0.00000000   -0.00000000    1.21476603   1       2  O-Fraction-0.50000
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -62.248310
+siesta: Eions   =       388.219918
+siesta: Ena     =       178.888847
+siesta: Ekin    =       104.228488
+siesta: Enl     =        18.873416
+siesta: DEna    =       -45.717426
+siesta: DUscf   =         4.498745
+siesta: DUext   =         0.000000
+siesta: Exc     =       -58.367715
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =      -185.815562
+siesta: Etot    =      -185.815562
+siesta: FreeEng =      -185.815563
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =     -62.248310
+siesta:       Kinetic =     104.228488
+siesta:       Hartree =      98.510618
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =     -58.367715
+siesta:  Ion-electron =    -287.177240
+siesta:       Ion-ion =     -43.009714
+siesta:       Ekinion =       0.000000
+siesta:         Total =    -185.815562
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:    -0.000157    0.000000   -0.000000
+siesta:     0.000000   -0.000157   -0.000000
+siesta:    -0.000000    0.000000   -0.000394
+
+siesta: Cell volume =        152.828404 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00000257          0.00000133  Ry/Bohr**3
+siesta:           0.00023591          0.00012219  eV/Ang**3
+siesta:           0.37796777          0.19577552  kBar
+(Free)E+ p_basis*V_orbitals  =        -185.383930
+(Free)Eharris+ p_basis*V_orbitals  =        -185.383930
+     spin moment: S , {S} =    2.00000       0.0       0.0   2.00000
+
+siesta: Electric dipole (a.u.)  =   -0.000000   -0.000000   -0.000209
+siesta: Electric dipole (Debye) =   -0.000000   -0.000000   -0.000530
+>> End of run:  10-JUN-2018  21:52:14
+Job completed

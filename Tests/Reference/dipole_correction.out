@@ -1,12 +1,13 @@
-Siesta Version: siesta-4.0--538
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpifort -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -fno-second-underscore
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DSIESTA__FFTW -DSIESTA__MRRR -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DSCALAPACK_DEBUG -D_DIAG_WORK -DSIESTA__ELPA 
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR 
 PARALLEL version
 NetCDF support
 
-* Running in serial mode with MPI
->> Start of run:  19-SEP-2017  15:00:30
+* Running on    8 nodes in parallel
+>> Start of run:  10-JUN-2018  20:58:45
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -369,7 +370,8 @@ redata: Long output                      =     F
 redata: Number of Atomic Species         =        2
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =    50.0000  Ry
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =    50.0000 Ry
 redata: Net charge of the system         =     0.0000 |e|
 redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =     3000
@@ -400,10 +402,10 @@ redata: ***********************************************************************
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    1  24
+* ProcessorY, Blocksize:    2   3
 
 
-* Orbital distribution balance (max,min):    23    23
+* Orbital distribution balance (max,min):     3     2
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -426,579 +428,653 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.000000    2.000000   10.000000
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :     60.0000
- Folding of H and S is implicitly performed
+Gamma-point calculation with interaction between periodic images
+Some features might not work optimally:
+e.g. DM initialization from atomic data
 New_DM. Step:     1
 Initializing Density Matrix...
-Note: For starting DM, Qtot, Tr[D*S] =          8.00000000          8.79343728
 New grid distribution:   1
-           1       1:    8    1:    5    1:   24
+           1       1:    8    1:    3    1:    6
+           2       1:    8    1:    3    7:   12
+           3       1:    8    1:    3   13:   18
+           4       1:    8    1:    3   19:   24
+           5       1:    8    4:    5    1:    6
+           6       1:    8    4:    5    7:   12
+           7       1:    8    4:    5   13:   18
+           8       1:    8    4:    5   19:   24
 
 InitMesh: MESH =    16 x    10 x    48 =        7680
 InitMesh: (bp) =     8 x     5 x    24 =         960
 InitMesh: Mesh cutoff (required, used) =    50.000    63.677 Ry
-ExtMesh (bp) on 0 =    36 x    33 x    52 =       61776
-PhiOnMesh: Number of (b)points on node 0 =                  960
-PhiOnMesh: nlist on node 0 =                19336
+ExtMesh (bp) on 0 =    36 x    31 x    34 =       37944
+New grid distribution:   2
+           1       5:    8    1:    5    1:   11
+           2       1:    4    1:    5   12:   13
+           3       5:    8    1:    5   14:   15
+           4       1:    4    1:    5   16:   24
+           5       1:    4    1:    5    1:   11
+           6       5:    8    1:    5   12:   13
+           7       1:    4    1:    5   14:   15
+           8       5:    8    1:    5   16:   24
+New grid distribution:   3
+           1       5:    8    1:    5    1:   11
+           2       1:    4    1:    5   12:   14
+           3       5:    8    1:    5   15:   17
+           4       1:    4    1:    5   18:   24
+           5       1:    4    1:    5    1:   11
+           6       1:    4    1:    5   15:   17
+           7       5:    8    1:    5   12:   14
+           8       5:    8    1:    5   18:   24
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    32 x    33 x    39 =       41184
+PhiOnMesh: Number of (b)points on node 0 =                  220
+PhiOnMesh: nlist on node 0 =                 2370
 
 efield: SlabDipoleCorrection enabled.
 efield: A dipole layer will be introduced in the vacuum
 efield: region to compensate the system dipole
-Dipole moment in unit cell   =      0.0000      0.0000     -1.8792 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.045891 Ry/Bohr/e
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0021 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000051 Ry/Bohr/e
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -170.659883
+siesta: Ebs     =      -118.172995
 siesta: Eions   =       815.854478
-siesta: Ena     =       174.246115
-siesta: Ekin    =       302.253150
-siesta: Enl     =       -47.695990
-siesta: DEna    =        20.054456
-siesta: DUscf   =         2.423557
-siesta: DUext   =         0.230814
-siesta: Exc     =      -106.461495
+siesta: Ena     =       174.247460
+siesta: Ekin    =       349.875634
+siesta: Enl     =       -59.196683
+siesta: DEna    =        -4.072329
+siesta: DUscf   =         0.285472
+siesta: DUext   =         0.000000
+siesta: Exc     =      -112.600051
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -473.884903
-siesta: Etot    =      -470.803871
-siesta: FreeEng =      -470.803871
+siesta: Eharris =      -461.848972
+siesta: Etot    =      -467.314977
+siesta: FreeEng =      -467.319804
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1     -473.8849     -470.8039     -470.8039  1.38684 -9.9746
-timer: Routine,Calls,Time,% =    IterSCF     1       0.012   1.32
-Dipole moment in unit cell   =     -0.0000     -0.0000      4.4267 D
-Electric field for dipole correction =    0.000000    0.000000   -0.108103 Ry/Bohr/e
-   scf:    2     -531.6861     -443.5550     -443.5550  1.80441  2.9024
-Dipole moment in unit cell   =      0.0000      0.0000     -0.2935 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.007167 Ry/Bohr/e
-   scf:    3     -462.8381     -469.1592     -469.1592  1.21560 -4.3573
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.8152 D
-Electric field for dipole correction =    0.000000    0.000000   -0.019908 Ry/Bohr/e
-   scf:    4     -467.3470     -465.6120     -465.6120  1.48703 -1.6039
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.8348 D
-Electric field for dipole correction =    0.000000    0.000000   -0.020387 Ry/Bohr/e
-   scf:    5     -467.5531     -465.4255     -465.4255  1.48965 -1.5605
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.4346 D
-Electric field for dipole correction =    0.000000    0.000000   -0.010612 Ry/Bohr/e
-   scf:    6     -464.7700     -460.1513     -460.1513  1.49219 -2.5440
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3940 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.009622 Ry/Bohr/e
-   scf:    7     -462.7324     -459.9256     -459.9256  1.25181 -4.6679
-Dipole moment in unit cell   =      0.0000      0.0000     -0.1112 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.002715 Ry/Bohr/e
-   scf:    8     -461.9620     -459.9897     -459.9897  1.37488 -4.0404
-Dipole moment in unit cell   =      0.0000      0.0000     -0.4211 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.010282 Ry/Bohr/e
-   scf:    9     -462.8269     -459.8162     -459.8162  1.24001 -4.7489
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3187 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.007782 Ry/Bohr/e
-   scf:   10     -462.7297     -460.3816     -460.3816  1.24183 -4.7546
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3003 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.007332 Ry/Bohr/e
-   scf:   11     -462.6867     -460.4178     -460.4178  1.24693 -4.7254
-Dipole moment in unit cell   =      0.0000      0.0000     -0.4354 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.010633 Ry/Bohr/e
-   scf:   12     -463.0458     -459.9980     -459.9980  1.18534 -4.9360
-Dipole moment in unit cell   =      0.0000      0.0000     -1.5050 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.036753 Ry/Bohr/e
-   scf:   13     -468.1870     -453.7911     -453.7911  0.54426 -7.9962
-Dipole moment in unit cell   =      0.0000      0.0000     -2.5188 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.061511 Ry/Bohr/e
-   scf:   14     -472.1005     -449.5601     -449.5601  1.07350 -8.8044
-Dipole moment in unit cell   =      0.0000      0.0000     -2.5571 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.062446 Ry/Bohr/e
-   scf:   15     -469.9187     -450.4832     -450.4832  0.98268 -8.3956
-Dipole moment in unit cell   =      0.0000      0.0000     -1.2168 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.029715 Ry/Bohr/e
-   scf:   16     -464.2081     -451.9799     -451.9799  0.50981 -5.2863
-Dipole moment in unit cell   =      0.0000      0.0000     -1.9077 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.046587 Ry/Bohr/e
-   scf:   17     -466.7636     -450.4522     -450.4522  0.60346 -8.2097
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.5999 D
-Electric field for dipole correction =    0.000000    0.000000   -0.014651 Ry/Bohr/e
-   scf:   18     -463.7990     -462.5927     -462.5927  2.89769 -3.4333
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3435 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.008389 Ry/Bohr/e
-   scf:   19     -462.5625     -461.0507     -461.0507  0.75686 -4.3476
-Dipole moment in unit cell   =      0.0000      0.0000     -0.4210 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.010281 Ry/Bohr/e
-   scf:   20     -462.4864     -460.7050     -460.7050  0.62306 -4.1440
-Dipole moment in unit cell   =      0.0000      0.0000     -0.4620 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.011283 Ry/Bohr/e
-   scf:   21     -463.4954     -459.9625     -459.9625  1.14311 -5.1084
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3803 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.009288 Ry/Bohr/e
-   scf:   22     -463.0970     -460.4489     -460.4489  0.82938 -4.7651
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3563 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.008701 Ry/Bohr/e
-   scf:   23     -462.8998     -459.4731     -459.4731  1.14252 -4.9234
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3582 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.008747 Ry/Bohr/e
-   scf:   24     -463.1597     -460.5185     -460.5185  1.19194 -5.0017
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3668 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.008957 Ry/Bohr/e
-   scf:   25     -461.8895     -461.5282     -461.5912  0.82184 -3.0731
-Dipole moment in unit cell   =      0.0000      0.0000     -0.4717 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.011519 Ry/Bohr/e
-   scf:   26     -464.0149     -460.1687     -460.1687  1.30261 -4.4565
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3941 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.009625 Ry/Bohr/e
-   scf:   27     -462.3868     -461.0724     -461.0724  0.59186 -4.0656
-Dipole moment in unit cell   =      0.0000      0.0000     -0.5784 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.014125 Ry/Bohr/e
-   scf:   28     -465.0959     -459.8748     -459.8748  1.57904 -7.0746
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3032 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.007405 Ry/Bohr/e
-   scf:   29     -463.3506     -460.7161     -460.7161  1.07228 -4.9656
-Dipole moment in unit cell   =      0.0000      0.0000     -0.8374 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.020450 Ry/Bohr/e
-   scf:   30     -466.5477     -458.8764     -458.8764  1.80107 -7.8335
-Dipole moment in unit cell   =      0.0000      0.0000     -0.6415 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.015667 Ry/Bohr/e
-   scf:   31     -465.5759     -459.9438     -459.9438  1.69084 -7.3157
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.4368 D
-Electric field for dipole correction =    0.000000    0.000000   -0.010668 Ry/Bohr/e
-   scf:   32     -464.2853     -462.3459     -462.3459  2.98894 -2.1597
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3731 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.009111 Ry/Bohr/e
-   scf:   33     -463.2677     -461.3803     -461.3803  1.00149 -4.8277
-Dipole moment in unit cell   =      0.0000      0.0000     -0.3355 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.008194 Ry/Bohr/e
-   scf:   34     -463.3090     -461.3813     -461.3813  1.02913 -4.8567
-Dipole moment in unit cell   =      0.0000      0.0000     -0.2756 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.006729 Ry/Bohr/e
-   scf:   35     -462.8800     -461.4616     -461.4616  0.91864 -4.5465
-Dipole moment in unit cell   =      0.0000      0.0000     -0.1668 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.004073 Ry/Bohr/e
-   scf:   36     -462.4608     -461.4677     -461.4677  0.79733 -4.2099
-Dipole moment in unit cell   =      0.0000      0.0000     -0.2684 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.006554 Ry/Bohr/e
-   scf:   37     -462.7549     -460.6086     -460.6086  0.85254 -4.5381
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0489 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001195 Ry/Bohr/e
-   scf:   38     -461.7639     -461.6907     -461.6918  0.51798 -3.5837
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.5064 D
-Electric field for dipole correction =    0.000000    0.000000   -0.012366 Ry/Bohr/e
-   scf:   39     -465.0680     -461.4938     -461.4938  3.05617 -1.9811
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0190 D
-Electric field for dipole correction =    0.000000    0.000000   -0.000463 Ry/Bohr/e
-   scf:   40     -461.7650     -461.6214     -461.6226  0.51077 -3.5807
-Dipole moment in unit cell   =      0.0000      0.0000     -0.0156 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.000381 Ry/Bohr/e
-   scf:   41     -461.6803     -461.6222     -461.6389  0.41132 -3.4779
-Dipole moment in unit cell   =      0.0000      0.0000     -0.0040 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.000098 Ry/Bohr/e
-   scf:   42     -461.7199     -461.3477     -461.3519  0.59564 -3.5809
-Dipole moment in unit cell   =      0.0000      0.0000     -0.0380 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.000928 Ry/Bohr/e
-   scf:   43     -461.8045     -461.4297     -461.4300  0.64671 -3.6666
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0728 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001778 Ry/Bohr/e
-   scf:   44     -461.9129     -461.4167     -461.4264  2.28967 -3.2848
-Dipole moment in unit cell   =      0.0000      0.0000     -0.0061 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.000148 Ry/Bohr/e
-   scf:   45     -461.8112     -461.4302     -461.4304  0.66526 -3.6895
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0844 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002062 Ry/Bohr/e
-   scf:   46     -461.7413     -461.7426     -461.7442  0.68908 -3.6113
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1097 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002678 Ry/Bohr/e
-   scf:   47     -461.6673     -461.7834     -461.7961  0.60268 -3.5302
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0876 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002140 Ry/Bohr/e
-   scf:   48     -461.7185     -461.6618     -461.6649  0.69823 -3.5885
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0972 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002375 Ry/Bohr/e
-   scf:   49     -461.6635     -461.7775     -461.7913  0.65231 -3.5171
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0812 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001983 Ry/Bohr/e
-   scf:   50     -461.7075     -461.8316     -461.8359  0.72572 -3.5555
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.4577 D
-Electric field for dipole correction =    0.000000    0.000000   -0.011179 Ry/Bohr/e
-   scf:   51     -464.8314     -461.2794     -461.2794  2.82982 -2.1111
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.4478 D
-Electric field for dipole correction =    0.000000    0.000000   -0.010936 Ry/Bohr/e
-   scf:   52     -464.3670     -461.8594     -461.8594  2.72928 -2.2058
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1744 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004258 Ry/Bohr/e
-   scf:   53     -462.3345     -462.0463     -462.0465  2.27120 -3.0864
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0945 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002307 Ry/Bohr/e
-   scf:   54     -461.6390     -461.9741     -461.9978  0.53420 -3.4710
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2762 D
-Electric field for dipole correction =    0.000000    0.000000   -0.006744 Ry/Bohr/e
-   scf:   55     -462.9873     -461.9108     -461.9108  2.48659 -2.8358
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2032 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004962 Ry/Bohr/e
-   scf:   56     -462.6273     -462.0061     -462.0061  2.41082 -2.9576
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1200 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002930 Ry/Bohr/e
-   scf:   57     -461.8111     -461.9940     -462.0154  2.11648 -3.2643
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0807 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001970 Ry/Bohr/e
-   scf:   58     -461.7775     -461.8616     -461.8622  0.61045 -3.5822
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0446 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001090 Ry/Bohr/e
-   scf:   59     -461.9233     -461.8029     -461.8029  0.66839 -3.7498
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2386 D
-Electric field for dipole correction =    0.000000    0.000000   -0.005826 Ry/Bohr/e
-   scf:   60     -462.3996     -461.9111     -461.9112  2.45360 -3.0243
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2404 D
-Electric field for dipole correction =    0.000000    0.000000   -0.005871 Ry/Bohr/e
-   scf:   61     -462.4140     -461.8984     -461.8985  2.45508 -3.0222
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1720 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004199 Ry/Bohr/e
-   scf:   62     -461.9577     -461.9204     -461.9264  2.33775 -3.1923
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2021 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004936 Ry/Bohr/e
-   scf:   63     -462.4069     -461.9696     -461.9697  2.43603 -3.0191
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2240 D
-Electric field for dipole correction =    0.000000    0.000000   -0.005471 Ry/Bohr/e
-   scf:   64     -462.3399     -461.9073     -461.9074  2.46325 -3.0399
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0069 D
-Electric field for dipole correction =    0.000000    0.000000   -0.000169 Ry/Bohr/e
-   scf:   65     -462.0462     -461.7502     -461.7502  0.71894 -3.8830
-Dipole moment in unit cell   =      0.0000      0.0000     -0.0159 D
-Electric field for dipole correction =   -0.000000   -0.000000    0.000389 Ry/Bohr/e
-   scf:   66     -462.1208     -461.7207     -461.7207  0.75100 -3.9602
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2733 D
-Electric field for dipole correction =    0.000000    0.000000   -0.006675 Ry/Bohr/e
-   scf:   67     -462.3325     -462.0340     -462.0342  2.51097 -2.9966
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2669 D
-Electric field for dipole correction =    0.000000    0.000000   -0.006517 Ry/Bohr/e
-   scf:   68     -462.3829     -461.9947     -461.9948  2.51250 -2.9887
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.2695 D
-Electric field for dipole correction =    0.000000    0.000000   -0.006582 Ry/Bohr/e
-   scf:   69     -462.3570     -461.9428     -461.9429  2.48817 -3.0197
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1907 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004656 Ry/Bohr/e
-   scf:   70     -462.0802     -461.9698     -461.9715  2.36329 -3.1445
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1760 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004297 Ry/Bohr/e
-   scf:   71     -461.9939     -461.9513     -461.9555  2.31453 -3.1871
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0369 D
-Electric field for dipole correction =    0.000000    0.000000   -0.000901 Ry/Bohr/e
-   scf:   72     -461.9970     -461.5386     -461.5386  0.79252 -3.8930
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0651 D
-Electric field for dipole correction =    0.000000    0.000000   -0.001590 Ry/Bohr/e
-   scf:   73     -461.8898     -461.5947     -461.5948  0.76686 -3.7777
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1030 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002515 Ry/Bohr/e
-   scf:   74     -461.7570     -461.6590     -461.6600  0.71615 -3.6234
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.0976 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002383 Ry/Bohr/e
-   scf:   75     -461.7726     -461.6530     -461.6536  0.72834 -3.6441
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1138 D
-Electric field for dipole correction =    0.000000    0.000000   -0.002779 Ry/Bohr/e
-   scf:   76     -461.6916     -461.7185     -461.7252  0.65328 -3.5386
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1789 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004369 Ry/Bohr/e
-   scf:   77     -461.6745     -461.7405     -461.7916  1.63410 -3.3539
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1484 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003625 Ry/Bohr/e
-   scf:   78     -461.6194     -461.6854     -461.7188  0.39230 -3.4773
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1415 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003457 Ry/Bohr/e
-   scf:   79     -461.6487     -461.6748     -461.6938  0.54815 -3.5039
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1492 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003644 Ry/Bohr/e
-   scf:   80     -461.6192     -461.6828     -461.7163  0.38904 -3.4767
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1529 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003735 Ry/Bohr/e
-   scf:   81     -461.6045     -461.6869     -461.7299  0.25321 -3.4620
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1710 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004176 Ry/Bohr/e
-   scf:   82     -461.6110     -461.6818     -461.7500  1.15374 -3.3803
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1728 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004221 Ry/Bohr/e
-   scf:   83     -461.6194     -461.6641     -461.7303  1.24225 -3.3813
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1234 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003013 Ry/Bohr/e
-   scf:   84     -461.7170     -461.5811     -461.5844  0.68851 -3.5894
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1404 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003428 Ry/Bohr/e
-   scf:   85     -461.6524     -461.6135     -461.6310  0.55006 -3.5121
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1534 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003747 Ry/Bohr/e
-   scf:   86     -461.6005     -461.6126     -461.6586  0.18718 -3.4624
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1644 D
-Electric field for dipole correction =    0.000000    0.000000   -0.004014 Ry/Bohr/e
-   scf:   87     -461.5818     -461.6242     -461.6935  0.48200 -3.4171
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1438 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003513 Ry/Bohr/e
-   scf:   88     -461.6417     -461.5778     -461.5997  0.52307 -3.5126
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1537 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003754 Ry/Bohr/e
-   scf:   89     -461.5996     -461.5954     -461.6421  0.19723 -3.4705
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1563 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003817 Ry/Bohr/e
-   scf:   90     -461.5873     -461.6231     -461.6806  0.03186 -3.4487
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1476 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003605 Ry/Bohr/e
-   scf:   91     -461.6102     -461.6203     -461.6594  0.31123 -3.4757
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1532 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003741 Ry/Bohr/e
-   scf:   92     -461.5871     -461.6248     -461.6824  0.03360 -3.4473
+   scf:    1     -461.8490     -467.3150     -467.3198  1.34378 -3.5971
+timer: Routine,Calls,Time,% =    IterSCF     1       0.014   1.14
+Dipole moment in unit cell   =     -0.0000     -0.0000      1.6304 D
+Electric field for dipole correction =    0.000000    0.000000   -0.039815 Ry/Bohr/e
+   scf:    2     -475.0924     -460.0340     -460.0340  2.73393 -0.6363
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.5020 D
+Electric field for dipole correction =    0.000000    0.000000   -0.012258 Ry/Bohr/e
+   scf:    3     -464.7077     -465.2278     -465.2278  2.15350 -2.4024
+Dipole moment in unit cell   =     -0.0000     -0.0000      1.4566 D
+Electric field for dipole correction =    0.000000    0.000000   -0.035571 Ry/Bohr/e
+   scf:    4     -473.3966     -460.9925     -460.9925  2.65735 -1.0218
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.4651 D
+Electric field for dipole correction =    0.000000    0.000000   -0.011357 Ry/Bohr/e
+   scf:    5     -461.7439     -463.1689     -463.2058  0.67988 -3.3395
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1556 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003800 Ry/Bohr/e
+   scf:    6     -462.9403     -462.8560     -462.8560  1.04978 -4.1571
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0373 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000911 Ry/Bohr/e
+   scf:    7     -463.5042     -462.7954     -462.7954  1.07217 -4.5437
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.4747 D
+Electric field for dipole correction =    0.000000    0.000000   -0.011591 Ry/Bohr/e
+   scf:    8     -461.7372     -462.9236     -462.9666  0.57086 -3.3185
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1675 D
+Electric field for dipole correction =    0.000000    0.000000   -0.004089 Ry/Bohr/e
+   scf:    9     -462.3209     -462.7589     -462.7589  0.78188 -3.8857
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.5029 D
+Electric field for dipole correction =    0.000000    0.000000   -0.012281 Ry/Bohr/e
+   scf:   10     -465.2677     -461.7703     -461.7703  2.92882 -1.7706
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.5261 D
+Electric field for dipole correction =    0.000000    0.000000   -0.012849 Ry/Bohr/e
+   scf:   11     -465.4598     -461.7452     -461.7452  2.93973 -1.7108
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.4702 D
+Electric field for dipole correction =    0.000000    0.000000   -0.011482 Ry/Bohr/e
+   scf:   12     -464.6690     -461.9173     -461.9173  2.81516 -1.9659
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.4929 D
+Electric field for dipole correction =    0.000000    0.000000   -0.012036 Ry/Bohr/e
+   scf:   13     -465.1464     -461.8415     -461.8415  2.90480 -1.8159
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.3044 D
+Electric field for dipole correction =    0.000000    0.000000   -0.007433 Ry/Bohr/e
+   scf:   14     -462.0271     -462.4343     -462.4375  2.28588 -3.0418
+Dipole moment in unit cell   =      0.0000      0.0000     -0.2357 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.005757 Ry/Bohr/e
+   scf:   15     -463.7560     -462.5339     -462.5339  0.81237 -4.8183
+Dipole moment in unit cell   =      0.0000      0.0000     -0.4960 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.012112 Ry/Bohr/e
+   scf:   16     -465.4811     -462.2026     -462.2026  1.01503 -6.7900
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.5624 D
+Electric field for dipole correction =    0.000000    0.000000   -0.013734 Ry/Bohr/e
+   scf:   17     -464.6633     -462.2795     -462.2795  2.83585 -1.9030
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0410 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.001002 Ry/Bohr/e
+   scf:   18     -462.1200     -461.9120     -461.9120  0.78254 -3.8646
+Dipole moment in unit cell   =      0.0000      0.0000     -0.5914 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.014443 Ry/Bohr/e
+   scf:   19     -463.8978     -460.8459     -460.8459  1.27628 -5.2700
+Dipole moment in unit cell   =      0.0000      0.0000     -0.4719 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.011525 Ry/Bohr/e
+   scf:   20     -463.4828     -460.9693     -460.9693  1.24448 -4.9782
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1037 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002532 Ry/Bohr/e
+   scf:   21     -462.0598     -461.7123     -461.7146  2.29434 -3.1166
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0544 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001329 Ry/Bohr/e
+   scf:   22     -461.7483     -461.8627     -461.8639  0.68540 -3.4892
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1587 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003875 Ry/Bohr/e
+   scf:   23     -462.0125     -461.8984     -461.9018  2.28377 -3.1090
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.2988 D
+Electric field for dipole correction =    0.000000    0.000000   -0.007297 Ry/Bohr/e
+   scf:   24     -463.3143     -461.8530     -461.8530  2.53333 -2.6055
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.2231 D
+Electric field for dipole correction =    0.000000    0.000000   -0.005447 Ry/Bohr/e
+   scf:   25     -462.5769     -461.9001     -461.9001  2.40579 -2.8859
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.2308 D
+Electric field for dipole correction =    0.000000    0.000000   -0.005637 Ry/Bohr/e
+   scf:   26     -462.6756     -461.8946     -461.8946  2.42529 -2.8480
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0106 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.000260 Ry/Bohr/e
+   scf:   27     -461.8610     -461.7678     -461.7678  0.72696 -3.6301
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1056 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002579 Ry/Bohr/e
+   scf:   28     -461.5838     -461.8208     -461.8916  0.55786 -3.3061
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0695 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.001698 Ry/Bohr/e
+   scf:   29     -462.0387     -461.7137     -461.7137  0.78441 -3.8255
+Dipole moment in unit cell   =      0.0000      0.0000     -0.2529 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.006176 Ry/Bohr/e
+   scf:   30     -462.8624     -461.5207     -461.5207  1.02332 -4.4705
+Dipole moment in unit cell   =      0.0000      0.0000     -0.2466 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.006022 Ry/Bohr/e
+   scf:   31     -462.8479     -461.4211     -461.4211  1.07438 -4.4736
+Dipole moment in unit cell   =      0.0000      0.0000     -0.1073 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.002621 Ry/Bohr/e
+   scf:   32     -462.2323     -461.5400     -461.5400  0.93912 -4.0522
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0747 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.001824 Ry/Bohr/e
+   scf:   33     -462.0728     -461.4428     -461.4428  0.92384 -3.9237
+Dipole moment in unit cell   =      0.0000      0.0000     -0.2286 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.005583 Ry/Bohr/e
+   scf:   34     -462.6519     -461.0842     -461.0842  1.07096 -4.4476
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.5059 D
+Electric field for dipole correction =    0.000000    0.000000   -0.012355 Ry/Bohr/e
+   scf:   35     -465.5974     -461.5699     -461.5699  3.07321 -1.7899
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0634 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001549 Ry/Bohr/e
+   scf:   36     -461.5864     -461.1565     -461.2269  0.42651 -3.5230
+Dipole moment in unit cell   =      0.0000      0.0000     -0.1285 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.003138 Ry/Bohr/e
+   scf:   37     -462.2876     -461.2548     -461.2548  0.93708 -4.2151
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0860 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002100 Ry/Bohr/e
+   scf:   38     -461.5825     -461.4299     -461.4941  0.20048 -3.4778
+Dipole moment in unit cell   =      0.0000      0.0000     -0.2074 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.005066 Ry/Bohr/e
+   scf:   39     -462.6171     -461.2479     -461.2479  0.98716 -4.4102
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0297 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000726 Ry/Bohr/e
+   scf:   40     -461.7795     -461.4853     -461.4857  0.72796 -3.6743
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0994 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.002426 Ry/Bohr/e
+   scf:   41     -462.2673     -461.3926     -461.3926  0.89808 -4.1719
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0115 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.000282 Ry/Bohr/e
+   scf:   42     -461.9738     -461.4413     -461.4413  0.81644 -3.9012
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0118 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.000287 Ry/Bohr/e
+   scf:   43     -461.9872     -461.4322     -461.4322  0.82165 -3.9211
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0295 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000722 Ry/Bohr/e
+   scf:   44     -461.8872     -461.4918     -461.4919  0.77980 -3.8112
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.6391 D
+Electric field for dipole correction =    0.000000    0.000000   -0.015607 Ry/Bohr/e
+   scf:   45     -465.7137     -461.8765     -461.8765  3.02297 -1.6984
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.2713 D
+Electric field for dipole correction =    0.000000    0.000000   -0.006625 Ry/Bohr/e
+   scf:   46     -462.8392     -461.5377     -461.5377  2.39729 -2.9544
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0671 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001640 Ry/Bohr/e
+   scf:   47     -461.7630     -461.4990     -461.4997  0.73412 -3.6740
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0846 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002067 Ry/Bohr/e
+   scf:   48     -461.7092     -461.4998     -461.5038  0.70143 -3.6134
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0748 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001826 Ry/Bohr/e
+   scf:   49     -461.7359     -461.4928     -461.4946  0.72122 -3.6459
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0540 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001317 Ry/Bohr/e
+   scf:   50     -461.7994     -461.4464     -461.4466  0.75953 -3.7328
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0747 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001824 Ry/Bohr/e
+   scf:   51     -461.7297     -461.4746     -461.4767  0.72059 -3.6441
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1224 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002990 Ry/Bohr/e
+   scf:   52     -461.5936     -461.5113     -461.5614  0.15384 -3.5037
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0382 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000932 Ry/Bohr/e
+   scf:   53     -461.8839     -461.5016     -461.5016  0.77571 -3.8141
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0231 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000563 Ry/Bohr/e
+   scf:   54     -461.9543     -461.4440     -461.4440  0.83150 -3.8988
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0836 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002040 Ry/Bohr/e
+   scf:   55     -461.8163     -461.5603     -461.5604  0.76043 -3.7317
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0110 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000268 Ry/Bohr/e
+   scf:   56     -461.9857     -461.4446     -461.4446  0.83449 -3.9324
+Dipole moment in unit cell   =      0.0000      0.0000     -0.0163 D
+Electric field for dipole correction =   -0.000000   -0.000000    0.000399 Ry/Bohr/e
+   scf:   57     -462.0780     -461.3873     -461.3873  0.87547 -4.0341
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1093 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002669 Ry/Bohr/e
+   scf:   58     -461.6902     -461.5430     -461.5497  0.65897 -3.6068
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.5641 D
+Electric field for dipole correction =    0.000000    0.000000   -0.013776 Ry/Bohr/e
+   scf:   59     -465.4419     -461.9638     -461.9638  3.04933 -1.7370
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.2230 D
+Electric field for dipole correction =    0.000000    0.000000   -0.005445 Ry/Bohr/e
+   scf:   60     -462.4505     -461.5055     -461.5055  2.31090 -3.1095
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0441 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001078 Ry/Bohr/e
+   scf:   61     -461.8649     -461.4357     -461.4357  0.80367 -3.8060
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0574 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001402 Ry/Bohr/e
+   scf:   62     -461.8107     -461.4362     -461.4364  0.78310 -3.7453
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0635 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001550 Ry/Bohr/e
+   scf:   63     -461.8009     -461.4435     -461.4437  0.77972 -3.7334
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0593 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001447 Ry/Bohr/e
+   scf:   64     -461.8109     -461.4399     -461.4401  0.78381 -3.7452
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0603 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001474 Ry/Bohr/e
+   scf:   65     -461.8075     -461.4447     -461.4449  0.77874 -3.7415
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0809 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001975 Ry/Bohr/e
+   scf:   66     -461.7394     -461.4595     -461.4611  0.74667 -3.6590
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.3733 D
+Electric field for dipole correction =    0.000000    0.000000   -0.009116 Ry/Bohr/e
+   scf:   67     -463.7742     -461.9573     -461.9573  2.73159 -2.4780
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1995 D
+Electric field for dipole correction =    0.000000    0.000000   -0.004871 Ry/Bohr/e
+   scf:   68     -462.2157     -461.5962     -461.5966  2.29180 -3.1719
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0508 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001240 Ry/Bohr/e
+   scf:   69     -461.8399     -461.4435     -461.4435  0.79162 -3.7765
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0261 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000636 Ry/Bohr/e
+   scf:   70     -461.9219     -461.4759     -461.4760  0.80545 -3.8511
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0298 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000729 Ry/Bohr/e
+   scf:   71     -461.9037     -461.4731     -461.4731  0.79905 -3.8322
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0356 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000870 Ry/Bohr/e
+   scf:   72     -461.8793     -461.4630     -461.4630  0.79324 -3.8090
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0312 D
+Electric field for dipole correction =    0.000000    0.000000   -0.000762 Ry/Bohr/e
+   scf:   73     -461.8997     -461.4534     -461.4535  0.80585 -3.8364
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0957 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002336 Ry/Bohr/e
+   scf:   74     -461.7258     -461.5744     -461.5768  0.72042 -3.6275
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.2964 D
+Electric field for dipole correction =    0.000000    0.000000   -0.007237 Ry/Bohr/e
+   scf:   75     -462.9093     -462.0835     -462.0835  2.58826 -2.7761
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1475 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003602 Ry/Bohr/e
+   scf:   76     -461.5979     -461.6088     -461.6794  0.95645 -3.4337
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0745 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001818 Ry/Bohr/e
+   scf:   77     -461.7905     -461.5599     -461.5602  0.74782 -3.7029
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0882 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002154 Ry/Bohr/e
+   scf:   78     -461.7433     -461.5717     -461.5731  0.72071 -3.6461
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0792 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001935 Ry/Bohr/e
+   scf:   79     -461.7768     -461.5710     -461.5715  0.73801 -3.6844
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0779 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001901 Ry/Bohr/e
+   scf:   80     -461.7849     -461.5742     -461.5746  0.74281 -3.6945
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0865 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002113 Ry/Bohr/e
+   scf:   81     -461.7559     -461.5812     -461.5821  0.73069 -3.6589
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0594 D
+Electric field for dipole correction =    0.000000    0.000000   -0.001452 Ry/Bohr/e
+   scf:   82     -461.8511     -461.5446     -461.5446  0.77563 -3.7779
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.4901 D
+Electric field for dipole correction =    0.000000    0.000000   -0.011968 Ry/Bohr/e
+   scf:   83     -464.6910     -462.0956     -462.0956  2.93488 -2.0166
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.2126 D
+Electric field for dipole correction =    0.000000    0.000000   -0.005193 Ry/Bohr/e
+   scf:   84     -462.2223     -461.6236     -461.6240  2.27263 -3.1887
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1065 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002600 Ry/Bohr/e
+   scf:   85     -461.6935     -461.5869     -461.5930  0.68172 -3.5910
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1033 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002522 Ry/Bohr/e
+   scf:   86     -461.7030     -461.5832     -461.5878  0.69358 -3.6016
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1089 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002658 Ry/Bohr/e
+   scf:   87     -461.6871     -461.5904     -461.5976  0.67340 -3.5835
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1104 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002696 Ry/Bohr/e
+   scf:   88     -461.6785     -461.5830     -461.5920  0.65850 -3.5762
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1193 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002912 Ry/Bohr/e
+   scf:   89     -461.6433     -461.5975     -461.6180  0.55419 -3.5369
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1144 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002794 Ry/Bohr/e
+   scf:   90     -461.6649     -461.5916     -461.6043  0.62870 -3.5605
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1491 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003641 Ry/Bohr/e
+   scf:   91     -461.5966     -461.7114     -461.7822  0.98071 -3.3960
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1037 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002532 Ry/Bohr/e
+   scf:   92     -461.7158     -461.6329     -461.6361  0.68617 -3.6039
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1077 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002631 Ry/Bohr/e
+   scf:   93     -461.7085     -461.6362     -461.6402  0.68302 -3.5971
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0952 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002325 Ry/Bohr/e
+   scf:   94     -461.7415     -461.6104     -461.6118  0.71062 -3.6400
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1002 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002448 Ry/Bohr/e
+   scf:   95     -461.7262     -461.6161     -461.6184  0.70494 -3.6216
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0973 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002376 Ry/Bohr/e
+   scf:   96     -461.7394     -461.6299     -461.6314  0.70491 -3.6326
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0971 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002371 Ry/Bohr/e
+   scf:   97     -461.7399     -461.6299     -461.6314  0.70490 -3.6330
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.3365 D
+Electric field for dipole correction =    0.000000    0.000000   -0.008218 Ry/Bohr/e
+   scf:   98     -463.5340     -461.8009     -461.8009  2.66614 -2.5518
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1562 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003815 Ry/Bohr/e
+   scf:   99     -461.7101     -461.5826     -461.6237  1.78570 -3.3842
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1016 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002481 Ry/Bohr/e
+   scf:  100     -461.6984     -461.5817     -461.5870  0.67108 -3.5827
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1014 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002476 Ry/Bohr/e
+   scf:  101     -461.7012     -461.5874     -461.5923  0.67371 -3.5847
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1055 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002577 Ry/Bohr/e
+   scf:  102     -461.6880     -461.5956     -461.6027  0.65301 -3.5676
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1196 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002920 Ry/Bohr/e
+   scf:  103     -461.6360     -461.6030     -461.6266  0.50884 -3.5183
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0999 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002440 Ry/Bohr/e
+   scf:  104     -461.7093     -461.5891     -461.5929  0.68059 -3.5931
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1093 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002668 Ry/Bohr/e
+   scf:  105     -461.6961     -461.6056     -461.6113  0.66818 -3.5796
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1002 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002446 Ry/Bohr/e
+   scf:  106     -461.7252     -461.6070     -461.6094  0.68866 -3.6092
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0975 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002382 Ry/Bohr/e
+   scf:  107     -461.7148     -461.5592     -461.5625  0.68006 -3.5975
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.0983 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002401 Ry/Bohr/e
+   scf:  108     -461.7127     -461.5655     -461.5690  0.67580 -3.5986
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1434 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003503 Ry/Bohr/e
+   scf:  109     -461.5799     -461.6585     -461.7238  0.28067 -3.4230
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1336 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003262 Ry/Bohr/e
+   scf:  110     -461.6026     -461.6333     -461.6763  0.24178 -3.4657
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1032 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002521 Ry/Bohr/e
+   scf:  111     -461.7087     -461.5852     -461.5892  0.68306 -3.5875
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1010 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002466 Ry/Bohr/e
+   scf:  112     -461.7152     -461.5944     -461.5977  0.68679 -3.5929
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1230 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003003 Ry/Bohr/e
+   scf:  113     -461.6479     -461.5932     -461.6117  0.55530 -3.5198
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1185 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002894 Ry/Bohr/e
+   scf:  114     -461.6578     -461.5780     -461.5928  0.58968 -3.5310
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1181 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002884 Ry/Bohr/e
+   scf:  115     -461.6621     -461.5833     -461.5968  0.60296 -3.5348
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1558 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003805 Ry/Bohr/e
+   scf:  116     -461.6134     -461.6113     -461.6785  1.19075 -3.3914
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1206 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002945 Ry/Bohr/e
+   scf:  117     -461.6525     -461.5843     -461.6011  0.57435 -3.5266
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1277 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003119 Ry/Bohr/e
+   scf:  118     -461.6257     -461.5927     -461.6215  0.44647 -3.4978
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1219 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002978 Ry/Bohr/e
+   scf:  119     -461.6476     -461.5820     -461.6007  0.55768 -3.5224
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1280 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003125 Ry/Bohr/e
+   scf:  120     -461.6269     -461.5896     -461.6177  0.45569 -3.5014
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1229 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003001 Ry/Bohr/e
+   scf:  121     -461.6418     -461.5799     -461.6009  0.53328 -3.5169
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1229 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003001 Ry/Bohr/e
+   scf:  122     -461.6434     -461.5816     -461.6020  0.54078 -3.5181
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1544 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003769 Ry/Bohr/e
+   scf:  123     -461.6007     -461.6131     -461.6831  1.02761 -3.3979
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1207 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002948 Ry/Bohr/e
+   scf:  124     -461.6519     -461.5826     -461.5996  0.57268 -3.5266
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1205 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002944 Ry/Bohr/e
+   scf:  125     -461.6525     -461.5839     -461.6007  0.57453 -3.5270
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1274 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003111 Ry/Bohr/e
+   scf:  126     -461.6269     -461.5848     -461.6129  0.45443 -3.5003
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1281 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003127 Ry/Bohr/e
+   scf:  127     -461.6266     -461.5898     -461.6181  0.45315 -3.5009
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1214 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002965 Ry/Bohr/e
+   scf:  128     -461.6485     -461.5811     -461.5994  0.55985 -3.5233
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1262 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003083 Ry/Bohr/e
+   scf:  129     -461.6304     -461.5829     -461.6092  0.47652 -3.5047
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1540 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003761 Ry/Bohr/e
+   scf:  130     -461.5981     -461.5994     -461.6699  0.98727 -3.4004
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1222 D
+Electric field for dipole correction =    0.000000    0.000000   -0.002985 Ry/Bohr/e
+   scf:  131     -461.6462     -461.5845     -461.6037  0.55067 -3.5204
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1240 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003028 Ry/Bohr/e
+   scf:  132     -461.6395     -461.5860     -461.6080  0.52126 -3.5134
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1302 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003179 Ry/Bohr/e
+   scf:  133     -461.6164     -461.5871     -461.6211  0.38036 -3.4892
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1285 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003138 Ry/Bohr/e
+   scf:  134     -461.6241     -461.5903     -461.6199  0.43676 -3.4980
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1241 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003031 Ry/Bohr/e
+   scf:  135     -461.6392     -461.5871     -461.6093  0.52022 -3.5130
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1238 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003024 Ry/Bohr/e
+   scf:  136     -461.6398     -461.5854     -461.6073  0.52326 -3.5139
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1489 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003635 Ry/Bohr/e
+   scf:  137     -461.5820     -461.5973     -461.6683  0.60694 -3.4191
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1284 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003135 Ry/Bohr/e
+   scf:  138     -461.6240     -461.5899     -461.6195  0.43391 -3.4970
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1347 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003290 Ry/Bohr/e
+   scf:  139     -461.6014     -461.5934     -461.6372  0.23648 -3.4730
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1299 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003172 Ry/Bohr/e
+   scf:  140     -461.6170     -461.5868     -461.6204  0.38596 -3.4898
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1282 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003130 Ry/Bohr/e
+   scf:  141     -461.6252     -461.5904     -461.6195  0.44290 -3.4988
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1252 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003057 Ry/Bohr/e
+   scf:  142     -461.6348     -461.5849     -461.6092  0.49790 -3.5088
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1301 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003177 Ry/Bohr/e
+   scf:  143     -461.6164     -461.5854     -461.6194  0.38056 -3.4904
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1444 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003526 Ry/Bohr/e
+   scf:  144     -461.5798     -461.5985     -461.6635  0.26464 -3.4372
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1248 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003047 Ry/Bohr/e
+   scf:  145     -461.6367     -461.5835     -461.6068  0.50800 -3.5108
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1268 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003098 Ry/Bohr/e
+   scf:  146     -461.6326     -461.5829     -461.6082  0.48601 -3.5063
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1365 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003333 Ry/Bohr/e
+   scf:  147     -461.6001     -461.5917     -461.6365  0.21959 -3.4707
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1315 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003210 Ry/Bohr/e
+   scf:  148     -461.6179     -461.5913     -461.6244  0.39137 -3.4904
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1359 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003320 Ry/Bohr/e
+   scf:  149     -461.6013     -461.5913     -461.6352  0.23494 -3.4726
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1372 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003352 Ry/Bohr/e
+   scf:  150     -461.5969     -461.5890     -461.6362  0.17735 -3.4679
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1434 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003503 Ry/Bohr/e
+   scf:  151     -461.5823     -461.5919     -461.6529  0.13029 -3.4452
 Dipole moment in unit cell   =     -0.0000     -0.0000      0.1337 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003264 Ry/Bohr/e
-   scf:   93     -461.6504     -461.6010     -461.6192  0.56074 -3.5138
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1422 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003472 Ry/Bohr/e
-   scf:   94     -461.5912     -461.5986     -461.6522  0.05689 -3.4539
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1442 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003521 Ry/Bohr/e
-   scf:   95     -461.5842     -461.5880     -461.6490  0.12724 -3.4446
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1386 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003385 Ry/Bohr/e
-   scf:   96     -461.5993     -461.5779     -461.6248  0.18785 -3.4672
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1362 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003327 Ry/Bohr/e
-   scf:   97     -461.6102     -461.5771     -461.6162  0.31133 -3.4782
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1344 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003281 Ry/Bohr/e
-   scf:   98     -461.6163     -461.5789     -461.6140  0.36620 -3.4838
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1334 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003259 Ry/Bohr/e
-   scf:   99     -461.6177     -461.5765     -461.6108  0.37746 -3.4860
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1341 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003276 Ry/Bohr/e
-   scf:  100     -461.6089     -461.5785     -461.6184  0.29899 -3.4770
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1400 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003418 Ry/Bohr/e
-   scf:  101     -461.5954     -461.5888     -461.6387  0.13086 -3.4615
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1432 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003497 Ry/Bohr/e
-   scf:  102     -461.5864     -461.5879     -461.6464  0.05665 -3.4490
+Electric field for dipole correction =    0.000000    0.000000   -0.003266 Ry/Bohr/e
+   scf:  152     -461.6101     -461.5866     -461.6245  0.32603 -3.4828
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1392 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003399 Ry/Bohr/e
+   scf:  153     -461.5935     -461.5914     -461.6414  0.12678 -3.4635
 Dipole moment in unit cell   =     -0.0000     -0.0000      0.1404 D
 Electric field for dipole correction =    0.000000    0.000000   -0.003428 Ry/Bohr/e
-   scf:  103     -461.5927     -461.5794     -461.6316  0.08532 -3.4595
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1383 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003377 Ry/Bohr/e
-   scf:  104     -461.5993     -461.5769     -461.6236  0.18887 -3.4676
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1398 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003414 Ry/Bohr/e
-   scf:  105     -461.5935     -461.5840     -461.6355  0.09948 -3.4597
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1414 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003454 Ry/Bohr/e
-   scf:  106     -461.5886     -461.5856     -461.6417  0.00087 -3.4529
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1387 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003387 Ry/Bohr/e
-   scf:  107     -461.5908     -461.5857     -461.6397  0.04751 -3.4563
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1380 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003369 Ry/Bohr/e
-   scf:  108     -461.5926     -461.5838     -461.6361  0.08163 -3.4587
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1401 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003421 Ry/Bohr/e
-   scf:  109     -461.5889     -461.5904     -461.6462  0.00696 -3.4533
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1402 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003423 Ry/Bohr/e
-   scf:  110     -461.5889     -461.5934     -461.6492  0.00571 -3.4530
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1422 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003472 Ry/Bohr/e
-   scf:  111     -461.5857     -461.6020     -461.6611  0.07818 -3.4466
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1401 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003422 Ry/Bohr/e
-   scf:  112     -461.5887     -461.5970     -461.6529  0.00176 -3.4523
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1401 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003422 Ry/Bohr/e
-   scf:  113     -461.5885     -461.5980     -461.6542  0.00412 -3.4520
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1389 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003393 Ry/Bohr/e
-   scf:  114     -461.5892     -461.5920     -461.6475  0.01102 -3.4542
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1392 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003400 Ry/Bohr/e
-   scf:  115     -461.5886     -461.5914     -461.6475  0.00189 -3.4535
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1405 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003431 Ry/Bohr/e
-   scf:  116     -461.5882     -461.5943     -461.6508  0.01129 -3.4532
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1403 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003425 Ry/Bohr/e
-   scf:  117     -461.5886     -461.5938     -461.6499  0.00221 -3.4539
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1407 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003436 Ry/Bohr/e
-   scf:  118     -461.5886     -461.5912     -461.6473  0.00159 -3.4544
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1400 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003418 Ry/Bohr/e
-   scf:  119     -461.5899     -461.5880     -461.6428  0.02882 -3.4573
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1408 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003438 Ry/Bohr/e
-   scf:  120     -461.5887     -461.5918     -461.6478  0.00043 -3.4545
+   scf:  154     -461.5903     -461.5918     -461.6445  0.07274 -3.4591
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1416 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003459 Ry/Bohr/e
+   scf:  155     -461.5874     -461.5917     -461.6471  0.01298 -3.4548
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1430 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003491 Ry/Bohr/e
+   scf:  156     -461.5843     -461.5864     -461.6450  0.06346 -3.4508
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1417 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003460 Ry/Bohr/e
+   scf:  157     -461.5868     -461.5861     -461.6421  0.00053 -3.4550
 Dipole moment in unit cell   =     -0.0000     -0.0000      0.1408 D
 Electric field for dipole correction =    0.000000    0.000000   -0.003439 Ry/Bohr/e
-   scf:  121     -461.5886     -461.5919     -461.6480  0.00054 -3.4544
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1413 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003450 Ry/Bohr/e
-   scf:  122     -461.5887     -461.5919     -461.6479  0.00065 -3.4544
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1413 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003451 Ry/Bohr/e
-   scf:  123     -461.5886     -461.5917     -461.6478  0.00081 -3.4543
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1413 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003451 Ry/Bohr/e
-   scf:  124     -461.5886     -461.5912     -461.6473  0.00047 -3.4544
+   scf:  158     -461.5872     -461.5851     -461.6407  0.00901 -3.4555
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1410 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003443 Ry/Bohr/e
+   scf:  159     -461.5866     -461.5852     -461.6414  0.00361 -3.4545
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1408 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003438 Ry/Bohr/e
+   scf:  160     -461.5870     -461.5860     -461.6418  0.00558 -3.4551
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1409 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003441 Ry/Bohr/e
+   scf:  161     -461.5868     -461.5862     -461.6422  0.00012 -3.4547
 Dipole moment in unit cell   =     -0.0000     -0.0000      0.1414 D
 Electric field for dipole correction =    0.000000    0.000000   -0.003453 Ry/Bohr/e
-   scf:  125     -461.5886     -461.5894     -461.6454  0.00123 -3.4544
+   scf:  162     -461.5862     -461.5860     -461.6426  0.01211 -3.4538
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1412 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003448 Ry/Bohr/e
+   scf:  163     -461.5868     -461.5864     -461.6424  0.00057 -3.4547
 Dipole moment in unit cell   =     -0.0000     -0.0000      0.1413 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003452 Ry/Bohr/e
-   scf:  126     -461.5887     -461.5892     -461.6452  0.00040 -3.4545
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1411 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003446 Ry/Bohr/e
-   scf:  127     -461.5886     -461.5889     -461.6450  0.00022 -3.4544
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1411 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003446 Ry/Bohr/e
-   scf:  128     -461.5886     -461.5889     -461.6450  0.00020 -3.4544
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1410 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003444 Ry/Bohr/e
-   scf:  129     -461.5886     -461.5888     -461.6448  0.00007 -3.4545
-
-SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00006686
-SCF cycle converged after  129 iterations
-
-Using DM_out to compute the final energy and forces
+Electric field for dipole correction =    0.000000    0.000000   -0.003450 Ry/Bohr/e
+   scf:  164     -461.5867     -461.5868     -461.6429  0.00151 -3.4544
 Dipole moment in unit cell   =     -0.0000     -0.0000      0.1412 D
 Electric field for dipole correction =    0.000000    0.000000   -0.003449 Ry/Bohr/e
+   scf:  165     -461.5868     -461.5868     -461.6428  0.00002 -3.4546
 
-siesta: E_KS(eV) =             -461.5886
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00001759
+SCF cycle converged after  165 iterations
 
-siesta: E_KS - E_eggbox =      -461.5886
+Using DM_out to compute the final energy and forces
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1411 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003446 Ry/Bohr/e
+
+siesta: E_KS(eV) =             -461.5868
+
+siesta: E_KS - E_eggbox =      -461.5868
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000   -0.000000   -0.198759
+   Tot   -0.000000    0.000000   -0.198648
 ----------------------------------------
-   Max    5.313515
-   Res    2.596399    sqrt( Sum f_i^2 / 3N )
+   Max    5.274334
+   Res    2.576674    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    5.313515    constrained
+   Max    5.274334    constrained
 
-Stress-tensor-Voigt (kbar):     -402.72       80.16      -92.42       -0.00        0.00        0.00
-(Free)E + p*V (eV/cell)     -456.4645
-Target enthalpy (eV/cell)     -461.6447
+Stress-tensor-Voigt (kbar):     -401.63       83.51      -91.81       -0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -456.5257
+Target enthalpy (eV/cell)     -461.6428
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -114.913328
+siesta: Ebs     =      -114.913958
 siesta: Eions   =       815.854478
-siesta: Ena     =       174.246115
-siesta: Ekin    =       368.960215
-siesta: Enl     =       -69.181283
-siesta: DEna    =        -6.176237
-siesta: DUscf   =         0.424507
-siesta: DUext   =         0.001304
-siesta: Exc     =      -114.008786
+siesta: Ena     =       174.247460
+siesta: Ekin    =       368.962810
+siesta: Enl     =       -69.181609
+siesta: DEna    =        -6.177812
+siesta: DUscf   =         0.424496
+siesta: DUext   =         0.001301
+siesta: Exc     =      -114.008932
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -461.588643
-siesta: Etot    =      -461.588643
-siesta: FreeEng =      -461.644666
+siesta: Eharris =      -461.586764
+siesta: Etot    =      -461.586764
+siesta: FreeEng =      -461.642788
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -114.913328
-siesta:       Kinetic =     368.960215
-siesta:       Hartree =     675.259747
-siesta:    Ext. field =       0.001304
-siesta:   Exch.-corr. =    -114.008786
-siesta:  Ion-electron =   -1685.350952
-siesta:       Ion-ion =     293.549829
+siesta:  Band Struct. =    -114.913958
+siesta:       Kinetic =     368.962810
+siesta:       Hartree =     675.259549
+siesta:    Ext. field =       0.001301
+siesta:   Exch.-corr. =    -114.008932
+siesta:  Ion-electron =   -1685.352661
+siesta:       Ion-ion =     293.551168
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -461.588643
+siesta:         Total =    -461.586764
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.000000   -0.000000   -5.313515
-siesta:      2    3.111093    0.000000    2.557378
-siesta:      3   -3.111093    0.000000    2.557378
+siesta:      1   -0.000000    0.000000   -5.274334
+siesta:      2    3.086529   -0.000000    2.537843
+siesta:      3   -3.086529   -0.000000    2.537843
 siesta: ----------------------------------------
-siesta:    Tot   -0.000000   -0.000000   -0.198759
+siesta:    Tot   -0.000000    0.000000   -0.198648
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.251358   -0.000000    0.000000
-siesta:    -0.000000    0.050030   -0.000000
-siesta:     0.000000    0.000000   -0.057682
+siesta:    -0.250677    0.000000   -0.000000
+siesta:    -0.000000    0.052121    0.000000
+siesta:    -0.000000   -0.000000   -0.057300
 
 siesta: Cell volume =         60.000000 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00094031          0.00046926  Ry/Bohr**3
-siesta:           0.08633651          0.04308601  eV/Ang**3
-siesta:         138.32782797         69.03213754  kBar
-(Free)E+ p_basis*V_orbitals  =        -461.059499
-(Free)Eharris+ p_basis*V_orbitals  =        -461.059499
+siesta:           0.00092886          0.00046145  Ry/Bohr**3
+siesta:           0.08528513          0.04236867  eV/Ang**3
+siesta:         136.64331543         67.88282978  kBar
+(Free)E+ p_basis*V_orbitals  =        -461.057621
+(Free)Eharris+ p_basis*V_orbitals  =        -461.057621
 
-siesta: Electric dipole (a.u.)  =   -0.000000   -0.000000    0.055567
-siesta: Electric dipole (Debye) =   -0.000000   -0.000000    0.141236
-Dipole moment in unit cell   =     -0.0000     -0.0000      0.1412 D
-Electric field for dipole correction =    0.000000    0.000000   -0.003449 Ry/Bohr/e
+siesta: Electric dipole (a.u.)  =   -0.000000   -0.000000    0.055513
+siesta: Electric dipole (Debye) =   -0.000000   -0.000000    0.141100
+Dipole moment in unit cell   =     -0.0000     -0.0000      0.1411 D
+Electric field for dipole correction =    0.000000    0.000000   -0.003446 Ry/Bohr/e
 
-dhscf: Vacuum level (max, mean) =    0.604007    0.087070 eV
-
-timer: Elapsed wall time (sec) =       2.665
-timer: CPU execution times (sec):
-
-Routine            Calls   Time/call    Tot.time        %
-siesta                 1       2.652       2.652   100.00
-Setup                  1       0.156       0.156     5.88
-MPI_BCAST            137       0.000       0.004     0.15
-MPI_COMM_RANK          3       0.000       0.000     0.00
-bands                  1       0.000       0.000     0.00
-KSV_init               1       0.000       0.000     0.00
-IterGeom               1       2.484       2.484    93.67
-state_init             1       0.124       0.124     4.68
-hsparse                1       0.000       0.000     0.00
-MPI_ALLREDUCE       2051       0.000       0.004     0.15
-overlap                1       0.124       0.124     4.68
-Setup_H0               1       0.616       0.616    23.23
-naefs                  2       0.000       0.000     0.00
-MolMec                 2       0.000       0.000     0.00
-kinefsm                2       0.060       0.120     4.52
-nlefsm                 2       0.242       0.484    18.25
-DHSCF_Init             1       0.020       0.020     0.75
-DHSCF1                 1       0.004       0.004     0.15
-INITMESH               1       0.000       0.000     0.00
-DHSCF2                 1       0.012       0.012     0.45
-REMESH                 1       0.000       0.000     0.00
-REORD                269       0.000       0.004     0.15
-PHION                  1       0.012       0.012     0.45
-COMM_BSC             264       0.000       0.004     0.15
-POISON               132       0.001       0.084     3.17
-fft                  264       0.000       0.068     2.56
-MPI_COMM_SPLIT         2       0.000       0.000     0.00
-MPI_COMM_SIZE          2       0.000       0.000     0.00
-IterSCF              129       0.013       1.652    62.29
-setup_H              129       0.012       1.604    60.48
-DHSCF                131       0.013       1.692    63.80
-DHSCF3               131       0.012       1.620    61.09
-rhoofd               131       0.007       0.932    35.14
-cellXC               131       0.001       0.132     4.98
-vmat                 130       0.003       0.452    17.04
-compute_dm           129       0.000       0.020     0.75
-diagon               129       0.000       0.020     0.75
-r-eigvec             129       0.000       0.016     0.60
-r-buildHS            129       0.000       0.000     0.00
-rdiag                129       0.000       0.016     0.60
-rdiag1               129       0.000       0.000     0.00
-rdiag2               129       0.000       0.004     0.15
-rdiag3               129       0.000       0.012     0.45
-rdiag4               129       0.000       0.000     0.00
-r-buildD             129       0.000       0.004     0.15
-MPI_ALLGATHER        129       0.000       0.000     0.00
-MIXER                128       0.000       0.004     0.15
-WriteDM              129       0.000       0.012     0.45
-PostSCF                1       0.092       0.092     3.47
-DHSCF4                 1       0.068       0.068     2.56
-dfscf                  1       0.064       0.064     2.41
-overfsm                1       0.004       0.004     0.15
-state_analysis         1       0.000       0.000     0.00
-siesta_move            1       0.000       0.000     0.00
-optical                1       0.000       0.000     0.00
-MPI_BARRIER            1       0.000       0.000     0.00
-  
->> End of run:  19-SEP-2017  15:00:32
+dhscf: Vacuum level (max, mean) =    0.603578    0.087082 eV
+>> End of run:  10-JUN-2018  20:58:47
 Job completed

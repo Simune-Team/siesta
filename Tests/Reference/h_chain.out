@@ -1,12 +1,13 @@
-Siesta Version: siesta-4.0--527
-Architecture  : x86_64-linux-n-62-18-14
-Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
-PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR 
 PARALLEL version
 NetCDF support
 
 * Running on    8 nodes in parallel
->> Start of run:   2-JUL-2017  11:59:10
+>> Start of run:  10-JUN-2018  21:48:12
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -188,7 +189,8 @@ redata: Long output                      =     F
 redata: Number of Atomic Species         =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =    50.0000  Ry
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =    50.0000 Ry
 redata: Net charge of the system         =     0.0000 |e|
 redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =       50
@@ -295,7 +297,7 @@ PhiOnMesh: nlist on node 0 =                  204
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =        -7.286601
+siesta: Ebs     =        -7.286600
 siesta: Eions   =        19.707322
 siesta: Ena     =         5.235715
 siesta: Ekin    =        12.643563
@@ -309,13 +311,13 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =       -13.382593
+siesta: Eharris =       -13.382592
 siesta: Etot    =       -12.168208
 siesta: FreeEng =       -12.169999
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1      -13.3826      -12.1682      -12.1700  0.48982 -5.9317
-timer: Routine,Calls,Time,% =    IterSCF     1       0.023   9.75
+timer: Routine,Calls,Time,% =    IterSCF     1       0.015  13.39
    scf:    2      -13.3831      -13.3828      -13.3846  0.01881 -6.1684
    scf:    3      -13.3831      -13.3829      -13.3847  0.01369 -6.1620
    scf:    4      -13.3830      -13.3829      -13.3847  0.00996 -6.1574
@@ -354,18 +356,18 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):       -0.01       -0.01       39.95        0.00       -0.00        0.00
+Stress-tensor-Voigt (kbar):       -0.01       -0.01       39.96       -0.00        0.00        0.00
 (Free)E + p*V (eV/cell)      -14.4485
 Target enthalpy (eV/cell)      -13.3848
 Writing WFSX for COOP/COHP in h_chain.fullBZ.WFSX
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =        -7.502981
+siesta: Ebs     =        -7.502982
 siesta: Eions   =        19.707322
 siesta: Ena     =         5.235715
-siesta: Ekin    =        10.266370
-siesta: Enl     =        -2.952020
-siesta: DEna    =         0.502110
+siesta: Ekin    =        10.266369
+siesta: Enl     =        -2.952019
+siesta: DEna    =         0.502111
 siesta: DUscf   =         0.016737
 siesta: DUext   =         0.000000
 siesta: Exc     =        -6.744632
@@ -379,32 +381,32 @@ siesta: Etot    =       -13.383041
 siesta: FreeEng =       -13.384833
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =      -7.502981
-siesta:       Kinetic =      10.266370
-siesta:       Hartree =       7.830008
+siesta:  Band Struct. =      -7.502982
+siesta:       Kinetic =      10.266369
+siesta:       Hartree =       7.830007
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =      -6.744632
-siesta:  Ion-electron =     -24.640321
+siesta:  Ion-electron =     -24.640319
 siesta:       Ion-ion =      -0.094466
 siesta:       Ekinion =       0.000000
 siesta:         Total =     -13.383041
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.000004    0.000000   -0.000000
-siesta:     0.000000   -0.000004   -0.000000
-siesta:     0.000000   -0.000000    0.024937
+siesta:    -0.000004   -0.000000   -0.000000
+siesta:    -0.000000   -0.000004    0.000000
+siesta:     0.000000    0.000000    0.024938
 
 siesta: Cell volume =        128.000000 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00009050         -0.00009050  Ry/Bohr**3
-siesta:          -0.00830971         -0.00830971  eV/Ang**3
-siesta:         -13.31376910        -13.31376910  kBar
+siesta:          -0.00009051         -0.00009051  Ry/Bohr**3
+siesta:          -0.00831012         -0.00831012  eV/Ang**3
+siesta:         -13.31442390        -13.31442390  kBar
 (Free)E+ p_basis*V_orbitals  =         -13.253233
 (Free)Eharris+ p_basis*V_orbitals  =         -13.253233
 
-siesta: Electric dipole (a.u.)  =    0.000000   -0.000000    0.000000
-siesta: Electric dipole (Debye) =    0.000000   -0.000000    0.000000
->> End of run:   2-JUL-2017  11:59:11
+siesta: Electric dipole (a.u.)  =    0.000000   -0.000000   -0.000000
+siesta: Electric dipole (Debye) =    0.000000   -0.000000   -0.000000
+>> End of run:  10-JUN-2018  21:48:12
 Job completed

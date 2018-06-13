@@ -1,12 +1,13 @@
-Siesta Version: siesta-4.0--527
-Architecture  : x86_64-linux-n-62-18-14
-Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
-PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR 
 PARALLEL version
 NetCDF support
 
 * Running on    8 nodes in parallel
->> Start of run:   2-JUL-2017  11:53:29
+>> Start of run:  10-JUN-2018  21:01:39
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -293,7 +294,8 @@ redata: Long output                      =     F
 redata: Number of Atomic Species         =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   150.0000  Ry
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =   150.0000 Ry
 redata: Net charge of the system         =     0.0000 |e|
 redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =       40
@@ -367,8 +369,7 @@ outcell: Cell angles (23,13,12) (deg):    109.4712     70.5288     70.5288
 outcell: Cell volume (Ang**3)        :     11.8200
 New_DM. Step:     1
 Initializing Density Matrix...
-
-initdm: Initial spin polarization (Qup-Qdown) =    4.000000
+     spin moment: S , {S} =    4.00000       0.0       0.0   4.00000
 New grid distribution:   1
            1       1:    8    1:    4    1:    2
            2       1:    8    1:    4    3:    4
@@ -409,11 +410,11 @@ PhiOnMesh: nlist on node 0 =                 6711
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -64.244333
+siesta: Ebs     =       -64.243856
 siesta: Eions   =       711.951407
-siesta: Ena     =        22.613144
+siesta: Ena     =        22.613244
 siesta: Ekin    =       769.702259
-siesta: Enl     =      -468.825527
+siesta: Enl     =      -468.825400
 siesta: DEna    =         0.000000
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -423,53 +424,63 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -781.872646
-siesta: Etot    =      -782.058207
-siesta: FreeEng =      -782.082731
+siesta: Eharris =      -781.872068
+siesta: Etot    =      -782.057980
+siesta: FreeEng =      -782.082509
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1     -781.8726     -782.0582     -782.0827  0.93214 -5.1951
+   scf:    1     -781.8721     -782.0580     -782.0825  0.93187 -5.1949
+     spin moment: S , {S} =    2.78612       0.0       0.0   2.78612
  Broyden: No of relevant DM elements:        26250
  maxit for broyden:            4
  cycle on maxit:  T
  variable weight:  T
  initial alpha:   0.10000000000000001     
-timer: Routine,Calls,Time,% =    IterSCF     1      11.750  88.35
-   scf:    2     -782.2767     -782.1127     -782.1335  0.05805 -6.2199
-   scf:    3     -782.2454     -782.1273     -782.1489  0.04387 -6.1068
-   scf:    4     -782.2155     -782.1604     -782.1863  0.03334 -5.7718
-   scf:    5     -782.2152     -782.1576     -782.1834  0.03438 -5.7604
-   scf:    6     -782.2288     -782.2541     -782.2814  0.01256 -5.8185
-   scf:    7     -782.2288     -782.2595     -782.2869  0.01311 -5.8227
-   scf:    8     -782.2310     -782.2456     -782.2728  0.00671 -5.8721
-   scf:    9     -782.2311     -782.2393     -782.2666  0.00435 -5.8688
-   scf:   10     -782.2311     -782.2377     -782.2650  0.00331 -5.8671
-   scf:   11     -782.2311     -782.2338     -782.2611  0.00090 -5.8700
+timer: Routine,Calls,Time,% =    IterSCF     1       7.516  85.61
+   scf:    2     -782.2760     -782.1120     -782.1328  0.05805 -6.2197
+     spin moment: S , {S} =    2.59183       0.0       0.0   2.59183
+   scf:    3     -782.2447     -782.1266     -782.1482  0.04387 -6.1066
+     spin moment: S , {S} =    2.58375       0.0       0.0   2.58375
+   scf:    4     -782.2147     -782.1597     -782.1856  0.03327 -5.7717
+     spin moment: S , {S} =    2.52047       0.0       0.0   2.52047
+   scf:    5     -782.2144     -782.1570     -782.1828  0.03429 -5.7605
+     spin moment: S , {S} =    2.52334       0.0       0.0   2.52334
+   scf:    6     -782.2279     -782.2531     -782.2804  0.01252 -5.8188
+     spin moment: S , {S} =    2.38673       0.0       0.0   2.38673
+   scf:    7     -782.2279     -782.2586     -782.2859  0.01309 -5.8231
+     spin moment: S , {S} =    2.38537       0.0       0.0   2.38537
+   scf:    8     -782.2302     -782.2444     -782.2716  0.00655 -5.8724
+     spin moment: S , {S} =    2.28603       0.0       0.0   2.28603
+   scf:    9     -782.2303     -782.2383     -782.2656  0.00425 -5.8688
+     spin moment: S , {S} =    2.30573       0.0       0.0   2.30573
+   scf:   10     -782.2303     -782.2366     -782.2639  0.00327 -5.8674
+     spin moment: S , {S} =    2.31114       0.0       0.0   2.31114
+   scf:   11     -782.2303     -782.2330     -782.2603  0.00091 -5.8702
+     spin moment: S , {S} =    2.30934       0.0       0.0   2.30934
 
 SCF Convergence by dMax criterion
-max |DM_out - DM_in|:     0.00089684
+max |DM_out - DM_in|:     0.00090606
 SCF cycle converged after   11 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: E_KS(eV) =             -782.2311
+siesta: E_KS(eV) =             -782.2303
 
-siesta: E_KS - E_eggbox =      -782.2311
-
-siesta: Total spin polarization (Qup-Qdown) =    2.308118
+siesta: E_KS - E_eggbox =      -782.2303
+     spin moment: S , {S} =    2.30934       0.0       0.0   2.30934
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):      -10.41      -10.41      -10.41       -5.22        5.22       -5.22
-(Free)E + p*V (eV/cell)     -782.1816
-Target enthalpy (eV/cell)     -782.2584
+Stress-tensor-Voigt (kbar):      -12.86      -12.86      -12.86       -5.22        5.22       -5.22
+(Free)E + p*V (eV/cell)     -782.1627
+Target enthalpy (eV/cell)     -782.2576
 
 mulliken: Atomic and Orbital Populations:
 
@@ -479,10 +490,10 @@ Species: Fe
 Atom  Qatom  Qorb
                4s      4s      3dxy    3dyz    3dz2    3dxz    3dx2-y2 3dxy    
                3dyz    3dz2    3dxz    3dx2-y2 4Ppy    4Ppz    4Ppx    
-   1  5.154  -0.152   0.447   0.905   0.905   0.967   0.905   0.967  -0.029
+   1  5.155  -0.152   0.447   0.905   0.905   0.967   0.905   0.967  -0.029
              -0.029  -0.022  -0.029  -0.022   0.114   0.114   0.114
 
-mulliken: Qtot =        5.154
+mulliken: Qtot =        5.155
 
 mulliken: Spin DOWN 
 
@@ -490,57 +501,56 @@ Species: Fe
 Atom  Qatom  Qorb
                4s      4s      3dxy    3dyz    3dz2    3dxz    3dx2-y2 3dxy    
                3dyz    3dz2    3dxz    3dx2-y2 4Ppy    4Ppz    4Ppx    
-   1  2.846  -0.243   0.544   0.540   0.540   0.343   0.540   0.343  -0.050
+   1  2.845  -0.243   0.544   0.540   0.540   0.343   0.540   0.343  -0.050
              -0.050  -0.042  -0.050  -0.042   0.157   0.157   0.157
 
-mulliken: Qtot =        2.846
+mulliken: Qtot =        2.845
 Computing bands...
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -64.820195
+siesta: Ebs     =       -64.817854
 siesta: Eions   =       711.951407
-siesta: Ena     =        22.613144
-siesta: Ekin    =       770.698469
-siesta: Enl     =      -473.897514
-siesta: DEna    =         0.776985
-siesta: DUscf   =         0.020580
+siesta: Ena     =        22.613244
+siesta: Ekin    =       770.710337
+siesta: Enl     =      -473.905240
+siesta: DEna    =         0.776089
+siesta: DUscf   =         0.020551
 siesta: DUext   =         0.000000
-siesta: Exc     =      -390.491379
+siesta: Exc     =      -390.493837
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -782.231121
-siesta: Etot    =      -782.231122
-siesta: FreeEng =      -782.258407
+siesta: Eharris =      -782.230262
+siesta: Etot    =      -782.230262
+siesta: FreeEng =      -782.257562
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =     -64.820195
-siesta:       Kinetic =     770.698469
-siesta:       Hartree =      86.257394
+siesta:  Band Struct. =     -64.817854
+siesta:       Kinetic =     770.710337
+siesta:       Hartree =      86.259657
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -390.491379
-siesta:  Ion-electron =    -819.241977
-siesta:       Ion-ion =    -429.453629
+siesta:   Exch.-corr. =    -390.493837
+siesta:  Ion-electron =    -819.252891
+siesta:       Ion-ion =    -429.453528
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -782.231122
+siesta:         Total =    -782.230262
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.006499   -0.003256   -0.003256
-siesta:    -0.003256   -0.006499    0.003256
-siesta:    -0.003256    0.003256   -0.006499
+siesta:    -0.008026   -0.003257   -0.003257
+siesta:    -0.003257   -0.008026    0.003257
+siesta:    -0.003257    0.003257   -0.008026
 
 siesta: Cell volume =         11.819952 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00007078          0.00007078  Ry/Bohr**3
-siesta:           0.00649856          0.00649856  eV/Ang**3
-siesta:          10.41196002         10.41196002  kBar
-(Free)E+ p_basis*V_orbitals  =        -781.674323
-(Free)Eharris+ p_basis*V_orbitals  =        -781.674323
-
-siesta: Total spin polarization (Qup-Qdown) =    2.308118
->> End of run:   2-JUL-2017  11:55:41
+siesta:           0.00008741          0.00008741  Ry/Bohr**3
+siesta:           0.00802604          0.00802604  eV/Ang**3
+siesta:          12.85926674         12.85926674  kBar
+(Free)E+ p_basis*V_orbitals  =        -781.673477
+(Free)Eharris+ p_basis*V_orbitals  =        -781.673477
+     spin moment: S , {S} =    2.30934       0.0       0.0   2.30934
+>> End of run:  10-JUN-2018  21:03:04
 Job completed

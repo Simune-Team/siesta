@@ -1,12 +1,13 @@
-Siesta Version: siesta-4.0--527
-Architecture  : x86_64-linux-n-62-18-14
-Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore 
-PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF  -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__FLOOK  
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR 
 PARALLEL version
 NetCDF support
 
 * Running on    8 nodes in parallel
->> Start of run:   2-JUL-2017  11:57:38
+>> Start of run:  10-JUN-2018  20:55:00
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -27,6 +28,8 @@ Restricted.Radial.Grid F
 XC.functional    GGA
 XC.authors       PBE
 Meshcutoff 100 Ry
+DM.MixingWeight 0.1
+MaxSCFIterations 200
 %block ChemicalSpeciesLabel
 1  47 Ag
 %endblock ChemicalSpeciesLabel
@@ -287,17 +290,18 @@ redata: Long output                      =     F
 redata: Number of Atomic Species         =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     NO
-redata: Mesh Cutoff                      =   100.0000  Ry
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =   100.0000 Ry
 redata: Net charge of the system         =     0.0000 |e|
 redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =       50
+redata: Max. number of SCF Iter          =      200
 redata: Mix DM or H after convergence    =     F
 redata: Recompute H after scf cycle      =     F
 redata: Mixing is linear
 redata: Mix DM in first SCF step ?       =     F
 redata: Write Pulay info on disk?        =     F
 redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.2500
+redata: New DM Mixing Weight             =     0.1000
 redata: New DM Occupancy tolerance       = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks       =     0.5000
@@ -344,10 +348,11 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    2.892067    2.892067    2.892067
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     17.1045
- Folding of H and S is implicitly performed
+Gamma-point calculation with interaction between periodic images
+Some features might not work optimally:
+e.g. DM initialization from atomic data
 New_DM. Step:     1
 Initializing Density Matrix...
-Note: For starting DM, Qtot, Tr[D*S] =         11.00000000         12.88354914
 New grid distribution:   1
            1       1:    8    1:    4    1:    2
            2       1:    8    1:    4    3:    4
@@ -388,84 +393,107 @@ PhiOnMesh: nlist on node 0 =                 4130
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -106.410448
+siesta: Ebs     =       -57.103613
 siesta: Eions   =       997.075652
-siesta: Ena     =         7.749557
-siesta: Ekin    =       793.398639
-siesta: Enl     =      -647.930456
-siesta: DEna    =        -7.119385
-siesta: DUscf   =         5.516928
+siesta: Ena     =         7.749609
+siesta: Ekin    =       905.676754
+siesta: Enl     =      -744.047277
+siesta: DEna    =        -1.197065
+siesta: DUscf   =         0.137118
 siesta: DUext   =         0.000000
-siesta: Exc     =      -237.603400
+siesta: Exc     =      -251.554153
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -1084.975734
-siesta: Etot    =     -1083.063771
-siesta: FreeEng =     -1083.100832
+siesta: Eharris =     -1085.803431
+siesta: Etot    =     -1080.310667
+siesta: FreeEng =     -1080.368815
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1    -1084.9757    -1083.0638    -1083.1008  0.62740 -9.1193
-timer: Routine,Calls,Time,% =    IterSCF     1       0.017   1.29
-   scf:    2    -1091.0367    -1077.2741    -1077.3322  1.20375 -0.7654
-   scf:    3    -1086.1550    -1079.9283    -1079.9865  0.45883 -3.3910
-   scf:    4    -1084.6411    -1081.2429    -1081.3010  0.12090 -4.8895
-   scf:    5    -1084.1553    -1082.0151    -1082.0732  0.17380 -5.7535
-   scf:    6    -1083.9963    -1082.5249    -1082.5830  0.17793 -6.2558
-   scf:    7    -1083.9439    -1082.8844    -1082.9426  0.16113 -6.5497
-   scf:    8    -1083.9267    -1083.1466    -1083.2047  0.13924 -6.7224
-   scf:    9    -1083.9211    -1083.3407    -1083.3988  0.12341 -6.8244
-   scf:   10    -1083.9196    -1083.4855    -1083.5435  0.13115 -6.8848
-   scf:   11    -1083.9223    -1083.5937    -1083.6502  0.20894 -6.9197
-   scf:   12    -1083.9482    -1083.6739    -1083.7198  0.41751 -6.9300
-   scf:   13    -1084.0115    -1083.7294    -1083.7657  0.52245 -6.8963
-   scf:   14    -1084.0021    -1083.7757    -1083.8124  0.50276 -6.9110
-   scf:   15    -1084.0045    -1083.8099    -1083.8464  0.50097 -6.9137
-   scf:   16    -1084.0063    -1083.8350    -1083.8715  0.49122 -6.9148
-   scf:   17    -1084.0016    -1083.8550    -1083.8917  0.48878 -6.9206
-   scf:   18    -1084.0079    -1083.8684    -1083.9049  0.48401 -6.9163
-   scf:   19    -1084.0004    -1083.8804    -1083.9171  0.48199 -6.9234
-   scf:   20    -1084.0085    -1083.8873    -1083.9237  0.47971 -6.9170
-   scf:   21    -1084.0000    -1083.8946    -1083.9314  0.47822 -6.9246
-   scf:   22    -1084.0087    -1083.8979    -1083.9343  0.47721 -6.9174
-   scf:   23    -1083.9998    -1083.9026    -1083.9394  0.47613 -6.9251
-   scf:   24    -1084.0088    -1083.9039    -1083.9403  0.47576 -6.9176
-   scf:   25    -1083.9997    -1083.9071    -1083.9439  0.47496 -6.9254
-   scf:   26    -1084.0089    -1083.9072    -1083.9437  0.47493 -6.9177
-   scf:   27    -1083.9997    -1083.9097    -1083.9465  0.47431 -6.9255
-   scf:   28    -1084.0089    -1083.9091    -1083.9455  0.47446 -6.9177
-   scf:   29    -1083.9997    -1083.9111    -1083.9479  0.47394 -6.9255
-   scf:   30    -1084.0089    -1083.9102    -1083.9466  0.47419 -6.9178
-   scf:   31    -1083.9997    -1083.9119    -1083.9487  0.47374 -6.9256
-   scf:   32    -1084.0089    -1083.9108    -1083.9472  0.47404 -6.9178
-   scf:   33    -1083.9997    -1083.9123    -1083.9491  0.47370 -6.9256
-   scf:   34    -1084.0089    -1083.9111    -1083.9476  0.47396 -6.9178
-   scf:   35    -1083.9997    -1083.9126    -1083.9494  0.47376 -6.9256
-   scf:   36    -1084.0089    -1083.9113    -1083.9477  0.47391 -6.9178
-   scf:   37    -1083.9997    -1083.9127    -1083.9495  0.47380 -6.9256
-   scf:   38    -1084.0089    -1083.9114    -1083.9478  0.47388 -6.9178
-   scf:   39    -1083.9997    -1083.9128    -1083.9496  0.47382 -6.9256
-   scf:   40    -1084.0089    -1083.9115    -1083.9479  0.47387 -6.9178
-   scf:   41    -1083.9997    -1083.9129    -1083.9497  0.47383 -6.9256
-   scf:   42    -1084.0089    -1083.9115    -1083.9479  0.47386 -6.9178
-   scf:   43    -1083.9997    -1083.9129    -1083.9497  0.47384 -6.9256
-   scf:   44    -1084.0089    -1083.9115    -1083.9480  0.47385 -6.9178
-   scf:   45    -1083.9997    -1083.9129    -1083.9497  0.47384 -6.9256
-   scf:   46    -1084.0089    -1083.9115    -1083.9480  0.47385 -6.9178
-   scf:   47    -1083.9997    -1083.9129    -1083.9497  0.47384 -6.9256
-   scf:   48    -1084.0089    -1083.9115    -1083.9480  0.47385 -6.9178
-   scf:   49    -1083.9997    -1083.9129    -1083.9497  0.47385 -6.9256
-   scf:   50    -1084.0089    -1083.9115    -1083.9480  0.47385 -6.9178
-SCF_NOT_CONV: SCF did not converge in maximum number of steps.
-Geom step, scf iteration, dmax:   0 50    0.473849
+   scf:    1    -1085.8034    -1080.3107    -1080.3688  0.44034 -3.5707
+timer: Routine,Calls,Time,% =    IterSCF     1       0.015   1.34
+   scf:    2    -1085.1994    -1082.4819    -1082.5178  0.73246 -9.0579
+   scf:    3    -1084.2991    -1082.6719    -1082.7301  0.56102 -8.4412
+   scf:    4    -1084.1846    -1082.8284    -1082.8866  0.47679 -8.1988
+   scf:    5    -1084.1044    -1082.9597    -1083.0178  0.40523 -7.9962
+   scf:    6    -1084.0482    -1083.0711    -1083.1292  0.34450 -7.8271
+   scf:    7    -1084.0090    -1083.1667    -1083.2248  0.29298 -7.6859
+   scf:    8    -1083.9816    -1083.2494    -1083.3075  0.24930 -7.5680
+   scf:    9    -1083.9625    -1083.3216    -1083.3797  0.21228 -7.4697
+   scf:   10    -1083.9492    -1083.3849    -1083.4431  0.18089 -7.3876
+   scf:   11    -1083.9399    -1083.4409    -1083.4990  0.15428 -7.3192
+   scf:   12    -1083.9334    -1083.4904    -1083.5486  0.13171 -7.2621
+   scf:   13    -1083.9289    -1083.5345    -1083.5926  0.11255 -7.2145
+   scf:   14    -1083.9258    -1083.5737    -1083.6319  0.09629 -7.1748
+   scf:   15    -1083.9236    -1083.6088    -1083.6670  0.08248 -7.1418
+   scf:   16    -1083.9221    -1083.6402    -1083.6984  0.07073 -7.1142
+   scf:   17    -1083.9211    -1083.6684    -1083.7265  0.06073 -7.0912
+   scf:   18    -1083.9203    -1083.6936    -1083.7517  0.05222 -7.0721
+   scf:   19    -1083.9198    -1083.7162    -1083.7744  0.04495 -7.0561
+   scf:   20    -1083.9195    -1083.7366    -1083.7947  0.03875 -7.0428
+   scf:   21    -1083.9192    -1083.7548    -1083.8130  0.03346 -7.0317
+   scf:   22    -1083.9190    -1083.7713    -1083.8294  0.02892 -7.0225
+   scf:   23    -1083.9189    -1083.7860    -1083.8442  0.02504 -7.0148
+   scf:   24    -1083.9188    -1083.7993    -1083.8575  0.02171 -7.0084
+   scf:   25    -1083.9188    -1083.8113    -1083.8694  0.01885 -7.0031
+   scf:   26    -1083.9187    -1083.8220    -1083.8802  0.01639 -6.9986
+   scf:   27    -1083.9187    -1083.8317    -1083.8898  0.01427 -6.9949
+   scf:   28    -1083.9187    -1083.8404    -1083.8985  0.01244 -6.9919
+   scf:   29    -1083.9187    -1083.8482    -1083.9064  0.01086 -6.9893
+   scf:   30    -1083.9187    -1083.8553    -1083.9134  0.00950 -6.9872
+   scf:   31    -1083.9187    -1083.8616    -1083.9198  0.00837 -6.9854
+   scf:   32    -1083.9187    -1083.8673    -1083.9255  0.00740 -6.9839
+   scf:   33    -1083.9187    -1083.8725    -1083.9306  0.00654 -6.9827
+   scf:   34    -1083.9187    -1083.8771    -1083.9352  0.00579 -6.9817
+   scf:   35    -1083.9187    -1083.8812    -1083.9394  0.00514 -6.9808
+   scf:   36    -1083.9187    -1083.8850    -1083.9431  0.00456 -6.9801
+   scf:   37    -1083.9187    -1083.8883    -1083.9465  0.00405 -6.9795
+   scf:   38    -1083.9187    -1083.8914    -1083.9495  0.00360 -6.9790
+   scf:   39    -1083.9187    -1083.8941    -1083.9523  0.00320 -6.9786
+   scf:   40    -1083.9187    -1083.8966    -1083.9547  0.00285 -6.9783
+   scf:   41    -1083.9187    -1083.8988    -1083.9569  0.00254 -6.9780
+   scf:   42    -1083.9187    -1083.9008    -1083.9589  0.00226 -6.9778
+   scf:   43    -1083.9187    -1083.9025    -1083.9607  0.00202 -6.9776
+   scf:   44    -1083.9187    -1083.9042    -1083.9623  0.00180 -6.9774
+   scf:   45    -1083.9187    -1083.9056    -1083.9638  0.00161 -6.9773
+   scf:   46    -1083.9187    -1083.9069    -1083.9651  0.00144 -6.9772
+   scf:   47    -1083.9187    -1083.9081    -1083.9662  0.00129 -6.9771
+   scf:   48    -1083.9187    -1083.9091    -1083.9673  0.00115 -6.9770
+   scf:   49    -1083.9187    -1083.9101    -1083.9682  0.00103 -6.9770
+   scf:   50    -1083.9187    -1083.9110    -1083.9691  0.00092 -6.9769
+   scf:   51    -1083.9187    -1083.9117    -1083.9699  0.00083 -6.9769
+   scf:   52    -1083.9187    -1083.9124    -1083.9706  0.00074 -6.9768
+   scf:   53    -1083.9187    -1083.9130    -1083.9712  0.00066 -6.9768
+   scf:   54    -1083.9187    -1083.9136    -1083.9718  0.00059 -6.9768
+   scf:   55    -1083.9187    -1083.9141    -1083.9723  0.00053 -6.9768
+   scf:   56    -1083.9187    -1083.9146    -1083.9727  0.00048 -6.9767
+   scf:   57    -1083.9187    -1083.9150    -1083.9731  0.00043 -6.9767
+   scf:   58    -1083.9187    -1083.9153    -1083.9735  0.00038 -6.9767
+   scf:   59    -1083.9187    -1083.9157    -1083.9738  0.00035 -6.9767
+   scf:   60    -1083.9187    -1083.9160    -1083.9741  0.00031 -6.9767
+   scf:   61    -1083.9187    -1083.9162    -1083.9744  0.00028 -6.9767
+   scf:   62    -1083.9187    -1083.9165    -1083.9746  0.00025 -6.9767
+   scf:   63    -1083.9187    -1083.9167    -1083.9748  0.00022 -6.9767
+   scf:   64    -1083.9187    -1083.9169    -1083.9750  0.00020 -6.9767
+   scf:   65    -1083.9187    -1083.9171    -1083.9752  0.00018 -6.9767
+   scf:   66    -1083.9187    -1083.9172    -1083.9754  0.00016 -6.9767
+   scf:   67    -1083.9187    -1083.9174    -1083.9755  0.00015 -6.9767
+   scf:   68    -1083.9187    -1083.9175    -1083.9757  0.00013 -6.9767
+   scf:   69    -1083.9187    -1083.9176    -1083.9758  0.00012 -6.9767
+   scf:   70    -1083.9187    -1083.9177    -1083.9759  0.00011 -6.9767
+   scf:   71    -1083.9187    -1083.9178    -1083.9760  0.00010 -6.9767
+
+SCF Convergence by dMax criterion
+max |DM_out - DM_in|:     0.00009575
+SCF cycle converged after   71 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: E_KS(eV) =            -1083.9129
+siesta: E_KS(eV) =            -1083.9187
 
-siesta: E_KS - E_eggbox =     -1083.9129
+siesta: E_KS - E_eggbox =     -1083.9187
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
@@ -476,53 +504,53 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):      685.12      685.12      822.50       -2.52       -2.41       -2.41
-(Free)E + p*V (eV/cell)    -1091.7523
-Target enthalpy (eV/cell)    -1083.9493
+Stress-tensor-Voigt (kbar):      730.97      730.97      730.97       -2.48       -2.48       -2.48
+(Free)E + p*V (eV/cell)    -1091.7804
+Target enthalpy (eV/cell)    -1083.9768
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -86.405006
+siesta: Ebs     =       -86.344064
 siesta: Eions   =       997.075652
-siesta: Ena     =         7.749557
-siesta: Ekin    =       839.898325
-siesta: Enl     =      -689.635686
-siesta: DEna    =        -4.309661
-siesta: DUscf   =         2.542578
+siesta: Ena     =         7.749609
+siesta: Ekin    =       839.852560
+siesta: Enl     =      -689.595133
+siesta: DEna    =        -4.312600
+siesta: DUscf   =         2.535401
 siesta: DUext   =         0.000000
-siesta: Exc     =      -243.082377
+siesta: Exc     =      -243.072846
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -1084.008867
-siesta: Etot    =     -1083.912915
-siesta: FreeEng =     -1083.949349
+siesta: Eharris =     -1083.918661
+siesta: Etot    =     -1083.918661
+siesta: FreeEng =     -1083.976808
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =     -86.405006
-siesta:       Kinetic =     839.898325
-siesta:       Hartree =     161.349065
+siesta:  Band Struct. =     -86.344064
+siesta:       Kinetic =     839.852560
+siesta:       Hartree =     161.320773
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -243.082377
-siesta:  Ion-electron =   -1026.196025
-siesta:       Ion-ion =    -815.881903
+siesta:   Exch.-corr. =    -243.072846
+siesta:  Ion-electron =   -1026.137297
+siesta:       Ion-ion =    -815.881851
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -1083.912915
+siesta:         Total =   -1083.918661
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.427612   -0.001571   -0.001547
-siesta:    -0.001571    0.427612   -0.001547
-siesta:    -0.001506   -0.001506    0.513356
+siesta:     0.456230   -0.001549   -0.001549
+siesta:    -0.001549    0.456230   -0.001549
+siesta:    -0.001549   -0.001549    0.456230
 
 siesta: Cell volume =         17.104482 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00496853         -0.00496853  Ry/Bohr**3
-siesta:          -0.45619354         -0.45619354  eV/Ang**3
-siesta:        -730.91053706       -730.91053706  kBar
-(Free)E+ p_basis*V_orbitals  =       -1083.909157
-(Free)Eharris+ p_basis*V_orbitals  =       -1084.005109
->> End of run:   2-JUL-2017  11:57:40
+siesta:          -0.00496893         -0.00496893  Ry/Bohr**3
+siesta:          -0.45623020         -0.45623020  eV/Ang**3
+siesta:        -730.96927154       -730.96927154  kBar
+(Free)E+ p_basis*V_orbitals  =       -1083.936617
+(Free)Eharris+ p_basis*V_orbitals  =       -1083.936617
+>> End of run:  10-JUN-2018  20:55:02
 Job completed
