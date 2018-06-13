@@ -58,11 +58,62 @@ module m_elsi_interface
 
   real(dp), allocatable :: v_old(:,:)
 
-  public :: elsi_solver
+  !  public :: elsi_solver
+  public :: getdm_elsi
   public :: elsi_finalize_scfloop
   public :: elsi_save_potential
 
 CONTAINS
+
+subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
+     numh, listhptr, listh, H, S, qtot, temp, &
+     xijo, indxuo, nkpnt, kpoint, kweight,    &
+     eo, qo, Dscf, Escf, ef, Entropy, occtol, neigwanted)
+
+! real*8 eo(maxo,nspin,nk)  : Eigenvalues 
+! real*8 qo(maxo,nspin,nk)  : Occupations of eigenstates
+! real*8 Dnew(maxnd,spin%DM)  : Output Density Matrix
+! real*8 Enew(maxnd,spin%EDM)  : Output Energy-Density Matrix
+! real*8 ef                      : Fermi energy
+! real*8 Entropy                 : Electronic entropy
+
+
+     real(dp), intent(inout) :: H(:,:), S(:)    ! Note!
+     integer, intent(in) ::  iscf, maxnh, no_u, no_l, no_s, nkpnt
+     integer, intent(in) ::  neigwanted, nspin
+     integer, intent(in) ::  indxuo(no_s), listh(maxnh), numh(no_l), listhptr(no_l)
+
+      real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Escf(maxnh,nspin), Entropy
+      real(dp), intent(out) ::  eo(no_u,nspin,nkpnt), qo(no_u,nspin,nkpnt)
+      real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
+
+      logical :: gamma, using_aux_cell
+
+      external die
+
+      gamma = ((nkpnt == 1) .and. (sum(abs(kpoint(:,1))) == 0.0_dp))
+      using_aux_cell =  (no_s /= no_u)
+
+      if (gamma) then
+         if  (.not. using_aux_cell) then
+            call elsi_solver(iscf, no_u, no_l, nspin, &
+                     maxnh, listhptr, listh, qtot, temp, &
+                     H, S, Dscf, Escf, ef, Entropy)
+         else
+            call die("Cannot do gamma-point ELSI with supercell yet")
+            ! Fold arrays
+            ! call routine
+            ! UNFOLD !!!
+         endif
+      else
+         ! Always using aux cell...
+         call die("Cannot do k-points with ELSI yet")
+         ! Fold arrays
+         !call elsi_solver_complex( )
+         ! UNFOLD !!!
+      endif
+
+end subroutine getdm_elsi
 
 ! This version uses separate distributions for Siesta (setup_H et al) and ELSI
 ! operations.  ELSI tasks 1D block-cyclic distributed CSC/CSR matrices as its
