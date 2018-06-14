@@ -70,6 +70,12 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      xijo, indxuo, nkpnt, kpoint, kweight,    &
      eo, qo, Dscf, Escf, ef, Entropy, occtol, neigwanted)
 
+  !
+  ! Analogous to 'diagon', it dispatches ELSI solver routines as needed
+  !
+
+  use m_fold_auxcell, only: fold_sparse_arrays ! Could be called in state_init
+  
 ! real*8 eo(maxo,nspin,nk)  : Eigenvalues 
 ! real*8 qo(maxo,nspin,nk)  : Occupations of eigenstates
 ! real*8 Dnew(maxnd,spin%DM)  : Output Density Matrix
@@ -88,6 +94,15 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
       logical :: gamma, using_aux_cell
+      integer, allocatable :: numh_u(:), listhptr_u(:), listh_u(:)
+      integer, allocatable :: ind2ind_u(:)
+
+      ! Real or complex, as appropriate
+      real(dp), allocatable, dimension(:,:)  :: Dscf_k, Escf_k, Hk
+      real(dp), allocatable, dimension(:)    :: Sk
+      
+      integer :: iuo, ispin, j, ind, ind_u, nnz_u
+      !complex(dp) :: kphs
 
       external die
 
@@ -96,14 +111,67 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
       if (gamma) then
          if  (.not. using_aux_cell) then
+
             call elsi_solver(iscf, no_u, no_l, nspin, &
                      maxnh, listhptr, listh, qtot, temp, &
                      H, S, Dscf, Escf, ef, Entropy)
+
          else
-            call die("Cannot do gamma-point ELSI with supercell yet")
-            ! Fold arrays
-            ! call routine
-            ! UNFOLD !!!
+
+            allocate(numh_u(no_l), listhptr_u(no_l))
+            call fold_sparse_arrays(no_l,no_u,no_s,numh,listhptr,maxnh,listh, &
+                             indxuo,numh_u,listhptr_u,nnz_u,listh_u,ind2ind_u)
+
+            allocate(Hk(nnz_u,nspin), Sk(nnz_u))
+            Sk = 0
+            Hk = 0
+            do ispin = 1, nspin  ! Serial over spins for now...
+               do iuo = 1,no_l
+                  do j = 1,numh(iuo)
+                     ind = listhptr(iuo) + j
+                     ind_u = ind2ind_u(ind)
+
+                  !kxij = kpoint(1,ik) * xij(1,ind) +    &
+                  !       kpoint(2,ik) * xij(2,ind) +    &
+                  !       kpoint(3,ik) * xij(3,ind) 
+                  !kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+
+                     Sk(ind_u) = Sk(ind_u) + S(ind)     !*kphs
+                     Hk(ind_u,ispin) = Hk(ind_u,ispin) + H(ind,ispin)   !*kphs
+                  
+                  enddo
+               enddo
+            enddo
+
+            allocate(Dscf_k(nnz_u,nspin), Escf_k(nnz_u,nspin))
+            call elsi_solver(iscf, no_u, no_l, nspin, &
+                     nnz_u, listhptr_u, listh_u, qtot, temp, &
+                     Hk, Sk, Dscf_k, Escf_k, ef, Entropy)
+            deallocate(Hk, Sk)
+
+
+            ! Unfold
+            do ispin = 1, nspin
+               do iuo = 1,no_l
+                  do j = 1,numh(iuo)
+                     ind = listhptr(iuo) + j
+                     ind_u = ind2ind_u(ind)
+
+                     !kxij = kpoint(1,ik) * xij(1,ind) +    &
+                     !kpoint(2,ik) * xij(2,ind) +    &
+                     !kpoint(3,ik) * xij(3,ind) 
+                     !ckxij = cos(kxij)
+                     !skxij = sin(kxij)
+!                     Dscf(ind,ispin)=Dscf_k(ind_u,ispin)*ckxij - &
+!                                     Dscf(2,juo,iuo)*skxij
+                     Dscf(ind,ispin) = Dscf_k(ind_u,ispin)
+                     Escf(ind,ispin) = Escf_k(ind_u,ispin)
+                  enddo
+               enddo
+            enddo
+            deallocate(Dscf_k, Escf_k)
+            deallocate(numh_u, listhptr_u)
+            deallocate(listh_u, ind2ind_u)
          endif
       else
          ! Always using aux cell...

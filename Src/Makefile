@@ -157,6 +157,7 @@ OBJS =  automatic_cell.o atom_options.o \
         die.o m_pexsi.o m_pexsi_driver.o m_pexsi_dos.o m_pexsi_local_dos.o\
 		m_chess.o \
         m_elsi_interface.o \
+        fold_auxcell.o \
         m_redist_spmatrix.o \
         class_Distribution.o\
         m_dminim.o m_zminim.o \
@@ -803,7 +804,7 @@ m_dminim.o: siesta_options.o sys.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o m_cite.o m_ts_global_vars.o mesh.o parallel.o
 m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
-m_elsi_interface.o: m_mpi_utils.o parallel.o precision.o
+m_elsi_interface.o: fold_auxcell.o m_mpi_utils.o parallel.o precision.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: cranknic_evolg.o cranknic_evolk.o m_gamma.o m_spin.o precision.o
@@ -1448,6 +1449,7 @@ m_fft.o: fft.o
 m_final_h_f_stress.o: final_H_f_stress.o
 m_find_kgrid.o: find_kgrid.o
 m_fire_optim.o: fire_optim.o
+m_fold_auxcell.o: fold_auxcell.o
 m_forhar.o: forhar.o
 m_get_kpoints_scale.o: get_kpoints_scale.o
 m_gradient.o: gradient.o
