@@ -8590,6 +8590,9 @@ an alternative way to plot the charge density (and wavefunctions).
   \textit{Use:} File \sysfile*{TOCH} is only written, not read, by
   siesta.
 
+  If netCDF support is compiled in, the file
+  \file{TotalCharge.grid.nc} is produced. 
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{SaveBaderCharge}
@@ -8655,9 +8658,9 @@ an alternative way to plot the charge density (and wavefunctions).
   normalized. All the relevant fdf options for charge-density file
   production and partial charge calculation can be used with this option.
 
-  \end{fdflogicalF}
+\end{fdflogicalF}
 
-  \begin{fdflogicalF}{SaveInitialChargeDensity}
+\begin{fdflogicalF}{SaveInitialChargeDensity}
   \index{output!charge density}
 
   If \fdftrue, the program generates a \sysfile{RHOINIT}
