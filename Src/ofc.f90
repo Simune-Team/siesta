@@ -74,10 +74,10 @@ subroutine ofc(fa, dx, na, has_constr, first)
 
     tmp = dx / Ang
     if ( has_constr ) then
-      write(iu,'(2a,i7,tr1,e22.16)') 'Force constants matrix (constrained). ', &
+      write(iu,'(2a,i0,tr1,e22.16)') 'Force constants matrix (constrained). ', &
           'n_atoms, displacement [Ang]: ', na, tmp
     else
-      write(iu,'(2a,i7,tr1,e22.16)') 'Force constants matrix. ', &
+      write(iu,'(2a,i0,tr1,e22.16)') 'Force constants matrix. ', &
           'n_atoms, displacement [Ang]: ', na, tmp
     end if
 
