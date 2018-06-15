@@ -1,13 +1,14 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI -DTRANSIESTA  -DTRANSIESTA
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR -DTRANSIESTA  -DTRANSIESTA
 PARALLEL version
 TRANSIESTA support
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:   3-OCT-2015   4:59:55
+* Running on    8 nodes in parallel
+>> Start of run:  13-JUN-2018  22:48:41
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -167,7 +168,7 @@ L=0  Nsemic=0  Cnfigmx=1
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -281,7 +282,8 @@ redata: Long output                      =     F
 redata: Number of Atomic Species         =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   350.0000  Ry
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =   350.0000 Ry
 redata: Net charge of the system         =     0.0000 |e|
 redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =      300
@@ -310,10 +312,10 @@ redata: ***********************************************************************
 Total number of electrons:     9.000000
 Total ionic charge:     9.000000
 
-* ProcessorY, Blocksize:    2   2
+* ProcessorY, Blocksize:    2   1
 
 
-* Orbital distribution balance (max,min):     3     2
+* Orbital distribution balance (max,min):     2     1
 
 k-point displ. along   3 input, could be:     0.00    0.50
  Kpoints in:          279 . Kpoints trimmed:          275
@@ -360,9 +362,9 @@ ts_read_options: **************************************************************
  NOTICE: Total number of energy points is not divisable by the number of nodes.
          There are no computational costs associated with increasing this.
          Used # of energy points   :   43
-         Optimal # of energy points:   44
+         Optimal # of energy points:   48
 ************************ End: TS CHECKS AND WARNINGS **************************
- 
+
  Kpoints in:            6 . Kpoints trimmed:            5
 
 transiesta: ts_k-grid: Number of Transport k-points =     5
@@ -384,13 +386,13 @@ transiesta: Atomic coordinates and regions (Ang):
 #     1.4615550     0.8438292    16.7069652  #     Right electrode
 #     1.4615550    -0.8438292    19.0936746  #
 ##############################################
- 
+
 transiesta: contour integration path:
  Type         Re(c)[eV]    Im(c)[eV]     Re(weight)     Im(weight)
  Equilibrium:
- resi   :       0.00000      0.02707    0.000000000   -0.003979496
- resi   :       0.00000      0.08122    0.000000000   -0.003979496
- resi   :       0.00000      0.13536    0.000000000   -0.003979496
+ resi   :       0.00000      0.02707   -0.000000000   -0.003979496
+ resi   :       0.00000      0.08122   -0.000000000   -0.003979496
+ resi   :       0.00000      0.13536   -0.000000000   -0.003979496
  fermi  :       0.19107      0.16243    0.000000000    0.000000000
  fermi  :       0.12325      0.16243    0.000000003    0.000000000
  fermi  :       0.07467      0.16243    0.000000534    0.000000000
@@ -431,7 +433,7 @@ transiesta: contour integration path:
  circle :     -29.97069      0.93543    0.003097869    0.049437567
  circle :     -29.99508      0.38235    0.000812334    0.031767873
  circle :     -29.99979      0.07273    0.000066680    0.013712003
- 
+
 
 Creating Green's function file for: left 
  Left unit cell (Ang):
@@ -476,14 +478,14 @@ Creating Green's function file for: right
  Orbitals available / used orbitals:      3 /      3
  q-points for expanding electrode (Bohr**-1):
    1     0.00000E+00   0.00000E+00   0.10000E+01
- Fermi level shift in electrode :        0.00000  eV
+ Fermi level shift in electrode :       -0.00000  eV
 Done creating 'scat.fast.TSGFR'.
 
 Left : GF atoms    / Expanded atoms    :      3 /      3
 Left : GF orbitals / Expanded orbitals :      3 /      3
 Right: GF atoms    / Expanded atoms    :      3 /      3
 Right: GF orbitals / Expanded orbitals :      3 /      3
- 
+
 Naive supercell factors:     4    4    1
 
 superc: Internal auxiliary supercell:     4 x     4 x     1  =      16
@@ -509,36 +511,48 @@ Initializing Density Matrix...
 TRANSIESTA: No TS-DensityMatrix file found
 TRANSIESTA: Initialization runs using diagon
 New grid distribution:   1
-           1       1:   15    1:    8    1:   63
-           2       1:   15    1:    8   64:  125
-           3       1:   15    9:   15    1:   63
-           4       1:   15    9:   15   64:  125
+           1       1:   15    1:    8    1:   32
+           2       1:   15    1:    8   33:   63
+           3       1:   15    1:    8   64:   94
+           4       1:   15    1:    8   95:  125
+           5       1:   15    9:   15    1:   32
+           6       1:   15    9:   15   33:   63
+           7       1:   15    9:   15   64:   94
+           8       1:   15    9:   15   95:  125
 
 InitMesh: MESH =    30 x    30 x   250 =      225000
 InitMesh: (bp) =    15 x    15 x   125 =       28125
 InitMesh: Mesh cutoff (required, used) =   350.000   374.367 Ry
-ExtMesh (bp) on 0 =    67 x    60 x   115 =      462300
+ExtMesh (bp) on 0 =    67 x    60 x    84 =      337680
 New grid distribution:   2
-           1       1:   15    1:   15    1:   32
-           2       1:   15    1:   15   64:   94
-           3       1:   15    1:   15   33:   63
-           4       1:   15    1:   15   95:  125
+           1       1:   15    1:   15    1:   16
+           2       1:   15    1:   15   49:   63
+           3       1:   15    1:   15   79:   94
+           4       1:   15    1:   15  110:  125
+           5       1:   15    1:   15   17:   32
+           6       1:   15    1:   15   33:   48
+           7       1:   15    1:   15   64:   78
+           8       1:   15    1:   15   95:  109
 New grid distribution:   3
-           1       1:   15    1:   15    1:   32
-           2       1:   15    1:   15   64:   94
-           3       1:   15    1:   15   33:   63
-           4       1:   15    1:   15   95:  125
+           1       1:   15    1:   15    1:   16
+           2       1:   15    1:   15   49:   63
+           3       1:   15    1:   15   64:   79
+           4       1:   15    1:   15   95:  110
+           5       1:   15    1:   15   17:   32
+           6       1:   15    1:   15   33:   48
+           7       1:   15    1:   15   80:   94
+           8       1:   15    1:   15  111:  125
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    67 x    67 x    84 =      377076
-PhiOnMesh: Number of (b)points on node 0 =                 7200
-PhiOnMesh: nlist on node 0 =                18332
+ExtMesh (bp) on 0 =    67 x    67 x    68 =      305252
+PhiOnMesh: Number of (b)points on node 0 =                 3600
+PhiOnMesh: nlist on node 0 =                 9060
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -50.140917
+siesta: Ebs     =       -50.140930
 siesta: Eions   =       177.365894
-siesta: Ena     =        43.257184
+siesta: Ena     =        43.257183
 siesta: Ekin    =       128.750035
 siesta: Enl     =       -33.039288
 siesta: DEna    =         0.000000
@@ -550,15 +564,15 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -110.198628
+siesta: Eharris =      -110.198642
 siesta: Etot    =      -103.459113
-siesta: FreeEng =      -103.460059
+siesta: FreeEng =      -103.460060
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
    scf:    1     -110.1986     -103.4591     -103.4601  0.22280 -4.5609
-timer: Routine,Calls,Time,% =    IterSCF     1       0.166  21.07
-   scf:    2     -110.1990     -103.6613     -103.6623  0.21611 -4.5625
-   scf:    3     -110.2046     -110.2046     -110.2055  0.00004 -4.6115
+timer: Routine,Calls,Time,% =    IterSCF     1       0.035  14.96
+   scf:    2     -110.1991     -103.6613     -103.6623  0.21611 -4.5625
+   scf:    3     -110.2046     -110.2046     -110.2056  0.00004 -4.6115
 
 SCF Convergence by dMax criterion
 max |DM_out - DM_in|:     0.00003602
@@ -584,42 +598,42 @@ Right electrode               [R]    :     2.98502
 Other                         [O]    :     0.01496
 
  Reading GF file, with title:
-   /home/albertog/code/SIESTA/trunk-ag/TS_ParIntel/Tests/TranSiesta-TBTrans/ts_fast/work/Scat/scat.fast.TSGFL
+   scat.fast.TSGFL
  Title: 'Generated GF file'
 
  Reading GF file, with title:
-   /home/albertog/code/SIESTA/trunk-ag/TS_ParIntel/Tests/TranSiesta-TBTrans/ts_fast/work/Scat/scat.fast.TSGFR
+   scat.fast.TSGFR
  Title: 'Generated GF file'
 
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    0.015    2.985    0.015    2.987    0.015    2.985    9.002
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -50.630397
+siesta: Ebs     =       -50.630411
 siesta: Eions   =       177.365894
-siesta: Ena     =        43.257184
-siesta: Ekin    =       118.232270
+siesta: Ena     =        43.257183
+siesta: Ekin    =       118.232255
 siesta: Enl     =       -32.081888
 siesta: DEna    =         1.533480
 siesta: DUscf   =         0.024881
 siesta: DUext   =         0.000000
-siesta: Exc     =       -63.804601
+siesta: Exc     =       -63.804600
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -110.213401
-siesta: Etot    =      -110.204569
-siesta: FreeEng =      -110.205514
+siesta: Eharris =      -110.213415
+siesta: Etot    =      -110.204583
+siesta: FreeEng =      -110.205528
 
 transiesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
 transiesta:    1     -110.2134     -110.2046     -110.2055  0.00095 -4.6115
-timer: Routine,Calls,Time,% =         TS     1       0.006   0.60
-timer: Routine,Calls,Time,% =    TS_calc     2       0.006   0.60
+timer: Routine,Calls,Time,% =         TS     1       0.003   0.97
+timer: Routine,Calls,Time,% =    TS_calc     2       0.003   0.97
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    0.015    2.985    0.015    2.984    0.015    2.985    8.999
-transiesta:    2     -110.1994     -110.2048     -110.2058  0.00053 -4.6115
+transiesta:    2     -110.1994     -110.2049     -110.2058  0.00053 -4.6115
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    0.015    2.985    0.015    2.985    0.015    2.985    9.000
 transiesta:    3     -110.2054     -110.2047     -110.2057  0.00013 -4.6115
@@ -646,10 +660,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.001937    constrained
 
-Stress-tensor-Voigt (kbar):      131.70      131.70      137.80       -0.00       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -123.4732
+Stress-tensor-Voigt (kbar):      131.62      131.62      137.72       -0.00       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -123.4657
 Target enthalpy (eV/cell)     -110.2058
- 
+
 mulliken: Atomic and Orbital Populations:
 
 Species: H                   
@@ -670,10 +684,10 @@ mulliken: Qtot =        9.000
 coxmol: Writing XMOL coordinates into file scat.fast.xyz                                                   
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =       -50.616406
+siesta: Ebs     =       -50.616420
 siesta: Eions   =       177.365894
-siesta: Ena     =        43.257184
-siesta: Ekin    =       118.232896
+siesta: Ena     =        43.257183
+siesta: Ekin    =       118.232881
 siesta: Enl     =       -32.082055
 siesta: DEna    =         1.533205
 siesta: DUscf   =         0.024874
@@ -684,33 +698,34 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -110.204821
-siesta: Etot    =      -110.204822
-siesta: FreeEng =      -110.205767
+siesta: Eharris =      -110.204836
+siesta: Etot    =      -110.204836
+siesta: FreeEng =      -110.205781
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =     -50.616406
-siesta:       Kinetic =     118.232896
+siesta:  Band Struct. =     -50.616420
+siesta:       Kinetic =     118.232881
 siesta:       Hartree =      17.777102
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -63.805032
-siesta:  Ion-electron =    -121.228416
-siesta:       Ion-ion =     -61.181372
+siesta:  Ion-electron =    -121.228415
+siesta:       Ion-ion =     -61.181373
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -110.204822
+siesta:         Total =    -110.204836
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.082200   -0.000000   -0.000000
-siesta:    -0.000000    0.082200   -0.000000
-siesta:    -0.000000   -0.000000    0.086007
+siesta:     0.082153   -0.000000   -0.000000
+siesta:    -0.000000    0.082153   -0.000000
+siesta:    -0.000000   -0.000000    0.085958
 
 siesta: Cell volume =        158.950899 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00090908         -0.00090821  Ry/Bohr**3
-siesta:          -0.08346876         -0.08338836  eV/Ang**3
-siesta:        -133.73315006       -133.60432792  kBar
-(Free)E+ p_basis*V_orbitals  =        -109.741584
-(Free)Eharris+ p_basis*V_orbitals  =        -109.741584
->> End of run:   3-OCT-2015   4:59:56
+siesta:          -0.00090856         -0.00090769  Ry/Bohr**3
+siesta:          -0.08342133         -0.08334092  eV/Ang**3
+siesta:        -133.65714620       -133.52832455  kBar
+(Free)E+ p_basis*V_orbitals  =        -109.741598
+(Free)Eharris+ p_basis*V_orbitals  =        -109.741598
+>> End of run:  13-JUN-2018  22:48:42
+Job completed

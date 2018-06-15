@@ -1,13 +1,14 @@
-Siesta Version: siesta-trunk-479
-Architecture  : atto-intel12-openmpi
-Compiler flags: /share/apps/openmpi-1.6.5-intel/bin/mpif90 -w  -O2 -mp
-PP flags      : -DCDF -DMPI -DTRANSIESTA  -DTRANSIESTA
+Siesta Version  : siesta-4.0--578
+Architecture    : x86_64-linux-n-62-25-35
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpif90 -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizationns -funroll-loops -fprefetch-loop-arrays -fno-second-underscore
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/hdf5-serial/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/netcdf-serial/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2660v3/elpa/2017.05.003/gnu-7.3.0/include -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DSIESTA__MRRR -DTRANSIESTA  -DTRANSIESTA
 PARALLEL version
 TRANSIESTA support
 NetCDF support
 
-* Running on    4 nodes in parallel
->> Start of run:   3-OCT-2015   2:46:50
+* Running on    8 nodes in parallel
+>> Start of run:  13-JUN-2018  22:13:15
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -258,7 +259,7 @@ L=0  Nsemic=0  Cnfigmx=6
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=6
 L=2  Nsemic=0  Cnfigmx=5
           n=1  nzeta=1  polorb=0
@@ -269,7 +270,7 @@ L=2  Nsemic=0  Cnfigmx=5
                qyuk:    0.0000    
                qwid:   0.10000E-01
                 rcs:    0.0000    
-            lambdas:   1.00000    
+            lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
@@ -529,7 +530,8 @@ redata: Long output                      =     F
 redata: Number of Atomic Species         =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   100.0000  Ry
+redata: Matel table size (NRTAB)         =     1024
+redata: Mesh Cutoff                      =   100.0000 Ry
 redata: Net charge of the system         =     0.0000 |e|
 redata: Min. number of SCF Iter          =        0
 redata: Max. number of SCF Iter          =      300
@@ -562,7 +564,7 @@ Total ionic charge:  1232.000000
 * ProcessorY, Blocksize:    2  24
 
 
-* Orbital distribution balance (max,min):   264   240
+* Orbital distribution balance (max,min):   144   120
 
 k-point displ. along   1 input, could be:     0.00    0.50
 k-point displ. along   2 input, could be:     0.00    0.50
@@ -608,8 +610,12 @@ ts_read_options: Right elec. repetition A1/A2 =   3 X   3
 ts_read_options: **************************************************************
 
 ************************ Begin: TS CHECKS AND WARNINGS ************************
+ NOTICE: Total number of energy points is not divisable by the number of nodes.
+         There are no computational costs associated with increasing this.
+         Used # of energy points   :   36
+         Optimal # of energy points:   40
 ************************ End: TS CHECKS AND WARNINGS **************************
- 
+
 k-point displ. along   1 input, could be:     0.00    0.50
 k-point displ. along   2 input, could be:     0.00    0.50
  Kpoints in:            4 . Kpoints trimmed:            4
@@ -736,16 +742,16 @@ transiesta: Atomic coordinates and regions (Ang):
 #     4.3255800     7.2093000    30.5865000  #
 #     7.2093000     7.2093000    30.5865000  #
 ##############################################
- 
+
 transiesta: contour integration path:
  Type         Re(c)[eV]    Im(c)[eV]     Re(weight)     Im(weight)
  Equilibrium:
- resi   :       0.00000      0.08121    0.000000000   -0.011938052
- resi   :       0.00000      0.24364    0.000000000   -0.011938052
- resi   :       0.00000      0.40607    0.000000000   -0.011938052
- resi   :       0.00000      0.56849    0.000000000   -0.011938052
- resi   :       0.00000      0.73092    0.000000000   -0.011938052
- resi   :       0.00000      0.89335    0.000000000   -0.011938052
+ resi   :       0.00000      0.08121   -0.000000000   -0.011938052
+ resi   :       0.00000      0.24364   -0.000000000   -0.011938052
+ resi   :       0.00000      0.40607   -0.000000000   -0.011938052
+ resi   :       0.00000      0.56849   -0.000000000   -0.011938052
+ resi   :       0.00000      0.73092   -0.000000000   -0.011938052
+ resi   :       0.00000      0.89335   -0.000000000   -0.011938052
  fermi  :       0.23248      0.97456    0.000001810    0.000000000
  fermi  :       0.08098      0.97456    0.000353799    0.000000000
  fermi  :      -0.01373      0.97456    0.003920956    0.000000000
@@ -776,7 +782,7 @@ transiesta: contour integration path:
  circle :     -40.72499      1.93436    0.009736937    0.101673836
  circle :     -40.80190      0.79296    0.002572042    0.065765810
  circle :     -40.81684      0.15105    0.000211927    0.028467907
- 
+
 
 Creating Green's function file for: left 
  Left unit cell (Ang):
@@ -901,14 +907,14 @@ Creating Green's function file for: right
    7     0.76866E+00   0.00000E+00   0.11111E+00
    8     0.76866E+00   0.38433E+00   0.11111E+00
    9     0.76866E+00   0.76866E+00   0.11111E+00
- Fermi level shift in electrode :        0.00000  eV
+ Fermi level shift in electrode :       -0.00000  eV
 Done creating 'au_100.TSGFR'.
 
 Left : GF atoms    / Expanded atoms    :      4 /     36
 Left : GF orbitals / Expanded orbitals :     36 /    324
 Right: GF atoms    / Expanded atoms    :      4 /     36
 Right: GF orbitals / Expanded orbitals :     36 /    324
- 
+
 Naive supercell factors:     3    3    1
 
 superc: Internal auxiliary supercell:     3 x     3 x     1  =       9
@@ -934,89 +940,101 @@ Initializing Density Matrix...
 TRANSIESTA: No TS-DensityMatrix file found
 TRANSIESTA: Initialization runs using diagon
 New grid distribution:   1
-           1       1:   27    1:   14    1:   50
-           2       1:   27    1:   14   51:  100
-           3       1:   27   15:   27    1:   50
-           4       1:   27   15:   27   51:  100
+           1       1:   27    1:   14    1:   25
+           2       1:   27    1:   14   26:   50
+           3       1:   27    1:   14   51:   75
+           4       1:   27    1:   14   76:  100
+           5       1:   27   15:   27    1:   25
+           6       1:   27   15:   27   26:   50
+           7       1:   27   15:   27   51:   75
+           8       1:   27   15:   27   76:  100
 
 InitMesh: MESH =    54 x    54 x   200 =      583200
 InitMesh: (bp) =    27 x    27 x   100 =       72900
 InitMesh: Mesh cutoff (required, used) =   100.000   103.859 Ry
-ExtMesh (bp) on 0 =    75 x    62 x    98 =      455700
+ExtMesh (bp) on 0 =    75 x    62 x    73 =      339450
 New grid distribution:   2
-           1       1:   27    1:   27   19:   63
-           2       1:   27    1:   27   64:   82
-           3       1:   27    1:   27    1:   18
-           4       1:   27    1:   27   83:  100
+           1       1:   27    1:   14    1:   18
+           2       1:   27    1:   13   19:   63
+           3       1:   27   15:   27    1:   18
+           4       1:   27    1:   14   83:  100
+           5       1:   27    1:   13   64:   82
+           6       1:   27   14:   27   19:   63
+           7       1:   27   14:   27   64:   82
+           8       1:   27   15:   27   83:  100
 New grid distribution:   3
-           1       1:   27    1:   27   26:   51
-           2       1:   27    1:   27   52:   76
-           3       1:   27    1:   27    1:   25
-           4       1:   27    1:   27   77:  100
+           1       1:   27    1:   14    1:   25
+           2       1:   27    1:   13   52:   76
+           3       1:   27   14:   27   52:   76
+           4       1:   27    1:   14   77:  100
+           5       1:   27    1:   13   26:   51
+           6       1:   27   14:   27   26:   51
+           7       1:   27   15:   27    1:   25
+           8       1:   27   15:   27   77:  100
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    75 x    75 x    93 =      523125
-PhiOnMesh: Number of (b)points on node 0 =                32805
-PhiOnMesh: nlist on node 0 =              1510850
+ExtMesh (bp) on 0 =    75 x    62 x    66 =      306900
+PhiOnMesh: Number of (b)points on node 0 =                 6804
+PhiOnMesh: nlist on node 0 =               603963
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     19211.935713
+siesta: Ebs     =     19212.211291
 siesta: Eions   =    106428.788183
-siesta: Ena     =       385.354664
-siesta: Ekin    =     71439.585242
-siesta: Enl     =    -46038.605114
-siesta: DEna    =       166.581003
-siesta: DUscf   =       281.732917
+siesta: Ena     =       385.361141
+siesta: Ekin    =     71439.798292
+siesta: Enl     =    -46038.739356
+siesta: DEna    =       166.573288
+siesta: DUscf   =       281.727738
 siesta: DUext   =         0.000000
-siesta: Exc     =    -80125.865728
+siesta: Exc     =    -80125.903469
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =   -159815.176421
-siesta: Etot    =   -160320.005200
-siesta: FreeEng =   -160320.098686
+siesta: Eharris =   -159815.098825
+siesta: Etot    =   -160319.970550
+siesta: FreeEng =   -160320.064055
 
    scf: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-   scf:    1  -159815.1764  -160320.0052  -160320.0987  5.55020 -1.9561
-timer: Routine,Calls,Time,% =    IterSCF     1      46.602  76.40
-   scf:    2  -156826.3096  -159514.6690  -159514.7896 12.52590 -0.8774
-   scf:    3  -160665.8403  -160494.4219  -160494.5538  1.21073 -1.8165
-   scf:    4  -160509.6687  -160510.4320  -160510.5993  0.28799 -2.0294
-   scf:    5  -160499.5346  -160509.6105  -160509.7308  0.52692 -1.9327
-   scf:    6  -160510.8828  -160510.7680  -160510.8851  0.43770 -1.9349
-   scf:    7  -160520.9019  -160517.1585  -160517.2953  0.22951 -2.0376
-   scf:    8  -160522.0436  -160519.6616  -160519.7989  0.23262 -2.0971
-   scf:    9  -160529.3649  -160526.6691  -160526.8085  0.33045 -2.5395
-   scf:   10  -160525.6822  -160526.7116  -160526.8479  0.08087 -2.3697
-   scf:   11  -160527.8693  -160527.3517  -160527.4893  0.03217 -2.4503
-   scf:   12  -160527.3854  -160527.3867  -160527.5245  0.03545 -2.4604
-   scf:   13  -160527.5483  -160527.4825  -160527.6211  0.03510 -2.4743
-   scf:   14  -160527.5303  -160527.5092  -160527.6480  0.01272 -2.4790
-   scf:   15  -160527.5285  -160527.5194  -160527.6581  0.01196 -2.4838
-   scf:   16  -160527.5368  -160527.5292  -160527.6676  0.00487 -2.4889
-   scf:   17  -160527.5307  -160527.5300  -160527.6683  0.00605 -2.4897
-   scf:   18  -160527.5301  -160527.5302  -160527.6686  0.00693 -2.4901
-   scf:   19  -160527.5306  -160527.5306  -160527.6690  0.00450 -2.4920
-   scf:   20  -160527.5318  -160527.5312  -160527.6696  0.00402 -2.4931
-   scf:   21  -160527.5340  -160527.5330  -160527.6712  0.00368 -2.4978
-   scf:   22  -160527.5316  -160527.5323  -160527.6706  0.00443 -2.4985
-   scf:   23  -160527.5342  -160527.5333  -160527.6715  0.00342 -2.4988
-   scf:   24  -160527.5335  -160527.5335  -160527.6716  0.00389 -2.5017
-   scf:   25  -160527.5341  -160527.5339  -160527.6720  0.00355 -2.5011
-   scf:   26  -160527.5349  -160527.5344  -160527.6725  0.00139 -2.5014
-   scf:   27  -160527.5362  -160527.5354  -160527.6733  0.00130 -2.5000
-   scf:   28  -160527.5359  -160527.5357  -160527.6736  0.00088 -2.4998
-   scf:   29  -160527.5357  -160527.5357  -160527.6737  0.00046 -2.4999
-   scf:   30  -160527.5357  -160527.5357  -160527.6737  0.00048 -2.4996
-   scf:   31  -160527.5357  -160527.5357  -160527.6737  0.00040 -2.4994
-   scf:   32  -160527.5357  -160527.5357  -160527.6737  0.00016 -2.4991
-   scf:   33  -160527.5357  -160527.5357  -160527.6737  0.00007 -2.4991
+   scf:    1  -159815.0988  -160319.9706  -160320.0641  5.55022 -1.9561
+timer: Routine,Calls,Time,% =    IterSCF     1      10.483  61.88
+   scf:    2  -156825.9328  -159514.5356  -159514.6562 12.52658 -0.8773
+   scf:    3  -160665.8212  -160494.3864  -160494.5183  1.21079 -1.8165
+   scf:    4  -160509.6274  -160510.3972  -160510.5645  0.28783 -2.0294
+   scf:    5  -160499.4945  -160509.5748  -160509.6951  0.52706 -1.9327
+   scf:    6  -160510.8455  -160510.7317  -160510.8488  0.43786 -1.9348
+   scf:    7  -160520.8678  -160517.1237  -160517.2605  0.22954 -2.0376
+   scf:    8  -160522.0082  -160519.6265  -160519.7638  0.23264 -2.0971
+   scf:    9  -160529.3330  -160526.6348  -160526.7742  0.33037 -2.5394
+   scf:   10  -160525.6473  -160526.6766  -160526.8129  0.08085 -2.3697
+   scf:   11  -160527.8342  -160527.3167  -160527.4543  0.03218 -2.4503
+   scf:   12  -160527.3502  -160527.3516  -160527.4893  0.03545 -2.4603
+   scf:   13  -160527.5132  -160527.4474  -160527.5860  0.03510 -2.4743
+   scf:   14  -160527.4952  -160527.4742  -160527.6129  0.01273 -2.4790
+   scf:   15  -160527.4934  -160527.4843  -160527.6230  0.01195 -2.4838
+   scf:   16  -160527.5017  -160527.4941  -160527.6325  0.00487 -2.4889
+   scf:   17  -160527.4956  -160527.4949  -160527.6332  0.00605 -2.4896
+   scf:   18  -160527.4950  -160527.4951  -160527.6335  0.00693 -2.4901
+   scf:   19  -160527.4955  -160527.4955  -160527.6339  0.00450 -2.4919
+   scf:   20  -160527.4967  -160527.4961  -160527.6345  0.00402 -2.4931
+   scf:   21  -160527.4989  -160527.4979  -160527.6361  0.00367 -2.4978
+   scf:   22  -160527.4965  -160527.4972  -160527.6355  0.00442 -2.4984
+   scf:   23  -160527.4991  -160527.4982  -160527.6364  0.00342 -2.4988
+   scf:   24  -160527.4984  -160527.4984  -160527.6365  0.00388 -2.5017
+   scf:   25  -160527.4990  -160527.4988  -160527.6369  0.00355 -2.5011
+   scf:   26  -160527.4998  -160527.4994  -160527.6374  0.00139 -2.5013
+   scf:   27  -160527.5011  -160527.5003  -160527.6383  0.00130 -2.5000
+   scf:   28  -160527.5008  -160527.5006  -160527.6385  0.00088 -2.4997
+   scf:   29  -160527.5006  -160527.5006  -160527.6386  0.00046 -2.4999
+   scf:   30  -160527.5006  -160527.5006  -160527.6386  0.00048 -2.4996
+   scf:   31  -160527.5006  -160527.5006  -160527.6386  0.00040 -2.4994
+   scf:   32  -160527.5006  -160527.5006  -160527.6386  0.00016 -2.4991
+   scf:   33  -160527.5006  -160527.5006  -160527.6386  0.00007 -2.4991
 
 SCF Convergence by dMax criterion
-max |H_out - H_in| (eV):     0.00099492
+max |H_out - H_in| (eV):     0.00099637
 SCF cycle converged after   33 iterations
 
                           ************************       
@@ -1027,111 +1045,111 @@ Creating update lists and calculating SIESTA charge distribution...
 
 transiesta: Total elements / Updated elements :  1226352 /   187524
 
-Efermi from SIESTA                   :    -2.49913
+Efermi from SIESTA                   :    -2.49910
 Total charge                  [Qt0]  :  1232.00000
-Charge in update region       [Qc]   :   436.14157
-Charge outside update region  [Qcn]  :   795.85843
-Left electrode                [L]    :   392.14870
-Left electrode/device         [L-C]  :     3.86784
-Device                        [C]    :   436.14157
-Device/right electrode        [C-R]  :     3.86788
-Right electrode               [R]    :   392.14863
-Other                         [O]    :     3.82538
+Charge in update region       [Qc]   :   436.14185
+Charge outside update region  [Qcn]  :   795.85815
+Left electrode                [L]    :   392.14875
+Left electrode/device         [L-C]  :     3.86771
+Device                        [C]    :   436.14185
+Device/right electrode        [C-R]  :     3.86774
+Right electrode               [R]    :   392.14868
+Other                         [O]    :     3.82527
 
  Reading GF file, with title:
-   /home/albertog/code/SIESTA/trunk-ag/TS_ParIntel/Tests/TranSiesta-TBTrans/ts_au_100_repetition/work/Scat_au_100/au_100.TSGFL
+   au_100.TSGFL
  Title: 'Generated GF file'
 
  Reading GF file, with title:
-   /home/albertog/code/SIESTA/trunk-ag/TS_ParIntel/Tests/TranSiesta-TBTrans/ts_au_100_repetition/work/Scat_au_100/au_100.TSGFR
+   au_100.TSGFR
  Title: 'Generated GF file'
 
 ts-charge:        O        L      L-C        C      C-R        R       Qt
-ts-charge:    3.825  392.149    3.868  436.097    3.868  392.149 1231.956
+ts-charge:    3.825  392.149    3.868  436.097    3.868  392.149 1231.955
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -8514.332625
+siesta: Ebs     =     -8514.538202
 siesta: Eions   =    106428.788183
-siesta: Ena     =       385.354664
-siesta: Ekin    =     73194.622553
-siesta: Enl     =    -47374.234336
-siesta: DEna    =       105.331695
-siesta: DUscf   =        41.010749
+siesta: Ena     =       385.361141
+siesta: Ekin    =     73194.788741
+siesta: Enl     =    -47374.334181
+siesta: DEna    =       105.325867
+siesta: DUscf   =        41.007697
 siesta: DUext   =         0.000000
-siesta: Exc     =    -80450.946840
+siesta: Exc     =    -80450.975187
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =   -160527.778948
-siesta: Etot    =   -160527.649698
-siesta: FreeEng =   -160527.787701
+siesta: Eharris =   -160527.742924
+siesta: Etot    =   -160527.614105
+siesta: FreeEng =   -160527.752112
 
 transiesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-transiesta:    1  -160527.7789  -160527.6497  -160527.7877  0.02798 -2.4991
-timer: Routine,Calls,Time,% =         TS     1      36.819   2.65
-timer: Routine,Calls,Time,% =    TS_calc     2      36.782   2.65
+transiesta:    1  -160527.7429  -160527.6141  -160527.7521  0.02799 -2.4991
+timer: Routine,Calls,Time,% =         TS     1       9.637   3.09
+timer: Routine,Calls,Time,% =    TS_calc     2       9.622   3.09
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    3.825  392.149    3.868  436.322    3.868  392.149 1232.180
-transiesta:    2  -160528.9342  -160528.4295  -160528.5675  0.03946 -2.4991
+transiesta:    2  -160528.8969  -160528.3929  -160528.5309  0.03955 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
-ts-charge:    3.825  392.149    3.868  436.187    3.868  392.149 1232.045
-transiesta:    3  -160527.5983  -160527.9632  -160528.1012  0.00893 -2.4991
+ts-charge:    3.825  392.149    3.868  436.187    3.868  392.149 1232.046
+transiesta:    3  -160527.5647  -160527.9283  -160528.0663  0.00912 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
-ts-charge:    3.825  392.149    3.868  436.154    3.868  392.149 1232.012
-transiesta:    4  -160527.7462  -160527.8420  -160527.9800  0.00370 -2.4991
+ts-charge:    3.825  392.149    3.868  436.155    3.868  392.149 1232.014
+transiesta:    4  -160527.7191  -160527.8116  -160527.9496  0.00395 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    3.825  392.149    3.868  436.153    3.868  392.149 1232.011
-transiesta:    5  -160527.8370  -160527.8391  -160527.9771  0.00303 -2.4991
+transiesta:    5  -160527.7964  -160527.8030  -160527.9410  0.00305 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    3.825  392.149    3.868  436.149    3.868  392.149 1232.007
-transiesta:    6  -160527.8341  -160527.8352  -160527.9732  0.00084 -2.4991
+transiesta:    6  -160527.8021  -160527.8013  -160527.9393  0.00084 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
-ts-charge:    3.825  392.149    3.868  436.150    3.868  392.149 1232.009
-transiesta:    7  -160527.8508  -160527.8436  -160527.9816  0.00069 -2.4991
+ts-charge:    3.825  392.149    3.868  436.151    3.868  392.149 1232.009
+transiesta:    7  -160527.8147  -160527.8085  -160527.9465  0.00069 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    3.825  392.149    3.868  436.150    3.868  392.149 1232.008
-transiesta:    8  -160527.8452  -160527.8442  -160527.9822  0.00055 -2.4991
+transiesta:    8  -160527.8101  -160527.8091  -160527.9471  0.00055 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    3.825  392.149    3.868  436.149    3.868  392.149 1232.008
-transiesta:    9  -160527.8671  -160527.8554  -160527.9934  0.00031 -2.4991
+transiesta:    9  -160527.8291  -160527.8189  -160527.9569  0.00034 -2.4991
+ts-charge:        O        L      L-C        C      C-R        R       Qt
+ts-charge:    3.825  392.149    3.868  436.150    3.868  392.149 1232.008
+transiesta:   10  -160527.8329  -160527.8260  -160527.9640  0.00019 -2.4991
+ts-charge:        O        L      L-C        C      C-R        R       Qt
+ts-charge:    3.825  392.149    3.868  436.150    3.868  392.149 1232.008
+transiesta:   11  -160527.8301  -160527.8281  -160527.9661  0.00019 -2.4991
+ts-charge:        O        L      L-C        C      C-R        R       Qt
+ts-charge:    3.825  392.149    3.868  436.150    3.868  392.149 1232.008
+transiesta:   12  -160527.8299  -160527.8290  -160527.9670  0.00013 -2.4991
 ts-charge:        O        L      L-C        C      C-R        R       Qt
 ts-charge:    3.825  392.149    3.868  436.149    3.868  392.149 1232.008
-transiesta:   10  -160527.8675  -160527.8616  -160527.9996  0.00020 -2.4991
-ts-charge:        O        L      L-C        C      C-R        R       Qt
-ts-charge:    3.825  392.149    3.868  436.149    3.868  392.149 1232.008
-transiesta:   11  -160527.8640  -160527.8627  -160528.0007  0.00018 -2.4991
-ts-charge:        O        L      L-C        C      C-R        R       Qt
-ts-charge:    3.825  392.149    3.868  436.149    3.868  392.149 1232.008
-transiesta:   12  -160527.8652  -160527.8640  -160528.0020  0.00013 -2.4991
-ts-charge:        O        L      L-C        C      C-R        R       Qt
-ts-charge:    3.825  392.149    3.868  436.149    3.868  392.149 1232.008
-transiesta:   13  -160527.8640  -160527.8639  -160528.0019  0.00007 -2.4991
+transiesta:   13  -160527.8289  -160527.8289  -160527.9669  0.00007 -2.4991
 
 SCF Convergence by dMax criterion
-max |H_out - H_in| (eV):     0.00094758
+max |H_out - H_in| (eV):     0.00090956
 SCF cycle converged after   13 iterations
 
 Using DM_out to compute the final energy and forces
 
-siesta: E_KS(eV) =          -160527.8639
+siesta: E_KS(eV) =          -160527.8289
 
-siesta: E_KS - E_eggbox =   -160527.8639
+siesta: E_KS - E_eggbox =   -160527.8289
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.006053   -0.006053    0.003426
+   Tot   -0.006053   -0.006053    0.003429
 ----------------------------------------
-   Max    1.300787
-   Res    0.296825    sqrt( Sum f_i^2 / 3N )
+   Max    1.303637
+   Res    0.297504    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.300787    constrained
+   Max    1.303637    constrained
 
-Stress-tensor-Voigt (kbar):     -138.10     -138.10     -138.51        1.12        0.58        0.58
-(Free)E + p*V (eV/cell)  -160317.3250
-Target enthalpy (eV/cell)  -160528.0019
- 
+Stress-tensor-Voigt (kbar):     -138.63     -138.63     -139.02        1.12        0.58        0.58
+(Free)E + p*V (eV/cell)  -160316.4896
+Target enthalpy (eV/cell)  -160527.9669
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Au                  
@@ -1158,11 +1176,11 @@ Atom  Qatom  Qorb
               0.159
   10 11.004   0.987   1.935   1.886   1.939   1.886   1.894   0.159   0.160
               0.159
-  11 11.002   0.981   1.935   1.887   1.940   1.886   1.894   0.159   0.161
+  11 11.002   0.981   1.935   1.887   1.940   1.886   1.894   0.159   0.160
               0.159
   12 11.003   0.984   1.935   1.886   1.940   1.886   1.894   0.159   0.161
               0.159
-  13 11.002   0.981   1.935   1.886   1.940   1.887   1.894   0.159   0.161
+  13 11.002   0.981   1.935   1.886   1.940   1.887   1.894   0.159   0.160
               0.159
   14 11.001   0.982   1.935   1.888   1.940   1.888   1.893   0.159   0.157
               0.159
@@ -1262,7 +1280,7 @@ Atom  Qatom  Qorb
               0.137
   62 11.013   1.012   1.949   1.916   1.939   1.912   1.867   0.142   0.132
               0.144
-  63 11.031   1.029   1.948   1.911   1.937   1.911   1.868   0.145   0.136
+  63 11.031   1.030   1.948   1.911   1.937   1.911   1.868   0.145   0.136
               0.145
   64 11.024   1.037   1.949   1.921   1.948   1.927   1.860   0.136   0.109
               0.136
@@ -1368,165 +1386,166 @@ mulliken: Qtot =     1232.008
 coxmol: Writing XMOL coordinates into file au_100.xyz                                                      
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -8361.202774
+siesta: Ebs     =     -8361.196056
 siesta: Eions   =    106428.788183
-siesta: Ena     =       385.354664
-siesta: Ekin    =     73196.365147
-siesta: Enl     =    -47375.165368
-siesta: DEna    =       105.127194
-siesta: DUscf   =        40.992889
+siesta: Ena     =       385.361141
+siesta: Ekin    =     73196.537249
+siesta: Enl     =    -47375.268886
+siesta: DEna    =       105.120822
+siesta: DUscf   =        40.989716
 siesta: DUext   =         0.000000
-siesta: Exc     =    -80451.750251
+siesta: Exc     =    -80451.780721
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =   -160527.863955
-siesta: Etot    =   -160527.863907
-siesta: FreeEng =   -160528.001909
+siesta: Eharris =   -160527.828923
+siesta: Etot    =   -160527.828862
+siesta: FreeEng =   -160527.966868
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =   -8361.202774
-siesta:       Kinetic =   73196.365147
-siesta:       Hartree =  243582.979117
+siesta:  Band Struct. =   -8361.196056
+siesta:       Kinetic =   73196.537249
+siesta:       Hartree =  243582.959412
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =  -80451.750251
-siesta:  Ion-electron = -542414.284840
-siesta:       Ion-ion =  145558.826919
+siesta:   Exch.-corr. =  -80451.780721
+siesta:  Ion-electron = -542414.378199
+siesta:       Ion-ion =  145558.833396
 siesta:       Ekinion =       0.000000
-siesta:         Total = -160527.863907
+siesta:         Total = -160527.828862
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.005969   -0.005969   -0.017945
-siesta:      2    0.006030   -0.000527   -0.026578
-siesta:      3   -0.000618    0.001411   -0.026277
-siesta:      4   -0.000527    0.006030   -0.026578
-siesta:      5    0.000527    0.000527   -0.001982
-siesta:      6   -0.000683   -0.011518   -0.020282
-siesta:      7    0.001411   -0.000618   -0.026277
-siesta:      8   -0.011518   -0.000683   -0.020282
-siesta:      9    0.010693    0.010693   -0.005437
-siesta:     10    0.001575    0.001575    0.031291
-siesta:     11   -0.004464   -0.006106    0.047616
-siesta:     12    0.003121   -0.002971    0.035331
-siesta:     13   -0.006106   -0.004464    0.047616
-siesta:     14   -0.005042   -0.005042    0.034462
-siesta:     15    0.011059   -0.003250    0.056024
-siesta:     16   -0.002971    0.003121    0.035331
-siesta:     17   -0.003250    0.011059    0.056024
-siesta:     18    0.006028    0.006028    0.046019
-siesta:     19   -0.010964   -0.010964   -0.066368
-siesta:     20    0.011399   -0.000270   -0.078633
-siesta:     21    0.001315    0.004177   -0.089827
-siesta:     22   -0.000270    0.011399   -0.078633
-siesta:     23    0.003844    0.003844   -0.101488
-siesta:     24   -0.004039   -0.007972   -0.089132
-siesta:     25    0.004177    0.001315   -0.089827
-siesta:     26   -0.007972   -0.004039   -0.089132
-siesta:     27    0.003591    0.003591   -0.093611
-siesta:     28    0.007950    0.007950    0.033341
-siesta:     29   -0.003010   -0.001237   -0.010361
-siesta:     30   -0.005709   -0.000160    0.020717
-siesta:     31   -0.001237   -0.003010   -0.010361
-siesta:     32   -0.008683   -0.008683    0.051094
-siesta:     33    0.010426   -0.001586   -0.005391
-siesta:     34   -0.000160   -0.005709    0.020717
-siesta:     35   -0.001586    0.010426   -0.005391
-siesta:     36   -0.000503   -0.000503    0.035530
-siesta:     37   -0.006974   -0.006974   -0.313510
-siesta:     38    0.005684   -0.009782   -0.035548
-siesta:     39   -0.003977   -0.011078   -0.031313
-siesta:     40   -0.009782    0.005684   -0.035548
-siesta:     41   -0.065771   -0.065771    0.087538
-siesta:     42    0.073382   -0.053007    0.079244
-siesta:     43   -0.011078   -0.003977   -0.031313
-siesta:     44   -0.053007    0.073382    0.079244
-siesta:     45    0.064060    0.064060    0.059810
-siesta:     46    0.280323    0.280323    1.262930
-siesta:     47   -0.014755    0.020303    1.078574
-siesta:     48   -0.249831    0.216477    1.191382
-siesta:     49    0.020303   -0.014755    1.078574
-siesta:     50    0.000782    0.000782    1.097063
-siesta:     51   -0.018091   -0.007386    1.056855
-siesta:     52    0.216477   -0.249831    1.191382
-siesta:     53   -0.007386   -0.018091    1.056855
-siesta:     54   -0.163461   -0.163461    1.296809
-siesta:     55    0.366908    0.366908    0.361803
-siesta:     56   -0.946766   -0.946766    0.015300
-siesta:     57    0.943027    0.943027   -0.014419
-siesta:     58   -0.368888   -0.368888   -0.357236
-siesta:     59   -0.280430   -0.280430   -1.269829
-siesta:     60    0.249971   -0.216651   -1.194784
-siesta:     61    0.014972   -0.020222   -1.083205
-siesta:     62   -0.216651    0.249971   -1.194784
-siesta:     63    0.163193    0.163193   -1.300787
-siesta:     64    0.007356    0.018043   -1.061258
-siesta:     65   -0.020222    0.014972   -1.083205
-siesta:     66    0.018043    0.007356   -1.061258
-siesta:     67   -0.000814   -0.000814   -1.101381
-siesta:     68    0.006742    0.006742    0.316470
-siesta:     69    0.003338    0.011218    0.034635
-siesta:     70   -0.005023    0.009735    0.038838
-siesta:     71    0.011218    0.003338    0.034635
-siesta:     72   -0.064566   -0.064566   -0.056114
-siesta:     73    0.053345   -0.073673   -0.075608
-siesta:     74    0.009735   -0.005023    0.038838
-siesta:     75   -0.073673    0.053345   -0.075608
-siesta:     76    0.066197    0.066197   -0.083891
-siesta:     77   -0.008090   -0.008090   -0.032653
-siesta:     78    0.005878    0.000114   -0.019921
-siesta:     79    0.002967    0.001323    0.011632
-siesta:     80    0.000114    0.005878   -0.019921
-siesta:     81    0.000571    0.000571   -0.034719
-siesta:     82    0.001590   -0.010674    0.006781
-siesta:     83    0.001323    0.002967    0.011632
-siesta:     84   -0.010674    0.001590    0.006781
-siesta:     85    0.008850    0.008850   -0.049816
-siesta:     86    0.010979    0.010979    0.065953
-siesta:     87   -0.000964   -0.004131    0.089618
-siesta:     88   -0.011738    0.000372    0.078357
-siesta:     89   -0.004131   -0.000964    0.089618
-siesta:     90   -0.003438   -0.003438    0.093379
-siesta:     91    0.007772    0.004127    0.088831
-siesta:     92    0.000372   -0.011738    0.078357
-siesta:     93    0.004127    0.007772    0.088831
-siesta:     94   -0.004047   -0.004047    0.101257
-siesta:     95   -0.001712   -0.001712   -0.031516
-siesta:     96   -0.002914    0.002871   -0.035594
-siesta:     97    0.004399    0.006132   -0.047953
-siesta:     98    0.002871   -0.002914   -0.035594
-siesta:     99   -0.005990   -0.005990   -0.046215
-siesta:    100    0.003303   -0.011144   -0.056243
-siesta:    101    0.006132    0.004399   -0.047953
-siesta:    102   -0.011144    0.003303   -0.056243
-siesta:    103    0.005108    0.005108   -0.035012
-siesta:    104    0.005926    0.005926    0.018281
-siesta:    105    0.000676   -0.001400    0.026512
-siesta:    106   -0.006058    0.000612    0.026937
-siesta:    107   -0.001400    0.000676    0.026512
-siesta:    108   -0.010606   -0.010606    0.005676
-siesta:    109    0.011418    0.000663    0.020563
-siesta:    110    0.000612   -0.006058    0.026937
-siesta:    111    0.000663    0.011418    0.020563
-siesta:    112   -0.000575   -0.000575    0.002277
+siesta:      1   -0.005974   -0.005974   -0.017935
+siesta:      2    0.006037   -0.000527   -0.026579
+siesta:      3   -0.000620    0.001411   -0.026281
+siesta:      4   -0.000527    0.006037   -0.026579
+siesta:      5    0.000526    0.000526   -0.001981
+siesta:      6   -0.000682   -0.011526   -0.020291
+siesta:      7    0.001411   -0.000620   -0.026281
+siesta:      8   -0.011526   -0.000682   -0.020291
+siesta:      9    0.010701    0.010701   -0.005438
+siesta:     10    0.001579    0.001579    0.031329
+siesta:     11   -0.004463   -0.006107    0.047654
+siesta:     12    0.003115   -0.002971    0.035365
+siesta:     13   -0.006107   -0.004463    0.047654
+siesta:     14   -0.005045   -0.005045    0.034486
+siesta:     15    0.011062   -0.003250    0.056061
+siesta:     16   -0.002971    0.003115    0.035365
+siesta:     17   -0.003250    0.011062    0.056061
+siesta:     18    0.006029    0.006029    0.046055
+siesta:     19   -0.010967   -0.010967   -0.066421
+siesta:     20    0.011402   -0.000269   -0.078668
+siesta:     21    0.001316    0.004181   -0.089864
+siesta:     22   -0.000269    0.011402   -0.078668
+siesta:     23    0.003841    0.003841   -0.101526
+siesta:     24   -0.004037   -0.007982   -0.089161
+siesta:     25    0.004181    0.001316   -0.089864
+siesta:     26   -0.007982   -0.004037   -0.089161
+siesta:     27    0.003598    0.003598   -0.093638
+siesta:     28    0.007960    0.007960    0.033280
+siesta:     29   -0.003007   -0.001240   -0.010437
+siesta:     30   -0.005720   -0.000160    0.020649
+siesta:     31   -0.001240   -0.003007   -0.010437
+siesta:     32   -0.008684   -0.008684    0.051038
+siesta:     33    0.010433   -0.001585   -0.005463
+siesta:     34   -0.000160   -0.005720    0.020649
+siesta:     35   -0.001585    0.010433   -0.005463
+siesta:     36   -0.000507   -0.000507    0.035473
+siesta:     37   -0.006988   -0.006988   -0.313649
+siesta:     38    0.005719   -0.009790   -0.035594
+siesta:     39   -0.004002   -0.011075   -0.031339
+siesta:     40   -0.009790    0.005719   -0.035594
+siesta:     41   -0.065782   -0.065782    0.087524
+siesta:     42    0.073400   -0.053025    0.079239
+siesta:     43   -0.011075   -0.004002   -0.031339
+siesta:     44   -0.053025    0.073400    0.079239
+siesta:     45    0.064085    0.064085    0.059809
+siesta:     46    0.281054    0.281054    1.265856
+siesta:     47   -0.014741    0.020294    1.082423
+siesta:     48   -0.250573    0.217211    1.194173
+siesta:     49    0.020294   -0.014741    1.082423
+siesta:     50    0.000771    0.000771    1.100928
+siesta:     51   -0.018071   -0.007391    1.060721
+siesta:     52    0.217211   -0.250573    1.194173
+siesta:     53   -0.007391   -0.018071    1.060721
+siesta:     54   -0.164153   -0.164153    1.299660
+siesta:     55    0.366096    0.366096    0.364951
+siesta:     56   -0.945195   -0.945195    0.015266
+siesta:     57    0.941457    0.941457   -0.014384
+siesta:     58   -0.368075   -0.368076   -0.360383
+siesta:     59   -0.281161   -0.281161   -1.272755
+siesta:     60    0.250714   -0.217386   -1.197574
+siesta:     61    0.014959   -0.020213   -1.087052
+siesta:     62   -0.217386    0.250714   -1.197574
+siesta:     63    0.163885    0.163885   -1.303637
+siesta:     64    0.007361    0.018022   -1.065122
+siesta:     65   -0.020213    0.014959   -1.087052
+siesta:     66    0.018023    0.007361   -1.065122
+siesta:     67   -0.000803   -0.000802   -1.105243
+siesta:     68    0.006757    0.006756    0.316608
+siesta:     69    0.003363    0.011215    0.034658
+siesta:     70   -0.005058    0.009743    0.038881
+siesta:     71    0.011215    0.003363    0.034659
+siesta:     72   -0.064590   -0.064590   -0.056115
+siesta:     73    0.053364   -0.073691   -0.075605
+siesta:     74    0.009744   -0.005058    0.038881
+siesta:     75   -0.073691    0.053364   -0.075606
+siesta:     76    0.066207    0.066208   -0.083880
+siesta:     77   -0.008100   -0.008100   -0.032592
+siesta:     78    0.005889    0.000114   -0.019852
+siesta:     79    0.002964    0.001326    0.011708
+siesta:     80    0.000114    0.005890   -0.019852
+siesta:     81    0.000574    0.000574   -0.034662
+siesta:     82    0.001590   -0.010681    0.006854
+siesta:     83    0.001325    0.002964    0.011708
+siesta:     84   -0.010682    0.001590    0.006853
+siesta:     85    0.008850    0.008850   -0.049760
+siesta:     86    0.010982    0.010982    0.066006
+siesta:     87   -0.000965   -0.004135    0.089655
+siesta:     88   -0.011741    0.000371    0.078393
+siesta:     89   -0.004135   -0.000965    0.089655
+siesta:     90   -0.003445   -0.003445    0.093407
+siesta:     91    0.007783    0.004126    0.088860
+siesta:     92    0.000371   -0.011741    0.078393
+siesta:     93    0.004126    0.007783    0.088860
+siesta:     94   -0.004045   -0.004045    0.101294
+siesta:     95   -0.001716   -0.001716   -0.031554
+siesta:     96   -0.002909    0.002870   -0.035629
+siesta:     97    0.004398    0.006133   -0.047991
+siesta:     98    0.002870   -0.002909   -0.035629
+siesta:     99   -0.005990   -0.005990   -0.046251
+siesta:    100    0.003303   -0.011147   -0.056279
+siesta:    101    0.006133    0.004398   -0.047991
+siesta:    102   -0.011147    0.003303   -0.056279
+siesta:    103    0.005111    0.005111   -0.035036
+siesta:    104    0.005931    0.005931    0.018272
+siesta:    105    0.000678   -0.001400    0.026515
+siesta:    106   -0.006065    0.000612    0.026938
+siesta:    107   -0.001400    0.000678    0.026515
+siesta:    108   -0.010614   -0.010614    0.005677
+siesta:    109    0.011425    0.000662    0.020572
+siesta:    110    0.000612   -0.006065    0.026938
+siesta:    111    0.000662    0.011425    0.020572
+siesta:    112   -0.000575   -0.000575    0.002276
 siesta: ----------------------------------------
-siesta:    Tot   -0.006053   -0.006053    0.003426
+siesta:    Tot   -0.006053   -0.006053    0.003429
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.086196    0.000701    0.000363
-siesta:     0.000701   -0.086196    0.000363
-siesta:     0.000361    0.000361   -0.086448
+siesta:    -0.086527    0.000700    0.000363
+siesta:     0.000700   -0.086527    0.000363
+siesta:     0.000361    0.000361   -0.086770
 
 siesta: Cell volume =       2441.783730 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00093970          0.00108756  Ry/Bohr**3
-siesta:           0.08627992          0.09985566  eV/Ang**3
-siesta:         138.23715948        159.98813931  kBar
-(Free)E+ p_basis*V_orbitals  =     -160450.394463
-(Free)Eharris+ p_basis*V_orbitals  =     -160450.394511
+siesta:           0.00094327          0.00109160  Ry/Bohr**3
+siesta:           0.08660771          0.10022685  eV/Ang**3
+siesta:         138.76234230        160.58284717  kBar
+(Free)E+ p_basis*V_orbitals  =     -160450.359423
+(Free)Eharris+ p_basis*V_orbitals  =     -160450.359484
 
-dhscf: Vacuum level (max, mean) =    2.208779    2.110679 eV
->> End of run:   3-OCT-2015   3:18:30
+dhscf: Vacuum level (max, mean) =    2.208551    2.110438 eV
+>> End of run:  13-JUN-2018  22:21:42
+Job completed
