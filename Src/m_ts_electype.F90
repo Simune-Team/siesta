@@ -183,6 +183,7 @@ contains
 
   function fdf_nElec(prefix,this_n) result(n)
     use fdf
+    use m_char, only: lcase
 
     character(len=*), intent(in) :: prefix
     type(Elec), allocatable :: this_n(:)
@@ -223,7 +224,16 @@ contains
        this_n(n)%Name = trim(fdf_bnames(pline,1))
        this_n(n)%ID = n
        if ( index(this_n(n)%name,'.') > 0 ) then
-          call die('Electrodes cannot be named with .!')
+          call die('Electrodes cannot contain a .!')
+       end if
+       if ( index(this_n(n)%name,'+') > 0 ) then
+          call die('Electrodes cannot contain a +!')
+       end if
+       if ( lcase(this_n(n)%name) == 'device' ) then
+          call die('Electrodes cannot be named device!')
+       end if
+       if ( lcase(this_n(n)%name) == 'buffer' ) then
+          call die('Electrodes cannot be named buffer!')
        end if
        if ( n > 1 ) then
           ! Check that no name is the same
