@@ -208,6 +208,31 @@ contains
 
       call setup_mp()
 
+    else if ( fdf_islist(name_fdf) ) then
+
+      ! The method is a k-point MP grid
+      this%method = K_METHOD_MONKHORST_PACK
+
+      ! We have a list of integers
+      i = -1
+      call fdf_list(name_fdf, i, this%k_cell(:,1))
+      if ( i /= 3 ) then
+        call die('kpoint_read: ERROR in ' // trim(name_fdf) // ' list (have to have 3 numbers)')
+      end if
+      
+      ! Initialize MP
+      this%k_cell = 0
+      this%k_displ = 0._dp
+      call fdf_list(name_fdf, i, this%k_cell(:, 1))
+      
+      ! Re-arange the elements
+      this%k_cell(2,2) = this%k_cell(2,1)
+      this%k_cell(2,1) = 0
+      this%k_cell(3,3) = this%k_cell(3,1)
+      this%k_cell(3,1) = 0
+
+      call setup_mp()
+
     end if
 
     ! Quick return
