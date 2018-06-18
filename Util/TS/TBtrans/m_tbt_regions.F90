@@ -473,6 +473,7 @@ contains
        ! This aligns the atoms in the same way the orbitals 
        ! introduce the atoms.
        call rgn_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
+       call rgn_sort(r_aEl(iEl))
 
        ! Create the region that connects the electrode-followed
        ! region to the central region
