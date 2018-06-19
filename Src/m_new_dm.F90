@@ -286,6 +286,9 @@ contains
           deallocate(allowed_a)
 
        end if
+        
+       ! Initialize the Fermi-level
+       diff_Ef = Ef
 
        if ( fdf_defined('TS.Fermi.Initial') ) then
           ! Write out some information regarding
@@ -317,9 +320,9 @@ contains
 
        ! The electrode EDM is aligned at Ef == 0
        ! We need to align the energy matrix
-       iElec =  nnzs(sparse_pattern) * spin%EDM
-       DM    => val(DM_2D)
-       EDM   => val(EDM_2D)
+       iElec = nnzs(sparse_pattern) * spin%EDM
+       DM => val(DM_2D)
+       EDM => val(EDM_2D)
        call daxpy(iElec,diff_Ef,DM(1,1),1,EDM(1,1),1)
 
     end if

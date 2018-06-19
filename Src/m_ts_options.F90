@@ -396,6 +396,11 @@ contains
       end if
       DM_bulk = 0
     end if
+    if ( leqi(chars,'force-bulk') ) then
+      DM_bulk = 1
+    !else if ( leqi(chars,'scf') ) then
+    !   DM_bulk = 2
+    end if
 
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)
@@ -839,7 +844,7 @@ contains
     use m_ts_mumps_init, only: MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
 
-    use m_ts_hartree, only: TS_HA, Vha_frac, El
+    use m_ts_hartree, only: TS_HA, Vha_frac, Vha_offset, El
     use m_ts_hartree, only: TS_HA_NONE, TS_HA_PLANE, TS_HA_ELEC, TS_HA_ELEC_BOX
 
     implicit none
@@ -919,6 +924,8 @@ contains
        call die('Vha, error in option collecting')
     end select
     write(*,f8) 'Fix Hartree potential fraction', Vha_frac
+    write(*,f7) 'Hartree potential offset', Vha_offset/eV, 'eV'
+
     if ( ts_method == TS_FULL ) then
        write(*,f10)'Solution method', 'Full inverse'
     else if ( ts_method == TS_BTD ) then
