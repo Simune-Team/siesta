@@ -288,7 +288,7 @@
 ! This call could be moved to a more appropriate place
 !
       if (savehs) then
-         call write_hsx( not_using_auxcell, no_u, no_s, spin%H, indxuo,
+         call write_hsx( no_u, no_s, spin%H, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, Qtot,
      &        Temp, xijo)
       endif

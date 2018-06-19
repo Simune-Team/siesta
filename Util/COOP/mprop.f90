@@ -301,7 +301,6 @@ program mprop
   ! but the total charge is read as qtot.
 
   call read_hs_file(trim(sflnm)//".HSX")
-  if (gamma_wfsx .neqv. gamma) STOP "Gamma mismatch"
 
   ztot = 0.0_dp
   do ia = 1, na_u
@@ -517,7 +516,7 @@ program mprop
 
   ! * Curves
 
-     if (gamma) then
+     if (gamma_wfsx) then
         allocate(wf(1,1:no_u))
      else
         allocate(wf(2,1:no_u))
@@ -676,7 +675,7 @@ program mprop
                                 !AG: Corrected:  (qcos, qsin) = conjg(C_1)*(C_2)
                                 ! We might want to avoid recomputing this
 
-                                if (gamma) then
+                                if (gamma_wfsx) then
                                    qcos = wf(1,io1)*wf(1,io2) 
                                    qsin = 0.0_dp
                                 else

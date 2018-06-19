@@ -1212,10 +1212,10 @@ setup_H0.o: m_spin.o metaforce.o molecularmechanics.o naefs.o nlefsm.o
 setup_H0.o: siesta_geom.o siesta_options.o sparse_matrices.o spinorbit.o
 setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o class_SpData1D.o
 setup_hamiltonian.o: class_SpData2D.o dhscf.o files.o ldau.o ldau_specs.o
-setup_hamiltonian.o: m_dipol.o m_energies.o m_gamma.o m_hsx.o m_mpi_utils.o
-setup_hamiltonian.o: m_ntm.o m_partial_charges.o m_rhog.o m_spin.o m_steps.o
-setup_hamiltonian.o: m_stress.o metaforce.o molecularmechanics.o parallel.o
-setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+setup_hamiltonian.o: m_dipol.o m_energies.o m_hsx.o m_mpi_utils.o m_ntm.o
+setup_hamiltonian.o: m_partial_charges.o m_rhog.o m_spin.o m_steps.o m_stress.o
+setup_hamiltonian.o: metaforce.o molecularmechanics.o parallel.o siesta_geom.o
+setup_hamiltonian.o: siesta_options.o sparse_matrices.o sys.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
