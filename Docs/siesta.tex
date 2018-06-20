@@ -3457,7 +3457,7 @@ These are options for the $k$-point grid used in the SCF cycle. For
 other specialized grids, see Secs.~\ref{sec:macroscopic-polarization}
 and \ref{sec:dos}.
 
-\begin{fdfentry}{kgrid!MonkhorstPack}[block]<$\Gamma$-point>
+\begin{fdfentry}{kgrid!MonkhorstPack}[block/list]<$\Gamma$-point>
   
   Real-space supercell, whose reciprocal unit cell is that of the
   k-sampling grid, and grid displacement for each grid coordinate.
@@ -3469,6 +3469,7 @@ and \ref{sec:dos}.
         Mk(1,2)  Mk(2,2)  Mk(3,2)   dk(2)
         Mk(1,3)  Mk(2,3)  Mk(3,3)   dk(3)
      %endblock
+     kgrid.MonkhorstPack [Mk(1,1) Mk(2,2) Mk(3,3)]
   \end{fdfexample}
   
   where \texttt{Mk(j,i)} are integers and \texttt{dk(i)} are usually
@@ -3488,7 +3489,11 @@ and \ref{sec:dos}.
   supercells are given in terms of the CELL specified by the
   \fdf{LatticeVectors} block.  If \texttt{Mk} is the identity matrix
   and \texttt{dk} is zero, only the $\Gamma$ point of the
-  \textbf{unit} cell is used.  Overrides \fdf{kgrid!Cutoff}
+  \textbf{unit} cell is used.  Overrides \fdf{kgrid!Cutoff}.
+
+  One may also use the \emph{list} input (last line in above example),
+  in that case the block input must not be present and in this case
+  the displacement vector cannot be selected.
 
 \end{fdfentry}
 
@@ -8877,6 +8882,9 @@ an alternative way to plot the charge density (and wavefunctions).
   \textit{Use:} File \sysfile*{TOCH} is only written, not read, by
   siesta.
 
+  If netCDF support is compiled in, the file
+  \file{TotalCharge.grid.nc} is produced. 
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{SaveBaderCharge}
@@ -8942,9 +8950,9 @@ an alternative way to plot the charge density (and wavefunctions).
   normalized. All the relevant fdf options for charge-density file
   production and partial charge calculation can be used with this option.
 
-  \end{fdflogicalF}
+\end{fdflogicalF}
 
-  \begin{fdflogicalF}{SaveInitialChargeDensity}
+\begin{fdflogicalF}{SaveInitialChargeDensity}
   \index{output!charge density}
 
   If \fdftrue, the program generates a \sysfile{RHOINIT}
@@ -12268,8 +12276,10 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   electrode. This may be set to \fdf*{bulk} to forcefully set the bulk
   values.
 
-  \note this should only be set to \fdf*{bulk} for equilibrium
-  calculations. 
+  \note this will automatically be set to \fdf*{diagon} for
+  non-equilibrium calculations. If bulk density matrix elements are
+  wanted in the electrodes it is vital to have this option set to
+  \fdf*{bulk} when performing the equilibrium calculation.
   
 \end{fdfentry}
 

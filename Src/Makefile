@@ -994,7 +994,7 @@ m_ts_electrode.o: m_pivot_array.o m_ts_elec_se.o m_ts_electype.o parallel.o
 m_ts_electrode.o: precision.o sys.o units.o
 m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_electype.o: intrinsic_missing.o m_geom_box.o m_geom_plane.o
+m_ts_electype.o: intrinsic_missing.o m_char.o m_geom_box.o m_geom_plane.o
 m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
 m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
 m_ts_electype.o: units.o

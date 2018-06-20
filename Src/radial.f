@@ -141,11 +141,11 @@
       endif
 !
       if (print_header) then
-         write(lun,'(i4,2g22.12,a)') op%n,
+         write(lun,'(i4,2g26.16,a)') op%n,
      $        op%delta, op%cutoff, " # npts, delta, cutoff"
       endif
       do j=1,op%n
-         write(lun,'(2g22.12)') (j-1)*op%delta, op%f(j)
+         write(lun,'(2g26.16)') (j-1)*op%delta, op%f(j)
       enddo
 
       end subroutine radial_dump_ascii

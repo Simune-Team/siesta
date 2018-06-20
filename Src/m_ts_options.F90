@@ -385,9 +385,18 @@ contains
     chars = fdf_get('TS.Elecs.DM.Init',trim(chars))
     DM_bulk = 0
     if ( leqi(chars,'bulk') ) then
-       DM_bulk = 1
+      DM_bulk = 1
     !else if ( leqi(chars,'scf') ) then
     !   DM_bulk = 2
+    end if
+    if ( IsVolt ) then
+      if ( DM_bulk /= 0 .and. IONode) then
+        if ( IONode ) then
+          c = '(''transiesta: *** '',a,/)'
+          write(*,c)'Will not read in electrode DM, only applicable for V = 0 calculations'
+        end if
+      end if
+      DM_bulk = 0
     end if
 
     ! detect how many electrodes we have
@@ -402,7 +411,7 @@ contains
        Elecs(2)%ID = 2
        ! if they do-not exist, the user will be told
        if ( IONode ) then
-          c = '(''transiesta: *** '',a)'
+          c = '(''transiesta: *** '',a,/)'
           write(*,c)'No electrode names were found, default Left/Right are expected'
        end if
     end if
@@ -1515,6 +1524,9 @@ contains
        write(*,'(a)') 'You are not initializing the electrode DM/EDM. &
             &This may result in very wrong electrostatic potentials close to &
             &the electrode/device boundary region.'
+       if ( IsVolt ) then
+         write(*,'(a)') '    This warning is only applicable for V == 0 calculations!'
+       end if
        warn = .true.
     end if
 
