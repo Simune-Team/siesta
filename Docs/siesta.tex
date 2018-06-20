@@ -8590,6 +8590,9 @@ an alternative way to plot the charge density (and wavefunctions).
   \textit{Use:} File \sysfile*{TOCH} is only written, not read, by
   siesta.
 
+  If netCDF support is compiled in, the file
+  \file{TotalCharge.grid.nc} is produced. 
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{SaveBaderCharge}
@@ -8655,9 +8658,9 @@ an alternative way to plot the charge density (and wavefunctions).
   normalized. All the relevant fdf options for charge-density file
   production and partial charge calculation can be used with this option.
 
-  \end{fdflogicalF}
+\end{fdflogicalF}
 
-  \begin{fdflogicalF}{SaveInitialChargeDensity}
+\begin{fdflogicalF}{SaveInitialChargeDensity}
   \index{output!charge density}
 
   If \fdftrue, the program generates a \sysfile{RHOINIT}
@@ -11511,6 +11514,17 @@ variables:
 
 \end{fdfentry}
 
+\begin{fdfentry}{TS!Hartree.Offset}[energy]<$0\,\mathrm{eV}$>
+
+  An offset in the Hartree potential to match the electrode potential.
+
+  This value may be useful in certain cases where the Hartree
+  potentials are very different between the electrode and device
+  region calculations.
+
+\end{fdfentry}
+
+
 \begin{fdfentry}{TS!Elec.<>!Hartree.Extend}[length]<$0.\,\mathrm{Ang}$>
   \fdfdepend{TS!Poisson:ramp-central,TS!Poisson:ramp-cell}
 
@@ -11789,8 +11803,10 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   electrode. This may be set to \fdf*{bulk} to forcefully set the bulk
   values.
 
-  \note this should only be set to \fdf*{bulk} for equilibrium
-  calculations. 
+  \note this will automatically be set to \fdf*{diagon} for
+  non-equilibrium calculations. If bulk density matrix elements are
+  wanted in the electrodes it is vital to have this option set to
+  \fdf*{bulk} when performing the equilibrium calculation.
   
 \end{fdfentry}
 

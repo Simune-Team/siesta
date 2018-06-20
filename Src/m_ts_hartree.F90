@@ -55,6 +55,9 @@ module m_ts_hartree
   ! The fraction of the actual fix
   real(dp), public :: Vha_frac = 1._dp
 
+  ! The Hartree offset potential as determined from the electrode calculation
+  real(dp), public :: Vha_offset = 0._dp
+
   ! The grid-index in the transport direction
   ! where we fix the Hartree potential.
   integer :: ha_idx = 1
@@ -91,7 +94,8 @@ contains
 
     ! Determine the fractional correction of the Hartree fix
     Vha_frac = fdf_get('TS.Hartree.Fix.Frac',1._dp)
-    
+    Vha_offset = fdf_get('TS.Hartree.Offset',0._dp, 'Ry')
+
   end subroutine read_ts_hartree_options
 
   ! Find the biggest electrode by comparing
@@ -551,10 +555,10 @@ contains
             &No points are encapsulated.')
     end if
 
-    Vav = Vtot / nlp
+    Vav = Vtot / nlp - Vha_offset
 
     if ( IONode ) then
-       write(*,'(a,e12.5,a)')'ts-Vha: ',Vav/eV,' eV'
+       write(*,'(a,e12.5,a)')'ts-Vha: ',Vav / eV,' eV'
     end if
     
     ! Align potential

@@ -165,8 +165,8 @@ contains
   ! it will currently only handle the full charge distribution, and
   ! not per k-point.
   subroutine ts_print_charges(N_Elec,Elecs,Qtot,dit, sp, &
-       nspin, n_nzs, DM, S, &
-       method)
+      nspin, n_nzs, DM, S, &
+      method)
     use parallel, only : IONode
     use m_ts_electype
 #ifdef MPI
@@ -176,9 +176,9 @@ contains
     use class_Sparsity
     use geom_helper, only : UCORB
 
-! **********************
-! * INPUT variables    *
-! **********************
+    ! **********************
+    ! * INPUT variables    *
+    ! **********************
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     ! The requested number of electrons in the simulation
@@ -192,14 +192,15 @@ contains
     real(dp), intent(in) :: DM(n_nzs,nspin), S(n_nzs)
     ! The method by which it should be printed out...
     integer, intent(in), optional :: method
-   
-! **********************
-! * LOCAL variables    *
-! **********************
+
+    ! **********************
+    ! * LOCAL variables    *
+    ! **********************
     integer :: i
     real(dp), allocatable :: Q(:,:)
     real(dp) :: sQtot
     integer :: ispin, lmethod
+    logical :: has_buffer
 
     ! Requested charge per spin if anti-ferromagnetic
     sQtot = Qtot / real(nspin,dp)
@@ -210,79 +211,89 @@ contains
     allocate(Q(0:2+N_Elec*2,nspin))
 
     call ts_get_charges(N_Elec,dit, sp, nspin, n_nzs, DM, S, Q = Q)
-         
+    has_buffer = sum(Q(1,:)) > 0._dp
+
     ! it will only be the IONode which will write out...
     if ( .not. IONode ) return
 
     if ( lmethod == TS_INFO_FULL ) then
-       write(*,'(/,a,f12.5)') 'transiesta: Charge distribution, target = ',Qtot
-       if ( nspin > 1 ) then
-          write(*,'(a,3(f12.5,tr1))') &
-               'Total charge                  [Q]  :', &
-               sum(Q(:,1)),sum(Q(:,2)),sum(Q)
-          if ( Q(1,1) > 0._dp .or. Q(1,2) > 0._dp ) then
-             write(*,'(a,2(f12.5,tr1))') &
-               'Buffer                        [B]  :',Q(1,1), Q(1,2)
-          end if
+      write(*,'(/,a,f12.5)') 'transiesta: Charge distribution, target = ',Qtot
+      if ( nspin > 1 ) then
+        write(*,'(a,3(f12.5,tr1))') &
+            'Total charge                  [Q]  :', &
+            sum(Q(:,1)),sum(Q(:,2)),sum(Q)
+        if ( has_buffer ) then
           write(*,'(a,2(f12.5,tr1))') &
-               'Device                        [D]  :',Q(2,1), Q(2,2)
-          do i = 1 , N_Elec
-             write(*,'(a,t31,a,i0,a,2(f12.5,tr1))') &
-                  trim(name(Elecs(i))),'[E',i,'] :', &
-                  Q(3+(i-1)*2,1), Q(3+(i-1)*2,2)
-             write(*,'(a,t22,a,i0,a,2(f12.5,tr1))') &
-                  trim(name(Elecs(i))),'/ device [C',i,'] :', &
-                  Q(4+(i-1)*2,1), Q(4+(i-1)*2,2)
-          end do
-          write(*,'(a,2(f12.5,tr1),/)') &
-               'Other                         [O]  :',Q(0,1), Q(0,2)
-       else
+            'Buffer                        [B]  :',Q(1,1), Q(1,2)
+        end if
+        write(*,'(a,2(f12.5,tr1))') &
+            'Device                        [D]  :',Q(2,1), Q(2,2)
+        do i = 1 , N_Elec
+          write(*,'(a,t31,a,i0,a,2(f12.5,tr1))') &
+              trim(name(Elecs(i))),'[E',i,'] :', &
+              Q(3+(i-1)*2,1), Q(3+(i-1)*2,2)
+          write(*,'(a,t22,a,i0,a,2(f12.5,tr1))') &
+              trim(name(Elecs(i))),'/ device [C',i,'] :', &
+              Q(4+(i-1)*2,1), Q(4+(i-1)*2,2)
+        end do
+        write(*,'(a,2(f12.5,tr1),/)') &
+            'Other                         [O]  :',Q(0,1), Q(0,2)
+      else
+        write(*,'(a,f12.5)') &
+            'Total charge                  [Q]  :', sum(Q(:,1))
+        if ( has_buffer ) then
           write(*,'(a,f12.5)') &
-               'Total charge                  [Q]  :', sum(Q(:,1))
-          if ( Q(1,1) > 0._dp ) then
-             write(*,'(a,f12.5)') &
-               'Buffer                        [B]  :',Q(1,1)
-          end if
-          write(*,'(a,f12.5)') &
-               'Device                        [D]  :',Q(2,1)
-          do i = 1 , N_Elec
-             write(*,'(a,t31,a,i0,a,f12.5)') &
-               trim(name(Elecs(i)))         ,'[E',i,'] :',Q(3+(i-1)*2,1)
-             write(*,'(a,t22,a,i0,a,f12.5)') &
-               trim(name(Elecs(i))),'/ device [C',i,'] :',Q(4+(i-1)*2,1)
-          end do
-          write(*,'(a,f12.5,/)') &
-               'Other                         [O]  :',Q(0,1)
-       end if
+            'Buffer                        [B]  :',Q(1,1)
+        end if
+        write(*,'(a,f12.5)') &
+            'Device                        [D]  :',Q(2,1)
+        do i = 1 , N_Elec
+          write(*,'(a,t31,a,i0,a,f12.5)') &
+              trim(name(Elecs(i)))         ,'[E',i,'] :',Q(3+(i-1)*2,1)
+          write(*,'(a,t22,a,i0,a,f12.5)') &
+              trim(name(Elecs(i))),'/ device [C',i,'] :',Q(4+(i-1)*2,1)
+        end do
+        write(*,'(a,f12.5,/)') &
+            'Other                         [O]  :',Q(0,1)
+      end if
 
     else if ( lmethod == TS_INFO_SCF ) then
 
-       ! We write out the information from the SCF cycle...
-       write(*,'(a,1x,a9)',advance='no') 'ts-q:','D'
-       do i = 1 , N_Elec
-          write(*,'(1x,a8,i0,1x,a8,i0)',advance='no') 'E',i,'C',i
-       end do
-       if ( nspin > 1 ) then
-          write(*,'(2(1x,a9))') 'dQ','dQtot'
-       else
-          write(*,'(1x,a9)') 'dQ'
-       end if
-       do ispin = 1 , nspin
+      ! We write out the information from the SCF cycle...
+      if ( has_buffer ) then
+        write(*,'(a,2(1x,a9))',advance='no') 'ts-q:','B','D'
+      else
+        write(*,'(a,1x,a9)',advance='no') 'ts-q:','D'
+      end if
+
+      do i = 1 , N_Elec
+        write(*,'(1x,a8,i0,1x,a8,i0)',advance='no') 'E',i,'C',i
+      end do
+      if ( nspin > 1 ) then
+        write(*,'(2(1x,a9))') 'dQ','dQtot'
+      else
+        write(*,'(1x,a9)') 'dQ'
+      end if
+      do ispin = 1 , nspin
+        if ( has_buffer ) then
+          write(*,'(a,2(1x,f9.3))',advance='no') 'ts-q:', Q(1,ispin), Q(2,ispin)
+        else
           write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
-          do i = 1 , N_Elec
-             write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
-          end do
-          if ( ispin > 1 .and. ispin == nspin ) then
-             write(*,'(2(1x,es9.3e1))') sum(Q(:,ispin)) - sQtot,sum(Q) - Qtot
-          else
-             write(*,'(1x,es9.3e1)') sum(Q(:,ispin)) - sQtot
-          end if
-       end do
-       
+        end if
+        do i = 1 , N_Elec
+          write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
+        end do
+        if ( ispin > 1 .and. ispin == nspin ) then
+          write(*,'(2(1x,es9.3e1))') sum(Q(:,ispin)) - sQtot,sum(Q) - Qtot
+        else
+          write(*,'(1x,es9.3e1)') sum(Q(:,ispin)) - sQtot
+        end if
+      end do
+
     end if
-    
+
     deallocate(Q)
-    
+
   end subroutine ts_print_charges
 
   subroutine ts_qc(N_Elec,Elecs, &
