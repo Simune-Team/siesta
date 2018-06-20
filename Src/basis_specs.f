@@ -80,7 +80,7 @@
 !   There are no 'per l-shell' polarization orbitals, except if the
 !   third character of 'basis_size' is 'p' (as in 'dzp'), in which
 !   case polarization orbitals are defined so they have the minimum      
-!   angular momentum l such that there are not occupied orbitals 
+!   angular momentum l such that there are no occupied orbitals 
 !   with the same l in the valence shell of the ground-state 
 !   atomic configuration. They polarize the corresponding l-1 shell.
 ! 
@@ -150,6 +150,7 @@
 
 !     Default Soft-confinement parameters set by the user
 !
+      logical, save   :: no_efield_for_pols
       logical, save   :: lsoft
       real(dp), save  :: softRc, softPt
 
@@ -197,6 +198,9 @@
       real(dp) :: new_a, new_b, new_rmax
 
 !------------------------------------------------------------------------
+      no_efield_for_pols = 
+     $   fdf_boolean('Explicit.Polarization.Orbitals',.false.)
+
       reparametrize_pseudos =
      $   fdf_boolean('ReparametrizePseudos',.false.)
 !
@@ -728,6 +732,7 @@ C Sanity checks on values
             else
               s%nzeta_pol = 1
             endif
+            basp%lmxo = max(basp%lmxo,s%l+1)  ! NOTE
           endif
 !
 ! Soft-confinement
@@ -843,6 +848,9 @@ C Sanity checks on values
           nn = 0
           do ish= 1, basp%nshells_tmp
             s => basp%tmp_shell(ish)
+            if (no_efield_for_pols) then
+               if (s%polarized .and. (s%l == (l-1))) nn=nn+1
+            endif
             if (s%l .eq. l) nn=nn+1
           enddo
           ls%nn = nn
@@ -856,6 +864,18 @@ C Sanity checks on values
           ind = 0
           do ish=1, basp%nshells_tmp
             s => basp%tmp_shell(ish)
+            if (no_efield_for_pols) then
+               if (s%polarized .and. (s%l == (l-1))) then
+                  ind = ind + 1
+                  call copy_shell(source=s,target=ls%shell(ind))
+                  ls%shell(ind)%n = -1   ! reset to find later
+                  ls%shell(ind)%l = l
+                  ls%shell(ind)%nzeta = s%nzeta_pol
+                  ls%shell(ind)%nzeta_pol = 0
+                  ls%shell(ind)%polarized = .false.
+                  ! rc's, lambdas, etc, will remain as in s.
+               endif
+            endif
             if (s%l .eq. l) then
               ind = ind+1
               call copy_shell(source=s,target=ls%shell(ind))
@@ -1294,9 +1314,21 @@ c (according to atmass subroutine).
                ! as polarizable
             
                if (.not. basp%ground_state%occupied(l)) then
-                  ls=>basp%lshell(l-1)
-                  nsh = size(ls%shell)  ! Use only the last shell
-                  s => ls%shell(nsh)
+                  if (no_efield_for_pols) then
+                     nsh = size(ls%shell)
+                     if (nsh /= 1) call die("Empty l-shell with nsh>1?")
+                     s => ls%shell(nsh)
+                     s%nzeta = nzeta_pol
+                     allocate(s%rc(1:s%nzeta))
+                     allocate(s%lambda(1:s%nzeta))
+                     s%rc(1:s%nzeta) = 0.0d0
+                     s%lambda(1:s%nzeta) = 1.0d0
+                     exit loop_angmom       ! Polarize only one shell!
+                  else
+                     ls=>basp%lshell(l-1)
+                     nsh = size(ls%shell) ! Use only the last shell
+                     s => ls%shell(nsh)
+                  endif
         
               ! Check whether shell to be polarized is occupied in the gs.
               ! (i.e., whether PAOs are going to be generated for it)
