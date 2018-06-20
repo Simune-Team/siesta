@@ -90,6 +90,7 @@ C
       use m_fermid,      only : fermid, fermispin, stepf
       use m_spin,        only : spinor_dim, e_spin_dim
       use alloc
+      use intrinsic_missing, only: MODP1
 
 #ifdef MPI
       use mpi_siesta
@@ -148,7 +149,7 @@ C Solve eigenvalue problem
       
       do ispin = 1,spinor_dim
 
-         call timer( 'r-eigvec', 1 )
+        call timer( 'r-eigvec', 1 )
         call timer( 'r-buildHS', 1 )
 !$OMP parallel do default(shared), private(io,j,ind,jo)
         do io = 1,nuo
@@ -157,7 +158,7 @@ C Solve eigenvalue problem
           do j = 1,numh(io)
             ind = listhptr(io) + j
             jo = listh(ind)
-            jo = mod(jo-1,nuotot) + 1    ! To allow auxiliary supercells
+            jo = MODP1(jo,nuotot)   ! To allow auxiliary supercells
             Saux(jo,io) = Saux(jo,io) + S(ind)
             Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
@@ -183,7 +184,7 @@ C Repeat diagonalisation with increased memory to handle clustering
             do j = 1,numh(io)
               ind = listhptr(io) + j
               jo = listh(ind)
-              jo = mod(jo-1,nuotot) + 1    ! To allow auxiliary supercells
+              jo = MODP1(jo,nuotot) ! To allow auxiliary supercells
               Saux(jo,io) = Saux(jo,io) + S(ind)
               Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
             enddo
@@ -300,7 +301,7 @@ C Global operation to form new density matrix
                 do j = 1,numd(io)
                   ind = listdptr(io) + j
                   jo  = listd(ind)
-                  jo = mod(jo-1,nuotot) + 1    ! To allow auxiliary supercells
+                  jo = MODP1(jo,nuotot) ! To allow auxiliary supercells
                   Dnew(ind,ispin) = Dnew(ind,ispin) + qei*paux(jo)
                   Enew(ind,ispin) = Enew(ind,ispin) + eei*paux(jo)
                 enddo

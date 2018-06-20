@@ -41,7 +41,6 @@
       use m_compute_dm,   only : PreviousCallDiagon
       use m_eo
       use Kpoint_grid
-      use m_gamma,        only: not_using_auxcell => gamma
       implicit none
 
       ! MD-step, SCF-step
@@ -51,13 +50,12 @@
       character(len=20) :: msg
       type(Pair_Geometry_dSpData2D)  :: pair
       type(Geometry)                :: geom
-
-#ifdef DEBUG
-      call write_debug( '    PRE post_scf_work' )
-#endif
+      logical                        :: not_using_auxcell
 
       call timer( 'PostSCF', 1 )
-!
+
+      not_using_auxcell = (no_s == no_u)
+!     
 !     If converged, make one last iteration to find forces and stress
 
 !     If we use the minimization routine, the energy-density

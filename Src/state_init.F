@@ -66,7 +66,6 @@
       use m_normalize_dm, only: normalize_dm
 
       use m_eo
-      use m_gamma,           only: not_using_auxcell => gamma
       use files,             only: slabel
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_sum
@@ -129,15 +128,15 @@
 
       type(dData2D) :: tmp_2D
       real(dp) :: dummy_qspin(8)
-
+      logical  :: not_using_auxcell
 
 !------------------------------------------------------------------- BEGIN
       call timer( 'IterGeom', 1 )
-#ifdef DEBUG
-      call write_debug( '  PRE state_init' )
-#endif
+
       call timer( 'state_init', 1 )
 
+      not_using_auxcell = (no_s == no_u)
+      
       istp = istp + 1
 
       if (IOnode) then

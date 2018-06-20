@@ -50,7 +50,6 @@
       use m_dipol
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
-      use m_gamma, only: not_using_auxcell => gamma
       use m_hsx, only: write_hsx
       use sys, only: die
       use fdf
@@ -98,6 +97,7 @@
 #endif
       character(len=label_length+13) :: fname
       integer :: io_istep, io_ia1
+      logical :: not_using_auxcell
 #ifdef CDF
 #ifdef NCDF_4
       type(dict) :: dic_save
@@ -105,6 +105,8 @@
 #endif
 !------------------------------------------------------------------------- BEGIN
 
+      not_using_auxcell = (no_s == no_u)
+      
 !     Initialize Hamiltonian ........................................
       call re_alloc(H_tmp, 1,maxnh, 1, spin%H,
      $             'H_tmp','final_H_f_stress')

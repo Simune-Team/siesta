@@ -30,8 +30,6 @@
       use m_eo
       use m_spin,   only: spin
       use m_diagon, only: diagon
-      ! Keep the old flags, but use a more appropriate name
-      use m_gamma,  only: not_using_auxcell => gamma
       use parallel, only: IONode
       use parallel, only: SIESTA_worker
       use m_compute_ebs_shift, only: compute_ebs_shift
@@ -68,9 +66,7 @@
       real(dp)            :: buffer1
       integer             :: mpierr
 
-!       character(15)            :: filename, indexstr
-!       character(15), parameter :: fnameform = '(A,A,A)'
-
+      logical             :: not_using_auxcell
 
 !-------------------------------------------------------------------- BEGIN
 
@@ -96,6 +92,8 @@
 !$OMP end parallel
       end if
 
+      not_using_auxcell = (no_u == no_s)
+      
       ! Compute shift in Tr(H*DM) for fermi-level bracketting
       ! Use the current H, the previous iteration H, and the
       ! previous iteration DM
@@ -195,7 +193,12 @@ c$$$     &           S, 'S.matrix')
      &      call die('ERROR: Non-collinear spin calculations
      &                       not yet implemented with OMM!')
         H_kin => val(H_kin_1D)
-        if (not_using_auxcell) then
+
+        ! Decide which version of OMM to use.
+        ! Test based on use of auxiliary supercell
+        ! It might still be possible to avoid the complex version
+        
+        if (not_using_auxcell) then 
           call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 spin%H, no_u, maxnh, numh, listhptr, listh, Dscf,
      &                 eta, qtots, H, S, H_kin)

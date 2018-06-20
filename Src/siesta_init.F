@@ -57,7 +57,6 @@
       use m_rmaxh
       use m_forces 
       use m_eo
-      use m_gamma,            only: not_using_auxcell => gamma
       use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
       use m_projected_DOS,    only: init_projected_DOS
@@ -115,7 +114,7 @@
       integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
-      logical :: user_wants_supercell
+      logical :: user_wants_supercell, not_using_auxcell
       real(dp) :: walltime_m, walltime_s
 
       integer :: World_Group
