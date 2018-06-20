@@ -124,6 +124,12 @@
      $               "The PEXSI solver does not implement "//
      $               "non-coll spins or Spin-orbit yet")
          endif
+         if (ionode) then
+            ! This should never happen for large-scale calculations...
+            if (no_s /= no_u) call die(
+     $               "The PEXSI solver cannot work " //
+     $               "with an auxiliary supercell")
+         endif
          call pexsi_solver(iscf, no_u, no_l, spin%spinor,
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
