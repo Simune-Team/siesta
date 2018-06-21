@@ -741,7 +741,8 @@ c    .          'atom: The above configuration will be used ',
      .                     vps, ve, vePAO, nrval, lmxo,nsemic,
      .                     nzeta, rco, lambda, npolorb, basistype,
      .                     rphi, no, rinn, vcte, qcoe, qyuk, qwid,
-     .                     split_norm, filtercut, atm_label, spp)
+     .                     split_norm, filtercut, atm_label, spp,
+     $                     basp)
  
           else
             if (abs(charge-zval+chgvps).gt.1.0d-3) then 
@@ -760,7 +761,8 @@ c    .          'atom: The above configuration will be used ',
      .                     vps, vePAO, vePAO, nrval, lmxo,nsemic,
      .                     nzeta, rco, lambda, npolorb, basistype,
      .                     rphi, no, rinn, vcte, qcoe, qyuk, qwid,
-     .                     split_norm, filtercut, atm_label, spp)
+     .                     split_norm, filtercut, atm_label, spp,
+     $                     basp)
           endif
           write(6,'(a,i3)')
      .      'atom: Total number of Sankey-type orbitals:', no
@@ -3107,7 +3109,8 @@ C
      .                       vps, ve, vePAO, nrval, lmxo,nsemic, 
      .                       nzeta, rco, lambda, polorb, basis_type,
      .                       rphi, notot, rinn, vcte, qcoe, qyuk,
-     .                       qwid, split_norm, filtercut, atm_label,spp)
+     .                       qwid, split_norm, filtercut, atm_label,spp,
+     $                       basp)
 
 C
 C Generates the basis set and stores all the information in the 
@@ -3139,6 +3142,7 @@ C
         character(len=10)
      .    basis_type
         type(species_info), intent(inout)  :: spp
+        type(basis_def_t), pointer   :: basp
 C
 C Internal variables
 C
@@ -3186,7 +3190,7 @@ C
      .               rphi, ePAO, noPAO,
      .               rinn, vcte, qcoe, qyuk,
      .               qwid, split_norm,
-     .               filtercut, atm_label, spp)
+     .               filtercut, atm_label, spp, basp)
          
         elseif (basis_type.eq.'nodes') then 
           call NODES(Zval,is, a,b,rofi,drdi,s,
@@ -3732,9 +3736,10 @@ C
      .                   vps,ve,vePAO,nrval,lmxo, nsemic,
      .                   nzeta,rco,lambda, rphi, ePAO, norb,
      .                   rinn,vcte,qcoe,qyuk,qwid,split_norm, 
-     .                   filtercut,atm_label, spp) 
+     .                   filtercut,atm_label, spp, basp) 
 
         use basis_specs, only:  restricted_grid
+        use basis_types, only:  shell_t
         use atm_types, only: species_info
 C
 C Calculates the atomic orbitals basis set, using the option SPLIT 
@@ -3762,6 +3767,7 @@ C
      .    nrval, lmxo, is, iz, nzeta(0:lmaxd,nsemx),
      .    norb, nsemic(0:lmaxd)
         type(species_info), intent(inout)  :: spp
+        type(basis_def_t), pointer   :: basp
 C
 C Internal variables
 C
@@ -3793,6 +3799,9 @@ C Number of points used by polint for the interpolation
 C 
         integer  npoint 
         parameter(npoint=4)
+
+        integer :: nsm_parent
+        type(shell_t), pointer :: shell, s_parent
 C
 C Reading the energy-shift to define the cut-off radius of orbitals
 C
@@ -3839,6 +3848,22 @@ C
      .          'SPLIT: Basis orbitals for state ',
      .          cnfigtb(l,nsm,is), sym(l)
 
+              ! Check whether this shell has been re-classified
+              ! as a standard shell, instead of perturbatively
+              ! creating the orbitals in polgen
+
+                 shell => basp%shell_of(l,nsm)%s
+                 if (shell%polarization_shell) then
+                    s_parent => shell%shell_being_polarized
+                    nsm_parent = s_parent%sequence_in_lshell
+                    rco(1,l,nsm) = rco(1,l-1,nsm_parent)
+                    write(6,'(A,I1,A)')
+     .                   'SPLIT: Actually polarization orbs for state ',
+     .                   cnfigtb(l-1,nsm_parent,is), sym(l-1)
+                    write(6,'(A,f0.4)')
+     .                   "SPLIT: rc(1st zeta) reset to: ", rco(1,l,nsm)
+                 endif
+                 
               if (rco(1,l,nsm).lt.1.0d-5) then    
 C
 C Automatic determination of the cut off radius for the PAOs

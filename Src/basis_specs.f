@@ -142,6 +142,7 @@
 
       type(basis_def_t), pointer :: basp => null()
       type(shell_t), pointer :: s => null()
+      type(shell_t), pointer :: polarized_shell_ptr
       type(lshell_t), pointer :: ls => null()
       type(kbshell_t), pointer :: k => null()
 
@@ -150,7 +151,7 @@
 
 !     Default Soft-confinement parameters set by the user
 !
-      logical, save   :: no_efield_for_pols
+      logical, save   :: non_perturbative_pols
       logical, save   :: lsoft
       real(dp), save  :: softRc, softPt
 
@@ -198,8 +199,8 @@
       real(dp) :: new_a, new_b, new_rmax
 
 !------------------------------------------------------------------------
-      no_efield_for_pols = 
-     $   fdf_boolean('Explicit.Polarization.Orbitals',.false.)
+      non_perturbative_pols = 
+     $   fdf_boolean('NonPerturbative.Polarization.Orbitals',.false.)
 
       reparametrize_pseudos =
      $   fdf_boolean('ReparametrizePseudos',.false.)
@@ -670,6 +671,7 @@ C Sanity checks on values
      .    basp%ionic_charge = fdf_bvalues(pline,2)
         allocate(basp%tmp_shell(basp%nshells_tmp))
 
+        ! These are (l,n) shells
         shells: do ish= 1, basp%nshells_tmp
           s => basp%tmp_shell(ish)
           call initialize(s)
@@ -833,12 +835,13 @@ C Sanity checks on values
         ! Clean up for this species
       enddo
 !
-!        OK, now classify the states by l-shells
+!        OK, now classify the (l,n) states by l-shells
 !
       do isp = 1, nsp
         basp => basis_parameters(isp)
         if (basp%lmxo .eq. -1) cycle !! Species not in block
                                      !!
+        polarized_shell_ptr => null()
         allocate (basp%lshell(0:basp%lmxo))
         loop_l: do l= 0, basp%lmxo
           ls => basp%lshell(l)
@@ -848,7 +851,8 @@ C Sanity checks on values
           nn = 0
           do ish= 1, basp%nshells_tmp
             s => basp%tmp_shell(ish)
-            if (no_efield_for_pols) then
+            if (non_perturbative_pols) then
+               ! Make room for a new one (explicit polarization orbital)
                if (s%polarized .and. (s%l == (l-1))) nn=nn+1
             endif
             if (s%l .eq. l) nn=nn+1
@@ -864,21 +868,36 @@ C Sanity checks on values
           ind = 0
           do ish=1, basp%nshells_tmp
             s => basp%tmp_shell(ish)
-            if (no_efield_for_pols) then
+            if (non_perturbative_pols) then
                if (s%polarized .and. (s%l == (l-1))) then
                   ind = ind + 1
+                  ! Copy again to inherit data
                   call copy_shell(source=s,target=ls%shell(ind))
                   ls%shell(ind)%n = -1   ! reset to find later
                   ls%shell(ind)%l = l
                   ls%shell(ind)%nzeta = s%nzeta_pol
                   ls%shell(ind)%nzeta_pol = 0
                   ls%shell(ind)%polarized = .false.
+                  ls%shell(ind)%polarization_shell = .true.
+                  ls%shell(ind)%shell_being_polarized =>
+     $                 polarized_shell_ptr
+                  polarized_shell_ptr => null()
                   ! rc's, lambdas, etc, will remain as in s.
                endif
             endif
             if (s%l .eq. l) then
               ind = ind+1
               call copy_shell(source=s,target=ls%shell(ind))
+              if (non_perturbative_pols) then
+                 if (s%polarized) then
+                    ! Save for later. There should be just one 'polarized' shell
+                    polarized_shell_ptr => ls%shell(ind)
+                    ! Remove markers (in new objects)
+                    ls%shell(ind)%polarized = .false.
+                    ls%shell(ind)%was_polarized = .true.
+                    ls%shell(ind)%nzeta_pol = 0
+                 endif
+              endif
             endif
           enddo
           if (nn.eq.1) then
@@ -1177,6 +1196,7 @@ c (according to atmass subroutine).
 !
       integer l, nzeta, nzeta_pol
       integer :: nsemic_shells(0:3), nsh, i
+      type(lshell_t), pointer :: ls_parent
 
       loop: do isp=1, nsp
          basp=>basis_parameters(isp)
@@ -1201,8 +1221,19 @@ c (according to atmass subroutine).
             if (nsemic_shells(l) > 0) basp%lmxo = max(l,basp%lmxo)
          enddo
          
-         !
-
+         ! Check whether we need to consider larger l's due to
+         ! non-perturbative polarization orbitals
+         if (non_perturbative_pols) then
+           if (basp%basis_size(3:3) .eq. 'p') then
+            loop_pol: do l=1,4  ! Note that l starts at 1
+               if ( (.not. basp%ground_state%occupied(l)) ) then
+                  basp%lmxo = max(l,basp%lmxo)
+                  EXIT loop_pol
+               endif
+            enddo loop_pol
+           endif
+         endif
+        
          allocate (basp%lshell(0:basp%lmxo))
 
          if (basp%basis_size(1:2) .eq. 'sz') nzeta = 1
@@ -1229,6 +1260,7 @@ c (according to atmass subroutine).
                s%n = basp%ground_state%n(l) - (nsh-i)
                s%nzeta = 1
                s%polarized = .false.
+               s%polarization_shell = .false.
                s%split_norm = global_splnorm
                s%nzeta_pol = 0
 
@@ -1262,6 +1294,7 @@ c (according to atmass subroutine).
                s%nzeta = 0
             endif
             s%polarized = .false.
+            s%polarization_shell = .false.
             if (abs(basp%z).eq.1) then
                s%split_norm = global_splnorm_H
             else
@@ -1291,7 +1324,7 @@ c (according to atmass subroutine).
          if (basp%basis_size(3:3) .eq. 'p') then
 
          ! Polarization orbitals are defined so they have the minimum      
-         ! angular momentum l such that there are not occupied orbitals 
+         ! angular momentum l such that there are no occupied orbitals 
          ! with the same l in the valence shell of the ground-state 
          ! atomic configuration. They polarize the corresponding l-1    
          ! shell.
@@ -1312,9 +1345,12 @@ c (according to atmass subroutine).
                ! For example, in Ti, p is not occupied in the GS
                ! The following code will mark the top-most s shell
                ! as polarizable
-            
-               if (.not. basp%ground_state%occupied(l)) then
-                  if (no_efield_for_pols) then
+
+               ! Note that l goes from 1 to 4
+               if ( (.not. basp%ground_state%occupied(l)) ) then
+     $                     
+                  if (non_perturbative_pols) then
+                     ls=>basp%lshell(l)
                      nsh = size(ls%shell)
                      if (nsh /= 1) call die("Empty l-shell with nsh>1?")
                      s => ls%shell(nsh)
@@ -1323,13 +1359,25 @@ c (according to atmass subroutine).
                      allocate(s%lambda(1:s%nzeta))
                      s%rc(1:s%nzeta) = 0.0d0
                      s%lambda(1:s%nzeta) = 1.0d0
-                     exit loop_angmom       ! Polarize only one shell!
-                  else
-                     ls=>basp%lshell(l-1)
-                     nsh = size(ls%shell) ! Use only the last shell
-                     s => ls%shell(nsh)
+                     
+                     s%polarization_shell = .true.
+
+                     ls_parent=> basp%lshell(l-1)
+                     nsh = size(ls_parent%shell) ! Parent is the last (l-1) shell
+                     s%shell_being_polarized => ls_parent%shell(nsh)
+                     ! Now, reset the polarization flags of the parent
+                     ls_parent%shell(nsh)%polarized = .false.
+                     ls_parent%shell(nsh)%was_polarized = .true.
+                     ls_parent%shell(nsh)%nzeta_pol = 0
+                     
+                     EXIT loop_angmom       ! Polarize only one shell!
                   endif
-        
+
+                  ! Normal treatment 
+                  ls=>basp%lshell(l-1)
+                  nsh = size(ls%shell) ! Use only the last shell
+                  s => ls%shell(nsh)
+
               ! Check whether shell to be polarized is occupied in the gs.
               ! (i.e., whether PAOs are going to be generated for it)
               ! If it is not, mark it for PAO generation anyway.
@@ -1347,10 +1395,11 @@ c (according to atmass subroutine).
                      s%rc(1:s%nzeta) = 0.0d0
                      s%lambda(1:s%nzeta) = 1.0d0
                   endif
+                  ! Put polarization flags
                   s%polarized = .true.
                   s%nzeta_pol = nzeta_pol
 
-                  exit loop_angmom  ! Polarize only one shell!
+                  EXIT loop_angmom  ! Polarize only one shell!
                endif
             enddo loop_angmom
 
