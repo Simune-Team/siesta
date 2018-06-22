@@ -73,6 +73,8 @@
         real(dp)             :: filter_cutoff = 0.0_dp
         real(dp)             :: filter_cutoff_orbitals = 0.0_dp
         real(dp)             :: filter_tol    = EkinTolDefault
+
+        logical              :: non_perturbative_pol_orbs
 !---------------------------------------------------------------------
 !     Auxiliary tables to save some species data for the operations
 !     in 'atom'. Mainly tables for the (deprecated) 'prinput', but
@@ -3179,6 +3181,16 @@ C
         spp%n_orbnl = 0 
         allocate(spp%orbnl(norb_nl))
 
+        non_perturbative_pol_orbs =
+     $     fdf_boolean('PAO.NonPerturbative.Polarization.Orbitals',
+     $                 .false.)
+
+        if (non_perturbative_pol_orbs .and. (basis_type/='split')) then
+           write(6,"(a)") '** Use an explicit PAO.Basis block'
+           call die("Non-perturbative polarization orbitals not " //
+     $              "compatible with " // trim(basis_type) //" option")
+        endif
+        
         noPAO = 0
         noPOL = 0
         if (basis_type.eq.'split') then  
@@ -3861,7 +3873,7 @@ C
                     ! Inherit the rc, to avoid 'non-bound' errors
                     ! We could apply a heuristic expansion factor
                     pol_exp_factor =
-     $                 fdf_get('polarization-rc-expansion-factor',
+     $                 fdf_get('pao-polarization-rc-expansion-factor',
      $                          1.0_dp)
                     rco(1,l,nsm) = pol_exp_factor*rco(1,l-1,nsm_parent)
 

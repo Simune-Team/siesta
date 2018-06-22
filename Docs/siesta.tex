@@ -2170,7 +2170,7 @@ block. In this case, the orbitals are generated in the standard way,
 using the appropriate confinement and split-norm options.
 
 If the perturbative method is not wanted, the following option
-can be used:
+can be used (only for the 'split' option of PAO generation):
 
 \begin{fdflogicalF}{PAO!non-perturbative-polarization-orbitals}
   \index{basis!polarization orbitals}
@@ -2182,7 +2182,7 @@ can be used:
 
 Note that, empirically, the perturbative method seems to give better
 results (in the variational sense), so this option should only be
-used when it fails for some reason.
+used when it fails for some reason, or for experimentation purposes.
 
 Furthermore, the perturbative method  does not require any extra
 information regarding confinement, since the $r_c$ value for the
@@ -2203,6 +2203,8 @@ value through the option:
   
 \end{fdfentry}
 
+A proper basis-set optimization should be carried out using
+a PAO.Basis block.
 
 
 \subsubsection{Soft-confinement options}

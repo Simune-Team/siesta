@@ -200,7 +200,7 @@
 
 !------------------------------------------------------------------------
       non_perturbative_pols = 
-     $   fdf_boolean('NonPerturbative.Polarization.Orbitals',.false.)
+     $  fdf_boolean('PAO.NonPerturbative.Polarization.Orbitals',.false.)
 
       reparametrize_pseudos =
      $   fdf_boolean('ReparametrizePseudos',.false.)
