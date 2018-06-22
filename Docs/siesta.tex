@@ -1971,7 +1971,7 @@ set to their problem under consideration.
     are constructed from perturbation theory,\index{perturbative
         polarization} and they are defined so they
     have\index{basis!polarization} the minimum angular momentum $l$
-    such that there are not occupied orbitals with the same $l$ in the
+    such that there are no occupied orbitals with the same $l$ in the
     valence shell of the ground-state atomic configuration. They
     polarize the corresponding $l-1$ shell.
 
@@ -2152,6 +2152,54 @@ As a summary of the above options:
   allows the underlying basis to have a higher kinetic energy cut-off
   for filtering. It only has an effect when the option
   \fdf{PAO!BasisType} is set to \fdf*{filteret}.
+  
+\end{fdfentry}
+
+\subsubsection{Polarization-orbital options}
+
+Polarization orbitals can be requested through an automatic basis-size
+specification such as DZP, or TZP, etc, or through the use of the 'P'
+shell option in the \fdf{PAO!Basis} block. 
+
+In these cases, by default, polarization orbitals are generated
+perturbatively, by formally applying an electric field to the orbital
+being polarized.
+
+Polarization shells can also be put explicitly in the \fdf{PAO!Basis}
+block. In this case, the orbitals are generated in the standard way,
+using the appropriate confinement and split-norm options.
+
+If the perturbative method is not wanted, the following option
+can be used:
+
+\begin{fdflogicalF}{PAO!non-perturbative-polarization-orbitals}
+  \index{basis!polarization orbitals}
+
+  If enabled, it will promote any polarization shells to the status
+  of explicit shells, thus using the standard generation options.
+  
+\end{fdflogicalF}
+
+Note that, empirically, the perturbative method seems to give better
+results (in the variational sense), so this option should only be
+used when it fails for some reason.
+
+Furthermore, the perturbative method  does not require any extra
+information regarding confinement, since the $r_c$ value for the
+polarization shell is the same as the one for the polarized shell.  If
+the perturbative method is turned off, the new explicit shell created
+for the polarization orbital will be assigned an $r_c$ equal to the
+one actually used for the polarized shell (for the 1st zeta). The only
+extra control offered at this point is a possible expansion of this
+value through the option:
+
+\begin{fdfentry}{PAO!polarization-rc-expansion-factor}[real]<$1.0$>
+  \index{basis!confinement radius expansion} 
+
+  When turning off the perturbative method for the generation of
+  polarization orbitals, assign to the 1st zeta of the explicit
+  polarization shell the $r_c$ of the polarized shell multiplied by
+  this factor.
   
 \end{fdfentry}
 

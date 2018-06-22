@@ -3802,6 +3802,7 @@ C
 
         integer :: nsm_parent
         type(shell_t), pointer :: shell, s_parent
+        real(dp) :: pol_exp_factor
 C
 C Reading the energy-shift to define the cut-off radius of orbitals
 C
@@ -3856,9 +3857,21 @@ C
                  if (shell%polarization_shell) then
                     s_parent => shell%shell_being_polarized
                     nsm_parent = s_parent%sequence_in_lshell
-                    rco(1,l,nsm) = rco(1,l-1,nsm_parent)
+
+                    ! Inherit the rc, to avoid 'non-bound' errors
+                    ! We could apply a heuristic expansion factor
+                    pol_exp_factor =
+     $                 fdf_get('polarization-rc-expansion-factor',
+     $                          1.0_dp)
+                    rco(1,l,nsm) = pol_exp_factor*rco(1,l-1,nsm_parent)
+
+                    ! Other z's will be constructed with the usual method,
+                    ! using the default parameters (for more control, one
+                    ! has to put the shell explicitly in the PAO.Basis block
+
                     write(6,'(A,I1,A)')
-     .                   'SPLIT: Actually polarization orbs for state ',
+     .                   'SPLIT: Non-perturbative ' //
+     $                   'polarization orbs for state ',
      .                   cnfigtb(l-1,nsm_parent,is), sym(l-1)
                     write(6,'(A,f0.4)')
      .                   "SPLIT: rc(1st zeta) reset to: ", rco(1,l,nsm)

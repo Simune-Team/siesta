@@ -1352,7 +1352,9 @@ c (according to atmass subroutine).
                   if (non_perturbative_pols) then
                      ls=>basp%lshell(l)
                      nsh = size(ls%shell)
-                     if (nsh /= 1) call die("Empty l-shell with nsh>1?")
+                     ! This can happen, for example, for Ge (3d is semicore,
+                     ! but the polarization shell is 4d (from 4p)
+                     !if (nsh /= 1) call die("Empty l-shell with nsh>1?")
                      s => ls%shell(nsh)
                      s%nzeta = nzeta_pol
                      allocate(s%rc(1:s%nzeta))
