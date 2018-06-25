@@ -8,7 +8,7 @@
       subroutine pdos( NO, nspin, maxspn, NO_L, MAXNH, 
      .                 MAXO, NUMH, LISTHPTR, LISTH, H, S, 
      .                 E1, E2, SIGMA, NHIST,
-     .                 XIJ, INDXUO, NK, KPOINT, WK, EO, NO_U )
+     .                 XIJ, INDXUO, GAMMA, NK, KPOINT, WK, EO, NO_U )
 C **********************************************************************
 C Subroutine to calculate the projected density of states on the
 C atomic orbitals for a given eigenvalue spectra
@@ -43,6 +43,7 @@ C INTEGER INDXUO(NO)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the nuber of orbitals in the unit cell
+C logical Gamma               : whether only the Gamma point is sampled
 C INTEGER NK                  : Number of k points
 C REAL*8  KPOINT(3,NK)        : k point vectors
 C REAL*8  WK(NK)              : k point weights (must sum one)
@@ -79,6 +80,7 @@ C **********************************************************************
      .  NO, NSPIN, MAXSPN, NO_L, MAXNH, NK, NHIST, 
      .  MAXO, NO_U
 
+      logical, intent(in) :: Gamma
       integer 
      .  NUMH(*), LISTH(MAXNH), LISTHPTR(*), INDXUO(NO)
 
@@ -98,7 +100,6 @@ C Internal variables ---------------------------------------------------
       integer iat, spec, ii, iorb
 
       logical :: orig_ParallelOverK, orig_Serial
-      logical :: gamma
 
       real(dp), dimension(:), pointer :: tmp
 
@@ -120,8 +121,6 @@ C Internal variables ---------------------------------------------------
 #endif
 
       call timer( 'pdos', 1)
-
-      gamma = ((nk == 1) .and. (sum(abs(kpoint(:,1))) == 0.0))
 
       orig_Serial = Serial
       orig_ParallelOverK = ParallelOverK

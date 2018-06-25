@@ -50,12 +50,9 @@
       character(len=20) :: msg
       type(Pair_Geometry_dSpData2D)  :: pair
       type(Geometry)                :: geom
-      logical                        :: not_using_auxcell
 
       call timer( 'PostSCF', 1 )
 
-      not_using_auxcell = (no_s == no_u)
-!     
 !     If converged, make one last iteration to find forces and stress
 
 !     If we use the minimization routine, the energy-density
@@ -79,12 +76,12 @@
      &                no_l, maxnh, maxnh, no_u,
      &                numh, listhptr, listh, numh, listhptr, listh, 
      &                H, S, qtot, fixspin, qtots, temp, 1.0_dp, -1.0_dp,
-     &                xijo, indxuo, nkpnt, kpoint, kweight,
+     &                xijo, indxuo, gamma_SCF, nkpnt, kpoint, kweight,
      &                eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &                occtol, iscf, neigwanted)
           Ecorrec = 0.0_dp
         else
-          if (not_using_auxcell) then
+          if ( gamma_SCF ) then
             call dminim(.true., .false., iscf, istp, no_l, nspin, no_u,
      &                  maxnh, numh, listhptr, listh, Escf, eta, qtots)
           else

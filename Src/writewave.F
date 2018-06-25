@@ -386,7 +386,7 @@ C #X.XXX #Y.YYY #Z.ZZZ
       subroutine wwave( no, nspin, maxspn, maxo, maxuo, maxnh, 
      .                  maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
-     .                  nk, kpoint, nuotot, occtol)
+     .                  gamma, nk, kpoint, nuotot, occtol)
 C *********************************************************************
 C Finds wavefunctions at selected k-points.
 C Written by P. Ordejon, June 2003
@@ -415,6 +415,7 @@ C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the number of orbitals in unit cell
+C logical Gamma               : whether only the Gamma-point is sampled
 C integer nk                  : Number of band k points
 C real*8  kpoint(3,maxk)      : k point vectors
 C integer nuotot              : Total number of orbitals in unit cell
@@ -447,6 +448,7 @@ C
 
       implicit          none
 
+      logical, intent(in) :: Gamma
       integer           maxk, maxnh, maxo, maxuo, nk, no, 
      .                  h_spin_dim, spinor_dim, nspin, maxspn,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
@@ -477,7 +479,6 @@ C Dynamic arrays
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
       logical :: SaveParallelOverK
-      logical           gamma
 
       h_spin_dim=size(H,dim=2)
 
@@ -492,8 +493,6 @@ C Get local number of orbitals
 C Start time counter 
       call timer( 'writewave', 1 )
 
-      gamma = ((nk == 1) .and. (sum(abs(kpoint(:,1))) == 0.0))
-      
 C Check parameter maxk 
       if (nk .gt. maxk) then
         if (Node.eq.0) then

@@ -96,7 +96,6 @@ module intrinsic_missing
 
 ! Elemental functions (can be called on arrays)
   public :: MODP
-  public :: MODP1
 
 ! Missing matrix stuff
   public :: EYE
@@ -232,28 +231,8 @@ contains
   elemental function MODP(a,p)
     integer, intent(in) :: a,p
     integer :: MODP
-    if ( a > p ) then
-       MODP = MOD(a,p)
-       if ( MODP == 0 ) MODP = p
-    else
-       MODP = a
-    end if
+    MODP = MOD(a-1,p) + 1
   end function MODP
-
-! Another implementation of the above function
-! NOTE that these functions should only be used on NATURAL numbers
-! The target domain is [1,p] instead of [0,p-1]
-! In particular, modp1(p,p) = p
-! This makes it useful in FORTRAN do-loops which are not zero-based
-! but 1-based.
-
-  elemental function MODP1(a,p)
-    integer, intent(in) :: a,p
-    integer :: MODP1
-
-    MODP1 = MOD(a-1,p) + 1
-    
-  end function MODP1
 
 ! Function to return the unique COUNT of an integer array.
 ! Thus will return how many DIFFERENT entries there exists.

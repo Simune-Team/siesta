@@ -15,7 +15,7 @@
       subroutine diagon(no, nspin, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, 
      .                  listdptr, listd, H, S, qtot, fixspin, 
-     .                  qs, temp, e1, e2, xij, indxuo, nk, 
+     .                  qs, temp, e1, e2, xij, indxuo, gamma, nk, 
      .                  kpoint, wk, eo, qo, Dnew, Enew, ef, efs, 
      .                  Entropy, nuotot, occtol, iscf, neigwanted )
 C *********************************************************************
@@ -62,6 +62,7 @@ C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the number of orbitals in unit cell
+C logical Gamma               : Whether only the Gamma point is sampled.
 C integer nk                  : Number of k points
 C real*8  kpoint(3,nk)        : k point vectors
 C real*8  wk(nk)              : k point weights (must sum one)
@@ -115,6 +116,7 @@ C
       implicit none
 
       real(dp), intent(in) :: H(:,:)
+      logical, intent(in) :: gamma
 
       integer
      .  iscf, maxnd, maxnh, maxuo, maxo, nk, no, nuotot,
@@ -145,7 +147,6 @@ C
 #endif
       integer            :: io, iuo, naux, nhs, npsi, nuo
       real(dp),  pointer :: aux(:)
-      logical            :: gamma
 C  ....................
 
 C Get Node number and calculate local orbital range
@@ -157,8 +158,6 @@ C Get Node number and calculate local orbital range
 
 C Start time counter ................................................
       call timer( 'diagon', 1 )
-
-      gamma = ((nk == 1) .and. (sum(abs(kpoint(:,1))) == 0.0))
 
 C     Check internal dimensions ..........................................
       

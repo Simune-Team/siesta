@@ -121,7 +121,7 @@
          call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
      .        maxnh,
      .        no_u, numh, listhptr, listh, H, S,
-     .        e1, e2, sigma, nhist, xijo, indxuo, 
+     .        e1, e2, sigma, nhist, xijo, indxuo, gamma_PDOS,
      .        nkpnt_pdos, kpoints_pdos, kweight_pdos, eo,
      .        no_u)
       else
@@ -130,7 +130,8 @@
      .        maxnh,
      .        no_u, numh, listhptr, listh, H, S,
      .        e1, e2, sigma, nhist,
-     .        xijo, indxuo, nkpnt, kpoint, kweight, eo,
+     .        xijo, indxuo, gamma_SCF,
+     .        nkpnt, kpoint, kweight, eo,
      .        no_u)
       endif
 
