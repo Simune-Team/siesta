@@ -26,6 +26,7 @@ C
      .           cnfigmx, charge, smass, basistype,
      &           rinn, vcte, qcoe, qyuk, qwid, split_norm
       use basis_types, only: write_basis_specs
+      use basis_types, only: initialize
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
       use basis_io
@@ -35,6 +36,10 @@ C
       use sys,          only : die
       use atom_options, only : get_atom_options, write_ion_plot_files
       use atm_types, only: species, species_info, nspecies
+
+      use m_spin,             only: init_spin, spin
+      use chemical
+      
 C
       implicit none
 
@@ -45,17 +50,26 @@ C
       type(basis_def_t), pointer   :: basp
       type(species_info),  pointer :: spp
 
-      external atm_transfer
-
 c Reading input for the pseudopotentials and atomic orbitals 
 
-         filein = "stdin"
+         filein = "INPUT"
          call fdf_init(filein,'gen-basis_fdf.log')
 
+         call init_spin()
+         
          call get_atom_options()
          write_ion_plot_files = .true.  ! get them always
 
          call read_xc_info()
+
+         ! Initialize all basis-parameters
+         call read_chemical_types()
+         nsp = number_of_species()
+         
+         allocate(basis_parameters(nsp))
+         do is = 1 , nsp
+            call initialize(basis_parameters(is))
+         end do
 
          call read_basis_specs()
          call basis_specs_transfer()
@@ -83,7 +97,7 @@ c Reading input for the pseudopotentials and atomic orbitals
      &           qwid(0:,1:,is),
      &           split_norm(0:,1:,is),
      &           filtercut(0:,1:,is), basp,spp,
-     &           lj_projs=fdf_get('lj-projs',.false.))
+     &           lj_projs=spin%SO_offsite)
          enddo 
 
          call prinput(nsp)
@@ -91,8 +105,9 @@ c Reading input for the pseudopotentials and atomic orbitals
 
 !        Create the new data structures
 
-         call dump_basis_ascii
-         call dump_basis_netcdf
+         nspecies = nsp
+         call dump_basis_ascii()
+         call dump_basis_netcdf()
 
       end program gen_basis
 !
