@@ -150,9 +150,12 @@
                                                          !  dependencies.
           integer                   ::  lmxkb_requested
           integer                   ::  lmxldaupj_requested
+          logical                   ::  non_perturbative_polorbs=.false.
+
           type(shell_t), pointer    ::  tmp_shell(:) => null()
           type(ldaushell_t), pointer::  ldaushell(:) => null()
           type(ref_container), allocatable :: shell_of(:,:)
+
       end type basis_def_t
 
       integer, save, public              :: nsp  ! Number of species
@@ -312,6 +315,7 @@
       p%lmxldaupj = -1
       p%lmxkb_requested = -1
       p%lmxldaupj_requested = -1
+      p%non_perturbative_polorbs = .false.
       p%nkbshells = -1
       p%nldaushells = -1
       p%nldauprojs_lm = -1

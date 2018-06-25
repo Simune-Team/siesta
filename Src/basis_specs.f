@@ -28,10 +28,13 @@
 ! * Read information about the valence charge density in the
 !   pseudopotential file and determine whether there are semicore
 !   states. 
-!   (A further semicore analysis is 'autobasis')
+!   (A further semicore analysis is in 'autobasis')
 ! * Read the optional fdf blocks:
 !   AtomicMass  (routine remass)
 !   PAO.BasisSize - Overrides the default 'basis_size' on a per-species basis.
+!   PAO.PolarizationScheme - Whether to use the standard perturbative approach
+!                            for polarization orbitals, or to promote the shell             
+!                            to a stand-alone status.
 !   PAO.Basis - This is the most complex block, very flexible but in
 !               need  of spelling-out the specific restrictions. Line by
 !               line, these are:
@@ -83,7 +86,8 @@
 !   angular momentum l such that there are no occupied orbitals 
 !   with the same l in the valence shell of the ground-state 
 !   atomic configuration. They polarize the corresponding l-1 shell.
-! 
+!   (See above for generation scheme)
+!
 !   The Soft-Confinement parameters 'rinn' and 'vcte' are set to 0.0
 !   The Charge-Confinement parameters 'qcoe', 'qyuk' and 'qwid' 
 !   are set to 0.0, 0.0 and 0.01
@@ -151,7 +155,6 @@
 
 !     Default Soft-confinement parameters set by the user
 !
-      logical, save   :: non_perturbative_pols
       logical, save   :: lsoft
       real(dp), save  :: softRc, softPt
 
@@ -199,9 +202,6 @@
       real(dp) :: new_a, new_b, new_rmax
 
 !------------------------------------------------------------------------
-      non_perturbative_pols = 
-     $  fdf_boolean('PAO.NonPerturbative.Polarization.Orbitals',.false.)
-
       reparametrize_pseudos =
      $   fdf_boolean('ReparametrizePseudos',.false.)
 !
@@ -734,7 +734,7 @@ C Sanity checks on values
             else
               s%nzeta_pol = 1
             endif
-            basp%lmxo = max(basp%lmxo,s%l+1)  ! NOTE
+            basp%lmxo = max(basp%lmxo,s%l+1)  ! NOTE new behavior
           endif
 !
 ! Soft-confinement
@@ -843,6 +843,7 @@ C Sanity checks on values
                                      !!
         polarized_shell_ptr => null()
         allocate (basp%lshell(0:basp%lmxo))
+
         loop_l: do l= 0, basp%lmxo
           ls => basp%lshell(l)
           call initialize(ls)
@@ -851,11 +852,12 @@ C Sanity checks on values
           nn = 0
           do ish= 1, basp%nshells_tmp
             s => basp%tmp_shell(ish)
-            if (non_perturbative_pols) then
+            if (s%l .eq. l) nn=nn+1
+
+            if (basp%non_perturbative_polorbs) then
                ! Make room for a new one (explicit polarization orbital)
                if (s%polarized .and. (s%l == (l-1))) nn=nn+1
             endif
-            if (s%l .eq. l) nn=nn+1
           enddo
           ls%nn = nn
           if (nn.eq.0) then
@@ -868,8 +870,26 @@ C Sanity checks on values
           ind = 0
           do ish=1, basp%nshells_tmp
             s => basp%tmp_shell(ish)
-            if (non_perturbative_pols) then
+
+            if (s%l .eq. l) then
+              ind = ind+1
+              call copy_shell(source=s,target=ls%shell(ind))
+              if (basp%non_perturbative_polorbs) then
+                 if (s%polarized) then
+                    ! Save for later. There should be just one 'polarized' shell
+                    polarized_shell_ptr => ls%shell(ind)
+                    ! Remove markers (in new objects)
+                    ls%shell(ind)%polarized = .false.
+                    ls%shell(ind)%was_polarized = .true.
+                    ls%shell(ind)%nzeta_pol = 0
+                 endif
+              endif
+            endif
+
+            if (basp%non_perturbative_polorbs) then
                if (s%polarized .and. (s%l == (l-1))) then
+                  ! Note that we have already seen this (parent) shell
+                  ! in the previous iteration of loop_l
                   ind = ind + 1
                   ! Copy again to inherit data
                   call copy_shell(source=s,target=ls%shell(ind))
@@ -885,22 +905,10 @@ C Sanity checks on values
                   ! rc's, lambdas, etc, will remain as in s.
                endif
             endif
-            if (s%l .eq. l) then
-              ind = ind+1
-              call copy_shell(source=s,target=ls%shell(ind))
-              if (non_perturbative_pols) then
-                 if (s%polarized) then
-                    ! Save for later. There should be just one 'polarized' shell
-                    polarized_shell_ptr => ls%shell(ind)
-                    ! Remove markers (in new objects)
-                    ls%shell(ind)%polarized = .false.
-                    ls%shell(ind)%was_polarized = .true.
-                    ls%shell(ind)%nzeta_pol = 0
-                 endif
-              endif
-            endif
-          enddo
-          if (nn.eq.1) then
+
+         enddo
+
+         if (nn.eq.1) then
             ! If n was not specified, set it to ground state n
             if (ls%shell(1)%n.eq.-1)
      .        ls%shell(1)%n=basp%ground_state%n(l)
@@ -998,6 +1006,59 @@ c given by the general input PAO.BasisSize, or its default value.
       endif
 
       end subroutine resizes
+
+!-----------------------------------------------------------------------
+      subroutine read_polarization_scheme()
+
+c Reading polarization orbital scheme for different species.
+c
+c Reads fdf block. Not necessarily all species have to be given. The
+c ones not given will be assumed to use the default perturbative method
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
+      character(len=40) :: string
+      logical           :: non_perturbative_pols
+      integer isp
+
+      non_perturbative_pols = 
+     $  fdf_boolean('PAO.NonPerturbative.Polarization.Orbitals',.false.)
+      loop: do isp=1, nsp
+         basp=>basis_parameters(isp)
+         basp%non_perturbative_polorbs = non_perturbative_pols
+      end do loop
+
+
+      if (fdf_block('PAO.PolarizationScheme',bfdf)) then
+        do while(fdf_bline(bfdf,pline))
+          if (.not. fdf_bmatch(pline,'nn'))
+     .      call die("Wrong format in PAO.PolarizationScheme")
+          isp = label2species(fdf_bnames(pline,1))
+          if (isp .eq. 0) then
+             write(6,'(a,1x,a)')
+     .            "WRONG species symbol in PAO.PolarizationScheme:",
+     .            trim(fdf_bnames(pline,1))
+             call die("Wrong species in PAO.PolarizationScheme")
+          else
+
+             basp => basis_parameters(isp)
+             string = fdf_bnames(pline,2)
+             
+             select case (trim(string))
+             case ("non-perturbative")
+                basp%non_perturbative_polorbs = .true.
+             case ("perturbative")
+                basp%non_perturbative_polorbs = .false.
+             case default
+                call die("Bad keyword in PAO.PolarizationScheme")
+             end select
+             
+          endif
+        enddo
+      endif
+
+      end subroutine read_polarization_scheme
 
 !-----------------------------------------------------------------------
 
@@ -1223,7 +1284,7 @@ c (according to atmass subroutine).
          
          ! Check whether we need to consider larger l's due to
          ! non-perturbative polarization orbitals
-         if (non_perturbative_pols) then
+         if (basp%non_perturbative_polorbs) then
            if (basp%basis_size(3:3) .eq. 'p') then
             loop_pol: do l=1,4  ! Note that l starts at 1
                if ( (.not. basp%ground_state%occupied(l)) ) then
@@ -1349,7 +1410,7 @@ c (according to atmass subroutine).
                ! Note that l goes from 1 to 4
                if ( (.not. basp%ground_state%occupied(l)) ) then
      $                     
-                  if (non_perturbative_pols) then
+                  if (basp%non_perturbative_polorbs) then
                      ls=>basp%lshell(l)
                      nsh = size(ls%shell)
                      ! This can happen, for example, for Ge (3d is semicore,
