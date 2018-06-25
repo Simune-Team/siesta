@@ -609,16 +609,17 @@ C     Initialise MPI and set processor number
 !     Find required supercell
 !     2*rmaxh is used to guarantee that two given orbitals in the
 !     supercell can only overlap once
-      if (gamma) then
+      if ( gamma ) then
         nsc(1:3) = 1
-      else
-        ! Discussion with Jose-Soler we get this size ! NPA
+      else if ( naive_aux_cell ) then
+        ! The auxiliary supercell is symmetric in the connections,
+        ! hence we need a factor of 2.
         do i = 1 , 3
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
           nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
         end do
-        ! The above is kept for historical reasons,
-        ! but a tight supercell can be found from the atom-graph info:
+      else
+        ! Determine the actual required number of supercells
         call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
       end if
 
