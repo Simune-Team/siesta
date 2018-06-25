@@ -393,6 +393,7 @@ C Sanity checks on values
 
       call remass()
       call resizes()
+      call read_polarization_scheme()
       call repaobasis()
       call autobasis()
       call relmxkb()
@@ -929,26 +930,11 @@ C Sanity checks on values
          integer lmxkb
          integer, intent(in) :: is
 
-         integer lpol, l, i
-
          lmxkb = -1
          basp=>basis_parameters(is)
          if (basp%z .le. 0) return     ! Leave it at -1 for floating orbs.
 
-         lmxkb = basp%lmxo + 1
-
-         ! But watch out for polarization orbitals...
-         ! We ASSUME that these do not count towards lshell%nn...
-
-         lpol = 0
-         do l = 0, basp%lmxo
-            ls=>basp%lshell(l)
-            do i = 1, ls%nn
-               s=>ls%shell(i)
-               if (s%polarized) lpol = s%l + 1
-            enddo
-         enddo
-         if (lpol .gt. basp%lmxo) lmxkb = lpol + 1
+         lmxkb = basp%lmxo + 1    ! This now includes any polarization orbitals
 
          write(6,'(3a,i1,/,2a,/,a)') 'For ', trim(basp%label),
      .              ', standard SIESTA heuristics set lmxkb to ',
@@ -1010,10 +996,7 @@ c given by the general input PAO.BasisSize, or its default value.
 !-----------------------------------------------------------------------
       subroutine read_polarization_scheme()
 
-c Reading polarization orbital scheme for different species.
-c
-c Reads fdf block. Not necessarily all species have to be given. The
-c ones not given will be assumed to use the default perturbative method
+      ! Optionally read polarization orbital scheme for different species.
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -1023,7 +1006,9 @@ c ones not given will be assumed to use the default perturbative method
       integer isp
 
       non_perturbative_pols = 
-     $  fdf_boolean('PAO.NonPerturbative.Polarization.Orbitals',.false.)
+     $     fdf_boolean('PAO.NonPerturbative.Polarization.Orbitals',
+     $                 .false.)
+      
       loop: do isp=1, nsp
          basp=>basis_parameters(isp)
          basp%non_perturbative_polorbs = non_perturbative_pols
@@ -1283,16 +1268,17 @@ c (according to atmass subroutine).
          enddo
          
          ! Check whether we need to consider larger l's due to
-         ! non-perturbative polarization orbitals
-         if (basp%non_perturbative_polorbs) then
-           if (basp%basis_size(3:3) .eq. 'p') then
+         ! polarization orbitals (this is a new behavior -- in the
+         ! case of perturbative pol orbs, the highest-l shell will remain empty)
+         ! But lmxo in the 'specs' output will be correct, and not confusing
+
+         if (basp%basis_size(3:3) .eq. 'p') then
             loop_pol: do l=1,4  ! Note that l starts at 1
-               if ( (.not. basp%ground_state%occupied(l)) ) then
-                  basp%lmxo = max(l,basp%lmxo)
-                  EXIT loop_pol
-               endif
+            if ( (.not. basp%ground_state%occupied(l)) ) then
+               basp%lmxo = max(l,basp%lmxo)
+               EXIT loop_pol
+            endif
             enddo loop_pol
-           endif
          endif
         
          allocate (basp%lshell(0:basp%lmxo))

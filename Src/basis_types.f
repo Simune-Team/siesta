@@ -761,11 +761,6 @@
      $        'L=', l, 'Nsemic=', nsemic(l,is),
      $        'Cnfigmx=', cnfigmx(l,is)
          do n=1,nsemic(l,is)+1
-            if (nzeta(l,n,is) == 0) then
-               ! Shell is not occupied in the GS
-               ! (see, e.g. basis_specs::autobasis)
-               exit
-            endif
             nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
             write(orb_id,"(a1,i1,a1,a1)") "(",nprin, sym(l), ")"
             ! but we still write n as index within the shell
@@ -773,7 +768,25 @@
      $                 advance="no")
      $           'n=', n, 'nzeta=',nzeta(l,n,is),
      $           'polorb=', polorb(l,n,is), orb_id
-            if (basp%lshell(l)%shell(n)%was_polarized) then
+
+            if (nzeta(l,n,is) == 0) then
+               ! Shell is not occupied in the GS
+               ! (see, e.g. basis_specs::autobasis)
+               ! It could be a polarization orbital with the new
+               ! convention of setting lmxo including polorbs, or just empty
+               if (l == basp%lmxo) then
+                  write(lun,'(tr2,a)')
+     $             '(perturbative polarization orbital)'
+               else
+                  write(lun,'(tr2,a)')
+     $             '(empty shell -- could be pol. orbital)'
+               endif
+               EXIT
+               
+            else if (basp%lshell(l)%shell(n)%polarized) then
+               write(lun,'(tr2,a)')
+     $              '(to be polarized perturbatively)'
+            else if (basp%lshell(l)%shell(n)%was_polarized) then
                write(lun,'(tr2,a)')
      $              '(to be polarized non-perturbatively)'
             else if (basp%lshell(l)%shell(n)%polarization_shell) then
