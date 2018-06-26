@@ -104,6 +104,8 @@ subroutine read_options( na, ns, nspin )
   !                             6 = Force constants
   !                             7 = Deprecated (Forces for PHONON program)
   !                             8 = Force evaluation
+  !                             9 = Explicit set of coordinates
+  !                            10 = Lua controlled dynamics
   ! integer istart           : Initial time step for MD
   ! integer ifinal           : Final time step for MD
   ! integer nmove            : Number of CG steps in CG optimization
@@ -1702,6 +1704,15 @@ subroutine read_options( na, ns, nspin )
      end select
   end if
 
+
+  ! Default variable depending on the action required
+  if ( idyn == 0 .and. nmove <= 1 ) then
+    ! Single-point calculation: use the tight auxiliary supercell by default
+    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .false. )
+  else
+    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .true. )
+  end if
+  
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   savehs                 = fdf_get( 'SaveHS', .false. )
   initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )

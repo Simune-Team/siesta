@@ -45,8 +45,7 @@ MODULE m_sankey_change_basis
   use mpi_siesta,          only : mpi_bcast, mpi_comm_world, mpi_logical
 #endif
   use m_spin,              only: nspin
-  use m_gamma,             only: gamma
-  use kpoint_scf_m,        only: kpoint_scf
+  use kpoint_scf_m,        only: kpoint_scf, gamma_scf
   use atomlist,            only: no_u, indxuo
   use wavefunctions
   use sparse_matrices,     only : numh, listhptr, listh, S, xijo, Dscf
@@ -123,7 +122,7 @@ MODULE m_sankey_change_basis
         ind = listhptr(iuo) + j
         juo = listh(ind)
         jo  = indxuo (juo)
-        if(.not.gamma) then 
+        if(.not.gamma_scf) then 
           kxij = kpoint_scf%k(1,ik) * xijo(1,ind) +&
           kpoint_scf%k(2,ik) * xijo(2,ind) +&
           kpoint_scf%k(3,ik) * xijo(3,ind)

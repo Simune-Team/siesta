@@ -40,8 +40,7 @@
       use m_steps,        only : istp, inicoor
       use m_compute_dm,   only : PreviousCallDiagon
       use m_eo
-      use kpoint_scf_m, only: kpoint_scf
-      use m_gamma
+      use kpoint_scf_m, only: kpoint_scf, gamma_scf
       implicit none
 
       ! MD-step, SCF-step
@@ -52,12 +51,8 @@
       type(Pair_Geometry_dSpData2D)  :: pair
       type(Geometry)                :: geom
 
-#ifdef DEBUG
-      call write_debug( '    PRE post_scf_work' )
-#endif
-
       call timer( 'PostSCF', 1 )
-!
+
 !     If converged, make one last iteration to find forces and stress
 
 !     If we use the minimization routine, the energy-density
@@ -81,16 +76,18 @@
      &                no_l, maxnh, maxnh, no_u,
      &                numh, listhptr, listh, numh, listhptr, listh, 
      &                H, S, qtot, fixspin, qtots, temp, 1.0_dp, -1.0_dp,
-     &                gamma, xijo, indxuo,
+     &                xijo, indxuo, gamma_SCF,
      &                kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
      &                eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &                occtol, iscf, neigwanted)
           Ecorrec = 0.0_dp
         else
-          if (gamma) then
+            if ( no_u == no_s ) then ! Not using an auxiliary supercell
             call dminim(.true., .false., iscf, istp, no_l, nspin, no_u,
      &                  maxnh, numh, listhptr, listh, Escf, eta, qtots)
           else
+            ! When using an auxiliary supercell
+            ! (even for gamma point; not optimized yet)
             call zminim(.true., .false., iscf, istp, no_l, nspin, no_u,
      &                  maxnh, numh, listhptr, listh, Escf, eta, qtots,
      &                  no_s, xijo, indxuo,

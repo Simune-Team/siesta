@@ -95,25 +95,25 @@ C Initialize some variables
       delta = (E2 - E1)/nhist
 
 C Initialize auxiliary variables
-      Haux=dcmplx(0.0_dp,0.0_dp)
-      Saux=dcmplx(0.0_dp,0.0_dp)
 
       call re_alloc(Spr, 1, nuotot, 1, nuo, name='Spr',
      &     routine='pdos3g')
 
       do io = 1,nuo
+        Saux(:,:,:,io) = 0._dp
+        Haux(:,:,:,io) = 0._dp
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-            Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-            Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-            Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-            Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-            Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-            Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
+          jo = indxuo(jo)
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
         enddo
       enddo
-
 C Diagonalize at the Gamma point
       call cdiag( Haux, Saux, 2*nuotot, 2*nuo, 2*nuotot,
      .            eo, psi, 2*nuotot, 1, ierror, 2*BlockSize )
@@ -121,20 +121,21 @@ C Diagonalize at the Gamma point
         call die('Terminating due to failed diagonalisation')
       elseif (ierror .lt. 0) then
 C Repeat diagonalisation with increased memory to handle clustering
-        Saux = dcmplx(0.0_dp, 0.0_dp)
-        Haux = dcmplx(0.0_dp, 0.0_dp)
-        do io = 1,nuo
-          do j = 1,numh(io)
-            ind = listhptr(io) + j
-            jo = listh(ind)
-             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-             Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-             Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-             Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
-          enddo
+      do io = 1,nuo
+        Saux(:,:,:,io) = 0._dp
+        Haux(:,:,:,io) = 0._dp
+        do j = 1,numh(io)
+          ind = listhptr(io) + j
+          jo = listh(ind)
+          jo = indxuo(jo)
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
         enddo
+      enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
      .                         2*nuotot,1,ierror,2*BlockSize)
       endif
@@ -145,7 +146,8 @@ C     Rebuild the full overlap matrix
         do j = 1, numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-          Spr(jo,io) = S(ind)
+          jo = indxuo(jo)
+          Spr(jo,io) = Spr(jo,io) + S(ind)
         enddo
       enddo
 

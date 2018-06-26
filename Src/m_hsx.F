@@ -8,7 +8,7 @@
       module m_hsx
       public :: write_hsx
       CONTAINS
-      subroutine write_hsx( gamma, no_u, no_s, nspin, indxuo, maxnh, 
+      subroutine write_hsx( no_u, no_s, nspin, indxuo, maxnh, 
      .                 numh, listhptr, listh, H, S, qtot, temp, xij)
 C *********************************************************************
 C Saves the hamiltonian and overlap matrices, and other data required
@@ -16,8 +16,6 @@ C to obtain the bands and density of states
 C Writen by J.Soler July 1997.
 C Note because of the new more compact method of storing H and S
 C this routine is NOT backwards compatible
-C *************************** INPUT **********************************
-C logical       gamma         : Is only gamma point used?
 C ******************** INPUT or OUTPUT (depending on task) ***********
 C integer no_u                : Number of basis orbitals per unit cell
 C integer no_s                : Number of basis orbitals per supercell
@@ -36,7 +34,6 @@ C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  qtot                : Total number of electrons
 C real*8  temp                : Electronic temperature for Fermi smearing
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
-C                               (not read/written if only gamma point)
 
 C
 C  Modules
@@ -59,7 +56,10 @@ C
 
       implicit          none
 
-      logical           gamma
+      ! This really means that supercell info is supported by default
+      logical, parameter ::  gamma = .false. 
+      logical, parameter ::  write_xijk = .true.
+
       integer           maxnh, no_u, no_s, nspin
       integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
       real(dp)          H(maxnh,nspin), S(maxnh),
@@ -78,7 +78,6 @@ C Internal variables and arrays
       real(dp), dimension(:),   allocatable :: buffer
       real(dp), dimension(:,:), allocatable :: buffer2
 #endif
-      logical    baddim, gammaonfile, write_xijk
 
       call timer("writeHSX",1)
       
@@ -101,14 +100,14 @@ C Open file
 C Write overall data
           write(iu) no_u, no_s, nspin, maxnhtot
 
-C Read logical
+C Write logical (always .false.)
           write(iu) gamma
 
 C Allocate local array for global numh
           allocate(numhg(no_u))
           call memory('A','I',no_u,'iohs')
 
-C Write out indxuo
+C Write out indxuo always
           if (.not.gamma) then
             write(iu) (indxuo(ih),ih=1,no_s)
           endif
@@ -272,9 +271,7 @@ C Free buffer array
           write(iu) qtot,temp
         endif
 
-        write_xijk = .TRUE.
-
-        if (write_xijk) then
+        if (write_xijk) then           ! Always
 #ifdef MPI
 C Allocate buffer array
           if (Node .eq. 0) then

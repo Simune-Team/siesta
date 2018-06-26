@@ -59,7 +59,6 @@
       use m_rmaxh
       use m_forces 
       use m_eo
-      use m_gamma
       use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
       use m_local_DOS,    only: init_local_DOS
@@ -123,7 +122,7 @@
       integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
-      logical :: user_wants_supercell
+      logical :: user_wants_supercell, not_using_auxcell
       real(dp) :: walltime_m, walltime_s
 
       integer :: World_Group
@@ -585,20 +584,20 @@ C     Initialise MPI and set processor number
 !     not early, in order to decide whether to use an 
 !     auxiliary supercell for the calculation of matrix elements.
       call setup_kpoint_scf( ucell )
-      gamma = gamma_scf
+      not_using_auxcell = gamma_scf
 
 !     Call initialisation of PDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation
       call init_projected_DOS( ucell )
       if ( do_pdos ) then
-        gamma = gamma .and. gamma_pdos
+        not_using_auxcell = not_using_auxcell.and. gamma_pdos
       endif
 
 !     Call initialisation of LDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation
       call init_local_DOS( ucell )
       if ( do_ldos ) then
-        gamma = gamma .and. gamma_ldos
+        not_using_auxcell = not_using_auxcell .and. gamma_ldos
       endif
 
       ! Read in diagonalization routines
@@ -615,35 +614,41 @@ C     Initialise MPI and set processor number
      &              'siesta_init')
 
       call setup_bands( )
-      gamma = gamma .and. gamma_bands
+      not_using_auxcell = not_using_auxcell .and. gamma_bands
 
       call setup_wf_kpoints( )
-      gamma = gamma .and. gamma_wavefunctions
+      not_using_auxcell = not_using_auxcell .and. gamma_wavefunctions
 
       call estimate_pol_kpoints( ucell )
-      gamma = gamma .and. gamma_polarization
-!      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
+      not_using_auxcell = not_using_auxcell .and. gamma_polarization
 !
 !     User can request that the calculation is done with an explicit
 !     auxiliary supercell and hermitian version, even if using only
 !     the gamma point
 !
       user_wants_supercell = fdf_get( 'ForceAuxCell', .false. )
-      if (user_wants_supercell) gamma = .false.
+      if (user_wants_supercell) not_using_auxcell = .false.
 
 !     Find required supercell
 !     2*rmaxh is used to guarantee that two given orbitals in the
 !     supercell can only overlap once
-      if (gamma) then
+      if ( not_using_auxcell ) then
         nsc(1:3) = 1
-      else
-        ! Discussion with Jose-Soler we get this size ! NPA
+      else if ( naive_aux_cell ) then
+        ! This scheme gives a safe supercell, not necessarily the tightest,
+        ! using only unit cell size information. It is appropriate for cases
+        ! in which the geometry might change, such as MD and relaxations. It
+        ! is expected that this supercell will stay mostly constant, allowing
+        ! the reuse of DM information across geometry steps. 
+        ! The auxiliary supercell is symmetric in the connections,
+        ! hence we need a factor of 2.
         do i = 1 , 3
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
           nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
         end do
-        ! The above is kept for historical reasons,
-        ! but a tight supercell can be found from the atom-graph info:
+      else
+        ! Determine the tightest auxiliary supercell using
+        ! also the atomic positions 
         call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
       end if
 

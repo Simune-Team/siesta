@@ -128,8 +128,7 @@ contains
       end if
       
       if ( IONode ) then
-        write(*,'(a,tr1,f8.3," -- ",f8.3,tr1,f8.3)') 'siesta: E1 -- E2, Ef [eV]', &
-            e1/eV, e2/eV, Ef/eV
+        write(*,'(a,tr1,f8.3," -- ",f8.3)') 'siesta: E1 -- E2 [eV]:', e1/eV, e2/eV
       end if
 
       ! If the k points have been set specifically for the LDOS then use this set
@@ -144,7 +143,7 @@ contains
       call diagon(no_s, spinor_dim, no_l, maxnh, maxnh, no_u, &
           numh, listhptr, listh, numh, listhptr, listh, &
           H, S, qtot, fixspin, qtots, temp, e1, e2, &
-          gamma_ldos, xijo, indxuo, &
+          xijo, indxuo, gamma_ldos, &
           kpoint_ldos%N, kpoint_ldos%k, kpoint_ldos%w, &
           eo, qo, Dscf, Escf, ef, efs, dummy_Entrop, no_u, &
           occtol, dummy_iscf, neigwanted)

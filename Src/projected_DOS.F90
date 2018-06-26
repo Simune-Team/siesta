@@ -65,7 +65,6 @@ contains
     use m_energies, only: Ef
     use m_eo
     use m_spin,      only: h_spin_dim, spinor_dim
-    use m_gamma
     use units,       only: eV
       
     type(block_fdf)            :: bfdf
@@ -122,8 +121,8 @@ contains
       nhist = fdf_bintegers(pline,1)
 
       if ( IOnode ) then
-        write(*,'(a,3(f8.2,a),2x,i5)') 'siesta: e1, e2, sigma, nhist: ', &
-            e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
+        write(*,'(a,f8.3," -- ",2(f8.3,tr1),i0)') 'siesta: E1 -- E2, sigma [eV], nhist: ', &
+            e1/eV, e2/eV, sigma/eV, nhist
       end if
 
       ! If the k points have been set specifically for the PDOS then use this set
@@ -133,7 +132,7 @@ contains
       
       call pdos( no_s, h_spin_dim, spinor_dim, no_l, &
           maxnh, no_u, numh, listhptr, listh, H, S, &
-          e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, &
+          e1, e2, sigma, nhist, xijo, indxuo, gamma_pdos, &
           kpoint_pdos%N, kpoint_pdos%k, kpoint_pdos%w, eo, no_u)
 
     else

@@ -804,11 +804,19 @@ contains
       ! initialize the bulk to those values
       if ( DM_bulk > 0 ) then
 
-         if ( IONode ) then
+        if ( IONode ) then
             write(*,'(/,2a)') 'transiesta: ', &
                  'Initializing bulk DM in electrodes.'
-         end if
+        end if
 
+        ! The electrode EDM is aligned at Ef == 0
+        ! We need to align the energy matrix to Ef == 0, then we switch
+        ! it back later.
+        DM  => val(DM_2D)
+        EDM => val(EDM_2D)
+        iEl = size(DM)
+        call daxpy(iEl,-Ef,DM(1,1),1,EDM(1,1),1)
+         
          na_a = 0
          do iEl = 1 , na_u
             if ( .not. a_isDev(iEl) ) na_a = na_a + 1
@@ -849,9 +857,7 @@ contains
 
          ! The electrode EDM is aligned at Ef == 0
          ! We need to align the energy matrix
-         DM  => val(DM_2D)
-         EDM => val(EDM_2D)
-         iEl =  size(DM)
+         iEl = size(DM)
          call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
 
       end if
