@@ -17,6 +17,7 @@
       use parallel,        only : Node, Nodes, BlockSize
       use parallelsubs,    only : LocalToGlobalOrb,GlobalToLocalOrb
       use m_fermid,        only : fermid, stepf
+      use intrinsic_missing, only: MODP
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -148,22 +149,19 @@ C of referencing has been changed in several places to reflect this.
 ! D_{i,j}(1,2) = 0.5 ( D_{i,j}(1,2) + D_{i,j}(2,1)^* )
 ! can not be enforced here.
 
-      Saux = dcmplx(0.0_dp, 0.0_dp)
-      Haux = dcmplx(0.0_dp, 0.0_dp)
       do io = 1,nuo
+        Saux(:,:,:,io) = 0._dp
+        Haux(:,:,:,io) = 0._dp
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-           Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-           Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-           Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-           Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-           Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-           Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
-        
-c           write(6,'(a,3i5,8f12.6)') 'io/jo/ind/H(ind,1:8) = ',
-c     .           io, jo, ind, H(ind,1:8)
-
+          jo = MODP(jo,nuotot) ! To allow auxiliary supercells
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
         enddo
       enddo
       
@@ -176,20 +174,22 @@ c     .           io, jo, ind, H(ind,1:8)
         call die('Terminating due to failed diagonalisation')
       elseif (ierror.lt.0) then
 !       Repeat diagonalisation with increased memory to handle clustering
-        Saux = dcmplx(0.0_dp, 0.0_dp)
-        Haux = dcmplx(0.0_dp, 0.0_dp)
-        do io = 1,nuo
-          do j = 1,numh(io)
-            ind = listhptr(io) + j
-            jo = listh(ind)
-             Saux(1,jo,1,io) = dcmplx(  S(ind),   0.0_dp)
-             Saux(2,jo,2,io) = dcmplx(  S(ind),   0.0_dp)
-             Haux(1,jo,1,io) = dcmplx(H(ind,1), H(ind,5))
-             Haux(2,jo,2,io) = dcmplx(H(ind,2), H(ind,6))
-             Haux(1,jo,2,io) = dcmplx(H(ind,3),-H(ind,4))
-             Haux(2,jo,1,io) = dcmplx(H(ind,7), H(ind,8))
-          enddo
+      do io = 1,nuo
+        Saux(:,:,:,io) = 0._dp
+        Haux(:,:,:,io) = 0._dp
+        do j = 1,numh(io)
+          ind = listhptr(io) + j
+          jo = listh(ind)
+          jo = MODP(jo,nuotot) ! To allow auxiliary supercells
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
         enddo
+      enddo
+      
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
      .             2*neigwanted,iscf,ierror,2*BlockSize)
       endif
@@ -264,6 +264,7 @@ c     .           io, jo, ind, H(ind,1:8)
             do j = 1,numd(io)
               ind = listdptr(io) + j
               jo = listd(ind)
+              jo = MODP(jo,nuotot) ! To allow auxiliary supercells
 !------- 1,1 -----------------------------------------------------------
               D11  = caux(1,iio) * dconjg(caux(1,jo))
 !------- 2,2 -----------------------------------------------------------

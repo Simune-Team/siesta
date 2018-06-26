@@ -69,7 +69,6 @@
       use parallel,    only: IOnode
       use m_eo
       use m_spin,      only: h_spin_dim, spinor_dim
-      use m_gamma
       use units,       only: eV
       
       implicit none
@@ -118,9 +117,10 @@
       
       call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
      .    maxnh, no_u, numh, listhptr, listh, H, S,
-     .    e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
+     .    e1, e2, sigma, nhist, xijo, indxuo, gamma_PDOS,
      .    kpoints_pdos%N, kpoints_pdos%k, kpoints_pdos%w, eo,
      .    no_u)
+
 
       end subroutine projected_DOS
 

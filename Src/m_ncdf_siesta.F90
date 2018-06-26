@@ -42,7 +42,6 @@ contains
     use fdf, only : fdf_get, leqi
     use class_Sparsity
     use files, only : slabel
-    use m_gamma, only : Gamma
     use atomlist, only: no_u, no_s, lasto, Qtot
     use siesta_geom, only: na_u, nsc
     use sparse_matrices, only: sparse_pattern

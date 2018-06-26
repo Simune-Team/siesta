@@ -26,7 +26,7 @@
       use sys,            only: die                      
       use files,          only: slabel     ! system label
       use files,          only: filesOut_t ! derived type for output file names
-      use kpoint_scf_m, only: kpoints_scf
+      use kpoint_scf_m, only: kpoints_scf, gamma_scf
       use parallel,       only: IOnode                   
       use files,          only : label_length            
       use m_ntm
@@ -36,7 +36,6 @@
       use m_spin,         only: nspin
       use m_spin,         only: spinor_dim 
       use m_diagon,       only: diagon
-      use m_gamma
       use m_dhscf,        only: dhscf
       implicit none
 
@@ -79,7 +78,7 @@
           call diagon(no_s, spinor_dim, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qtots, temp, e1, e2,
-     .                gamma, xijo, indxuo,
+     .                xijo, indxuo, gamma_SCF,
      .                kpoints_scf%N, kpoints_scf%k, kpoints_scf%w,
      .                eo, qo, Dscf, Escf, ef, efs, dummy_Entrop, no_u,
      .                occtol, dummy_iscf, neigwanted)

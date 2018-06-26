@@ -232,7 +232,6 @@ CONTAINS
       use sparse_matrices,  only: numh, maxnh, listh, listhptr, xijo
       use sparse_matrices,  only: H, S
       use kpoint_scf_m,     only: kpoints_scf, gamma_scf
-      use m_gamma,          only: gamma
       use atomlist,         only: no_l, no_u, indxuo
       use m_spin,           only: nspin
       use MatrixSwitch

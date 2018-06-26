@@ -204,6 +204,9 @@ MODULE siesta_options
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
 
+  logical :: naive_aux_cell ! Control whether the auxiliary superc-cell will always be the maximal allowed cell size
+                            ! This will default to true for MD, FC and Lua controlled calculations since atoms may move
+  
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
   real(dp) :: charnet       ! Net electric charge
