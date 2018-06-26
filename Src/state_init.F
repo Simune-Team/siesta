@@ -259,14 +259,23 @@
 !       Find required supercell
         if (not_using_auxcell) then
            nsc(1:3) = 1
+        else if ( naive_aux_cell ) then
+          ! This scheme gives a safe supercell, not necessarily the
+          ! tightest, using only unit cell size information. It is
+          ! appropriate for cases in which the geometry might change,
+          ! such as MD and relaxations. It is expected that this
+          ! supercell will stay mostly constant, allowing the reuse of
+          ! DM information across geometry steps.  The auxiliary
+          ! supercell is symmetric in the connections, hence we need a
+          ! factor of 2.
+          do i = 1 , 3
+            veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
+            nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
+          end do
         else
-           do i = 1 , 3
-              veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-              nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
-           end do
-           ! The above is kept for historical reasons,
-           ! but a tight supercell can be found from the atom-graph info:
-           call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+          ! Determine the tightest auxiliary supercell using
+          ! also the atomic positions 
+          call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
         endif
 
         mscell = 0.0_dp

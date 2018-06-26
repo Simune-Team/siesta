@@ -157,7 +157,7 @@ contains
           DM_init = .true.
           read_DM = .false.
           if ( IONode ) then
-             write(*,"(a)") "DM history reset as supercell changed."
+             write(*,"(a)") "DM history reset as auxiliary supercell changed."
           end if
           call get_allowed_history_depth(n_depth)
           call new(DM_history, n_depth, "(reset DM history stack)")

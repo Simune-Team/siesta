@@ -596,7 +596,6 @@ C     Initialise MPI and set processor number
 
       call estimate_pol_kpoints( ucell )
       not_using_auxcell = not_using_auxcell .and. gamma_polarization
-!      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
 !
 !     User can request that the calculation is done with an explicit
 !     auxiliary supercell and hermitian version, even if using only
@@ -608,16 +607,23 @@ C     Initialise MPI and set processor number
 !     Find required supercell
 !     2*rmaxh is used to guarantee that two given orbitals in the
 !     supercell can only overlap once
-      if (not_using_auxcell) then
+      if ( not_using_auxcell ) then
         nsc(1:3) = 1
-      else
-        ! Discussion with Jose-Soler we get this size ! NPA
+      else if ( naive_aux_cell ) then
+        ! This scheme gives a safe supercell, not necessarily the tightest,
+        ! using only unit cell size information. It is appropriate for cases
+        ! in which the geometry might change, such as MD and relaxations. It
+        ! is expected that this supercell will stay mostly constant, allowing
+        ! the reuse of DM information across geometry steps. 
+        ! The auxiliary supercell is symmetric in the connections,
+        ! hence we need a factor of 2.
         do i = 1 , 3
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
           nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
         end do
-        ! The above is kept for historical reasons,
-        ! but a tight supercell can be found from the atom-graph info:
+      else
+        ! Determine the tightest auxiliary supercell using
+        ! also the atomic positions 
         call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
       end if
 
