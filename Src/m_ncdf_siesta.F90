@@ -491,12 +491,12 @@ contains
 
   subroutine cdf_save_settings(fname)
 
-    use kpoint_scf_m,   only: kpoints_scf
+    use kpoint_scf_m,   only: kpoint_scf
     use siesta_options, only: cdf_w_parallel
     use siesta_options, only: dDtol, dHtol, charnet, wmix, temp, g2cut
     use siesta_options, only: isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
-    use ts_kpoint_scf_m, only: ts_kpoints_scf
+    use ts_kpoint_scf_m, only: ts_kpoint_scf
 
     character(len=*), intent(in) :: fname
     
@@ -509,8 +509,8 @@ contains
     call ncdf_open_grp(ncdf,'SETTINGS',grp)
 
     ! Save settings
-    call ncdf_put_var(grp,'BZ',kpoints_scf%k_cell)
-    call ncdf_put_var(grp,'BZ_displ',kpoints_scf%k_displ)
+    call ncdf_put_var(grp,'BZ',kpoint_scf%k_cell)
+    call ncdf_put_var(grp,'BZ_displ',kpoint_scf%k_displ)
     call ncdf_put_var(grp,'DMTolerance',dDtol)
     call ncdf_put_var(grp,'HTolerance',dHtol)
     call ncdf_put_var(grp,'NetCharge',charnet)
@@ -524,8 +524,8 @@ contains
     if ( isolve == SOLVE_TRANSI ) then
        call ncdf_open_grp(ncdf,'TRANSIESTA',grp)
 
-       call ncdf_put_var(grp,'BZ',ts_kpoints_scf%k_cell)
-       call ncdf_put_var(grp,'BZ_displ',ts_kpoints_scf%k_displ)
+       call ncdf_put_var(grp,'BZ',ts_kpoint_scf%k_cell)
+       call ncdf_put_var(grp,'BZ_displ',ts_kpoint_scf%k_displ)
 
     end if
 

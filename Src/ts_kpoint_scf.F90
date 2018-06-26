@@ -19,55 +19,69 @@ module ts_kpoint_scf_m
   implicit none
 
   public :: setup_ts_kpoint_scf
-  public :: ts_kpoints_scf
-  public :: ts_gamma_scf
+  public :: reset_ts_kpoint_scf
+  public :: ts_kpoint_scf
+  public :: ts_gamma_SCF
   
   private
 
-  logical, save :: ts_gamma_scf
-  type(kpoint_t), save :: ts_kpoints_scf
+  logical, save :: ts_gamma_SCF
+  type(kpoint_t), save :: ts_kpoint_scf
 
 contains
 
-  subroutine setup_ts_kpoint_scf( ucell, kpoints_scf )
+  subroutine setup_ts_kpoint_scf( ucell, kpoint_scf )
     use parallel, only: Node
     use siesta_options, only: writek
     use m_spin, only: TrSym
     use m_ts_global_vars, only : TSmode
 
     real(dp), intent(in) :: ucell(3,3)
-    type(kpoint_t), intent(in) :: kpoints_scf
+    type(kpoint_t), intent(in) :: kpoint_scf
 
-    call kpoint_read(ts_kpoints_scf, 'TS', ucell, TrSym, process_k_cell=process_k_cell_displ)
+    call kpoint_read(ts_kpoint_scf, 'TS', ucell, TrSym, process_k_cell=process_k_cell_displ)
 
-    if ( ts_kpoints_scf%method == K_METHOD_NONE ) then
+    if ( ts_kpoint_scf%method == K_METHOD_NONE ) then
 
-      call kpoint_delete(ts_kpoints_scf)
+      call kpoint_delete(ts_kpoint_scf)
 
       if ( TSmode ) then
         ! The user hasn't specified anything.
         ! This means that we will use the default setting from siesta
-        call kpoint_read(ts_kpoints_scf, '', ucell, TrSym, process_k_cell=process_k_cell_displ)
+        call kpoint_read(ts_kpoint_scf, '', ucell, TrSym, process_k_cell=process_k_cell_displ)
       else
         ! To limit memory usage for very high number of k-points
-        call kpoint_associate(ts_kpoints_scf, kpoints_scf)
+        call kpoint_associate(ts_kpoint_scf, kpoint_scf)
       end if
 
     end if
 
-    ts_gamma_scf = (ts_kpoints_scf%N == 1 .and. &
-        dot_product(ts_kpoints_scf%k(:,1),ts_kpoints_scf%k(:,1)) < 1.0e-20_dp)
+    ts_gamma_SCF = (ts_kpoint_scf%N == 1 .and. &
+        dot_product(ts_kpoint_scf%k(:,1),ts_kpoint_scf%k(:,1)) < 1.0e-20_dp)
 
     ! Quick-return if non-IO or not a transiesta run
     if ( .not. TSmode ) return
     if ( Node /= 0 ) return
 
-    call kpoint_write_stdout(ts_kpoints_scf, writek, 'transiesta')
-    call kpoint_write_xml(ts_kpoints_scf, 'TS')
-    call kpoint_write_file(ts_kpoints_scf, 'TS.KP')
+    call kpoint_write_stdout(ts_kpoint_scf, writek, 'transiesta')
+    call kpoint_write_xml(ts_kpoint_scf, 'TS')
+    call kpoint_write_file(ts_kpoint_scf, 'TS.KP')
 
   end subroutine setup_ts_kpoint_scf
 
+  subroutine reset_ts_kpoint_scf()
+    use kpoint_scf_m, only: kpoint_scf
+
+    if ( kpoint_associated(ts_kpoint_scf, kpoint_scf) ) then
+      call kpoint_nullify(ts_kpoint_scf)
+    else
+      call kpoint_delete(ts_kpoint_scf)
+    end if
+    ts_gamma_SCF = .true.
+    
+  end subroutine reset_ts_kpoint_scf
+
+  
   subroutine process_k_cell_displ(k_cell, k_displ)
     use m_ts_global_vars, only : TSmode
     use m_ts_tdir, only: ts_tidx

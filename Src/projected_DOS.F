@@ -17,17 +17,17 @@
 
       CONTAINS
       
-      subroutine init_projected_DOS()
+      subroutine init_projected_DOS( ucell )
 
-      USE siesta_options
+      use precision, only: dp
+      use siesta_options
       use fdf,         only: fdf_block, block_fdf
       ! This is to get the reference kpoints in case PDOS.kgrid* has not
       ! been specified
       use kpoint_pdos_m, only: setup_kpoint_pdos
-      use parallel,    only: IOnode, Nodes
-      use siesta_geom, only: ucell
-      use m_spin,      only: spin
+      use parallel, only: IOnode, Nodes
 
+      real(dp), intent(in) :: ucell(3,3)
       type(block_fdf) :: bfdf
       
 !-------------------------------------------------------------------------BEGIN
@@ -64,8 +64,8 @@
       use atomlist,    only : indxuo, no_s, no_u, no_l
       use fdf
       use sys,         only : die
-      use kpoint_scf_m, only: kpoints_scf
-      use Kpoint_pdos_m, only: kpoints_pdos, gamma_pdos
+      use kpoint_scf_m, only: kpoint_scf
+      use Kpoint_pdos_m, only: kpoint_pdos, gamma_pdos
       use parallel,    only: IOnode
       use m_eo
       use m_spin,      only: h_spin_dim, spinor_dim
@@ -104,22 +104,22 @@
       sigma = fdf_breals(pline,3) * factor
       nhist = fdf_bintegers(pline,1)
       if (IOnode) then
-         write(6,'(a)') 'siesta: PDOS info: '
+         write(6,'(/a)') 'siesta: PDOS info: '
          write(6,'(a,3(f8.2,a),2x,i5)')
      $        'siesta: e1, e2, sigma, nhist: ',
      $        e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
        end if
 
       ! If the k points have been set specifically for the PDOS then use this set
-      if ( kpoints_pdos%N > kpoints_scf%N ) then
-        call re_alloc(eo,1,no_u,1,spinor_dim,1,kpoints_pdos%N,name="eo",
+      if ( kpoint_pdos%N > kpoint_scf%N ) then
+        call re_alloc(eo,1,no_u,1,spinor_dim,1,kpoint_pdos%N,name="eo",
      .      routine="projected_dos")
       end if
       
       call pdos( no_s, h_spin_dim, spinor_dim, no_l, 
      .    maxnh, no_u, numh, listhptr, listh, H, S,
      .    e1, e2, sigma, nhist, gamma_pdos, xijo, indxuo, 
-     .    kpoints_pdos%N, kpoints_pdos%k, kpoints_pdos%w, eo,
+     .    kpoint_pdos%N, kpoint_pdos%k, kpoint_pdos%w, eo,
      .    no_u)
 
       end subroutine projected_DOS

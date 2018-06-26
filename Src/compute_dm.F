@@ -23,7 +23,7 @@
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
      &                    qtot, Qtots, no_l
       use sys, only: die, bye
-      use kpoint_scf_m, only: kpoints_scf
+      use kpoint_scf_m, only: kpoint_scf
       use m_energies,   only: Ebs, Ecorrec, Entropy, DE_NEGF
       use m_energies,   only: Ef, Efs
       use m_rmaxh
@@ -178,7 +178,7 @@ c$$$     &           S, 'S.matrix')
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qtots, temp, e1, e2,
      &              gamma, xijo, indxuo,
-     &              kpoints_scf%N, kpoints_scf%k, kpoints_scf%w,
+     &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
@@ -206,7 +206,7 @@ c$$$     &           S, 'S.matrix')
           call zminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 spin%H, no_u, maxnh, numh, listhptr, listh, Dscf,
      &                 eta, qtots, no_s, xijo, indxuo,
-     &                 kpoints_scf%N, kpoints_scf%k, kpoints_scf%w,
+     &                 kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
      &                 H, S, H_kin)
         end if
         Ecorrec = 0.0_dp
@@ -232,7 +232,7 @@ c$$$     &           S, 'S.matrix')
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qtots, temp, e1, e2,
      &              gamma, xijo, indxuo,
-     &              kpoints_scf%N, kpoints_scf%k, kpoints_scf%w,
+     &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
 

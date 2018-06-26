@@ -12,9 +12,10 @@
       CONTAINS
 
       subroutine siesta_init()
-      use kpoint_scf_m,       only: setup_kpoint_scf, kpoints_scf
+      use kpoint_scf_m,       only: setup_kpoint_scf, kpoint_scf
       use kpoint_scf_m,       only: gamma_scf
       use kpoint_pdos_m,      only: gamma_pdos
+      use kpoint_ldos_m,      only: gamma_ldos
       use Band,               only: gamma_bands, setup_bands
       use m_ksvinit,          only: gamma_polarization,
      &                              estimate_pol_kpoints
@@ -61,6 +62,7 @@
       use m_gamma
       use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
+      use m_local_DOS,    only: init_local_DOS
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
@@ -587,9 +589,16 @@ C     Initialise MPI and set processor number
 
 !     Call initialisation of PDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation
-      call init_projected_DOS( )
+      call init_projected_DOS( ucell )
       if ( do_pdos ) then
         gamma = gamma .and. gamma_pdos
+      endif
+
+!     Call initialisation of LDOS here since we need to check if 
+!     the auxiliary supercell is needed for a non-gamma calculation
+      call init_local_DOS( ucell )
+      if ( do_ldos ) then
+        gamma = gamma .and. gamma_ldos
       endif
 
       ! Read in diagonalization routines
@@ -600,9 +609,9 @@ C     Initialise MPI and set processor number
       call print_diag()
 
       nullify(eo,qo)
-      call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N, 'eo', 
+      call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 'eo', 
      &              'siesta_init')
-      call re_alloc(qo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N, 'qo', 
+      call re_alloc(qo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 'qo', 
      &              'siesta_init')
 
       call setup_bands( )

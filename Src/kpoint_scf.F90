@@ -19,13 +19,14 @@ module kpoint_scf_m
   implicit none
 
   public :: setup_kpoint_scf
-  public :: kpoints_scf
+  public :: reset_kpoint_scf
+  public :: kpoint_scf
   public :: gamma_scf
   
   private
 
   logical, save :: gamma_scf
-  type(kpoint_t), save :: kpoints_scf
+  type(kpoint_t), save :: kpoint_scf
 
 contains
 
@@ -36,18 +37,25 @@ contains
 
     real(dp), intent(in) :: ucell(3,3)
 
-    call kpoint_read(kpoints_scf, '', ucell, TrSym)
+    call kpoint_read(kpoint_scf, '', ucell, TrSym)
 
-    gamma_scf = (kpoints_scf%N == 1 .and. &
-        dot_product(kpoints_scf%k(:,1),kpoints_scf%k(:,1)) < 1.0e-20_dp)
+    gamma_scf = (kpoint_scf%N == 1 .and. &
+        dot_product(kpoint_scf%k(:,1),kpoint_scf%k(:,1)) < 1.0e-20_dp)
 
     ! Quick-return if non-IO
     if ( Node /= 0 ) return
 
-    call kpoint_write_stdout(kpoints_scf, all=writek)
-    call kpoint_write_xml(kpoints_scf)
-    call kpoint_write_file(kpoints_scf, 'KP')
+    call kpoint_write_stdout(kpoint_scf, all=writek)
+    call kpoint_write_xml(kpoint_scf)
+    call kpoint_write_file(kpoint_scf, 'KP')
 
   end subroutine setup_kpoint_scf
-  
+
+  subroutine reset_kpoint_scf()
+
+    call kpoint_delete(kpoint_scf)
+    gamma_scf = .true.
+    
+  end subroutine reset_kpoint_scf
+
 end module kpoint_scf_m
