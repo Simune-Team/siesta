@@ -17,7 +17,7 @@
       use parallel,        only : Node, Nodes, BlockSize
       use parallelsubs,    only : LocalToGlobalOrb,GlobalToLocalOrb
       use m_fermid,        only : fermid, stepf
-      use intrinsic_missing, only: MODP1
+      use intrinsic_missing, only: MODP
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -155,7 +155,7 @@ C of referencing has been changed in several places to reflect this.
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-          jo = MODP1(jo,nuotot) ! To allow auxiliary supercells
+          jo = MODP(jo,nuotot) ! To allow auxiliary supercells
           Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
           Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
           Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
@@ -180,7 +180,7 @@ C of referencing has been changed in several places to reflect this.
         do j = 1,numh(io)
           ind = listhptr(io) + j
           jo = listh(ind)
-          jo = MODP1(jo,nuotot) ! To allow auxiliary supercells
+          jo = MODP(jo,nuotot) ! To allow auxiliary supercells
           Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
           Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
           Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
@@ -264,7 +264,7 @@ C of referencing has been changed in several places to reflect this.
             do j = 1,numd(io)
               ind = listdptr(io) + j
               jo = listd(ind)
-              jo = MODP1(jo,nuotot) ! To allow auxiliary supercells
+              jo = MODP(jo,nuotot) ! To allow auxiliary supercells
 !------- 1,1 -----------------------------------------------------------
               D11  = caux(1,iio) * dconjg(caux(1,jo))
 !------- 2,2 -----------------------------------------------------------

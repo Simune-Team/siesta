@@ -15,7 +15,7 @@
 
       subroutine siesta_analysis( relaxd )
       USE band, only: nbk, bk, maxbk, bands
-      USE writewave, only: nwk, wfk, wwave
+      USE writewave, only: nwk, wfk, wwave, gamma_wavefunctions
       USE writewave, only: setup_wfs_list, wfs_filename
       USE m_ksvinit, only: nkpol, kpol, wgthpol
       use m_ksv
@@ -35,7 +35,6 @@
      &                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
       use atomlist, only: qtot
       use fdf
-      use writewave,    only: wwave
       use siesta_cml
       use files,        only : slabel
       use files,        only : filesOut_t   ! derived type for output file names
@@ -274,7 +273,7 @@
         call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
      &              nwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     &              nwk, wfk, no_u, occtol )
+     &              gamma_wavefunctions, nwk, wfk, no_u, occtol )
       endif
 
 
@@ -294,7 +293,7 @@
          call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
      .        nkpnt,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     .        nkpnt, kpoint, no_u, occtol)
+     .        gamma_SCF, nkpnt, kpoint, no_u, occtol)
       endif
 
 !     Compute bands

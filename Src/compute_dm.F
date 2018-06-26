@@ -66,8 +66,6 @@
       real(dp)            :: buffer1
       integer             :: mpierr
 
-      logical             :: not_using_auxcell
-
 !-------------------------------------------------------------------- BEGIN
 
       if (SIESTA_worker) call timer( 'compute_dm', 1 )
@@ -92,8 +90,6 @@
 !$OMP end parallel
       end if
 
-      not_using_auxcell = (no_u == no_s)
-      
       ! Compute shift in Tr(H*DM) for fermi-level bracketting
       ! Use the current H, the previous iteration H, and the
       ! previous iteration DM
@@ -178,14 +174,13 @@ c$$$     &           S, 'S.matrix')
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
      &              H, S, qtot, fixspin, qtots, temp, e1, e2,
-     $              xijo, indxuo, nkpnt, kpoint, kweight,
+     $              xijo, indxuo, gamma_SCF, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then
-        if ((nkpnt > 1) .or. (sum(abs(kpoint(:,1))) /= 0.0))
-     $        call die("Cannot do O(N) with k-points.")
+        if ( .not. gamma_SCF ) call die("Cannot do O(N) with k-points.")
         if ( spin%NCol .or. spin%SO )
      .      call die("Cannot do O(N) with non-coll spins or Spin-orbit")
         call ordern(usesavelwf, ioptlwf, na_u, no_u, no_l, lasto,
@@ -204,11 +199,13 @@ c$$$     &           S, 'S.matrix')
         ! Test based on use of auxiliary supercell
         ! It might still be possible to avoid the complex version
         
-        if (not_using_auxcell) then 
+        if ( no_u == no_s ) then    ! Not using an auxiliary supercell
           call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 spin%H, no_u, maxnh, numh, listhptr, listh, Dscf,
      &                 eta, qtots, H, S, H_kin)
         else
+          ! When using an auxiliary supercell
+          ! (even for gamma point; not optimized yet)
           call zminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 spin%H, no_u, maxnh, numh, listhptr, listh, Dscf,
      &                 eta, qtots, no_s, xijo, indxuo, nkpnt, kpoint,
@@ -222,7 +219,7 @@ c$$$     &           S, 'S.matrix')
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh,
      &              H, S, qtot, fixspin, qtots, temp, e1, e2,
-     $              xijo, indxuo, nkpnt, kpoint, kweight,
+     $              xijo, indxuo, gamma_SCF, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
 
@@ -231,7 +228,7 @@ c$$$     &           S, 'S.matrix')
       else if (TSrun) then
 
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
-     &        Not_Using_Auxcell, ucell, nsc, isc_off, no_u, na_u,
+     &        no_u == no_s, ucell, nsc, isc_off, no_u, na_u,
      &        lasto, xa, maxnh,
      &        H, S, Dscf, Escf, Ef, Qtot, .false., DE_NEGF )
 
