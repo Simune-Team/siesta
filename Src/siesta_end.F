@@ -133,6 +133,7 @@
 
 !     Print final date and time
       if (IOnode) then
+        write(*,*) ! Newline
         call timestamp('End of run')
         call wallclock('End of run')
         ! Ensure clock file is closed

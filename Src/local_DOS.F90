@@ -35,7 +35,7 @@ contains
     if ( isolve /= SOLVE_DIAGON ) then
       if (.not.((isolve == SOLVE_MINIM).and. minim_calc_eigenvalues)) then
         if (IONode) then
-          write(6,*) 'siesta: ERROR: LDOS implemented only with diagon'
+          write(*,*) 'siesta: ERROR: LDOS implemented only with diagon'
         end if
         do_ldos = .false.
       end if
@@ -49,6 +49,7 @@ contains
 
   subroutine local_DOS( )
 
+    use units, only: eV
     use alloc, only: re_alloc
     use m_energies
     use sparse_matrices
@@ -101,11 +102,35 @@ contains
       ! Find the desired energy range
       if (.not. fdf_bline(bfdf,pline)) &
           call die('local_DOS: ERROR in LocalDensityOfStates block')
-      if (.not. fdf_bmatch(pline,'vvn')) &
-          call die("Wrong format in LocalDensityofStates")
-      factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
-      e1 = fdf_bvalues(pline,1)*factor
-      e2 = fdf_bvalues(pline,2)*factor
+
+      if ( IONode ) write(*,'(/a)') 'siesta: LDOS info'
+
+      if ( fdf_bmatch(pline, 'nvvn') ) then
+        ! EF e1 e2 unit
+        if ( .not. leqi(fdf_bnames(pline,1), 'Ef') ) then
+          call die('local_DOS: ERROR in LocalDensityOfStates block, first name *must* be EF or not set')
+        end if
+        if ( IONode ) &
+            write(*,'(a)') 'siesta: Shifting energies with respect to Fermi-level'
+        
+        factor = fdf_convfac( fdf_bnames(pline,2), 'Ry' )
+        e1 = fdf_bvalues(pline,1)*factor + Ef 
+        e2 = fdf_bvalues(pline,2)*factor + Ef
+        
+      else if ( fdf_bmatch(pline, 'vvn') ) then
+        
+        factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
+        e1 = fdf_bvalues(pline,1)*factor
+        e2 = fdf_bvalues(pline,2)*factor
+        
+      else
+        call die('local_DOS: ERROR in LocalDensityOfStates block!')
+      end if
+      
+      if ( IONode ) then
+        write(*,'(a,tr1,f8.3," -- ",f8.3,tr1,f8.3)') 'siesta: E1 -- E2, Ef [eV]', &
+            e1/eV, e2/eV, Ef/eV
+      end if
 
       ! If the k points have been set specifically for the LDOS then use this set
       if ( kpoint_ldos%N > kpoint_scf%N ) then

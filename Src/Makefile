@@ -806,7 +806,7 @@ listsc.o: alloc.o
 local_DOS.o: alloc.o atomlist.o dhscf.o diagon.o files.o kpoint_ldos.o
 local_DOS.o: kpoint_scf.o m_energies.o m_eo.o m_forces.o m_ntm.o m_spin.o
 local_DOS.o: parallel.o precision.o siesta_geom.o siesta_options.o
-local_DOS.o: sparse_matrices.o sys.o
+local_DOS.o: sparse_matrices.o sys.o units.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
@@ -1187,9 +1187,9 @@ post_scf_work.o: sparse_matrices.o
 print_spin.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 print_spin.o: siesta_cml.o sparse_matrices.o
 printmatrix.o: alloc.o
-projected_DOS.o: alloc.o atomlist.o kpoint_pdos.o kpoint_scf.o m_eo.o m_gamma.o
-projected_DOS.o: m_spin.o parallel.o precision.o siesta_options.o
-projected_DOS.o: sparse_matrices.o sys.o units.o
+projected_DOS.o: alloc.o atomlist.o kpoint_pdos.o kpoint_scf.o m_energies.o
+projected_DOS.o: m_eo.o m_gamma.o m_spin.o parallel.o precision.o
+projected_DOS.o: siesta_options.o sparse_matrices.o sys.o units.o
 propor.o: precision.o sys.o
 proximity_check.o: chemical.o m_ts_global_vars.o mneighb.o parallel.o
 proximity_check.o: precision.o siesta_geom.o siesta_options.o units.o
