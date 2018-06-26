@@ -48,7 +48,6 @@ module m_initwf
 !                               indexes for each matrix row
 ! real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 ! real*8  S(maxnh)            : Overlap in sparse form
-! logical gamma               : Only gamma point?
 ! real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
 !                               (not used if only gamma point)
 ! integer indxuo(no)          : Index of equivalent orbital in unit cell
@@ -77,10 +76,9 @@ module m_initwf
       use fdf
       use densematrix,     only : Haux, Saux, psi
       use sparse_matrices, only : maxnh
-      use kpoint_scf_m,    only : kpoints_scf
+      use kpoint_scf_m,    only : kpoints_scf, gamma_scf
       use atomlist,        only : no_s, no_l, no_u, qtot, indxuo
       use m_spin,          only : nspin
-      use m_gamma,         only : gamma
       use alloc
       use memory_log
       use m_fermid,      only : fermid
@@ -129,7 +127,7 @@ module m_initwf
 !       Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
         if (spiral.and.Node.eq.0) then
-          if (gamma) write(6,*) &
+          if (gamma_scf) write(6,*) &
             'diagon: WARNING: spin-spiral requires k sampling'
           if (nspin.ne.4) write(6,*) &
             'diagon: WARNING: spin-spiral requires nspin=4'
@@ -145,10 +143,10 @@ module m_initwf
 !     Start time counter ................................................
       call timer( 'initwf', 1 )
 !     Check internal dimensions ..........................................
-      if (nspin.le.2 .and. gamma) then
+      if (nspin.le.2 .and. gamma_scf) then
         nhs  = no_u * nuo
         npsi = no_u * no_l * nspin
-      else if (nspin.le.2 .and. .not.gamma) then
+      else if (nspin.le.2 .and. .not.gamma_scf) then
         nhs  = 2 * no_u * nuo
         npsi = 2 * no_u * nuo
       else if (nspin.eq.4) then 
@@ -266,10 +264,10 @@ module m_initwf
         end do
       end do
 !     Call apropriate routine .............................................
-      if (nspin.le.2 .and. gamma) then
+      if (nspin.le.2 .and. gamma_scf) then
         call diaggiwf( nspin, nuo, no_l, maxnh, no_u,                     &
                     Haux, Saux, psi, no_u, occup)
-      else if (nspin.le.2 .and. .not.gamma) then
+      else if (nspin.le.2 .and. .not.gamma_scf) then
           call diagkiwf( nspin, nuo, no_s, nspin, no_l, maxnh,                 &
                          no_u, indxuo, kpoints_scf%N, kpoints_scf%k, Haux, Saux, &
                          psi, no_u, occup)

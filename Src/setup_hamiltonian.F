@@ -47,7 +47,6 @@
 
       use m_dipol
       use alloc, only: re_alloc, de_alloc
-      use m_gamma
       use m_hsx, only: write_hsx
       use m_partial_charges, only: want_partial_charges
       use files, only : filesOut_t    ! derived type for output file names
@@ -310,7 +309,7 @@
 ! Only in HSX format now.  Use Util/HSX/hsx2hs to generate an HS file
 
       if (savehs .or. write_coop) then
-         call write_hsx( gamma, no_u, no_s, spin%H, indxuo,
+         call write_hsx( no_u, no_s, spin%H, indxuo,
      &        maxnh, numh, listhptr, listh, H, S, qtot,
      &        temp, xijo)
       endif

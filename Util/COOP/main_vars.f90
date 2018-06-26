@@ -84,7 +84,6 @@ module main_vars
   logical,   allocatable :: ref_mask(:)
 
   !
-  logical :: gamma
   real(dp) :: r_dummy(3), dummy_weight, ztot
   integer  :: idummy
   !

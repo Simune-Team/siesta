@@ -22,6 +22,7 @@ subroutine read_hs_file(fname)
   real(sp), allocatable  :: buff3(:,:)
 
   integer numx, ind
+  logical lacking_indxuo
 
   write(6,"(1x,a)",advance='no') trim(fname)
   open(hs_u,file=trim(fname),status='old',form='unformatted')
@@ -32,14 +33,20 @@ subroutine read_hs_file(fname)
   if (nnao /= nao) STOP "norbs inconsistency"
   no_u = nao
 
-  read(hs_u,iostat=iostat) gamma
-  if (iostat /= 0) STOP "gamma"
-  IF (DEBUG) PRINT *, "GAMMA=", gamma
-  if (.not. gamma) then
+  ! In modern versions of HSX files this should be always .false., that is,
+  ! files always include the indxuo array, even if it is trivial.
+  
+  read(hs_u,iostat=iostat) lacking_indxuo
+  if (iostat /= 0) STOP "lacking_indxuo"
+  IF (DEBUG) PRINT *, "LACKING_INDXUO=", lacking_indxuo
+
+  if (.not. lacking_indxuo) then
+     ! read it
      allocate(indxuo(no_s))
      read(hs_u) (indxuo(i),i=1,no_s)
   else
      allocate(indxuo(no_u))
+     ! build it
      do i=1,no_u
         indxuo(i) = i
      enddo

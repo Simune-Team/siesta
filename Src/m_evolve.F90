@@ -32,23 +32,27 @@ MODULE m_evolve
   use precision
   use sys,               only : die
   use m_spin,            only : nspin
-  use m_gamma,           only : gamma
   use cranknic_evolg,    only : cn_evolg
   use cranknic_evolk,    only : cn_evolk
+  use atomlist,          only : no_s, no_u
   !
   implicit none
   !
   real(dp), intent(in)     ::   dt_tded
   !
+
+  logical :: not_using_auxcell
+  
 #ifdef DEBUG
   call write_debug( '    PRE evolve' )
 #endif
-!
+  !
+  not_using_auxcell = (no_u == no_s)
   !
   ! Call apropriate routine .............................................
-  if (nspin.le.2 .and. gamma) then
+  if (nspin.le.2 .and. not_using_auxcell) then
     call cn_evolg ( dt_tded )
-  elseif (nspin.le.2 .and. .not.gamma) then
+  elseif (nspin.le.2 .and. .not. not_using_auxcell) then
     call cn_evolk ( dt_tded )
   elseif (nspin.eq.4 ) then 
     call die( 'evolve: TDDFT: non-collinear spin not yet implemented' )

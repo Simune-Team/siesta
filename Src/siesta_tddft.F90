@@ -33,7 +33,6 @@ contains
     use m_energies,    only: Etot           ! Total energy
     use atomlist,      only: no_s, no_l, no_u, indxuo
     use m_spin,        only: nspin
-    use m_gamma
     use kpoint_scf_m,    only: kpoints_scf
 
     use m_compute_energies, only: compute_energies
