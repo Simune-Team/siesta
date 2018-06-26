@@ -36,7 +36,6 @@
       use m_spin,         only: nspin
       use m_spin,         only: spinor_dim 
       use m_diagon,       only: diagon
-      use m_gamma
       use m_dhscf,        only: dhscf
       implicit none
 
@@ -79,7 +78,7 @@
           call diagon(no_s, spinor_dim, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qtots, temp, e1, e2,
-     .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     .                xijo, indxuo, gamma_SCF, nkpnt, kpoint, kweight,
      .                eo, qo, Dscf, Escf, ef, efs, dummy_Entrop, no_u,
      .                occtol, dummy_iscf, neigwanted)
 

@@ -13,7 +13,7 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use Kpoint_grid,       only: setup_Kpoint_grid, nkpnt
+      use Kpoint_grid,       only: setup_Kpoint_grid, nkpnt, gamma_scf
       use m_os,              only: file_exist
       use m_new_dm,          only: new_dm
       use m_proximity_check, only: proximity_check
@@ -66,7 +66,6 @@
       use m_normalize_dm, only: normalize_dm
 
       use m_eo
-      use m_gamma
       use files,             only: slabel
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_sum
@@ -129,15 +128,15 @@
 
       type(dData2D) :: tmp_2D
       real(dp) :: dummy_qspin(8)
-
+      logical  :: not_using_auxcell
 
 !------------------------------------------------------------------- BEGIN
       call timer( 'IterGeom', 1 )
-#ifdef DEBUG
-      call write_debug( '  PRE state_init' )
-#endif
+
       call timer( 'state_init', 1 )
 
+      not_using_auxcell = (no_s == no_u)
+      
       istp = istp + 1
 
       if (IOnode) then
@@ -245,7 +244,7 @@
       endif
 
       if ( cell_can_change .and.
-     &     (istep.ne.inicoor) .and. (.not.gamma) ) then
+     &     (istep.ne.inicoor) .and. (.not.gamma_scf) ) then
 
 !       Will print k-points also
         call setup_Kpoint_grid( ucell )
@@ -258,16 +257,25 @@
      &                 'state_init' )
 
 !       Find required supercell
-        if (gamma) then
+        if (not_using_auxcell) then
            nsc(1:3) = 1
+        else if ( naive_aux_cell ) then
+          ! This scheme gives a safe supercell, not necessarily the
+          ! tightest, using only unit cell size information. It is
+          ! appropriate for cases in which the geometry might change,
+          ! such as MD and relaxations. It is expected that this
+          ! supercell will stay mostly constant, allowing the reuse of
+          ! DM information across geometry steps.  The auxiliary
+          ! supercell is symmetric in the connections, hence we need a
+          ! factor of 2.
+          do i = 1 , 3
+            veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
+            nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
+          end do
         else
-           do i = 1 , 3
-              veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-              nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
-           end do
-           ! The above is kept for historical reasons,
-           ! but a tight supercell can be found from the atom-graph info:
-           call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+          ! Determine the tightest auxiliary supercell using
+          ! also the atomic positions 
+          call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
         endif
 
         mscell = 0.0_dp
@@ -340,14 +348,14 @@
       call delete(xij_2D) ! as xijo will be reallocated
       nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, maxnh, gamma,
+     &              lastkb, iphorb, iphKB, maxnh, not_using_auxcell,
      $              set_xijo=.true., folding=folding1,
      $              diagonal_folding=diag_folding1,
      $              debug_folding=fdf_get('debug-folding',.false.))
 !
       call globalize_or(diag_folding1,diag_folding)
       call globalize_or(folding1,folding)
-      if (diag_folding .and. gamma) then
+      if (diag_folding .and. not_using_auxcell) then
          call message("WARNING","Gamma-point calculation " //
      $         "with interaction between periodic images")
          call message("WARNING",
@@ -358,7 +366,7 @@
      $                              "'force-aux-cell T'")
 
       else if (folding) then
-         if (gamma) then
+         if (not_using_auxcell) then
                call message("INFO","Gamma-point calculation " //
      $                      "with multiply-connected orbital pairs")
                call message("INFO",
@@ -449,7 +457,7 @@
       xijo => val(xij_2D)
 
       ! Calculate the super-cell offsets...
-      if ( Gamma ) then
+      if ( not_using_auxcell ) then
          ! Here we create the super-cell offsets
          call re_alloc(isc_off,1,3,1,1)
          isc_off(:,:) = 0
@@ -467,7 +475,7 @@
          ! Force the creation of the full sparsity pattern
          call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
      &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
-     &        Gamma, isc_off)
+     &        not_using_auxcell, isc_off)
 
          ! create the tri-diagonal matrix
          call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
@@ -580,7 +588,7 @@
          ! We include H as S, well-knowing that we only write one of
          ! them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
-     &        .true., Gamma, ts_Gamma_file,
+     &        .true., not_using_auxcell, ts_Gamma_file,
      &        ucell, nsc, isc_off, na_u, no_s, spin%H,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, lasto, 
