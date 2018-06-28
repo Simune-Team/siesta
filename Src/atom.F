@@ -74,7 +74,6 @@
         real(dp)             :: filter_cutoff_orbitals = 0.0_dp
         real(dp)             :: filter_tol    = EkinTolDefault
 
-        logical              :: non_perturbative_pol_orbs
 !---------------------------------------------------------------------
 !     Auxiliary tables to save some species data for the operations
 !     in 'atom'. Mainly tables for the (deprecated) 'prinput', but
@@ -3181,16 +3180,6 @@ C
         spp%n_orbnl = 0 
         allocate(spp%orbnl(norb_nl))
 
-        non_perturbative_pol_orbs =
-     $     fdf_boolean('PAO.NonPerturbative.Polarization.Orbitals',
-     $                 .false.)
-
-        if (non_perturbative_pol_orbs .and. (basis_type/='split')) then
-           write(6,"(a)") '** Use an explicit PAO.Basis block'
-           call die("Non-perturbative polarization orbitals not " //
-     $              "compatible with " // trim(basis_type) //" option")
-        endif
-        
         noPAO = 0
         noPOL = 0
         if (basis_type.eq.'split') then  
@@ -3210,7 +3199,7 @@ C
      .               nrval, lmxo, nsemic,
      .               nzeta, rco, lambda, 
      .               rphi, ePAO, noPAO,
-     .               filtercut, spp)
+     .               filtercut, spp, basp)
 
         elseif (basis_type.eq.'nonodes') then 
 
@@ -3219,7 +3208,7 @@ C
      .                 nrval, lmxo, nsemic,
      .                 nzeta, rco, lambda, 
      .                 rphi, ePAO, noPAO,
-     .                 filtercut, spp)
+     .                 filtercut, spp, basp)
           
         elseif (basis_type.eq.'splitgauss') then 
 
@@ -3228,7 +3217,7 @@ C
      .                    nrval, lmxo, nsemic,
      .                    nzeta, rco, lambda, 
      .                    rphi, ePAO, noPAO,
-     .                    filtercut, spp)
+     .                    filtercut, spp, basp)
 
         elseif (basis_type.eq.'filteret') then  
 
@@ -3239,7 +3228,7 @@ C
      .                  rphi, ePAO, noPAO,
      .                  rinn, vcte, qcoe, qyuk, qwid,
      .                  split_norm,
-     .                  filtercut, atm_label, spp)
+     .                  filtercut, atm_label, spp, basp)
          
         endif            
  
@@ -3274,7 +3263,8 @@ C
      .                      nzeta,rco,lambda, 
      .                      rphi, ePAO, norb,
      .                      rinn,vcte, qcoe, qyuk, qwid,
-     .                      split_norm,filtercut,atm_label,spp) 
+     .                      split_norm,filtercut,atm_label,spp,
+     .                      basp) 
 
         use basis_specs, only:  restricted_grid
         use atm_types, only: species_info
@@ -3284,8 +3274,6 @@ C from Soler and Anglada.
 C Written (based heavily on SPLIT) by J.D. Gale, Aug. 2009
 C
         implicit none
-
-        type(basis_def_t), pointer   :: basp
 
         real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
@@ -3300,6 +3288,7 @@ C
      .    split_norm(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
           character(len=*) atm_label
         type(species_info), intent(inout)  :: spp
+        type(basis_def_t), pointer   :: basp
 
 
         integer
@@ -3375,6 +3364,9 @@ C
      .          'FILTERET: Basis orbitals for state ',
      .          cnfigtb(l,nsm,is), sym(l)
 
+              call check_rc_for_nonpert_pol_shell('FILTERET',
+     $                        is,l,nsm,basp,rco)
+                 
               if (rco(1,l,nsm).lt.1.0d-5) then
 C
 C Automatic determination of the cut off radius for the PAOs
@@ -3858,7 +3850,7 @@ C
      .          cnfigtb(l,nsm,is), sym(l)
 
               call check_rc_for_nonpert_pol_shell('SPLIT',
-     $                        is,l,nsm,basp,rco(1,l,nsm))
+     $                        is,l,nsm,basp,rco)
                  
               if (rco(1,l,nsm).lt.1.0d-5) then    
 C
@@ -4353,7 +4345,7 @@ C
      .                   nrval,lmxo,nsemic,
      .                   nzeta,rco,lambda, 
      .                   rphi, ePAO, norb,
-     .                   filtercut, spp) 
+     .                   filtercut, spp, basp) 
 
         use basis_specs, only: restricted_grid
         use atm_types, only: species_info
@@ -4380,6 +4372,7 @@ C
      .    nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
      .    norb,nsemic(0:lmaxd)
         type(species_info), intent(inout)  :: spp
+        type(basis_def_t), pointer   :: basp
 C
 C Internal variables
 C
@@ -4433,6 +4426,9 @@ C
               write(6,'(/A,I1,A)')
      .          'NODES: Basis orbitals for state ',
      .          cnfigtb(l,nsm,is), sym(l)
+
+              call check_rc_for_nonpert_pol_shell('NODES',
+     $                        is,l,nsm,basp,rco)
 
               if (rco(1,l,nsm).lt.1.0d-5) then    
 C**Automatic determination of the cut off radius for the PAOs***
@@ -4599,7 +4595,7 @@ C
      .                     nrval,lmxo,nsemic,
      .                     nzeta,rco,lambda, 
      .                     rphi, ePAO, norb,
-     .                     filtercut, spp) 
+     .                     filtercut, spp, basp) 
 
         use basis_specs, only: restricted_grid
         use atm_types, only: species_info
@@ -4620,6 +4616,7 @@ C
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
         type(species_info), intent(inout)  :: spp
+        type(basis_def_t), pointer   :: basp
 
         integer
      .    nrval, lmxo,  is, nzeta(0:lmaxd,nsemx),
@@ -4676,6 +4673,8 @@ C
      .          'NONODES: Basis orbitals for state ',
      .          cnfigtb(l,nsm,is), sym(l)
 
+              call check_rc_for_nonpert_pol_shell('NONODES',
+     $                        is,l,nsm,basp,rco)
 
               if (rco(1,l,nsm).lt.1.0d-5) then    
 C**Automatic determination of the cut off radius for the PAOs***
@@ -4943,7 +4942,7 @@ C
         subroutine SPLITGAUSS(Zval,is,a,b,rofi,drdi,s,
      .                        vps,ve,vePAO,nrval,lmxo,nsemic,
      .                        nzeta,rco,lambda,rphi,ePAO,norb,
-     .                        filtercut,spp) 
+     .                        filtercut,spp,basp) 
 
         use basis_specs, only: restricted_grid
         use atm_types, only: species_info
@@ -4962,8 +4961,10 @@ C
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .    ePAO(0:lmaxd,nsemx), filtercut(0:lmaxd,nsemx)
-        type(species_info), intent(inout)  :: spp
 
+        type(species_info), intent(inout)  :: spp
+        type(basis_def_t), pointer   :: basp
+                 
         integer
      .    nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
      .    norb, nsemic(0:lmaxd)
@@ -5023,6 +5024,9 @@ C
      .          'SPLITGAUSS: Basis orbitals for state ',
      .          cnfigtb(l,nsm,is), sym(l)
 
+              call check_rc_for_nonpert_pol_shell('SPLITGAUSS',
+     $                        is,l,nsm,basp,rco)
+                 
               if (rco(1,l,nsm).lt.1.0d-5) then    
 C
 C Automatic determination of the cut off radius for the PAOs
@@ -7460,7 +7464,7 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
        end subroutine split_scan
 
        subroutine check_rc_for_nonpert_pol_shell(scheme,
-     $     is,l,nsm,basp,rc_1st_zeta)
+     $     is,l,nsm,basp,rco)
 
        use basis_types, only:  shell_t
        use basis_types, only: basis_def_t
@@ -7470,7 +7474,7 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
        integer, intent(in)           :: l
        integer, intent(in)           :: nsm
        type(basis_def_t), intent(in) :: basp
-       real(dp), intent(inout)       :: rc_1st_zeta
+       real(dp), intent(inout)       :: rco(:,0:,:)
        
        ! Check whether this shell has been re-classified as a standard
        ! shell, instead of perturbatively creating the orbitals in
@@ -7490,7 +7494,7 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
           pol_exp_factor =
      $         fdf_get('pao-polarization-rc-expansion-factor',
      $         1.0_dp)
-          rc_1st_zeta = pol_exp_factor*rc_1st_zeta
+          rco(1,l,nsm) = pol_exp_factor*rco(1,l-1,nsm_parent)
 
 ! Other z's will be constructed with the usual method,
 ! using the default parameters (for more control, one
@@ -7502,7 +7506,7 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
      .         cnfigtb(l-1,nsm_parent,is), sym(l-1)
           write(6,'(A,f0.4)')
      .         trim(scheme) //': rc(1st zeta) reset to: ',
-     $         rc_1st_zeta
+     $         rco(1,l,nsm)
        endif
       end subroutine check_rc_for_nonpert_pol_shell
 !------------------------------------------------------------                 
