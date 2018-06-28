@@ -263,7 +263,10 @@ contains
     integer, intent(in), optional :: idx_a
     character(len=*), intent(in), optional :: name_prefix
 
-    logical :: found, mix_bloch, bloch_rep
+    logical :: found
+#ifdef TBTRANS
+    logical :: in_tbt
+#endif
 
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
@@ -320,10 +323,6 @@ contains
 
     
     cidx_a = 0
-    ! Denote that no bloch expansion coefficients has
-    ! been set.
-    mix_bloch = .false.
-    bloch_rep = .false.
 
     if ( present(idx_a) ) then
        if ( idx_a /= 0 ) then
@@ -343,11 +342,34 @@ contains
        end if
     end if
     this%na_used = -1
+
+#ifdef TBTRANS
+    ! Whether or not we are in TBtrans options
+    in_tbt = .false.
+#endif
     
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
        
-       ln = fdf_bnames(pline,1) 
+       ln = fdf_bnames(pline,1)
+
+#ifdef TBTRANS
+       ! If the input starts with tbt., then remove it
+       ! in tbtrans calculations
+       if ( leqi(ln(1:4), 'tbt.') ) then
+         
+         ln = ln(5:)
+         in_tbt = .true.
+         
+       else if ( in_tbt ) then
+         write(*,*) 'Found a non-tbtrans option *AFTER* a tbtrans option. This is not allowed!'
+         write(*,*) 'Place all tbt.* options at the end of the electrode block'
+         call die('Electrode options *MUST* have transiesta options first then all tbt.* options.')
+       end if
+#else
+       ! Transiesta will disregard the TBT-only options
+       if ( leqi(ln(1:4), 'tbt.') ) cycle
+#endif
        
        ! We select the input
        if ( leqi(ln,'HS') .or. leqi(ln,'HS-file') .or. &
@@ -519,77 +541,23 @@ contains
           this%Bloch(1) = fdf_bintegers(pline,1)
           this%Bloch(2) = fdf_bintegers(pline,2)
           this%Bloch(3) = fdf_bintegers(pline,3)
-          mix_bloch = .true.
           
        else if ( leqi(ln,'bloch-a') .or. leqi(ln,'bloch-a1') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A1 is not supplied')
           this%Bloch(1) = fdf_bintegers(pline,1)
-          mix_bloch = .true.
           
        else if ( leqi(ln,'bloch-b') .or. leqi(ln,'bloch-a2') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A2 is not supplied')
           this%Bloch(2) = fdf_bintegers(pline,1)
-          mix_bloch = .true.
           
        else if ( leqi(ln,'bloch-c') .or. leqi(ln,'bloch-a3') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A3 is not supplied')
           this%Bloch(3) = fdf_bintegers(pline,1)
-          mix_bloch = .true.
 
-       else if ( leqi(ln,'replicate-a') .or. leqi(ln,'rep-a') .or. &
-            leqi(ln,'replicate-a1') .or. leqi(ln,'rep-a1') ) then
-          if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Bloch expansion of A1 is not supplied')
-          this%Bloch(1) = fdf_bintegers(pline,1)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-
-       else if ( leqi(ln,'replicate-b') .or. leqi(ln,'rep-b') .or. &
-            leqi(ln,'replicate-a2') .or. leqi(ln,'rep-a2') ) then
-          if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Bloch expansion of A2 is not supplied')
-          this%Bloch(2) = fdf_bintegers(pline,1)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-
-       else if ( leqi(ln,'replicate-c') .or. leqi(ln,'rep-c') .or. &
-            leqi(ln,'replicate-a3') .or. leqi(ln,'rep-a3') ) then
-          if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Bloch expansion of A3 is not supplied')
-          this%Bloch(3) = fdf_bintegers(pline,1)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-          
-       else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
-          if ( fdf_bnintegers(pline) < 3 ) &
-               call die('Bloch expansion for all directions are not supplied <A1> <A2> <A3>')
-          this%Bloch(1) = fdf_bintegers(pline,1)
-          this%Bloch(2) = fdf_bintegers(pline,2)
-          this%Bloch(3) = fdf_bintegers(pline,3)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.out-of-core') .or. &
-            leqi(ln,'out-of-core') ) then
-#else
        else if ( leqi(ln,'out-of-core') ) then
-#endif
 
           this%out_of_core = fdf_bboolean(pline,1,after=1)
 
@@ -609,42 +577,20 @@ contains
           if ( fdf_bnnames(pline) < 2 ) call die('DE name not supplied')
           this%DEfile = trim(fdf_bnames(pline,2))
 
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.Accuracy') .or. leqi(ln,'Accuracy') ) then
-#else
        else if ( leqi(ln,'Accuracy') ) then
-#endif
-          call pline_E_parse(pline,1,ln, &
+
+         call pline_E_parse(pline,1,ln, &
                val = this%accu, before=3)
 
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.Eta') .or. leqi(ln,'Eta') ) then
-#else
        else if ( leqi(ln,'Eta') ) then
-#endif
-          call pline_E_parse(pline,1,ln, &
+
+         call pline_E_parse(pline,1,ln, &
                val = this%Eta, before=3)
 #ifdef TBTRANS
 #ifdef TBT_PHONON
           ! eta value needs to be squared as it is phonon spectrum
           this%Eta = this%Eta ** 2
 #endif
-#endif
-
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.GF') .or. &
-            leqi(ln,'tbt.GF-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('tbt.GF-file not supplied')
-          this%GFfile = trim(fdf_bnames(pline,2))
-
-       else if ( leqi(ln,'tbt.GF.ReUse') ) then
-
-          this%ReUseGF = fdf_bboolean(pline,1,after=1)
-
-#else
-       else if ( leqi(ln(1:3),'tbt') ) then
-          ! by-pass
-          ! All options that are meant for tbtrans are discarded :)
 #endif
 
        else
@@ -796,15 +742,6 @@ contains
 #else
        this%DEfile = this%HSfile(1:i-4)//'TSDE'
 #endif
-    end if
-
-    ! Print out the error if using the repetition keyword
-    if ( IONode .and. bloch_rep ) then
-       write(*,'(/a)')'DEPRECATION WARNING:'
-       write(*,'(5(a,/))')'Electrode Bloch expansion keyword in electrode '&
-            //trim(this%name)//':', &
-            '  replicate','has been superseeded by:', &
-            '  bloch', 'The replicate keyword may be ignored in future versions.'
     end if
 
   end function fdf_Elec
@@ -2008,7 +1945,7 @@ contains
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
     real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
-    integer :: tile(3), reps(3)
+    integer :: Tile(3), Reps(3)
     integer :: i
     logical :: found, alloc(3), is_TSDE
 
@@ -2068,21 +2005,21 @@ contains
       Reps(:) = 1
     end if
 
-    ! The expansion xa_EPS is not important since the atomic coordinates
-    ! have already been accepted by the script!
+    ! The expansion xa_EPS must be below the atomic distances such that tiled atoms
+    ! are taken into accountp
     call expand_spd2spd_2D(i,this%na_used, &
         this%na_u,this%lasto,this%xa,f_DM_2D,&
         this%cell, Tile, Reps, &
         product(this%nsc), this%isc_off, &
-          na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, 100._dp, &
-          print = .true., allowed_a = allowed)
+        na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, 0.05_dp, &
+        print = .true., allowed_a = allowed)
 
     if ( is_TSDE ) then
       call expand_spd2spd_2D(i,this%na_used, &
           this%na_u,this%lasto,this%xa,f_EDM_2D, &
           this%cell, Tile, Reps, &
           product(this%nsc), this%isc_off, &
-          na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, 100._dp, &
+          na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, 0.05_dp, &
           allowed_a = allowed)
     end if
        

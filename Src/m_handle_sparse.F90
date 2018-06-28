@@ -213,6 +213,8 @@ contains
 
   end subroutine bulk_expand
 
+  ! This will expand an inner sparse matrix to an outer sparse matrix
+  ! by copying elements.
   subroutine expand_spd2spd_2D(s_a,na,na_i,lasto_i,xa_i,in,&
       cell_i, tile_i, repeat_i, n_s_i, sc_off_i, &
       na_o,xa_o,lasto_o,out,cell_o,n_s_o,sc_off_o, at, xa_EPS, &
@@ -222,6 +224,7 @@ contains
 #ifdef MPI
     use mpi_siesta
 #endif
+    use m_region
 
     ! Starting atom and number of atoms from the starting atom.
     integer, intent(in) :: s_a, na
@@ -260,7 +263,7 @@ contains
     real(dp) :: xc_i(3), xc_o(3), xj_i(3), xj_o(3)
     real(dp), pointer :: a_i(:,:), a_o(:,:)
 
-    integer, allocatable :: lallow(:)
+    type(tRgn) :: rallow
 
 #ifdef MPI
     integer :: tmp_copy(3)
@@ -276,14 +279,13 @@ contains
 
     if ( present(allowed_a) ) then
       ! We copy over the allowed atoms
-      allocate(lallow(size(allowed_a)))
-      lallow(:) = allowed_a(:)
-    else
-      ! We only allow copying the diagonal entries
-      allocate(lallow(o1 * i1 * na))
-      do i = 1 , o1 * i1 * na
-        lallow(i) = at + i - 1
+      call rgn_init(rallow, size(allowed_a))
+      do i = 1 , rallow%n
+        rallow%r(i) = allowed_a(i)
       end do
+      call rgn_sort(rallow)
+    else
+      call rgn_range(rallow, at, at + o1 * i1 * na - 1)
     end if
 
     dit_i => dist(in)
@@ -382,7 +384,7 @@ contains
                       ! corresponds to:
                       ao = iaorb(o_col(i_o),lasto_o)
                       ! Do not allow overwriting DM outside of region.
-                      if ( .not. any(ao == lallow) ) cycle
+                      if ( .not. in_rgn(rallow, ao) ) cycle
 
                       i_s   = (o_col(i_o)-1) / no_o
                       orb_o = ucorb(o_col(i_o),no_o) - lasto_o(ao-1)
@@ -446,7 +448,7 @@ contains
       end do o2_loop
     end do o3_loop
 
-    deallocate(lallow)
+    call rgn_delete(rallow)
 
     if ( .not. present(print) ) return
     if ( .not. print ) return
