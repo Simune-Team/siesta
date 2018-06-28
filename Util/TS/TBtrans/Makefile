@@ -391,10 +391,10 @@ m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
 m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
 m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
 m_handle_sparse.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_iodm.o
-m_handle_sparse.o: m_os.o m_ts_io.o parallel.o precision.o
+m_handle_sparse.o: m_os.o m_ts_io.o parallel.o precision.o units.o
 m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
 m_handle_sparse.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_iodm.o
-m_handle_sparse.o: m_os.o m_ts_io.o parallel.o precision.o
+m_handle_sparse.o: m_os.o m_ts_io.o parallel.o precision.o units.o
 m_integrate.o: precision.o
 m_integrate.o: precision.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o

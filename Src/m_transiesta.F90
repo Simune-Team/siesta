@@ -58,7 +58,7 @@ contains
     use class_OrbitalDistribution
     use class_Sparsity
 
-    use ts_kpoint_scf_m, only : ts_kpoints_scf, ts_gamma_scf
+    use ts_kpoint_scf_m, only : ts_kpoint_scf, ts_gamma_scf
 
     use m_ts_electype
 
@@ -588,7 +588,7 @@ contains
          end if
 
          if ( Elecs(iEl)%out_of_core ) then
-            call read_Green(uGF(iEl),Elecs(iEl), ts_kpoints_scf%N, NEn )
+            call read_Green(uGF(iEl),Elecs(iEl), ts_kpoint_scf%N, NEn )
          end if
          
       end do

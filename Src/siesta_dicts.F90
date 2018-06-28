@@ -218,7 +218,7 @@ contains
   subroutine dict_populate_variables()
 
     use siesta_geom
-    use kpoint_scf_m, only: kpoints_scf
+    use kpoint_scf_m, only: kpoint_scf
     use m_forces
     use m_energies
     use atomlist
@@ -327,9 +327,9 @@ contains
 
     ! Add the k-point sampling
     variables = variables // &
-         ('BZ.k.Matrix'.kvp.kpoints_scf%k_cell)
+         ('BZ.k.Matrix'.kvp.kpoint_scf%k_cell)
     variables = variables // &
-         ('BZ.k.Displacement'.kvp.kpoints_scf%k_displ)
+         ('BZ.k.Displacement'.kvp.kpoint_scf%k_displ)
 
   end subroutine dict_populate_variables
 

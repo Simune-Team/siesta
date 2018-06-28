@@ -1989,11 +1989,13 @@ contains
 
   end function check_connectivity
 
-  subroutine copy_DM(this,na_u,xa,lasto,nsc,isc_off,cell,DM_2D, EDM_2D, &
-       na_a, allowed)
+  subroutine copy_DM(this,na_u,xa,lasto,nsc,isc_off,cell,DM_2D, EDM_2D, na_a, allowed)
+    
     use m_handle_sparse
+    use class_OrbitalDistribution
     use m_iodm
     use m_ts_iodm
+    
     ! We will copy over the density matrix and "fix it in the leads
     type(Elec), intent(inout) :: this
     integer, intent(in) :: na_u, lasto(0:na_u), nsc(3), isc_off(3,product(nsc))
@@ -2006,7 +2008,7 @@ contains
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
     real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
-    integer, parameter :: One3(3) = (/1,1,1/)
+    integer :: tile(3), reps(3)
     integer :: i
     logical :: found, alloc(3), is_TSDE
 
@@ -2058,20 +2060,30 @@ contains
        i = this%na_u - this%na_used + 1
     end if
 
+    if ( this%repeat ) then
+      Tile(:) = 1
+      Reps(:) = this%Bloch
+    else
+      Tile(:) = this%Bloch
+      Reps(:) = 1
+    end if
+
+    ! The expansion xa_EPS is not important since the atomic coordinates
+    ! have already been accepted by the script!
     call expand_spd2spd_2D(i,this%na_used, &
-         this%na_u,this%lasto,this%xa,f_DM_2D,&
-         this%cell, One3, this%Bloch, &
-         product(this%nsc), this%isc_off, &
-         na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
-         print = .true., allowed_a = allowed)
+        this%na_u,this%lasto,this%xa,f_DM_2D,&
+        this%cell, Tile, Reps, &
+        product(this%nsc), this%isc_off, &
+          na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, 100._dp, &
+          print = .true., allowed_a = allowed)
 
     if ( is_TSDE ) then
-       call expand_spd2spd_2D(i,this%na_used, &
-            this%na_u,this%lasto,this%xa,f_EDM_2D, &
-            this%cell, One3, this%Bloch, &
-            product(this%nsc), this%isc_off, &
-            na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
-            allowed_a = allowed)
+      call expand_spd2spd_2D(i,this%na_used, &
+          this%na_u,this%lasto,this%xa,f_EDM_2D, &
+          this%cell, Tile, Reps, &
+          product(this%nsc), this%isc_off, &
+          na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, 100._dp, &
+          allowed_a = allowed)
     end if
        
     if ( .not. alloc(1) ) deallocate(this%xa) ; nullify(this%xa)

@@ -166,7 +166,7 @@ CONTAINS
     !***********************************
     use sparse_matrices,      only: numh, maxnh, listh, listhptr,     &
                                     xijo   
-    use kpoint_scf_m,         only: kpoints_scf, gamma_scf
+    use kpoint_scf_m,         only: kpoint_scf, gamma_scf
     use atomlist,             only: no_l, no_u, indxuo
     use m_spin,               only: nspin
     integer                      :: ispin, nuo, nuotot
@@ -185,9 +185,9 @@ CONTAINS
 #endif
     Dnew(1:maxnh,1:nspin) = 0.0_dp
     call m_allocate(Daux,no_u,no_u,m_storage)
-    Do ik = 1, kpoints_scf%N
+    Do ik = 1, kpoint_scf%N
       Do ispin =1, nspin
-      wk = 2.00_dp*kpoints_scf%w(ik)/dble(nspin)
+      wk = 2.00_dp*kpoint_scf%w(ik)/dble(nspin)
       ! Calculating density matrix using MatrixSwitch.
       call mm_multiply(wavef_ms(ik,ispin),'n',wavef_ms(ik,ispin),'c',Daux,           & 
                     cmplx(wk,0.0_dp,dp),cmplx(0.0_dp,0.0_dp,dp),m_operation)
@@ -198,9 +198,9 @@ CONTAINS
           juo = listh(ind)
           jo  = indxuo(juo)
           IF (.NOT. gamma_scf) THEN
-            kxij = kpoints_scf%k(1,ik) * xijo(1,ind) + &
-            kpoints_scf%k(2,ik) * xijo(2,ind) +        &
-            kpoints_scf%k(3,ik) * xijo(3,ind) 
+            kxij = kpoint_scf%k(1,ik) * xijo(1,ind) + &
+            kpoint_scf%k(2,ik) * xijo(2,ind) +        &
+            kpoint_scf%k(3,ik) * xijo(3,ind) 
             ckxij =  cos(kxij)
             skxij = -sin(kxij)
           ELSE
@@ -231,7 +231,7 @@ CONTAINS
       use parallelsubs,     only: LocalToGlobalOrb
       use sparse_matrices,  only: numh, maxnh, listh, listhptr, xijo
       use sparse_matrices,  only: H, S
-      use kpoint_scf_m,     only: kpoints_scf, gamma_scf
+      use kpoint_scf_m,     only: kpoint_scf, gamma_scf
       use atomlist,         only: no_l, no_u, indxuo
       use m_spin,           only: nspin
       use MatrixSwitch
@@ -259,9 +259,9 @@ CONTAINS
       Enew(1:maxnh,1:nspin) = 0.0_dp
       call m_allocate(S_1,no_u,no_u,m_storage)
       call m_allocate(Eaux,no_u,no_u,m_storage)
-      Do ik=1,kpoints_scf%N
+      Do ik=1,kpoint_scf%N
         Do ispin=1,nspin
-          wk = 2.00_dp*kpoints_scf%w(ik)/dble(nspin)
+          wk = 2.00_dp*kpoint_scf%w(ik)/dble(nspin)
           nocc = wavef_ms(ik,ispin)%dim2
           call m_allocate(psi,nocc,no_u,m_storage)
           call m_allocate (Hauxms,no_u, no_u, m_storage)
@@ -273,8 +273,8 @@ CONTAINS
               juo = listh(ind)
               jo  = indxuo(juo)
               if( .not. gamma_scf ) then
-                kxij = kpoints_scf%k(1,ik)*xijo(1,ind) + kpoints_scf%k(2,ik)*xijo(2,ind) +         &
-                       kpoints_scf%k(3,ik)*xijo(3,ind)
+                kxij = kpoint_scf%k(1,ik)*xijo(1,ind) + kpoint_scf%k(2,ik)*xijo(2,ind) +         &
+                       kpoint_scf%k(3,ik)*xijo(3,ind)
                 ckxij =  cos(kxij)
                 skxij = -sin(kxij)
               else
@@ -306,9 +306,9 @@ CONTAINS
               juo = listh(ind)
               jo  = indxuo(juo)
               IF (.NOT. gamma_scf) THEN
-                kxij = kpoints_scf%k(1,ik) * xijo(1,ind) + &
-                kpoints_scf%k(2,ik) * xijo(2,ind) +        &
-                kpoints_scf%k(3,ik) * xijo(3,ind) 
+                kxij = kpoint_scf%k(1,ik) * xijo(1,ind) + &
+                kpoint_scf%k(2,ik) * xijo(2,ind) +        &
+                kpoint_scf%k(3,ik) * xijo(3,ind) 
                 ckxij =  cos(kxij)
                 skxij = -sin(kxij)
               ELSE

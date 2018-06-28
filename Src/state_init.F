@@ -13,8 +13,8 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use kpoint_scf_m,      only: setup_kpoint_scf, kpoints_scf
-      use kpoint_scf_m,      only: gamma_scf
+      use kpoint_scf_m,      only: setup_kpoint_scf
+      use kpoint_scf_m,      only: kpoint_scf, gamma_scf
       use kpoint_t_m, only: kpoint_delete, kpoint_nullify
 
       use m_os,              only: file_exist
@@ -80,7 +80,7 @@
       use sys,               only: message, die
       use m_sparse, only : xij_offset
 
-      use ts_kpoint_scf_m, only: setup_ts_kpoint_scf, ts_kpoints_scf
+      use ts_kpoint_scf_m, only: setup_ts_kpoint_scf, ts_kpoint_scf
       use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
       use m_ts_options, only : BTD_method
       use m_ts_options, only : TS_Analyze
@@ -265,19 +265,19 @@
      &     (istep.ne.inicoor) .and. (.not.gamma_scf) ) then
 
 !       Will print k-points also
-        call kpoint_delete(kpoints_scf)
+        call kpoint_delete(kpoint_scf)
         call setup_kpoint_scf( ucell )
 
         if ( TSmode ) then
-          call kpoint_delete( ts_kpoints_scf )
+          call kpoint_delete( ts_kpoint_scf )
         else
-          call kpoint_nullify( ts_kpoints_scf )
+          call kpoint_nullify( ts_kpoint_scf )
         end if
-        call setup_ts_kpoint_scf( ucell, kpoints_scf )
+        call setup_ts_kpoint_scf( ucell, kpoint_scf )
 
-        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N,
+        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N,
      &                 'eo', 'state_init')
-        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, kpoints_scf%N, 
+        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 
      &                 'qo', 'state_init' )
 
 !       Find required supercell

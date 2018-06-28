@@ -76,7 +76,7 @@ module m_initwf
       use fdf
       use densematrix,     only : Haux, Saux, psi
       use sparse_matrices, only : maxnh
-      use kpoint_scf_m,    only : kpoints_scf, gamma_scf
+      use kpoint_scf_m,    only : kpoint_scf, gamma_scf
       use atomlist,        only : no_s, no_l, no_u, qtot, indxuo
       use m_spin,          only : nspin
       use alloc
@@ -161,10 +161,10 @@ module m_initwf
       call re_alloc(psi,1,npsi,name='psi',routine='initwf')
       allocate(muo(nuo),stat=mem_stat)
       call memory('A','I',nuo,'initwf',stat=mem_stat)
-      allocate(nocck(kpoints_scf%N,nspin),stat=mem_stat)
-      call memory('A','I',kpoints_scf%N*nspin,'initwf',stat=mem_stat)
-      allocate(occup(no_u,nspin,kpoints_scf%N),stat=mem_stat)
-      call memory('A','L',nuo*kpoints_scf%N*nspin,'initwf',stat=mem_stat)
+      allocate(nocck(kpoint_scf%N,nspin),stat=mem_stat)
+      call memory('A','I',kpoint_scf%N*nspin,'initwf',stat=mem_stat)
+      allocate(occup(no_u,nspin,kpoint_scf%N),stat=mem_stat)
+      call memory('A','L',nuo*kpoint_scf%N*nspin,'initwf',stat=mem_stat)
 !     Check indxuo .......................................................
       do iuo = 1,nuo
         muo(iuo) = 0
@@ -197,7 +197,7 @@ module m_initwf
 !     evolved by integrating TDKS equations.                                  !
 ! ............................................................................!
       temp=1.0d-6
-      call fermid( nspin, nspin, kpoints_scf%N, kpoints_scf%w, no_u, no_u, eo, &
+      call fermid( nspin, nspin, kpoint_scf%N, kpoint_scf%w, no_u, no_u, eo, &
                    temp, qtot, qo, ef, entrp )
       nocc(1) = 0
       nocc(2) = 0
@@ -205,26 +205,26 @@ module m_initwf
       degen= .false.
       !
       !
-      do ik=1,kpoints_scf%N
+      do ik=1,kpoint_scf%N
         do ispin=1,nspin
           nocck(ik,ispin)=0
           do io=1,no_u
             occup(io,ispin,ik)=.false.
-            if(dabs(qo(io,ispin,ik)-2.0d0*kpoints_scf%w(ik)/nspin).le.    &
-               1.0d-2*dabs(2.0d0**kpoints_scf%w(ik)/nspin))  then
+            if(dabs(qo(io,ispin,ik)-2.0d0*kpoint_scf%w(ik)/nspin).le.    &
+               1.0d-2*dabs(2.0d0**kpoint_scf%w(ik)/nspin))  then
               nocc(ispin)=nocc(ispin)+1
               nocck(ik,ispin)=nocck(ik,ispin)+1
 !             Accounting the number of electrons corresponding the states being marked
 !             as occupied.
-              nelect=nelect+dabs(2.0d0*kpoints_scf%w(ik)/nspin)
+              nelect=nelect+dabs(2.0d0*kpoint_scf%w(ik)/nspin)
               occup(io,ispin,ik)=.true.
             else
-              if ( dabs( qo(io,ispin,ik)) .gt.1.0d-2*dabs(2.0d0*kpoints_scf%w(ik)/nspin)) then
+              if ( dabs( qo(io,ispin,ik)) .gt.1.0d-2*dabs(2.0d0*kpoint_scf%w(ik)/nspin)) then
                 IF (Node .eq. 0) THEN
                   IF(.not. degen) write(6,fmt="(/,a,tr3,a,tr3,a,tr3,a)") "initwf:","ik", &
                          "occupancy","maximum occupancy"
                   write(6,"(tr2,I10,tr3,f8.6,tr4,f8.6)") ik, qo(io,ispin,ik), &
-                         2.0d0*kpoints_scf%w(ik)/nspin
+                         2.0d0*kpoint_scf%w(ik)/nspin
                 END IF
                 degen = .true.  
               end if
@@ -257,8 +257,8 @@ module m_initwf
 #else
       m_storage='szden'
 #endif
-      allocate(wavef_ms(1:kpoints_scf%N,1:nspin)) ! allocate (nkpnt*npsin) matrices inside wavef_ms
-      do i=1,kpoints_scf%N !for every value of nkpnt and nspin, allocate a matrix of size (no_u x nocck(i,j))
+      allocate(wavef_ms(1:kpoint_scf%N,1:nspin)) ! allocate (nkpnt*npsin) matrices inside wavef_ms
+      do i=1,kpoint_scf%N !for every value of nkpnt and nspin, allocate a matrix of size (no_u x nocck(i,j))
         do j=1,nspin
           call m_allocate(wavef_ms(i,j),no_u,nocck(i,j),m_storage)
         end do
@@ -269,7 +269,7 @@ module m_initwf
                     Haux, Saux, psi, no_u, occup)
       else if (nspin.le.2 .and. .not.gamma_scf) then
           call diagkiwf( nspin, nuo, no_s, nspin, no_l, maxnh,                 &
-                         no_u, indxuo, kpoints_scf%N, kpoints_scf%k, Haux, Saux, &
+                         no_u, indxuo, kpoint_scf%N, kpoint_scf%k, Haux, Saux, &
                          psi, no_u, occup)
       else 
          call die('initwf: ERROR: non-collinear spin options for TDDFT not yet implemented')
@@ -277,7 +277,7 @@ module m_initwf
 !     Write/save wavefunction in .TDWF file to use for TDDFT calculation.
       IF (Node .eq. 0) WRITE(6,'(a)') 'initwf: Saving wavefunctions & 
                   &in <systemlabel>.TDWF file.'
-      call  iowavef('write',wavef_ms,no_u,kpoints_scf%N,nspin)
+      call  iowavef('write',wavef_ms,no_u,kpoint_scf%N,nspin)
 !     Free local arrays
       call memory('D','I',size(muo),'initwf',stat=mem_stat)
       deallocate(muo,stat=mem_stat)

@@ -39,7 +39,7 @@
       use files,        only : slabel
       use files,        only : filesOut_t   ! derived type for output file names
       use zmatrix,      only: lUseZmatrix, write_zmatrix
-      use kpoint_scf_m, only: kpoints_scf, gamma_scf
+      use kpoint_scf_m, only: kpoint_scf, gamma_scf
       use parallel, only: IOnode
       use parallel, only: SIESTA_worker
       use files,       only : label_length
@@ -284,7 +284,7 @@
         ! The user is responsible for using appropriate values.
         wfs_band_min = fdf_get("WFS.BandMin",1)
         wfs_band_max = fdf_get("WFS.BandMax",no_u)
-        call setup_wfs_list(kpoints_scf%N,no_u,
+        call setup_wfs_list(kpoint_scf%N,no_u,
      &                      wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
      $                      use_energy_window=.true.)
@@ -292,9 +292,9 @@
          if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
      $                           // trim(wfs_filename)
          call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
-     .        kpoints_scf%N,
+     .        kpoint_scf%N,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     .        gamma_scf, kpoints_scf%N, kpoints_scf%k, no_u, occtol)
+     .        gamma_scf, kpoint_scf%N, kpoint_scf%k, no_u, occtol)
       endif
 
 !     Compute bands
@@ -352,7 +352,7 @@
           if ( h_spin_dim <= 2 ) then
             write(6,'(/,a,/,a4,a3,a7)')
      &       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
-            do ik = 1,kpoints_scf%N
+            do ik = 1,kpoint_scf%N
               do ispin = 1,spinor_dim
                 write(6,'(i4,i3,10f7.2)')
      &            ik,ispin,(eo(io,ispin,ik)/eV,io=1,min(10,neigwanted))
@@ -362,7 +362,7 @@
             enddo
           else
             write(6,'(/,a)') 'siesta: Eigenvalues (eV):'
-            do ik = 1,kpoints_scf%N
+            do ik = 1,kpoint_scf%N
               write(6,'(a,i6)') 'ik =', ik
               write(6,'(10f7.2)')
      &          ((eo(io,ispin,ik)/eV,io=1,neigwanted),ispin=1,2)
@@ -375,9 +375,9 @@
       if (((isolve.eq.SOLVE_DIAGON).or.
      &     ((isolve.eq.SOLVE_MINIM).and.minim_calc_eigenvalues))
      &     .and.IOnode)
-     &    call ioeig(eo,ef,neigwanted,nspin,kpoints_scf%N,
+     &    call ioeig(eo,ef,neigwanted,nspin,kpoint_scf%N,
      &     no_u,spinor_dim,
-     &     kpoints_scf%N, kpoints_scf%k, kpoints_scf%w)
+     &     kpoint_scf%N, kpoint_scf%k, kpoint_scf%w)
 
 
 !**   This uses H,S, and xa, as it diagonalizes them again
