@@ -202,9 +202,9 @@ xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
 xml.o: precision.o
 xml.o: precision.o
 gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o
-gen-basis.o: basis_types.o local_sys.o
+gen-basis.o: basis_types.o chemical.o local_sys.o m_spin.o
 gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o
-gen-basis.o: basis_types.o local_sys.o
+gen-basis.o: basis_types.o chemical.o local_sys.o m_spin.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 aux_proj.o: atom.o
