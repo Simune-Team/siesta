@@ -9,7 +9,7 @@
 C *******************************************************************
 C Writes force constants matrix to file
 C Input forces are in Ry/Bohr and input displacements are in Bohr.
-C Force Constants written in file are in eV / Ang
+C Force Constants written in file are in eV / Ang ** 2
 C Written by P.Ordejon. August'98.
 C Dynamic memory and save attribute for fres introduced by J.Gale
 C Sept'99.
