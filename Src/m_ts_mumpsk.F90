@@ -66,7 +66,7 @@ contains
     ! Self-energy expansion
     use m_ts_elec_se
 
-    use ts_kpoint_scf_m, only : ts_kpoints_scf
+    use ts_kpoint_scf_m, only : ts_kpoint_scf
 
     use m_ts_options, only : Calc_Forces
     use m_ts_options, only : N_mu, mus
@@ -236,7 +236,7 @@ contains
     end if
 
     ! start the itterators
-    call itt_init  (SpKp,end1=nspin,end2=ts_kpoints_scf%N)
+    call itt_init  (SpKp,end1=nspin,end2=ts_kpoint_scf%N)
     ! point to the index iterators
     call itt_attach(SpKp,cur1=ispin,cur2=ikpt)
 
@@ -252,10 +252,10 @@ contains
        end if
 
        ! Include spin factor and 1/(2\pi)
-       kpt(:) = ts_kpoints_scf%k(:,ikpt)
+       kpt(:) = ts_kpoint_scf%k(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
-       kw = 0.5_dp / Pi * ts_kpoints_scf%w(ikpt)
+       kw = 0.5_dp / Pi * ts_kpoint_scf%w(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
 
        write(mum%ICNTL(1),'(/,a,i0,a,3(tr1,g10.4),/)') &

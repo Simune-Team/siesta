@@ -72,7 +72,7 @@ contains
     ! Self-energy expansion
     use m_ts_elec_se
 
-    use ts_kpoint_scf_m, only : ts_kpoints_scf
+    use ts_kpoint_scf_m, only : ts_kpoint_scf
 
     use m_ts_options, only : Calc_Forces
     use m_ts_options, only : N_mu, mus
@@ -298,7 +298,7 @@ contains
 
     
     ! start the itterators
-    call itt_init  (SpKp,end1=nspin,end2=ts_kpoints_scf%N)
+    call itt_init  (SpKp,end1=nspin,end2=ts_kpoint_scf%N)
     ! point to the index iterators
     call itt_attach(SpKp,cur1=ispin,cur2=ikpt)
     
@@ -311,10 +311,10 @@ contains
        end if
 
        ! Include spin factor and 1/(2\pi)
-       kpt(:) = ts_kpoints_scf%k(:,ikpt)
+       kpt(:) = ts_kpoint_scf%k(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
-       kw = 0.5_dp / Pi * ts_kpoints_scf%w(ikpt)
+       kw = 0.5_dp / Pi * ts_kpoint_scf%w(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING
@@ -685,7 +685,7 @@ contains
     ! Self-energy expansion
     use m_ts_elec_se
 
-    use ts_kpoint_scf_m, only : ts_kpoints_scf
+    use ts_kpoint_scf_m, only : ts_kpoint_scf
 
     use m_ts_sparse, only : ts_sp_uc, tsup_sp_uc
     use m_ts_sparse, only : ltsup_sp_sc, sc_off
@@ -811,15 +811,15 @@ contains
     zDM => val(spuDM)
     call newdSpData2D(ltsup_sp_sc,1, sp_dist,spDM   ,name='TS spDM')
     
-    call itt_init  (SpKp,end1=nspin,end2=ts_kpoints_scf%N)
+    call itt_init  (SpKp,end1=nspin,end2=ts_kpoint_scf%N)
     call itt_attach(SpKp,cur1=ispin,cur2=ikpt)
     
     call init_val(spDM)
     do while ( .not. itt_step(SpKp) )
 
-       kpt(:) = ts_kpoints_scf%k(:,ikpt)
+       kpt(:) = ts_kpoint_scf%k(:,ikpt)
        call kpoint_convert(ucell,kpt,bkpt,1)
-       kw = 0.5_dp / Pi * ts_kpoints_scf%w(ikpt)
+       kw = 0.5_dp / Pi * ts_kpoint_scf%w(ikpt)
        if ( nspin == 1 ) kw = kw * 2._dp
        
 #ifdef TRANSIESTA_TIMING

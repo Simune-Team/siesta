@@ -36,9 +36,9 @@ contains
     use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
     
-    use kpoint_scf_m, only : kpoints_scf
+    use kpoint_scf_m, only : kpoint_scf
     use ts_kpoint_scf_m, only : setup_ts_kpoint_scf
-    use ts_kpoint_scf_m, only : ts_kpoints_scf, ts_Gamma_scf
+    use ts_kpoint_scf_m, only : ts_kpoint_scf, ts_Gamma_scf
     use m_ts_cctype
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
@@ -91,11 +91,11 @@ contains
     call read_ts_elec( ucell, na_u, xa, lasto )
 
     ! Read in the k-points
-    call setup_ts_kpoint_scf( ucell, kpoints_scf )
+    call setup_ts_kpoint_scf( ucell, kpoint_scf )
 
     ! Read after electrode stuff
     call read_ts_after_Elec( ucell, nspin, na_u, xa, lasto, &
-        ts_kpoints_scf%k_cell, ts_kpoints_scf%k_displ)
+        ts_kpoint_scf%k_cell, ts_kpoint_scf%k_displ)
 
     ! Print the options
     call print_ts_options( ucell )
@@ -188,13 +188,13 @@ contains
           call init_Electrode_HS(Elecs(i))
 
           call do_Green(Elecs(i), &
-               ucell,ts_kpoints_scf%N,ts_kpoints_scf%k,ts_kpoints_scf%w, &
+               ucell,ts_kpoint_scf%N,ts_kpoint_scf%k,ts_kpoint_scf%w, &
                Elecs_xa_Eps, .false. )
 
           if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
              
              call do_Green_Fermi(mean_kT, Elecs(i), &
-                  ucell,ts_kpoints_scf%N,ts_kpoints_scf%k,ts_kpoints_scf%w, &
+                  ucell,ts_kpoint_scf%N,ts_kpoint_scf%k,ts_kpoint_scf%w, &
                   Elecs_xa_Eps, .false. )
 
           end if
