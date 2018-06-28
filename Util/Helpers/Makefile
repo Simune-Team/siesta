@@ -366,7 +366,7 @@ m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
 m_getopts.o: f2kcli.o
 m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
 m_handle_sparse.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_iodm.o
-m_handle_sparse.o: m_os.o m_ts_io.o parallel.o precision.o units.o
+m_handle_sparse.o: m_os.o m_region.o m_ts_io.o parallel.o precision.o units.o
 m_hartree_add.o: intrinsic_missing.o m_cite.o m_geom_objects.o m_mesh_node.o
 m_hartree_add.o: parallel.o precision.o units.o
 m_hs_matrix.o: alloc.o cellsubs.o geom_helper.o local_sys.o precision.o
