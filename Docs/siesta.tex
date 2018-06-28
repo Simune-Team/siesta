@@ -7656,28 +7656,32 @@ The \program{readwf}\index{readwf} and
 There are several options to obtain the
 total density of states:
 \begin{itemize}
-\index{output!eigenvalues}
-\item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
-dumped into \sysfile{EIG} in a format analogous to SystemLabel.bands,
-but without the kmin, kmax, emin, emax information, and without
-the abscissa. The \program{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}}
-postprocessing utility can be then used to obtain the density of
-states.\index{density of states}
-See the \fdf{WriteEigenvalues} descriptor.
-%
-\item As a side-product of a partial-density-of-states calculation
+  \index{output!eigenvalues}
+  
+  \item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
+  dumped into \sysfile{EIG} in a format analogous to SystemLabel.bands,
+  but without the kmin, kmax, emin, emax information, and without
+  the abscissa. The \program{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}}
+  postprocessing utility can be then used to obtain the density of
+  states.\index{density of states}
+  See the \fdf{WriteEigenvalues} descriptor.
+
+  \item As a side-product of a partial-density-of-states calculation
   (see below)
-\item As one of the files produced by the \program{Util/COOP/mprop} during
+
+  \item As one of the files produced by the \program{Util/COOP/mprop} during
   the off-line analysis of the electronic structure. This method
   allows the flexibility of specifying energy ranges and resolutions
   at will, without re-running \siesta\ See Sec.~\ref{sec:coop}.
-\item Using the inertia-counting routines in the PEXSI solver (see Sec.~\ref{pexsi-dos}).
+
+  \item Using the inertia-counting routines in the PEXSI solver (see
+  Sec.~\ref{pexsi-dos}).
+  
 \end{itemize}
 
-The k-point specification for the density of states calculations may
-be tuned via these options. Note that the \fdf*{DOS.kgrid.?} options
-are the default values for \fdf{ProjectedDensityOfStates} and
-\fdf{LocalDensityOfStates}.
+The k-point specification for the partial and local density of states
+calculations described in the following two sections may optionally be
+given by 
 
 \begin{fdfentry}{DOS.kgrid.?}<kgrid.?>
 
@@ -7686,7 +7690,12 @@ are the default values for \fdf{ProjectedDensityOfStates} and
   See Sec.~\ref{ssec:k-points} for details. If \emph{any} of
   \fdf*{DOS.kgrid.MonkhorstPack}, \fdf*{DOS.kgrid.Cutoff} or
   \fdf*{DOS.kgrid.File} is present, they will be used, otherwise fall
-  back to the SCF k-point sampling.
+  back to the SCF k-point sampling (\fdf*{kgrid.?}).
+
+  \note \fdf{DOS.kgrid.?} options are the default values for
+  \fdf{ProjectedDensityOfStates} and \fdf{LocalDensityOfStates}, but
+  they do not affect the sampling used to generate the \sysfile{EIG}
+  file. This feature might be implemented in a later version.
 
 \end{fdfentry}
 
@@ -7695,11 +7704,14 @@ are the default values for \fdf{ProjectedDensityOfStates} and
 
 There are two options to obtain the partial density of states
 \begin{itemize}
-\item Using the options below
-\item Using the \program{Util/COOP/mprop} program for the off-line analysis of
+  
+  \item Using the options below
+  
+  \item Using the \program{Util/COOP/mprop} program for the off-line analysis of
   the electronic structure in PDOS mode. This method allows the
   flexibility of specifying energy ranges, orbitals, and resolutions
   at will, without re-running \siesta. See Sec.~\ref{sec:coop}.
+  
 \end{itemize}
 
 \begin{fdfentry}{ProjectedDensityOfStates}[block]
@@ -7770,7 +7782,8 @@ There are two options to obtain the partial density of states
   \fdf{kgrid!File} options. Refer to them for additional details.
 
   If \fdf{PDOS.kgrid.?} does not exist, then \fdf{DOS.kgrid.?} is
-  checked, if that does not exist then \fdf*{kgrid.?} are used.
+  checked, and if that does not exist then \fdf*{kgrid.?} options are
+  used.
 
 \end{fdfentry}
 
