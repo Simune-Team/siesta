@@ -112,7 +112,7 @@
           ! We still need to read the pseudopotential information
           ! because the .ion files do not contain V_so information
           write(6,'(a)') ' initatom: spin-orbit-onsite with user-basis'
-          write(6,'(a)') ' initatom: Still need to read the psf files.'
+          write(6,'(a)') ' initatom: still needs pseudopotential files'
           do is = 1 , nsp
              basp => basis_parameters(is)
              basp%label = species_label(is)
@@ -122,7 +122,8 @@
                 if (.not. valid_spin_orbit_potentials(basp%psml_handle))
      $                    then
                    call die(
-     $            "Cannot do spin-orbit without proper semilocal pots")
+     $            "Cannot do spin-orbit 'onsite' without " //
+     $            "proper semilocal potentials in the psml file")
                 endif
              endif
           end do
@@ -148,7 +149,7 @@
         allocate(species(nspecies))
         do is = 1,nsp
           call write_basis_specs(6,is)
-          basp=>basis_parameters(is)
+          basp => basis_parameters(is)
           spp => species(is)
           call ATOM_MAIN( iz(is), lmxkb(is), nkbl(0:lmaxd,is),
      &                    erefkb(1:nkbmx,0:lmaxd,is), lmxo(is),

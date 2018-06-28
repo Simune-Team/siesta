@@ -3751,7 +3751,6 @@ C
      .                   filtercut,atm_label, spp, basp) 
 
         use basis_specs, only:  restricted_grid
-        use basis_types, only:  shell_t
         use atm_types, only: species_info
 C
 C Calculates the atomic orbitals basis set, using the option SPLIT 
@@ -3812,9 +3811,6 @@ C
         integer  npoint 
         parameter(npoint=4)
 
-        integer :: nsm_parent
-        type(shell_t), pointer :: shell, s_parent
-        real(dp) :: pol_exp_factor
 C
 C Reading the energy-shift to define the cut-off radius of orbitals
 C
@@ -3861,33 +3857,8 @@ C
      .          'SPLIT: Basis orbitals for state ',
      .          cnfigtb(l,nsm,is), sym(l)
 
-              ! Check whether this shell has been re-classified
-              ! as a standard shell, instead of perturbatively
-              ! creating the orbitals in polgen
-
-                 shell => basp%shell_of(l,nsm)%s
-                 if (shell%polarization_shell) then
-                    s_parent => shell%shell_being_polarized
-                    nsm_parent = s_parent%sequence_in_lshell
-
-                    ! Inherit the rc, to avoid 'non-bound' errors
-                    ! We could apply a heuristic expansion factor
-                    pol_exp_factor =
-     $                 fdf_get('pao-polarization-rc-expansion-factor',
-     $                          1.0_dp)
-                    rco(1,l,nsm) = pol_exp_factor*rco(1,l-1,nsm_parent)
-
-                    ! Other z's will be constructed with the usual method,
-                    ! using the default parameters (for more control, one
-                    ! has to put the shell explicitly in the PAO.Basis block
-
-                    write(6,'(A,I1,A)')
-     .                   'SPLIT: Non-perturbative ' //
-     $                   'polarization orbs for state ',
-     .                   cnfigtb(l-1,nsm_parent,is), sym(l-1)
-                    write(6,'(A,f0.4)')
-     .                   "SPLIT: rc(1st zeta) reset to: ", rco(1,l,nsm)
-                 endif
+              call check_rc_for_nonpert_pol_shell('SPLIT',
+     $                        is,l,nsm,basp,rco(1,l,nsm))
                  
               if (rco(1,l,nsm).lt.1.0d-5) then    
 C
@@ -7488,6 +7459,53 @@ c    .              ,'        # scaleFactor(izeta=1,Nzeta)'
 
        end subroutine split_scan
 
+       subroutine check_rc_for_nonpert_pol_shell(scheme,
+     $     is,l,nsm,basp,rc_1st_zeta)
+
+       use basis_types, only:  shell_t
+       use basis_types, only: basis_def_t
+
+       character(len=*), intent(in)  :: scheme
+       integer, intent(in)           :: is
+       integer, intent(in)           :: l
+       integer, intent(in)           :: nsm
+       type(basis_def_t), intent(in) :: basp
+       real(dp), intent(inout)       :: rc_1st_zeta
+       
+       ! Check whether this shell has been re-classified as a standard
+       ! shell, instead of perturbatively creating the orbitals in
+       ! polgen, and reset rc (1st zeta) accordingly.
+       
+       type(shell_t), pointer :: shell, s_parent
+       integer :: nsm_parent
+       real(dp) :: pol_exp_factor
+
+       shell => basp%shell_of(l,nsm)%s
+       if (shell%polarization_shell) then
+          s_parent => shell%shell_being_polarized
+          nsm_parent = s_parent%sequence_in_lshell
+
+! Inherit the rc, to avoid 'non-bound' errors
+! We could apply a heuristic expansion factor
+          pol_exp_factor =
+     $         fdf_get('pao-polarization-rc-expansion-factor',
+     $         1.0_dp)
+          rc_1st_zeta = pol_exp_factor*rc_1st_zeta
+
+! Other z's will be constructed with the usual method,
+! using the default parameters (for more control, one
+! has to put the shell explicitly in the PAO.Basis block
+
+          write(6,'(A,I1,A)')
+     .         trim(scheme) //': Non-perturbative ' //
+     $         'polarization orbs for state ',
+     .         cnfigtb(l-1,nsm_parent,is), sym(l-1)
+          write(6,'(A,f0.4)')
+     .         trim(scheme) //': rc(1st zeta) reset to: ',
+     $         rc_1st_zeta
+       endif
+      end subroutine check_rc_for_nonpert_pol_shell
+!------------------------------------------------------------                 
       function dampen(a,b,r) result (y)
       real(dp), intent(in) :: a, b, r
       real(dp)             :: y
