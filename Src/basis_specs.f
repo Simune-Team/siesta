@@ -1365,6 +1365,18 @@ c (according to atmass subroutine).
                allocate(s%lambda(1:s%nzeta))
                s%rc(1:s%nzeta) = 0.0d0
                s%lambda(1:s%nzeta) = 1.0d0
+               !
+               ! This option needs scale factors for multiple-z
+               if (basp%basis_type.eq.'nonodes') then
+                  s%lambda(1) = 1.0d0
+                  if (s%nzeta > 1)  then
+                     call message("WARNING","NONODES: " //
+     $                 "Default scale factors set for shell (x0.8)")
+                  endif
+                  do i=2,s%nzeta
+                     s%lambda(i) = 0.8d0 * s%lambda(i-1)
+                  enddo
+               endif
             endif
          enddo loop_l
 
