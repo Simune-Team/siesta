@@ -804,7 +804,8 @@ m_dminim.o: siesta_options.o sys.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o m_cite.o m_ts_global_vars.o mesh.o parallel.o
 m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
-m_elsi_interface.o: fold_auxcell.o m_mpi_utils.o parallel.o precision.o
+m_elsi_interface.o: alloc.o class_Distribution.o fold_auxcell.o m_mpi_utils.o
+m_elsi_interface.o: m_redist_spmatrix.o parallel.o precision.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: cranknic_evolg.o cranknic_evolk.o m_gamma.o m_spin.o precision.o

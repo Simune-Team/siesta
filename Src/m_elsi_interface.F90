@@ -75,13 +75,10 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
   !
 
   use m_fold_auxcell, only: fold_sparse_arrays ! Could be called in state_init
-  
-! real*8 eo(maxo,nspin,nk)  : Eigenvalues 
-! real*8 qo(maxo,nspin,nk)  : Occupations of eigenstates
-! real*8 Dnew(maxnd,spin%DM)  : Output Density Matrix
-! real*8 Enew(maxnd,spin%EDM)  : Output Energy-Density Matrix
-! real*8 ef                      : Fermi energy
-! real*8 Entropy                 : Electronic entropy
+
+! Missing for now
+!  eo(no_u,nspin,nk)  : Eigenvalues 
+!  qo(no_u,nspin,nk)  : Occupations of eigenstates
 
 
      real(dp), intent(inout) :: H(:,:), S(:)    ! Note!
@@ -196,7 +193,11 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 #ifdef MPI
   use mpi_siesta
 #endif
-
+  use class_Distribution
+  use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
+  use alloc
+  use m_mpi_utils, only: globalize_sum
+  
   implicit none
 
   integer,  intent(in)    :: iscf      ! SCF step counter
@@ -205,11 +206,11 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer,  intent(in)    :: n_spin
   integer,  intent(in)    :: nnz_l     ! Local nonzero
   integer,  intent(in)    :: row_ptr(n_basis_l)
-  integer,  intent(in)    :: col_idx(nnz_l)
+  integer,  intent(in), target    :: col_idx(nnz_l)
   real(dp), intent(in)    :: qtot
   real(dp), intent(in)    :: temp
-  real(dp), intent(inout) :: ham(nnz_l,n_spin)
-  real(dp), intent(inout) :: ovlp(nnz_l)
+  real(dp), intent(inout), target :: ham(nnz_l,n_spin)
+  real(dp), intent(inout), target :: ovlp(nnz_l)
   real(dp), intent(out)   :: dm(nnz_l,n_spin)
   real(dp), intent(out)   :: edm(nnz_l,n_spin)
   real(dp), intent(out)   :: ef        ! Fermi energy
@@ -238,7 +239,41 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   character(len=5) :: broad_string
 
   integer, allocatable, dimension(:) :: row_ptr2
+  integer, allocatable, dimension(:), target :: numh
 
+  integer :: World_group
+  integer :: elsi_Spatial_comm, elsi_Spatial_group
+  integer :: elsi_Spin_comm
+
+  type(distribution) :: dist1
+  type(distribution), target  :: dist2_spin(2)
+  type(distribution), pointer :: dist2
+  
+  type(aux_matrix), allocatable, target :: m1_spin(:)
+  type(aux_matrix) :: m2
+  type(aux_matrix), pointer :: m1
+
+  integer :: color, spatial_rank, spin_rank
+  integer :: npTotal, npPerSpin
+  integer, allocatable, dimension(:) :: global_ranks_in_world
+  integer, allocatable, dimension(:) :: ranks_in_world  ! should be 'spatial_ranks...'
+  integer, allocatable, dimension(:,:) :: ranks_in_World_Spin
+
+  integer :: elsi_spin
+
+  integer :: numColLocal   ! change name later ....
+  integer :: nnzLocal   ! change name later ....
+  integer :: nnz
+  integer, pointer  :: colptrLocal(:) => null()
+  integer  :: i, ih, ispin
+  real(dp) :: ets_spin
+
+  integer, pointer  :: rowindLocal(:)
+  real(dp), pointer :: SnzvalLocal(:)
+  real(dp), pointer :: HnzvalLocal(:)
+  real(dp), pointer :: DMnzvalLocal(:) => null()
+  real(dp), pointer :: EDMnzvalLocal(:) => null()
+  
   external :: timer
 
 #ifndef MPI
@@ -248,6 +283,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   ! Global communicator is a duplicate of passed communicator
   call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
   call MPI_Comm_Rank(elsi_global_comm, mpirank, ierr)
+  call MPI_Comm_Size(elsi_global_comm, npTotal, ierr)
 
   call timer("elsi", 1)
 
@@ -304,24 +340,6 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_init(elsi_h, which_solver, MULTI_PROC, SIESTA_CSC, n_basis, &
       qtot, n_state)
 
-    ! Sparsity pattern
-    call globalize_sum(nnz_l, nnz_g, comm=elsi_global_comm)
-
-    allocate(row_ptr2(n_basis_l+1))
-
-    row_ptr2(1:n_basis_l) = row_ptr(1:n_basis_l)+1
-    row_ptr2(n_basis_l+1) = nnz_l+1
-
-    call elsi_set_csc(elsi_h, nnz_g, nnz_l, n_basis_l, col_idx, row_ptr2)
-    call elsi_set_csc_blk(elsi_h, BlockSize)
-
-    deallocate(row_ptr2)
-
-    ! MPI
-!    call elsi_set_spin(elsi_h, n_spin, elsi_spin_id)
-    call elsi_set_mpi(elsi_h, elsi_global_comm)
-    call elsi_set_mpi_global(elsi_h, elsi_global_comm)
-
     ! Output
     call elsi_set_output(elsi_h, out_level)
     call elsi_set_output_log(elsi_h, out_json)
@@ -355,22 +373,251 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
     call elsi_set_sips_n_elpa(elsi_h, sips_n_elpa)
     call elsi_set_sips_interval(elsi_h, -10.0_dp, 10.0_dp)
-  end if
 
+ endif   ! iscf == 1
+  
+    if (n_spin == 1) then
+       
+       ! Sparsity pattern
+       call globalize_sum(nnz_l, nnz_g, comm=elsi_global_comm)
+
+       allocate(row_ptr2(n_basis_l+1))
+       row_ptr2(1:n_basis_l) = row_ptr(1:n_basis_l)+1
+       row_ptr2(n_basis_l+1) = nnz_l+1
+
+       call elsi_set_csc(elsi_h, nnz_g, nnz_l, n_basis_l, col_idx, row_ptr2)
+       deallocate(row_ptr2)
+
+       call elsi_set_csc_blk(elsi_h, BlockSize)
+       ! ** Do I need one of these??
+       call elsi_set_mpi(elsi_h, elsi_global_comm)
+       !call elsi_set_mpi_global(elsi_h, elsi_global_comm)
+
+
+    else
+       
+       ! MPI logic for spin polarization
+
+       ! Re-create numh, as we use it in the transfer
+       allocate(numh(n_basis_l))
+       numh(1) = row_ptr(2)
+       do i = 2, n_basis_l-1
+          numh(i) = row_ptr(i+1)-row_ptr(i)
+       enddo
+       numh(n_basis_l) = nnz_l - row_ptr(n_basis_l)
+
+       ! Define the original distribution (over all the available nodes)
+
+       allocate(global_ranks_in_world(npTotal))
+       global_ranks_in_world = (/ (i, i=0, npTotal-1) /)
+       call newDistribution(dist1,elsi_global_Comm,global_ranks_in_world, &
+            TYPE_BLOCK_CYCLIC,BlockSize,"global dist")
+       deallocate(global_ranks_in_world)
+       call MPI_Barrier(elsi_global_Comm,ierr)
+
+
+       ! "Row" communicator for independent PEXSI operations on each spin
+       ! The name refers to "spatial" degrees of freedom.
+       color = mod(mpirank,n_spin)    ! {0,1} for n_spin = 2, or {0} for n_spin = 1
+       call MPI_Comm_Split(elsi_global_comm, color, mpirank, elsi_Spatial_Comm, ierr)
+       ! "Column" communicator for spin reductions
+       color = mpirank/n_spin
+       call MPI_Comm_Split(elsi_global_comm, color, mpirank, elsi_Spin_Comm, ierr)
+
+       call mpi_comm_rank( elsi_Spatial_Comm, spatial_rank, ierr )
+       call mpi_comm_rank( elsi_Spin_Comm, spin_rank, ierr )
+    
+       ! Include the actual world ranks in the distribution objects
+
+       npPerSpin = npTotal/n_spin
+
+       call MPI_Comm_Group(elsi_Spatial_Comm, elsi_Spatial_Group, Ierr)
+       allocate(ranks_in_world(npPerSpin))
+       call MPI_Comm_Group(elsi_global_comm, World_Group, Ierr)
+       call MPI_Group_translate_ranks( elsi_Spatial_Group, npPerSpin, &
+            (/ (i,i=0,npPerSpin-1) /), &
+            World_Group, ranks_in_world, ierr )
+
+       call MPI_Group_Free(elsi_Spatial_Group, ierr)
+       call MPI_Group_Free(World_Group, ierr)
+       
+       allocate (ranks_in_World_Spin(npPerSpin,n_spin))
+       call MPI_AllGather(ranks_in_world,npPerSpin,MPI_integer,&
+            Ranks_in_World_Spin(1,1),npPerSpin, &
+            MPI_integer,elsi_Spin_Comm,ierr)
+
+       ! Create distributions known to all nodes (we used allgather...)
+       do ispin = 1, n_spin
+          call newDistribution(dist2_spin(ispin), elsi_global_Comm, &
+               Ranks_in_World_Spin(:,ispin),  &
+               TYPE_BLOCK_CYCLIC, blockSize, "SPATIAL dist")
+       enddo
+       deallocate(ranks_in_world,Ranks_in_World_Spin)
+       call MPI_Barrier(elsi_global_Comm,ierr)
+
+       elsi_spin = spin_rank+1  ! {1,2}
+
+       
+       ! This is done serially, each time filling one spin set
+       ! Note that **all processes** need to have the same m1
+       ! but we probably do not need two copies of m1
+
+       ! Just do allocate(m1%vals(2)) outside the loop
+       
+       allocate(m1_spin(n_spin))
+       do ispin = 1, n_spin
+
+          m1 => m1_spin(ispin)
+
+          m1%norbs = n_basis
+          m1%no_l  = n_basis_l
+          m1%nnzl  = nnz_l
+          m1%numcols => numh  ! numh
+          m1%cols    => col_idx
+          allocate(m1%vals(2))
+          m1%vals(1)%data => ovlp(:)
+          m1%vals(2)%data => ham(:,ispin)
+
+          call timer("redist_orbs_fwd", 1)
+ 
+          dist2 => dist2_spin(ispin)
+          call redistribute_spmatrix(n_basis,m1,dist1,m2,dist2,elsi_global_Comm)
+   
+          call timer("redist_orbs_fwd", 2)
+
+          if (elsi_spin == ispin) then  ! Each team gets their own data
+
+             !nrows = m2%norbs          ! or simply 'norbs'
+             numColLocal = m2%no_l
+             nnzLocal    = m2%nnzl
+             call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,elsi_Spatial_Comm,ierr)
+             call re_alloc(colptrLocal,1,numColLocal+1,"colptrLocal","elsi_solver")
+             colptrLocal(1) = 1
+             do ih = 1,numColLocal
+                colptrLocal(ih+1) = colptrLocal(ih) + m2%numcols(ih)
+             enddo
+
+             rowindLocal => m2%cols
+             SnzvalLocal => m2%vals(1)%data
+             HnzvalLocal => m2%vals(2)%data
+
+             call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","elsi_solver")
+             call re_alloc(EDMnzvalLocal,1,nnzLocal,"EDMnzvalLocal","elsi_solver")
+          endif
+       enddo
+
+       call elsi_set_csc(elsi_h, nnz, nnzLocal, numColLocal, rowindLocal, colPtrLocal)
+       call de_alloc(colPtrLocal,"colPtrLocal","elsi_solver")
+       
+       call elsi_set_csc_blk(elsi_h, BlockSize)
+       call elsi_set_spin(elsi_h, n_spin, elsi_spin)
+       call elsi_set_mpi(elsi_h, elsi_Spatial_comm)
+       call elsi_set_mpi_global(elsi_h, elsi_global_comm)
+
+    endif  ! n_spin
+    
   call timer("elsi-solver", 1)
 
-  ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
-  call elsi_dm_real_sparse(elsi_h, ham, ovlp, dm, energy)
-  call elsi_get_edm_real_sparse(elsi_h, edm)
+  if (n_spin == 1) then
+     call elsi_dm_real_sparse(elsi_h, ham, ovlp, DM, energy)
+     call elsi_get_edm_real_sparse(elsi_h, EDM)
+     call elsi_get_entropy(elsi_h, ets)
+  else
+     ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
+     ! Presumably energy is already summed over spins
+     call elsi_dm_real_sparse(elsi_h, HnzValLocal, SnzValLocal, DMnzvallocal, energy)
+     call elsi_get_edm_real_sparse(elsi_h, EDMnzvallocal)
+     !... we need to sum this over spins
+     call elsi_get_entropy(elsi_h, ets_spin)
+     call globalize_sum(ets_spin, ets, comm=elsi_Spin_comm)
+  endif
+
+  ! We assume also that ef and ets are known to all nodes
   call elsi_get_mu(elsi_h, ef)
-  call elsi_get_entropy(elsi_h, ets)
+
 
   ets = ets/temp
 
   call timer("elsi-solver", 2)
 
+  if ( n_spin == 2) then
+     ! Now we need to redistribute back
+
+     do ispin = 1, n_spin
+
+        m1 => m1_spin(ispin)
+
+        if (elsi_spin == ispin) then
+           ! Prepare m2 to transfer
+           ! The other fields are the same
+           call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","elsi_solver")
+           call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","elsi_solver")
+
+           m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
+           m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
+
+        endif
+
+        ! Prepare m1 to receive the results
+
+        nullify(m1%vals(1)%data)    ! formerly pointing to S
+        nullify(m1%vals(2)%data)    ! formerly pointing to H
+        deallocate(m1%vals)
+        nullify(m1%numcols)         ! formerly pointing to numH
+        nullify(m1%cols)            ! formerly pointing to listH
+
+        call timer("redist_orbs_bck", 1)
+        dist2 => dist2_spin(ispin)
+        call redistribute_spmatrix(n_basis,m2,dist2,m1,dist1,elsi_global_Comm)
+        call timer("redist_orbs_bck", 2)
+
+        if (elsi_spin == ispin) then
+           ! Each team deallocates during "its" spin cycle
+           call de_alloc(DMnzvalLocal, "DMnzvalLocal", "elsi_solver")
+           call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","elsi_solver")
+
+           nullify(m2%vals(1)%data)    ! formerly pointing to DM
+           nullify(m2%vals(2)%data)    ! formerly pointing to EDM
+           deallocate(m2%vals)
+           ! allocated in the direct transfer
+           call de_alloc(m2%numcols,"m2%numcols","elsi_solver")
+           call de_alloc(m2%cols,   "m2%cols",   "elsi_solver")
+        endif
+
+
+        ! In future, m1%vals(1,2) could be pointing to DM and EDM,
+        ! and the 'redistribute' routine check whether the vals arrays are
+        ! associated, to use them instead of allocating them.
+        DM(:,ispin)  = m1%vals(1)%data(:)    
+        EDM(:,ispin) = m1%vals(2)%data(:)    
+        ! Check no_l
+        if (n_basis_l /= m1%no_l) then
+           call die("Mismatch in no_l")
+        endif
+        ! Check listH
+        if (any(col_idx(:) /= m1%cols(:))) then
+           call die("Mismatch in listH")
+        endif
+
+        ! Do this here if using two copies of m1. Otherwise, put it
+        ! outside the loop
+        call de_alloc(m1%vals(1)%data,"m1%vals(1)%data","elsi_solver")
+        call de_alloc(m1%vals(2)%data,"m1%vals(2)%data","elsi_solver")
+        deallocate(m1%vals)
+        ! allocated in the direct transfer
+        call de_alloc(m1%numcols,"m1%numcols","elsi_solver") 
+        call de_alloc(m1%cols,   "m1%cols",   "elsi_solver")
+
+     enddo
+
+     call MPI_Comm_Free(elsi_Spatial_comm, ierr)
+     call MPI_Comm_Free(elsi_Spin_comm, ierr)
+     
+  endif
+
   call timer("elsi", 2)
 
+  
 end subroutine elsi_solver
 
 ! Clean up:  Finalize ELSI instance and free MPI communicator.
