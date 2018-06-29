@@ -27,7 +27,6 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
-  
   logical :: mix_scf_first ! Mix first SCF step?
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
@@ -234,7 +233,7 @@ MODULE siesta_options
   real(dp) :: total_spin    ! Total spin used in spin-polarized calculations
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
-  real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
+  real(dp) :: wmixkick      ! Mixing weight for DM in special 'kick' SCF steps
 
   character(len=164) :: sname   ! System name, used to initialise read
 
@@ -251,5 +250,5 @@ MODULE siesta_options
   ! LUA-handle
   type(luaState) :: LUA
 #endif
-  
+
 END MODULE siesta_options

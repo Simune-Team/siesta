@@ -28,7 +28,7 @@
 #          for a serial run.
 #
 #          It is also possible to have separate working directories,
-#          by using the a "label". For example:
+#          by using a "label". For example:
 #
 #          make label=finer 
 #     
@@ -75,12 +75,8 @@ tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
 #  sih-pexsi-spin
 #  TranSiesta-TBTrans
 
-# These tests are extremely time consuming and
-# should only be runned sometimes
-# Currently they may be runned individually.
-#	SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
-tests_soc  = SOC_Pt2_xx SOC_Pt2_xz SOC_Pt2_zy SOC_Pt2_zz
-tests_soc += SOC_FePt_xx SOC_FePt_xz SOC_FePt_zy SOC_FePt_zz
+# SOC tests
+tests_soc = ge_soc_bands Pt_dimer_soc FePt_soc
 
 # Tests only applicable for LUA
 tests_lua  = lua_si111 lua_h2o

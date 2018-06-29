@@ -47,8 +47,10 @@ CONTAINS
                                  lastkb, no_s, rmaxv, indxua, iphorb, lasto, &
                                  rmaxo, no_l
       use m_ntm,           only: ntm
-      use m_spin,          only: NoMagn, SPpol, NonCol, SpOrb 
-      use m_spin,          only: nspin, h_spin_dim, spinor_dim
+
+      use m_spin,          only: spin
+      use parallel,        only: IONode 
+
       use m_dipol,         only: dipol
       use siesta_geom,     only: na_u, na_s, xa, isa
       use m_rhog,          only: rhog
@@ -58,22 +60,20 @@ CONTAINS
 
       integer, intent(in)   :: iscf
 
-      integer               :: ihmat, ifa, istr, ispin, io
+      integer               :: ispin, io
 #ifdef MPI
       real(dp) :: buffer1
 #endif
 
-      real(dp) :: const
-      real(dp) :: dummy_stress(3,3), dummy_fa(1,1)
-      real(dp) :: dummy_E, g2max, dummy_H(1,1)
       logical  :: mixDM
+
 
       mixDM = (.not. (mixH .or. mix_charge))
 
 !     Compute the band-structure energy
 
       call compute_EBS()
-    
+
       ! These energies were calculated in the latest call to
       ! setup_hamiltonian, using as ingredient D_in 
 
@@ -126,36 +126,89 @@ CONTAINS
 
    subroutine compute_EBS()
 
-      Ebs = 0.0_dp
-!       const factor takes into account that there are two nondiagonal
-!       elements in non-collinear spin density matrix, stored as
-!       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
-!       ispin=4 => Imag(D12)
+     real(dp)    :: Ebs_SO(4)
+     complex(dp) :: Ebs_Daux(2,2), Ebs_Haux(2,2)
 
-      if ( SpOrb ) then
-        do io = 1,maxnh
-          Ebs = Ebs      + H(io,1) * ( Dscf(io,1) )   &
-                         + H(io,2) * ( Dscf(io,2) )   &
-                         + H(io,3) * ( Dscf(io,7) )   &
-                         + H(io,4) * ( Dscf(io,8) )   &
-                         - H(io,5) * ( Dscf(io,5) )   &
-                         - H(io,6) * ( Dscf(io,6) )   &
-                         + H(io,7) * ( Dscf(io,3) )   &
-                         + H(io,8) * ( Dscf(io,4) )
+      integer :: i, j, ind
+
+      Ebs = 0.0_dp
+
+! Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
+!
+!*****************************************************************************
+!  Note about Ebs and E_Harris calculation for the Spin-Orbit:
+!*****************************************************************************
+!
+!  E_bs and E_Harris are calculated by means of the following 
+! complex matrix multiplication: 
+!
+!                 E_bs = Re { Tr[ H * DM ] } 
+!             E_Harris = Re { Tr[ H * (DM-DM_old) ] }  
+!
+!  In the following: DM/H(1,1) --> up/up     <--> uu
+!                    DM/H(2,2) --> down/down <--> dd
+!                    DM/H(1,2) --> up/down   <--> ud
+!                    DM/H(2,1) --> down/up   <--> du
+!
+!  Using DM/H components, E_bs would be sum(E_bs(1:4)), where
+!
+!   E_bs(1)=Re{sum_ij(H_ij(1,1)*D_ji(1,1))}=Re{sum_ij(H_ij^uu*(DM_ij^uu)^*)}
+!   E_bs(2)=Re{sum_ij(H_ij(2,2)*D_ji(2,2))}=Re{sum_ij(H_ij^dd*(DM_ij^dd)^*)}
+!   E_bs(3)=Re{sum_ij(H_ij(1,2)*D_ji(2,1))}=Re{sum_ij(H_ij^ud*(DM_ij^ud)^*)}
+!   E_bs(4)=Re{sum_ij(H_ij(2,1)*D_ji(1,2))}=Re{sum_ij(H_ij^du*(DM_ij^du)^*)}
+!
+!         since, due to overall hermiticity,  DM_ij^ab = (DM_ji^ba)^*
+!
+!   The trace operation is then an extended dot product over the "ij"
+!   sparse index, which can also be conveniently done in parallel, as
+!   each processor handles the same indexes in H and the DM. Only a
+!   global reduction is needed at the end.
+      
+!  Same comments are valid for the E_Harris calculation.
+!
+!*****************************************************************************
+!
+      if ( spin%SO ) then
+
+        Ebs_SO = 0.0_dp  
+        Ebs_Daux = dcmplx(0.0_dp, 0.0_dp)
+        Ebs_Haux = dcmplx(0.0_dp, 0.0_dp)
+
+        do io = 1, maxnh
+
+          Ebs_Haux(1,1) = dcmplx(H(io,1),H(io,5))  
+          Ebs_Haux(2,2) = dcmplx(H(io,2),H(io,6))  
+          Ebs_Haux(1,2) = dcmplx(H(io,3),-H(io,4)) 
+          Ebs_Haux(2,1) = dcmplx(H(io,7),H(io,8)) 
+
+          Ebs_Daux(1,1) = dcmplx(Dscf(io,1),Dscf(io,5)) 
+          Ebs_Daux(2,2) = dcmplx(Dscf(io,2),Dscf(io,6)) 
+          Ebs_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
+          Ebs_Daux(2,1) = dcmplx(Dscf(io,7),Dscf(io,8)) 
+
+
+          Ebs_SO(1) = Ebs_SO(1) + real( Ebs_Haux(1,1)*dconjg(Ebs_Daux(1,1)) )
+          Ebs_SO(2) = Ebs_SO(2) + real( Ebs_Haux(2,2)*dconjg(Ebs_Daux(2,2)) )
+          Ebs_SO(3) = Ebs_SO(3) + real( Ebs_Haux(1,2)*dconjg(Ebs_Daux(1,2)) )
+          Ebs_SO(4) = Ebs_SO(4) + real( Ebs_Haux(2,1)*dconjg(Ebs_Daux(2,1)) )
+
         enddo
-      else if ( NonCol ) then
+
+        Ebs = sum ( Ebs_SO )
+
+      else if ( spin%NCol ) then
         do io = 1,maxnh
           Ebs    = Ebs    + H(io,1) * ( Dscf(io,1)  )   &
                           + H(io,2) * ( Dscf(io,2)  )   &
                  + 2.0_dp * H(io,3) * ( Dscf(io,3)  )   &
                  + 2.0_dp * H(io,4) * ( Dscf(io,4)  )
         enddo
-      else if ( SPpol )  then
+      else if ( spin%Col )  then
         do io = 1,maxnh
           Ebs    = Ebs    + H(io,1) * Dscf(io,1)  &
                           + H(io,2) * Dscf(io,2)
         enddo
-      else if ( NoMagn ) then
+      else if ( spin%none ) then
         do io = 1,maxnh
           Ebs    = Ebs + H(io,1) *  Dscf(io,1)
         enddo
@@ -170,36 +223,65 @@ CONTAINS
 
     subroutine compute_DEharr()
 
-      DEharr = 0.0_dp
-             !       const factor takes into account that there are two nondiagonal
-             !       elements in non-collinear spin density matrix, stored as
-             !       ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
-             !       ispin=4 => Imag(D12)
+      real(dp)    :: DEharr_SO(4)
+      complex(dp) :: DEharr_Daux(2,2), DEharr_Haux(2,2), DEharr_Daux_old(2,2)
 
-      if ( SpOrb ) then
-        do io = 1,maxnh
-          DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
-                          + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
-                          + H(io,3) * ( Dscf(io,7) - Dold(io,7) )  &
-                          + H(io,4) * ( Dscf(io,8) - Dold(io,8) )  &
-                          - H(io,5) * ( Dscf(io,5) - Dold(io,5) )  &
-                          - H(io,6) * ( Dscf(io,6) - Dold(io,6) )  &
-                          + H(io,7) * ( Dscf(io,3) - Dold(io,3) )  &
-                          + H(io,8) * ( Dscf(io,4) - Dold(io,4) )
-        enddo
-      else if ( NonCol ) then
+      DEharr = 0.0_dp
+
+      if ( spin%SO ) then
+
+        DEharr_SO = 0.0_dp 
+        DEharr_Daux     = dcmplx(0.0_dp, 0.0_dp)
+        DEharr_Daux_old = dcmplx(0.0_dp, 0.0_dp)
+        DEharr_Haux     = dcmplx(0.0_dp, 0.0_dp)
+
+        do io = 1, maxnh
+
+          DEharr_Haux(1,1) = dcmplx( H(io,1),H(io,5) )
+          DEharr_Haux(2,2) = dcmplx( H(io,2),H(io,6) )
+          DEharr_Haux(1,2) = dcmplx( H(io,3),-H(io,4) )
+          DEharr_Haux(2,1) = dcmplx( H(io,7),H(io,8) )
+
+          DEharr_Daux(1,1) = dcmplx( Dscf(io,1),Dscf(io,5) )
+          DEharr_Daux(2,2) = dcmplx( Dscf(io,2),Dscf(io,6) )
+          DEharr_Daux(1,2) = dcmplx( Dscf(io,3),-Dscf(io,4) )
+          DEharr_Daux(2,1) = dcmplx( Dscf(io,7),Dscf(io,8) )
+
+          DEharr_Daux_old(1,1) = dcmplx( Dold(io,1),Dold(io,5) )
+          DEharr_Daux_old(2,2) = dcmplx( Dold(io,2),Dold(io,6) ) 
+          DEharr_Daux_old(1,2) = dcmplx( Dold(io,3),-Dold(io,4) ) 
+          DEharr_Daux_old(2,1) = dcmplx( Dold(io,7),Dold(io,8) )
+
+
+          DEharr_SO(1) = DEharr_SO(1) &
+             + real( DEharr_Haux(1,1)*dconjg(DEharr_Daux(1,1)-DEharr_Daux_old(1,1)) ) 
+
+          DEharr_SO(2) = DEharr_SO(2) &
+             + real( DEharr_Haux(2,2)*dconjg(DEharr_Daux(2,2)-DEharr_Daux_old(2,2)) )
+
+          DEharr_SO(3) = DEharr_SO(3) &
+             + real( DEharr_Haux(1,2)*dconjg(DEharr_Daux(1,2)-DEharr_Daux_old(1,2)) )
+
+          DEharr_SO(4) = DEharr_SO(4) &
+             + real( DEharr_Haux(2,1)*dconjg(DEharr_Daux(2,1)-DEharr_Daux_old(2,1)) )
+
+         enddo
+
+         DEharr = sum ( DEharr_SO )
+
+      else if ( spin%NCol ) then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
                           + H(io,2) * ( Dscf(io,2) - Dold(io,2) )  &
                  + 2.0_dp * H(io,3) * ( Dscf(io,3) - Dold(io,3) )  &
                  + 2.0_dp * H(io,4) * ( Dscf(io,4) - Dold(io,4) )
         enddo
-      elseif (SPpol)  then
+      elseif ( spin%Col )  then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )  &
                           + H(io,2) * ( Dscf(io,2) - Dold(io,2) )
         enddo
-      elseif (NoMagn) then
+      elseif ( spin%none ) then
         do io = 1,maxnh
           DEharr = DEharr + H(io,1) * ( Dscf(io,1) - Dold(io,1) )
         enddo
@@ -217,11 +299,21 @@ CONTAINS
       use files, only : filesOut_t    ! derived type for output file names
       use class_dSpData1D, only : val
       use class_dSpData2D, only : val
-      use sparse_matrices, only: H_kin_1D, H_vkb_1D, H_so_2D
+      use class_zSpData2D, only : val
+      use sparse_matrices, only: H_kin_1D, H_vkb_1D
+      use sparse_matrices, only: H_so_on_2D, H_so_off_2D
+
 
       type(filesOut_t)  :: filesOut  ! blank output file names
-      real(dp), pointer :: H_vkb(:), H_kin(:), H_so(:,:)
+      real(dp), pointer :: H_vkb(:), H_kin(:), H_so_on(:,:)
+      complex(dp), pointer :: H_so_off(:,:)
 
+
+      complex(dp) :: Hc, Dc
+      real(dp)    :: dummy_stress(3,3), dummy_fa(1,1)
+      real(dp)    :: dummy_E, g2max, dummy_H(1,1)
+      integer     :: ihmat, ifa, istr
+      
       ! Compute E_KS(DM_out)
 
       g2max = g2cut
@@ -233,7 +325,7 @@ CONTAINS
 
       ! Remove unwanted arguments...
 
-      call dhscf( nspin, no_s, iaorb, iphorb, no_l,      &
+      call dhscf( spin%Grid, no_s, iaorb, iphorb, no_l,      &
                   no_u, na_u, na_s, isa, xa, indxua,                        &
                   ntm, ifa, istr, ihmat, filesOut,                          &
                   maxnh, numh, listhptr, listh, Dscf, Datm,                 &
@@ -250,7 +342,7 @@ CONTAINS
       
       Ekin = 0.0_dp
       Enl  = 0.0_dp
-      do ispin = 1, spinor_dim
+      do ispin = 1, spin%spinor
          do io = 1,maxnh
             Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
             Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
@@ -266,21 +358,48 @@ CONTAINS
 #endif
 
       Eso = 0._dp
-      if ( SpOrb ) then
+
+      if ( spin%SO_offsite ) then
+         H_so_off => val(H_so_off_2D)
+
+         ! The computation of the trace is different here, as H_so_off has
+         ! a different structure from H and the DM.
+        do io = 1, maxnh
+
+!-------- Eso(u,u)
+          Dc = cmplx(Dscf(io,1),Dscf(io,5), dp)
+          Eso = Eso + real( H_so_off(io,1)*Dc, dp)
+!-------- Eso(d,d)
+          Dc = cmplx(Dscf(io,2),Dscf(io,6), dp)
+          Eso = Eso + real( H_so_off(io,2)*Dc, dp)
+!-------- Eso(u,d)
+          Dc = cmplx(Dscf(io,3),Dscf(io,4), dp)
+          Eso = Eso + real( H_so_off(io,4)*Dc, dp)
+!-------- Eso(d,u)
+          Dc = cmplx(Dscf(io,7),-Dscf(io,8), dp)
+          Eso = Eso + real( H_so_off(io,3)*Dc, dp)
+
+        end do
+
+      else if ( spin%SO_onsite ) then
          ! Sadly some compilers (g95), does
          ! not allow bounds for pointer assignments :(
-         H_so => val(H_so_2D)
+         H_so_on => val(H_so_on_2D)
          do io = 1,maxnh
-            Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8) &
-                 + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4) &
-                 - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
-         end do
+            Eso = Eso + H_so_on(io,1)*Dscf(io,7) + H_so_on(io,2)*Dscf(io,8) &
+                 + H_so_on(io,5)*Dscf(io,3) + H_so_on(io,6)*Dscf(io,4) &
+                 - H_so_on(io,3)*Dscf(io,5) - H_so_on(io,4)*Dscf(io,6)
+          end do
+          
+      end if
+
 #ifdef MPI
+      if (spin%SO) then
          ! Global reduction of Eso
          call globalize_sum( Eso, buffer1 )
          Eso = buffer1
+      endif
 #endif
-      end if
       
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 

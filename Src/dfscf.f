@@ -20,6 +20,7 @@ C ********************************************************************
 C Adds the SCF contribution to atomic forces and stress.
 C Written by P.Ordejon, J.M.Soler, and J.Gale.
 C Last modification by J.M.Soler, October 2000.
+C Modifed for Off-Site Spin-orbit coupling by R. Cuadrado, Feb. 2018
 C *********************** INPUT **************************************
 C integer ifa             : Are forces required? (1=yes,0=no)
 C integer istr            : Is stress required? (1=yes,0=no)
@@ -334,7 +335,7 @@ C     Copy potential to a double precision array
 
 C     Factor two for nondiagonal elements for non-collinear spin (and SO)
         if ( nspin == 4 ) then
-           V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
+         V(1:nsp,3:4) = 2.0_dp * V(1:nsp,3:4)
         end if
 
 C     Loop on first orbital of mesh point

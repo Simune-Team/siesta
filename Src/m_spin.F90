@@ -7,13 +7,16 @@
 ! ---
 module t_spin
 
+  use precision, only: dp
+  
   implicit none
-
+  private
+  
   !> Type containing a simulations spin configuration
   !!
   !! Thus this type contains _all_ relevant information
   !! regarding the spin-configuration.
-  type tSpin
+  type, public :: tSpin
 
      !> Dimensionality of the Hamiltonian
      integer :: H = 1
@@ -37,8 +40,9 @@ module t_spin
      !> Spin-orbit coupling
      logical :: SO = .false.
 
-     !> If .true. the spin-orbit is using the off-site implementation (else the on-site)
-     logical :: SO_off = .false.
+     !> Flavors of off-site implementation
+     logical :: SO_offsite = .false.
+     logical :: SO_onsite  = .false.
 
      ! Perhaps one could argue that one may
      ! associate a symmetry to the spin which
@@ -110,6 +114,10 @@ contains
     use fdf, only : fdf_get, leqi, fdf_deprecated
     use alloc, only: re_alloc
 
+    use m_cite, only: add_citation
+    use files, only: slabel
+    use parallel, only: IONode
+
     character(len=32) :: opt
 
     ! Create pointer assignments...
@@ -127,14 +135,14 @@ contains
     ! Time reversal symmetry
     TrSym  = .true.
 
-    ! All components of the 'spin' variable
-    ! is initially correct...
+    ! Initialize all components of the 'spin' variable
     spin%none = .false.
     spin%Col = .false.
     spin%NCol = .false.
     spin%SO = .false.
-    spin%SO_off = .false.
-    
+    spin%SO_offsite = .false.
+    spin%SO_onsite  = .false.
+
     ! Read in old flags (discouraged)
     spin%Col  = fdf_get('SpinPolarized',.false.)
     spin%NCol = fdf_get('NonCollinearSpin',.false.)
@@ -149,7 +157,7 @@ contains
     if ( spin%SO ) then
        opt = 'spin-orbit'
     else if ( spin%NCol ) then
-       opt = 'non-colinear'
+       opt = 'non-collinear'
     else if ( spin%Col ) then
        opt = 'collinear'
     else
@@ -173,52 +181,41 @@ contains
        
        spin%Col = .true.
        
-    else if ( leqi(opt, 'non-collinear') .or. leqi(opt, 'non-colinear') .or. &
+    else if ( leqi(opt, 'non-collinear') .or.  leqi(opt, 'non-colinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
        
        spin%NCol = .true.
        
     else if ( leqi(opt, 'spin-orbit') .or. leqi(opt, 'S-O') .or. &
-         leqi(opt, 'SOC') .or. leqi(opt, 'SO') ) then
-       ! Spin-orbit is the same as using the off-site implementation
+         leqi(opt, 'SOC') .or. leqi(opt, 'SO') .or. &
+         leqi(opt, 'spin-orbit+offsite') .or. leqi(opt, 'S-O+offsite') .or. &
+         leqi(opt, 'SOC+offsite') .or. leqi(opt, 'SO+offsite') ) then
+       ! Spin-orbit defaults to the off-site implementation
        
        spin%SO = .true.
-       spin%SO_off = .true.
+       spin%SO_offsite = .true.
 
-    else if ( leqi(opt, 'spin-orbit+off') .or. leqi(opt, 'S-O+off') .or. &
-         leqi(opt, 'SOC+off') .or. leqi(opt, 'SO+off') ) then
+    else if ( leqi(opt, 'spin-orbit+onsite') .or. leqi(opt, 'S-O+onsite') .or. &
+         leqi(opt, 'SOC+onsite') .or. leqi(opt, 'SO+onsite') ) then
        
        spin%SO = .true.
-       spin%SO_off = .true.
-
-    else if ( leqi(opt, 'spin-orbit+on') .or. leqi(opt, 'S-O+on') .or. &
-         leqi(opt, 'SOC+on') .or. leqi(opt, 'SO+on') ) then
-       
-       spin%SO = .true.
-       spin%SO_off = .false.
+       spin%SO_onsite = .true.
 
     else
        write(*,*) 'Unknown spin flag: ', trim(opt)
        call die('Spin: unknown flag, please assert the correct input.')
     end if
 
-    ! TODO once off-site is fully implemented
-    ! this should be removed to enable the off-site code
-    ! fully!
-    spin%SO_off = .false.
-
-    ! Note that, in what follows,
-    !   spinor_dim = min(h_spin_dim,2)
-    !   e_spin_dim = min(h_spin_dim,4)
-    !   nspin      = min(h_spin_dim,4)  ! Relevant for dhscf, local DM
-    !      should probably be called nspin_grid
-    !
-    ! so everything can be determined if h_spin_dim is known.
-    ! It is tempting to go back to the old 'nspin' overloading,
-    ! making 'nspin' mean again 'h_spin_dim'.
-    ! But this has to be done carefully, as some routines expect
-    ! an argument 'nspin' which really means 'spinor_dim' (like diagon),
-    ! and others (such as dhscf) expect 'nspin' to mean 'nspin_grid'.
+    if ( spin%SO_offsite ) then
+       call add_citation("10.1088/0953-8984/24/8/086005")
+    end if
+    if ( spin%SO_onsite ) then
+       call add_citation("10.1088/0953-8984/18/34/012")
+    end if
+    
+    ! These are useful for fine control beyond the old "nspin". Some routines expect
+    ! an argument 'nspin' which might really mean 'spin%spinor' (like diagon),
+    ! 'spin%Grid' (like dhscf), etc.
 
     if ( spin%SO ) then
        ! Spin-orbit case
@@ -235,9 +232,10 @@ contains
        spin%Col  = .false.
        spin%NCol = .false.
        spin%SO   = .true.
+       ! off/on MUST already be set!
 
        ! should be moved...
-       TRSym      = .false.
+       TRSym = .false.    ! Cannot be changed !
 
     else if ( spin%NCol ) then
        ! Non-collinear case
@@ -250,13 +248,15 @@ contains
        spin%spinor = 2
 
        ! Flags
-       spin%none = .false.
-       spin%Col  = .false.
-       spin%NCol = .true.
-       spin%SO   = .false.
+       spin%none       = .false.
+       spin%Col        = .false.
+       spin%NCol       = .true.
+       spin%SO         = .false.
+       spin%SO_onsite  = .false.
+       spin%SO_offsite = .false.
 
        ! should be moved...
-       TRSym      = .false.
+       TRSym = .false.    ! Cannot be changed !
 
     else if ( spin%Col ) then
        ! Collinear case
@@ -269,13 +269,17 @@ contains
        spin%spinor = 2
 
        ! Flags
-       spin%none = .false.
-       spin%Col  = .true.
-       spin%NCol = .false.
-       spin%SO   = .false.
+       spin%none       = .false.
+       spin%Col        = .true.
+       spin%NCol       = .false.
+       spin%SO         = .false.
+       spin%SO_onsite  = .false.
+       spin%SO_offsite = .false.
 
        ! should be moved...
-       TRSym      = .true.
+       TRSym = .true.
+       ! Allow the user to choose not to have TRS
+       TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
 
     else if ( spin%none ) then
        ! No spin configuration...
@@ -288,18 +292,20 @@ contains
        spin%spinor = 1
 
        ! Flags
-       spin%none = .true.
-       spin%Col  = .false.
-       spin%NCol = .false.
-       spin%SO   = .false.
+       spin%none       = .true.
+       spin%Col        = .false.
+       spin%NCol       = .false.
+       spin%SO         = .false.
+       spin%SO_onsite  = .false.
+       spin%SO_offsite = .false.
 
        ! should be moved...
-       TRSym      = .true.
+       TRSym = .true.
+       ! Allow the user to choose not to have TRS
+       TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
 
     end if
 
-    ! Get true time reversal symmetry
-    TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
 
   contains
 
@@ -331,10 +337,10 @@ contains
     if ( .not. IONode ) return
 
     if ( spin%SO ) then
-       if ( spin%SO_off ) then
-          opt = 'spin-orbit+off'
+       if ( spin%SO_offsite ) then
+          opt = 'spin-orbit+offsite'
        else
-          opt = 'spin-orbit+on'
+          opt = 'spin-orbit+onsite'
        end if
     else if ( spin%NCol ) then
        opt = 'non-collinear'

@@ -14,12 +14,14 @@
 
       USE siesta_options
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
-      use sparse_matrices, only: H_ldau_2D, H_so_2D
+      use sparse_matrices, only: H_ldau_2D
+      use sparse_matrices, only: H_so_on_2D, H_so_off_2D
       use sparse_matrices, only: listh, listhptr, numh, maxnh
       use sparse_matrices, only: H, S, Hold
       use sparse_matrices, only: Dscf, Escf, xijo
       use class_dSpData1D,  only: val
       use class_dSpData2D,  only: val
+      use class_zSpData2D,  only: val
 
       use siesta_geom
       use atmfuncs, only: uion
@@ -40,7 +42,9 @@
       use parallel, only: Node
       use m_steps, only: istp
       use m_ntm
-      use m_spin,         only: spin
+
+      use m_spin,          only: spin 
+
       use m_dipol
       use alloc, only: re_alloc, de_alloc
       use m_gamma
@@ -68,7 +72,12 @@
       type(filesOut_t)    :: filesOut  ! blank output file names
       logical             :: use_rhog_in
 
-      real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:), H_so(:,:)
+      real(dp), pointer   :: H_vkb(:), H_kin(:), H_ldau(:,:)
+      real(dp), pointer   :: H_so_on(:,:)
+      complex(dp), pointer:: H_so_off(:,:)
+
+      complex(dp):: Dc
+      integer :: ind, i, j
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -84,53 +93,53 @@
       do ispin = 1, spin%H
          do io = 1,maxnh
             Hold(io,ispin) = H(io,ispin)
-         enddo
-      enddo
+         end do
+      end do
 !$OMP end do
 
 !$OMP single
       H_kin => val(H_kin_1D)
       H_vkb => val(H_vkb_1D)
-      if ( spin%SO ) then
-         ! Sadly some compilers (g95), does
-         ! not allow bounds for pointer assignments :(
-         H_so => val(H_so_2D)
+      
+      if ( spin%SO_onsite ) then
+        ! Sadly some compilers (g95), does
+        ! not allow bounds for pointer assignments :(
+        H_so_on => val(H_so_on_2D)
+        
+      else if ( spin%SO_offsite ) then
+        H_so_off => val(H_so_off_2D)
+        
       end if
 !$OMP end single ! keep wait
 
-      ! We do not need to set the non-spinor components
-      ! For non-colinear they are set down below,
-      ! while for spin-orbit they are set to the H_so initial
-      ! spin-orbit.
-      
+      ! Initialize diagonal Hamiltonian
       do ispin = 1, spin%spinor
 !$OMP do
-          do io = 1,maxnh
-            H(io,ispin) = H_kin(io) + H_vkb(io)
-          end do
+        do io = 1,maxnh
+          H(io,ispin) = H_kin(io) + H_vkb(io)
+        end do
 !$OMP end do nowait
       end do
 
-      if ( spin%NCol ) then
-
+      if ( spin%SO_onsite ) then
 !$OMP do collapse(2)
-         do ispin = 3 , spin%H
-            do io = 1, maxnh
-               H(io,ispin) = 0._dp
-            end do
-         end do
+        do ispin = 3 , spin%H
+          do io = 1,maxnh
+            H(io,ispin) = H_so_on(io,ispin-2)
+          end do
+        end do
 !$OMP end do nowait
          
-      else if ( spin%SO ) then
+      else
 
 !$OMP do collapse(2)
-         do ispin = 3 , spin%H
-            do io = 1, maxnh
-               H(io,ispin) = H_so(io,ispin-2)
-            end do
-         end do
+        do ispin = 3 , spin%H
+          do io = 1,maxnh
+            H(io,ispin) = 0._dp
+          end do
+        end do
 !$OMP end do nowait
-
+         
       end if
          
 ! ..................
@@ -146,6 +155,7 @@
 !$OMP single
       Ekin = 0.0_dp
       Enl = 0.0_dp
+      Eso = 0.0_dp
 !$OMP end single ! keep wait
       
 !$OMP do collapse(2), reduction(+:Ekin,Enl)
@@ -157,21 +167,46 @@
       end do
 !$OMP end do nowait
 
-!$OMP single
-      Eso = 0._dp
-!$OMP end single
-      if ( spin%SO ) then
+!
+!  Dc IS NOT the dense matrix, it is just a complex number 
+! (per each io index) used as an artifact to multiply the 
+! elements of the H_SO times the corresponding elements of 
+! DM in a such way that the result gives Re{Tr[H_SO*DM]}.
+!
+
+      if ( spin%SO_offsite ) then
+        do io = 1, maxnh
+
+!-------- Eso(u,u)
+          Dc = cmplx(Dscf(io,1),Dscf(io,5), dp)
+          Eso = Eso + real( H_so_off(io,1)*Dc, dp)
+!-------- Eso(d,d)
+          Dc = cmplx(Dscf(io,2),Dscf(io,6), dp)
+          Eso = Eso + real( H_so_off(io,2)*Dc, dp)
+!-------- Eso(u,d)
+          Dc = cmplx(Dscf(io,3),Dscf(io,4), dp)
+          Eso = Eso + real( H_so_off(io,4)*Dc, dp)
+!-------- Eso(d,u)
+          Dc = cmplx(Dscf(io,7),-Dscf(io,8), dp)
+          Eso = Eso + real( H_so_off(io,3)*Dc, dp)
+
+        end do
+
+      else if ( spin%SO_onsite ) then
+        
 !$OMP do reduction(+:Eso)
          do io = 1, maxnh
-            Eso = Eso + H_so(io,1)*Dscf(io,7) + H_so(io,2)*Dscf(io,8)
-     .           + H_so(io,5)*Dscf(io,3) + H_so(io,6)*Dscf(io,4)
-     .           - H_so(io,3)*Dscf(io,5) - H_so(io,4)*Dscf(io,6)
+           Eso = Eso + H_so_on(io,1)*Dscf(io,7) +
+     &         H_so_on(io,2)*Dscf(io,8)+ H_so_on(io,5)*Dscf(io,3) +
+     &         H_so_on(io,6)*Dscf(io,4)- H_so_on(io,3)*Dscf(io,5) -
+     &         H_so_on(io,4)*Dscf(io,6)
          end do
 !$OMP end do nowait
-      end if
+
+       end if
 
 !$OMP end parallel
-      
+
 #ifdef MPI
       ! Global reduction of Ekin, Enl
       call globalize_sum(Ekin,buffer1)
@@ -191,7 +226,7 @@
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
         if ( spin%NCol ) then
-         call die('LDA+U cannot be used with non-colinear spin.')
+         call die('LDA+U cannot be used with non-collinear spin.')
         end if
         if ( spin%SO ) then
          call die('LDA+U cannot be used with spin-orbit coupling.')
@@ -242,6 +277,25 @@
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, stress, fal, stressl,
      .            use_rhog_in)
+
+      if ( spin%SO_offsite ) then
+
+! H(:, [5, 6]) are not updated in dhscf, see vmat for details.
+        
+!------- H(u,u)
+         H(:,1) = H(:,1) + real(H_so_off(:,1), dp)
+         H(:,5) =         dimag(H_so_off(:,1))
+!------- H(d,d)
+         H(:,2) = H(:,2) + real(H_so_off(:,2), dp)
+         H(:,6) =         dimag(H_so_off(:,2))
+!------- H(u,d)
+         H(:,3) = H(:,3) + real(H_so_off(:,3), dp)
+         H(:,4) = H(:,4) +dimag(H_so_off(:,3))
+!------- H(d,u)
+         H(:,7) = H(:,7) + real(H_so_off(:,4), dp)
+         H(:,8) = H(:,8) -dimag(H_so_off(:,4))
+
+      endif
 
       ! This statement will apply to iscf = 1, for example, when
       ! we do not use rhog_in. Rhog here is always the charge used to
