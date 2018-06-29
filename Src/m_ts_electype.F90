@@ -183,6 +183,7 @@ contains
 
   function fdf_nElec(prefix,this_n) result(n)
     use fdf
+    use m_char, only: lcase
 
     character(len=*), intent(in) :: prefix
     type(Elec), allocatable :: this_n(:)
@@ -223,7 +224,16 @@ contains
        this_n(n)%Name = trim(fdf_bnames(pline,1))
        this_n(n)%ID = n
        if ( index(this_n(n)%name,'.') > 0 ) then
-          call die('Electrodes cannot be named with .!')
+          call die('Electrodes cannot contain a .!')
+       end if
+       if ( index(this_n(n)%name,'+') > 0 ) then
+          call die('Electrodes cannot contain a +!')
+       end if
+       if ( lcase(this_n(n)%name) == 'device' ) then
+          call die('Electrodes cannot be named device!')
+       end if
+       if ( lcase(this_n(n)%name) == 'buffer' ) then
+          call die('Electrodes cannot be named buffer!')
        end if
        if ( n > 1 ) then
           ! Check that no name is the same
@@ -253,7 +263,10 @@ contains
     integer, intent(in), optional :: idx_a
     character(len=*), intent(in), optional :: name_prefix
 
-    logical :: found, mix_bloch, bloch_rep
+    logical :: found
+#ifdef TBTRANS
+    logical :: in_tbt
+#endif
 
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
@@ -310,10 +323,6 @@ contains
 
     
     cidx_a = 0
-    ! Denote that no bloch expansion coefficients has
-    ! been set.
-    mix_bloch = .false.
-    bloch_rep = .false.
 
     if ( present(idx_a) ) then
        if ( idx_a /= 0 ) then
@@ -333,11 +342,34 @@ contains
        end if
     end if
     this%na_used = -1
+
+#ifdef TBTRANS
+    ! Whether or not we are in TBtrans options
+    in_tbt = .false.
+#endif
     
     do while ( fdf_bline(bfdf,pline) )
        if ( fdf_bnnames(pline) == 0 ) cycle
        
-       ln = fdf_bnames(pline,1) 
+       ln = fdf_bnames(pline,1)
+
+#ifdef TBTRANS
+       ! If the input starts with tbt., then remove it
+       ! in tbtrans calculations
+       if ( leqi(ln(1:4), 'tbt.') ) then
+         
+         ln = ln(5:)
+         in_tbt = .true.
+         
+       else if ( in_tbt ) then
+         write(*,*) 'Found a non-tbtrans option *AFTER* a tbtrans option. This is not allowed!'
+         write(*,*) 'Place all tbt.* options at the end of the electrode block'
+         call die('Electrode options *MUST* have transiesta options first then all tbt.* options.')
+       end if
+#else
+       ! Transiesta will disregard the TBT-only options
+       if ( leqi(ln(1:4), 'tbt.') ) cycle
+#endif
        
        ! We select the input
        if ( leqi(ln,'HS') .or. leqi(ln,'HS-file') .or. &
@@ -509,77 +541,23 @@ contains
           this%Bloch(1) = fdf_bintegers(pline,1)
           this%Bloch(2) = fdf_bintegers(pline,2)
           this%Bloch(3) = fdf_bintegers(pline,3)
-          mix_bloch = .true.
           
        else if ( leqi(ln,'bloch-a') .or. leqi(ln,'bloch-a1') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A1 is not supplied')
           this%Bloch(1) = fdf_bintegers(pline,1)
-          mix_bloch = .true.
           
        else if ( leqi(ln,'bloch-b') .or. leqi(ln,'bloch-a2') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A2 is not supplied')
           this%Bloch(2) = fdf_bintegers(pline,1)
-          mix_bloch = .true.
           
        else if ( leqi(ln,'bloch-c') .or. leqi(ln,'bloch-a3') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A3 is not supplied')
           this%Bloch(3) = fdf_bintegers(pline,1)
-          mix_bloch = .true.
 
-       else if ( leqi(ln,'replicate-a') .or. leqi(ln,'rep-a') .or. &
-            leqi(ln,'replicate-a1') .or. leqi(ln,'rep-a1') ) then
-          if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Bloch expansion of A1 is not supplied')
-          this%Bloch(1) = fdf_bintegers(pline,1)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-
-       else if ( leqi(ln,'replicate-b') .or. leqi(ln,'rep-b') .or. &
-            leqi(ln,'replicate-a2') .or. leqi(ln,'rep-a2') ) then
-          if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Bloch expansion of A2 is not supplied')
-          this%Bloch(2) = fdf_bintegers(pline,1)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-
-       else if ( leqi(ln,'replicate-c') .or. leqi(ln,'rep-c') .or. &
-            leqi(ln,'replicate-a3') .or. leqi(ln,'rep-a3') ) then
-          if ( fdf_bnintegers(pline) < 1 ) &
-               call die('Bloch expansion of A3 is not supplied')
-          this%Bloch(3) = fdf_bintegers(pline,1)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-          
-       else if ( leqi(ln,'replicate') .or. leqi(ln,'rep') ) then
-          if ( fdf_bnintegers(pline) < 3 ) &
-               call die('Bloch expansion for all directions are not supplied <A1> <A2> <A3>')
-          this%Bloch(1) = fdf_bintegers(pline,1)
-          this%Bloch(2) = fdf_bintegers(pline,2)
-          this%Bloch(3) = fdf_bintegers(pline,3)
-          if ( mix_bloch ) then
-             call die('A "Bloch" keyword was found previously. &
-                  &No mixing of rep/Bloch may be performed.')
-          end if
-          bloch_rep = .true.
-
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.out-of-core') .or. &
-            leqi(ln,'out-of-core') ) then
-#else
        else if ( leqi(ln,'out-of-core') ) then
-#endif
 
           this%out_of_core = fdf_bboolean(pline,1,after=1)
 
@@ -599,42 +577,20 @@ contains
           if ( fdf_bnnames(pline) < 2 ) call die('DE name not supplied')
           this%DEfile = trim(fdf_bnames(pline,2))
 
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.Accuracy') .or. leqi(ln,'Accuracy') ) then
-#else
        else if ( leqi(ln,'Accuracy') ) then
-#endif
-          call pline_E_parse(pline,1,ln, &
+
+         call pline_E_parse(pline,1,ln, &
                val = this%accu, before=3)
 
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.Eta') .or. leqi(ln,'Eta') ) then
-#else
        else if ( leqi(ln,'Eta') ) then
-#endif
-          call pline_E_parse(pline,1,ln, &
+
+         call pline_E_parse(pline,1,ln, &
                val = this%Eta, before=3)
 #ifdef TBTRANS
 #ifdef TBT_PHONON
           ! eta value needs to be squared as it is phonon spectrum
           this%Eta = this%Eta ** 2
 #endif
-#endif
-
-#ifdef TBTRANS
-       else if ( leqi(ln,'tbt.GF') .or. &
-            leqi(ln,'tbt.GF-file') ) then
-          if ( fdf_bnnames(pline) < 2 ) call die('tbt.GF-file not supplied')
-          this%GFfile = trim(fdf_bnames(pline,2))
-
-       else if ( leqi(ln,'tbt.GF.ReUse') ) then
-
-          this%ReUseGF = fdf_bboolean(pline,1,after=1)
-
-#else
-       else if ( leqi(ln(1:3),'tbt') ) then
-          ! by-pass
-          ! All options that are meant for tbtrans are discarded :)
 #endif
 
        else
@@ -788,15 +744,6 @@ contains
 #endif
     end if
 
-    ! Print out the error if using the repetition keyword
-    if ( IONode .and. bloch_rep ) then
-       write(*,'(/a)')'DEPRECATION WARNING:'
-       write(*,'(5(a,/))')'Electrode Bloch expansion keyword in electrode '&
-            //trim(this%name)//':', &
-            '  replicate','has been superseeded by:', &
-            '  bloch', 'The replicate keyword may be ignored in future versions.'
-    end if
-
   end function fdf_Elec
 
   ! Initialize variables for the electrode according
@@ -825,25 +772,27 @@ contains
     ! Calculate the pivoting table
     do i = 1 , 3
 
-       ! We just want to find the cell vector
-       ! which is closests to 1, that ensures a parallel
-       ! cell vector
-       ! Note that here we do not enforce the direction
-       ! of the cell vector.
-       ! This is because it _can_ be opposite for directions
-       ! without k-point samplings.
-       p = SPC_PROJ(cell, this%cell(:,i))
-       p = p / VNORM(this%cell(:,i))
-       if ( abs(abs(p(1)) - 1._dp) < cell_unit_align ) then
-          this%pvt(i) = 1
-       else if ( abs(abs(p(2)) - 1._dp) < cell_unit_align ) then
-          this%pvt(i) = 2
-       else if ( abs(abs(p(3)) - 1._dp) < cell_unit_align ) then
-          this%pvt(i) = 3
-       else
-          ! We simply take the largest one
-          this%pvt(i) = IDX_SPC_PROJ(cell,this%cell(:,i), mag=.true.)
-       end if
+      ! We just want to find the cell vector
+      ! which is closests to 1, that ensures a parallel
+      ! cell vector
+      ! Note that here we do not enforce the direction
+      ! of the cell vector.
+      ! This is because it _can_ be opposite for directions
+      ! without k-point samplings.
+      p = SPC_PROJ(cell, this%cell(:,i))
+      p = p / VNORM(this%cell(:,i))
+      if ( abs(abs(p(1)) - 1._dp) < cell_unit_align ) then
+        this%pvt(i) = 1
+      else if ( abs(abs(p(2)) - 1._dp) < cell_unit_align ) then
+        this%pvt(i) = 2
+      else if ( abs(abs(p(3)) - 1._dp) < cell_unit_align ) then
+        this%pvt(i) = 3
+      else
+        ! We simply take the largest one
+        ! TODO we should probably always take one direction which is not
+        ! aligned along any others.
+        this%pvt(i) = IDX_SPC_PROJ(cell,this%cell(:,i), mag=.true.)
+      end if
        
     end do
     
@@ -950,7 +899,7 @@ contains
 
     use parallel, only : IONode
     use units, only : Pi, Ang
-    use intrinsic_missing, only : VNORM
+    use intrinsic_missing, only : VNORM, VEC_PROJ_SCA
 
     use m_ts_io, only: ts_read_TSHS_opt
 
@@ -973,9 +922,9 @@ contains
     real(dp), intent(in), optional :: kdispl(3)
     
     ! Local variables
-    integer :: this_kcell(3,3)
+    integer :: this_kcell(3,3), this_nsc(3)
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
-    real(dp) :: max_xa(3), cur_xa(3)
+    real(dp) :: max_xa(3), cur_xa(3), p
     real(dp), pointer :: this_xa(:,:)
     integer :: i, j, k, ia, na, pvt(3), iaa, idir(3)
     logical :: ldie, er, Gamma, orbs
@@ -1059,75 +1008,104 @@ contains
     end if
 
     er = .false.
-    if ( present(kcell) .and. this%kcell_check ) then
-       
-       call ts_read_TSHS_opt(this%HSfile, &
-            kscell=this_kcell,kdispl=this_kdispl, &
-            Gamma=Gamma, Bcast=.true.)
+    if ( present(kcell) ) then
 
-       ! Check that there is actually k-points in the transport direction
-       j = this%t_dir
-       i = this_kcell(j,j)
-       if ( i < 20 .and. IONode ) then
-          write(*,'(a)') 'Electrode: '//trim(this%name)//' has very few &
-               &k-points in the semi-infinite direction, at least 20 is recommended.'
-       else if ( i < 5 .and. IONode ) then
-          write(*,'(a)') 'Electrode: '//trim(this%name)//' has exceptionally few &
-               &k-points in the semi-infinite direction, at least 5 is required.'
+      call ts_read_TSHS_opt(this%HSfile, &
+          kscell=this_kcell,kdispl=this_kdispl, nsc=this_nsc, &
+          Gamma=Gamma, Bcast=.true.)
+
+      ! Check that the pivoting directions have a unique k-point alignment.
+      do j = 1, 3
+        
+        ! TODO check the off-diagonal components of the kcell
+        if ( kcell(j, j) == 1 ) cycle
+        
+        ! If there is no periodicity along this direction, we don't care anyway
+        if ( this_nsc(j) == 1 ) cycle
+
+        ! Figure out if we need to worry about the pivoting
+        p = VEC_PROJ_SCA(s_cell(:,this%pvt(j)), this%cell(:, j))
+        p = p / VNORM(this%cell(:, j))
+        
+        if ( abs(abs(p) - 1._dp) > cell_unit_align .and. IONode ) then
+          write(*,'(a)') 'ERROR: Electrode: '//trim(this%name)
+          write(*,'(a,i0)') 'Electrode direction = ',j
+          write(*,'(a,i0)') 'Projected direction = ',this%pvt(j)
+          write(*,'(2(a,i0),a,e10.4)') '|elec_cell(:, ', j, ') . cell(:,', this%pvt(j), ')| - 1 = ', abs(p) - 1._dp
+          
           ldie = .true.
-       end if
+          
+        end if
+        
+      end do
 
-       ! If the system is not a Gamma calculation, then the file must
-       ! not be either (the Bloch expansion will only increase the number of
-       ! k-points, hence the above)
-       do j = 1 , 3
+      if ( this%kcell_check ) then
+
+        ! Check that there is actually k-points in the transport direction
+        j = this%t_dir
+        i = this_kcell(j,j)
+        if ( i < 20 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has very few &
+              &k-points in the semi-infinite direction, at least 20 is recommended.'
+        else if ( i < 5 .and. IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' has exceptionally few &
+              &k-points in the semi-infinite direction, at least 5 is required.'
+          ldie = .true.
+        end if
+
+        ! If the system is not a Gamma calculation, then the file must
+        ! not be either (the Bloch expansion will only increase the number of
+        ! k-points, hence the above)
+        do j = 1 , 3
           k = this%Bloch(j)
           ! The displacements are not allowed non-equivalent.
           er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
           if ( j == this%t_dir ) cycle
           do i = 1 , 3
-             if ( i == this%t_dir ) cycle
-             if ( j == i ) then
-                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
-             else 
-                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
-             end if
+            if ( i == this%t_dir ) cycle
+            if ( j == i ) then
+              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
+            else 
+              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
+            end if
           end do
-       end do
+        end do
 
-       if ( er .and. IONode ) then
-          
+        if ( er .and. IONode ) then
+
           write(*,'(a)') 'Incompatible k-grids...'
           write(*,'(a)') 'Electrode file k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), this_kdispl(j)
+            write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), this_kdispl(j)
           end do
           write(*,'(a)') 'System k-grid:'
           do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') kcell(:,j), kdispl(j)
+            write(*,'(3(i4,tr1),f8.4)') kcell(:,j), kdispl(j)
           end do
           write(*,'(a)') 'Electrode file k-grid should probably be:'
           ! Loop the electrode directions
           do j = 1 , 3
-             if ( j == this%t_dir ) then
-                ! ensure that we retain the semi-infinite
-                ! direction k-sampling, and suggest more k-points
-                ! if necessary
-                if ( this_kcell(j,j) < 20 ) then
-                   this_kcell(j,j) = 50
-                end if
-             else
-                this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
-             end if
-             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), kdispl(pvt(j))
+            if ( j == this%t_dir ) then
+              ! ensure that we retain the semi-infinite
+              ! direction k-sampling, and suggest more k-points
+              ! if necessary
+              if ( this_kcell(j,j) < 20 ) then
+                this_kcell(j,j) = 50
+              end if
+            else
+              this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
+            end if
+            write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), kdispl(pvt(j))
           end do
-          
-       end if
 
+        end if
+        
+      end if
+      
     else
-       
-       call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
-
+      
+      call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
+      
     end if
 
     ldie = ldie .or. er
@@ -1948,11 +1926,13 @@ contains
 
   end function check_connectivity
 
-  subroutine copy_DM(this,na_u,xa,lasto,nsc,isc_off,cell,DM_2D, EDM_2D, &
-       na_a, allowed)
+  subroutine copy_DM(this,na_u,xa,lasto,nsc,isc_off,cell,DM_2D, EDM_2D, na_a, allowed)
+    
     use m_handle_sparse
+    use class_OrbitalDistribution
     use m_iodm
     use m_ts_iodm
+    
     ! We will copy over the density matrix and "fix it in the leads
     type(Elec), intent(inout) :: this
     integer, intent(in) :: na_u, lasto(0:na_u), nsc(3), isc_off(3,product(nsc))
@@ -1965,7 +1945,7 @@ contains
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
     real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
-    integer, parameter :: One3(3) = (/1,1,1/)
+    integer :: Tile(3), Reps(3)
     integer :: i
     logical :: found, alloc(3), is_TSDE
 
@@ -2017,20 +1997,30 @@ contains
        i = this%na_u - this%na_used + 1
     end if
 
+    if ( this%repeat ) then
+      Tile(:) = 1
+      Reps(:) = this%Bloch
+    else
+      Tile(:) = this%Bloch
+      Reps(:) = 1
+    end if
+
+    ! The expansion xa_EPS must be below the atomic distances such that tiled atoms
+    ! are taken into accountp
     call expand_spd2spd_2D(i,this%na_used, &
-         this%na_u,this%lasto,this%xa,f_DM_2D,&
-         this%cell, One3, this%Bloch, &
-         product(this%nsc), this%isc_off, &
-         na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, &
-         print = .true., allowed_a = allowed)
+        this%na_u,this%lasto,this%xa,f_DM_2D,&
+        this%cell, Tile, Reps, &
+        product(this%nsc), this%isc_off, &
+        na_u,xa,lasto,DM_2D,cell,product(nsc),isc_off, this%idx_a, 0.05_dp, &
+        print = .true., allowed_a = allowed)
 
     if ( is_TSDE ) then
-       call expand_spd2spd_2D(i,this%na_used, &
-            this%na_u,this%lasto,this%xa,f_EDM_2D, &
-            this%cell, One3, this%Bloch, &
-            product(this%nsc), this%isc_off, &
-            na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, &
-            allowed_a = allowed)
+      call expand_spd2spd_2D(i,this%na_used, &
+          this%na_u,this%lasto,this%xa,f_EDM_2D, &
+          this%cell, Tile, Reps, &
+          product(this%nsc), this%isc_off, &
+          na_u,xa,lasto,EDM_2D,cell,product(nsc),isc_off, this%idx_a, 0.05_dp, &
+          allowed_a = allowed)
     end if
        
     if ( .not. alloc(1) ) deallocate(this%xa) ; nullify(this%xa)

@@ -42,7 +42,6 @@ contains
     use fdf, only : fdf_get, leqi
     use class_Sparsity
     use files, only : slabel
-    use m_gamma, only : Gamma
     use atomlist, only: no_u, no_s, lasto, Qtot
     use siesta_geom, only: na_u, nsc
     use sparse_matrices, only: sparse_pattern
@@ -494,12 +493,12 @@ contains
 
   subroutine cdf_save_settings(fname)
 
-    use kpoint_grid,    only: kscell, kdispl
+    use kpoint_scf_m,   only: kpoint_scf
     use siesta_options, only: cdf_w_parallel
     use siesta_options, only: dDtol, dHtol, charnet, wmix, temp, g2cut
     use siesta_options, only: isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
-    use m_ts_kpoints,   only: ts_kscell, ts_kdispl
+    use ts_kpoint_scf_m, only: ts_kpoint_scf
 
     character(len=*), intent(in) :: fname
     
@@ -512,8 +511,8 @@ contains
     call ncdf_open_grp(ncdf,'SETTINGS',grp)
 
     ! Save settings
-    call ncdf_put_var(grp,'BZ',kscell)
-    call ncdf_put_var(grp,'BZ_displ',kdispl)
+    call ncdf_put_var(grp,'BZ',kpoint_scf%k_cell)
+    call ncdf_put_var(grp,'BZ_displ',kpoint_scf%k_displ)
     call ncdf_put_var(grp,'DMTolerance',dDtol)
     call ncdf_put_var(grp,'HTolerance',dHtol)
     call ncdf_put_var(grp,'NetCharge',charnet)
@@ -527,8 +526,8 @@ contains
     if ( isolve == SOLVE_TRANSI ) then
        call ncdf_open_grp(ncdf,'TRANSIESTA',grp)
 
-       call ncdf_put_var(grp,'BZ',ts_kscell)
-       call ncdf_put_var(grp,'BZ_displ',ts_kdispl)
+       call ncdf_put_var(grp,'BZ',ts_kpoint_scf%k_cell)
+       call ncdf_put_var(grp,'BZ_displ',ts_kpoint_scf%k_displ)
 
     end if
 

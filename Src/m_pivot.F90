@@ -30,10 +30,14 @@ module m_pivot
   integer, parameter :: PVT_PCG = 7
   integer, parameter :: PVT_REV_PCG = 8
 #ifdef SIESTA__METIS
-  integer, parameter :: PVT_METIS = 9
+  integer, parameter :: PVT_METIS_NODEND = 9
 #endif
   integer, parameter :: PVT_CONNECT = 10
   integer, parameter :: PVT_REV_CONNECT = 11
+#ifdef SIESTA__METIS
+  integer, parameter :: PVT_METIS_PARTGRAPHKWAY = 12
+  integer, parameter :: PVT_METIS_PARTGRAPHRECURSIVE = 13
+#endif
 
 contains
 
@@ -120,9 +124,15 @@ contains
        call rev_GGPS(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt , priority = priority )
        pvt%name = 'rev-General-Gibbs-Poole-Stockmeyer'
 #ifdef SIESTA__METIS
-    else if ( method == PVT_METIS ) then
-       call metis_pvt(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, priority = priority)
-       pvt%name = 'metis'
+    else if ( method == PVT_METIS_NODEND ) then
+       call metis_NodeND_pvt(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, priority = priority)
+       pvt%name = 'metis-NodeND'
+    else if ( method == PVT_METIS_PARTGRAPHKWAY ) then
+       call metis_PartGraphKway_pvt(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, priority = priority)
+       pvt%name = 'metis-PartGraphKway'
+    else if ( method == PVT_METIS_PARTGRAPHRECURSIVE ) then
+       call metis_PartGraphRecursive_pvt(n,n_nzs,ncol,l_ptr,l_col,lsub,pvt, priority = priority)
+       pvt%name = 'metis-PartGraphRecursive'
 #endif
     else
        call die('m_pivot: Programming error, unknown method')

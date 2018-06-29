@@ -32,7 +32,7 @@ CONTAINS
   USE sparse_matrices,       ONLY: H, S, numh, listh, listhptr, xijo, Dscf
   USE atomlist,              ONLY: no_u, no_l, indxuo
   USE m_spin,                ONLY: nspin
-  USE Kpoint_grid,           ONLY: kpoint, nkpnt
+  USE kpoint_scf_m,          ONLY: kpoint_scf
   USE wavefunctions,         ONLY: compute_tddm, wavef_ms, complx_0, complx_1
   USE m_energies,            ONLY: etot 
   USE m_eo,                  ONLY: qo, eo
@@ -64,7 +64,7 @@ CONTAINS
   call timer( 'cn_evolk', 1)
   ! 
   !
-  DO ik = 1,nkpnt
+  DO ik = 1,kpoint_scf%N
     DO ispin =1,nspin
       call m_allocate ( Hauxms, no_u, no_u, m_storage)
       call m_allocate ( Sauxms, no_u, no_u, m_storage)
@@ -76,8 +76,8 @@ CONTAINS
           ind  = listhptr(i) + j
           juo  = listh(ind)
           jo   = indxuo (juo)
-          kxij = kpoint(1,ik)*xijo(1,ind) + kpoint(2,ik)*xijo(2,ind) +        &     
-                 kpoint(3,ik)*xijo(3,ind)
+          kxij = kpoint_scf%k(1,ik)*xijo(1,ind) + kpoint_scf%k(2,ik)*xijo(2,ind) + &
+                 kpoint_scf%k(3,ik)*xijo(3,ind)
          ckxij =  cos(kxij)
          skxij = -sin(kxij)
          cvar1 = cmplx(H(ind,ispin)*ckxij,H(ind,ispin)*skxij,dp)
@@ -132,7 +132,7 @@ CONTAINS
 
  USE wavefunctions
  USE m_spin,                ONLY: nspin
- USE Kpoint_grid,           ONLY: nkpnt
+ USE kpoint_scf_m,          ONLY: kpoint_scf
  USE cranknic_evolg,        ONLY: Uphi
  USE atomlist,              ONLY: no_u
  USE MatrixSwitch
@@ -165,14 +165,14 @@ CONTAINS
    ENDIF
  
    IF(extrapol_H_tdks) THEN
-     ALLOCATE(firstimeK(nkpnt, nspin))
-     ALLOCATE(Hsave(nkpnt, nspin))
-     DO i=1,nkpnt
+     ALLOCATE(firstimeK(kpoint_scf%N, nspin))
+     ALLOCATE(Hsave(kpoint_scf%N, nspin))
+     DO i=1,kpoint_scf%N
        DO j=1,nspin
          call m_allocate (Hsave(i,j),no_u, no_u, m_storage) 
        END DO
      END DO
-   firstimeK(1:nkpnt,1:nspin) = .true.
+   firstimeK(1:kpoint_scf%N,1:nspin) = .true.
    END IF
  
    firsttime = .false.

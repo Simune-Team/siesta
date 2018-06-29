@@ -55,6 +55,9 @@ module m_ts_hartree
   ! The fraction of the actual fix
   real(dp), public :: Vha_frac = 1._dp
 
+  ! The Hartree offset potential as determined from the electrode calculation
+  real(dp), public :: Vha_offset = 0._dp
+
   ! The grid-index in the transport direction
   ! where we fix the Hartree potential.
   integer :: ha_idx = 1
@@ -91,7 +94,8 @@ contains
 
     ! Determine the fractional correction of the Hartree fix
     Vha_frac = fdf_get('TS.Hartree.Fix.Frac',1._dp)
-    
+    Vha_offset = fdf_get('TS.Hartree.Offset',0._dp, 'Ry')
+
   end subroutine read_ts_hartree_options
 
   ! Find the biggest electrode by comparing
@@ -189,7 +193,7 @@ contains
     use m_mesh_node, only : offset_r, dMesh, dL
     use parallel, only : IONode
 #ifdef MPI
-    use mpi_siesta, only : MPI_AllReduce, MPI_Sum
+    use mpi_siesta, only : MPI_AllReduce, MPI_Sum, MPI_Barrier
     use mpi_siesta, only : MPI_Comm_World, MPI_integer
 #endif
 
@@ -319,13 +323,18 @@ contains
           write(*,'(a)') 'ts: Please move structure so this point is &
                &inside unit cell (Ang):'
           write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', &
-               VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
-          write(*,'(a)') 'ts: You can use %block AtomicCoordinatesOrigin'
-          write(*,'(a)') 'ts: to easily move the entire structure.'
+              2 * VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
+          write(*,'(a)') 'ts: The following block will most likely be usable (otherwise try different displacements)'
+          write(*,'(/,a)') '%block AtomicCoordinatesOrigin'
+          write(*,'(tr2,3(tr1,f13.5))') -2 * VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
+          write(*,'(a,/)') '%endblock'
        end if
     end if
 
     if ( nlp == 0 ) then
+#ifdef MPI
+       call MPI_Barrier(MPI_Comm_World, MPIerror)
+#endif
        call die('The partitioning of the basal plane went wrong. &
             &No points are encapsulated.')
     end if
@@ -546,10 +555,10 @@ contains
             &No points are encapsulated.')
     end if
 
-    Vav = Vtot / nlp
+    Vav = Vtot / nlp - Vha_offset
 
     if ( IONode ) then
-       write(*,'(a,e12.5,a)')'ts-Vha: ',Vav/eV,' eV'
+       write(*,'(a,e12.5,a)')'ts-Vha: ',Vav / eV,' eV'
     end if
     
     ! Align potential

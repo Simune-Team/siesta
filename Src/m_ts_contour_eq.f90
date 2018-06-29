@@ -442,7 +442,11 @@ contains
        ! and not in "random" order
        idx = get_c_io_index(mu%Eq_seg(i))
 
-       if ( leqi(Eq_c(idx)%c_io%part,'circle') ) then
+       if ( leqi(Eq_c(idx)%c_io%part,'user') ) then
+
+          call contour_file(Eq_c(idx),mu,lift)
+
+        else if ( leqi(Eq_c(idx)%c_io%part,'circle') ) then
 
           call contour_Circle(Eq_c(idx),mu,R,cR)
 
@@ -513,7 +517,7 @@ contains
 
       ! the radius can be calculated using two triangles in the circle
       ! there is no need to use the cosine-relations
-      R = .5_dp * cR / cos(alpha) ** 2
+      R = 0.5_dp * cR / cos(alpha) ** 2
 
       ! the real-axis center
       cR = a + R
@@ -1127,34 +1131,47 @@ contains
           call TanhSinh_Exact(c%c_io%N,ce,cw,a,b, p=tmp)
 
        end if
-       
-       
+
+    case ( CC_USER )
+
+      ! Read the file information
+      call contour_file(c,mu,Eta)
+
     case default
        write(*,*) 'Method for contour ',trim(c%c_io%name), &
             ' could not be deciphered: ', c%c_io%method
        call die('Could not determine the line-integral')
     end select
-
-    ! I know this is "bad" practice, however, zero is a well-defined quantity.
-    set_c = sum(abs(c%c(:))) == 0._dp
-
+    
     ! get the index in the ID array (same index in w-array)
     call ID2idx(c,mu%ID,idx)
+    
+    if ( method(c%c_io) == CC_USER ) then
 
-    do i = 1 , c%c_io%N
-       if ( set_c ) then
+      do i = 1 , c%c_io%N
+        c%w(idx,i) = c%w(idx,i) * nf((real(c%c(i), dp) - mu%mu) / mu%kT)
+      end do
+      
+    else
+      
+      ! I know this is "bad" practice, however, zero is a well-defined quantity.
+      set_c = sum(abs(c%c(:))) == 0._dp
+
+      do i = 1 , c%c_io%N
+        if ( set_c ) then
           c%c(i) = dcmplx(ce(i),Eta)
-       else
+        else
           if ( abs(c%c(i) - dcmplx(ce(i),Eta)) > 1.e-10_dp ) then
-             call die('contour_line: Error on contour match')
+            call die('contour_line: Error on contour match')
           end if
-       end if
+        end if
 
-       !ztmp = (c%c(i) - mu%mu) / mu%kT
-       c%w(idx,i) = cw(i) * nf((ce(i) - mu%mu) / mu%kT)
+        c%w(idx,i) = cw(i) * nf((ce(i) - mu%mu) / mu%kT)
 
-    end do
-
+      end do
+      
+    end if
+    
     deallocate(ce,cw)
     
   end subroutine contour_line
@@ -1256,7 +1273,9 @@ contains
 
     case default
 
-       ! we revert so that we can actually use the line-integral
+      ! we revert so that we can actually use the line-integral
+      ! The tail and line are equivalent in the sense that the
+      ! fermi functions are applied to the weights
        c%c_io%part = 'line'
 
        call contour_line(c,mu,Eta)
@@ -1438,6 +1457,110 @@ contains
     
   end subroutine contour_continued_fraction
 
+  ! This routine will read the contour points from a file
+  subroutine contour_file(c,mu,Eta)
+    use m_io, only: io_assign, io_close
+    use fdf, only: fdf_convfac
+
+    type(ts_cw), intent(inout) :: c
+    type(ts_mu), intent(in) :: mu
+    ! The lifting into the complex plane
+    real(dp), intent(in) :: Eta
+
+    integer :: iu, iostat, ne, idx
+    logical :: exist
+    complex(dp) :: E , W
+    real(dp) :: rE, iE, rW, iW, conv
+    character(len=512) :: file, line
+    character(len=16) :: unit
+    
+    ! The contour type contains the file name in:
+    !  c%c_io%cN (weirdly enough)
+    file = c%c_io%cN
+    call ID2idx(c,mu%ID,idx)
+
+    call io_assign(iu)
+    
+    ! Open the contour file
+    inquire(file=trim(file), exist=exist)
+    if ( .not. exist ) then
+      call die('The file: '//trim(file)//' could not be found to read contour points!')
+    end if
+    
+    ! Open the file
+    open(iu, file=trim(file), form='formatted', status='old')
+    
+    ne = 0
+    ! The default unit is eV.
+    ! On every line an optional unit-specificer may be used to specify the
+    ! subsequent lines units (until another unit is specified)
+    conv = fdf_convfac('eV', 'Ry')
+    do
+      ! Now we have the line
+      read(iu, '(a)', iostat=iostat) line
+      if ( iostat /= 0 ) exit
+      if ( len_trim(line) == 0 ) cycle
+      line = trim(adjustl(line))
+      if ( line(1:1) == '#' ) cycle
+      
+      ! We have a line with energy and weight
+      ne = ne + 1
+      ! There are three optional ways of reading this
+      ! 1.  ReE ImE, ReW ImW [unit]
+      read(line, *, iostat=iostat) rE, iE, rW, iW, unit
+      if ( iostat == 0 ) then
+        conv = fdf_convfac(unit, 'Ry')
+      else
+        read(line, *, iostat=iostat) rE, iE, rW, iW
+      end if
+      if ( iostat == 0 ) then
+        c%c(ne) = dcmplx(rE,iE) * conv
+        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        cycle
+      end if
+
+      ! 2.  ReE ImE, ReW [unit]
+      iW = 0._dp
+      read(line, *, iostat=iostat) rE, iE, rW, unit
+      if ( iostat == 0 ) then
+        conv = fdf_convfac(unit, 'Ry')
+      else
+        read(line, *, iostat=iostat) rE, iE, rW
+      end if
+      if ( iostat == 0 ) then
+        c%c(ne) = dcmplx(rE,iE) * conv
+        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        cycle
+      end if
+
+      ! 3.  ReE , ReW [unit]
+      iE = Eta
+      iW = 0._dp
+      read(line, *, iostat=iostat) rE, rW, unit
+      if ( iostat == 0 ) then
+        conv = fdf_convfac(unit, 'Ry')
+      else
+        read(line, *, iostat=iostat) rE, rW
+      end if
+      if ( iostat == 0 ) then
+        c%c(ne) = dcmplx(rE * conv,iE)
+        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        cycle
+      end if
+
+      call die('Contour file: '//trim(file)//' is not formatted correctly. &
+          &Please read the documentation!')
+
+    end do
+
+    call io_close(iu)
+
+    if ( c%c_io%N /= ne ) then
+      call die('Error in reading the contour points from file: '//trim(file))
+    end if
+    
+  end subroutine contour_file
+  
   function Eq_E(id,step) result(c)
     integer, intent(in) :: id
     integer, intent(in), optional :: step

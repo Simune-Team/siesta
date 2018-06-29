@@ -27,7 +27,7 @@ subroutine read_options( na, ns, nspin )
   use units,     only : eV, Ang, Kelvin
   use siesta_cml
   use m_target_stress, only: set_target_stress
-  use m_spin, only: print_spin_options
+  use m_spin, only: print_spin_options, spin
 
   use m_charge_add, only : read_charge_add
   use m_hartree_add, only : read_hartree_add
@@ -105,6 +105,8 @@ subroutine read_options( na, ns, nspin )
   !                             6 = Force constants
   !                             7 = Deprecated (Forces for PHONON program)
   !                             8 = Force evaluation
+  !                             9 = Explicit set of coordinates
+  !                            10 = Lua controlled dynamics
   ! integer istart           : Initial time step for MD
   ! integer ifinal           : Final time step for MD
   ! integer nmove            : Number of CG steps in CG optimization
@@ -854,6 +856,19 @@ subroutine read_options( na, ns, nspin )
           units='siestaUnits:eSpin' )
   endif
 
+  ! For SOC calculations: If .false., Enl will contain
+  ! the SO part of the energy.
+  if (spin%SO) then
+     split_sr_so = fdf_get('SOC.Split.SR.SO',.true.)
+     if (ionode) then
+        write(6,1) 'redata: Split SR and SO contributions', split_sr_so
+     endif
+     if (cml_p) then 
+        call cmlAddParameter( xf=mainXML, name='Split-SR-SO', &
+             value=split_sr_so, dictref='siesta:split_sr_so' )
+     endif
+  endif
+  
   ! Order-N solution parameters ...
   !     Maximum number of CG minimization iterations
   ncgmax = fdf_get('ON.MaxNumIter',1000)
@@ -1700,10 +1715,17 @@ subroutine read_options( na, ns, nspin )
      end select
   end if
 
+
+  ! Default variable depending on the action required
+  if ( idyn == 0 .and. nmove <= 1 ) then
+    ! Single-point calculation: use the tight auxiliary supercell by default
+    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .false. )
+  else
+    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .true. )
+  end if
+  
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   savehs                 = fdf_get( 'SaveHS', .false. )
-  fixauxcell             = fdf_get( 'FixAuxiliaryCell', .false. )
-  naiveauxcell           = fdf_get( 'NaiveAuxiliaryCell', .false. )
   initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )
   allow_dm_reuse         = fdf_get( 'DM.AllowReuse', .TRUE. )
   allow_dm_extrapolation = fdf_get( 'DM.AllowExtrapolation', .TRUE. )

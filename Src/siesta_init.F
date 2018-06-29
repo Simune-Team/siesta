@@ -12,12 +12,15 @@
       CONTAINS
 
       subroutine siesta_init()
-      use Kpoint_grid,        only: setup_Kpoint_grid, gamma_scf, nkpnt
-      USE Kpoint_pdos,        only: gamma_pdos
+      use kpoint_scf_m,       only: setup_kpoint_scf, kpoint_scf
+      use kpoint_scf_m,       only: gamma_scf
+      use kpoint_pdos_m,      only: gamma_pdos
+      use kpoint_ldos_m,      only: gamma_ldos
       use Band,               only: gamma_bands, setup_bands
       use m_ksvinit,          only: gamma_polarization,
      &                              estimate_pol_kpoints
       use m_struct_init,      only: struct_init
+      use units,              only: Kelvin
       use siesta_options
       use timer_options,      only: use_tree_timer, use_parallel_timer
       use sparse_matrices
@@ -56,9 +59,9 @@
       use m_rmaxh
       use m_forces 
       use m_eo
-      use m_gamma
       use m_fixed,            only: init_fixed, print_fixed
       use m_ioxv,             only: xv_file_read
+      use m_local_DOS,    only: init_local_DOS
       use m_projected_DOS,    only: init_projected_DOS
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
@@ -119,7 +122,7 @@
       integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
-      logical :: user_wants_supercell
+      logical :: user_wants_supercell, not_using_auxcell
       real(dp) :: walltime_m, walltime_s
 
       integer :: World_Group
@@ -541,8 +544,29 @@ C     Initialise MPI and set processor number
       numh        = 0
 
       ! Get number of eigenstates that need to be calculated
+      ! This generally needs to be set to halve the number of
+      ! charges plus some few states (such that the temperature
+      ! tail can be found).
       neigwanted = fdf_get('NumberOfEigenStates',no_u)
+
+      ! Calculate the number of eigenstates
+      ! dependent on the # of spin-components.
+      neigmin = 0
+      do is = 1 , spin%spinor
+        neigmin = max(neigmin, ceiling(qtots(is)))
+      end do
       
+      if ( spin%spinor == 1 ) then
+        ! Only take halve the number of states because the filling
+        ! is doubled. Otherwise the number of states is
+        ! correct. For NC and SOC the diag[23]* routines
+        ! intrinsically doubles neigwanted.
+        neigmin = neigmin / 2
+      end if
+      ! Always at least have one additional state per 100 K.
+      ! This choice is rather arbitrary.
+      neigmin = neigmin + ceiling((temp / Kelvin) / 100._dp)
+
       ! Correct the number of calculated eigenstates
       if ( neigwanted < 0 ) then
          
@@ -551,27 +575,18 @@ C     Initialise MPI and set processor number
          ! to be included.
          ! For very high temperatures this may be difficult to 
          ! choose, however, for moderate temperatures this
-         ! need not be somewhat more than say 10
+         ! need not be somewhat more than say 10.
 
-         ! Calculate the number of additional eigenstates
-         ! dependent on the # of spin-components
-         ! For spin-polarized calculations this is equivalent to
-         ! only half of the wanted eigenstates per spin-channel.
-         neigmin = ceiling(real(abs(neigwanted)) / spin%spinor)
-
-         do is = 1 , spin%spinor
-            neigwanted = max(neigwanted, ceiling(qtots(is)) + neigmin)
-         end do
+         ! Add the user requested states.
+         neigwanted = neigmin - neigwanted
 
       end if
 
       ! Check number of eigenstates - cannot be larger than number of
       ! basis functions or smaller than number of occupied states + 1
       ! so that the Fermi level can be estimated
-      do is = 1 , spin%spinor
-         neigmin = ceiling(qtots(is)) + 1
-         neigwanted = max(neigwanted, neigmin)
-      end do
+      neigwanted = max(neigwanted, neigmin)
+
       ! Truncate value
       neigwanted = min(neigwanted,no_u)
       
@@ -579,8 +594,22 @@ C     Initialise MPI and set processor number
 !     NOTE: We need to know whether gamma is .true. or
 !     not early, in order to decide whether to use an 
 !     auxiliary supercell for the calculation of matrix elements.
-      call setup_Kpoint_grid( ucell )
-      gamma = gamma_scf
+      call setup_kpoint_scf( ucell )
+      not_using_auxcell = gamma_scf
+
+!     Call initialisation of PDOS here since we need to check if 
+!     the auxiliary supercell is needed for a non-gamma calculation
+      call init_projected_DOS( ucell )
+      if ( do_pdos ) then
+        not_using_auxcell = not_using_auxcell.and. gamma_pdos
+      endif
+
+!     Call initialisation of LDOS here since we need to check if 
+!     the auxiliary supercell is needed for a non-gamma calculation
+      call init_local_DOS( ucell )
+      if ( do_ldos ) then
+        not_using_auxcell = not_using_auxcell .and. gamma_ldos
+      endif
 
       ! Read in diagonalization routines
       ! Note that only the sampled BZ is responsible for
@@ -589,49 +618,49 @@ C     Initialise MPI and set processor number
       call read_diag(Gamma_scf, spin%H)
       call print_diag()
 
-!     Call initialisation of PDOS here since we need to check if 
-!     the auxiliary supercell is needed for a non-gamma calculation
-      call init_projected_DOS( )
-      if (do_pdos) then
-        gamma = gamma .and. gamma_pdos
-      endif
-
       nullify(eo,qo)
-      call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'eo', 
+      call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 'eo', 
      &              'siesta_init')
-      call re_alloc(qo, 1, no_u, 1, spin%spinor, 1, nkpnt, 'qo', 
+      call re_alloc(qo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 'qo', 
      &              'siesta_init')
 
       call setup_bands( )
-      gamma = gamma .and. gamma_bands
+      not_using_auxcell = not_using_auxcell .and. gamma_bands
 
       call setup_wf_kpoints( )
-      gamma = gamma .and. gamma_wavefunctions
+      not_using_auxcell = not_using_auxcell .and. gamma_wavefunctions
 
       call estimate_pol_kpoints( ucell )
-      gamma = gamma .and. gamma_polarization
-!      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
+      not_using_auxcell = not_using_auxcell .and. gamma_polarization
 !
 !     User can request that the calculation is done with an explicit
 !     auxiliary supercell and hermitian version, even if using only
 !     the gamma point
 !
       user_wants_supercell = fdf_get( 'ForceAuxCell', .false. )
-      if (user_wants_supercell) gamma = .false.
+      if (user_wants_supercell) not_using_auxcell = .false.
 
 !     Find required supercell
 !     2*rmaxh is used to guarantee that two given orbitals in the
 !     supercell can only overlap once
-      if (gamma) then
+      if ( not_using_auxcell ) then
         nsc(1:3) = 1
-      else
-        ! Discussion with Jose-Soler we get this size ! NPA
+      else if ( naive_aux_cell ) then
+        ! This scheme gives a safe supercell, not necessarily the tightest,
+        ! using only unit cell size information. It is appropriate for cases
+        ! in which the geometry might change, such as MD and relaxations. It
+        ! is expected that this supercell will stay mostly constant, allowing
+        ! the reuse of DM information across geometry steps. 
+        ! The auxiliary supercell is symmetric in the connections,
+        ! hence we need a factor of 2.
         do i = 1 , 3
           veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
           nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
         end do
-        if ( .not. naiveauxcell ) 
-     &       call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+      else
+        ! Determine the tightest auxiliary supercell using
+        ! also the atomic positions 
+        call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
       end if
 
       mscell = 0.0_dp

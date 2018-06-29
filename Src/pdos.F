@@ -8,7 +8,7 @@
       subroutine pdos( NO, nspin, maxspn, NO_L, MAXNH, 
      .                 MAXO, NUMH, LISTHPTR, LISTH, H, S, 
      .                 E1, E2, SIGMA, NHIST,
-     .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO, NO_U )
+     .                 XIJ, INDXUO, GAMMA, NK, KPOINT, WK, EO, NO_U )
 C **********************************************************************
 C Subroutine to calculate the projected density of states on the
 C atomic orbitals for a given eigenvalue spectra
@@ -37,13 +37,13 @@ C                               (to find local density of states)
 C                               Not used if e1 > e2
 C REAL*8  SIGMA               : Width of the gaussian to expand the eigenvalues
 C INTEGER NHIST               : Number of subdivisions of the histogram
-C LOGICAL GAMMA               : Only gamma point?
 C REAL*8  XIJ(3,MAXNH)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C INTEGER INDXUO(NO)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the nuber of orbitals in the unit cell
+C logical Gamma               : whether only the Gamma point is sampled
 C INTEGER NK                  : Number of k points
 C REAL*8  KPOINT(3,NK)        : k point vectors
 C REAL*8  WK(NK)              : k point weights (must sum one)
@@ -80,15 +80,13 @@ C **********************************************************************
      .  NO, NSPIN, MAXSPN, NO_L, MAXNH, NK, NHIST, 
      .  MAXO, NO_U
 
+      logical, intent(in) :: Gamma
       integer 
      .  NUMH(*), LISTH(MAXNH), LISTHPTR(*), INDXUO(NO)
 
       real(dp)
      .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA,  
      .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), EO(MAXO,MAXSPN,NK)
-
-      logical
-     .  gamma
 
 C Dynamic arrays -------------------------------------------------------
       real(dp), dimension(:,:)  , pointer :: DTOT
@@ -286,7 +284,7 @@ C New writing
         call xml_AddAttribute(xf,"units","eV")
         call xml_AddPCData(xf, Ef / eV)
         call xml_EndElement(xf,"fermi_energy")
-        write(iunit2,'(a,f20.5,a)') '<fermi_energy units="eV">',
+        write(iunit2,'(a,e17.9,a)') '<fermi_energy units="eV">',
      &       Ef / eV, '</fermi_energy>'
 
         ! Write sampled energies
@@ -299,7 +297,7 @@ C New writing
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
-           write(iunit2,'(f20.5)') tmp(ihist)
+           write(iunit2,'(e17.9)') tmp(ihist)
         enddo
         write(iunit2,'(a)') '</energy_values>'
 
@@ -343,14 +341,14 @@ C New writing
           case ( 1 )
              do ihist = 1, nhist
                 tmp(ihist) = dpr(ihist,i,1) * eV
-                write(iunit2,'(f10.5)') tmp(ihist)
+                write(iunit2,'(e17.9)') tmp(ihist)
              end do
              call xml_AddArray(xf,tmp(1:nhist))
           case ( 2 )
              do ihist = 1, nhist
                 tmp(ihist*2-1) = dpr(ihist,i,1) * eV
                 tmp(ihist*2) = dpr(ihist,i,2) * eV
-                write(iunit2,'(2f10.5)') tmp(ihist*2-1:ihist*2)
+                write(iunit2,'(2(tr1,e17.9))') tmp(ihist*2-1:ihist*2)
              end do
              call xml_AddArray(xf,tmp(1:2*nhist))
           case ( 4 )

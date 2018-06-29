@@ -17,7 +17,7 @@ module m_supercell
   
   implicit none
   
-  public :: exact_sc_size
+  !! public :: exact_sc_size   ! not used anymore
   public :: exact_sc_ag
   private
   

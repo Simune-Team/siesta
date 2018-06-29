@@ -45,8 +45,7 @@ MODULE m_sankey_change_basis
   use mpi_siesta,          only : mpi_bcast, mpi_comm_world, mpi_logical
 #endif
   use m_spin,              only: nspin
-  use m_gamma,             only: gamma
-  use Kpoint_grid,         only: nkpnt, kpoint, kweight
+  use kpoint_scf_m,        only: kpoint_scf, gamma_scf
   use atomlist,            only: no_u, indxuo
   use wavefunctions
   use sparse_matrices,     only : numh, listhptr, listh, S, xijo, Dscf
@@ -106,8 +105,8 @@ MODULE m_sankey_change_basis
   END IF
     ! Allocate local arrays
   if(frstme) then
-    allocate(sqrtS(nkpnt))
-    do ik=1,nkpnt
+    allocate(sqrtS(kpoint_scf%N))
+    do ik=1,kpoint_scf%N
       call m_allocate(sqrtS(ik),no_u,no_u,m_storage)
     end do
     frstme=.false.
@@ -115,7 +114,7 @@ MODULE m_sankey_change_basis
   call m_allocate(Maux,no_u,no_u,m_storage)
   call m_allocate(invsqS,no_u,no_u,m_storage)
   !
-  do ik = 1,nkpnt
+  do ik = 1,kpoint_scf%N
   call m_allocate(Sauxms,no_u,no_u,m_storage)
     do iuo = 1,nuo
       call LocalToGlobalOrb(iuo, Node, Nodes, io)
@@ -123,10 +122,10 @@ MODULE m_sankey_change_basis
         ind = listhptr(iuo) + j
         juo = listh(ind)
         jo  = indxuo (juo)
-        if(.not.gamma) then 
-          kxij = kpoint(1,ik) * xijo(1,ind) +&
-          kpoint(2,ik) * xijo(2,ind) +&
-          kpoint(3,ik) * xijo(3,ind)
+        if(.not.gamma_scf) then 
+          kxij = kpoint_scf%k(1,ik) * xijo(1,ind) +&
+          kpoint_scf%k(2,ik) * xijo(2,ind) +&
+          kpoint_scf%k(3,ik) * xijo(3,ind)
           ckxij = cos(kxij)
           skxij = -sin(kxij)
         else 
@@ -151,7 +150,7 @@ MODULE m_sankey_change_basis
       call m_add ( Maux,'n',sqrtS(ik),cmplx(1.0_dp,0.0_dp,dp),              &
                   cmplx(0.0_dp,0.0_dp,dp),m_operation )
       ! C1=S0^1/2*S1^1/2*C0
-      qe=2.0d0*kweight(ik)/dble(nspin)
+      qe=2.0d0*kpoint_scf%w(ik)/dble(nspin)
       do ispin=1,nspin
         ! Cn = Saux*Cn-1 where Saux= Sn-1^1/2*Sn^-1/2
         call m_allocate ( phi,wavef_ms(ik,ispin)%dim1,                      &

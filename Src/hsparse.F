@@ -48,7 +48,9 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,     
      &                    nlhmax, gamma,
-     $                    set_xijo, folding, buffer)
+     $                    set_xijo, folding,
+     $                    diagonal_folding, debug_folding,
+     $                    buffer)
 
       use precision
       use parallel,        only : Node, Nodes
@@ -59,9 +61,8 @@ C
       use sorting
       use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
       use neighbour,       only : mneighb, reset_neighbour_arrays
-      use sys,             only : die
       use alloc,           only : re_alloc, de_alloc
-      use atomlist,        only : no_l
+      use atomlist,        only : no_l, indxuo
       use atomlist,        only : in_kb_orb_u_range
       use sparse_matrices, only : listhptr, numh, listh, xijo
       use radial,          only : rad_func
@@ -82,6 +83,8 @@ C
       logical, intent(in)           :: gamma
       logical, intent(in)           :: set_xijo
       logical, intent(out)          :: folding
+      logical, intent(out)          :: diagonal_folding
+      logical, intent(in), optional :: debug_folding
       real(dp),intent(in),optional  :: buffer
 
       external               timer
@@ -92,6 +95,7 @@ C
       real(dp), allocatable     :: rkbmax(:) ! maximum KB radius of each species
       real(dp), allocatable     :: rorbmax(:) ! maximum ORB radius of each species
       real(dp), allocatable     :: rldaumax(:)! maximum LDA+U radius of each species
+      real(dp), allocatable     :: rmax_projectors(:) ! maximum projector radius of each species
       integer      :: maxnkb  = 500          ! max no. of atoms with
                                              ! KB projectors which 
                                              ! overlap another
@@ -107,8 +111,6 @@ C
      &  rci, rcj, rck, rij, rik, rjk,
      &  rmax, rmaxkb, rmaxo, rmaxldau, buffer_
 
-      logical, save :: warn1 = .false.
-
       real(dp), dimension(:), pointer :: rckb
       logical, dimension(:),  pointer :: conect
       integer, dimension(:),  pointer :: index
@@ -116,19 +118,22 @@ C
       integer, dimension(:),  pointer :: listhtmp
 
       logical :: connected
+      logical :: third_centers ! Whether we need to consider interactions mediated
+                               ! by projectors at third centers
       type(species_info), pointer :: spp
       type(rad_func),     pointer :: pp
-
+      logical :: debug
+      integer :: nprints   ! for debugging
 C -------------------------------------
-#ifdef DEBUG
-      call write_debug( '    PRE hsparse' )
-#endif
+
 C     Start time counter
       call timer( 'hsparse', 1 )
 
-      ! Reduce check to only IONode
-      if ( .not. warn1 ) warn1 = Node /= 0
-
+      debug = .false.
+      if (present(debug_folding)) then
+         debug = debug_folding
+      endif
+      
 C     Check size of internal arrays
       ncells = nsc(1) * nsc(2) * nsc(3)
       nua = na / ncells
@@ -143,10 +148,6 @@ C     Allocate local arrays
       call re_alloc( conect, 1, no, 'conect', 'hsparse' )
       call re_alloc( listhtmp, 1, no, 'listhtmp', 'hsparse' )
 
-      ! We force nnkb == 0
-      ! for the case where no LDAU and negl == .true.
-      nnkb = 0
-      
 C     Allocate local arrays that depend on parameters
       nullify( knakb, rckb, index )
       call re_alloc( knakb, 1, maxnkb, 'knakb', 'hsparse' )
@@ -163,6 +164,7 @@ C     Allocate local arrays that depend on parameters
 !     Also for orbitals (for possible future extra optimizations)
 !     
       allocate(rkbmax(nspecies),rorbmax(nspecies),rldaumax(nspecies))
+      allocate(rmax_projectors(nspecies))
       rmaxo    = 0.0_dp
       rmaxkb   = 0.0_dp
       rmaxldau = 0.0_dp
@@ -196,11 +198,21 @@ C     Allocate local arrays that depend on parameters
       enddo
 
       
-      ! Now calculate the actual extend of the basis orbitals
+      ! Now calculate an approximate range for the neighbor search
       if ( negl ) then
+         ! If we neglect the KB projectors in the interaction scheme
+         ! we might still have to worry about the LDAU projectors
          rmax = rmaxo + rmaxldau
+         do is = 1, nspecies
+            rmax_projectors(is) = rldaumax(is)
+         enddo
+         third_centers = switch_ldau  
       else
          rmax = rmaxo + max(rmaxkb, rmaxldau)
+         do is = 1, nspecies
+            rmax_projectors(is) = max(rldaumax(is),rkbmax(is))
+         enddo
+         third_centers = .true.
       end if
       rmax = rmax * 2._dp
 
@@ -224,6 +236,7 @@ C     Initialize vector switch only once
       end do
       
       folding = .false.
+      diagonal_folding = .false.
 
 C------------------------------------C
 C     Find number of non-zeros in H  C
@@ -262,36 +275,16 @@ C       Loop on orbitals of atom ia
                endif
             enddo
 
-            if ( negl .and. switch_ldau ) then
-              ! We ONLY add the LDAU projectors
-              nnkb = 0
+            ! Create a list of mediating projectors
+            nnkb = 0
+            if ( third_centers ) then
               do kna = 1,nna
                 ka = jna(kna)
                 rik = sqrt( r2ij(kna) )
                 ks = isa(ka)
-                rck = rldaumax(ks)
+                rck = rmax_projectors(ks)
                 if ( rci + rck > rik ) then
                   call extend_projector(nnkb, kna, rck)
-                end if
-              end do
-            else if ( .not. negl ) then
-              ! Find overlaping KB and LDA+U projectors
-              nnkb = 0
-              do kna = 1,nna
-                ka = jna(kna)
-                rik = sqrt( r2ij(kna) )
-                ks = isa(ka)
-                ! It is only necessary to check with
-                ! the *largest* KB projector
-                rck = rkbmax(ks)
-                if ( rci + rck > rik ) then
-                  call extend_projector(nnkb, kna, rck)
-                endif
-                if( switch_ldau ) then
-                  rck = rldaumax(ks)
-                  if ( rci + rck > rik ) then
-                    call extend_projector(nnkb, kna, rck)
-                  end if
                 end if
               end do
             end if
@@ -380,6 +373,7 @@ C     Set up listhptr
 C------------------------------------C
 C     Find full H sparsity pattern   C
 C------------------------------------C
+      nprints = 0
 C     Loop on atoms in unit cell
       do ia = 1,nua
 C       Find neighbour atoms within maximum range
@@ -403,37 +397,17 @@ C       Loop on orbitals of atom ia
             rci = rcut(is,ioa)+buffer_
 
 C           Find overlaping KB and LDA+U projectors
-            if ( negl .and. switch_ldau ) then
-              ! We ONLY add the LDAU projectors
-              nnkb = 0
+            nnkb = 0
+            if ( third_centers ) then
               do kna = 1,nna
                 ka = jna(kna)
                 rik = sqrt( r2ij(kna) )
                 ks = isa(ka)
-                rck = rldaumax(ks)
+                rck = rmax_projectors(ks)
                 if ( rci + rck > rik ) then
-                  call add_projector(nnkb, kna, rck)
+                  call add_projector(nnkb, kna, rck)  ! No need to check sizes
                 end if
               end do
-            else if ( .not. negl ) then
-              nnkb = 0
-              do kna = 1,nna
-                ka = jna(kna)
-                rik = sqrt( r2ij(kna) )
-                ks = isa(ka)
-                ! It is only necessary to check with
-                ! the *largest* KB/LDAU projector
-                rck = rkbmax(ks)
-                if ( rci + rck > rik ) then
-                   call add_projector(nnkb, kna, rck)
-                end if
-                if( switch_ldau ) then
-                   rck = rldaumax(ks)
-                   if ( rci + rck > rik ) then
-                      call add_projector(nnkb, kna, rck)
-                   endif
-                endif
-              enddo
             endif
         
 C           Find orbitals connected by direct overlap or
@@ -452,8 +426,8 @@ C           through a KB or LDA+U projector
                 
                 if ( .not. connected ) then
 
-! Find if jo overlaps with a KB projector
-! nnkb is zero if no KB/LDAU projector exists
+                   ! Find if jo overlaps with a projector
+                   ! nnkb is zero if no KB/LDAU projector exists
                    do inkb = 1,nnkb
                     rck = rckb(inkb)
                     kna = knakb(inkb)
@@ -469,59 +443,53 @@ C           through a KB or LDA+U projector
                 end if
 
                 if (connected) then
-                  if (conect(jo)) then
-                    folding = .true.
+                      if (conect(jo)) then
+                         folding = .true.
+                         if (io == indxuo(jo)) then
+                            diagonal_folding = .true.
+                         endif
                        
-                    ! This test is now deferred to be able
-                    ! to catch multiple images while avoiding
-                    ! false positives (i.e., we test first
-                    ! whether there is indeed a connection).
+                         ! If already connected and using supercell, the
+                         ! latter might not be big enough...  We defer
+                         ! the decision on whether to kill the program
+                         ! to the caller.  Here keep the first instance
 
-                    ! If already connected and using supercell, 
-                    ! the latter might not be big enough...
-                    ! We warn the user and keep the first instance
-                    ! of xij (same behavior as the old xijorb, as
-                    ! earlier jnats are closer)
-                    ! Warn also if Gamma-point calculation, just
-                    ! in case
-                    if (.not.warn1) then
-                      if ( gamma ) then
-                        call check_cohp(io,jo)
-                      else
-                        write(6,'(/,a,2i6,a,/,a)')
-     .                        'WARNING: orbital pair ',io,jo,
+                         if (debug) then
+                            ! This might not be pretty in
+                            ! parallel. Better to build a list of a few
+                            ! cases, and pass it to the caller.
+                            if (nprints <= 20) then
+                               print "(a,2i6,a)",
+     .                           'WARNING: orbital pair ',io,indxuo(jo),
      .                        ' is multiply connected'
-                      endif
-                      warn1 = .true.
-                    endif
+                               nprints = nprints + 1
+                            endif
+                         endif
                        
-                  else
+                      else
                      
-                    conect(jo) = .true.
-                    numh(iio) = numh(iio) + 1
-                    ind = listhptr(iio)+numh(iio)
-                    listh(ind) = jo
-                    if (set_xijo) then
-                      xijo(1:3,ind) = xij(1:3,jnat)
-                    endif
-                  endif
-                endif
-              enddo
-            enddo
+                         conect(jo) = .true.
+                         numh(iio) = numh(iio) + 1
+                         ind = listhptr(iio)+numh(iio)
+                         listh(ind) = jo
+                         if (set_xijo) then
+                            xijo(1:3,ind) = xij(1:3,jnat)
+                         endif
+                      endif
+                   endif
+                enddo
+             enddo
           
             ! Restore conect array for next orbital io
-            do j = 1,numh(iio)
-              jo = listh(listhptr(iio)+j)
-              conect(jo) = .false.
-            end do
+             do j = 1,numh(iio)
+                jo = listh(listhptr(iio)+j)
+                conect(jo) = .false.
+             enddo
            
           end if                 ! iio > 0
         end do                   ! io
       end do                     ! ia
 
-!!        print "(a5,i3,a40,3i8)",
-!!     $         "Node: ", Node, "in hsparse nuo, nuotot, nlhmax: ",
-!!     $         nuo, nuotot, nlhmax
 
 C     Initialize listsc
       call LISTSC_INIT( nsc, nuotot )
@@ -537,15 +505,11 @@ C     Deallocate local arrays
       call de_alloc( rckb, 'rckb', 'hsparse' )
 
       call timer( 'hsparse', 2 )
-#ifdef DEBUG
-      call write_debug( '    POS hsparse' )
-#endif
 
       contains
 
-      ! Possibly increase the arrays used for creating
-      ! the data arrays
-      ! ALSO add data to the arrays
+      ! Add to the list of third_center projectors
+      ! that might mediate interactions
       subroutine extend_projector(nnkb, kna, rck)
       integer, intent(inout) :: nnkb
       integer, intent(in)    :: kna
@@ -570,25 +534,7 @@ C     Deallocate local arrays
       rckb(nnkb)  = rck
       end subroutine add_projector
       
-      end subroutine hsparse
-      
-      subroutine check_cohp(io,jo)
-      use siesta_options, only: write_coop
 
-      integer, intent(in) :: io, jo
- 
-      if (write_coop) then
-         write(6,'(/,a,2i6,a,/,a)')
-     .     'NOTE: orbital pair ',io,jo,
-     .     ' (at least) is multiply connected.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.'
-         write(0,'(/,a,2i6,a,/,a)')
-     .     'NOTE: orbital pair ',io,jo,
-     .     ' (at least) is multiply connected.',
-     .     'NOTE: Your COOP/COHP analysis might ' //
-     $     'be affected by folding.'
-      endif
-      end subroutine check_cohp
+      end subroutine hsparse
 
       end module m_hsparse

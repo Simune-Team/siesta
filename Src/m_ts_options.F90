@@ -184,7 +184,7 @@ contains
        ts_method = TS_MUMPS
 #endif
     else
-       call die('Unrecognized Transiesta solution method: '//trim(chars))
+       call die('Unrecognized TranSiesta solution method: '//trim(chars))
     end if
 
     ! currently this does not work
@@ -253,7 +253,7 @@ contains
 
     ts_kT = fdf_get('TS.ElectronicTemperature',kT,'Ry')
     if ( ts_kT / Kelvin < 10._dp ) then
-       call die('transiesta electronic temperature *must* &
+       call die('TranSiesta electronic temperature *must* &
             &be larger than 10 kT')
     end if
     
@@ -279,7 +279,7 @@ contains
        ! We do not allow the electronic temperature
        ! to be below 10 kT
        if ( mus(i)%kT / Kelvin < 10._dp ) then
-          call die('transiesta electronic temperature *must* &
+          call die('TranSiesta electronic temperature *must* &
                &be larger than 10 kT')
        end if
        
@@ -385,7 +385,21 @@ contains
     chars = fdf_get('TS.Elecs.DM.Init',trim(chars))
     DM_bulk = 0
     if ( leqi(chars,'bulk') ) then
-       DM_bulk = 1
+      DM_bulk = 1
+    !else if ( leqi(chars,'scf') ) then
+    !   DM_bulk = 2
+    end if
+    if ( IsVolt ) then
+      if ( DM_bulk /= 0 .and. IONode) then
+        if ( IONode ) then
+          c = '(''transiesta: *** '',a,/)'
+          write(*,c)'Will not read in electrode DM, only applicable for V = 0 calculations'
+        end if
+      end if
+      DM_bulk = 0
+    end if
+    if ( leqi(chars,'force-bulk') ) then
+      DM_bulk = 1
     !else if ( leqi(chars,'scf') ) then
     !   DM_bulk = 2
     end if
@@ -402,7 +416,7 @@ contains
        Elecs(2)%ID = 2
        ! if they do-not exist, the user will be told
        if ( IONode ) then
-          c = '(''transiesta: *** '',a)'
+          c = '(''transiesta: *** '',a,/)'
           write(*,c)'No electrode names were found, default Left/Right are expected'
        end if
     end if
@@ -832,7 +846,7 @@ contains
     use m_ts_mumps_init, only: MUMPS_mem, MUMPS_ordering, MUMPS_block
 #endif
 
-    use m_ts_hartree, only: TS_HA, Vha_frac, El
+    use m_ts_hartree, only: TS_HA, Vha_frac, Vha_offset, El
     use m_ts_hartree, only: TS_HA_NONE, TS_HA_PLANE, TS_HA_ELEC, TS_HA_ELEC_BOX
 
     implicit none
@@ -912,6 +926,8 @@ contains
        call die('Vha, error in option collecting')
     end select
     write(*,f8) 'Fix Hartree potential fraction', Vha_frac
+    write(*,f7) 'Hartree potential offset', Vha_offset/eV, 'eV'
+
     if ( ts_method == TS_FULL ) then
        write(*,f10)'Solution method', 'Full inverse'
     else if ( ts_method == TS_BTD ) then
@@ -1025,7 +1041,7 @@ contains
        end select
     end if
     if ( .not. Calc_Forces ) then
-       write(*,f11) '*** TranSIESTA will NOT update forces ***'
+       write(*,f11) '*** TranSiesta will NOT update forces ***'
     end if
 
     if ( TS_RHOCORR_METHOD == 0 ) then
@@ -1114,17 +1130,17 @@ contains
 
     write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
     if ( FixSpin .and. (TS_HS_save .or. TSmode) ) then
-       write(*,'(a)') 'Fixed spin not possible with TranSIESTA!'
+       write(*,'(a)') 'Fixed spin not possible with TranSiesta!'
        write(*,'(a)') 'Disable TS.HS.Save or FixSpin'
-       write(*,'(a)') 'Electrodes with fixed spin is not possible with Transiesta!'
-       call die('Fixing spin is not possible in transiesta')
+       write(*,'(a)') 'Electrodes with fixed spin is not possible with TranSiesta!'
+       call die('Fixing spin is not possible in TranSiesta')
     end if
 
     if ( .not. TSmode ) then
        if ( TS_HA == TS_HA_ELEC ) then
-          call die('Hartree potiental cannot use electrodes without transiesta')
+          call die('Hartree potiental cannot use electrodes without TranSiesta')
        else if ( TS_HA == TS_HA_ELEC_BOX ) then
-          call die('Hartree potiental cannot use electrodes without transiesta')
+          call die('Hartree potiental cannot use electrodes without TranSiesta')
        end if
     end if
 
@@ -1150,7 +1166,7 @@ contains
     end if
 
     if ( TS_HA == TS_HA_NONE ) then
-       write(*,'(a)') 'Hartree potiental fix REQUIRED when running transiesta'
+       write(*,'(a)') 'Hartree potiental fix REQUIRED when running TranSiesta'
        err = .true.
     end if
 
@@ -1312,17 +1328,17 @@ contains
     call contour_nEq_warnings()
     
     if ( .not. Calc_Forces ) then
-       write(*,f11) '***       TranSIESTA will NOT update forces       ***'
+       write(*,f11) '***       TranSiesta will NOT update forces       ***'
        write(*,f11) '*** ALL FORCES AFTER TRANSIESTA HAS RUN ARE WRONG ***'
        if ( Nmove > 0 ) then
-          write(*,'(a)')'Relaxation with transiesta *REQUIRES* an update of &
+          write(*,'(a)')'Relaxation with TranSiesta *REQUIRES* an update of &
                &the energy density matrix. Will continue at your request.'
           err = .true.
        end if
     end if
 
     if ( Nmove > 0 .and. .not. all(Elecs(:)%DM_update > 0) ) then
-       write(*,'(a)') 'transiesta relaxation is only allowed if you also &
+       write(*,'(a)') 'TranSiesta relaxation is only allowed if you also &
             &update, at least, the cross terms, please set: &
             &TS.Elecs.DM.Update [cross-terms|all]'
        err = .true.
@@ -1384,7 +1400,7 @@ contains
 
     if ( ts_tidx < 1 ) then
 
-       write(*,'(a)') '*** TranSIESTA semi-infinite directions are individual ***'
+       write(*,'(a)') '*** TranSiesta semi-infinite directions are individual ***'
        write(*,'(a)') '*** It is heavily adviced to have any electrodes with no &
             &periodicity'
        write(*,'(a)') '    in the transverse directions be located as far from any &
@@ -1515,6 +1531,9 @@ contains
        write(*,'(a)') 'You are not initializing the electrode DM/EDM. &
             &This may result in very wrong electrostatic potentials close to &
             &the electrode/device boundary region.'
+       if ( IsVolt ) then
+         write(*,'(a)') '    This warning is only applicable for V == 0 calculations!'
+       end if
        warn = .true.
     end if
 
@@ -1602,13 +1621,9 @@ contains
        if ( sum(Elecs(iEl)%pvt) /= 6 .or. count(Elecs(iEl)%pvt==2) /= 1 ) then
           write(*,'(a,/,a)') 'The pivoting table for the electrode unit-cell, &
                &onto the simulation unit-cell is not unique: '//trim(Elecs(iEl)%name), &
-               '  Please check your electrode and device cell parameters.'
-          if ( .not. Gamma ) then
-             err = .true.
-          else
-             warn = .true.
-             write(*,'(a)') '  Combining this with electric fields or dipole-corrections is ill-adviced!'
-          end if
+               '  Please check your electrode and device cell parameters!'
+          write(*,'(a)') '  Combining this with electric fields or dipole-corrections is ill-adviced!'
+          warn = .true.
        end if
     end do
 
@@ -1628,7 +1643,7 @@ contains
        write(*,'(tr19,a)') 'TRANSIESTA REPORTED ERRORS'
        write(*,'(tr18,a)') repeat('*',30)
 
-       call die('One or more errors have occured doing transiesta &
+       call die('One or more errors have occured doing TranSiesta &
             &initialization, check the output')
     end if
     
@@ -1656,13 +1671,13 @@ contains
 
     if ( onlyS .or. .not. TSmode ) return
 
-    write(*,'(/,a,/)') '>>> Transiesta block information for FDF-file START <<<'
+    write(*,'(/,a,/)') '>>> TranSiesta block information for FDF-file START <<<'
     
     call print_mus_block( 'TS' , N_mu , mus)
     
     call print_contour_block( 'TS' , IsVolt )
     
-    write(*,'(/,a,/)') '>>> Transiesta block information for FDF-file END <<<'
+    write(*,'(/,a,/)') '>>> TranSiesta block information for FDF-file END <<<'
 
     ! write out the contour
     call io_contour(IsVolt, mus, slabel)

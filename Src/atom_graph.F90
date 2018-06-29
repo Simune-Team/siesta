@@ -96,8 +96,9 @@ contains
     real(dp), allocatable :: rorbmax(:)  ! maximum ORB radius of each species
     real(dp), allocatable :: rkbmax(:)   ! maximum KB radius of each species
     real(dp), allocatable :: rldaumax(:) ! maximum LDAU radius of each species
+    real(dp), allocatable :: rmax_projectors(:) ! maximum projector radius of each species
     integer :: maxnkb  = 500 ! max no. of atoms with
-                             ! KB projectors which 
+                             ! KB (or LDAU) projectors which 
                              ! overlap another
                              ! atom's orbitals.
 
@@ -130,6 +131,8 @@ contains
     integer, dimension(:),  pointer :: index => null()
     integer, dimension(:),  pointer :: knakb => null()
     logical :: connected_s, connected_h
+    logical :: third_centers ! Whether we need to consider interactions mediated
+                             ! by projectors at third centers
 
     ! Whether the xijo array should be created
     logical :: lxijo
@@ -160,7 +163,7 @@ contains
     
     ! Find maximum radius of orbs and KB projectors of each specie
     allocate(rkbmax(nspecies), rorbmax(nspecies))
-    allocate(rldaumax(nspecies))
+    allocate(rldaumax(nspecies), rmax_projectors(nspecies))
     do is = 1 , nspecies
        rorbmax(is) = 0.0_dp
        do io = 1 , nofis(is)
@@ -186,16 +189,22 @@ contains
     rmaxldau = maxval(rldaumax(1:nspecies))
 
 
-    ! If we neglect the KB projectors in the interaction scheme
     if ( negl ) then
+       ! If we neglect the KB projectors in the interaction scheme
+       ! we might still have to worry about the LDAU projectors
        rmax = 2._dp * (rmaxo+rmaxldau)
+       do is = 1, nspecies
+          rmax_projectors(is) = rldaumax(is)
+       enddo
+       third_centers = switch_ldau  
     else
        rmax = 2._dp * (rmaxo+max(rmaxkb,rmaxldau))
+       do is = 1, nspecies
+          rmax_projectors(is) = max(rldaumax(is),rkbmax(is))
+       enddo
+       third_centers = .true.
     end if
 
-    ! Reset the nnkb value to 0
-    nnkb = 0
-    
     ! Allocate local arrays that depend on parameters
     call re_alloc(knakb,1,maxnkb, name="knakb",routine="atom_graph")
     call re_alloc(rckb,1,maxnkb, name="rckb",routine="atom_graph")
@@ -229,43 +238,23 @@ contains
        is  = isa(ia)
        rci = rorbmax(is)
 
-       if ( negl .and. switch_ldau ) then
-          ! We ONLY add the LDAU projectors
-          nnkb = 0
+       nnkb = 0
+       if ( third_centers ) then
           do kna = 1,nna
              ka = jna(kna)
              rik = sqrt( r2ij(kna) )
              ks = isa(ka)
-             rck = rldaumax(ks)
-             if ( rci + rck > rik ) then
-                call extend_projector(nnkb, kna, rck)
-             end if
-          end do
-          
-       else if ( .not. negl ) then
-          ! Find overlaping KB and LDA+U projectors
-          nnkb = 0
-          do kna = 1 , nna
-             ka = jna(kna)
-             rik = sqrt( r2ij(kna) )
-             ks = isa(ka)
              ! It is only necessary to check with
-             ! the *largest* KB projector
-             rck = rkbmax(ks)
+             ! the *largest* projector in the third center
+             rck = rmax_projectors(ks)
              if ( rci + rck > rik ) then
                 call extend_projector(nnkb, kna, rck)
              end if
-             if( switch_ldau ) then
-                rck = rldaumax(ks)
-                if ( rci + rck > rik ) then
-                   call extend_projector(nnkb, kna, rck)
-                endif
-             endif
           end do
        end if
 
        ! Find atoms connected by direct overlap or
-       ! through a KB projector
+       ! through a KB projector or LDAU projector
        do jnat = 1 , nna
           connected_h = .false.
           ja = jna(jnat)
@@ -276,7 +265,7 @@ contains
           if ( rci + rcj > rij ) then
              connected_h = .true.
           else
-             ! Find if ja overlaps with a KB projector in ia's list
+             ! Find if ja overlaps with a projector in ia's list
              do inkb = 1 , nnkb
                 rck = rckb(inkb)
                 kna = knakb(inkb)
@@ -349,37 +338,17 @@ contains
        is  = isa(ia)
        rci = rorbmax(is)
 
-       
-       if ( negl .and. switch_ldau ) then
-          ! We ONLY add the LDAU projectors
-          nnkb = 0
-          do kna = 1,nna
-             ka = jna(kna)
-             rik = sqrt( r2ij(kna) )
-             ks = isa(ka)
-             rck = rldaumax(ks)
-             if ( rci + rck > rik ) then
-                call extend_projector(nnkb, kna, rck)
-             end if
-          end do
-       else if ( .not. negl ) then
-          ! Find overlaping KB and LDA+U projectors
-          nnkb = 0
+       nnkb = 0
+       if ( third_centers ) then
           do kna = 1,nna
              ka = jna(kna)
              rik = sqrt( r2ij(kna) )
              ks = isa(ka)
              ! It is only necessary to check with
-             ! the *largest* KB projector
-             rck = rkbmax(ks)
+             ! the *largest* object in the third center
+             rck = rmax_projectors(ks)
              if ( rci + rck > rik ) then
                 call extend_projector(nnkb, kna, rck)
-             endif
-             if( switch_ldau ) then
-                rck = rldaumax(ks)
-                if ( rci + rck > rik ) then
-                   call extend_projector(nnkb, kna, rck)
-                end if
              end if
           end do
        end if
@@ -425,7 +394,7 @@ contains
     call de_alloc(index,name="index",routine="atom_graph")
     call de_alloc(knakb,name="knakb",routine="atom_graph")
     call de_alloc(rckb,name="rckb",routine="atom_graph")
-    deallocate(n_col,l_ptr,rkbmax,rorbmax)
+    deallocate(n_col,l_ptr,rkbmax,rorbmax,rldaumax,rmax_projectors)
 
     ! Clean up, if the distribution has not
     ! been supplied the local distribution 

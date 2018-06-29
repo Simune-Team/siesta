@@ -473,6 +473,7 @@ contains
        ! This aligns the atoms in the same way the orbitals 
        ! introduce the atoms.
        call rgn_Orb2Atom(r_oEl(iEl), na_u, lasto , r_aEl(iEl))
+       call rgn_sort(r_aEl(iEl))
 
        ! Create the region that connects the electrode-followed
        ! region to the central region
@@ -773,7 +774,11 @@ contains
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
-    use m_sparsity_handling, only : Sp_retain_region, Sp_sort
+    use m_sparsity_handling, only : Sp_retain_region, Sp_sort, Sp_union
+#ifdef NCDF_4
+    use m_tbt_delta, only: read_delta_Sp
+    use m_tbt_dH, only: use_dH, dH
+#endif
 
     type(Sparsity), intent(inout) :: sp
     type(dict), intent(in) :: save_DATA
@@ -781,6 +786,7 @@ contains
     type(OrbitalDistribution) :: fdit
 
     integer :: no_u
+    type(Sparsity) :: sp_dH
 #endif
 
     ! Make sure to initialize the device region
@@ -789,6 +795,7 @@ contains
 #ifdef NCDF_4
     if ( ('orb-current' .in. save_DATA) .or. &
          ('proj-orb-current' .in. save_DATA) .or. &
+         ('DM-Gf' .in. save_DATA) .or. ('DM-A' .in. save_DATA) .or. &
          ('COOP-Gf' .in. save_DATA) .or. ('COHP-Gf' .in. save_DATA) .or. &
          ('COOP-A' .in. save_DATA) .or. ('COHP-A' .in. save_DATA) ) then
 
@@ -798,8 +805,15 @@ contains
 #else
        call newDistribution(no_u,-1           ,fdit,name='TBT-fake dist')
 #endif
-
        call Sp_retain_region(fdit,sp,r_oDev,sp_dev_sc)
+       ! Note that the delta-Sigma is not necessary because
+       ! the self-energy does not add to bond-currents, etc.
+       if ( use_dH ) then
+         call read_delta_Sp(dH,no_u,sp_dH)
+         call Sp_retain_region(fdit,sp_dH,r_oDev,sp_dH)
+         call Sp_union(fdit,sp_dev_sc,sp_dH,sp_dev_sc)
+         call delete(sp_dH)
+       end if
        call Sp_sort(sp_dev_sc)
        call delete(fdit)
 

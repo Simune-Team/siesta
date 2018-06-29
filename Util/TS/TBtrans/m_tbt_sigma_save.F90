@@ -54,8 +54,10 @@ contains
 #ifdef NCDF_4
 
     sigma_save = fdf_get('TBT.CDF.SelfEnergy.Save',.false.)
+    sigma_save = fdf_get('TBT.SelfEnergy.Save',sigma_save)
     if ( sigma_save ) then
-       sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
+      sigma_mean_save = fdf_get('TBT.CDF.SelfEnergy.Save.Mean',.false.)
+      sigma_mean_save = fdf_get('TBT.SelfEnergy.Save.Mean',sigma_mean_save)
     end if
     cmp_lvl = fdf_get('CDF.Compress',0)
     cmp_lvl = fdf_get('TBT.CDF.Compress',cmp_lvl)
@@ -63,7 +65,8 @@ contains
     if ( cmp_lvl < 0 ) cmp_lvl = 0
     if ( cmp_lvl > 9 ) cmp_lvl = 9
 #ifdef NCDF_PARALLEL
-    sigma_parallel = fdf_get('TBT.CDF.SelfEnergy.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.MPI',.false.)
+    sigma_parallel = fdf_get('TBT.CDF.SelfEnergy.MPI',sigma_parallel)
     if ( sigma_parallel ) then
        cmp_lvl = 0
     end if
@@ -138,9 +141,10 @@ contains
   end subroutine open_cdf_Sigma
 
   ! Save the self-energies of the electrodes and
-  subroutine init_Sigma_save(fname, TSHS, r, btd, ispin, N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE, &
-       a_Dev, a_Buf)
+  subroutine init_Sigma_save(fname, TSHS, r, btd, ispin, &
+      N_Elec, Elecs, raEl, &
+      nkpt, kpt, wkpt, NE, Eta, &
+      a_Dev, a_Buf)
 
     use parallel, only : IONode
     use m_os, only : file_exist
@@ -165,9 +169,12 @@ contains
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
+    type(tRgn), intent(in) :: raEl(N_Elec)
     integer, intent(in) :: nkpt
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
+    real(dp), intent(in) :: Eta
+
     ! Device atoms
     type(tRgn), intent(in) :: a_Dev
     ! Buffer atoms
@@ -199,100 +206,100 @@ contains
     ! in case it already exists...
     if ( exist ) then
 
-       ! Create a dictionary to check that the sigma file is the
-       ! same
-       call ncdf_open(ncdf,fname)
+      ! Create a dictionary to check that the sigma file is the
+      ! same
+      call ncdf_open(ncdf,fname)
 
-       dic = ('no_u'.kv.TSHS%no_u) // ('na_u'.kv.TSHS%na_u) // &
-            ('nkpt'.kv.nkpt ) // ('no_d'.kv.r%n) // &
-            ('ne'.kv. NE ) // ('n_btd'.kv.btd%n)
-       dic = dic // ('na_d'.kv. a_Dev%n)
-       if ( a_Buf%n > 0 ) then
-          dic = dic // ('na_b'.kv.a_Buf%n)
-       end if
-       call ncdf_assert(ncdf,exist,dims=dic)
-       call delete(dic)
+      dic = ('no_u'.kv.TSHS%no_u) // ('na_u'.kv.TSHS%na_u) // &
+          ('nkpt'.kv.nkpt ) // ('no_d'.kv.r%n) // &
+          ('ne'.kv. NE ) // ('n_btd'.kv.btd%n)
+      dic = dic // ('na_d'.kv. a_Dev%n)
+      if ( a_Buf%n > 0 ) then
+        dic = dic // ('na_b'.kv.a_Buf%n)
+      end if
+      call ncdf_assert(ncdf,exist,dims=dic)
+      call delete(dic)
 #ifdef MPI
-       call MPI_Bcast(same,1,MPI_Logical,0, &
-            MPI_Comm_World,MPIerror)
+      call MPI_Bcast(same,1,MPI_Logical,0, &
+          MPI_Comm_World,MPIerror)
 #endif
-       if ( .not. same ) then
-          call die('Dimensions in the TBT.SE.nc file does not conform &
-               &to the current simulation.')
-       end if
+      if ( .not. same ) then
+        call die('Dimensions in the TBT.SE.nc file does not conform &
+            &to the current simulation.')
+      end if
 
-       do iEl = 1 , N_Elec
-          call ncdf_open_grp(ncdf,Elecs(iEl)%name,grp)
-          dic = dic // ('no_e'.kv.Elecs(iEl)%o_inD%n)
-          call ncdf_assert(grp,exist,dims=dic)
-          if ( .not. exist ) then
-             write(*,*) 'Assertion of dimensions in file: '//trim(fname)//' failed.'
+      do iEl = 1 , N_Elec
+        call ncdf_open_grp(ncdf,Elecs(iEl)%name,grp)
+        dic = dic // ('no_e'.kv.Elecs(iEl)%o_inD%n)
+        call ncdf_assert(grp,exist,dims=dic)
+        if ( .not. exist ) then
+          write(*,*) 'Assertion of dimensions in file: '//trim(fname)//' failed.'
 
-             call die('We could not assert the dimensions TBT.SE.nc file.')
-          end if
-       end do
-       call delete(dic)
+          call die('We could not assert the dimensions TBT.SE.nc file.')
+        end if
+      end do
+      call delete(dic)
 
-       ! Check the variables
-       ! Check the variables
-       dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
-            ('pivot'.kvp. r%r ) // ('btd'.kvp.btd%r)
-       call rgn_copy(a_Dev, r_tmp)
-       call rgn_sort(r_tmp)
-       dic = dic // ('a_dev'.kvp.r_tmp%r )
-       dic = dic // ('xa'.kvp. TSHS%xa)
-       if ( a_Buf%n > 0 )then
-          dic = dic // ('a_buf'.kvp.a_Buf%r )
-       end if
-       call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-4_dp )
-       call delete(dic,dealloc=.false.) ! we have them pointing...
+      ! Check the variables
+      ! Check the variables
+      dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) ) // &
+          ('pivot'.kvp. r%r ) // ('btd'.kvp.btd%r)
+      call rgn_copy(a_Dev, r_tmp)
+      call rgn_sort(r_tmp)
+      dic = dic // ('a_dev'.kvp.r_tmp%r )
+      dic = dic // ('xa'.kvp. TSHS%xa)
+      if ( a_Buf%n > 0 )then
+        dic = dic // ('a_buf'.kvp.a_Buf%r )
+      end if
+      call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-4_dp )
+      call delete(dic,dealloc=.false.) ! we have them pointing...
 #ifdef MPI
-       call MPI_Bcast(same,1,MPI_Logical,0, &
-            MPI_Comm_World,MPIerror)
+      call MPI_Bcast(same,1,MPI_Logical,0, &
+          MPI_Comm_World,MPIerror)
 #endif
-       if ( .not. same ) then
-          call die('pivot, lasto, xa or a_buf in the TBT.nc file does &
-               &not conform to the current simulation.')
-       end if
-       call rgn_delete(r_tmp)
+      if ( .not. same ) then
+        call die('pivot, lasto, xa or a_buf in the TBT.nc file does &
+            &not conform to the current simulation.')
+      end if
+      call rgn_delete(r_tmp)
 
-       ! Check the k-points
-       allocate(r2(3,nkpt))
-       do i = 1 , nkpt
-          call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
-       end do
-       dic = ('kpt'.kvp. r2) // ('wkpt'.kvp. wkpt)
-       call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-7_dp )
-       if ( .not. same ) then
-          call die('k-points or k-weights are not the same')
-       end if
-       call delete(dic,dealloc = .false. )
-       deallocate(r2)
+      ! Check the k-points
+      allocate(r2(3,nkpt))
+      do i = 1 , nkpt
+        call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+      end do
+      dic = ('kpt'.kvp. r2) // ('wkpt'.kvp. wkpt)
+      call ncdf_assert(ncdf,same,vars=dic, d_EPS = 1.e-7_dp )
+      if ( .not. same ) then
+        call die('k-points or k-weights are not the same')
+      end if
+      call delete(dic,dealloc = .false. )
+      deallocate(r2)
 
-       call die('Currently the TBT.SE.nc file exists, &
-            &we do not currently implement a continuation scheme.')
+      call die('Currently the TBT.SE.nc file exists, &
+          &we do not currently implement a continuation scheme.')
 
-       ! We currently overwrite the Sigma-file
-       if ( IONode ) then
-          write(*,'(2a)')'tbt: Overwriting self-energy file: ',trim(fname)
-       end if
+      ! We currently overwrite the Sigma-file
+      if ( IONode ) then
+        write(*,'(2a)')'tbt: Overwriting self-energy file: ',trim(fname)
+      end if
 
     else
-       
-       if ( IONode ) then
-          write(*,'(2a)')'tbt: Initializing self-energy file: ',trim(fname)
-       end if
+
+      if ( IONode ) then
+        write(*,'(2a)')'tbt: Initializing self-energy file: ',trim(fname)
+      end if
 
     end if
 
     ! We need to create the file
 #ifdef NCDF_PARALLEL
     if ( sigma_parallel ) then
-       call ncdf_create(ncdf,fname, mode=ior(NF90_NETCDF4,NF90_MPIIO), overwrite=.true., &
-            comm = MPI_COMM_WORLD, &
-            parallel = .true. )
+      call ncdf_create(ncdf,fname, mode=ior(NF90_NETCDF4,NF90_MPIIO), overwrite=.true., &
+          comm = MPI_COMM_WORLD, &
+          parallel = .true. )
     else
-       call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
+      call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
     end if
 #else
     call ncdf_create(ncdf,fname, mode=NF90_NETCDF4, overwrite=.true.)
@@ -309,7 +316,7 @@ contains
     call ncdf_def_dim(ncdf,'no_d',r%n)
     call ncdf_def_dim(ncdf,'n_btd',btd%n)
     if ( a_Buf%n > 0 ) then
-       call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
+      call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
     end if
 
 #ifdef TBT_PHONON
@@ -321,16 +328,16 @@ contains
     char = datestring()
     dic = dic//('date'.kv.char(1:10))
     if ( all(TSHS%nsc(:) == 1) ) then
-       dic = dic // ('Gamma'.kv.'true')
+      dic = dic // ('Gamma'.kv.'true')
     else
-       dic = dic // ('Gamma'.kv.'false')
+      dic = dic // ('Gamma'.kv.'false')
     end if
     if ( TSHS%nspin > 1 ) then
-       if ( ispin == 1 ) then
-          dic = dic // ('spin'.kv.'UP')
-       else
-          dic = dic // ('spin'.kv.'DOWN')
-       end if
+      if ( ispin == 1 ) then
+        dic = dic // ('spin'.kv.'UP')
+      else
+        dic = dic // ('spin'.kv.'DOWN')
+      end if
     end if
     call ncdf_put_gatt(ncdf, atts = dic )
     call delete(dic)
@@ -338,49 +345,52 @@ contains
     ! Create all the variables needed to save the states
     dic = ('info'.kv.'Last orbitals of the equivalent atom')
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
-         atts = dic)
+        atts = dic)
     dic = dic//('info'.kv.'Unit cell')
     dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
-         atts = dic)
+        atts = dic)
     dic = dic//('info'.kv.'Atomic coordinates')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
-         atts = dic)
+        atts = dic)
     call delete(dic)
 
     dic = ('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
-         atts = dic)
+        atts = dic)
 
     dic = dic // ('info'.kv.'Blocks in BTD for the pivot table')
     call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
-         atts = dic)
+        atts = dic)
 
     dic = dic//('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
-         atts = dic)
+        atts = dic)
 
     if ( a_Buf%n > 0 ) then
-       dic = dic//('info'.kv.'Index of buffer atoms')
-       call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
-            atts = dic)
+      dic = dic//('info'.kv.'Index of buffer atoms')
+      call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
+          atts = dic)
     end if
 
     dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
     call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
-         atts = dic)
+        atts = dic)
     call delete(dic)
     dic = dic//('info'.kv.'k point weights')
     call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
-         atts = dic)
+        atts = dic)
 
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
 #else
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
-    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), &
-         atts = dic)
+    call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
+
+    dic = dic//('info'.kv.'Imaginary part for device')
+    call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+
     call delete(dic)
 
     call ncdf_put_var(ncdf,'pivot',r%r)
@@ -398,75 +408,91 @@ contains
     mem = mem + calc_mem(NF90_INT, btd%n)
     call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
-       call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
-       mem = mem + calc_mem(NF90_INT, a_Buf%n)
+      call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
+      mem = mem + calc_mem(NF90_INT, a_Buf%n)
     end if
 
     ! Save all k-points
     allocate(r2(3,nkpt))
     do i = 1 , nkpt
-       call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
+      call kpoint_convert(TSHS%cell,kpt(:,i),r2(:,i),1)
     end do
     call ncdf_put_var(ncdf,'kpt',r2)
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
     mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt)
 
+    call ncdf_put_var(ncdf,'eta',Eta)
+
     do iEl = 1 , N_Elec
 
-       call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
+      call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-       ! Save generic information about electrode
-       dic = dic//('info'.kv.'Bloch expansion')
-       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), &
-            atts = dic)
-       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+      ! Define atoms etc.
+      i = TotUsedAtoms(Elecs(iEl))
+      call ncdf_def_dim(grp,'na',i)
 
-       dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
-       call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
-            atts = dic)
-       call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
+      dic = dic//('info'.kv.'Electrode atoms')
+      call rgn_range(r_tmp, ELecs(iEl)%idx_a, ELecs(iEl)%idx_a + i - 1)
+      call ncdf_def_var(grp,'a',NF90_INT,(/'na'/), atts = dic)
+      call ncdf_put_var(grp,'a',r_tmp%r)
+       mem = mem + calc_mem(NF90_INT, r_tmp%n)
+      call rgn_delete(r_tmp)
+
+      call ncdf_def_dim(grp,'na_down',raEl(iEl)%n)
+      dic = dic//('info'.kv.'Electrode + downfolding atoms')
+      call ncdf_def_var(grp,'a_down',NF90_INT,(/'na_down'/), atts = dic)
+      call ncdf_put_var(grp,'a_down',raEl(iEl)%r)
+      mem = mem + calc_mem(NF90_INT, raEl(iEl)%n)
+      
+      ! Save generic information about electrode
+      dic = dic//('info'.kv.'Bloch expansion')
+      call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), atts = dic)
+      call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+
+      dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
+      call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
 
 #ifdef TBT_PHONON
-       dic = dic//('info'.kv.'Phonon temperature')
+      dic = dic//('info'.kv.'Phonon temperature')
 #else
-       dic = dic//('info'.kv.'Electronic temperature')
+      dic = dic//('info'.kv.'Electronic temperature')
 #endif
-       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
-            atts = dic)
-       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
-       
-       dic = dic//('info'.kv.'Imaginary part of self-energy')
-       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
-       
-       dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
-       call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
-       call delete(dic)
+      call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
-       no_e = Elecs(iEl)%o_inD%n
-       call ncdf_def_dim(grp,'no_e',no_e)
+      dic = dic//('info'.kv.'Imaginary part of self-energy')
+      call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
-       dic = ('info'.kv.'Orbital pivot table for self-energy')
-       call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
-       
-       dic = dic//('info'.kv.'Downfolded self-energy')
-       dic = dic//('unit'.kv.'Ry')
-       ! Chunking greatly reduces IO cost
-       call ncdf_def_var(grp,'SelfEnergy', prec_Sigma, &
-            (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
-            atts = dic , chunks = (/no_e,no_e,1,1/) )
-       call delete(dic)
+      dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
+      call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
+      call delete(dic)
 
-       call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
-       call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
-       call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
+      no_e = Elecs(iEl)%o_inD%n
+      call ncdf_def_dim(grp,'no_e',no_e)
 
-       mem = mem + calc_mem(NF90_INT, no_e)
-       if ( prec_Sigma ) then
-         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt) * 2
-       else
-         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt)
-       end if
+      dic = ('info'.kv.'Orbital pivot table for self-energy')
+      call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
+
+      dic = dic//('info'.kv.'Downfolded self-energy')
+      dic = dic//('unit'.kv.'Ry')
+      ! Chunking greatly reduces IO cost
+      call ncdf_def_var(grp,'SelfEnergy', prec_Sigma, &
+          (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
+          atts = dic , chunks = (/no_e,no_e,1,1/) )
+      call delete(dic)
+
+      call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
+      call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
+      call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
+
+      mem = mem + calc_mem(NF90_INT, no_e)
+      if ( prec_Sigma ) then
+        mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt) * 2
+      else
+        mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt)
+      end if
 
     end do
 

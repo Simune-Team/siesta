@@ -951,7 +951,7 @@ libraries
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_FLOOK}
   
-  See \program{Tests/h2o\_lua} for an example on the LUA interface.
+  See \program{Tests/h2o\_lua}\index{Tests} for an example on the LUA interface.
 
   To easily install \program{flook} please see the installation file:
   \shell{Docs/install\_flook.bash}.
@@ -3396,15 +3396,56 @@ See the ``Forces'' option in \fdf{MD!TypeOfRun}. Note that
 
 
 \subsection{\texorpdfstring{$k$}{k}-point sampling}
+\label{ssec:k-points}
 
-These are options for the k-point grid used in the SCF cycle. For
-other specialized grids, see the Macroscopic Polarization and Density
-of States sections.
+These are options for the $k$-point grid used in the SCF cycle. For
+other specialized grids, see Secs.~\ref{sec:macroscopic-polarization}
+and \ref{sec:dos}.
+
+\begin{fdfentry}{kgrid!MonkhorstPack}[block/list]<$\Gamma$-point>
+  
+  Real-space supercell, whose reciprocal unit cell is that of the
+  k-sampling grid, and grid displacement for each grid coordinate.
+  Specified as an integer matrix and a real vector:
+
+  \begin{fdfexample}
+     %block kgrid.MonkhorstPack
+        Mk(1,1)  Mk(2,1)  Mk(3,1)   dk(1)
+        Mk(1,2)  Mk(2,2)  Mk(3,2)   dk(2)
+        Mk(1,3)  Mk(2,3)  Mk(3,3)   dk(3)
+     %endblock
+     kgrid.MonkhorstPack [Mk(1,1) Mk(2,2) Mk(3,3)]
+  \end{fdfexample}
+  
+  where \texttt{Mk(j,i)} are integers and \texttt{dk(i)} are usually
+  either 0.0 or 0.5 (the program will warn the user if the displacements
+  chosen are not optimal).
+  The k-grid supercell is defined from \texttt{Mk}
+  as in block \fdf{SuperCell} above, i.e.:
+  $KgridSuperCell(ix,i) = \sum_j CELL(ix,j)*Mk(j,i)$.
+  Note again that the matrix indexes are inverted: each input line
+  gives the decomposition of a supercell vector in terms of the unit
+  cell vectors.
+  
+  
+  \textit{Use:} Used only if \fdf{SolutionMethod} \fdf*{diagon}.  The
+  k-grid supercell is compatible and unrelated (except for the default
+  value, see below) with the \fdf{SuperCell} specifier. Both
+  supercells are given in terms of the CELL specified by the
+  \fdf{LatticeVectors} block.  If \texttt{Mk} is the identity matrix
+  and \texttt{dk} is zero, only the $\Gamma$ point of the
+  \textbf{unit} cell is used.  Overrides \fdf{kgrid!Cutoff}.
+
+  One may also use the \emph{list} input (last line in above example),
+  in that case the block input must not be present and in this case
+  the displacement vector cannot be selected.
+
+\end{fdfentry}
 
 \begin{fdfentry}{kgrid!Cutoff}[length]<$0.\,\mathrm{Bohr}$>
 
-  Parameter which determines the fineness of the k-grid used for
-  Brillouin zone sampling.  It is half the length of the smallest
+  Parameter which determines the fineness of the $k$-grid used for
+  Brillouin zone sampling. It is half the length of the smallest
   lattice vector of the supercell required to obtain the same sampling
   precision with a single k point.  Ref: Moreno and Soler, PRB 45,
   13891 (1992).
@@ -3429,38 +3470,28 @@ of States sections.
   
 \end{fdfentry}
 
-\begin{fdfentry}{kgrid!MonkhorstPack}[block]<$\Gamma$-point>
-  
-  Real-space supercell, whose reciprocal unit cell is that of the
-  k-sampling grid, and grid displacement for each grid coordinate.
-  Specified as an integer matrix and a real vector:
+\begin{fdfentry}{kgrid!File}[string]<none>
 
-  \begin{fdfexample}
-     %block kgrid.MonkhorstPack
-        Mk(1,1)  Mk(2,1)  Mk(3,1)   dk(1)
-        Mk(1,2)  Mk(2,2)  Mk(3,2)   dk(2)
-        Mk(1,3)  Mk(2,3)  Mk(3,3)   dk(3)
-     %endblock
-  \end{fdfexample}
-  
-  where \texttt{Mk(j,i)} are integers and \texttt{dk(i)} are usually
-  either 0.0 or 0.5 (the program will warn the user if the displacements
-  chosen are not optimal).
-  The k-grid supercell is defined from \texttt{Mk}
-  as in block \fdf{SuperCell} above, i.e.:
-  $KgridSuperCell(ix,i) = \sum_j CELL(ix,j)*Mk(j,i)$.
-  Note again that the matrix indexes are inverted: each input line
-  gives the decomposition of a supercell vector in terms of the unit
-  cell vectors.
-  
-  
-  \textit{Use:} Used only if \fdf{SolutionMethod} \fdf*{diagon}.  The
-  k-grid supercell is compatible and unrelated (except for the default
-  value, see below) with the \fdf{SuperCell} specifier. Both
-  supercells are given in terms of the CELL specified by the
-  \fdf{LatticeVectors} block.  If \texttt{Mk} is the identity matrix
-  and \texttt{dk} is zero, only the $\Gamma$ point of the
-  \textbf{unit} cell is used.  Overrides \fdf{kgrid!Cutoff}
+  Specify a file from where the $k$-points are read in.  The format of
+  the file is identical to the \sysfile{KP} file with the exception
+  that the $k$-points are given in units of the reciprocal lattice
+  vectors. I.e. the range of the $k$-points are $]-1/2 ; 1/2]$.
+
+  An example input may be (not physically justified in any sense):
+  \begin{shellexample}
+    4
+    1 0.0 0.0 0.0 0.25
+    2 0.5 0.5 0.5 0.25
+    3 0.2 0.2 0.2 0.25
+    4 0.3 0.3 0.3 0.25
+  \end{shellexample}
+  The first integer specifies the total number of $k$-points in the
+  file.  The first column is an index; the next 3 columns are the
+  $k$-point specification for each of the reciprocal lattice vectors
+  while the fifth column is the weight for the $k$-point.
+
+  \siesta\ checks whether the sum of weights equals 1. If not,
+  \siesta\ will die.
 
 \end{fdfentry}
 
@@ -3870,8 +3901,8 @@ general, one can say that a good calculation will have high number of
 \fdf{SCF.H!Tolerance} and high values of \fdf{MeshCutoff}.  We
 encourage the user to test carefully these options for each system. An
 additional point to take into account is the mixing scheme
-employed. You are encouraged to use \fdf{SCF.Mix:hamiltonian}
-(currently is set up by default) instead of density matrix mixing,
+employed. You are encouraged to use \fdf{SCF.Mix:Hamiltonian}
+(currently this is the default) instead of density matrix mixing,
 since it speeds up the convergence.  The pseudopotentials have to be
 properly generated and tested for each specific system and they have
 to be in their fully relativistic form, together with the non-linear
@@ -3906,7 +3937,35 @@ could still be difficult.
 
 \end{fdflogicalF}
 
+\begin{fdflogicalT}{SOC.Split.SR.SO}
 
+  In calculations with spin-orbit-coupling (SOC) the program carries
+  out a splitting of the contributions to the Hamiltonian and energies
+  into scalar-relativistic (SR) and spin-orbit (SO) parts. The
+  splitting procedure for the off-site flavor of SOC (involving full
+  lj projectors) can sometimes be ill-defined, and in those cases the
+  program relies on a heuristic to compute the two contributions. A
+  warning is printed.
+  
+  If this option is set to \fdffalse, it will prevent the program from
+  attempting the splitting (but it still will be able to detect a
+  possible problem and report an informational message).
+  
+  For the onsite flavor of SOC this problem does not appear, but the
+  option is also available for generality.
+  
+  When the SO contribution is not split, the relevant energy
+  contributions in the output file are tagged 
+  \code{Enl(+so)} and \code{Eso(nil)}.
+  
+  The CML file is not thus changed (but there is a new parameter
+  \code{Split-SR-SO}).
+  
+  Note that this is only a cosmetic change affecting the reporting of
+  some components of the energy. All the other results should be
+  unchanged.
+
+\end{fdflogicalT}
 
 \subsection{The self-consistent-field loop}
 
@@ -3970,6 +4029,7 @@ The current version introduces several changes:
   end of the SCF cycle. Thus it is still possible to use a ``mixed''
   DM for restarting an interrupted loop, but a ``good'' DM will be
   used for any other post-processing.
+
 
 \end{itemize}
 
@@ -4039,14 +4099,17 @@ by potentially saving many self-consistency steps in production runs.
 
   \begin{fdfoptions}
     \option[Hamiltonian]%
+    \fdfindex*{SCF.Mix:Hamiltonian}%
     \index{SCF!mixing!Hamiltonian}
     Mix the Hamiltonian matrix (default).
 
     \option[density]%
+    \fdfindex*{SCF.Mix:density}%
     \index{SCF!mixing!Density}
     Mix the density matrix.
 
     \option[charge]%
+    \fdfindex*{SCF.Mix:charge}%
     \index{SCF!mixing!Charge}
     Mix the real-space charge density. Note this is an experimental
     feature.
@@ -4971,7 +5034,7 @@ the DIIS history. There is no provision yet for any other kind of
 
 NOTE: The conditions and options for density-matrix re-use are quite
 varied and not completely orthogonal at this point. For further
-information, see routine \texttt{Src/m\_new\_dm.F}. What follows is a
+information, see routine \file{Src/m\_new\_dm.F}. What follows is a
 summary.
 
 The Density matrix can be:
@@ -5826,33 +5889,63 @@ When using k-points, this auxiliary supercell is needed to compute properly
 the matrix elements involving orbitals in different unit cells.
 It is computed automatically by the program at every geometry step.
 
-\begin{fdflogicalF}{FixAuxiliaryCell}
-  
-  Logical variable to control whether the auxiliary cell is changed
-  during a variable cell optimization.
+Note that for gamma-point-only calculations there is an implicit
+``folding'' of matrix elements corresponding to the images of orbitals
+outside the unit cell. If information about the specific values of
+these matrix elements is needed (as for COOP/COHP analysis), one has
+to make sure that the unit cell is large enough, or force the use
+of an aunxiliary supercell.
+\index{COOP/COHP curves!Folding in Gamma-point calculations}
+ 
+\begin{fdflogicalF}{ForceAuxCell}
+
+If \fdftrue, the program uses an auxiliary cell even for gamma-point-only
+calculations. This might be needed for COOP/COHP calculations, as
+noted above, \index{COOP/COHP curves!Folding in Gamma-point
+  calculations} or in degenerate cases, such as when the cell is so
+small that a given orbital ``self-interacts'' with its own images (via
+direct overlap or through a KB projector). In this case, the diagonal
+value of the overlap matrix S for this orbital is different from 1, and an
+initialization of the DM via atomic data would be faulty. The
+program corrects the problem to zeroth-order by dividing the DM value
+by the corresponding overlap matrix entry, but the initial charge
+density would exhibit distortions from a true atomic superposition
+(See routine \file{m\_new\_dm.F}). The distortion of the charge density
+is a serious problem for Harris functional calculations, so this
+option must be enabled for them if self-folding is present. (Note that
+this should not happen in any serious calculation...)
 
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{NaiveAuxiliaryCell}
-  
-  If \fdftrue, the program does not check whether the auxiliary cell
-  constructed with a naive algorithm is appropriate. This variable is
-  only useful if one wishes to reproduce calculations done with
-  previous versions of the program in which the auxiliary cell was not
-  large enough, as indicated by warnings such as:
+\begin{fdfentry}{NaiveAuxiliaryCell}[logical]<\fdfvalue{MD.TypeOfRun}>
 
-  \texttt{WARNING: orbital pair 1 341 is multiply connected}
+  The auxiliary supercell needed can be determined using the atomic positions,
+  the orbital extent and the lattice parameters. For a fixed geometry
+  configuration the tightest auxiliary supercell is uniquely defined. However,
+  when performing MD simulations (or relaxations) the displacement of
+  certain atoms may result in changes to the required auxiliary
+  supercell, thus inhibiting re-use of DM information across geometry steps.
+  When this is option is \fdftrue\ the auxiliary supercell will be computed
+  with a simpler algorithm using only the orbital extent (fixed for \emph{any}
+  calculation) and the lattice vectors. The resulting supercell might
+  be larger than strictly needed, but it will remain mostly constant
+  during the run (even when the \fdf{MD.VariableCell} option is used,
+  if the lattice changes are moderate).
 
-  Only small numerical differences in the results are to be expected.
-  
-  Note that for gamma-point-only calculations there is an implicit
-  ``folding'' of matrix elements corresponding to the images of orbitals
-  outside the unit cell. If information about the specific values of
-  these matrix elements is needed (as for COOP/COHP analysis), one has
-  to make sure that the unit cell is large enough.  
-  \index{COOP/COHP curves!Folding in Gamma-point calculations}
+  By default this will be \fdffalse\ when performing single-point calculations
+  (\fdf{MD.TypeOfRun:CG} with \fdf{MD.NumCGsteps:1} or below). Otherwise
+  this will default to \fdftrue.
 
-\end{fdflogicalF}
+  \note one may try to set this to \fdffalse\ for better performance,
+  at the risk of inhibiting the re-use of DM information.
+
+  \note this option may made obsolete in later versions when a
+  supercell conversion routine is in place.
+
+  \note the name of the option reflects historical usage.
+
+\end{fdfentry}
+
 
 
 \subsection{Calculation of the electronic structure}
@@ -7556,39 +7649,69 @@ The \program{readwf}\index{readwf} and
 
 
 
-\subsection{Densities of states}
+\subsection{Density of states}
+\label{sec:dos}
 
 \subsubsection{Total density of states}
 There are several options to obtain the
 total density of states:
 \begin{itemize}
-\index{output!eigenvalues}
-\item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
-dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
-but without the kmin, kmax, emin, emax information, and without
-the abscissa. The \program{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}}
-postprocessing utility can be then used to obtain the density of
-states.\index{density of states}
-See the \fdf{WriteEigenvalues} descriptor.
-%
-\item As a side-product of a partial-density-of-states calculation
+  \index{output!eigenvalues}
+  
+  \item The Hamiltonian eigenvalues for the SCF sampling $\vec k$ points can be
+  dumped into \sysfile{EIG} in a format analogous to SystemLabel.bands,
+  but without the kmin, kmax, emin, emax information, and without
+  the abscissa. The \program{Eig2DOS}\index{Eig2DOS@\textsc{Eig2DOS}}
+  postprocessing utility can be then used to obtain the density of
+  states.\index{density of states}
+  See the \fdf{WriteEigenvalues} descriptor.
+
+  \item As a side-product of a partial-density-of-states calculation
   (see below)
-\item As one of the files produced by the \program{Util/COOP/mprop} during
+
+  \item As one of the files produced by the \program{Util/COOP/mprop} during
   the off-line analysis of the electronic structure. This method
   allows the flexibility of specifying energy ranges and resolutions
   at will, without re-running \siesta\ See Sec.~\ref{sec:coop}.
-\item Using the inertia-counting routines in the PEXSI solver (see Sec.~\ref{pexsi-dos}).
+
+  \item Using the inertia-counting routines in the PEXSI solver (see
+  Sec.~\ref{pexsi-dos}).
+  
 \end{itemize}
+
+The k-point specification for the partial and local density of states
+calculations described in the following two sections may optionally be
+given by 
+
+\begin{fdfentry}{DOS.kgrid.?}<kgrid.?>
+
+  The generic DOS k-grid specification.
+
+  See Sec.~\ref{ssec:k-points} for details. If \emph{any} of
+  \fdf*{DOS.kgrid.MonkhorstPack}, \fdf*{DOS.kgrid.Cutoff} or
+  \fdf*{DOS.kgrid.File} is present, they will be used, otherwise fall
+  back to the SCF k-point sampling (\fdf*{kgrid.?}).
+
+  \note \fdf{DOS.kgrid.?} options are the default values for
+  \fdf{ProjectedDensityOfStates} and \fdf{LocalDensityOfStates}, but
+  they do not affect the sampling used to generate the \sysfile{EIG}
+  file. This feature might be implemented in a later version.
+
+\end{fdfentry}
+
 
 \subsubsection{Partial (projected) density of states}
 
 There are two options to obtain the partial density of states
 \begin{itemize}
-\item Using the options below
-\item Using the \program{Util/COOP/mprop} program for the off-line analysis of
+  
+  \item Using the options below
+  
+  \item Using the \program{Util/COOP/mprop} program for the off-line analysis of
   the electronic structure in PDOS mode. This method allows the
   flexibility of specifying energy ranges, orbitals, and resolutions
   at will, without re-running \siesta. See Sec.~\ref{sec:coop}.
+  
 \end{itemize}
 
 \begin{fdfentry}{ProjectedDensityOfStates}[block]
@@ -7607,17 +7730,21 @@ There are two options to obtain the partial density of states
         -20.00  10.00  0.200  500  eV
      %endblock ProjectedDensityOfStates
   \end{fdfexample}
+  Optionally one may start the line with \shell{EF} as this:
+  \begin{fdfexample}
+     %block ProjectedDensityOfStates
+        EF -20.00  10.00  0.200  500  eV
+     %endblock ProjectedDensityOfStates
+  \end{fdfexample}
+  This specifies the energies with respect to the Fermi-level.    
 
   By default the projected density of states is generated for the same
   grid of points in reciprocal space as used for the SCF calculation.
   However, a separate set of K-points, usually on a finer grid, can be
-  generated using one of the options \fdf{PDOS.kgrid.Cutoff} or
-  \fdf{PDOS.kgrid.MonkhorstPack}. The format of these options is
-  exactly the same as for \fdf{kgrid.Cutoff} and
-  \fdf{kgrid.MonkhorstPack}, respectively. Note that if a gamma
-  point calculation is being used in the SCF part, especially as part
-  of a geometry optimisation, and this is then to be run with a grid
-  of K-points for the PDOS calculation it is more efficient to run the
+  generated by using \fdf{PDOS.kgrid.?} Note that if a gamma point
+  calculation is being used in the SCF part, especially as part of a
+  geometry optimisation, and this is then to be run with a grid of
+  K-points for the PDOS calculation it is more efficient to run the
   SCF phase first and then restart to perform the PDOS evaluation
   using the density matrix saved from the SCF phase.
 
@@ -7647,6 +7774,18 @@ There are two options to obtain the partial density of states
 
 \end{fdfentry}
 
+\begin{fdfentry}{PDOS.kgrid.?}<\fdfvalue{DOS.kgrid.?}>
+
+  This is PDOS only specification for the k-points. I.e. if one wishes
+  to use a specific k-point sampling. These options are equivalent to
+  the \fdf{kgrid!Cutoff}, \fdf{kgrid!MonkhorstPack} and
+  \fdf{kgrid!File} options. Refer to them for additional details.
+
+  If \fdf{PDOS.kgrid.?} does not exist, then \fdf{DOS.kgrid.?} is
+  checked, and if that does not exist then \fdf*{kgrid.?} options are
+  used.
+
+\end{fdfentry}
 
 
 \subsubsection{Local density of states}
@@ -7674,8 +7813,33 @@ obtain simple STM images in the Tersoff-Hamann approximation (See
      %endblock LocalDensityOfStates
   \end{fdfexample}
 
+  One may optionally write \shell{EF} as the first word to specify that
+  the energies are with respect to the Fermi level
+  \begin{fdfexample}
+     %block LocalDensityOfStates
+       EF -3.50  0.00   eV
+     %endblock LocalDensityOfStates
+  \end{fdfexample}
+  would calculate the LDOS from $-3.5\,\mathrm{eV}$ below the
+  Fermi-level up to the Fermi-level.
+
+  One may use \fdf{LDOS.kgrid.?} to fine-tune the k-point sampling in
+  the LDOS calculation.
+  
   \note the two energies of the range must be ordered, with lowest
   first.
+
+\end{fdfentry}
+
+\begin{fdfentry}{LDOS.kgrid.?}<\fdfvalue{DOS.kgrid.?}>
+
+  This is LDOS only specification for the k-points. I.e. if one wishes
+  to use a specific k-point sampling. These options are equivalent to
+  the \fdf{kgrid!Cutoff}, \fdf{kgrid!MonkhorstPack} and
+  \fdf{kgrid!File} options. Refer to them for additional details.
+
+  If \fdf{LDOS.kgrid.?} does not exist, then \fdf{DOS.kgrid.?} is
+  checked, if that does not exist then \fdf*{kgrid.?} are used.
 
 \end{fdfentry}
 
@@ -7999,7 +8163,7 @@ References:
 
 
 \subsection{Macroscopic polarization}
-
+\label{sec:macroscopic-polarization}
 
 \begin{fdfentry}{PolarizationGrids}[block]
   \index{bulk polarization}%
@@ -8358,7 +8522,7 @@ or interpolation of bands), can be downloaded from
   to simulate properly doped systems in which there are large portions
   of vacuum, such as doped slabs.
 
-  (See \texttt{Tests/sic-slab})
+  See \shell{Tests/sic-slab}.
 
 \end{fdflogicalF}
 
@@ -8404,7 +8568,7 @@ or interpolation of bands), can be downloaded from
   \fdf{SCF.Mix!First}\index{Slab dipole correction} option to request a mix of the input and
   output density matrices after that first iteration.
 
-  (See \texttt{Tests/sic-slab})
+  See \shell{Tests/sic-slab}.
 
   This will default to \fdftrue\ if an external field is applied to a
   slab calculation, otherwise it will default to \fdffalse.
@@ -8725,6 +8889,9 @@ an alternative way to plot the charge density (and wavefunctions).
   \textit{Use:} File \sysfile*{TOCH} is only written, not read, by
   siesta.
 
+  If netCDF support is compiled in, the file
+  \file{TotalCharge.grid.nc} is produced. 
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{SaveBaderCharge}
@@ -8790,9 +8957,9 @@ an alternative way to plot the charge density (and wavefunctions).
   normalized. All the relevant fdf options for charge-density file
   production and partial charge calculation can be used with this option.
 
-  \end{fdflogicalF}
+\end{fdflogicalF}
 
-  \begin{fdflogicalF}{SaveInitialChargeDensity}
+\begin{fdflogicalF}{SaveInitialChargeDensity}
   \index{output!charge density}
 
   If \fdftrue, the program generates a \sysfile{RHOINIT}
@@ -10531,18 +10698,20 @@ self-consistency. This constitutes the first run.
 
 \begin{fdfentry}{MD.TypeOfRun}[string]<TDED>
 
-A new Molecular Dynamics option, \fdf{TDED}, has been
-included. The second run of \siesta\ uses this option with the files
-\sysfile{TDWF} and \sysfile{TDXV} present in the working directory.  In this option ions
-and electrons are assumed to move simultaneously.  The occupied
-electronic states are time-evolved instead of the usual SCF
-calculations in each step.  Choose this option even if you intend to
-do only-electron dynamics. If you want to do an electron dynamics-only
-calculation set \fdf{MD.FinalTimeStep} equal to $1$. For optical
-response calculations switch off the external field during the second
-run. The \fdf{MD.LengthTimeStep}, unlike in the standard MD simulation,
-is defined by mulitpilication of \fdf{TDED.TimeStep} and \fdf{TDED.Nsteps}.
-In TDDFT calculations, the user defined \fdf{MD.LengthTimeStep} is ignored.
+  A new Molecular Dynamics option, \fdf{TDED}, has been included. The
+  second run of \siesta\ uses this option with the files
+  \sysfile{TDWF} and \sysfile{TDXV} present in the working directory.
+  In this option ions and electrons are assumed to move
+  simultaneously. The occupied electronic states are time-evolved
+  instead of the usual SCF calculations in each step.  Choose this
+  option even if you intend to do only-electron dynamics. If you want
+  to do an electron dynamics-only calculation set
+  \fdf{MD.FinalTimeStep} equal to $1$. For optical response
+  calculations switch off the external field during the second
+  run. The \fdf{MD.LengthTimeStep}, unlike in the standard MD
+  simulation, is defined by mulitpilication of \fdf{TDED.TimeStep} and
+  \fdf{TDED.Nsteps}. In TDDFT calculations, the user defined
+  \fdf{MD.LengthTimeStep} is ignored.
 
 \end{fdfentry}
 
@@ -11053,15 +11222,21 @@ single nearest neighbor cell in the semi-infinite direction (the size
 of the unit cell can thus be derived from the range of support for the
 orbital basis functions). \tsiesta\ will stop if this is not
 enforced. The electrodes are generated by a separate \tsiesta\ run on
-a bulk system. The results are saved in a file with extension
-\sysfile{TSHS} which contains a description of the electrode unit
-cell, the position of the atoms within the unit cell, as well as the
-Hamiltonian and overlap matrices that describe the electronic
-structure of the lead. One can generate a variety of electrodes and
-the typical use of \tsiesta\ would involve reusing the same electrode
-for several setups. At runtime, the \tsiesta\ coordinates are checked
-against the electrode coordinates and the program stops if there is a
-mismatch to a certain precision ($10^{-4}\,\mathrm{Bohr}$).
+a bulk system. This implies that the proper bulk properties are
+obtained by a sufficiently high $k$-point sampling. If in doubt, use
+100 $k$-points along the semi-infinite direction. The results are
+saved in a file with extension \sysfile{TSHS} which contains a
+description of the electrode unit cell, the position of the atoms
+within the unit cell, as well as the Hamiltonian and overlap matrices
+that describe the electronic structure of the lead. One can generate a
+variety of electrodes and the typical use of \tsiesta\ would involve
+reusing the same electrode for several setups. At runtime, the
+\tsiesta\ coordinates are checked against the electrode coordinates
+and the program stops if there is a mismatch to a certain precision
+($10^{-4}\,\mathrm{Bohr}$). Note that the atomic coordinates are
+compared relatively. Hence the \emph{input} atomic coordinates of the
+electrode and the device need not be the same (see e.g. the tests in
+the \shell{Tests}\index{Tests} directory.
 
 To run an electrode calculation one should do:
 \begin{shellexample}
@@ -11465,8 +11640,11 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   \siesta. Upon exit it will also create the \sysfile{TSDE} file which
   may be used for initialization runs later.
 
-  This is mainly intended for test runs where one wishes to start
-  several calculations from the same initial density matrix.
+  This may be used to start several calculations from the same initial
+  density matrix, and it may also be used to rescale the Fermi level
+  of electrodes. The rescaling is primarily used for semi-conductors
+  where the Fermi levels of the device and electrodes may be
+  misaligned. 
 
 \end{fdflogicalF}
 
@@ -11526,6 +11704,34 @@ TS.BTD.Pivot atom+GGPS
   to be post-processed in Graphviz\footnote{\url{www.graphviz.org}}.
   
 \end{fdflogicalF}
+
+\subsection{\texorpdfstring{$k$}{k}-point sampling}
+
+The options for $k$-point sampling are identical to the \siesta\
+options, \fdf{kgrid!MonkhorstPack}, \fdf{kgrid!Cutoff} or
+\fdf{kgrid!File}.
+
+One may however use specific \tsiesta\ $k$-points by using these
+options:
+
+\begin{fdfentry}{TS.kgrid!MonkhorstPack}[block]<\fdfvalue{kgrid!MonkhorstPack}>%
+
+  See \fdf{kgrid!MonkhorstPack} for details.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS.kgrid!Cutoff}[length]<$0.\,\mathrm{Bohr}$>
+
+  See \fdf{kgrid!Cutoff} for details.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS.kgrid!File}[string]<none>
+
+  See \fdf{kgrid!File} for details.
+  
+\end{fdfentry}
+
 
 \subsubsection{Algorithm specific options}
 
@@ -11798,6 +12004,17 @@ variables:
   \note this is an experimental feature!
 
 \end{fdfentry}
+
+\begin{fdfentry}{TS!Hartree.Offset}[energy]<$0\,\mathrm{eV}$>
+
+  An offset in the Hartree potential to match the electrode potential.
+
+  This value may be useful in certain cases where the Hartree
+  potentials are very different between the electrode and device
+  region calculations.
+
+\end{fdfentry}
+
 
 \begin{fdfentry}{TS!Elec.<>!Hartree.Extend}[length]<$0.\,\mathrm{Ang}$>
   \fdfdepend{TS!Poisson:ramp-central,TS!Poisson:ramp-cell}
@@ -12077,8 +12294,10 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   electrode. This may be set to \fdf*{bulk} to forcefully set the bulk
   values.
 
-  \note this should only be set to \fdf*{bulk} for equilibrium
-  calculations. 
+  \note this will automatically be set to \fdf*{diagon} for
+  non-equilibrium calculations. If bulk density matrix elements are
+  wanted in the electrodes it is vital to have this option set to
+  \fdf*{bulk} when performing the equilibrium calculation.
   
 \end{fdfentry}
 
@@ -12568,7 +12787,7 @@ device region. Note how repeating has different order of tiling.
   \sysfile{TSDE}. This file also contains geometry information
   etc. needed by \tsiesta\ and \tbtrans.
 
-  \item[\sysfile{TSKP}]: The $k$-points used in the \tsiesta\ calculation. See
+  \item[\sysfile{TS.KP}]: The $k$-points used in the \tsiesta\ calculation. See
   \siesta\ \sysfile{KP} file for formatting information.
 
   \item[\sysfile{TSCCEQ*}]: The equilibrium complex contour integration paths.

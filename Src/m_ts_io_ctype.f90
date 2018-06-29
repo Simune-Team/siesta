@@ -264,6 +264,7 @@ contains
 
     character(len=c_N) :: opt, val
     integer :: iS, iE
+    logical :: is_file
     
     ! if the block does not exist, return
     if ( .not. ts_exists_contour_block(prefix,suffix,bName,bfdf=bfdf) ) then
@@ -277,7 +278,7 @@ contains
     c%name = trim(bName)
     
     ! We must ensure the block be organized as this:
-    !  part circle|line|tail
+    !  part circle|line|tail|user
     !  from <a> to <b> 
     !    points <N> / separation <d>
     !      method <method>
@@ -312,8 +313,10 @@ contains
        c%part = 'line'
     else if ( leqi(c%part,'tail') ) then
        c%part = 'tail'
+    else if ( leqi(c%part,'user') ) then
+       c%part = 'user'
     else
-       call die('Part of the contour could not be recognized as circle|square|line|tail')
+       call die('Part of the contour could not be recognized as circle|square|line|tail|user')
     end if
    
 
@@ -361,17 +364,30 @@ contains
     end if
     
     ! we now read the points or separation
+    is_file = .false.
     iS = search_fun('points',pline)
     if ( iS < 0 ) iS = search_fun('p',pline)
     iE = search_fun('delta',pline)
-    if ( iE < 0 ) iE = search_fun('sep',pline)
+    if ( iE < 0 ) iE = search_fun('d',pline)
     if ( iS < 0 .and. iE < 0 ) then
-       call die('Block: '//trim(bName)//' is not build correctly. &
-            &Could not decipher points/delta/separation')
+      iS = search_fun('file',pline)
+      if ( iS < 0 ) iS = search_fun('user',pline)
+      if ( iS < 0 ) then
+        call die('Block: '//trim(bName)//' is not build correctly. &
+            &Could not decipher points/delta/file')
+      end if
+      is_file = .true.
     end if
     
     ! if we have points we simply read in the number
-    if ( 0 <= iS ) then
+    if ( is_file ) then
+      
+      ! The file contains all the relevant information.
+      c%cN = fdf_bnames(pline, 2) ! file name
+      c%method = 'user' ! user-defined method
+      c%N = file_energy_points(c%cN) ! read number of energy points
+
+    else if ( 0 <= iS ) then
        c%N  = fdf_bintegers(pline,1,after=iS) ! first integer
        c%cN = characters(pline,1,-1,after=iS)
        if ( c%N < 1 ) then
@@ -397,17 +413,30 @@ contains
     ! } "points"
 
     ! { "method <method>"
-    if ( .not. move2names() ) then
-       call die('Block: '//trim(bName)//'. &
-            &Could not find method <method> segment in contour')
-    end if
-    if ( fdf_bnnames(pline) < 2 ) then
-       call die('Block: '//trim(bName)//' has not described the method properly. &
-            &Must have method <method>')
-    end if
+    if ( move2names() ) then
+      val = fdf_bnames(pline, 1)
+      if ( leqi(val, 'method') ) then
+        if ( fdf_bnnames(pline) < 2 ) then
+          call die('Block: '//trim(bName)//' has not described the method properly. &
+              &Must have method <method>')
+        end if
 
-    ! the method should be a one-name thing
-    c%method = fdf_bnames(pline,2)
+        ! the method should be a one-name thing
+        c%method = fdf_bnames(pline,2)
+        
+      else if ( .not. is_file ) then
+        ! The method segment has not been found.
+        ! Error out
+        call die('Block: '//trim(bName)//'. &
+            &Could not find method <method> segment in contour')
+      else if ( is_file ) then
+        ! The name is most probably an option, step back in the block
+        if ( .not. fdf_bbackspace(bfdf) ) then
+          call die('Block: '//trim(bName)//' parsing went wrong!')
+        end if
+      end if
+    end if
+    if ( is_file ) c%method = 'user'
 
     ! } "method"
 
@@ -432,7 +461,43 @@ contains
     end do
     ! } "opt"
     
-  contains 
+  contains
+
+    function file_energy_points(file) result(ne)
+      use m_io, only: io_assign, io_close
+      
+      character(len=*), intent(in) :: file
+      integer :: iu
+      character(len=256) :: line
+      integer :: ne, iostat
+      logical :: exist
+
+      call io_assign(iu)
+
+      ! Open the contour file
+      inquire(file=trim(file), exist=exist)
+      if ( .not. exist ) then
+        call die('Block: '//trim(bName)//' requested an external contour file. &
+            &The file: '//trim(file)//' could not be found!')
+      end if
+
+      ! Open the file
+      open(iu, file=trim(file), form='formatted', status='old')
+
+      ne = 0
+      do
+        read(iu, '(a)', iostat=iostat) line
+        if ( iostat /= 0 ) exit
+        if ( len_trim(line) == 0 ) cycle
+        line = trim(adjustl(line))
+        if ( line(1:1) == '#' ) cycle
+        
+        ne = ne + 1
+      end do
+
+      call io_close(iu)
+      
+    end function file_energy_points
 
     function move2names() result(found)
       logical :: found
@@ -804,13 +869,17 @@ contains
       
     write(*,'(4a)') '   from ',trim(c%ca),' to ',trim(c%cb)
 
-    if ( len_trim(c%cd) /= 0 ) then
-       ! we have delta designation
-       write(*,'(t7,a,tr1,a)') 'delta', trim(c%cd)
-
+    ! Ensure we correctly get the user-definition
+    if ( c%method == 'user' ) then
+      write(*,'(t7,a,tr1,a)') 'file', trim(c%cN)
+      
+    else if ( len_trim(c%cd) /= 0 ) then
+      ! we have delta designation
+      write(*,'(t7,a,tr1,a)') 'delta', trim(c%cd)
+      
     else       
-       ! Print the number of points...
-       write(*,'(t7,a,tr1,i0)') 'points', c%N
+      ! Print the number of points...
+      write(*,'(t7,a,tr1,i0)') 'points', c%N
       
     end if
 
@@ -830,6 +899,7 @@ contains
     write(*,'(a,a)') '%endblock ',trim(name)
     
   end subroutine ts_print_contour_block
+
 
   ! *****
   ! This routine fixes the inputs for the contours according to those given by 

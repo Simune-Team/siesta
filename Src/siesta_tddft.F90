@@ -34,8 +34,7 @@ contains
     use m_energies,    only: Etot           ! Total energy
     use atomlist,      only: no_s, no_l, no_u, indxuo
     use m_spin,        only: nspin
-    use m_gamma
-    use Kpoint_grid,    only: nkpnt, kpoint, kweight
+    use kpoint_scf_m,    only: kpoint_scf
 
     use m_compute_energies, only: compute_energies
     use m_state_analysis, only: state_analysis
@@ -114,8 +113,8 @@ contains
     ! ms_scalapack_setup. Which is now implicit in changebasis. 
 
     if ( istep == 1 ) then
-       allocate(wavef_ms(nkpnt,nspin))
-       call iowavef('read',wavef_ms,no_u,nkpnt,nspin)
+       allocate(wavef_ms(kpoint_scf%N,nspin))
+       call iowavef('read',wavef_ms,no_u,kpoint_scf%N,nspin)
        IF (IONode) THEN
        write(6,'(a)') 'Computing DM from initial KS wavefunctions'
        END IF
@@ -127,7 +126,7 @@ contains
       ! The wavefunctions are saved after transforming into the current basis
       ! but before evolving them to future.This keeps the wavefunctions
       ! concurrent with atomic position.
-      if(fincoor .gt. 1) call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
+      if(fincoor .gt. 1) call iowavef('write',wavef_ms,no_u,kpoint_scf%N,nspin)
     end if
 
     do itded = 1 , ntded ! TDED loop
@@ -142,7 +141,7 @@ contains
 
        if (tdsavewf) then
          if (fincoor .eq. 1 .and. itded .eq. ntded) then
-           call iowavef('write',wavef_ms,no_u,nkpnt,nspin)
+           call iowavef('write',wavef_ms,no_u,kpoint_scf%N,nspin)
          endif
        end if
 
@@ -155,7 +154,7 @@ contains
        
        call compute_energies (itded)
        call write_tddft(totime, istep, itded, ntded, rstart_time, &
-            etot, eo, no_u,nspin,nkpnt)
+            etot, eo, no_u,nspin,kpoint_scf%N)
        
     end do ! TDED loop
     call compute_tdEdm (Escf)

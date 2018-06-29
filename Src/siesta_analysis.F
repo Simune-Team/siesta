@@ -15,7 +15,7 @@
 
       subroutine siesta_analysis( relaxd )
       USE band, only: nbk, bk, maxbk, bands
-      USE writewave, only: nwk, wfk, wwave
+      USE writewave, only: nwk, wfk, wwave, gamma_wavefunctions
       USE writewave, only: setup_wfs_list, wfs_filename
       USE m_ksvinit, only: nkpol, kpol, wgthpol
       use m_ksv
@@ -35,12 +35,11 @@
      &                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
       use atomlist, only: qtot
       use fdf
-      use writewave,    only: wwave
       use siesta_cml
       use files,        only : slabel
       use files,        only : filesOut_t   ! derived type for output file names
       use zmatrix,      only: lUseZmatrix, write_zmatrix
-      use Kpoint_grid
+      use kpoint_scf_m, only: kpoint_scf, gamma_scf
       use parallel, only: IOnode
       use parallel, only: SIESTA_worker
       use files,       only : label_length
@@ -52,7 +51,6 @@
       use m_dipol
       use m_eo
       use m_forces,          only: fa
-      use m_gamma 
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
@@ -275,7 +273,7 @@
         call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
      &              nwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     &              nwk, wfk, no_u, gamma, occtol )
+     &              gamma_wavefunctions, nwk, wfk, no_u, occtol )
       endif
 
 
@@ -286,16 +284,17 @@
         ! The user is responsible for using appropriate values.
         wfs_band_min = fdf_get("WFS.BandMin",1)
         wfs_band_max = fdf_get("WFS.BandMax",no_u)
-        call setup_wfs_list(nkpnt,no_u,wfs_band_min,wfs_band_max,
+        call setup_wfs_list(kpoint_scf%N,no_u,
+     &                      wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
      $                      use_energy_window=.true.)
          wfs_filename = trim(slabel)//".fullBZ.WFSX"
          if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
      $                           // trim(wfs_filename)
          call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
-     .        nkpnt,
+     .        kpoint_scf%N,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     .        nkpnt, kpoint, no_u, gamma, occtol)
+     .        gamma_scf, kpoint_scf%N, kpoint_scf%k, no_u, occtol)
       endif
 
 !     Compute bands
@@ -353,7 +352,7 @@
           if ( h_spin_dim <= 2 ) then
             write(6,'(/,a,/,a4,a3,a7)')
      &       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
-            do ik = 1,nkpnt
+            do ik = 1,kpoint_scf%N
               do ispin = 1,spinor_dim
                 write(6,'(i4,i3,10f7.2)')
      &            ik,ispin,(eo(io,ispin,ik)/eV,io=1,min(10,neigwanted))
@@ -363,7 +362,7 @@
             enddo
           else
             write(6,'(/,a)') 'siesta: Eigenvalues (eV):'
-            do ik = 1,nkpnt
+            do ik = 1,kpoint_scf%N
               write(6,'(a,i6)') 'ik =', ik
               write(6,'(10f7.2)')
      &          ((eo(io,ispin,ik)/eV,io=1,neigwanted),ispin=1,2)
@@ -376,8 +375,9 @@
       if (((isolve.eq.SOLVE_DIAGON).or.
      &     ((isolve.eq.SOLVE_MINIM).and.minim_calc_eigenvalues))
      &     .and.IOnode)
-     &     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,spinor_dim,
-     &     nkpnt,kpoint, kweight)
+     &    call ioeig(eo,ef,neigwanted,nspin,kpoint_scf%N,
+     &     no_u,spinor_dim,
+     &     kpoint_scf%N, kpoint_scf%k, kpoint_scf%w)
 
 
 !**   This uses H,S, and xa, as it diagonalizes them again

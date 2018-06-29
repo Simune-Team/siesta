@@ -34,14 +34,12 @@ MODULE siesta_options
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: dumpcharge    ! Write electron density?
   logical :: fire_mix      ! SCF mixing with FIRE method
-  logical :: fixauxcell    ! Keep the auxiliary supercell fixed?
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: init_anti_ferro ! Antiferro spin ordering in initdm?
   logical :: initdmaux     ! Re-initialize DM when auxiliary supercell changes?        
   logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
-  logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
@@ -101,6 +99,7 @@ MODULE siesta_options
   logical :: writic        ! Write the initial atomic ccordinates?
   logical :: varcel        ! Change unit cell during relaxation or dynamics?
   logical :: do_pdos       ! Compute the projected density of states?
+  logical :: do_ldos       ! Compute the local density of states?
   logical :: write_tshs_history ! Write the MD track of Hamiltonian and overlap matrices in transiesta format
   logical :: write_hs_history ! Write the MD track of Hamiltonian and overlap matrices
   logical :: writedm       ! Write file with density matrix?
@@ -128,6 +127,7 @@ MODULE siesta_options
   logical :: muldeb        ! Write Mulliken populations at every SCF step?
   logical :: spndeb        ! Write spin-polarization information at every SCF step?
   logical :: orbmoms       ! Write orbital moments?
+  logical :: split_sr_so   ! Cosmetic: split full lj NL energies into SR and SO parts
 
   ! Convergence options
   logical :: converge_FreeE   ! free Energy conv. to finish SCF iteration?
@@ -205,6 +205,9 @@ MODULE siesta_options
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
 
+  logical :: naive_aux_cell ! Control whether the auxiliary superc-cell will always be the maximal allowed cell size
+                            ! This will default to true for MD, FC and Lua controlled calculations since atoms may move
+  
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
   real(dp) :: charnet       ! Net electric charge

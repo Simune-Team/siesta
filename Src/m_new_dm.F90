@@ -157,7 +157,7 @@ contains
           DM_init = .true.
           read_DM = .false.
           if ( IONode ) then
-             write(*,"(a)") "DM history reset as supercell changed."
+             write(*,"(a)") "DM history reset as auxiliary supercell changed."
           end if
           call get_allowed_history_depth(n_depth)
           call new(DM_history, n_depth, "(reset DM history stack)")
@@ -240,52 +240,57 @@ contains
           end if
 
           if ( init_method == 0 ) then
-             ! We are starting from atomic-filled orbitals
-             ! We are now allowed to overwrite everything!
-             na_a = na_u
-             allocate(allowed_a(na_a))
-             do iElec = 1 , na_a
-                allowed_a(iElec) = iElec
-             end do
+            ! We are starting from atomic-filled orbitals
+            ! We are now allowed to overwrite everything (even buffer!)
+            na_a = na_u
+            allocate(allowed_a(na_a))
+            do iElec = 1 , na_a
+              allowed_a(iElec) = iElec
+            end do
           else
-             na_a = 0
-             do iElec = 1 , na_u
-                if ( .not. a_isDev(iElec) ) na_a = na_a + 1
-             end do
-             allocate(allowed_a(na_a))
-             na_a = 0 
-             do iElec = 1 , na_u
-                if ( .not. a_isDev(iElec) ) then
-                   na_a = na_a + 1
-                   allowed_a(na_a) = iElec
-                end if
-             end do
+            ! We will only overwrite elements in the electrodes
+            ! Not in buffer
+            na_a = 0
+            do iElec = 1 , na_u
+              if ( a_isElec(iElec) ) na_a = na_a + 1
+            end do
+            allocate(allowed_a(na_a))
+            na_a = 0 
+            do iElec = 1 , na_u
+              if ( a_isElec(iElec) ) then
+                na_a = na_a + 1
+                allowed_a(na_a) = iElec
+              end if
+            end do
           end if
 
           do iElec = 1 , N_Elec
 
-             if ( IONode ) then
-                write(*,'(/,a)') 'transiesta: Reading in electrode TSDE for '//&
-                     trim(Elecs(iElec)%Name)
-             end if
-
-             ! Copy over the DM in the lead
-             ! Notice that the EDM matrix that is copied over
-             ! will be equivalent at Ef == 0
-             call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
-                  ucell, DM_2D, EDM_2D, na_a, allowed_a)
-
-             ! We shift the mean by one fraction of the electrode
-             if ( set_Ef ) then
-                Ef = Ef + Elecs(iElec)%Ef / N_Elec
-             end if
-
+            if ( IONode ) then
+              write(*,'(/,2a)') 'transiesta: Reading in electrode TSDE for ', &
+                  trim(Elecs(iElec)%Name)
+            end if
+            
+            ! Copy over the DM in the lead
+            ! Notice that the EDM matrix that is copied over
+            ! will be equivalent at Ef == 0
+            call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
+                ucell, DM_2D, EDM_2D, na_a, allowed_a)
+            
+            ! We shift the mean by one fraction of the electrode
+            if ( set_Ef ) then
+              Ef = Ef + Elecs(iElec)%Ef / N_Elec
+            end if
+            
           end do
 
           ! Clean-up
           deallocate(allowed_a)
 
        end if
+        
+       ! Initialize the Fermi-level
+       diff_Ef = Ef
 
        if ( fdf_defined('TS.Fermi.Initial') ) then
           ! Write out some information regarding
@@ -317,9 +322,9 @@ contains
 
        ! The electrode EDM is aligned at Ef == 0
        ! We need to align the energy matrix
-       iElec =  nnzs(sparse_pattern) * spin%EDM
-       DM    => val(DM_2D)
-       EDM   => val(EDM_2D)
+       iElec = nnzs(sparse_pattern) * spin%EDM
+       DM => val(DM_2D)
+       EDM => val(EDM_2D)
        call daxpy(iElec,diff_Ef,DM(1,1),1,EDM(1,1),1)
 
     end if
@@ -788,6 +793,7 @@ contains
 
     use fdf
     use parsing
+    use sparse_matrices, only: S  ! Note direct import of (associated now) pointer
 
 #ifdef MPI
     use mpi_siesta
@@ -822,6 +828,7 @@ contains
     type(dData2D) :: arr_2D
     ! The pointers for the sparse pattern
     integer :: no_l, nnz
+    integer :: io, gio, i, ind, jo
     integer, pointer :: ncol(:), ptr(:), col(:)
     real(dp), pointer :: DM(:,:)
     
@@ -851,10 +858,29 @@ contains
        call init_user()
     end if
 
+    ! We have initialized with atomic information. Correct in case we
+    ! are using such a small cell that there are direct interactions
+    ! of orbitals with their own images, and we insist on using the
+    ! Gamma-point only. Otherwise S(diagonal) is always 1.0 and the
+    ! simple atomic-orbital superposition works as intended.
+
+      do io = 1, no_l
+         ! Retrieve global orbital index
+         gio = index_local_to_global(dit, io)
+         do i = 1 , ncol(io)
+            ind = ptr(io) + i
+            jo = col(ind)
+            ! Check for diagonal element
+            if ( gio == jo ) then
+               DM(ind,:) = DM(ind,:) / S(ind)
+            endif
+         end do
+      end do
+
   contains
 
     subroutine init_atomic()
-
+      
       integer :: io, gio, i, ind, jo, i1, i2
       ! This subroutine initializes the DM based on
       ! the anti_ferro

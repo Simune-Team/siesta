@@ -28,7 +28,6 @@
       use m_spin,         only: nspin, h_spin_dim
       use m_dipol
       use alloc, only: re_alloc, de_alloc
-      use m_gamma
       use files, only : filesOut_t    ! derived type for output file names
 
       implicit none
