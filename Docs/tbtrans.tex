@@ -1316,7 +1316,7 @@ and transmission.
   
   The imaginary ($\eta$) part of the Green function in the device
   region. Note that the electrodes imaginary part may be controlled
-  via \fdf{TBT.Elecs!Eta} and \fdf{TBT.Elec.<>!tbt.Eta}.
+  via \fdf{TBT.Elecs!Eta}.
 
   This value controls the smearing of the DOS on the energy
   axis. Generally will the electrode $\eta$ value contribute to a
@@ -1549,6 +1549,13 @@ is no need to specify the chemical potential
   \fdf*{semi-inf-dir}, \fdf*{electrode-pos}, \fdf*{chem-pot} (only if
   \fdf{TBT!Voltage} is not $0$).
 
+  If there are some settings that you only want to take effect in
+  \tbtrans\ calculations you can prefix the option with
+  \fdf*{tbt.Eta}, e.g. which will only be used for the \tbtrans\
+  calculations. Note that \emph{all} \fdf*{tbt.*} options must be
+  located at the end of the block. This may be particularly useful
+  with respect to the Green function file options.
+
   \begin{fdfoptions}
 
     \option[HS]%
@@ -1615,13 +1622,13 @@ is no need to specify the chemical potential
     performance at the cost of disk-space.
 
     
-    \option[tbt.Eta/Eta]%
-    \fdfindex*{TBT.Elec.<>!tbt.Eta}%
+    \option[Eta]%
+    \fdfindex*{TBT.Elec.<>!Eta}%
     Control the imaginary part of the surface Green function for this
     electrode. See \fdf{TBT.Elecs!Eta}.
 
-    \option[tbt.Accuracy/Accuracy]%
-    \fdfindex*{TBT.Elec.<>!tbt.Accuracy}%
+    \option[Accuracy]%
+    \fdfindex*{TBT.Elec.<>!Accuracy}%
     Control the convergence accuracy required for the self-energy
     calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
     scheme.
@@ -1660,8 +1667,8 @@ is no need to specify the chemical potential
     %
     For performance reasons \fdf*{all} is preferred. 
 
-    \option[tbt.out-of-core/out-of-core]%
-    \fdfindex*{TBT.Elec.<>!tbt.out-of-core}%
+    \option[out-of-core]%
+    \fdfindex*{TBT.Elec.<>!out-of-core}%
     If \fdftrue\ the GF files are created which contain the surface
     Green function. Setting this to \fdftrue\ may be advantageous when
     performing many calculations using the same $k$ and energy grid
@@ -1673,17 +1680,17 @@ is no need to specify the chemical potential
 
     \note simultaneous calculations may read the same GF file.
 
-    \option[tbt.Gf-Reuse]%
-    \fdfindex*{TBT.Elec.<>!tbt.Gf-Reuse}%
-    \fdfdepend{TBT.Elec.<>!tbt.out-of-core}%
+    \option[Gf-Reuse]%
+    \fdfindex*{TBT.Elec.<>!Gf-Reuse}%
+    \fdfdepend{TBT.Elec.<>!out-of-core}%
     Logical deciding whether the surface Green function file should be
     re-used or deleted.
     %
     If this is \fdffalse\ the surface Green function file is deleted
     and re-created upon start.
 
-    \option[tbt.check-kgrid]%
-    \fdfindex*{TBT.Elec.<>!tbt.check-kgrid}%
+    \option[check-kgrid]%
+    \fdfindex*{TBT.Elec.<>!check-kgrid}%
     For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
     not be equivalent for the electrodes and the device region
     calculations. However, \tbtrans\ requires that the device and
@@ -1715,7 +1722,7 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
   function calculation. This $\eta$ value is \emph{not} used in the
   device region.
   %
-  See \fdf{TBT.Elec.<>!tbt.Eta}.
+  See \fdf{TBT.Elec.<>!Eta}.
   
 \end{fdfentry}
 
@@ -1723,7 +1730,7 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
   
   Globally control the accuracy required for convergence of the self-energy.
   %
-  See \fdf{TBT!Elec.<>!tbt.Accuracy}.
+  See \fdf{TBT!Elec.<>!Accuracy}.
   
 \end{fdfentry}
 
@@ -1746,7 +1753,7 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 
   You are encouraged to set this to \fdftrue\ to reduce computations. 
   %
-  See \fdf{TBT.Elec.<>!tbt.out-of-core}.
+  See \fdf{TBT.Elec.<>!out-of-core}.
 
   Currently this option is not compatible with \fdf{TBT.T.Bulk} and
   \fdf{TBT.DOS.Elecs}, and the bulk transmission and bulk DOS will not
@@ -1755,12 +1762,12 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 \end{fdflogicalF}
 
 \begin{fdflogicalT}{TBT.Elecs!Gf.Reuse}
-  \fdfdepend{TBT.Elecs!Out-of-core,TBT.Elec.<>!tbt.out-of-core}
+  \fdfdepend{TBT.Elecs!Out-of-core}
   
   Globally control whether the surface Green function files should
   be re-used (\fdftrue) or re-created (\fdffalse).
   %
-  See \fdf{TBT.Elec.<>!tbt.Gf-Reuse}.
+  See \fdf{TBT.Elec.<>!Gf-Reuse}.
   
 \end{fdflogicalT}
 
@@ -2599,7 +2606,7 @@ These files are created if NetCDF4 support is enabled
   The structure of this file is a natural tree structure to
   accommodate $N$ electrode output.
 
-  \item[\sysfile{TBT.SE.nc}] \fillsee{TBT.CDF!SelfEnergy.Save}%
+  \item[\sysfile{TBT.SE.nc}] \fillsee{TBT!SelfEnergy.Save}%
 
   Down-folded self-energies are stored in this file. 
 

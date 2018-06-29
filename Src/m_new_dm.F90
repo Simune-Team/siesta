@@ -240,46 +240,48 @@ contains
           end if
 
           if ( init_method == 0 ) then
-             ! We are starting from atomic-filled orbitals
-             ! We are now allowed to overwrite everything!
-             na_a = na_u
-             allocate(allowed_a(na_a))
-             do iElec = 1 , na_a
-                allowed_a(iElec) = iElec
-             end do
+            ! We are starting from atomic-filled orbitals
+            ! We are now allowed to overwrite everything (even buffer!)
+            na_a = na_u
+            allocate(allowed_a(na_a))
+            do iElec = 1 , na_a
+              allowed_a(iElec) = iElec
+            end do
           else
-             na_a = 0
-             do iElec = 1 , na_u
-                if ( .not. a_isDev(iElec) ) na_a = na_a + 1
-             end do
-             allocate(allowed_a(na_a))
-             na_a = 0 
-             do iElec = 1 , na_u
-                if ( .not. a_isDev(iElec) ) then
-                   na_a = na_a + 1
-                   allowed_a(na_a) = iElec
-                end if
-             end do
+            ! We will only overwrite elements in the electrodes
+            ! Not in buffer
+            na_a = 0
+            do iElec = 1 , na_u
+              if ( a_isElec(iElec) ) na_a = na_a + 1
+            end do
+            allocate(allowed_a(na_a))
+            na_a = 0 
+            do iElec = 1 , na_u
+              if ( a_isElec(iElec) ) then
+                na_a = na_a + 1
+                allowed_a(na_a) = iElec
+              end if
+            end do
           end if
 
           do iElec = 1 , N_Elec
 
-             if ( IONode ) then
-                write(*,'(/,a)') 'transiesta: Reading in electrode TSDE for '//&
-                     trim(Elecs(iElec)%Name)
-             end if
-
-             ! Copy over the DM in the lead
-             ! Notice that the EDM matrix that is copied over
-             ! will be equivalent at Ef == 0
-             call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
-                  ucell, DM_2D, EDM_2D, na_a, allowed_a)
-
-             ! We shift the mean by one fraction of the electrode
-             if ( set_Ef ) then
-                Ef = Ef + Elecs(iElec)%Ef / N_Elec
-             end if
-
+            if ( IONode ) then
+              write(*,'(/,2a)') 'transiesta: Reading in electrode TSDE for ', &
+                  trim(Elecs(iElec)%Name)
+            end if
+            
+            ! Copy over the DM in the lead
+            ! Notice that the EDM matrix that is copied over
+            ! will be equivalent at Ef == 0
+            call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
+                ucell, DM_2D, EDM_2D, na_a, allowed_a)
+            
+            ! We shift the mean by one fraction of the electrode
+            if ( set_Ef ) then
+              Ef = Ef + Elecs(iElec)%Ef / N_Elec
+            end if
+            
           end do
 
           ! Clean-up
