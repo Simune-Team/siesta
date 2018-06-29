@@ -257,8 +257,11 @@ C     Initialise MPI and set processor number
       call reinit( sname )
 
 #ifdef MPI
+      
+#ifdef SIESTA__PEXSI
       ! Optionally, restrict the number of processors that SIESTA uses, out
-      ! of the total pool
+      ! of the total pool (but only for PEXSI, not yet for other solvers)
+      
       npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
       call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
       call MPI_Group_incl(World_Group, npSIESTA,
@@ -268,7 +271,10 @@ C     Initialise MPI and set processor number
      $                     SIESTA_Comm, MPIerror)
 
       SIESTA_worker = (Node < npSIESTA)
-
+#else
+      SIESTA_Comm = MPI_Comm_World
+      SIESTA_worker = .true.
+#endif
       ! Swap communicators
       ! This is needed in case that the whole program is run with
       ! a subset of the global processes. In that case, the DFT instance
@@ -282,7 +288,7 @@ C     Initialise MPI and set processor number
          call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
          call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
       endif
-#else
+#else /* not MPI */
       SIESTA_worker = .true.
       Node = 0
       Nodes = 1

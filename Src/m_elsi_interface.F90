@@ -22,8 +22,9 @@
 !        in the fdf file
 ! TODO:
 !        -  Do not get EDM in every SCF step
-!        -  MPI.Nprocs.SIESTA is not working
-!        -  Spin (and k-point?)
+!        -  MPI.Nprocs.SIESTA is not working -- maybe we will remove that feature
+!        -  Spin works
+!        -  k-points to be implemented soon
 !        -  Add documentation
 !
 module m_elsi_interface
@@ -180,7 +181,7 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
 end subroutine getdm_elsi
 
-! This version uses separate distributions for Siesta (setup_H et al) and ELSI
+! This version assumes *the same* distributions for Siesta (setup_H et al) and ELSI
 ! operations.  ELSI tasks 1D block-cyclic distributed CSC/CSR matrices as its
 ! input/output.
 !
@@ -306,13 +307,13 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     sips_n_elpa          = fdf_get("ELSISIPSELPASteps", 2)
 
     select case (solver_string)
-    case ("elpa")
+    case ("elpa", "ELPA")
       which_solver = ELPA_SOLVER
-    case ("omm")
+    case ("omm", "OMM")
       which_solver = OMM_SOLVER
-    case ("pexsi")
+    case ("pexsi", "PEXSI")
       which_solver = PEXSI_SOLVER
-    case ("sips")
+    case ("sips", "SIPS")
       which_solver = SIPS_SOLVER
     case default
       which_solver = ELPA_SOLVER
@@ -389,10 +390,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
        deallocate(row_ptr2)
 
        call elsi_set_csc_blk(elsi_h, BlockSize)
-       ! ** Do I need one of these??
        call elsi_set_mpi(elsi_h, elsi_global_comm)
-       !call elsi_set_mpi_global(elsi_h, elsi_global_comm)
-
 
     else
        
