@@ -916,6 +916,33 @@ libraries
   LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
 \end{shellexample}
 
+  \item[\href{http://elsi-interchange.org}{ELSI}]%
+  \index{ELSI}%
+  \index{External library!ELSI}%
+  The ELSI library may be used with \siesta\ for access to a range of
+  solvers, see Sec.~\ref{SolverELSI}. Currently the interface is
+  implemented (tested) as of ELSI version 2.0.2. If
+  newer versions retain the same interface they may also be used.
+
+  Add these flags to your \file{arch.make} file to enable ELSI
+\begin{shellexample}
+  INCFLAGS += -I/opt/elsi/include
+  LIBS += -L/opt/elsi/lib <>
+  FPPFLAGS += -DSIESTA__ELSI
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_ELSI}
+  where \shell{<>} represents the appropriate ELSI libraries (see the
+  ELSI installation instructions).
+  %
+  If one experiences linker failures, one possible solution that may
+  help is
+\begin{shellexample}
+  LIBS += -lmpi_cxx -lstdc++
+\end{shellexample}
+  which is due to ELSI containing some parts written in C++, while the
+  linking is done by the Fortran compiler. The exact library name for
+  your MPI vendor may vary.
+
 
   \item[CheSS]%
   \index{CheSS}%
@@ -5971,6 +5998,11 @@ pole expansion of the Fermi-Dirac function and the direct computation
 of the density matrix via an efficient scheme of selected
 inversion (see Sec~\ref{SolverPEXSI}).
 
+Additionally, \siesta\ can use the ELSI library (see
+Sec.~\ref{SolverELSI}) of solvers (which provides versions of OMM
+and PEXSI, in addition to diagonalization), and the new linear-scaling
+CheSS library (see Sec.~\ref{SolverCheSS})
+
 The calculation of the H and S matrix elements is always done with an
 O(N) method. The actual scaling is not linear for small systems, but
 it becomes O(N) when the system dimensions are larger than the scale
@@ -5994,8 +6026,8 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   Character string to choose among diagonalization (\fdf*{diagon}),
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
   solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
-  PEXSI method (\fdf*{PEXSI}) or the \fdf*{CheSS} solver.
-  
+  PEXSI method (\fdf*{PEXSI}), ELSI solver (\fdf*{ELSI}) or the \fdf*{CheSS} solver.
+
 \end{fdfentry}
 
 
@@ -6815,6 +6847,88 @@ necessary.
   \sysfile{LWF} by a previous run.
 
 \end{fdflogicalF}
+
+\subsection{The ELSI solver family}
+\label{SolverELSI}
+\index{ELSI solvers}
+
+The ELSI library provides a unified interface to a range of solvers,
+including ELPA (diagonalization), PEXSI, OMM, and SIPS (based on spectrum
+slicing). It can be downloaded and installed freely from
+\url{http://elsi-interchange.org}.
+
+The current interface in \siesta\ is appropriate for gamma-point
+calculations, and is based on the ``DM'' mode in ELSI: sparse H and S
+matrices are passed to the library, and sparse DM and EDM matrices are
+returned. Internally, the library performs any extra operations
+needed.  Spin-polarization in collinear form is also supported, in
+fully parallel mode. This means that spin-polarized calculations will
+be carried out splitting the communicator for orbital distribution.
+
+See Sec.~\ref{sec:libs} for details on installing \siesta\ with ELSI support.
+
+\subsubsection{Input parameters}
+
+The most important parameter is the solver to be used. Most other
+options are given default values by the program which are nearly
+always appropriate.
+
+\begin{fdfentry}{ELSI!Solver}[string]<ELPA>
+  A specification of the solver wanted. Possible values are
+  \begin{itemize}
+  \item ELPA
+  \item OMM
+  \item PEXSI
+  \item SIPS
+  \end{itemize}
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Broadening!Method}[string]<''fermi''>
+The scheme for level broadening. Valid options are ``fermi'',
+``gauss'', ``mp'' (Methfessel-Paxton), ``cold''
+(Marzari-Vanderbilt cold smearing).
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Output!Level}[integer]<0>
+ The level of detail provided in the output. Possible values are 0, 1,
+ 2, and 3.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Output!Json}[integer]<1>
+  If not 0, a separate log file in JSON format will be written out.
+\end{fdfentry}
+
+Other fdf options are mapped in a direct way to the options described in the
+ELSI manual:
+
+\begin{fdfentry}{ELSI!Broadening!MPOrder}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!Flavor}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!Flavor}[integer]<0>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!ELPA!Steps}[integer]<3>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!Tolerance}[real]<10e-9>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!TasksPerPole}[integer]< {\bf no default}>
+  See the discussion on the three-level PEXSI parallelism in the ELSI manual.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!TasksSymbolic}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!SIPS!Slices}[integer]<{\bf no default}>
+  See the discussion in the ELSI manual.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!SIPS!ELPA!Steps}[integer]<2>
+\end{fdfentry}
 
 
 \subsection{The CheSS solver}
