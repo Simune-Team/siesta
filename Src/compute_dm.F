@@ -21,13 +21,14 @@
       use sparse_matrices
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
-     &                    qtot, no_l
+     &                    qtot, Qtots, no_l
       use sys, only: die, bye
       use Kpoint_grid
-      use m_energies,   only: Ebs, Ecorrec, Ef, Entropy, DE_NEGF
+      use m_energies,   only: Ebs, Ecorrec, Entropy, DE_NEGF
+      use m_energies,   only: Ef, Efs
       use m_rmaxh
       use m_eo
-      use m_spin,   only: spin, qs, efs
+      use m_spin,   only: spin
       use m_diagon, only: diagon
       use m_gamma
       use parallel, only: IONode
@@ -201,7 +202,7 @@ c$$$     &           S, 'S.matrix')
         call diagon(no_s, spin%spinor, 
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh, 
-     &              H, S, qtot, fixspin, qs, temp, e1, e2,
+     &              H, S, qtot, fixspin, qtots, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
@@ -215,7 +216,7 @@ c$$$     &           S, 'S.matrix')
      &               isa, qa, rcoor, rmaxh, ucell, xa, iscf,
      &               istp, ncgmax, etol, eta, qtot, maxnh, numh,
      &               listhptr, listh, H, S, chebef, noeta, rcoorcp,
-     &               beta, pmax, Dscf, Escf, Ecorrec, spin%H, qs )
+     &               beta, pmax, Dscf, Escf, Ecorrec, spin%H, qtots )
         Entropy = 0.0_dp
       elseif (isolve .eq. SOLVE_MINIM) then
         if ( spin%NCol .or. spin%SO ) 
@@ -225,11 +226,11 @@ c$$$     &           S, 'S.matrix')
         if (gamma) then
           call dminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 spin%H, no_u, maxnh, numh, listhptr, listh, Dscf,
-     &                 eta, qs, H, S, H_kin)
+     &                 eta, qtots, H, S, H_kin)
         else
           call zminim(.false., PreviousCallDiagon, iscf, istp, no_l,
      &                 spin%H, no_u, maxnh, numh, listhptr, listh, Dscf,
-     &                 eta, qs, no_s, xijo, indxuo, nkpnt, kpoint,
+     &                 eta, qtots, no_s, xijo, indxuo, nkpnt, kpoint,
      &                 kweight, H, S, H_kin)
         end if
         Ecorrec = 0.0_dp
@@ -253,7 +254,7 @@ c$$$     &           S, 'S.matrix')
         call diagon(no_s, spin%spinor, 
      &              no_l, maxnh, maxnh, no_u,
      &              numh, listhptr, listh, numh, listhptr, listh,
-     &              H, S, qtot, fixspin, qs, temp, e1, e2,
+     &              H, S, qtot, fixspin, qtots, temp, e1, e2,
      &              gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
      &              occtol, iscf, neigwanted)
@@ -281,21 +282,6 @@ c$$$     &           S, 'S.matrix')
      &                         overwrite=.true. )
       endif
 #endif
-
-!     Print populations at each SCF step if requested before mixing ......
-      if (muldeb) then
-        if (ionode) write (6,"(/a)")
-     &    'siesta: Mulliken populations (DM_out)'
-            if ( spin%SO ) then
-              call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
-     .                      listh, S, Dscf, isa, lasto, iaorb, iphorb,
-     .                      indxuo )
-            else
-             call mulliken( mullipop, spin%DM, na_u, no_u, maxnh,
-     &                 numh, listhptr, listh, S, Dscf, isa,
-     &                 lasto, iaorb, iphorb )
-            endif
-      endif
 
 ! Write orbital indexes. JMS Dec.2009
       if (IOnode .and. iscf==1) then

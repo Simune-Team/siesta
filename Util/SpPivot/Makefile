@@ -69,9 +69,11 @@ clean:
 dep:
 	-sfmakedepend --depend=obj --modext=o \
 		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
+                $(VPATH)/*.T90 \
 		*.f90 *.F90 *.f *.F
-# Remove the link to ncdf
 	@sed -i -e "/^m_ts_io.o:/s/m_ncdf_io.o//" Makefile
+	@sed -i -e "/^siesta_cmlsubs.o:/s/version.o//" Makefile
+	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: local_sys.o m_io.o parallel.o precision.o
@@ -131,6 +133,8 @@ chemical.o: local_sys.o parallel.o precision.o
 chempot.o: alloc.o local_sys.o mneighb.o parallel.o parallelsubs.o precision.o
 chkdim.o: local_sys.o
 chkgmx.o: cellsubs.o local_sys.o minvec.o precision.o
+class_Data1D.o: alloc.o
+class_Data2D.o: alloc.o
 class_Fstack_Data1D.o: class_Data1D.o class_Data1D.o
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Geometry_SpData2D.o: class_Pair_Geometry_SpData2D.o
@@ -141,9 +145,12 @@ class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_Pair_SpData1D.o: class_SpData1D.o class_SpData1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
+class_TriMat.o: alloc.o intrinsic_missing.o
 coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
 compute_dm.o: iodmhs_netcdf.o kpoint_grid.o local_sys.o m_chess.o m_dminim.o
@@ -657,7 +664,7 @@ molecularmechanics.o: alloc.o local_sys.o parallel.o precision.o units.o
 moments.o: atmfuncs.o parallel.o parallelsubs.o precision.o spinorbit.o
 moreParallelSubs.o: alloc.o local_sys.o m_io.o parallel.o precision.o
 moremeshsubs.o: alloc.o local_sys.o mesh.o parallel.o precision.o schecomm.o
-mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
+mulliken.o: alloc.o atmfuncs.o m_spin.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_matel.o: alloc.o errorf.o interpolation.o local_sys.o matel_registry.o
@@ -767,7 +774,6 @@ setup_hamiltonian.o: m_mpi_utils.o m_ntm.o m_partial_charges.o m_rhog.o
 setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o metaforce.o
 setup_hamiltonian.o: molecularmechanics.o parallel.o siesta_geom.o
 setup_hamiltonian.o: siesta_options.o sparse_matrices.o
-setup_kscell.o: minvec.o parallel.o precision.o units.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o local_sys.o parallel.o parallelsubs.o
@@ -787,7 +793,7 @@ siesta_analysis.o: parallel.o projected_DOS.o siesta2wannier90.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
 siesta_cmlsubs.o: files.o m_uuid.o parallel.o siesta_cml.o timestamp.o
-siesta_cmlsubs.o: version.o
+siesta_cmlsubs.o: 
 siesta_dicts.o: atomlist.o files.o kpoint_grid.o m_energies.o m_forces.o
 siesta_dicts.o: m_mixing_scf.o m_steps.o m_stress.o precision.o siesta_geom.o
 siesta_dicts.o: siesta_options.o

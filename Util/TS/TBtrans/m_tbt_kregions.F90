@@ -97,10 +97,10 @@ contains
 
      ! Warn the user about possible mis-use of regions
     if ( IONode ) then
-       write(*,'(/,a)') 'tbtrans: WARNING'
-       write(*,'(a)') 'tbtrans: Using k-regions is not recommended &
+       write(*,'(/,a)') 'tbt: WARNING'
+       write(*,'(a)') 'tbt: Using k-regions is not recommended &
             &unless you really know what you are doing.'
-       write(*,'(a)') 'tbtrans: WARNING'
+       write(*,'(a)') 'tbt: WARNING'
     end if
 
     ! First change original k-points to reciprocal units
@@ -112,7 +112,7 @@ contains
     n_k = 0
 
     if ( .not. fdf_block('TBT.Atoms.k',bfdf) ) &
-         call die('tbtrans: k-regions, could not read &
+         call die('tbt: k-regions, could not read &
          &different periodic regions. See %block TBT.Atoms.k')
     call crt_read_k(bfdf,na_u)
 
@@ -171,7 +171,7 @@ contains
           do i = 1 , n_k
              call rgn_print(r_k(i)%atm)
           end do
-          write(*,*)'tbtrans: Periodicity regions are ill-formatted'
+          write(*,*)'tbt: Periodicity regions are ill-formatted'
           write(*,*)'Each electrode MUST only be present in any one &
                &periodicity region at any time'
           write(*,*)'Dividing the electrode into two periodicity &
@@ -598,12 +598,12 @@ contains
     ! Print out information regarding the k regions
 
     if ( verbosity > 3 ) then 
-       write(*,'(/,a)') 'tbtrans: k-regions print out, in the permutation order'
-       write(*,'(/,a)') 'tbtrans: Gamma region'
+       write(*,'(/,a)') 'tbt: k-regions print out, in the permutation order'
+       write(*,'(/,a)') 'tbt: Gamma region'
        write(g,'(a,i0)') 'nkpt = ',1
        call rgn_print(r_k(0)%atm, name = g , seq_max = 12 )
        
-       write(*,'(/,a)') 'tbtrans: k-regions'
+       write(*,'(/,a)') 'tbt: k-regions'
        nperm = size(r_k(0)%wkpt)
        do il = 1 , n_k
           write(g,'(a,i0)') 'nkpt = ',size(r_k(il)%wkpt)
@@ -614,7 +614,7 @@ contains
           nperm = nperm * size(r_k(il)%wkpt)
        end do
     else
-       write(*,'(/,a)') 'tbtrans: k-regions permutation order'
+       write(*,'(/,a)') 'tbt: k-regions permutation order'
        nperm = size(r_k(0)%wkpt)
        do il = 1 , n_k
           nperm = nperm * size(r_k(il)%wkpt)
@@ -622,11 +622,11 @@ contains
           if ( associated(r_k(il)%off) ) then
              g = trim(g)//', offsets: '//trim(r_k(il)%off%atm%name)
           end if
-          write(*,'(3a)')'tbtrans: ',trim(r_k(il)%atm%name), trim(g)
+          write(*,'(3a)')'tbt: ',trim(r_k(il)%atm%name), trim(g)
        end do
     end if
        
-    write(*,'(/,2(a,i0))')'tbtrans: k-point &
+    write(*,'(/,2(a,i0))')'tbt: k-point &
          &permutations [default/total]: ',size(r_k(0)%wkpt),' / ',nperm
 
     ! Save the k-points

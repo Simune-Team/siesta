@@ -58,6 +58,7 @@ contains
     use siesta_options, only: savevt, savepsch, savetoch, saverhoxc
     use siesta_options, only: savebader
     use siesta_options, only: save_initial_charge_density
+    use siesta_options, only: fixspin, total_spin
     use m_timestamp, only: datestring
     use m_ts_electype, elec_name => name
     use m_ts_options, only : Volt, N_Elec, Elecs
@@ -112,8 +113,18 @@ contains
          compress_lvl=0, atts=dic)
 
     dic = dic//('info'.kv.'Fermi level')//('unit'.kv.'Ry')
-    call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'one'/), &
-         compress_lvl=0, atts=dic)
+    if ( fixspin ) then
+      call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'spin'/), &
+          compress_lvl=0, atts=dic)
+
+      call delete(dic)
+      dic = dic//('info'.kv.'Total spin')
+      call ncdf_def_var(ncdf,'Qspin',NF90_DOUBLE,(/'one'/), &
+          compress_lvl=0, atts=dic)
+    else
+      call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'one'/), &
+          compress_lvl=0, atts=dic)
+    end if
     
     dic = dic//('info'.kv.'Atomic coordinates')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
@@ -442,6 +453,10 @@ contains
 
     ! Save the total charge and lasto
     call ncdf_put_var(ncdf,'Qtot',Qtot)
+    if ( fixspin ) then
+      call ncdf_put_var(ncdf,'Qspin',total_spin)
+    end if
+
     call ncdf_put_var(ncdf,'lasto',lasto(1:na_u))
 
     if ( isolve == SOLVE_TRANSI ) then
@@ -492,7 +507,7 @@ contains
 
     ! We just open it (prepending)
     call ncdf_open(ncdf,fname, &
-         mode=ior(NF90_WRITE,NF90_NETCDF4))
+        mode=ior(NF90_WRITE,NF90_NETCDF4))
 
     call ncdf_open_grp(ncdf,'SETTINGS',grp)
 
@@ -523,9 +538,10 @@ contains
 
 
   subroutine cdf_save_state(fname,dic_save)
-!    use m_gamma, only : Gamma
-    use m_energies, only: Ef
-    use atomlist, only : Qtot
+    !    use m_gamma, only : Gamma
+    use m_energies, only: Ef, Efs
+    use atomlist, only : Qtot, Qtots
+    use siesta_options, only: fixspin, total_spin
     use siesta_geom, only: na_u, ucell, xa, va
     use siesta_geom, only: nsc, isc_off
     use sparse_matrices, only: sparse_pattern, block_dist
@@ -554,8 +570,15 @@ contains
 #endif
 
     ! Add attribute of current Fermi-level
-    if ( ('Ef' .in. dic_save) .and. Node == 0 ) &
-         call ncdf_put_var(ncdf,'Ef',Ef)
+    if ( fixspin ) then
+      if ( ('Ef' .in. dic_save) .and. Node == 0 ) &
+          call ncdf_put_var(ncdf,'Ef',Efs)
+      if ( ('Qspin' .in. dic_save) .and. Node == 0 ) &
+          call ncdf_put_var(ncdf,'Qspin',total_spin)
+    else
+      if ( ('Ef' .in. dic_save) .and. Node == 0 ) &
+          call ncdf_put_var(ncdf,'Ef',Ef)
+    end if
     if ( ('Qtot' .in. dic_save) .and. Node == 0 ) &
          call ncdf_put_var(ncdf,'Qtot',Qtot)
     ! Save nsc, xa, fa, lasto, ucell

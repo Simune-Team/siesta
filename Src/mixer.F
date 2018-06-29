@@ -15,7 +15,7 @@
 
       use precision,        only: dp
       use siesta_options,   only: mixH, mix_scf_first
-      use siesta_options,   only: mullipop, muldeb
+      use siesta_options,   only: mullipop, muldeb, orbmoms
       ! Spin mixing options
       use m_mixing_scf, only: MIX_SPIN_ALL, MIX_SPIN_SPINOR
       use m_mixing_scf, only: MIX_SPIN_SUM, MIX_SPIN_SUM_DIFF
@@ -44,7 +44,6 @@
       integer               :: iiscf, i, is
 
       external :: mulliken
-
 !-------------------------------------------------------------------- BEGIN
 
       call timer( 'MIXER', 1 )
@@ -187,19 +186,17 @@
       ! entirely correct. It should be moved to the top,
       ! or done somewhere else.
 
-      if (muldeb) then 
-         if (IONode)
-     &        write (6,"(/a)")
-     &        'siesta: Mulliken populations after mixing'
-         if ( SpOrb ) then
-            call moments( mullipop, na_u, no_u, maxnh, numh, listhptr,
+      if (muldeb .and. (.not. MixH) ) then 
+         if (IONode) write (6,"(/a)") 'Using DM after mixing:'
+         if ( SpOrb .and. orbmoms) then
+            call moments( 1, na_u, no_u, maxnh, numh, listhptr,
      .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .           indxuo )
-         else
-            call mulliken( mullipop, h_spin_dim, na_u, no_u, maxnh,
+         endif
+         ! Call this unconditionally
+         call mulliken( mullipop, na_u, no_u, maxnh,
      &           numh, listhptr, listh, S, Dscf, isa,
      &           lasto, iaorb, iphorb )
-         endif
       endif
 
       call timer( 'MIXER', 2 )

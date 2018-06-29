@@ -43,7 +43,7 @@ mkdir Elec
 cd Elec
 ln ../../Au.psf .
 ln ../../${ELEC}.fdf .
-${TS} < ${ELEC}.fdf > ${ELEC}.out
+${TS} --electrode ${ELEC}.fdf > ${ELEC}.out
 RETVAL=$?
 if [ $RETVAL -ne 0 ]
 then

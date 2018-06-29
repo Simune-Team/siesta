@@ -79,7 +79,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 7   = ELSI
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
-  ! real*8  ts               : Total spin of the system
+  ! real*8  total_spin       : Total spin of the system
   ! integer ncgmax           : Maximum number of CG steps for 
   !                            band structure energy minimization
   ! real*8 etol              : Relative tolerance in CG minimization
@@ -248,6 +248,8 @@ subroutine read_options( na, ns, nspin )
   if (mullipop == 0 .and. outlng) then
      mullipop = 1
   endif
+  ! <L> output
+  orbmoms                = fdf_get( 'WriteOrbMom'   , .false. )
 
   if (ionode) then
      select case (mullipop)
@@ -280,6 +282,14 @@ subroutine read_options( na, ns, nspin )
   partial_charges_at_every_scf_step =  &
        fdf_get('PartialChargesAtEveryScfStep',.false.)
 
+
+  if ( IONode ) then
+    write(6,4) 'redata: Matel table size (NRTAB)', 1024
+  end if
+  if (cml_p) then
+    call cmlAddParameter( xf=mainXML, name='MatelNRTAB',value=1024, &
+        dictRef='siesta:matel_nrtab', units="cmlUnits:countable")
+  end if
 
   ! Planewave cutoff of the real space mesh ...
   g2cut = fdf_get('MeshCutoff',300._dp,'Ry')
@@ -823,23 +833,24 @@ subroutine read_options( na, ns, nspin )
   endif
 
   if (fixspin) then
-     if (nspin .ne. 2) then
-        call die( 'redata: ERROR: You can only fix the spin of '//&
-             'the system for collinear spin polarized calculations.' )
-     endif
-     ts = fdf_get('TotalSpin',0.0_dp)
-     if (ionode) then
-        write(6,9) 'redata: Value of the Spin of the System',ts
-     endif
+    if (nspin .ne. 2) then
+      call die( 'redata: ERROR: You can only fix the spin of '//&
+          'the system for collinear spin polarized calculations.' )
+    endif
+    total_spin = fdf_get('TotalSpin',0.0_dp)
+    total_spin = fdf_get('Spin.Total',total_spin)
+    if (ionode) then
+      write(6,9) 'redata: Total spin of the system (spin value)', total_spin
+    endif
   else
-     ts = 0.0_dp
+    total_spin = 0.0_dp
   endif
 
   if (cml_p) then 
      call cmlAddParameter( xf=mainXML, name='FixSpin', &
           value=fixspin, dictref='siesta:fixspin' )
      call cmlAddParameter( xf=mainXML, name='TotalSpin', &
-          value=ts, dictref='siesta:ts',&
+          value=total_spin, dictref='siesta:totalspin',&
           units='siestaUnits:eSpin' )
   endif
 
@@ -1700,6 +1711,8 @@ subroutine read_options( na, ns, nspin )
   dm_normalization_tol   = fdf_get( 'DM.NormalizationTolerance',1.0d-5)
   normalize_dm_during_scf= fdf_get( 'DM.NormalizeDuringSCF',.true.)
   muldeb                 = fdf_get( 'MullikenInSCF'   , .false.)
+  spndeb                 = fdf_get( 'SpinInSCF'   , (nspin>1) )
+
   ! If no mulliken is requested, set it to false
   if ( mullipop == 0 ) muldeb = .false.
   rijmin                 = fdf_get( 'WarningMinimumAtomicDistance', &

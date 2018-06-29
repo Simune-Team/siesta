@@ -27,6 +27,11 @@
       use ldau_specs,    only: switch_ldau, dTol_ldaupop
       use m_ldau,        only: LDAU_dPop
 
+      use sparse_matrices, only:  Dscf, S, numh, listhptr, listh, maxnh
+      use siesta_geom, only: na_u, isa
+      use atomlist, only:    no_u, lasto, iaorb, iphorb, indxuo
+      use m_spin,           only: h_spin_dim, SpOrb
+
       implicit none
 
       integer :: iscf
@@ -40,6 +45,7 @@
       logical, intent(out)              :: converged
 
       logical :: is_LDAU_conv
+      real(dp) :: dummy_qspin(8)
       character(len=64) :: conv_text
 
 !------------------------------------------------------------------- BEGIN
@@ -67,6 +73,24 @@
         ! flush stdout
         call pxfflush(6)
         call wallclock("-------------- end of scf step")
+      endif
+
+!     Print spin polarization at each SCF step if requested before mixing
+      if (spndeb) then
+         call print_spin(dummy_qspin)
+      endif
+!     Print populations at each SCF step if requested before mixing ......
+      if (muldeb) then
+        if (ionode) write (6,"(/a)") 'Using DM_out for analysis:'
+        if ( SpOrb .and. orbmoms) then
+           call moments( 1, na_u, no_u, maxnh, numh, listhptr,
+     .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .           indxuo )
+        endif
+        ! Call this unconditionally
+        call mulliken( mullipop, na_u, no_u, maxnh,
+     &                 numh, listhptr, listh, S, Dscf, isa,
+     &                 lasto, iaorb, iphorb )
       endif
 
       is_LDAU_conv = switch_ldau .and.
@@ -151,6 +175,15 @@
 
          call pxfflush(6)
 
+      endif
+
+      if (harrisfun) then
+         converged = .true.
+         if (IOnode) then
+            write(6,"(a)") "Harris-functional calculation " //
+     $                     "considered 'converged'"
+            call pxfflush(6)
+         endif
       endif
 
 !---------------------------------------------------------------- END

@@ -9,7 +9,7 @@
      .                    listhptr,listh,s,dm,isa,lasto,iaorb,
      .                    iphorb, indxuo)
 C ********************************************************************
-C Subroutine to calculate spin and orbital moments on atoms.
+C Subroutine to calculate orbital moments on atoms.
 C The density matrix (d.m.) and overlap matrix are passed in sparse form
 C (both with the same sparse structure)
 C There is no output. The populations are printed to the output.
@@ -36,6 +36,7 @@ C integer indxuo(*)        : Index of equivalent unit-cell orbital
 C ************************* OUTPUT *************************************
 C No output. The results are printed to standard output
 ! Written by Jaime Ferrer (February 2009).
+! Retain only the orbital angular moments (Alberto Garcia, April 2018)
 C **********************************************************************
 C
 !
@@ -121,18 +122,15 @@ C
 
 #ifdef MPI
       integer MPIerror, mpistatus(MPI_STATUS_SIZE)
-      real(dp), dimension(7) :: qb, pb
+      real(dp), dimension(3) :: qb, pb
       character(len=200)     :: mpibuff
 #endif
       integer i, ioa, ia, in, io, is, ind, ns, ispec, config, 
      .        jo, jo_u, joa, ja, lj, mj, zj, iNode
 
       real(dp) :: L(3)
-
-      real(dp) s_atm(4), l_atm(3), s_sqr, l_sqr, svec(3), lvec(3),
-     .         s_tot(4), l_tot(3), qtot
-
-      real(dp), dimension(:,:), allocatable ::  l_orb, s_orb
+      real(dp) l_atm(3), l_sqr, lvec(3), l_tot(3)
+      real(dp), dimension(:,:), allocatable ::  l_orb
 
 
       character sym_label*7, atm_label*20
@@ -159,8 +157,6 @@ C iopt = 0 implies no analysis
 C Allocate local memory
       allocate(l_orb(3,no_l))
       call memory('A','D',no_l*3,'moments')
-      allocate(s_orb(4,no_l))
-      call memory('A','D',no_l*4,'moments')
 
       ns=0
       do i = 1,natoms
@@ -171,20 +167,11 @@ C Compute Orbital and Spin moments by orbitals.........
       if (ionode) then
         write(6,*) 
         write(6,"(a)")
-     .   'moments: Atomic and Orbital Populations and Magnetic Moments:'
+     .   'moments: Magnetic moments from orbital angular momenta:'
       endif
       l_orb(:,:) = 0.d0
-      s_orb(:,:) = 0.d0
 
 C --- accummulate orbital and spin moments in each orbital:
-
-      do io = 1,no_l
-        do in = 1,numh(io)
-          ind = listhptr(io)+in
-          jo = listh(ind)
-          s_orb(1:4,io) = s_orb(1:4,io) + s(ind)*dm(ind,1:4)
-        enddo
-      enddo
 
       do io = 1,no_l
         call LocalToGlobalOrb(io,Node,Nodes,io_u)
@@ -218,7 +205,6 @@ C --- accummulate orbital and spin moments in each orbital:
 
 C .... printout in a loop over species, and atoms in species
 
-      s_tot(:) = 0.0_dp
       l_tot(:) = 0.0_dp
 
       do ispec=1,ns
@@ -227,44 +213,35 @@ C .... printout in a loop over species, and atoms in species
 
         if (ionode) then
          write(6,'(/2a)')'Species: ', atm_label
-         write(6,'(/,a4,a7,8x,a9,2x,a13,3x,a17,4x,a12,a18,/,100("-"))')
-     .            'Atom', 'Orb', 'Charge', 'sqrt(<S>^2)', 
-     .            '<(Sx,Sy,Sz)>', 'sqrt(<L>^2)', '<(Lx,Ly,Lz)>'
+         write(6,'(/,a4,a7,8x,a12,a18,/,100("-"))')
+     .            'Atom', 'Orb', 'sqrt(<L>^2)', '<(Lx,Ly,Lz)>'
         endif
 
         do ia = 1,natoms 
          if (isa(ia) /= ispec) CYCLE  
          do iNode = 0, Nodes-1
           if (iNode .ne. Node) CYCLE
-          s_atm(:) = 0.0_dp  
           l_atm(:) = 0.0_dp  
            do io = lasto(ia-1)+1,lasto(ia)  
             call GlobalToLocalOrb(io,Node,Nodes,io_l)
             if (io_l .gt. 0) then 
-              s_atm(1:4) = s_atm(1:4) + s_orb(1:4,io_l)
-              s_tot(1:4) = s_tot(1:4) + s_orb(1:4,io_l)
               l_atm(1:3) = l_atm(1:3) + l_orb(1:3,io_l)
               l_tot(1:3) = l_tot(1:3) + l_orb(1:3,io_l)
               sym_label=symfio(ispec,iphorb(io))
               config=cnfigfio(ispec,iphorb(io))
-              svec(1) = s_orb(3,io_l)*2
-              svec(2) = s_orb(4,io_l)*2
-              svec(3) = s_orb(1,io_l) - s_orb(2,io_l)
               lvec(1) = l_orb(1,io_l)
               lvec(2) = l_orb(2,io_l)
               lvec(3) = l_orb(3,io_l)
-              qtot    = s_orb(1,io_l) + s_orb(2,io_l)
+              l_sqr = sqrt(lvec(1)**2+lvec(2)**2+lvec(3)**2)
               if (ionode) then
                 write(6,
-     .            '(i4,i5,2x,i1,a6,1x,f9.4,17x,3f7.3,13x,3f7.3)')
-     .             ia, io, config, sym_label, 
-     .             qtot, svec(1:3)/2.0_dp, lvec(1:3)/2.0_dp
+     .            '(i4,i5,2x,i1,a6,1x,f8.3,2x,3f7.3)')
+     .             ia, io, config, sym_label, l_sqr, lvec(1:3)
 #ifdef MPI
               else
                 write(mpibuff,
-     .            '(i4,i5,2x,i1,a6,1x,f9.4,17x,3f7.3,13x,3f7.3)')
-     .             ia, io, config, sym_label, 
-     .             qtot, svec(1:3)/2.0_dp, lvec(1:3)/2.0_dp
+     .            '(i4,i5,2x,i1,a6,1x,f8.3,2x,3f7.3)')
+     .             ia, io, config, sym_label, l_sqr, lvec(1:3)
                 call mpi_send(mpibuff, 200, MPI_Character,
      .                        0, io, MPI_Comm_world, mpierror)
               endif
@@ -278,66 +255,43 @@ C .... printout in a loop over species, and atoms in species
               endif
             endif
            enddo ! io
-           svec(1) = s_atm(3)
-           svec(2) = s_atm(4)
-           svec(3) = (s_atm(1) - s_atm(2))/2.0_dp
            lvec(1:3) = l_atm(1:3)
-           qtot    = s_atm(1) + s_atm(2)
-
          enddo ! iNodes
 
 #ifdef MPI
 C Global reduction of terms
-         qb(1)=qtot
-         qb(2:4)=svec(1:3)
-         qb(5:7)=lvec(1:3)
-         call MPI_Reduce(qb,pb,7,MPI_double_precision,MPI_sum,0,
+         qb(1:3)=lvec(1:3)
+         call MPI_Reduce(qb,pb,3,MPI_double_precision,MPI_sum,0,
      .                   MPI_Comm_World,MPIerror)
-         qtot=pb(1)
-         svec(1:3)=pb(2:4)
-         lvec(1:3)=pb(5:7)
+         lvec(1:3)=pb(1:3)
 #endif
          if (ionode) then
-           s_sqr = sqrt(svec(1)**2+svec(2)**2+svec(3)**2)
            l_sqr = sqrt(lvec(1)**2+lvec(2)**2+lvec(3)**2)
            write(6,'(100("-"))')
-           write(6,'(i4,5x,a6,5x,f8.4,6x,f8.3,3x,
-     .           3f7.3,4x,f8.3,1x,3f7.3/)')
-     .           ia, 'Total', qtot, s_sqr, svec, l_sqr, lvec
+           write(6,'(i4,5x,a6,4x,f8.3,2x,3f7.3/)')
+     .           ia, 'Total', l_sqr, lvec
          endif
         enddo    !   do ia = 1,natoms 
       enddo    !   do ispec=1,ns
 
-      svec(1) = s_tot(3)
-      svec(2) = s_tot(4)
-      svec(3) = (s_tot(1) - s_tot(2))/2.0_dp
       lvec(1:3) = l_tot(1:3)
-      qtot    = s_tot(1) + s_tot(2)
 
 #ifdef MPI
 C Global reduction of terms
-      qb(1)=qtot
-      qb(2:4)=svec(1:3)
-      qb(5:7)=lvec(1:3)
-      call MPI_Reduce(qb,pb,7,MPI_double_precision,MPI_sum,0,
+      qb(1:3)=lvec(1:3)
+      call MPI_Reduce(qb,pb,3,MPI_double_precision,MPI_sum,0,
      .                MPI_Comm_World,MPIerror)
-      qtot=pb(1)
-      svec(1:3)=pb(2:4)
-      lvec(1:3)=pb(5:7)
+      lvec(1:3)=pb(1:3)
 #endif
 
       if (ionode) then
-           s_sqr = sqrt(svec(1)**2+svec(2)**2+svec(3)**2)
            l_sqr = sqrt(lvec(1)**2+lvec(2)**2+lvec(3)**2)
            write(6,'(100("-"))')
-           write(6,'(a4,14x,f10.4,4x,f10.3,3x,3f7.3,
-     .           4x,f8.3,1x,3f7.3/)')
-     .           'Sum', qtot, s_sqr, svec, l_sqr,lvec
+           write(6,'(a4,15x,f8.3,2x,3f7.3/)')
+     .           'Sum', l_sqr,lvec
       endif
   
 C Deallocate local memory
-      call memory('D','D',size(s_orb),'moments')
-      deallocate(s_orb)
       call memory('D','D',size(l_orb),'moments')
       deallocate(l_orb)
 

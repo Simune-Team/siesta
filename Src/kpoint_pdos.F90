@@ -55,7 +55,8 @@ MODULE Kpoint_pdos
     spiral = fdf_defined('SpinSpiral')
       ! Allow the user to control the use of time-reversal-symmetry
       ! By default, it is on, except for "spin-spiral" calculations
-      time_reversal_symmetry = fdf_get(             &
+      ! and/or non-collinear calculations
+    time_reversal_symmetry = fdf_get(             &
            "TimeReversalSymmetryForKpoints",   &
            (.not. spiral) .and. TrSym)
 

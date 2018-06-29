@@ -56,112 +56,79 @@ contains
 
     ! The new sparsity pattern
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, allocatable :: a_c(:), num(:), listptr(:), list(:)
-    integer :: ia, ja, io, lio, ind, indx
+    integer, allocatable :: num(:), listptr(:), list(:)
+    logical, allocatable :: la_c(:)
+    integer :: ia, ja, io, lio, ind
     integer :: no_l, no_u, n_nzs
     integer :: ic
 
-    call attach(in,nrows=no_l,nrows_g=no_u, &
+    call attach(in,nrows=no_l,nrows_g=no_u, nnzs=n_nzs, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
     if ( no_u /= no_l ) call die('Error in conversion SpOrb2SpAt')
 
-    allocate(a_c(na_u))
+    ! Instead of doing these loops 2 times we simply allocate
+    ! as though the sparsity pattern was an atomic sparsity pattern.
+    ! Then we only fill in new entries as needed.
+    ! This has a slight overhead of memory but should be negligeble.
+    allocate(la_c(na_u))
+    la_c(:) = .true.
     allocate(num(na_u))
+    allocate(list(n_nzs))
+    n_nzs = 0
     do ia = 1 , na_u
-       ! we figure out the number of atom
-       ! connections for each atom
+      ! we figure out the number of atom
+      ! connections for each atom
 
-       ! Initialize count
-       ic = 0
-       do io = lasto(ia-1) + 1 , lasto(ia)
+      ! Initialize count
+      ic = 0
+      ! Initialize to specify where to accept entries
+      do io = lasto(ia-1) + 1 , lasto(ia)
 
-          ! Check the local orbital
-          lio = index_global_to_local(dit,io)
-          if ( lio <= 0 ) cycle
-          if ( l_ncol(lio) == 0 ) cycle
+        ! Check the local orbital
+        lio = index_global_to_local(dit,io)
+        if ( lio <= 0 ) cycle
+        if ( l_ncol(lio) == 0 ) cycle
 
-          do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-          
-             ! Get connecting atom
-             ja = orb_to_atom(l_col(ind), na_u, lasto, no_u)
-             if ( ic == 0 ) then
-                ic = 1 
-                a_c(ic) = ja
-             else if ( all(a_c(1:ic) /= ja) ) then
-                ic = ic + 1
-                a_c(ic) = ja
-             end if
-             
-          end do
+        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-       end do
+          ! Get connecting atom
+          ja = orb_to_atom(l_col(ind), na_u, lasto, no_u)
+          if ( la_c(ja) ) then
+            la_c(ja) = .false.
+            n_nzs = n_nzs + 1
+            list(n_nzs) = ja
+            ic = ic + 1
+          end if
 
-       num(ia) = ic
-       
+        end do
+
+      end do
+      
+      num(ia) = ic
+
+      ! Reset true values
+      do ja = 0, ic - 1
+        la_c(list(n_nzs-ja)) = .true.
+      end do
+
     end do
+
+    deallocate(la_c)
 
     ! Create listptr
     allocate(listptr(na_u))
     listptr(1) = 0
     do ia = 2 , na_u
-       listptr(ia) = listptr(ia-1) + num(ia-1)
+      listptr(ia) = listptr(ia-1) + num(ia-1)
     end do
-
-    n_nzs = listptr(na_u) + num(na_u)
-
-    ! Create actual sparsity pattern 
-    allocate(list(n_nzs))
-    indx = 0
-    do ia = 1 , na_u
-
-       ! Quick skip
-       if ( num(ia) == 0 ) cycle
-       if ( listptr(ia) /= indx ) then
-          print *,ia,listptr(ia),indx
-          call die('SpOrb2SpAt: Could not assert sparsity ptr')
-       end if
-
-       ! Initialize count
-       ic = 0
-       do io = lasto(ia-1) + 1 , lasto(ia)
-
-          ! Check the local orbital
-          lio = index_global_to_local(dit,io)
-          if ( lio <= 0 ) cycle
-          if ( l_ncol(lio) == 0 ) cycle
-
-          do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-
-             ! Get connecting atom
-             ja = orb_to_atom(l_col(ind), na_u, lasto, no_u)
-             if ( ic == 0 ) then
-                ic = 1 
-                a_c(ic) = ja
-             else if ( all(a_c(1:ic) /= ja) ) then
-                ic = ic + 1
-                a_c(ic) = ja
-             end if
-             
-          end do
-       
-       end do
-
-       if ( num(ia) /= ic ) call die('SpOrb2SpAtom: Error in second count')
-       list(indx+1:indx+ic) = a_c(1:ic)
-       indx = indx + ic
-       
-    end do
-    if ( n_nzs /= indx ) then
-       call die('SpOrb2SpAtom: Could not ensure sparsity pattern')
-    end if
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,na_u,na_u,n_nzs,num,listptr,list, &
-         name='Atomic ('//trim(name(in))//')', &
-         ncols=na_u,ncols_g=na_u)
+        name='Atomic ('//trim(name(in))//')', &
+        ncols=na_u,ncols_g=na_u)
 
     ! Clean up
-    deallocate(num,listptr,list,a_c)
+    deallocate(num,listptr,list)
 
   contains
 
@@ -199,7 +166,7 @@ contains
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, indx, is
 
-    type(tRgn) :: rin
+    logical, allocatable :: log_r(:)
 
     ! set the connections to zero for the supplied atoms
     ! We do NOT reduce the sparsity row-size, ONLY the number of
@@ -208,12 +175,12 @@ contains
     call attach(in,nrows=no_l,nrows_g=no_u, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
+    allocate(log_r(no_u))
     if ( present(r) ) then
-       call rgn_copy(r,rin)
-       call rgn_sort(rin)
+      log_r(:) = .false.
+      call rgn_2logical(r, log_r)
     else
-       call rgn_range(rin,1,no_u)
-       rin%sorted = .true. ! we confirm it is sorted.
+      log_r(:) = .true.
     end if
 
     allocate(num(no_l))
@@ -227,7 +194,7 @@ contains
        if ( l_ncol(lio) /= 0 ) then
 
        io = index_local_to_global(dit,lio)
-       if ( .not. in_rgn(rin,io) ) then
+       if ( .not. log_r(io) ) then
           ! we are not asked to remove these cross-terms
           num(lio) = l_ncol(lio)
 
@@ -235,7 +202,7 @@ contains
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          if ( in_rgn(rin,ucorb(l_col(ind),no_u)) ) then
+          if ( log_r(ucorb(l_col(ind),no_u)) ) then
 
              is = (l_col(ind)-1)/no_u
              if ( isc_off(dir,is) /= 0 ) cycle
@@ -271,7 +238,7 @@ contains
        if ( num(lio) == 0 ) cycle
 
        io = index_local_to_global(dit,lio)
-       if ( .not. in_rgn(rin,io) ) then
+       if ( .not. log_r(io) ) then
           ! we are not asked to remove these cross-terms
           ind = l_ptr(lio)
           list(indx+1:indx+l_ncol(lio)) = l_col(ind+1:ind+l_ncol(lio))
@@ -281,7 +248,7 @@ contains
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          if ( in_rgn(rin,UCORB(l_col(ind),no_u)) ) then
+          if ( log_r(UCORB(l_col(ind),no_u)) ) then
              
              is = (l_col(ind)-1)/no_u
              if ( isc_off(dir,is) /= 0 ) cycle
@@ -299,7 +266,7 @@ contains
        call die('Could not ensure sparsity pattern')
     end if
 
-    call rgn_delete(rin)
+    deallocate(log_r)
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,n_nzs,num,listptr,list, &
@@ -446,8 +413,8 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_l, no_u, n_nzs
     integer, allocatable :: num(:), listptr(:), list(:)
-    integer :: lio, io, ind, jo, indx
-    type(tRgn) :: sr
+    integer :: lio, io, ind, jo, indx, n_rr
+    logical, allocatable :: log_rr(:)
 
     ! set the connections to zero for the supplied atoms
     ! We do NOT reduce the sparsity row-size, ONLY the number of
@@ -456,12 +423,13 @@ contains
     call attach(in,nrows=no_l,nrows_g=no_u, &
          n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
 
-    call rgn_copy(rr,sr)
-    call rgn_sort(sr)
+    allocate(log_rr(no_u))
+    log_rr(:) = .false.
+    n_rr = rr%n
+    call rgn_2logical(rr, log_rr)
 
     allocate(num(no_l))
-!$OMP parallel do default(shared), &
-!$OMP&private(lio,io,ind,jo)
+!$OMP parallel do default(shared), private(lio,io,ind,jo)
     do lio = 1 , no_l
 
        ! Initialize sparsity to 0 entries
@@ -471,16 +439,16 @@ contains
 
        io = index_local_to_global(dit,lio)
 
-       if ( .not. in_rgn(sr,io) ) then
+       if ( .not. log_rr(io) ) then
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
           
           jo = ucorb(l_col(ind),no_u)
-          if ( in_rgn(sr,jo) ) cycle
+          if ( .not. log_rr(jo) ) then
        
-          ! The orbital exists on the atom
-          num(lio) = num(lio) + 1
-          
+            ! The orbital exists on the atom
+            num(lio) = num(lio) + 1
+          end if
        end do
 
        end if
@@ -504,27 +472,28 @@ contains
     do lio = 1 , no_l
 
        io = index_local_to_global(dit,lio)
-       if ( in_rgn(sr,io) ) cycle
+       if ( .not. log_rr(io) ) then
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
           jo = ucorb(l_col(ind),no_u)
-          if ( in_rgn(sr,jo) ) cycle
+          if ( .not. log_rr(jo) ) then
 
-          indx = indx + 1
-
-          list(indx) = l_col(ind)
+            indx = indx + 1
+            list(indx) = l_col(ind)
+          end if
           
        end do
+
+       end if
        
     end do
     if ( n_nzs /= indx ) then
        call die('Could not ensure sparsity pattern')
     end if
 
-    ! Clean-up
-    call rgn_delete(sr)
-
+    deallocate(log_rr)
+    
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,n_nzs,num,listptr,list, &
          name='T '//trim(name(in)), &
@@ -584,18 +553,22 @@ contains
     integer :: no_l, no_u, n_nzs
     integer, allocatable :: num(:), listptr(:), list(:)
     integer :: lio, io, ind, jo, indx, ridx
-    type(tRgn) :: sr1, sr2
+    logical, allocatable :: log_r(:,:)
 
     ! set the connections to zero for the supplied atoms
     ! We do NOT reduce the sparsity row-size, ONLY the number of
     ! entries.
 
     call attach(in,nrows=no_l,nrows_g=no_u, &
-         n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
-    call rgn_copy(r1,sr1)
-    call rgn_copy(r2,sr2)
-    call rgn_sort(sr1)
-    call rgn_sort(sr2)
+        n_col=l_ncol,list_ptr=l_ptr,list_col=l_col)
+    allocate(log_r(no_u, 2))
+    log_r(:,:) = .false.
+    do io = 1, r1%n
+      log_r(r1%r(io), 1) = .true.
+    end do
+    do io = 1, r2%n
+      log_r(r2%r(io), 2) = .true.
+    end do
 
     allocate(num(no_l))
 !$OMP parallel do default(shared), &
@@ -609,9 +582,9 @@ contains
 
        io = index_local_to_global(dit,lio)
 
-       if ( in_rgn(sr1,io) ) then
+       if ( log_r(io, 1) ) then
           ridx = 1
-       else if ( in_rgn(sr2,io) ) then
+       else if ( log_r(io, 2) ) then
           ridx = 2
        else
           ridx = 0
@@ -627,10 +600,10 @@ contains
              ! the i'th orbital is in region 1
              ! now if jo is in region 2 we have a match
              ! and remove that orbital connection
-             if ( in_rgn(sr2,jo) ) cycle
+             if ( log_r(jo, 2) ) cycle
           else if ( ridx == 2 ) then
              jo = ucorb(l_col(ind),no_u)
-             if ( in_rgn(sr1,jo) ) cycle
+             if ( log_r(jo, 1) ) cycle
           end if
        
           ! The orbital exists on the atom
@@ -659,9 +632,9 @@ contains
     do lio = 1 , no_l
 
        io = index_local_to_global(dit,lio)
-       if ( in_rgn(sr1,io) ) then
+       if ( log_r(io, 1) ) then
           ridx = 1
-       else if ( in_rgn(sr2,io) ) then
+       else if ( log_r(io, 2) ) then
           ridx = 2
        else
           ridx = 0
@@ -674,10 +647,10 @@ contains
              ! the i'th orbital is in region 1
              ! now if jo is in region 2 we have a match
              ! and remove that orbital connection
-             if ( in_rgn(sr2,jo) ) cycle
+             if ( log_r(jo, 2) ) cycle
           else if ( ridx == 2 ) then
              jo = ucorb(l_col(ind),no_u)
-             if ( in_rgn(sr1,jo) ) cycle
+             if ( log_r(jo, 1) ) cycle
           end if
 
           indx = indx + 1
@@ -690,8 +663,7 @@ contains
        call die('Could not ensure sparsity pattern')
     end if
 
-    ! Clean-up sorted regions
-    call rgn_delete(sr1,sr2)
+    deallocate(log_r)
 
     ! Create new sparsity pattern and copy over
     call newSparsity(out,no_l,no_u,n_nzs,num,listptr,list, &

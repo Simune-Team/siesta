@@ -139,6 +139,8 @@ contains
     ! Read in general values that should be used in the electrode generation
     ! I.e. these FDF-parameters are used for diagon runs with transiesta
 #ifdef TRANSIESTA
+    ! Although transiesta is deprecated, one may still
+    ! compile a TS executable that always saves HS and DE.
     TS_HS_save = fdf_get('TS.HS.Save',.true.)
     TS_DE_save = fdf_get('TS.DE.Save',.true.)
 #else
@@ -1640,7 +1642,6 @@ contains
 
     use m_ts_global_vars, only: TSmode, onlyS
     use m_ts_chem_pot, only: print_mus_block
-    use m_ts_electype, only: print_elec
     use m_ts_contour, only: print_contour_block, io_contour
 
 
@@ -1666,13 +1667,7 @@ contains
     ! write out the contour
     call io_contour(IsVolt, mus, slabel)
 
-    ! Print out the electrode coordinates
-    do i = 1 , N_Elec
-       call print_elec(Elecs(i),na_u,xa)
-    end do
-
   end subroutine print_ts_blocks
-
 
   subroutine val_swap(v1,v2)
     real(dp), intent(inout) :: v1, v2

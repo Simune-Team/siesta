@@ -30,7 +30,15 @@ failed=""
 
 for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile ); do
     relpath=${i%/*}
+    sub=${relpath##*/}
     f=${i##*/}
+    # Skip these directories
+    case $sub in
+	fdict|ncdf)
+	    continue
+	    ;;
+    esac
+    
     echo ""
     echo "====> Processing $relpath ..."
     echo ""

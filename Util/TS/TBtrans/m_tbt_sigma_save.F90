@@ -90,22 +90,22 @@ contains
     if ( .not. IONode ) return
     
 #ifdef NCDF_4
-    write(*,f1)'Saving down-folded self-energies',sigma_save
+    write(*,f1)'Saving downfolded self-energies',sigma_save
     if ( .not. sigma_save ) return
 #ifdef NCDF_PARALLEL
     write(*,f1)'Use parallel MPI-IO for self-energy file', sigma_parallel
 #endif
 
-    write(*,f1)'Only calc down-folded self-energies', &
+    write(*,f1)'Only calc downfolded self-energies', &
          ('Sigma-only'.in.save_DATA)
     if ( cmp_lvl > 0 ) then
        write(*,f12)'Compression level of TBT.SE.nc files',cmp_lvl
     else
        write(*,f11)'No compression level of TBT.SE.nc files'
     end if
-    write(*,f1)'k-average down-folded self-energies',sigma_mean_save
+    write(*,f1)'k-average downfolded self-energies',sigma_mean_save
 #else
-    write(*,f11)'Saving down-folded self-energies not enabled (NetCDF4)'
+    write(*,f11)'Saving downfolded self-energies not enabled (NetCDF4)'
 #endif
 
   end subroutine print_Sigma_options
@@ -148,7 +148,7 @@ contains
     use netcdf_ncdf, ncdf_parallel => parallel
     use m_timestamp, only : datestring
 #ifdef MPI
-    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast, MPI_Logical
+    use mpi_siesta, only : MPI_COMM_WORLD, MPI_Bcast, MPI_Logical, MPI_Barrier
 #endif
     use m_ts_electype
     use m_region
@@ -179,7 +179,9 @@ contains
 
     logical :: prec_Sigma
     logical :: exist, same
-    character(len=200) :: char
+    character(len=256) :: char
+    real(dp) :: mem
+    character(len=2) :: unit
     integer :: i, iEl, no_e
     real(dp), allocatable :: r2(:,:)
 #ifdef MPI
@@ -189,6 +191,8 @@ contains
     if ( .not. sigma_save ) return
 
     exist = file_exist(fname, Bcast = .true. )
+
+    mem = 0._dp
 
     call tbt_cdf_precision('SelfEnergy','single',prec_Sigma)
 
@@ -270,13 +274,13 @@ contains
 
        ! We currently overwrite the Sigma-file
        if ( IONode ) then
-          write(*,'(2a)')'tbtrans: Overwriting self-energy file: ',trim(fname)
+          write(*,'(2a)')'tbt: Overwriting self-energy file: ',trim(fname)
        end if
 
     else
        
        if ( IONode ) then
-          write(*,'(2a)')'tbtrans: Initializing self-energy file: ',trim(fname)
+          write(*,'(2a)')'tbt: Initializing self-energy file: ',trim(fname)
        end if
 
     end if
@@ -340,7 +344,6 @@ contains
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
          atts = dic)
     dic = dic//('info'.kv.'Atomic coordinates')
-    dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
          atts = dic)
     call delete(dic)
@@ -381,16 +384,22 @@ contains
     call delete(dic)
 
     call ncdf_put_var(ncdf,'pivot',r%r)
+    mem = mem + calc_mem(NF90_INT, r%n)
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
+    mem = mem + calc_mem(NF90_INT, TSHS%na_u)
     call rgn_copy(a_Dev, r_tmp)
     call rgn_sort(r_tmp)
     call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
+    mem = mem + calc_mem(NF90_INT, r_tmp%n)
     call ncdf_put_var(ncdf,'btd',btd%r)
+    mem = mem + calc_mem(NF90_INT, btd%n)
     call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
        call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
+       mem = mem + calc_mem(NF90_INT, a_Buf%n)
     end if
 
     ! Save all k-points
@@ -401,21 +410,36 @@ contains
     call ncdf_put_var(ncdf,'kpt',r2)
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
+    mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt)
 
     do iEl = 1 , N_Elec
 
        call ncdf_def_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-       ! Save information about electrode
+       ! Save generic information about electrode
+       dic = dic//('info'.kv.'Bloch expansion')
+       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+
        dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), &
             atts = dic)
        call ncdf_put_var(grp,'mu',Elecs(iEl)%mu%mu)
 
-       dic = ('info'.kv.'Imaginary part of self-energy')//('unit'.kv.'Ry')
-       call ncdf_def_var(grp,'Eta',NF90_DOUBLE,(/'one'/), atts = dic)
+#ifdef TBT_PHONON
+       dic = dic//('info'.kv.'Phonon temperature')
+#else
+       dic = dic//('info'.kv.'Electronic temperature')
+#endif
+       call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), &
+            atts = dic)
+       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
        
-       dic = ('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
+       dic = dic//('info'.kv.'Imaginary part of self-energy')
+       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+       
+       dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
        call delete(dic)
 
@@ -425,21 +449,82 @@ contains
        dic = ('info'.kv.'Orbital pivot table for self-energy')
        call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
        
-       dic = dic//('info'.kv.'Down-folded self-energy')
+       dic = dic//('info'.kv.'Downfolded self-energy')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
-       call ncdf_def_var(grp,'SelfEnergy',prec_Sigma, &
+       call ncdf_def_var(grp,'SelfEnergy', prec_Sigma, &
             (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
             atts = dic , chunks = (/no_e,no_e,1,1/) )
        call delete(dic)
 
-       call ncdf_put_var(grp,'Eta',Elecs(iEl)%Eta)
+       call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
        call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
        call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
+
+       mem = mem + calc_mem(NF90_INT, no_e)
+       if ( prec_Sigma ) then
+         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt) * 2
+       else
+         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt)
+       end if
 
     end do
 
     call ncdf_close(ncdf)
+
+#ifdef MPI
+    ! Ensure that the processors are aligned
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
+    if ( IONode ) then
+      call pretty_memory(mem, unit)
+      write(*,'(3a,f8.3,tr1,a/)') 'tbt: Estimated file size of ', trim(fname), ':', &
+          mem, unit
+    end if
+
+  contains
+
+    pure function calc_mem(prec_nf90, n1, n2, n3, n4) result(kb)
+      use precision, only: dp
+      integer, intent(in) :: prec_nf90, n1
+      integer, intent(in), optional :: n2, n3, n4
+      real(dp) :: kb
+
+      kb = real(n1, dp) / 1024._dp
+      if ( present(n2) ) kb = kb * real(n2, dp)
+      if ( present(n3) ) kb = kb * real(n3, dp)
+      if ( present(n4) ) kb = kb * real(n4, dp)
+
+      select case ( prec_nf90 )
+      case ( NF90_INT, NF90_FLOAT )
+        kb = kb * 4
+      case ( NF90_DOUBLE )
+        kb = kb * 8
+      end select
+
+    end function calc_mem
+
+    pure subroutine pretty_memory(mem, unit)
+      use precision, only: dp
+      real(dp), intent(inout) :: mem
+      character(len=2), intent(out) :: unit
+
+      unit = 'KB'
+      if ( mem > 1024._dp ) then
+        mem = mem / 1024._dp
+        unit = 'MB'
+        if ( mem > 1024._dp ) then
+          mem = mem / 1024._dp
+          unit = 'GB'
+          if ( mem > 1024._dp ) then
+            mem = mem / 1024._dp
+            unit = 'TB'
+          end if
+        end if
+      end if
+
+    end subroutine pretty_memory
 
   end subroutine init_Sigma_save
 
@@ -602,6 +687,8 @@ contains
     ! Loop over all electrodes
     do iEl = 1 , N_Elec
 
+      call delete(dic)
+
        ! We need to extend the netcdf file with the SigmaMean
        ! variable
 
@@ -610,7 +697,7 @@ contains
        ! Get size of Sigma
        call ncdf_inq_dim(grp,'no_e',len=no_e)
 
-       dic = ('info'.kv.'Down-folded self-energy, k-averaged')
+       dic = ('info'.kv.'Downfolded self-energy, k-averaged')
        dic = dic//('unit'.kv.'Ry')
        ! Chunking greatly reduces IO cost
        call ncdf_def_var(grp,'SelfEnergyMean',NF90_DOUBLE_COMPLEX, &

@@ -212,7 +212,7 @@ MODULE parse
   integer(ip), parameter, private :: MAX_NTOKENS = 50
 
 ! Length of string encoding plines
-  integer, parameter, public :: SERIALIZED_LENGTH =  MAX_LENGTH + 4 + 10*MAX_NTOKENS
+  integer(ip), parameter, public :: SERIALIZED_LENGTH =  MAX_LENGTH + 4 + 10*MAX_NTOKENS
 
 !   Parsed line info (ntokens, token info and identification)
 !   Note that the token characters are stored in a single "line",
@@ -740,7 +740,7 @@ MODULE parse
 
            ! Read last element (or the only element if one is given)
            if ( ti == lpline%ntokens ) then
-              if (leqi(lpline%id(ti),'i')) then
+             if (leqi(lpline%id(ti),'i')) then
                  call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
               end if
            end if
@@ -766,15 +766,14 @@ MODULE parse
       
       subroutine add_exit(is_counting,idx,ni,val)
         logical, intent(in) :: is_counting
-        integer, intent(inout) :: idx
-        integer, intent(in) :: ni, val
+        integer(ip), intent(inout) :: idx
+        integer(ip), intent(in) :: ni, val
         idx = idx + 1
-        if ( .not. is_counting ) then
-           if ( idx > ni ) then
-              found = .false.
-           else
-              list(idx) = val
-           end if
+        if ( is_counting ) return
+        if ( idx > ni ) then
+          found = .false.
+        else
+          list(idx) = val
         end if
       end subroutine add_exit
 
@@ -1791,9 +1790,9 @@ MODULE parse
     subroutine serialize_pline(pline,string,length)
     type(parsed_line)   :: pline
     character(len=*), intent(out) :: string
-    integer, intent(out) :: length
+    integer(ip), intent(out) :: length
 
-    integer :: pos, i
+    integer(ip) :: pos, i
     character(len=10) buffer
 
     length = SERIALIZED_LENGTH

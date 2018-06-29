@@ -19,3 +19,5 @@ MD.TypeOfRun           FC
 MD.FCfirst             1
 MD.FClast              2
 MD.FCdispl             0.0400000000  Bohr
+
+MaxSCFIterations 200

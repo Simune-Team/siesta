@@ -22,7 +22,9 @@
     use parallel,       only:  SIESTA_worker
     use m_ntm
     use m_forces,       only: fa
-    use m_spin,         only: nspin, qs, efs
+    use m_spin,         only: nspin
+    use atomlist,       only: qs => qtots
+    use m_energies,     only: efs
     use m_dhscf,        only: dhscf
   
     implicit none

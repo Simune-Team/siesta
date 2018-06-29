@@ -75,7 +75,7 @@ contains
        call Sp_retain_region(dit,sp,r_oElpD(i),tmpSp2)
 
        ! Add the self-energy of the electrode (in its original position)
-       call crtSparsity_Union_region(dit,tmpSp2, r_oEl_alone(i),tmpSp1)
+       call crtSparsity_Union(dit,tmpSp2, r_oEl_alone(i),tmpSp1)
        call delete(tmpSp2)
 
 #ifdef TRANSIESTA_DEBUG
@@ -109,7 +109,7 @@ contains
        ElTri(iEl)%name = '[TRI] '//trim(Elecs(iEl)%name)
 
        ! Sort the tri-diagonal blocks
-       call ts_pivot_tri_sort_El(r_oElpD(iEl),1,Elecs(iEl:iEl),ElTri(iEl))
+       call ts_pivot_tri_sort_El(nrows_g(sp), r_oElpD(iEl), 1, Elecs(iEl:iEl), ElTri(iEl))
        
     end do
 
@@ -128,7 +128,7 @@ contains
     use class_Sparsity
 
     use create_Sparsity_SC, only: crtSparsity_SC
-    use create_Sparsity_Union
+    use create_Sparsity_Union, only: crtSparsity_Union
 
     use m_ts_rgn2trimat
     use m_ts_tri_common, only : ts_pivot_tri_sort_El
@@ -157,13 +157,14 @@ contains
     type(tRgn) :: r_tmp
     integer :: i, n, iEl
     integer(i8b) :: els
+    integer, allocatable :: rpvt(:)
 
     call timer('tri-init',1)
 
     if ( IONode ) then
-       write(*,'(/,a)')'tbtrans: Creating electrode tri-diagonal matrix blocks'
+       write(*,'(/,a)')'tbt: Creating electrode tri-diagonal matrix blocks'
     end if
-
+    
     ! Copy over sparsity pattern (in UC format)
     call crtSparsity_SC(sp, tmpSp1, UC = .true.)
     
@@ -171,7 +172,7 @@ contains
 
        ! Add the self-energy of the electrode in the projected position
        ! of the "device" region.
-       call crtSparsity_Union_region(dit,tmpSp1,Elecs(iEl)%o_inD,tmpSp1)
+       call crtSparsity_Union(dit,tmpSp1,Elecs(iEl)%o_inD,tmpSp1)
 
     end do
 
@@ -181,7 +182,7 @@ contains
     call tbt_tri_init_elec( dit , tmpSp1 )
 
     if ( IONode ) then
-       write(*,'(a)')'tbtrans: Creating device tri-diagonal matrix blocks'
+       write(*,'(a)')'tbt: Creating device tri-diagonal matrix blocks'
     end if
 
     if ( present(proj) ) then
@@ -189,7 +190,7 @@ contains
 
           ! Add the self-energy of the electrode in the projected position
           ! of the "device" region.
-          call crtSparsity_Union_region(dit,tmpSp1,proj(i),tmpSp1)
+          call crtSparsity_Union(dit,tmpSp1,proj(i),tmpSp1)
           
        end do
     end if
@@ -219,54 +220,64 @@ contains
 
     call rgn_delete(DevTri)
 
+    
     ! Create tri-diagonal parts for this one...
     call ts_rgn2TriMat(N_Elec, Elecs, .true., &
        dit, tmpSp2, r_oDev, DevTri%n, DevTri%r, &
        BTD_method, last_eq = 0, par = .true. )
     call delete(tmpSp2) ! clean up
 
+    i = nrows_g(sp)
     ! Sort the tri-diagonal blocks
-    call ts_pivot_tri_sort_El(r_oDev,N_Elec,Elecs,DevTri)
+    call ts_pivot_tri_sort_El(i, r_oDev, N_Elec, Elecs, DevTri)
+
+    ! Create back-pivoting table to easily find indices in the device
+    ! pivoting table.
+    allocate(rpvt(i))
+    do i = 1, r_oDev%n
+      rpvt(r_oDev%r(i)) = i
+    end do
 
     ! The down-folded region can "at-will" be sorted
     ! in the same manner it is seen in the device region.
     ! We enforce this as it increases the chances of consecutive 
     ! memory layout.
     do iEl = 1 , N_Elec
-       
-       ! Sort the region according to the device
-       ! (this ensures that the Gamma function
-       !  is laid out according to the device region)
-       call rgn_copy(Elecs(iEl)%o_inD, r_tmp)
-       call rgn_sort(r_tmp)
 
-       ! Loop on the device region and copy
-       ! region, in order
-       ! This will sort the electrode orbitals in
-       ! the device region, as provided in the electrodes
-       n = 0
-       do i = 1 , r_oDev%n
-          if ( in_rgn(r_tmp,r_oDev%r(i)) ) then
-          
-             n = n + 1
-             ! Sort according to device region
-             Elecs(iEl)%o_inD%r(n) = r_oDev%r(i)
-             ! create the pivoting table
-             Elecs(iEl)%inDpvt%r(n) = i
+      ! Associate so we put pivoting table directly where it should be
+      call rgn_assoc(r_tmp, Elecs(iEl)%inDpvt)
+      r_tmp%n = 0
 
-          end if
-       end do
+      ! Put electrode in device orbitals in the region
+      do i = 1, Elecs(iEl)%o_inD%n
+        if ( .not. rgn_push(r_tmp, rpvt(Elecs(iEl)%o_inD%r(i))) ) &
+            call die('tri_init: error on pushing values')
+      end do
 
-       ! It is clear that the inDpvt array is a sorted array
-       Elecs(iEl)%inDpvt%sorted = .true.
-       
-       ! Copy this information to the ElpD
-       if ( n /= Elecs(iEl)%o_inD%n ) &
-            call die('Error programming, n')
-       i = r_oElpD(iEl)%n
-       r_oElpD(iEl)%r(i-n+1:i) = Elecs(iEl)%o_inD%r(1:n)
+      ! Sort according to device input (this sorts inDpvt)
+      call rgn_sort(r_tmp)
+      ! It is clear that the inDpvt array is a sorted array
+      Elecs(iEl)%inDpvt%sorted = .true.
+
+      if ( r_tmp%n /= Elecs(iEl)%inDpvt%n ) then
+        call die('tri_init: error on inDpvt update')
+      end if
+
+      ! Copy back the device in sorted device region order
+      do i = 1, Elecs(iEl)%o_inD%n
+        Elecs(iEl)%o_inD%r(i) = r_oDev%r(r_tmp%r(i))
+      end do
+
+      ! Copy this information to the El + D
+      i = r_oElpD(iEl)%n
+      n = Elecs(iEl)%o_inD%n
+      r_oElpD(iEl)%r(i-n+1:i) = Elecs(iEl)%o_inD%r(1:n)
 
     end do
+    call rgn_nullify(r_tmp)
+
+    ! Clean-up memory
+    deallocate(rpvt)
 
     DevTri%name = '[TRI] device region'
 
@@ -278,12 +289,12 @@ contains
        els = nnzs_tri_i8b(DevTri%n,DevTri%r)
        ! check if there are overflows
        if ( els < int(nnzs_tri_dp(DevTri%n, DevTri%r), i8b) ) then
-          call die('tbtrans: Memory consumption is too large, try &
+          call die('tbt: Memory consumption is too large, try &
                &another pivoting scheme.')
        end if
-       write(*,'(a,i0)') 'tbtrans: Matrix elements in BTD: ', els
+       write(*,'(a,i0)') 'tbt: Matrix elements in BTD: ', els
 
-       write(*,'(/,a)') 'tbtrans: Electrodes tri-diagonal matrices'
+       write(*,'(/,a)') 'tbt: Electrodes tri-diagonal matrices'
        do i = 1 , N_Elec
           call rgn_print(ElTri(i), seq_max = 8 , repeat = .true.)
        end do
@@ -370,7 +381,7 @@ contains
     call rgn_sort(ra)
 
     write(*,*) ''
-    write(*,'(a)') 'tbtrans: Suggested atoms for fastest transmission calculation:'
+    write(*,'(a)') 'tbt: Suggested atoms for fastest transmission calculation:'
 
     ra%name = '[A]-Fast transmission'
     call rgn_print(ra, seq_max = 12)
@@ -458,7 +469,7 @@ contains
     real(dp) :: min_mem
 
     ! Write out all pivoting etc. analysis steps
-    if ( IONode ) write(*,'(/,a)') 'tbtrans: BTD analysis'
+    if ( IONode ) write(*,'(/,a)') 'tbt: BTD analysis'
 
     ! Copy over the sparse matrix to tmpSp1
     tmpSp1 = sp
@@ -743,7 +754,7 @@ contains
        write(*,'(a,/)') ' You should analyze the pivoting schemes!'
        write(*,'(a)') ' Minimum memory required pivoting scheme:'
        write(*,'(a,a)') '  TBT.BTD.Pivot.Device ', trim(min_mem_method)
-       write(*,'(a,f8.2,a)') '  Memory: ', min_mem, ' MB'
+       write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
        write(*,*) ! new-line
     end if
     
@@ -760,6 +771,7 @@ contains
       integer :: bw
       ! Possibly very large numbers
       integer(i8b) :: prof, els
+      real(dp) :: total
 
       call rgn_copy(r_pvt, cur)
 
@@ -773,7 +785,7 @@ contains
       ! However, this also makes it easier to
       ! insert the self-energy as they become consecutive
       ! in index, all-in-all, win-win!
-      call ts_pivot_tri_sort_El(cur,N_Elec,Elecs,ctri)
+      call ts_pivot_tri_sort_El(nrows_g(tmpSp1), cur, N_Elec, Elecs, ctri)
 
       bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,cur)
       prof = profile(no,n_nzs,ncol,l_ptr,l_col,cur)
@@ -786,43 +798,43 @@ contains
       els = nnzs_tri(ctri%n,ctri%r)
       ! check if there are overflows
       if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
-         call die('transiesta: Memory consumption is too large, &
-              &try another pivoting scheme.')
-      end if
-      
-      if ( IONode ) then
-         call rgn_print(ctri, name = 'BTD partitions' , &
-              seq_max = 10 , indent = 3 , repeat = .true. )
-         
-         write(*,'(tr3,a,i0,'' / '',f10.3)') &
-              'BTD matrix block size [max] / [average]: ', &
-              maxval(ctri%r), sum(real(ctri%r)) / ctri%n
-         
-         prof = r_pvt%n ** 2
-         write(*,'(tr3,a,f9.5,'' %'')') &
-              'BTD matrix elements in % of full matrix: ', &
-              real(els,dp)/real(prof,dp) * 100._dp
+        call die('transiesta: Memory consumption is too large, &
+            &try another pivoting scheme.')
       end if
 
-      prof = els * 2 ! total mem
       if ( IONode ) then
-         write(*,'(tr3,a,t39,f8.2,a)') 'Rough estimation of MEMORY: ', &
-              size2mb(prof),' MB'
+        call rgn_print(ctri, name = 'BTD partitions' , &
+            seq_max = 10 , indent = 3 , repeat = .true. )
+
+        write(*,'(tr3,a,i0,'' / '',f10.3)') &
+            'BTD matrix block size [max] / [average]: ', &
+            maxval(ctri%r), sum(real(ctri%r)) / ctri%n
+
+        total = real(r_pvt%n, dp) ** 2
+        write(*,'(tr3,a,f9.5,'' %'')') &
+            'BTD matrix elements in % of full matrix: ', &
+            real(els,dp)/total * 100._dp
       end if
-      if ( size2mb(prof) < min_mem ) then
-         min_mem = size2mb(prof)
-         min_mem_method = fmethod
+
+      total = size2gb(els) * 2
+      if ( IONode ) then
+        write(*,'(tr3,a,t39,en11.3,a)') 'Rough estimation of MEMORY: ', &
+            total,' GB'
+      end if
+      if ( total < min_mem ) then
+        min_mem = total
+        min_mem_method = fmethod
       end if
 
       call rgn_delete(ctri, cur)
       
     end subroutine tri
 
-    function size2mb(i) result(mb)
+    function size2gb(i) result(b)
       integer(i8b) :: i
-      real(dp) :: mb
-      mb = real(i, dp) * 16._dp / 1024._dp ** 2
-    end function size2mb
+      real(dp) :: b
+      b = real(i, dp) * 16._dp / 1024._dp ** 3
+    end function size2gb
 
   end subroutine tbt_tri_analyze
   

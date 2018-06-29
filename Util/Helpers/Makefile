@@ -653,7 +653,7 @@ molecularmechanics.o: alloc.o local_sys.o parallel.o precision.o units.o
 moments.o: atmfuncs.o parallel.o parallelsubs.o precision.o spinorbit.o
 moreParallelSubs.o: alloc.o local_sys.o m_io.o parallel.o precision.o
 moremeshsubs.o: alloc.o local_sys.o mesh.o parallel.o precision.o schecomm.o
-mulliken.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
+mulliken.o: alloc.o atmfuncs.o m_spin.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o new_matel.o precision.o
 new_matel.o: alloc.o errorf.o interpolation.o local_sys.o matel_registry.o
@@ -763,7 +763,6 @@ setup_hamiltonian.o: m_mpi_utils.o m_ntm.o m_partial_charges.o m_rhog.o
 setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o metaforce.o
 setup_hamiltonian.o: molecularmechanics.o parallel.o siesta_geom.o
 setup_hamiltonian.o: siesta_options.o sparse_matrices.o
-setup_kscell.o: minvec.o parallel.o precision.o units.o
 setup_ordern_indexes.o: alloc.o domain_decom.o parallel.o spatial.o
 shaper.o: atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o local_sys.o parallel.o parallelsubs.o
