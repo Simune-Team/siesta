@@ -123,7 +123,6 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             allocate(Hk(nnz_u,nspin), Sk(nnz_u))
             Sk = 0
             Hk = 0
-            do ispin = 1, nspin  ! Serial over spins for now...
                do iuo = 1,no_l
                   do j = 1,numh(iuo)
                      ind = listhptr(iuo) + j
@@ -135,11 +134,12 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
                   !kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
 
                      Sk(ind_u) = Sk(ind_u) + S(ind)     !*kphs
-                     Hk(ind_u,ispin) = Hk(ind_u,ispin) + H(ind,ispin)   !*kphs
+                     do ispin = 1, nspin 
+                        Hk(ind_u,ispin) = Hk(ind_u,ispin) + H(ind,ispin)   !*kphs
+                     enddo
                   
                   enddo
                enddo
-            enddo
 
             allocate(Dscf_k(nnz_u,nspin), Escf_k(nnz_u,nspin))
             call elsi_solver(iscf, no_u, no_l, nspin, &
@@ -148,7 +148,7 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             deallocate(Hk, Sk)
 
 
-            ! Unfold
+            ! Unfold -- might put the spin loop inside
             do ispin = 1, nspin
                do iuo = 1,no_l
                   do j = 1,numh(iuo)
