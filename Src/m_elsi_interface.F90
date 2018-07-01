@@ -396,7 +396,8 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
        ! Split the communicator in spins and get distribution objects
        ! for the data redistribution needed
-       call get_spin_comms_and_dists(elsi_global_comm,blocksize, n_spin, &
+       call get_spin_comms_and_dists(elsi_global_comm,elsi_global_comm, &
+            blocksize, n_spin, &
             dist1,dist2_spin, elsi_spatial_comm, elsi_spin_comm)
 
        ! Find out which spin team we are in, and tag the spin we work on
@@ -635,58 +636,62 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf)
 
 end subroutine elsi_save_potential
 
-! Auxiliary routine to 
-! To-Do: Check if we need to distinguish between 'global_comm'
+! To-Do: Check the implications of distinguishing between 'global_comm'
 ! (common space for communications) and 'base_comm' (to be split)
 ! For the real case they can be the same
-subroutine get_spin_comms_and_dists(global_comm, blocksize, n_spin,&
+!
+! This routine should be called by everybody in global_comm
+
+subroutine get_spin_comms_and_dists(global_comm, base_comm, blocksize, n_spin,&
      dist_global, dist_spin, spatial_comm, spin_comm)
 
   use mpi_siesta
   use class_Distribution    ! distribution, newDistribution, types
   
-  integer, intent(in)  :: global_comm
+  integer, intent(in)  :: global_comm    ! Communicator for global distribution
+                                         ! Needed to include the actual global ranks
+                                         ! in the distribution objects
+
+  integer, intent(in)  :: base_comm      ! Communicator to be split
   integer, intent(out) :: spatial_comm   ! "Orbital" comm (one for each spin team)
   integer, intent(out) :: spin_comm      ! "Inner" spin comm (for reductions)
+
   integer, intent(in)  :: blocksize
   integer, intent(in)  :: n_spin              ! should be 2 in this version
+
   ! Note inout for bud objects
   type(distribution), intent(inout)  :: dist_global         ! global distribution object
   type(distribution), intent(inout)  :: dist_spin(2) ! per-spin objects
-  
-  integer :: color, mpirank, spatial_rank, spin_rank
-  integer :: npTotal, npPerSpin
+
+  ! Local variables
+  integer :: color, base_rank
+  integer :: npGlobal, npPerSpin
   integer, allocatable, dimension(:) :: global_ranks_in_world
   integer, allocatable, dimension(:) :: ranks_in_world  ! should be 'spatial_ranks...'
   integer, allocatable, dimension(:,:) :: ranks_in_World_Spin
   integer :: global_group, Spatial_group
   integer :: i, ispin, ierr
   
-  call MPI_Comm_Size(global_comm, npTotal, ierr)
-  call MPI_Comm_Rank(global_comm, mpirank, ierr)
-
-       allocate(global_ranks_in_world(npTotal))
-       global_ranks_in_world = (/ (i, i=0, npTotal-1) /)
+       call MPI_Comm_Size(global_comm, npGlobal, ierr)
+         ! This distribution could be created by the caller...
+       allocate(global_ranks_in_world(npGlobal))
+       global_ranks_in_world = (/ (i, i=0, npGlobal-1) /)
        call newDistribution(dist_global,global_Comm,global_ranks_in_world, &
             TYPE_BLOCK_CYCLIC,BlockSize,"global dist")
        deallocate(global_ranks_in_world)
        call MPI_Barrier(global_Comm,ierr)
 
-
-       ! "Row" communicator for independent PEXSI operations on each spin
+       ! Split the base communicator
+       call MPI_Comm_Rank(base_comm, base_rank, ierr)
+       ! "Row" communicator for independent operations on each spin
        ! The name refers to "spatial" degrees of freedom.
-       color = mod(mpirank,n_spin)    ! {0,1} for n_spin = 2, or {0} for n_spin = 1
-       call MPI_Comm_Split(global_comm, color, mpirank, Spatial_Comm, ierr)
+       color = mod(base_rank,n_spin)    ! {0,1} for n_spin = 2, or {0} for n_spin = 1
+       call MPI_Comm_Split(base_comm, color, base_rank, Spatial_Comm, ierr)
        ! "Column" communicator for spin reductions
-       color = mpirank/n_spin
-       call MPI_Comm_Split(global_comm, color, mpirank, Spin_Comm, ierr)
+       color = base_rank/n_spin
+       call MPI_Comm_Split(base_comm, color, base_rank, Spin_Comm, ierr)
 
-       call mpi_comm_rank( Spatial_Comm, spatial_rank, ierr )
-       call mpi_comm_rank( Spin_Comm, spin_rank, ierr )
-    
-       ! Include the actual world ranks in the distribution objects
-
-       npPerSpin = npTotal/n_spin
+       call MPI_Comm_Size(spatial_comm, npPerSpin, ierr)   ! number of procs in each spin team
 
        call MPI_Comm_Group(Spatial_Comm, Spatial_Group, Ierr)
        allocate(ranks_in_world(npPerSpin))
@@ -702,11 +707,16 @@ subroutine get_spin_comms_and_dists(global_comm, blocksize, n_spin,&
        ! We need everybody to have this information, as all nodes
        ! are part of the global distribution side of the communication
        ! (global_comm is the common-address space)
+
+       ! But note that this will tell only those in base_comm...
+       ! This routine might not be the end of the story for cascading splits
+       ! (k-points and spin)
+       ! We might need an extra 'broadcast' over the k-point 'column' comm.
        call MPI_AllGather(ranks_in_world,npPerSpin,MPI_integer,&
             Ranks_in_World_Spin(1,1),npPerSpin, &
             MPI_integer,Spin_Comm,ierr)
 
-       ! Create distributions known to all nodes 
+       ! Create distributions known to all nodes  (again, those in base_comm)
        do ispin = 1, n_spin
           call newDistribution(dist_spin(ispin), global_Comm, &
                Ranks_in_World_Spin(:,ispin),  &
