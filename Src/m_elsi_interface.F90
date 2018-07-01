@@ -243,14 +243,10 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
   integer :: elsi_Spatial_comm, elsi_Spin_comm
 
-  type(distribution) :: dist1
-  type(distribution), target  :: dist2_spin(2)
-  type(distribution), pointer :: dist2
+  type(distribution) :: dist_global
+  type(distribution) :: dist_spin(2)
   
-  type(aux_matrix), allocatable, target :: m1_spin(:)
-  type(aux_matrix) :: m2
-  type(aux_matrix), pointer :: m1
-
+  type(aux_matrix) :: pkg_global, pkg_spin   ! Packages for transfer
 
   integer :: my_spin
 
@@ -396,9 +392,10 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
        ! Split the communicator in spins and get distribution objects
        ! for the data redistribution needed
+       ! Note that dist_spin is an array
        call get_spin_comms_and_dists(elsi_global_comm,elsi_global_comm, &
             blocksize, n_spin, &
-            dist1,dist2_spin, elsi_spatial_comm, elsi_spin_comm)
+            dist_global,dist_spin, elsi_spatial_comm, elsi_spin_comm)
 
        ! Find out which spin team we are in, and tag the spin we work on
        call mpi_comm_rank( elsi_Spin_Comm, spin_rank, ierr )
@@ -406,60 +403,65 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
        
        ! This is done serially, each time filling one spin set
-       ! Note that **all processes** need to have the same m1
-       ! but we probably do not need two copies of m1
-
-       ! Just do allocate(m1%vals(2)) outside the loop
+       ! Note that **all processes** need to have the same pkg_global
        
-       allocate(m1_spin(n_spin))
        do ispin = 1, n_spin
 
-          m1 => m1_spin(ispin)
+          ! Load pkg_global data package
+          pkg_global%norbs = n_basis
+          pkg_global%no_l  = n_basis_l
+          pkg_global%nnzl  = nnz_l
+          pkg_global%numcols => numh  
+          pkg_global%cols    => col_idx
 
-          m1%norbs = n_basis
-          m1%no_l  = n_basis_l
-          m1%nnzl  = nnz_l
-          m1%numcols => numh  ! numh
-          m1%cols    => col_idx
-          allocate(m1%vals(2))
-          m1%vals(1)%data => ovlp(:)
+          allocate(pkg_global%vals(2))
+          ! Link the vals items to the appropriate arrays (no extra memory here)
+          pkg_global%vals(1)%data => ovlp(:)
           ! Note that we *cannot* say  => ham(:,my_spin)
           ! and avoid the sequential loop, as then half the processors will send
           ! the information for 'spin up' and the other half the information for 'spin down',
           ! which is *not* what we want.
-          m1%vals(2)%data => ham(:,ispin)
+          pkg_global%vals(2)%data => ham(:,ispin)
 
           call timer("redist_orbs_fwd", 1)
 
           ! We are doing the transfers sequentially. One spin team is
-          ! 'idle' (in the receiving side) in each pass, as the dist2 distribution
+          ! 'idle' (in the receiving side) in each pass, as the dist_spin(ispin) distribution
           ! does not involve them.
           
-          dist2 => dist2_spin(ispin)
-          call redistribute_spmatrix(n_basis,m1,dist1,m2,dist2,elsi_global_Comm)
+          call redistribute_spmatrix(n_basis,pkg_global,dist_global, &
+                                             pkg_spin,dist_spin(ispin),elsi_global_Comm)
    
           call timer("redist_orbs_fwd", 2)
 
           if (my_spin == ispin) then  ! Each team gets their own data
 
-             !nrows = m2%norbs          ! or simply 'norbs'
-             my_no_l = m2%no_l
-             my_nnz_l    = m2%nnzl
+             !nrows = pkg_spin%norbs          ! or simply 'norbs'
+             my_no_l = pkg_spin%no_l
+             my_nnz_l    = pkg_spin%nnzl
              call MPI_AllReduce(my_nnz_l,my_nnz,1,MPI_integer,MPI_sum,elsi_Spatial_Comm,ierr)
              ! generate off-by-one row pointer
              call re_alloc(my_row_ptr2,1,my_no_l+1,"my_row_ptr2","elsi_solver")
              my_row_ptr2(1) = 1
              do ih = 1,my_no_l
-                my_row_ptr2(ih+1) = my_row_ptr2(ih) + m2%numcols(ih)
+                my_row_ptr2(ih+1) = my_row_ptr2(ih) + pkg_spin%numcols(ih)
              enddo
 
-             my_col_idx => m2%cols
-             my_S => m2%vals(1)%data
-             my_H => m2%vals(2)%data
+             my_col_idx => pkg_spin%cols
+             my_S => pkg_spin%vals(1)%data
+             my_H => pkg_spin%vals(2)%data
 
              call re_alloc(my_DM,1,my_nnz_l,"my_DM","elsi_solver")
              call re_alloc(my_EDM,1,my_nnz_l,"my_EDM","elsi_solver")
           endif
+
+          ! Clean pkg_global
+          nullify(pkg_global%vals(1)%data)  
+          nullify(pkg_global%vals(2)%data)  
+          deallocate(pkg_global%vals)
+          nullify(pkg_global%numcols)   
+          nullify(pkg_global%cols)      
+
        enddo
 
        call elsi_set_csc(elsi_h, my_nnz, my_nnz_l, my_no_l, my_col_idx, my_row_ptr2)
@@ -500,70 +502,62 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
      do ispin = 1, n_spin
 
-        m1 => m1_spin(ispin)
-
         if (my_spin == ispin) then
-           ! Prepare m2 to transfer
-           ! The other fields are the same
-           call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","elsi_solver")
-           call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","elsi_solver")
+           ! Prepare pkg_spin to transfer the right spin information
+           ! The other fields (numcols, cols) are the same and are still there
+           ! Deallocate my_S and my_H
+           call de_alloc(pkg_spin%vals(1)%data,"pkg_spin%vals(1)%data","elsi_solver")
+           call de_alloc(pkg_spin%vals(2)%data,"pkg_spin%vals(2)%data","elsi_solver")
 
-           m2%vals(1)%data => my_DM(1:my_nnz_l)
-           m2%vals(2)%data => my_EDM(1:my_nnz_l)
+           pkg_spin%vals(1)%data => my_DM(1:my_nnz_l)
+           pkg_spin%vals(2)%data => my_EDM(1:my_nnz_l)
 
         endif
 
-        ! Prepare m1 to receive the results
-
-        nullify(m1%vals(1)%data)    ! formerly pointing to S
-        nullify(m1%vals(2)%data)    ! formerly pointing to H
-        deallocate(m1%vals)
-        nullify(m1%numcols)         ! formerly pointing to numH
-        nullify(m1%cols)            ! formerly pointing to listH
-
+        ! pkg_global is clean now
         call timer("redist_orbs_bck", 1)
-        dist2 => dist2_spin(ispin)
-        call redistribute_spmatrix(n_basis,m2,dist2,m1,dist1,elsi_global_Comm)
+        call redistribute_spmatrix(n_basis,pkg_spin,dist_spin(ispin) &
+                                          ,pkg_global,dist_global,elsi_global_Comm)
         call timer("redist_orbs_bck", 2)
 
+        ! Clean pkg_spin
         if (my_spin == ispin) then
            ! Each team deallocates during "its" spin cycle
            call de_alloc(my_DM, "my_DM", "elsi_solver")
            call de_alloc(my_EDM,"my_EDM","elsi_solver")
 
-           nullify(m2%vals(1)%data)    ! formerly pointing to DM
-           nullify(m2%vals(2)%data)    ! formerly pointing to EDM
-           deallocate(m2%vals)
+           nullify(pkg_spin%vals(1)%data)    ! formerly pointing to DM
+           nullify(pkg_spin%vals(2)%data)    ! formerly pointing to EDM
+           deallocate(pkg_spin%vals)
            ! allocated in the direct transfer
-           call de_alloc(m2%numcols,"m2%numcols","elsi_solver")
-           call de_alloc(m2%cols,   "m2%cols",   "elsi_solver")
+           call de_alloc(pkg_spin%numcols,"pkg_spin%numcols","elsi_solver")
+           call de_alloc(pkg_spin%cols,   "pkg_spin%cols",   "elsi_solver")
         endif
 
 
-        ! In future, m1%vals(1,2) could be pointing to DM and EDM,
+        ! In future, pkg_global%vals(1,2) could be pointing to DM and EDM,
         ! and the 'redistribute' routine check whether the vals arrays are
         ! associated, to use them instead of allocating them.
-        DM(:,ispin)  = m1%vals(1)%data(:)    
-        EDM(:,ispin) = m1%vals(2)%data(:)    
+        DM(:,ispin)  = pkg_global%vals(1)%data(:)    
+        EDM(:,ispin) = pkg_global%vals(2)%data(:)    
         ! Check no_l
-        if (n_basis_l /= m1%no_l) then
+        if (n_basis_l /= pkg_global%no_l) then
            call die("Mismatch in no_l")
         endif
         ! Check listH
-        if (any(col_idx(:) /= m1%cols(:))) then
+        if (any(col_idx(:) /= pkg_global%cols(:))) then
            call die("Mismatch in listH")
         endif
 
-        ! allocated in the direct transfer
-        ! we did not actually look at them
-        call de_alloc(m1%numcols,"m1%numcols","elsi_solver") 
-        call de_alloc(m1%cols,   "m1%cols",   "elsi_solver")
+        ! Clean pkg_global
+        ! allocated by the transfer routine, but we did not actually
+        ! look at them
+        call de_alloc(pkg_global%numcols,"pkg_global%numcols","elsi_solver") 
+        call de_alloc(pkg_global%cols,   "pkg_global%cols",   "elsi_solver")
 
-        ! Do this here if using two copies of m1. Otherwise, put it
-        ! outside the loop
-        call de_alloc(m1%vals(1)%data,"m1%vals(1)%data","elsi_solver")
-        call de_alloc(m1%vals(2)%data,"m1%vals(2)%data","elsi_solver")
-        deallocate(m1%vals)
+        call de_alloc(pkg_global%vals(1)%data,"pkg_global%vals(1)%data","elsi_solver")
+        call de_alloc(pkg_global%vals(2)%data,"pkg_global%vals(2)%data","elsi_solver")
+        deallocate(pkg_global%vals)
 
      enddo
 
