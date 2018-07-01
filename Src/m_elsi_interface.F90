@@ -254,18 +254,18 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
   integer :: my_spin
 
-  integer :: numColLocal   ! change name later ....
-  integer :: nnzLocal   ! change name later ....
-  integer :: nnz
-  integer, pointer  :: colptrLocal(:) => null()
+  integer :: my_no_l  
+  integer :: my_nnz_l 
+  integer :: my_nnz
+  integer, pointer  :: my_row_ptr2(:) => null()
   integer  :: i, ih, ispin, spin_rank
   real(dp) :: ets_spin
 
-  integer, pointer  :: rowindLocal(:)
-  real(dp), pointer :: SnzvalLocal(:)
-  real(dp), pointer :: HnzvalLocal(:)
-  real(dp), pointer :: DMnzvalLocal(:) => null()
-  real(dp), pointer :: EDMnzvalLocal(:) => null()
+  integer, pointer  :: my_col_idx(:)
+  real(dp), pointer :: my_S(:)
+  real(dp), pointer :: my_H(:)
+  real(dp), pointer :: my_DM(:) => null()
+  real(dp), pointer :: my_EDM(:) => null()
   
   external :: timer
 
@@ -423,10 +423,18 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
           m1%cols    => col_idx
           allocate(m1%vals(2))
           m1%vals(1)%data => ovlp(:)
+          ! Note that we *cannot* say  => ham(:,my_spin)
+          ! and avoid the sequential loop, as then half the processors will send
+          ! the information for 'spin up' and the other half the information for 'spin down',
+          ! which is *not* what we want.
           m1%vals(2)%data => ham(:,ispin)
 
           call timer("redist_orbs_fwd", 1)
- 
+
+          ! We are doing the transfers sequentially. One spin team is
+          ! 'idle' (in the receiving side) in each pass, as the dist2 distribution
+          ! does not involve them.
+          
           dist2 => dist2_spin(ispin)
           call redistribute_spmatrix(n_basis,m1,dist1,m2,dist2,elsi_global_Comm)
    
@@ -435,26 +443,27 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
           if (my_spin == ispin) then  ! Each team gets their own data
 
              !nrows = m2%norbs          ! or simply 'norbs'
-             numColLocal = m2%no_l
-             nnzLocal    = m2%nnzl
-             call MPI_AllReduce(nnzLocal,nnz,1,MPI_integer,MPI_sum,elsi_Spatial_Comm,ierr)
-             call re_alloc(colptrLocal,1,numColLocal+1,"colptrLocal","elsi_solver")
-             colptrLocal(1) = 1
-             do ih = 1,numColLocal
-                colptrLocal(ih+1) = colptrLocal(ih) + m2%numcols(ih)
+             my_no_l = m2%no_l
+             my_nnz_l    = m2%nnzl
+             call MPI_AllReduce(my_nnz_l,my_nnz,1,MPI_integer,MPI_sum,elsi_Spatial_Comm,ierr)
+             ! generate off-by-one row pointer
+             call re_alloc(my_row_ptr2,1,my_no_l+1,"my_row_ptr2","elsi_solver")
+             my_row_ptr2(1) = 1
+             do ih = 1,my_no_l
+                my_row_ptr2(ih+1) = my_row_ptr2(ih) + m2%numcols(ih)
              enddo
 
-             rowindLocal => m2%cols
-             SnzvalLocal => m2%vals(1)%data
-             HnzvalLocal => m2%vals(2)%data
+             my_col_idx => m2%cols
+             my_S => m2%vals(1)%data
+             my_H => m2%vals(2)%data
 
-             call re_alloc(DMnzvalLocal,1,nnzLocal,"DMnzvalLocal","elsi_solver")
-             call re_alloc(EDMnzvalLocal,1,nnzLocal,"EDMnzvalLocal","elsi_solver")
+             call re_alloc(my_DM,1,my_nnz_l,"my_DM","elsi_solver")
+             call re_alloc(my_EDM,1,my_nnz_l,"my_EDM","elsi_solver")
           endif
        enddo
 
-       call elsi_set_csc(elsi_h, nnz, nnzLocal, numColLocal, rowindLocal, colPtrLocal)
-       call de_alloc(colPtrLocal,"colPtrLocal","elsi_solver")
+       call elsi_set_csc(elsi_h, my_nnz, my_nnz_l, my_no_l, my_col_idx, my_row_ptr2)
+       call de_alloc(my_row_ptr2,"my_row_ptr2","elsi_solver")
        
        call elsi_set_csc_blk(elsi_h, BlockSize)
        call elsi_set_spin(elsi_h, n_spin, my_spin)
@@ -472,8 +481,8 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   else
      ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
      ! Energy is already summed over spins
-     call elsi_dm_real_sparse(elsi_h, HnzValLocal, SnzValLocal, DMnzvallocal, energy)
-     call elsi_get_edm_real_sparse(elsi_h, EDMnzvallocal)
+     call elsi_dm_real_sparse(elsi_h, my_H, my_S, my_DM, energy)
+     call elsi_get_edm_real_sparse(elsi_h, my_EDM)
      !... but we still need to sum the entropy over spins
      call elsi_get_entropy(elsi_h, ets_spin)
      call globalize_sum(ets_spin, ets, comm=elsi_Spin_comm)
@@ -499,8 +508,8 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
            call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","elsi_solver")
            call de_alloc(m2%vals(2)%data,"m2%vals(2)%data","elsi_solver")
 
-           m2%vals(1)%data => DMnzvalLocal(1:nnzLocal)
-           m2%vals(2)%data => EDMnzvalLocal(1:nnzLocal)
+           m2%vals(1)%data => my_DM(1:my_nnz_l)
+           m2%vals(2)%data => my_EDM(1:my_nnz_l)
 
         endif
 
@@ -519,8 +528,8 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
         if (my_spin == ispin) then
            ! Each team deallocates during "its" spin cycle
-           call de_alloc(DMnzvalLocal, "DMnzvalLocal", "elsi_solver")
-           call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","elsi_solver")
+           call de_alloc(my_DM, "my_DM", "elsi_solver")
+           call de_alloc(my_EDM,"my_EDM","elsi_solver")
 
            nullify(m2%vals(1)%data)    ! formerly pointing to DM
            nullify(m2%vals(2)%data)    ! formerly pointing to EDM
@@ -545,14 +554,16 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
            call die("Mismatch in listH")
         endif
 
+        ! allocated in the direct transfer
+        ! we did not actually look at them
+        call de_alloc(m1%numcols,"m1%numcols","elsi_solver") 
+        call de_alloc(m1%cols,   "m1%cols",   "elsi_solver")
+
         ! Do this here if using two copies of m1. Otherwise, put it
         ! outside the loop
         call de_alloc(m1%vals(1)%data,"m1%vals(1)%data","elsi_solver")
         call de_alloc(m1%vals(2)%data,"m1%vals(2)%data","elsi_solver")
         deallocate(m1%vals)
-        ! allocated in the direct transfer
-        call de_alloc(m1%numcols,"m1%numcols","elsi_solver") 
-        call de_alloc(m1%cols,   "m1%cols",   "elsi_solver")
 
      enddo
 
