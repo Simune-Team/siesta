@@ -217,7 +217,6 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   real(dp), intent(out)   :: ef        ! Fermi energy
   real(dp), intent(out)   :: ets       ! Entropy/k, dimensionless
 
-  integer :: mpirank
   integer :: ierr
   integer :: n_state
   integer :: nnz_g
@@ -242,9 +241,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer, allocatable, dimension(:) :: row_ptr2
   integer, allocatable, dimension(:), target :: numh
 
-  integer :: World_group
-  integer :: elsi_Spatial_comm, elsi_Spatial_group
-  integer :: elsi_Spin_comm
+  integer :: elsi_Spatial_comm, elsi_Spin_comm
 
   type(distribution) :: dist1
   type(distribution), target  :: dist2_spin(2)
@@ -254,19 +251,14 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   type(aux_matrix) :: m2
   type(aux_matrix), pointer :: m1
 
-  integer :: color, spatial_rank, spin_rank
-  integer :: npTotal, npPerSpin
-  integer, allocatable, dimension(:) :: global_ranks_in_world
-  integer, allocatable, dimension(:) :: ranks_in_world  ! should be 'spatial_ranks...'
-  integer, allocatable, dimension(:,:) :: ranks_in_World_Spin
 
-  integer :: elsi_spin
+  integer :: my_spin
 
   integer :: numColLocal   ! change name later ....
   integer :: nnzLocal   ! change name later ....
   integer :: nnz
   integer, pointer  :: colptrLocal(:) => null()
-  integer  :: i, ih, ispin
+  integer  :: i, ih, ispin, spin_rank
   real(dp) :: ets_spin
 
   integer, pointer  :: rowindLocal(:)
@@ -283,8 +275,6 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
   ! Global communicator is a duplicate of passed communicator
   call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
-  call MPI_Comm_Rank(elsi_global_comm, mpirank, ierr)
-  call MPI_Comm_Size(elsi_global_comm, npTotal, ierr)
 
   call timer("elsi", 1)
 
@@ -404,56 +394,14 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
        enddo
        numh(n_basis_l) = nnz_l - row_ptr(n_basis_l)
 
-       ! Define the original distribution (over all the available nodes)
+       ! Split the communicator in spins and get distribution objects
+       ! for the data redistribution needed
+       call get_spin_comms_and_dists(elsi_global_comm,blocksize, n_spin, &
+            dist1,dist2_spin, elsi_spatial_comm, elsi_spin_comm)
 
-       allocate(global_ranks_in_world(npTotal))
-       global_ranks_in_world = (/ (i, i=0, npTotal-1) /)
-       call newDistribution(dist1,elsi_global_Comm,global_ranks_in_world, &
-            TYPE_BLOCK_CYCLIC,BlockSize,"global dist")
-       deallocate(global_ranks_in_world)
-       call MPI_Barrier(elsi_global_Comm,ierr)
-
-
-       ! "Row" communicator for independent PEXSI operations on each spin
-       ! The name refers to "spatial" degrees of freedom.
-       color = mod(mpirank,n_spin)    ! {0,1} for n_spin = 2, or {0} for n_spin = 1
-       call MPI_Comm_Split(elsi_global_comm, color, mpirank, elsi_Spatial_Comm, ierr)
-       ! "Column" communicator for spin reductions
-       color = mpirank/n_spin
-       call MPI_Comm_Split(elsi_global_comm, color, mpirank, elsi_Spin_Comm, ierr)
-
-       call mpi_comm_rank( elsi_Spatial_Comm, spatial_rank, ierr )
+       ! Find out which spin team we are in, and tag the spin we work on
        call mpi_comm_rank( elsi_Spin_Comm, spin_rank, ierr )
-    
-       ! Include the actual world ranks in the distribution objects
-
-       npPerSpin = npTotal/n_spin
-
-       call MPI_Comm_Group(elsi_Spatial_Comm, elsi_Spatial_Group, Ierr)
-       allocate(ranks_in_world(npPerSpin))
-       call MPI_Comm_Group(elsi_global_comm, World_Group, Ierr)
-       call MPI_Group_translate_ranks( elsi_Spatial_Group, npPerSpin, &
-            (/ (i,i=0,npPerSpin-1) /), &
-            World_Group, ranks_in_world, ierr )
-
-       call MPI_Group_Free(elsi_Spatial_Group, ierr)
-       call MPI_Group_Free(World_Group, ierr)
-       
-       allocate (ranks_in_World_Spin(npPerSpin,n_spin))
-       call MPI_AllGather(ranks_in_world,npPerSpin,MPI_integer,&
-            Ranks_in_World_Spin(1,1),npPerSpin, &
-            MPI_integer,elsi_Spin_Comm,ierr)
-
-       ! Create distributions known to all nodes (we used allgather...)
-       do ispin = 1, n_spin
-          call newDistribution(dist2_spin(ispin), elsi_global_Comm, &
-               Ranks_in_World_Spin(:,ispin),  &
-               TYPE_BLOCK_CYCLIC, blockSize, "SPATIAL dist")
-       enddo
-       deallocate(ranks_in_world,Ranks_in_World_Spin)
-       call MPI_Barrier(elsi_global_Comm,ierr)
-
-       elsi_spin = spin_rank+1  ! {1,2}
+       my_spin = spin_rank+1  ! {1,2}
 
        
        ! This is done serially, each time filling one spin set
@@ -483,7 +431,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
    
           call timer("redist_orbs_fwd", 2)
 
-          if (elsi_spin == ispin) then  ! Each team gets their own data
+          if (my_spin == ispin) then  ! Each team gets their own data
 
              !nrows = m2%norbs          ! or simply 'norbs'
              numColLocal = m2%no_l
@@ -508,7 +456,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
        call de_alloc(colPtrLocal,"colPtrLocal","elsi_solver")
        
        call elsi_set_csc_blk(elsi_h, BlockSize)
-       call elsi_set_spin(elsi_h, n_spin, elsi_spin)
+       call elsi_set_spin(elsi_h, n_spin, my_spin)
        call elsi_set_mpi(elsi_h, elsi_Spatial_comm)
        call elsi_set_mpi_global(elsi_h, elsi_global_comm)
 
@@ -522,19 +470,18 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
      call elsi_get_entropy(elsi_h, ets)
   else
      ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
-     ! Presumably energy is already summed over spins
+     ! Energy is already summed over spins
      call elsi_dm_real_sparse(elsi_h, HnzValLocal, SnzValLocal, DMnzvallocal, energy)
      call elsi_get_edm_real_sparse(elsi_h, EDMnzvallocal)
-     !... we need to sum this over spins
+     !... but we still need to sum the entropy over spins
      call elsi_get_entropy(elsi_h, ets_spin)
      call globalize_sum(ets_spin, ets, comm=elsi_Spin_comm)
   endif
 
-  ! We assume also that ef and ets are known to all nodes
   call elsi_get_mu(elsi_h, ef)
-
-
   ets = ets/temp
+  
+  ! Ef, energy, and ets are known to all nodes
 
   call timer("elsi-solver", 2)
 
@@ -545,7 +492,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
         m1 => m1_spin(ispin)
 
-        if (elsi_spin == ispin) then
+        if (my_spin == ispin) then
            ! Prepare m2 to transfer
            ! The other fields are the same
            call de_alloc(m2%vals(1)%data,"m2%vals(1)%data","elsi_solver")
@@ -569,7 +516,7 @@ subroutine elsi_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
         call redistribute_spmatrix(n_basis,m2,dist2,m1,dist1,elsi_global_Comm)
         call timer("redist_orbs_bck", 2)
 
-        if (elsi_spin == ispin) then
+        if (my_spin == ispin) then
            ! Each team deallocates during "its" spin cycle
            call de_alloc(DMnzvalLocal, "DMnzvalLocal", "elsi_solver")
            call de_alloc(EDMnzvalLocal,"EDMnzvalLocal","elsi_solver")
@@ -687,6 +634,88 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf)
   end if
 
 end subroutine elsi_save_potential
+
+! Auxiliary routine to 
+! To-Do: Check if we need to distinguish between 'global_comm'
+! (common space for communications) and 'base_comm' (to be split)
+! For the real case they can be the same
+subroutine get_spin_comms_and_dists(global_comm, blocksize, n_spin,&
+     dist_global, dist_spin, spatial_comm, spin_comm)
+
+  use mpi_siesta
+  use class_Distribution    ! distribution, newDistribution, types
+  
+  integer, intent(in)  :: global_comm
+  integer, intent(out) :: spatial_comm   ! "Orbital" comm (one for each spin team)
+  integer, intent(out) :: spin_comm      ! "Inner" spin comm (for reductions)
+  integer, intent(in)  :: blocksize
+  integer, intent(in)  :: n_spin              ! should be 2 in this version
+  ! Note inout for bud objects
+  type(distribution), intent(inout)  :: dist_global         ! global distribution object
+  type(distribution), intent(inout)  :: dist_spin(2) ! per-spin objects
+  
+  integer :: color, mpirank, spatial_rank, spin_rank
+  integer :: npTotal, npPerSpin
+  integer, allocatable, dimension(:) :: global_ranks_in_world
+  integer, allocatable, dimension(:) :: ranks_in_world  ! should be 'spatial_ranks...'
+  integer, allocatable, dimension(:,:) :: ranks_in_World_Spin
+  integer :: global_group, Spatial_group
+  integer :: i, ispin, ierr
+  
+  call MPI_Comm_Size(global_comm, npTotal, ierr)
+  call MPI_Comm_Rank(global_comm, mpirank, ierr)
+
+       allocate(global_ranks_in_world(npTotal))
+       global_ranks_in_world = (/ (i, i=0, npTotal-1) /)
+       call newDistribution(dist_global,global_Comm,global_ranks_in_world, &
+            TYPE_BLOCK_CYCLIC,BlockSize,"global dist")
+       deallocate(global_ranks_in_world)
+       call MPI_Barrier(global_Comm,ierr)
+
+
+       ! "Row" communicator for independent PEXSI operations on each spin
+       ! The name refers to "spatial" degrees of freedom.
+       color = mod(mpirank,n_spin)    ! {0,1} for n_spin = 2, or {0} for n_spin = 1
+       call MPI_Comm_Split(global_comm, color, mpirank, Spatial_Comm, ierr)
+       ! "Column" communicator for spin reductions
+       color = mpirank/n_spin
+       call MPI_Comm_Split(global_comm, color, mpirank, Spin_Comm, ierr)
+
+       call mpi_comm_rank( Spatial_Comm, spatial_rank, ierr )
+       call mpi_comm_rank( Spin_Comm, spin_rank, ierr )
+    
+       ! Include the actual world ranks in the distribution objects
+
+       npPerSpin = npTotal/n_spin
+
+       call MPI_Comm_Group(Spatial_Comm, Spatial_Group, Ierr)
+       allocate(ranks_in_world(npPerSpin))
+       call MPI_Comm_Group(global_comm, Global_Group, Ierr)
+       call MPI_Group_translate_ranks( Spatial_Group, npPerSpin, &
+            (/ (i,i=0,npPerSpin-1) /), &
+            Global_Group, ranks_in_world, ierr )
+
+       call MPI_Group_Free(Spatial_Group, ierr)
+       call MPI_Group_Free(Global_Group, ierr)
+       
+       allocate (ranks_in_World_Spin(npPerSpin,n_spin))
+       ! We need everybody to have this information, as all nodes
+       ! are part of the global distribution side of the communication
+       ! (global_comm is the common-address space)
+       call MPI_AllGather(ranks_in_world,npPerSpin,MPI_integer,&
+            Ranks_in_World_Spin(1,1),npPerSpin, &
+            MPI_integer,Spin_Comm,ierr)
+
+       ! Create distributions known to all nodes 
+       do ispin = 1, n_spin
+          call newDistribution(dist_spin(ispin), global_Comm, &
+               Ranks_in_World_Spin(:,ispin),  &
+               TYPE_BLOCK_CYCLIC, blockSize, "SPATIAL dist")
+       enddo
+       deallocate(ranks_in_world,Ranks_in_World_Spin)
+       call MPI_Barrier(global_Comm,ierr)
+       
+end subroutine get_spin_comms_and_dists
 
 #endif  /* SIESTA__ELSI */
 
