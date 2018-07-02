@@ -2,8 +2,8 @@ module m_fold_auxcell
   public :: fold_sparse_arrays
   private
   CONTAINS
-    subroutine fold_sparse_arrays(no_l,no_u,no_s,numh,listhptr,nnz,listh, &
-         indxuo,numh_u,listhptr_u,nnz_u,listh_u,ind2ind_u)
+    subroutine fold_sparse_arrays(no_l,no_u,numh,listhptr,nnz,listh, &
+               numh_u,listhptr_u,nnz_u,listh_u,ind2ind_u)
 
 ! Fold-in a sparse matrix from the auxiliary supercell into the
 ! unit cell (see picture)
@@ -12,8 +12,6 @@ module m_fold_auxcell
       integer, intent(in) :: no_l
       ! Number of orbitals in unit cell
       integer, intent(in) :: no_u
-      ! Number of orbitals in auxiliary supercell
-      integer, intent(in) :: no_s
       
       ! Number of interactions per orbital; pointer to beginning of sparse array data
       integer, intent(in) :: numh(no_l), listhptr(no_l)
@@ -21,10 +19,6 @@ module m_fold_auxcell
       integer, intent(in) :: nnz
       ! Columns of the (rectangular) supercell-based matrix
       integer, intent(in) :: listh(nnz)
-
-      ! Mapper of supercell-to-unit cell orbital indexes
-      integer, intent(in) :: indxuo(no_s)
-
 
       ! Output: All interactions are collapsed to the unit cell orbitals
 
@@ -51,7 +45,7 @@ module m_fold_auxcell
          do j = 1,numh(iuo)
             ind = listhptr(iuo) + j
             jo = listh(ind)
-            juo = indxuo(jo)
+            juo = mod(jo-1,no_u) + 1
             mask(juo) = 1    ! Found one
          enddo
          numh_u(iuo) = sum(mask)
@@ -75,7 +69,7 @@ module m_fold_auxcell
          do j = 1,numh(iuo)
             ind = ind + 1
             jo = listh(ind)
-            juo = indxuo(jo)
+            juo = mod(jo-1,no_u) + 1
             if (mask(juo) > 0) then
                ! juo already seen and its place recorded
                ind2ind_u(ind) = mask(juo)

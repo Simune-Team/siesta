@@ -1,18 +1,44 @@
+!
+!  This module implements functionality to change the MPI parallel
+!  distribution of a sparse matrix stored in the modified
+!  block-compressed form used in Siesta.
+!  
+!  The immediate goal is to exchange matrices between Siesta and the
+!  PEXSI library. Siesta uses a "block-cyclic" distribution over
+!  N_Siesta processors, and PEXSI uses a simple "greedy" blocked
+!  distribution on each pole-group, with npPerPole processors. The
+!  code works in principle with any distribution (subject to some
+!  conditions spelled out below). The source and target process groups
+!  are arbitrary, and can overlap. In fact, in SIESTA-PEXSI they
+!  *will* overlap, as otherwise we would need extra processors for the
+!  Siesta operations. This overlap forces the code to re-invent much
+!  of the logic involved in MPI intercommunicators, which cannot be
+!  created for non-disjoint groups.
 
-! --- Tangled code
+!  Written by Alberto Garcia
+
+! --- Tangled code  (using Org mode in emacs)
+!     Alas, the Org version is no longer maintained.
+!
 module m_redist_spmatrix
 #if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
  implicit none
+ integer, parameter, private :: dp = selected_real_kind(10,100)
+
+ ! Some auxiliary derived types
+ 
  type, public :: comm_t
     integer :: src, dst, i1, i2, nitems
  end type comm_t
- 
- integer, parameter, private :: dp = selected_real_kind(10,100)
- 
+  
  type, public :: dp_pointer
     ! boxed array pointer type
     real(dp), pointer :: data(:) => null()
  end type dp_pointer
+ type, public :: complex_dp_pointer
+    ! boxed array pointer type
+    complex(dp), pointer :: data(:) => null()
+ end type complex_dp_pointer
  
  type, public ::  aux_matrix
     integer :: norbs = -1
@@ -20,14 +46,21 @@ module m_redist_spmatrix
     integer :: nnzl  = -1
     integer, pointer :: numcols(:) => null()
     integer, pointer :: cols(:)    => null()
-    ! array of 1D pointers
+    ! arrays of 1D pointers
     type(dp_pointer), dimension(:), pointer :: vals(:) => null()
+    type(complex_dp_pointer), dimension(:), pointer :: complex_vals(:) => null()
  end type aux_matrix
+
+ 
  public :: redistribute_spmatrix
+ 
 CONTAINS
+  
  subroutine redistribute_spmatrix(norbs,m1,dist1,m2,dist2,bridge_comm)
  
-   use mpi
+   use mpi     ! Note that this is fine, as we do not use any Siesta-specific
+               ! parameter, such as a modified mpi_comm_world
+   
    use class_Distribution
    use alloc,       only: re_alloc, de_alloc
  
@@ -47,10 +80,11 @@ CONTAINS
    logical ::  proc_in_set1, proc_in_set2
    integer ::  ierr
  
-   integer ::  i, io, g1, g2, j, nvals
+   integer ::  i, io, g1, g2, j, nvals, nvals_complex
    integer ::  comparison, n1, n2, c1, c2
    integer, parameter :: dp = selected_real_kind(10,100)
    real(dp), dimension(:), pointer  :: data1 => null(), data2 => null()
+   complex(dp), dimension(:), pointer  :: cdata1 => null(), cdata2 => null()
  
    integer, allocatable :: ranks1(:), ranks2(:)
  
@@ -143,12 +177,18 @@ CONTAINS
       else
          nvals = 0
       endif
+      if (associated(m1%complex_vals)) then
+         nvals_complex = size(m1%complex_vals)
+      else
+         nvals_complex = 0
+      endif
    endif
    ! Now do a broadcast within bridge_comm, using as root one
    ! process in the first set. Let's say the one with rank 0
    ! in g1, the first in the set, which will have rank=ranks1(1)
    ! in bridge_comm
    call MPI_Bcast(nvals,1,MPI_Integer,ranks1(1),bridge_comm,ierr)
+   call MPI_Bcast(nvals_complex,1,MPI_Integer,ranks1(1),bridge_comm,ierr)
  
    ! Now we can figure out how many non-zeros there are
    if (proc_in_set2) then
@@ -160,6 +200,14 @@ CONTAINS
          do j=1,nvals
             call re_alloc(m2%vals(j)%data,1,m2%nnzl, &
                  "m2%vals(j)%data","redistribute_spmatrix")
+         enddo
+      endif
+ 
+      if (nvals_complex > 0) then
+         allocate(m2%complex_vals(nvals_complex))
+         do j=1,nvals_complex
+            call re_alloc(m2%complex_vals(j)%data,1,m2%nnzl, &
+                 "m2%complex_vals(j)%data","redistribute_spmatrix")
          enddo
       endif
  
@@ -216,6 +264,16 @@ CONTAINS
            g1,g2,bridge_comm)
    enddo
    nullify(data1,data2)
+
+!   if (myid == 0) print *, "About to transfer complex values..."
+   ! Transfer the values arrays
+   do j=1, nvals_complex
+      if (proc_in_set1) cdata1 => m1%complex_vals(j)%data
+      if (proc_in_set2) cdata2 => m2%complex_vals(j)%data
+      call do_transfers_complex_dp(commsnnz,cdata1,cdata2, &
+           g1,g2,bridge_comm)
+   enddo
+   nullify(cdata1,cdata2)
 !   if (myid == 0) print *, "Done transfers."
  
    deallocate(commsnnz)
@@ -543,6 +601,114 @@ CONTAINS
        deallocate(local_reqR, local_reqS, statuses)
  
      end subroutine do_transfers_dp
+ !--------------------------------------------------
+    subroutine do_transfers_complex_dp(comms,data1,data2,g1,g2,bridge_comm)
+ 
+      use mpi
+      integer, parameter :: dp = selected_real_kind(10,100)
+ 
+      type(comm_t), intent(in), target     :: comms(:)
+      complex(dp), dimension(:), pointer :: data1
+      complex(dp), dimension(:), pointer :: data2
+      integer, intent(in)                :: g1
+      integer, intent(in)                :: g2
+      integer, intent(in)                :: bridge_comm
+ 
+      integer                 :: basegroup, nsize1, nsize2, ierr
+      integer, allocatable    :: comm_rank1(:), comm_rank2(:)
+ 
+ 
+      integer :: ncomms
+      integer :: i
+      integer :: nrecvs_local, nsends_local
+      integer, allocatable :: statuses(:,:), local_reqR(:), local_reqS(:)
+      integer :: src_in_comm, dst_in_comm
+      integer :: myrank1, myrank2, myid
+      type(comm_t), pointer :: c
+ 
+      call  MPI_Comm_Rank( bridge_comm, myid, ierr )
+ !     print *, "Entering transfer_complex_dp"
+ !     print *, "rank, Associated data1: ", myid, associated(data1)
+ !     print *, "rank, Associated data2: ", myid, associated(data2)
+ 
+       ! Find the rank correspondences, in case
+       ! there is implicit renumbering at the time of group creation
+ 
+       call  MPI_Comm_group( bridge_comm, basegroup, ierr )
+       call  MPI_Group_Size( g1, nsize1, ierr )
+       call  MPI_Group_Size( g2, nsize2, ierr )
+       allocate(comm_rank1(0:nsize1-1))
+       call MPI_Group_translate_ranks( g1, nsize1, (/ (i,i=0,nsize1-1) /), &
+                                       basegroup, comm_rank1, ierr )
+ !      print "(a,10i3)", "Ranks of g1 in base group:", comm_rank1
+       allocate(comm_rank2(0:nsize2-1))
+       call MPI_Group_translate_ranks( g2, nsize2, (/ (i,i=0,nsize2-1) /), &
+                                       basegroup, comm_rank2, ierr )
+ !      print "(a,10i3)", "Ranks of g2 in base group:", comm_rank2
+ 
+       call mpi_group_rank(g1,myrank1,ierr)
+       call mpi_group_rank(g2,myrank2,ierr)
+ 
+       ! Do the actual transfers. 
+       ! This version with non-blocking communications
+ 
+      ncomms = size(comms)
+ 
+       ! Some bookkeeping for the requests
+       nrecvs_local = 0
+       nsends_local = 0
+       do i=1,ncomms
+          c => comms(i)
+          if (myrank2 == c%dst) then
+             nrecvs_local = nrecvs_local + 1
+          endif
+          if (myrank1 == c%src) then
+             nsends_local = nsends_local + 1
+          endif
+       enddo
+       allocate(local_reqR(nrecvs_local))
+       allocate(local_reqS(nsends_local))
+       allocate(statuses(mpi_status_size,nrecvs_local))
+ 
+       ! First, post the receives
+       nrecvs_local = 0
+       do i=1,ncomms
+          c => comms(i)
+          if (myrank2 == c%dst) then
+             nrecvs_local = nrecvs_local + 1
+             src_in_comm = comm_rank1(c%src)
+             call MPI_irecv(data2(c%i2),c%nitems,MPI_Double_Complex,src_in_comm, &
+                            i,bridge_comm,local_reqR(nrecvs_local),ierr)
+          endif
+       enddo
+ 
+       ! Post the sends
+       nsends_local = 0
+       do i=1,ncomms
+          c => comms(i)
+          if (myrank1 == c%src) then
+             nsends_local = nsends_local + 1
+             dst_in_comm = comm_rank2(c%dst)
+             call MPI_isend(data1(c%i1),c%nitems,MPI_Double_Complex,dst_in_comm, &
+                         i,bridge_comm,local_reqS(nsends_local),ierr)
+          endif
+       enddo
+ 
+       ! A former loop of waits can be substituted by a "waitall",
+       ! with every processor keeping track of the actual number of 
+       ! requests in which it is involved.
+ 
+       ! Should we wait also on the sends?
+ 
+       call MPI_waitall(nrecvs_local, local_reqR, statuses, ierr)
+ 
+ 
+       ! This barrier is needed, I think
+       call MPI_Barrier(bridge_comm,ierr)
+ 
+       deallocate(local_reqR, local_reqS, statuses)
+ 
+     end subroutine do_transfers_complex_dp
 #endif
 end module m_redist_spmatrix
 ! --- End of tangled code
