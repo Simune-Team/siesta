@@ -82,14 +82,14 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 !  qo(no_u,nspin,nk)  : Occupations of eigenstates
 
 
-     real(dp), intent(inout) :: H(:,:), S(:)    ! Note!
+     real(dp), intent(inout) :: H(:,:), S(:)    ! Note: we might overwrite these
      integer, intent(in) ::  iscf, maxnh, no_u, no_l, no_s, nkpnt
      integer, intent(in) ::  neigwanted, nspin
      integer, intent(in) ::  listh(maxnh), numh(no_l), listhptr(no_l)
+     real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
       real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Escf(maxnh,nspin), Entropy
       real(dp), intent(out) ::  eo(no_u,nspin,nkpnt), qo(no_u,nspin,nkpnt)
-      real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
       logical :: gamma, using_aux_cell
       integer, allocatable :: numh_u(:), listhptr_u(:), listh_u(:)
@@ -155,20 +155,26 @@ subroutine getdm_elsi(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             enddo
             deallocate(Dscf_k, Escf_k)
             deallocate(ind2ind_u)
-         endif
+
+         endif  ! using auxiliary supercell with Gamma sampling
          
       else
+         ! We need more preparation
          call elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
               numh, listhptr, listh, H, S, qtot, temp, &
               xijo, nkpnt, kpoint, kweight,    &
               eo, qo, Dscf, Escf, ef, Entropy, occtol, neigwanted)
+         
       endif
 
 end subroutine getdm_elsi
 
-! This version assumes *the same* distributions for Siesta (setup_H et al) and ELSI
-! operations.  ELSI tasks 1D block-cyclic distributed CSC/CSR matrices as its
+!======================================================================================
+! ELSI takes 1D block-cyclic distributed CSC/CSR matrices as its
 ! input/output.
+!
+! But note taht this version assumes *the same* distributions for Siesta (setup_H et al) and ELSI
+! operations.  
 !
 subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   col_idx, qtot, temp, ham, ovlp, dm, edm, ef, ets)
@@ -182,7 +188,6 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   use class_Distribution
   use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
   use alloc
-  use m_mpi_utils, only: globalize_sum
   
   implicit none
 
@@ -590,7 +595,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
       
-      integer :: mpirank, npGlobal
+      integer :: mpirank, kcolrank, npGlobal
       integer :: npPerK, color, my_kpt_n
       
       integer :: kpt_comm, kpt_col_comm
@@ -605,10 +610,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       type(aux_matrix) :: pkg_global, pkg_k
       integer :: nvals
       real(dp), allocatable, target :: xijo_transp(:,:)
-      real(dp), allocatable :: xij(:,:)
       real(dp), pointer :: my_xijo_transp(:,:) => null()
+      real(dp), allocatable :: my_xij(:,:)
 
-      integer :: my_no_l, my_nnz_l, my_nnz
+      integer :: my_no_l, my_nnz_l
       integer, pointer :: my_numh(:)
       integer, pointer :: my_listh(:)
       integer, pointer :: my_listhptr(:) => null()
@@ -658,7 +663,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       ! Column communicator
       color = mod(mpirank, npPerK) ! :  color 0: 0,4  1: 1,5  2: 2,6  3: 3,7
       call MPI_Comm_Split(elsi_global_comm, color, mpirank, kpt_col_Comm, ierr) ! OK to use mpirank: just ordering
+      call MPI_Comm_Rank(kpt_col_comm, kcolrank, ierr)
 
+      print *, mpirank, "| ", "k-point ", my_kpt_n, " rank in col:", kcolrank
+      
       ! Create distribution for k-point group
       call MPI_Comm_Group(elsi_global_comm, Global_Group, Ierr)
       call MPI_Comm_Group(kpt_Comm, kpt_Group, Ierr)
@@ -724,7 +732,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
           ! Unpack info: real S and H (and index arrays) distributed over each kpt_comm
           my_no_l   = pkg_k%no_l
           my_nnz_l  = pkg_k%nnzl
-          call MPI_AllReduce(my_nnz_l,my_nnz,1,MPI_integer,MPI_sum,kpt_Comm,ierr)   !! ** Check comm
           my_numh => pkg_k%numcols
 
           my_listh => pkg_k%cols
@@ -744,7 +751,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
            !  nullify(pkg_k%cols)
            !  deallocate(pkg_k%vals)
              !
-             ! but we need to remember to deallocate the arrays after use
+             ! but we need to remember to deallocate the actual arrays after use
              ! it is probably safer to keep the pkg references
           !---------------------------
 
@@ -765,8 +772,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
              my_listhptr(ih) = my_listhptr(ih-1) + my_numh(ih-1)
           enddo
 
-      ! For folding, each (k,spin) team has their own set of 'global' variables (could some be common?)
-      ! The folded variables are local to each team
+          ! The folded variables (*_u) are local to each team
                 
           allocate(numh_u(my_no_l), listhptr_u(my_no_l))
           call fold_sparse_arrays(my_no_l,no_u, &
@@ -774,8 +780,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
                               numh_u,listhptr_u,nnz_u,listh_u,ind2ind_u)
 
       ! 
-      call transpose(my_xijo_transp,xij)
+      call transpose(my_xijo_transp,my_xij)
       my_kpoint(:) = kpoint(:,my_kpt_n)
+      print *, mpirank, "| ", "Doing k-point ", my_kpt_n
+      
       allocate(Hk(nnz_u,nspin), Sk(nnz_u))
       Sk = 0
       Hk = 0
@@ -784,9 +792,9 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             ind = my_listhptr(iuo) + j
             ind_u = ind2ind_u(ind)
 
-            kxij = my_kpoint(1) * xij(1,ind) +    &
-                   my_kpoint(2) * xij(2,ind) +    &
-                   my_kpoint(3) * xij(3,ind) 
+            kxij = my_kpoint(1) * my_xij(1,ind) +    &
+                   my_kpoint(2) * my_xij(2,ind) +    &
+                   my_kpoint(3) * my_xij(3,ind) 
             kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
 
             Sk(ind_u) = Sk(ind_u) + my_S(ind) *kphs
@@ -810,7 +818,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       call elsi_complex_solver(iscf, no_u, my_no_l, nspin, nnz_u, numh_u, listhptr_u, &
                                listh_u, qtot, temp, Hk, Sk, DM_k, EDM_k, Ef, Entropy,  &
                                nkpnt, my_kpt_n, kpoint(:,my_kpt_n), kweight(my_kpt_n),    &
-                               elsi_global_comm, kpt_Comm, kpt_col_Comm )
+                               elsi_global_comm, kpt_Comm )
       
       deallocate(listhptr_u, numh_u, listh_u)
       deallocate(Hk,Sk)
@@ -828,10 +836,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             ind = my_listhptr(iuo) + j
             ind_u = ind2ind_u(ind)
 
-            kxij = my_kpoint(1) * xij(1,ind) +    &
-                 my_kpoint(2) * xij(2,ind) +    &
-                 my_kpoint(3) * xij(3,ind) 
-            kphs = cdexp(dcmplx(0.0_dp, +1.0_dp)*kxij)
+            kxij = my_kpoint(1) * my_xij(1,ind) +    &
+                 my_kpoint(2) * my_xij(2,ind) +    &
+                 my_kpoint(3) * my_xij(3,ind) 
+            kphs = cdexp(dcmplx(0.0_dp, +1.0_dp)*kxij)  ! ** CHECK phase sign
 
             do ispin = 1, nspin
                my_Dscf(ind,ispin) = real( DM_k(ind_u,ispin) * kphs )
@@ -840,6 +848,8 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
          enddo
       enddo
 
+      deallocate(my_xij)
+      deallocate(ind2ind_u)
       call de_alloc(DM_k,"DM_k","elsi_solver")
       call de_alloc(EDM_k,"EDM_k","elsi_solver")
 
@@ -847,15 +857,19 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
          ! Prepare arrays for holding reduced data
          call re_alloc(my_Dscf_reduced,1,my_nnz_l,1,nspin,"my_Dscf_reduced","elsi_solver")
          call re_alloc(my_Escf_reduced,1,my_nnz_l,1,nspin,"my_Escf_reduced","elsi_solver")
+         if (kcolrank /= 0) call die("Rank 0 in kpt_comm not doing kpt 1") 
       endif
 
       ! Use k-point column communicator, and reduce to rank 0,
-      ! which *should* correspond to kpt=1... CHECK ***
+      ! which *should* correspond to kpt=1... (checked above)
       call MPI_Reduce( my_Dscf, my_Dscf_reduced, nspin*my_nnz_l, MPI_Double_Precision, &
            MPI_Sum, 0, kpt_col_comm, ierr )
       call MPI_Reduce( my_Escf, my_Escf_reduced, nspin*my_nnz_l, MPI_Double_Precision, &
            MPI_Sum, 0, kpt_col_comm, ierr )
 
+      call de_alloc(my_Dscf,"my_Dscf")
+      call de_alloc(my_Escf,"my_Escf")
+      
       ! redistribute to global distribution, only from the first k-point
 
       if (my_kpt_n == 1) then
@@ -878,25 +892,24 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
       ! Everybody participates in the transfer in the receiving side, but
       ! only kpt=1 in the sending side, because we are using dist_k(1)
-      call timer("redist_orbs_bck", 1)
+      call timer("redist_dm-edm_bck", 1)
       call redistribute_spmatrix(no_u,pkg_k,dist_k(1), &
            pkg_global,dist_global,elsi_global_Comm)
-      call timer("redist_orbs_bck", 2)
+      call timer("redist_dm-edm_bck", 2)
 
+      call de_alloc(my_Dscf_reduced,"my_Dscf_reduced")
+      call de_alloc(my_Escf_reduced,"my_Escf_reduced")
       !Clean pkg_k in sender
       if (my_kpt_n == 1) then
-         do i = 1, size(pkg_k%vals)
-            call de_alloc(pkg_k%vals(i)%data,"pkg_k%vals%data","kpoints_dispatcher")
-         enddo
-         deallocate(pkg_k%vals)
+         deallocate(pkg_k%vals)   ! just pointers
       endif
 
-      !Clean all pkg_k
-      call de_alloc(pkg_k%numcols)
-      call de_alloc(pkg_k%cols)
+      !Clean all pkg_k: These were actually allocated in the forward transfer
+      call de_alloc(pkg_k%numcols,"pkg_k%numcols")
+      call de_alloc(pkg_k%cols,"pkg_k%cols")
 
-      ! Unload data (all processors, original global distribution)
-        ! In future, pkg_global%vals(1,2) could be pointing to DM and EDM,
+      ! Unpack data (all processors, original global distribution)
+        ! In future, pkg_global%vals(:) could be pointing to DM and EDM,
         ! and the 'redistribute' routine check whether the vals arrays are
         ! associated, to use them instead of allocating them.
          do ispin = 1, nspin
@@ -919,6 +932,11 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
            call de_alloc(pkg_global%vals(i)%data,"pkg_global%vals%data","kpoints_dispatcher")
         enddo
         deallocate(pkg_global%vals)
+
+        ! Possible reduction of entropy?
+        
+     call MPI_Comm_Free(kpt_comm, ierr)
+     call MPI_Comm_Free(kpt_col_comm, ierr)
                   
 end subroutine elsi_kpoints_dispatcher
 
@@ -1087,7 +1105,7 @@ end subroutine get_spin_comms_and_dists
 
 subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, row_ptr, &
      col_idx, qtot, temp, ham, ovlp, dm, edm, ef, ets, &
-     nkpnt, kpt_n, kpt, weight, elsi_global_comm, kpt_comm, kpt_col_comm)
+     nkpnt, kpt_n, kpt, weight, elsi_global_comm, kpt_comm)
 
   use fdf,         only: fdf_get
   use m_mpi_utils, only: globalize_sum
@@ -1124,7 +1142,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   real(dp), intent(in)    :: weight
   integer,  intent(in)    :: elsi_global_comm
   integer,  intent(in)    :: kpt_comm
-  integer,  intent(in)    :: kpt_col_comm
   
   integer :: ierr
   integer :: n_state
