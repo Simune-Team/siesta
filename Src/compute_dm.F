@@ -153,14 +153,11 @@
      &              no_l, maxnh, no_u,
      &              numh, listhptr, listh,
      &              H, S, qtot, temp, 
-     &              xijo, indxuo,
+     &              xijo,
      &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
      &              eo, qo, Dscf, Escf, ef, Entropy,
      &              occtol, neigwanted)
          Ecorrec = 0.0_dp
-!         call elsi_solver(iscf, no_u, no_l, spin%spinor,
-!     $              maxnh, listhptr, listh, qtot, temp,
-!     $              H, S, Dscf, Escf, ef, Entropy)
       endif
       if (.not. SIESTA_worker) RETURN
 #endif
