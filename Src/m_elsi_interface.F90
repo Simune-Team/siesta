@@ -724,46 +724,52 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
              pkg_global%vals(4+ispin)%data => H(:,ispin)
           enddo
 
-          call timer("redist_orbs_fwd", 1)
-          call redistribute_spmatrix(no_u,pkg_global,dist_global, &
-                                             pkg_k,dist_k(my_kpt_n),elsi_global_Comm)
-          call timer("redist_orbs_fwd", 2)
+        ! Do sequential
+        do ik=1, nkpnt
 
-          !------------------------------------------
-          ! Unpack info: real S and H (and index arrays) distributed over each kpt_comm
-          my_no_l   = pkg_k%no_l
-          my_nnz_l  = pkg_k%nnzl
-          my_numh => pkg_k%numcols
+           call timer("redist_orbs_fwd", 1)
+           call redistribute_spmatrix(no_u,pkg_global,dist_global, &
+                                             pkg_k,dist_k(ik),elsi_global_Comm)
+           call timer("redist_orbs_fwd", 2)
 
-          my_listh => pkg_k%cols
-          
-          allocate(my_S(my_nnz_l))
-          my_S(:) = pkg_k%vals(1)%data(:)
-          call de_alloc(pkg_k%vals(1)%data)
-          
-          allocate(my_xijo_transp(my_nnz_l,3))
-          do i = 1, 3
-             buffer => pkg_k%vals(1+i)%data
-             my_xijo_transp(:,i) = buffer(:)
-             call de_alloc(pkg_k%vals(1+i)%data)
-          enddo
+           if (my_kpt_n == ik) then
+              !------------------------------------------
+              ! Unpack info: real S and H (and index arrays) distributed over each kpt_comm
+              my_no_l   = pkg_k%no_l
+              my_nnz_l  = pkg_k%nnzl
+              my_numh => pkg_k%numcols
 
-          allocate(my_H(my_nnz_l,nspin))
-          do ispin = 1, nspin
-             buffer => pkg_k%vals(4+ispin)%data
-             my_H(:,ispin) = buffer(:)
-             call de_alloc(pkg_k%vals(4+ispin)%data)
-          enddo
-          deallocate(pkg_k%vals)
-          !------------------------------------------
+              my_listh => pkg_k%cols
           
-          ! Now we could clear the rest of pkg_k--
-           !  nullify(pkg_k%numcols)
-           !  nullify(pkg_k%cols)
-             !
-             ! but we need to remember to deallocate the actual arrays after use
-             ! it is probably safer to keep the pkg references
-          !---------------------------
+              allocate(my_S(my_nnz_l))
+              my_S(:) = pkg_k%vals(1)%data(:)
+              call de_alloc(pkg_k%vals(1)%data)
+          
+              allocate(my_xijo_transp(my_nnz_l,3))
+              do i = 1, 3
+                 buffer => pkg_k%vals(1+i)%data
+                 my_xijo_transp(:,i) = buffer(:)
+                 call de_alloc(pkg_k%vals(1+i)%data)
+              enddo
+
+              allocate(my_H(my_nnz_l,nspin))
+              do ispin = 1, nspin
+                 buffer => pkg_k%vals(4+ispin)%data
+                 my_H(:,ispin) = buffer(:)
+                 call de_alloc(pkg_k%vals(4+ispin)%data)
+              enddo
+              deallocate(pkg_k%vals)
+          
+              ! Now we could clear the rest of pkg_k--
+              !  nullify(pkg_k%numcols)
+              !  nullify(pkg_k%cols)
+              !
+              ! but we need to remember to deallocate the actual arrays after use
+              ! it is probably safer to keep the pkg references
+              !---------------------------
+
+           endif
+        enddo   !ik
 
           ! Clean pkg_global -- This is safe, as we use pointers to data only
           do i = 1, size(pkg_global%vals)
