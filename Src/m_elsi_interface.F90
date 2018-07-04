@@ -621,13 +621,13 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       real(dp), allocatable :: my_H(:,:)
       real(dp), pointer :: buffer(:)  ! for unpacking help
 
-      real(dp), pointer :: my_Escf(:,:) => null()
-      real(dp), pointer :: my_Dscf(:,:) => null()
-      real(dp), pointer :: my_Escf_reduced(:,:) => null()
-      real(dp), pointer :: my_Dscf_reduced(:,:) => null()
+      real(dp), allocatable :: my_Escf(:,:) 
+      real(dp), allocatable :: my_Dscf(:,:) 
+      real(dp), allocatable, target :: my_Escf_reduced(:,:)
+      real(dp), allocatable, target :: my_Dscf_reduced(:,:) 
 
-      complex(dp), pointer :: DM_k(:,:)
-      complex(dp), pointer :: EDM_k(:,:)
+      complex(dp), allocatable :: DM_k(:,:)
+      complex(dp), allocatable :: EDM_k(:,:)
       complex(dp), allocatable :: Hk(:,:)
       complex(dp), allocatable :: Sk(:)
 
@@ -826,8 +826,8 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
       print *, mpirank, "| ", "k-point ", my_kpt_n, " Done folding"
       ! Prepare arrays for holding results
-      call re_alloc(DM_k,1,nnz_u,1,nspin,"DM_k","elsi_solver")
-      call re_alloc(EDM_k,1,nnz_u,1,nspin,"EDM_k","elsi_solver")
+      allocate(DM_k(nnz_u,nspin))
+      allocate(EDM_k(nnz_u,nspin))
 
       call elsi_complex_solver(iscf, no_u, my_no_l, nspin, nnz_u, numh_u, listhptr_u, &
                                listh_u, qtot, temp, Hk, Sk, DM_k, EDM_k, Ef, Entropy,  &
@@ -843,8 +843,8 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       ! Unfold within a given k
 
       ! Prepare arrays for holding results: Note sizes: these are folded out
-      call re_alloc(my_Dscf,1,my_nnz_l,1,nspin,"my_Dscf","elsi_solver")
-      call re_alloc(my_Escf,1,my_nnz_l,1,nspin,"my_Escf","elsi_solver")
+      allocate(my_Dscf(my_nnz_l,nspin))
+      allocate(my_Escf(my_nnz_l,nspin))
 
       do iuo = 1, my_no_l
          do j = 1, my_numh(iuo)
@@ -866,14 +866,17 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       print *, mpirank, "| ", "k-point ", my_kpt_n, " Done generating my_Dscf"
       deallocate(my_xij)
       deallocate(ind2ind_u)
-      call de_alloc(DM_k,"DM_k","elsi_solver")
-      call de_alloc(EDM_k,"EDM_k","elsi_solver")
+      deallocate(DM_k,EDM_k)
 
       if (my_kpt_n == 1 ) then
          ! Prepare arrays for holding reduced data
-         call re_alloc(my_Dscf_reduced,1,my_nnz_l,1,nspin,"my_Dscf_reduced","elsi_solver")
-         call re_alloc(my_Escf_reduced,1,my_nnz_l,1,nspin,"my_Escf_reduced","elsi_solver")
+         allocate(my_Dscf_reduced(my_nnz_l,nspin))
+         allocate(my_Escf_reduced(my_nnz_l,nspin))
          if (kcolrank /= 0) call die("Rank 0 in kpt_comm not doing kpt 1") 
+      else
+         ! These should not be referenced
+         allocate(my_Dscf_reduced(1,1))
+         allocate(my_Escf_reduced(1,1))
       endif
 
       ! Use k-point column communicator, and reduce to rank 0,
@@ -884,8 +887,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
            MPI_Sum, 0, kpt_col_comm, ierr )
 
       print *, mpirank, "| ", "k-point ", my_kpt_n, " Done reducing my_Dscf"
-      call de_alloc(my_Dscf,"my_Dscf")
-      call de_alloc(my_Escf,"my_Escf")
+      deallocate(my_Dscf, my_Escf)
       
       ! redistribute to global distribution, only from the first k-point
 
@@ -914,10 +916,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
            pkg_global,dist_global,elsi_global_Comm)
       call timer("redist_dm-edm_bck", 2)
 
-      call de_alloc(my_Dscf_reduced,"my_Dscf_reduced")
-      call de_alloc(my_Escf_reduced,"my_Escf_reduced")
-      !Clean pkg_k in sender
+      ! Deallocate aux arrays
+      deallocate(my_Dscf_reduced, my_Escf_reduced)
       if (my_kpt_n == 1) then
+         !Clean pkg_k in sender
          deallocate(pkg_k%vals)   ! just pointers
       endif
 
@@ -1200,7 +1202,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   integer :: my_nnz_l 
   integer :: my_nnz
   integer, pointer  :: my_row_ptr2(:) => null()
-  integer  :: i, ih, ispin, spin_rank
+  integer  :: i, ih, ispin, spin_rank, global_rank
   real(dp) :: ets_spin
 
   integer, pointer  :: my_col_idx(:)
@@ -1306,6 +1308,8 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
  endif   ! iscf == 1
   
+      print *, global_rank, "| ", " Entering elsi_complex_solver"
+
     if (n_spin == 1) then
        
        ! Sparsity pattern
@@ -1325,12 +1329,14 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
     else
        
+       call mpi_comm_rank( elsi_global_Comm, global_rank, ierr )
+
        ! MPI logic for spin polarization
 
        ! Split the communicator in spins and get distribution objects
        ! for the data redistribution needed
        ! Note that dist_spin is an array
-       call get_spin_comms_and_dists(elsi_global_comm,kpt_comm, &  !! **** kpt_comm as global?
+       call get_spin_comms_and_dists(kpt_comm,kpt_comm, &  !! **** kpt_comm as global?
             blocksize, n_spin, &
             dist_global,dist_spin, elsi_spatial_comm, elsi_spin_comm)
 
@@ -1338,6 +1344,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
        call mpi_comm_rank( elsi_Spin_Comm, spin_rank, ierr )
        my_spin = spin_rank+1  ! {1,2}
 
+      print *, global_rank, "| ", "spin ", my_spin, " After spin splitting"
        
        ! This is done serially, each time filling one spin set
        ! Note that **all processes** need to have the same pkg_global
@@ -1367,7 +1374,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
           ! does not involve them.
           
           call redistribute_spmatrix(n_basis,pkg_global,dist_global, &
-                                             pkg_spin,dist_spin(ispin),elsi_global_Comm)
+                                             pkg_spin,dist_spin(ispin),kpt_Comm)
    
           call timer("redist_orbs_fwd", 2)
 
@@ -1401,6 +1408,8 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
        enddo
 
+       print *, global_rank, "| ", "spin ", my_spin, "Done spin transfers"
+
        call elsi_set_csc(elsi_h, my_nnz, my_nnz_l, my_no_l, my_col_idx, my_row_ptr2)
        call de_alloc(my_row_ptr2,"my_row_ptr2","elsi_solver")
        
@@ -1414,6 +1423,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
     
   call timer("elsi-solver", 1)
 
+  print *, global_rank, "| ", "About to call elsi_dm"
   if (n_spin == 1) then
      call elsi_dm_complex_sparse(elsi_h, ham, ovlp, DM, energy)
      call elsi_get_edm_complex_sparse(elsi_h, EDM)
@@ -1435,6 +1445,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   ! Ef, energy, and ets are known to all nodes
 
   call timer("elsi-solver", 2)
+  print *, global_rank, "| ", "Done elsi_dm"
 
   if ( n_spin == 2) then
      ! Now we need to redistribute back
@@ -1456,7 +1467,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
         ! pkg_global is clean now
         call timer("redist_orbs_bck", 1)
         call redistribute_spmatrix(n_basis,pkg_spin,dist_spin(ispin) &
-                                          ,pkg_global,dist_global,elsi_global_Comm)
+                                          ,pkg_global,dist_global,kpt_Comm)
         call timer("redist_orbs_bck", 2)
 
         ! Clean pkg_spin
@@ -1502,7 +1513,10 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
      call MPI_Comm_Free(elsi_Spatial_comm, ierr)
      call MPI_Comm_Free(elsi_Spin_comm, ierr)
-     
+  
+  else    ! n_spin == 1
+   
+       ! Nothing else to do
   endif
 
   call timer("elsi-complex-solver", 2)
