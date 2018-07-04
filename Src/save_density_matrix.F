@@ -28,7 +28,7 @@
       use atomlist,             only:  no_l
       use siesta_options,       only:  writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
-      use siesta_options,       only:  idyn
+      use siesta_options,       only:  idyn, nmove
       use m_steps,              only:  istp
       use sparse_matrices,      only:  Dscf, DM_2D
       use fdf,                  only:  fdf_get
@@ -51,7 +51,7 @@
       logical, intent(in), optional  :: when
       character(len=*), intent(in), optional   :: file
 
-      logical :: do_it
+      logical :: do_it, is_MD
 
 #ifdef CDF
 #ifdef NCDF_4
@@ -83,13 +83,17 @@
      &                         overwrite=.true. )
       endif
 #ifdef NCDF_4
-      if ( write_cdf ) then
+      if ( write_cdf .and. do_it ) then
 
-         dic_save = ('Ef'.kv.1)
-         dic_save = dic_save//('DM'.kv.1)//('EDM'.kv.1)
-         call cdf_save_state(trim(slabel)//'.nc',dic_save)
-
-         call delete(dic_save)
+        if ( (idyn == 0 .and. nmove == 0) .or.
+     &      (idyn == 6 .and. istp == 1 ) ) then
+          
+          dic_save = ('Ef'.kv.1)
+          dic_save = dic_save//('DM'.kv.1)//('EDM'.kv.1)
+          call cdf_save_state(trim(slabel)//'.nc',dic_save)
+          
+          call delete(dic_save)
+        end if
 
       end if
 #endif

@@ -72,9 +72,7 @@
       use write_subs,            only: siesta_write_forces
       use write_subs,            only: siesta_write_stress_pressure
 #ifdef NCDF_4
-      use dictionary
-      use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
-      use m_ncdf_siesta, only : cdf_save_state, cdf_save_basis
+      use m_ncdf_siesta, only : cdf_save_settings
 #endif
       use m_compute_energies, only: compute_energies
       use m_mpi_utils, only: broadcast
@@ -121,9 +119,6 @@
       external :: die, message
 
       real(dp) :: Qcur
-#ifdef NCDF_4
-      type(dict) :: d_sav
-#endif
 #ifdef SIESTA__FLOOK
       ! len=24 from m_mixing.F90
       character(len=1), target :: next_mixer(24)
@@ -230,27 +225,12 @@
       ! Initialize the NC file
       if ( write_cdf ) then
 
-         ! Initialize the file...
-         call cdf_init_file(trim(slabel)//'.nc',is_MD = .false.)
+!       Save the settings (important to do here since mesh-cutoff may
+!       have changed).
+        call cdf_save_settings(trim(slabel)//'.nc')
 #ifdef MPI
-         call MPI_Barrier(MPI_Comm_World,MPIerror)
+        call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
-
-         ! Save the settings
-         call cdf_save_settings(trim(slabel)//'.nc')
-#ifdef MPI
-         call MPI_Barrier(MPI_Comm_World,MPIerror)
-#endif
-
-         d_sav = ('sp'.kv.1)//('S'.kv.1)
-         d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
-         d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
-         d_sav = d_sav//('isc_off'.kv.1)
-         call cdf_save_state(trim(slabel)//'.nc',d_sav)
-         call delete(d_sav)
-
-         ! Save the basis set
-         call cdf_save_basis(trim(slabel)//'.nc')
 
       end if
 #endif
