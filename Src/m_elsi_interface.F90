@@ -610,15 +610,16 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       type(aux_matrix) :: pkg_global, pkg_k
       integer :: nvals
       real(dp), allocatable, target :: xijo_transp(:,:)
-      real(dp), pointer :: my_xijo_transp(:,:) => null()
+      real(dp), allocatable :: my_xijo_transp(:,:)
       real(dp), allocatable :: my_xij(:,:)
 
       integer :: my_no_l, my_nnz_l
       integer, pointer :: my_numh(:)
       integer, pointer :: my_listh(:)
       integer, pointer :: my_listhptr(:) => null()
-      real(dp), pointer :: my_S(:)
-      real(dp), pointer :: my_H(:,:)
+      real(dp), allocatable :: my_S(:)
+      real(dp), allocatable :: my_H(:,:)
+      real(dp), pointer :: buffer(:)  ! for unpacking help
 
       real(dp), pointer :: my_Escf(:,:) => null()
       real(dp), pointer :: my_Dscf(:,:) => null()
@@ -735,21 +736,30 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
           my_numh => pkg_k%numcols
 
           my_listh => pkg_k%cols
-          my_S => pkg_k%vals(1)%data
-
+          
+          allocate(my_S(my_nnz_l))
+          my_S(:) = pkg_k%vals(1)%data(:)
+          call de_alloc(pkg_k%vals(1)%data)
+          
+          allocate(my_xijo_transp(my_nnz_l,3))
           do i = 1, 3
-             my_xijo_transp(1:my_nnz_l,i:i) => pkg_k%vals(1+i)%data
+             buffer => pkg_k%vals(1+i)%data
+             my_xijo_transp(:,i) = buffer(:)
+             call de_alloc(pkg_k%vals(1+i)%data)
           enddo
 
+          allocate(my_H(my_nnz_l,nspin))
           do ispin = 1, nspin
-             my_H(1:my_nnz_l,ispin:ispin) => pkg_k%vals(4+ispin)%data
+             buffer => pkg_k%vals(4+ispin)%data
+             my_H(:,ispin) = buffer(:)
+             call de_alloc(pkg_k%vals(4+ispin)%data)
           enddo
+          deallocate(pkg_k%vals)
           !------------------------------------------
           
-          ! Now we could clear pkg_k--
+          ! Now we could clear the rest of pkg_k--
            !  nullify(pkg_k%numcols)
            !  nullify(pkg_k%cols)
-           !  deallocate(pkg_k%vals)
              !
              ! but we need to remember to deallocate the actual arrays after use
              ! it is probably safer to keep the pkg references
@@ -780,9 +790,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
                               numh_u,listhptr_u,nnz_u,listh_u,ind2ind_u)
 
       ! 
-      call transpose(my_xijo_transp,my_xij)
+          call transpose(my_xijo_transp,my_xij)
+          deallocate(my_xijo_transp)
+
       my_kpoint(:) = kpoint(:,my_kpt_n)
-      print *, mpirank, "| ", "Doing k-point ", my_kpt_n
       
       allocate(Hk(nnz_u,nspin), Sk(nnz_u))
       Sk = 0
@@ -803,14 +814,11 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             enddo
          enddo
       enddo
-            
-      ! Deallocate un-needed bits of pkg_k  (my_S, my_H, my_xijo_transp)
-      do i = 1, size(pkg_k%vals)
-         call de_alloc(pkg_k%vals(i)%data,"pkg_k%vals%data","kpoints_dispatcher")
-      enddo
-      deallocate(pkg_k%vals)
+
+      deallocate(my_S,my_H)
       !       
 
+      print *, mpirank, "| ", "k-point ", my_kpt_n, " Done folding"
       ! Prepare arrays for holding results
       call re_alloc(DM_k,1,nnz_u,1,nspin,"DM_k","elsi_solver")
       call re_alloc(EDM_k,1,nnz_u,1,nspin,"EDM_k","elsi_solver")
@@ -820,6 +828,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
                                nkpnt, my_kpt_n, kpoint(:,my_kpt_n), kweight(my_kpt_n),    &
                                elsi_global_comm, kpt_Comm )
       
+      print *, mpirank, "| ", "k-point ", my_kpt_n, " Done elsi_complex_solver"
       deallocate(listhptr_u, numh_u, listh_u)
       deallocate(Hk,Sk)
 
@@ -848,6 +857,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
          enddo
       enddo
 
+      print *, mpirank, "| ", "k-point ", my_kpt_n, " Done generating my_Dscf"
       deallocate(my_xij)
       deallocate(ind2ind_u)
       call de_alloc(DM_k,"DM_k","elsi_solver")
@@ -867,6 +877,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       call MPI_Reduce( my_Escf, my_Escf_reduced, nspin*my_nnz_l, MPI_Double_Precision, &
            MPI_Sum, 0, kpt_col_comm, ierr )
 
+      print *, mpirank, "| ", "k-point ", my_kpt_n, " Done reducing my_Dscf"
       call de_alloc(my_Dscf,"my_Dscf")
       call de_alloc(my_Escf,"my_Escf")
       
@@ -908,6 +919,8 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       call de_alloc(pkg_k%numcols,"pkg_k%numcols")
       call de_alloc(pkg_k%cols,"pkg_k%cols")
 
+      print *, mpirank, "| ", "k-point ", my_kpt_n, " Done cleaning pkg_k"
+      
       ! Unpack data (all processors, original global distribution)
         ! In future, pkg_global%vals(:) could be pointing to DM and EDM,
         ! and the 'redistribute' routine check whether the vals arrays are
@@ -925,6 +938,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
            call die("Mismatch in listH at end of kpoints-dispatcher")
         endif
 
+        print *, mpirank, "| ", "k-point ", my_kpt_n, " Done Dscf"
         ! Clean pkg_global
         call de_alloc(pkg_global%numcols,"pkg_global%numcols","elsi_solver") 
         call de_alloc(pkg_global%cols,   "pkg_global%cols",   "elsi_solver")
@@ -932,6 +946,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
            call de_alloc(pkg_global%vals(i)%data,"pkg_global%vals%data","kpoints_dispatcher")
         enddo
         deallocate(pkg_global%vals)
+        print *, mpirank, "| ", "k-point ", my_kpt_n, " Done cleaning pkg_global"
 
         ! Possible reduction of entropy?
         
