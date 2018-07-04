@@ -54,7 +54,7 @@ module m_elsi_interface
 
   type(elsi_handle) :: elsi_h
 
-  integer :: elsi_global_comm
+  integer :: elsi_global_comm    ! Used by all routines. Freed at end of scf loop
   integer :: which_solver
 
   real(dp), allocatable :: v_old(:,:)
@@ -599,8 +599,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       integer :: npPerK, color, my_kpt_n
       
       integer :: kpt_comm, kpt_col_comm
-      integer :: elsi_global_comm
-
       integer :: Global_Group, kpt_Group
 
       integer, allocatable :: ranks_in_world(:), ranks_in_world_AllK(:,:)
@@ -832,7 +830,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       call elsi_complex_solver(iscf, no_u, my_no_l, nspin, nnz_u, numh_u, listhptr_u, &
                                listh_u, qtot, temp, Hk, Sk, DM_k, EDM_k, Ef, Entropy,  &
                                nkpnt, my_kpt_n, kpoint(:,my_kpt_n), kweight(my_kpt_n),    &
-                               elsi_global_comm, kpt_Comm )
+                               kpt_Comm )
       
       print *, mpirank, "| ", "k-point ", my_kpt_n, " Done elsi_complex_solver"
       deallocate(listhptr_u, numh_u, listh_u)
@@ -1128,7 +1126,7 @@ end subroutine get_spin_comms_and_dists
 
 subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, row_ptr, &
      col_idx, qtot, temp, ham, ovlp, dm, edm, ef, ets, &
-     nkpnt, kpt_n, kpt, weight, elsi_global_comm, kpt_comm)
+     nkpnt, kpt_n, kpt, weight, kpt_comm)
 
   use fdf,         only: fdf_get
   use m_mpi_utils, only: globalize_sum
@@ -1163,7 +1161,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   integer,  intent(in)    :: kpt_n
   real(dp), intent(in)    :: kpt(3:)
   real(dp), intent(in)    :: weight
-  integer,  intent(in)    :: elsi_global_comm
   integer,  intent(in)    :: kpt_comm
   
   integer :: ierr
