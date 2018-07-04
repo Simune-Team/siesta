@@ -37,7 +37,7 @@
       use m_pexsi_solver,  only: pexsi_solver
 #endif
 #ifdef SIESTA__ELSI
-      use m_elsi_interface,  only: getdm_elsi
+      use m_elsi_interface,  only: elsi_getdm
 #endif
       use m_hsx, only      : write_hs_formatted
 #ifdef MPI
@@ -149,7 +149,7 @@
      $               "The ELSI solver does not implement "//
      $               "non-coll spins or Spin-orbit yet")
          endif
-         call getdm_elsi(iscf, no_s, spin%spinor, 
+         call elsi_getdm(iscf, no_s, spin%spinor, 
      &              no_l, maxnh, no_u,
      &              numh, listhptr, listh,
      &              H, S, qtot, temp, 
