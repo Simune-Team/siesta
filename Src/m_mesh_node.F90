@@ -165,15 +165,21 @@ contains
          call die('Incorrect number of C divisions found.')
 
     ! Calculate starting point for grid
-    offset_i(1) = (meshLim(1,1)-1)*nsm
-    offset_i(2) = (meshLim(1,2)-1)*nsm
-    offset_i(3) = (meshLim(1,3)-1)*nsm
+    offset_i(:) = (meshLim(1,:) - 1)*nsm
 
 #ifdef MESH_DEBUG
     ! We will print out information about the boxes that each processor
     ! has..
     if ( IONode ) then
        write(*,'(t2,a)') 'Printing offsets and corners in Ang'
+       write(*,'(t3,a,3(tr1,f10.5))') &
+               'dL-x: ',dL(:,1)/Ang
+       write(*,'(t3,a,3(tr1,f10.5))') &
+               'dL-y: ',dL(:,2)/Ang
+       write(*,'(t3,a,3(tr1,f10.5))') &
+               'dL-z: ',dL(:,3)/Ang
+       write(*,'(t3,a,3(tr1,f10.5))') &
+               'dMesh:',dMesh(:)/Ang
     end if
 #ifdef MPI
     do i = 0 , Nodes - 1
