@@ -9,7 +9,7 @@ subroutine ofc(fa, dx, na, has_constr, first)
 ! *******************************************************************
 ! Writes force constants matrix to file
 ! Input forces are in Ry/Bohr and input displacements are in Bohr.
-! Force Constants written in file are in eV / Ang
+! Force Constants written in file are in eV / Ang ** 2
 ! Written by P.Ordejon. August'98.
 ! Dynamic memory and save attribute for fres introduced by J.Gale
 ! Sept'99.
