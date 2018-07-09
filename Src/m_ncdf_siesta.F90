@@ -180,8 +180,7 @@ contains
       
       chks = (/n_nzs,1,1/)
       
-      dic = dic//('info'.kv. &
-          'Supercell column indices in the sparse format ')
+      dic = dic//('info'.kv. 'Supercell column indices in the sparse format')
       call ncdf_def_var(grp,'list_col',NF90_INT,(/'nnzs'/), &
           compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
       
@@ -410,21 +409,33 @@ contains
 
       ! Create dimension arrays
       ! Create arrays for containers
-      call ncdf_def_dim(grp,'ia',ia2-ia1+1)
+      allocate(ibuf(ia2-ia1+1))
+      do i = ia1, ia2
+        ibuf(i-ia1+1) = i
+      end do
+      call ncdf_def_dim(grp,'na_fc',ia2-ia1+1)
       call ncdf_def_dim(grp,'m_p',2)
 
       dic = dic//('info'.kv.'Displacement length')//('unit'.kv.'Bohr')
       call ncdf_def_var(grp,'disp',NF90_DOUBLE,(/'one'/), &
-          compress_lvl=0, atts=dic) ! do not compress unlimited D
+          compress_lvl=0, atts=dic)
       call ncdf_put_var(grp,'disp',dx)
 
-      dic = dic//('info'.kv.'Undisplaced atomic forces ')//('unit'.kv.'Ry/Bohr')
+      call delete(dic)
+      dic = dic//('info'.kv.'Displaced atoms')
+      call ncdf_def_var(grp,'ia_fc',NF90_INT,(/'na_fc'/), &
+          compress_lvl=cdf_comp_lvl, atts=dic)
+
+      call ncdf_put_var(grp,'ia_fc',ibuf)
+      deallocate(ibuf)
+
+      dic = dic//('info'.kv.'Undisplaced atomic forces')//('unit'.kv.'Ry/Bohr')
       call ncdf_def_var(grp,'fa0',NF90_DOUBLE,(/'xyz ','na_u'/), &
-          compress_lvl=0, atts=dic) ! do not compress unlimited D
+          compress_lvl=cdf_comp_lvl, atts=dic)
 
       dic = dic//('info'.kv.'Displaced atomic forces')//('unit'.kv.'Ry/Bohr')
-      call ncdf_def_var(grp,'fa',NF90_DOUBLE,(/'xyz ','na_u','m_p ','xyz ', 'ia  '/), &
-          compress_lvl=0, atts=dic) ! do not compress unlimited D
+      call ncdf_def_var(grp,'fa',NF90_DOUBLE,(/'xyz  ','na_u ','m_p  ','xyz  ', 'na_fc'/), &
+          compress_lvl=cdf_comp_lvl, atts=dic)
       
     end if
 
