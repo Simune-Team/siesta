@@ -17,7 +17,7 @@
 #ifdef NCDF_4
       use siesta_options, only: write_cdf
 #endif
-      use siesta_options, only: g2cut, savehs, temp
+      use siesta_options, only: g2cut, savehs, temp, nmove
       use siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
       use sparse_matrices, only: H, S, Dscf, Escf, maxnh, xijo
@@ -319,10 +319,23 @@
 #ifdef CDF
 #ifdef NCDF_4
       if ( write_cdf ) then
-         dic_save = ('fa'.kv.1)//('stress'.kv.1)
-         if ( savehs .or. TS_HS_save ) dic_save = dic_save //('H'.kv.1)
-         call cdf_save_state(trim(slabel)//'.nc',dic_save)
-         call delete(dic_save)
+        if ( idyn == 6 ) then
+          call cdf_save_fc(trim(slabel)//'.nc', istep)
+          if ( istep == 0 ) then
+            dic_save = ('fa'.kv.1)//('stress'.kv.1)
+            if ( savehs .or. TS_HS_save )
+     &          dic_save = dic_save//('H'.kv.1)
+            call cdf_save_state(trim(slabel)//'.nc',dic_save)
+            call delete(dic_save)
+          end if
+        else if ( idyn /=0 .or. nmove /= 0 ) then
+          call cdf_save_md(trim(slabel)//'.nc')
+        else
+          dic_save = ('fa'.kv.1)//('stress'.kv.1)
+          if ( savehs .or. TS_HS_save ) dic_save = dic_save //('H'.kv.1)
+          call cdf_save_state(trim(slabel)//'.nc',dic_save)
+          call delete(dic_save)
+        end if
       end if
 #endif
 #endif

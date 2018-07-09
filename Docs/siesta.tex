@@ -5933,7 +5933,7 @@ this should not happen in any serious calculation...)
   if the lattice changes are moderate).
 
   By default this will be \fdffalse\ when performing single-point calculations
-  (\fdf{MD.TypeOfRun:CG} with \fdf{MD.NumCGsteps:1} or below). Otherwise
+  (\fdf{MD.TypeOfRun:CG} with \fdf{MD.Steps:1} or below). Otherwise
   this will default to \fdftrue.
 
   \note one may try to set this to \fdffalse\ for better performance,
@@ -9639,15 +9639,20 @@ misleading but kept for historical reasons.
 
 \end{fdfentry}
 
-\begin{fdfentry}{MD.NumCGsteps}[integer]<0>
+\begin{fdfentry}{MD.Steps}[integer]<0>
+  \fdfdepend{MD.NumCGsteps}
   
-  Maximum number of conjugate gradient (or Broyden) minimization moves
+  Maximum number of steps in a minimization routine
   (the minimization will stop if tolerance is reached before; see
   \fdf{MD.MaxForceTol} below).
 
+  \note The old flag \fdf*{MD.NumCGsteps} will remain for historical
+  reasons.
+
 \end{fdfentry}
 
-\begin{fdfentry}{MD.MaxCGDispl}[length]<$0.2\,\mathrm{Bohr}$>
+\begin{fdfentry}{MD.MaxDispl}[length]<$0.2\,\mathrm{Bohr}$>
+  \fdfdepend{MD.MaxCGDispl}
   
   Maximum atomic displacements in an optimization move.
 
@@ -9657,6 +9662,9 @@ misleading but kept for historical reasons.
   same result can be obtained by choosing a small time step.
 
   Note that there are Zmatrix-specific options that override this option.
+
+  \note The old flag \fdf*{MD.MaxCGDispl} will remain for historical
+  reasons.
 
 \end{fdfentry}
 
@@ -9934,7 +9942,7 @@ coordinates will not be updated.
 
 \end{fdfentry}
 
-\begin{fdfentry}{MD.FinalTimeStep}[integer]<$1$>
+\begin{fdfentry}{MD.FinalTimeStep}[integer]<\fdfvalue{MD.Steps}>
 
   Final time step of the MD simulation.
 

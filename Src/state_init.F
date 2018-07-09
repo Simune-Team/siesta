@@ -25,9 +25,9 @@
       use sparse_matrices, only: maxnh, numh, listh, listhptr
       use sparse_matrices, only: Dold, Dscf, DM_2D
       use sparse_matrices, only: Eold, Escf, EDM_2D
-      use sparse_matrices, only: Hold, H   , H_2D
+      use sparse_matrices, only: Hold, H, H_2D
       use sparse_matrices, only: xijo, xij_2D
-      use sparse_matrices, only: S   , S_1D
+      use sparse_matrices, only: S, S_1D
 
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_ldau_2D
@@ -99,6 +99,15 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
+#ifdef NCDF_4
+      use dictionary
+      use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
+      use m_ncdf_siesta, only : cdf_save_state, cdf_save_basis
+#ifdef MPI
+      use mpi_siesta
+#endif
+#endif
+
       use class_Sparsity
       use class_dSpData1D
       use class_dSpData2D
@@ -138,6 +147,13 @@
       real(dp) :: chess_value
 #endif
       type(Sparsity) :: g_Sp
+#ifdef NCDF_4
+      type(dict) :: d_sav
+#ifdef MPI
+      integer :: MPIerror
+#endif
+      logical :: is_MD, is_FC
+#endif
       
       character(len=256)            :: oname
 
@@ -628,8 +644,42 @@
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &              lasto, iphorb, isa, numh, listhptr, listh, S )
 
-
+#ifdef NCDF_4
+!     At this point the sparsity pattern, overlap matrix and some
+!     other details.
+!     Before continuing we will create the CDF file output
 !
+!     Initialize the NC file
+      if ( write_cdf ) then
+        if ( inicoor == istep ) then
+          is_MD = .true.
+          if ( idyn == 0 .and. nmove == 0 ) is_MD = .false.
+          is_FC = (idyn == 6)
+          if ( is_FC ) is_MD = .false.
+          call cdf_init_file(trim(slabel)//'.nc',
+     &        is_MD=is_MD, is_FC=is_FC)
+#ifdef MPI
+          call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
+!         Save the basis set (only once)
+          call cdf_save_basis(trim(slabel)//'.nc')
+#ifdef MPI
+          call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
+
+          if ( .not. is_MD ) then
+            d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
+            d_sav = d_sav//('sp'.kv.1)//('S'.kv.1)//('xij'.kv.1)
+            d_sav = d_sav//('isc_off'.kv.1)//('nsc'.kv.1)
+            call cdf_save_state(trim(slabel)//'.nc',d_sav)
+            call delete(d_sav)
+          end if
+        end if
+      end if
+#endif
+
+!     
 !     Here we could also read a Hamiltonian, either to proceed to
 !     the analysis section (with nscf=0) or to start a mix-H scf cycle.
 !

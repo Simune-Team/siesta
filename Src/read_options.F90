@@ -1113,9 +1113,11 @@ subroutine read_options( na, ns, nspin )
 
   ! Maximum number of steps in CG/Broyden coordinate optimization
   nmove = fdf_get('MD.NumCGsteps',0)
+  nmove = fdf_get('MD.Steps',nmove)
 
   ! Maximum atomic displacement in one CG step
   dxmax = fdf_get('MD.MaxCGDispl',0.2_dp,'Bohr')
+  dxmax = fdf_get('MD.MaxDispl',dxmax,'Bohr')
 
   ! Tolerance in the maximum atomic force [0.04 eV/Ang]
   ftol = fdf_get('MD.MaxForceTol', 0.00155574_dp, 'Ry/Bohr')
@@ -1171,9 +1173,17 @@ subroutine read_options( na, ns, nspin )
                    name  = 'MD.NumCGSteps', &
                    value = nmove,           &
                    units = "cmlUnits:countable" )
+              call cmlAddParameter( xf    = mainXML,         &
+                   name  = 'MD.Steps', &
+                   value = nmove,           &
+                   units = "cmlUnits:countable" )
 
               call cmlAddParameter( xf    = mainXML,           &
                    name  = 'MD.MaxCGDispl',   &
+                   value = dxmax,             &
+                   units = 'siestaUnits:Bohr' )
+              call cmlAddParameter( xf    = mainXML,           &
+                   name  = 'MD.MaxDispl',   &
                    value = dxmax,             &
                    units = 'siestaUnits:Bohr' )
 
@@ -1275,7 +1285,11 @@ subroutine read_options( na, ns, nspin )
 
   ! Initial and final time steps for MD
   istart = fdf_get('MD.InitialTimeStep',1)
-  ifinal = fdf_get('MD.FinalTimeStep',1)
+  if ( fdf_defined('MD.Steps') ) then
+    ifinal = fdf_get('MD.FinalTimeStep',max(1,nmove - istart + 1))
+  else
+    ifinal = fdf_get('MD.FinalTimeStep',1)
+  end if
 
   ! Length of time step for MD
   dt = fdf_get('MD.LengthTimeStep',1._dp,'fs')
@@ -1706,7 +1720,7 @@ subroutine read_options( na, ns, nspin )
 
 
   ! Default variable depending on the action required
-  if ( idyn == 0 .and. nmove <= 1 ) then
+  if ( idyn == 0 .and. nmove <= 0 ) then
     ! Single-point calculation: use the tight auxiliary supercell by default
     naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .false. )
   else
