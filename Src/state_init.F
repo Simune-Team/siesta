@@ -277,8 +277,14 @@
      &                     (idyn .eq. 5)        ! Anneal
       endif
 
-      if ( cell_can_change .and.
-     &     (istep.ne.inicoor) .and. (.not.gamma_scf) ) then
+      if ( cell_can_change .and. istep /= inicoor ) then
+
+!       Madelung correction for charged systems 
+        if (charnet .ne. 0.0_dp) then
+          call madelung(ucell, shape, charnet, Emad)
+        end if
+
+        if ( .not. gamma_scf ) then
 
 !       Will print k-points also
         call kpoint_delete(kpoint_scf)
@@ -325,11 +331,7 @@
            nscold(i) = nsc(i)
         enddo
 
-!       Madelung correction for charged systems 
-        if (charnet .ne. 0.0_dp) then
-          call madelung(ucell, shape, charnet, Emad)
-        endif
-
+        end if
       endif
 !     End variable cell actualization
 
