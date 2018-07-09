@@ -336,7 +336,7 @@
             !  2 = +x
             !  3 = -y
             !  4 = +y
-!  5 = -z
+            !  5 = -z
             !  6 = +z
             call FC_index(istep,ia1,io_istep,io_ia1)
             fname = fname_TSHS(slabel,istep = io_istep, ia1 = io_ia1)

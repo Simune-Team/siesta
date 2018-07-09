@@ -1166,7 +1166,11 @@ subroutine read_options( na, ns, nspin )
 
   ! Initial and final time steps for MD
   istart = fdf_get('MD.InitialTimeStep',1)
-  ifinal = fdf_get('MD.FinalTimeStep',nmove)
+  if ( fdf_defined('MD.Steps') ) then
+    ifinal = fdf_get('MD.FinalTimeStep',max(1,nmove - istart + 1))
+  else
+    ifinal = fdf_get('MD.FinalTimeStep',1)
+  end if
 
   ! Length of time step for MD
   dt = fdf_get('MD.LengthTimeStep',1._dp,'fs')
