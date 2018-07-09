@@ -725,7 +725,9 @@ contains
 
     ! Used for saving variables
     integer :: no, nk
-    integer, allocatable :: aux(:)
+    integer, allocatable :: iaux(:)
+    real(dp), allocatable :: raux(:)
+
 
     ! Unluckily the new basis saves only
     ! saved on the IO node. 
@@ -797,8 +799,8 @@ contains
 
        ! Create all projector variables...
        if ( nk > 0 ) then
-          dic = ('pjnl_l'.kv.NF90_INT)//('pjnl_n'.kv.NF90_INT)
-          dic = dic//('pjnl_ekb'.kv.NF90_DOUBLE)
+          dic = ('pjnl_l'.kv.NF90_INT)//('pjnl_j'.kv.NF90_DOUBLE)
+          dic = dic//('pjnl_n'.kv.NF90_INT)//('pjnl_ekb'.kv.NF90_DOUBLE)
           dic = dic//('kbcutoff'.kv.NF90_DOUBLE)//('kbdelta'.kv.NF90_DOUBLE)
           d = .first. dic
           do while ( .not. (.empty. d) )
@@ -863,21 +865,27 @@ contains
        call ncdf_put_var(grp,'orbnl_n',spp%orbnl_n(1:no))
        call ncdf_put_var(grp,'orbnl_z',spp%orbnl_z(1:no))
 
-       allocate(aux(no))
+       allocate(iaux(no))
        do i = 1, no
           if ( spp%orbnl_ispol(i) ) then
-             aux(i) = 1
+             iaux(i) = 1
           else
-             aux(i) = 0 
+             iaux(i) = 0 
           end if
        end do
-       call ncdf_put_var(grp,'orbnl_ispol',aux(1:no))
-       deallocate(aux)
+       call ncdf_put_var(grp,'orbnl_ispol',iaux(1:no))
+       deallocate(iaux)
        call ncdf_put_var(grp,'orbnl_pop',spp%orbnl_pop(1:no))
 
        ! Save projector
        if ( nk > 0 ) then
           call ncdf_put_var(grp,'pjnl_l',spp%pjnl_l(1:nk))
+          allocate(raux(nk))
+          do i = 1, nk
+            raux(i) = 0._dp
+          end do
+          call ncdf_put_var(grp,'pjnl_j',raux)
+          deallocate(raux)
           call ncdf_put_var(grp,'pjnl_n',spp%pjnl_n(1:nk))
           call ncdf_put_var(grp,'pjnl_ekb',spp%pjnl_ekb(1:nk))
        end if
