@@ -28,6 +28,7 @@
       use sparse_matrices, only: Hold, H, H_2D
       use sparse_matrices, only: xijo, xij_2D
       use sparse_matrices, only: S, S_1D
+      use sparse_matrices, only: gradS_2D
 
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_ldau_2D
@@ -99,6 +100,7 @@
       use iodm_netcdf, only: setup_dm_netcdf_file
       use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
+      use overlap_gradient_m, only: overlap_gradient
 #ifdef NCDF_4
       use dictionary
       use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
@@ -644,7 +646,12 @@
 
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
-     &              lasto, iphorb, isa, numh, listhptr, listh, S )
+     &    lasto, iphorb, isa, numh, listhptr, listh, S )
+
+      if ( fdf_get('Save.Overlap.Gradient', .false.) ) then
+        call newdSpData2D(sparse_pattern,3,block_dist,gradS_2D)
+        call overlap_gradient(na_U, lasto, isa, maxnh, xijo, gradS_2D)
+      end if
 
 #ifdef NCDF_4
 !     At this point the sparsity pattern, overlap matrix and some
@@ -674,12 +681,18 @@
             d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
             d_sav = d_sav//('sp'.kv.1)//('S'.kv.1)//('xij'.kv.1)
             d_sav = d_sav//('isc_off'.kv.1)//('nsc'.kv.1)
+            if ( initialized(gradS_2D) ) then
+              d_sav = d_sav//('gradS'.kv.1)
+            end if
             call cdf_save_state(trim(slabel)//'.nc',d_sav)
             call delete(d_sav)
           end if
         end if
       end if
 #endif
+
+      ! Clean-up (regardless of specified
+      call delete(gradS_2D)
 
 !     
 !     Here we could also read a Hamiltonian, either to proceed to

@@ -180,15 +180,19 @@ contains
       
       chks = (/n_nzs,1,1/)
       
-      dic = dic//('info'.kv. &
-          'Supercell column indices in the sparse format ')
+      dic = dic//('info'.kv.'Supercell column indices in the sparse format')
       call ncdf_def_var(grp,'list_col',NF90_INT,(/'nnzs'/), &
           compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
       
       ! Create the overlap matrix (we know it will not change)
-      dic = ('info'.kv.'Overlap matrix')
+      dic = dic//('info'.kv.'Overlap matrix')
       call ncdf_def_var(grp,'S',NF90_DOUBLE,(/'nnzs'/), &
           compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+
+      dic = dic//('info'.kv.'Overlap matrix gradient')//('unit'.kv.'1/Bohr')
+      call ncdf_def_var(grp,'S_gradient',NF90_DOUBLE,(/'nnzs', 'xyz '/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+      call delete(dic)
 
       dic = dic//('info'.kv.'Density matrix')
       call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs','spin'/), &
@@ -353,6 +357,8 @@ contains
     call ncdf_def_var(grp,'MeshCutoff',NF90_DOUBLE,(/'one'/), &
          compress_lvl=0, atts=dic)
 
+    call delete(dic)
+
     ! Create MD group
     if ( lis_MD ) then
 
@@ -448,6 +454,7 @@ contains
        dic = dic//('info'.kv.'Applied voltage')//('unit'.kv.'Ry')
        call ncdf_def_var(grp,'Volt',NF90_DOUBLE,(/'one'/), &
             compress_lvl=0,atts=dic)
+
        call delete(dic)
 
        ! Add all the electrodes
@@ -588,7 +595,7 @@ contains
     use sparse_matrices, only: sparse_pattern, block_dist
     use sparse_matrices, only: S_1D
     use sparse_matrices, only: DM_2D, EDM_2D, H_2D
-!    use sparse_matrices, only: xij_2D
+    use sparse_matrices, only: gradS_2D
     use m_stress, only : stress
     use m_forces, only: fa
 
@@ -646,6 +653,8 @@ contains
          call cdf_w_Sp(grp,block_dist,sparse_pattern)
     if ( 'S' .in. dic_save ) &
          call cdf_w_d1D(grp,'S',S_1D)
+    if ( 'gradS' .in. dic_save ) &
+         call cdf_w_d2D(grp,'S_gradient',gradS_2D)
 !    if ( .not. Gamma .and. ('xij' .in. dic_save) ) then
        ! Write the xij array, it will not change during SCF
 !       call cdf_w_d2D(grp,'xij',xij_2D)

@@ -46,6 +46,7 @@
       !  New interface data
       type(Sparsity), public, save :: sparse_pattern
       type(dSpData1D), public, save :: S_1D
+      type(dSpData2D), public, save :: gradS_2D
       type(dSpData2D), public, save :: DM_2D, EDM_2D, xij_2D, H_2D
       type(Fstack_Pair_Geometry_dSpData2D), public, save :: DM_history
 

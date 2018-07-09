@@ -128,7 +128,7 @@ OBJS =  automatic_cell.o atom_options.o \
         onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
-        nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
+        nlefsm.o overfsm.o overlap.o overlap_gradient.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
         molecularmechanics.o zm_broyden_optim.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
@@ -1339,10 +1339,10 @@ state_init.o: m_mixing_scf.o m_mpi_utils.o m_ncdf_siesta.o m_new_dm.o m_os.o
 state_init.o: m_pivot_methods.o m_rmaxh.o m_sparse.o m_sparsity_handling.o
 state_init.o: m_spin.o m_steps.o m_supercell.o m_test_io.o m_ts_charge.o
 state_init.o: m_ts_electype.o m_ts_global_vars.o m_ts_io.o m_ts_options.o
-state_init.o: m_ts_sparse.o m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
-state_init.o: proximity_check.o siesta_cml.o siesta_dicts.o siesta_geom.o
-state_init.o: siesta_options.o sparse_matrices.o sys.o ts_kpoint_scf.o units.o
-state_init.o: write_subs.o zmatrix.o
+state_init.o: m_ts_sparse.o m_ts_tri_init.o normalize_dm.o overlap.o
+state_init.o: overlap_gradient.o parallel.o proximity_check.o siesta_cml.o
+state_init.o: siesta_dicts.o siesta_geom.o siesta_options.o sparse_matrices.o
+state_init.o: sys.o ts_kpoint_scf.o units.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iotdxv.o ioxv.o
 struct_init.o: m_exp_coord.o m_iostruct.o m_mpi_utils.o m_steps.o parallel.o
 struct_init.o: periodic_table.o siesta_cml.o siesta_geom.o siesta_master.o
