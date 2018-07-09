@@ -756,7 +756,7 @@ initatom.o: old_atmfuncs.o precision.o pseudopotential.o
 initparallel.o: alloc.o class_OrbitalDistribution.o domain_decom.o parallel.o
 initparallel.o: parallelsubs.o precision.o siesta_options.o sparse_matrices.o
 initparallel.o: spatial.o sys.o
-io.o: sys.o
+io.o: m_io.o
 iocg.o: files.o precision.o sys.o
 iodm.o: alloc.o files.o parallel.o parallelsubs.o precision.o sys.o
 iodm_netcdf.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
