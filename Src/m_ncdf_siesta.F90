@@ -726,8 +726,6 @@ contains
     ! Used for saving variables
     integer :: no, nk
     integer, allocatable :: iaux(:)
-    real(dp), allocatable :: raux(:)
-
 
     ! Unluckily the new basis saves only
     ! saved on the IO node. 
@@ -880,12 +878,7 @@ contains
        ! Save projector
        if ( nk > 0 ) then
           call ncdf_put_var(grp,'pjnl_l',spp%pjnl_l(1:nk))
-          allocate(raux(nk))
-          do i = 1, nk
-            raux(i) = 0._dp
-          end do
-          call ncdf_put_var(grp,'pjnl_j',raux)
-          deallocate(raux)
+          call ncdf_put_var(grp,'pjnl_j',spp%pjnl_j(1:nk))
           call ncdf_put_var(grp,'pjnl_n',spp%pjnl_n(1:nk))
           call ncdf_put_var(grp,'pjnl_ekb',spp%pjnl_ekb(1:nk))
        end if

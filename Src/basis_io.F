@@ -62,12 +62,13 @@
 
       integer nkbs, nkbs_id, ntb_id, proj_id,
      $     pjnl_l_id, pjnl_n_id, pjnl_ekb_id, kbdelta_id,
-     $     kbcutoff_id
+     $     kbcutoff_id, pjnl_j_id
       integer norbs, norbs_id, orbnl_l_id, orbnl_n_id, orbnl_z_id,
      $     cutoff_id, delta_id, orb_id, orbnl_pop_id, orbnl_ispol_id
       integer vna_id, chlocal_id, core_id
 
       integer aux(maxnorbs)
+      logical :: has_pjnl_j
 
       integer is, j, i, l, nrp_tables, core_flag, nor, nk, m
 
@@ -205,6 +206,10 @@
 !        Projectors
          iret = nf90_inq_varid(ncid,'pjnl_l',pjnl_l_id)
          call check(iret)
+         iret = nf90_inq_varid(ncid,'pjnl_j',pjnl_j_id)
+         has_pjnl_j = (iret == NF90_NOERR)
+         iret = nf90_inq_varid(ncid,'pjnl_l',pjnl_l_id)
+
          iret = nf90_inq_varid(ncid,'pjnl_n',pjnl_n_id)
          iret = nf90_inq_varid(ncid,'pjnl_ekb',pjnl_ekb_id)
          iret = nf90_inq_varid(ncid,'kbcutoff',kbcutoff_id)
@@ -246,6 +251,13 @@
          iret = nf90_get_var(ncid,pjnl_l_id,spp%pjnl_l,
      &        count=(/nkbs/))
          call check(iret)
+         if ( has_pjnl_j ) then
+           iret = nf90_get_var(ncid,pjnl_j_id,spp%pjnl_j,
+     &         count=(/nkbs/))
+           call check(iret)
+         else
+           spp%pjnl_j(:) = 0._dp
+         end if
          iret = nf90_get_var(ncid,pjnl_n_id,spp%pjnl_n,
      &        count=(/nkbs/))
          call check(iret)
@@ -504,7 +516,7 @@
 
       integer nkbs, nkbs_id, ntb_id, proj_id,
      $        pjnl_l_id, pjnl_n_id, pjnl_ekb_id, kbdelta_id,
-     $        kbcutoff_id
+     $        kbcutoff_id, pjnl_j_id
       integer norbs, norbs_id, orbnl_l_id, orbnl_n_id, orbnl_z_id,
      $        cutoff_id, delta_id, orb_id, orbnl_pop_id, orbnl_ispol_id
       integer vna_id, chlocal_id, reduced_vlocal_id, core_id
@@ -640,6 +652,8 @@
          !! Projectors
          iret = nf90_def_var(ncid,'pjnl_l',nf90_int,nkbs_id,pjnl_l_id)
          call check(iret)
+         iret = nf90_def_var(ncid,'pjnl_j',
+     &       nf90_double,nkbs_id,pjnl_j_id)
          iret = nf90_def_var(ncid,'pjnl_n',nf90_int,nkbs_id,pjnl_n_id)
          iret = nf90_def_var(ncid,'pjnl_ekb',nf90_double,
      $        nkbs_id,pjnl_ekb_id)
@@ -706,6 +720,8 @@
       subroutine put_non_floating
       if ( nkbs > 0 ) then
          iret = nf90_put_var(ncid,pjnl_l_id,spp%pjnl_l,count=(/nkbs/))
+         call check(iret)
+         iret = nf90_put_var(ncid,pjnl_j_id,spp%pjnl_j,count=(/nkbs/))
          call check(iret)
          iret = nf90_put_var(ncid,pjnl_n_id,spp%pjnl_n,count=(/nkbs/))
          call check(iret)
