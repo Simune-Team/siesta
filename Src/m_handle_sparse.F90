@@ -340,7 +340,7 @@ contains
                     xc_o(:) = xa_o(:,iat) - xa_o(:,lat)
 
                     if ( maxval(abs(xc_o - xc_i)) > xa_EPS ) then
-                      write(*,'(2(tr1,a,tr1,i0),3(tr1,f10.5),3(tr1,i2)))') &
+                      write(*,'(2(tr1,a,tr1,i0),3(tr1,f10.5),3(tr1,i2))') &
                           'ia',ia_i,'matching',iat, (xc_o-xc_i)/Ang, i1, i2, i3
                       call die('Atomic coordinates do not coincide, &
                           &have you employed correct ordering for expansion A1->A2->A3?')
