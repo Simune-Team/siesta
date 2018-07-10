@@ -6857,13 +6857,16 @@ including ELPA (diagonalization), PEXSI, OMM, and SIPS (based on spectrum
 slicing). It can be downloaded and installed freely from
 \url{http://elsi-interchange.org}.
 
-The current interface in \siesta\ is appropriate for gamma-point
-calculations, and is based on the ``DM'' mode in ELSI: sparse H and S
-matrices are passed to the library, and sparse DM and EDM matrices are
-returned. Internally, the library performs any extra operations
-needed.  Spin-polarization in collinear form is also supported, in
-fully parallel mode. This means that spin-polarized calculations will
-be carried out splitting the communicator for orbital distribution.
+The current interface in \siesta\ is based on the ``DM'' mode in ELSI:
+sparse H and S matrices are passed to the library, and sparse DM and
+EDM matrices are returned. Internally, the library performs any extra
+operations needed.  K-points and/or spin-polarization (in collinear
+form) are also supported, in fully parallel mode. This means that
+k-points/spin-polarized calculations will be carried out splitting the
+communicator for orbital distribution into nk$\times$nspin copies,
+where nk is the number of k-points and nspin the number of spin
+components. The total number of MPI processors must be a multiple of
+nk$\times$nspin.
 
 See Sec.~\ref{sec:libs} for details on installing \siesta\ with ELSI support.
 
