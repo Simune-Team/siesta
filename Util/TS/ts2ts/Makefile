@@ -283,7 +283,7 @@ initatom.o: m_spin.o precision.o pseudopotential.o
 initparallel.o: alloc.o class_OrbitalDistribution.o domain_decom.o local_sys.o
 initparallel.o: parallel.o parallelsubs.o precision.o siesta_options.o
 initparallel.o: sparse_matrices.o spatial.o
-io.o: local_sys.o
+io.o: m_io.o
 iocg.o: files.o local_sys.o precision.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 iodm_netcdf.o: alloc.o local_sys.o parallel.o parallelsubs.o precision.o
