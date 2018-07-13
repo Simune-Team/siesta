@@ -2386,7 +2386,7 @@ C
           call filter(l=0,nr=nrcore,r=rofi(1:nrcore),
      .                f=chcore(1:nrcore),
      .                kc=sqrt(kmax2),
-     .                norm_opt=0,n_eigen=n_eigen)
+     .                norm_opt=0)
 
           !Store chcore*r2
           do ir=2,nrval
@@ -3920,7 +3920,6 @@ C
      .    dlt, d, dn, norm(nsemx),
      .    kmax, kmax_tol, etol, paoFilterFactor,
      .    spln_min
-        integer :: n_eigen
         real(dp),allocatable,dimension(:) :: forb !filtered orbital
         logical :: filterOrbitals
         logical :: new_split_code, fix_split_table, split_tail_norm
@@ -4423,7 +4422,7 @@ C
                   endif
 
                   call filter(l=l,nr=nrc,r=rofi(1:nrc),f=forb(1:nrc),
-     .                           kc=kmax,norm_opt=2,n_eigen=n_eigen)
+     .                           kc=kmax,norm_opt=2)
 
                   filter_cutoff_orbitals = 
      .              max(filter_cutoff_orbitals,kmax**2)
@@ -5550,7 +5549,6 @@ C
      .    nrc,ir, l, ncocc
 
         real(dp), allocatable :: ve_backup(:)
-        integer n_eigen
 
         do ir=1,nrval
           rho(ir)=0.0d0
@@ -5685,7 +5683,7 @@ C
      .                             kmax2,' Ry'
           call filter(l=0,nr=nVna,r=rofi(1:nVna),
      .                f=Ve(1:nVna),kc=sqrt(kmax2),
-     .                norm_opt=0,n_eigen=n_eigen)
+     .                norm_opt=0)
 
           deallocate(ve_backup)
         endif
@@ -5868,7 +5866,6 @@ C
         logical :: fix_split_table
         logical :: old_style_pol
         real(dp):: kmax, kmax_tol, etol, paoFilterFactor, spln_min
-        integer :: n_eigen
         real(dp),allocatable,dimension(:) :: forb !filtered orbital
       
         old_style_pol = fdf_boolean('PAO.OldStylePolorbs',.true.)
@@ -6116,7 +6113,7 @@ C
 
                   call filter(l=l+1,nr=nrc,r=rofi(1:nrc),
      .                        f=forb(1:nrc),
-     .                        kc=kmax,norm_opt=2,n_eigen=n_eigen)
+     .                        kc=kmax,norm_opt=2)
 
                   filter_cutoff_orbitals = max(filter_cutoff_orbitals,
      .                                     kmax**2)

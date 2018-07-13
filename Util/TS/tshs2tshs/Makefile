@@ -423,7 +423,7 @@ m_eo.o: precision.o
 m_evolve.o: atomlist.o cranknic_evolg.o cranknic_evolk.o local_sys.o m_spin.o
 m_evolve.o: precision.o
 m_exp_coord.o: files.o m_os.o parallel.o precision.o units.o
-m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
+m_filter.o: bessph.o local_sys.o precision.o radfft.o
 m_fire.o: parallel.o precision.o
 m_fire_mixing.o: alloc.o m_fire_para.o m_mpi_utils.o parallel.o precision.o
 m_fire_para.o: m_mpi_utils.o parallel.o precision.o

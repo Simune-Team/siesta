@@ -2517,19 +2517,19 @@ above.
   \index{basis!filtering}
 
   Residual kinetic-energy leaked by filtering each basis function.
-  While \fdf{FilterCutoff} sets a common reciprocal-space cutoff
-  for all the basis functions, \fdf{FilterTol} sets a specific
-  cutoff for each basis function, much as the \fdf{PAO!EnergyShift}
-  sets their real-space cutoff. Therefore, it is reasonable to use
-  similar values for both parameters.  The maximum cutoff required to
-  meet the \fdf{FilterTol}, among all the basis functions, is used
-  (multiplied by the empirical factor $1/0.7^2 \simeq 2$) to filter
-  the pseudo-core densities and the neutral-atom
-  potentials. \fdf{FilterTol} is ignored if \fdf{FilterCutoff}
-  is present in the input file.  If neither \fdf{FilterCutoff} nor
+  While \fdf{FilterCutoff} sets a common reciprocal-space cutoff for
+  all the basis functions, \fdf{FilterTol} sets a specific cutoff for
+  each basis function, much as the \fdf{PAO!EnergyShift} sets their
+  real-space cutoff. Therefore, it is reasonable to use similar values
+  for both parameters.  The maximum cutoff required to meet the
+  \fdf{FilterTol}, among all the basis functions, is used (multiplied
+  by the empirical factor $1/0.7^2 \simeq 2$) to filter the
+  pseudo-core densities and the neutral-atom
+  potentials. \fdf{FilterTol} is ignored if \fdf{FilterCutoff} is
+  present in the input file.  If neither \fdf{FilterCutoff} nor
   \fdf{FilterTol} are present, no filtering is performed.  See
-  Soler and Anglada, arXiv:0807.5030, for details of the filtering
-  procedure.
+  \citeauthor{SOLER20091134}\cite{SOLER20091134}, for details of the
+  filtering procedure.
 
   \textbf{Warning:} If the value of \fdf{FilterCutoff} is made too
   small (or \fdf{FilterTol} too large) some of the filtered basis
