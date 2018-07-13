@@ -267,7 +267,7 @@ initatom.o: old_atmfuncs.o precision.o pseudopotential.o
 initparallel.o: alloc.o class_OrbitalDistribution.o domain_decom.o local_sys.o
 initparallel.o: parallel.o parallelsubs.o precision.o siesta_options.o
 initparallel.o: sparse_matrices.o spatial.o
-io.o: local_sys.o
+io.o: m_io.o
 iocg.o: files.o local_sys.o precision.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 iodm_netcdf.o: alloc.o local_sys.o parallel.o parallelsubs.o precision.o
@@ -330,7 +330,7 @@ m_efield.o: parallel.o precision.o siesta_cml.o siesta_geom.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_exp_coord.o: files.o m_os.o parallel.o precision.o units.o
-m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
+m_filter.o: bessph.o local_sys.o precision.o radfft.o
 m_fire.o: parallel.o precision.o
 m_fire_mixing.o: alloc.o m_fire_para.o m_mpi_utils.o parallel.o precision.o
 m_fire_para.o: m_mpi_utils.o parallel.o precision.o
