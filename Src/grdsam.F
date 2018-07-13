@@ -142,18 +142,14 @@ C Internal variables and arrays
       type(parsed_line), pointer :: pline
       type(filesOut_t)           :: filesOut  ! blank output file names
 
-      !Saved variables:
-      logical, save :: blread = .false.
-      logical, save :: samgrd = .false.
+      ! Saved variables:
+      integer, save  :: npt = -1
+      real(dp), pointer, save :: pt(:,:) => null()
 
       real(dp) :: d, dx(3)
       real(dp) :: famax(3), fastd(3)
       real(dp) :: strmax
-      real(dp), save :: lstcll(3,3) = 0.743978657912656D50
-      integer, save  :: lstntm(3) = (/10000, 1, 1/) 
-      integer, save  :: npt = 0
       integer :: nABC(3), ix, iy, iz
-      real(dp), pointer, save :: pt(:,:) => null()
 
 c ----------------------------------------------------------------------------
 #ifdef DEBUG
@@ -169,7 +165,7 @@ c ----------------------------------------------------------------------------
 
 C Check whether GridCellSampling block has been looked for ------------------
 
-      if ( .not. blread ) then
+      if ( npt == -1 ) then
 
         ! Initialize number of sampled points...
         npt = 0
@@ -179,7 +175,6 @@ C Check whether GridCellSampling block has been looked for ------------------
         ! sampling.
 
         if ( fdf_islist('Grid.CellSampling') ) then
-           samgrd = .true.
            
            ! There are two methods of using the 
            ! Cell sampling, the diagonal one (via a list)
@@ -196,8 +191,7 @@ C Check whether GridCellSampling block has been looked for ------------------
            if ( npt == 0 ) then
               ! This is the special case where the user
               ! says [1 1 1] / [0 0 0]
-              ! in that case we sample the half diagonal
-              ! voxel
+              ! in that case we sample the half diagonal voxel
               npt = 1
            end if
 
@@ -235,7 +229,6 @@ C Check whether GridCellSampling block has been looked for ------------------
            end if
            
         else if ( fdf_block('Grid.CellSampling', bfdf) ) then
-           samgrd = .true.
            
            ! The user-defined one
            
@@ -271,16 +264,18 @@ C Check whether GridCellSampling block has been looked for ------------------
      &             trim(fdf_getline(bfdf%mark))
              end if
           end do
-          
+
+          if ( ipt /= npt ) then
+            call die('Error in reading the grid-cell-sampling.')
+          end if
+
         end if
        
-        blread = .true.
-       
-      endif
+      end if
 
 c if sampling, store the forces and stresses prior to dhscf -----------------
 
-      if ( samgrd ) then
+      if ( npt > 0 ) then
 
         ! Allocate the old forces which contain the pre-mesh local forces
         call re_alloc( faold, 1, 3, 1, nua, 'faold', 'grdsam' )
@@ -289,11 +284,11 @@ c if sampling, store the forces and stresses prior to dhscf -----------------
         strold(:,:,1) = stress(:,:)
         strold(:,:,2) = stressl(:,:)
         if ( IONode ) then
-           write(*,'(2(a,i0))') 'grdsam: Grid-cell sampling: ', 0,
-     &          ' / ',npt
-       endif
+          write(*,'(2(a,i0))') 'grdsam: Grid-cell sampling: ', 0,
+     &        ' / ',npt
+        end if
        
-      endif
+      end if
 
 
 c first (normal) call to DHSCF, ihmat=1 --------------------------------------
@@ -317,22 +312,7 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
 
 c Sampling ------------------------------------------------------------------
 
-      if ( samgrd ) then
-
-!       This check is superfluous, as the generation of the displacements
-!       can be done in each call without much overhead.
-
-c find if mesh is new -------------------------------------------------------
-
-        samesh = .true.
-        do iv = 1, 3
-          if ( ntm(iv) .ne. lstntm(iv) ) samesh = .false.
-          lstntm(iv) = ntm(iv)
-          do ix = 1, 3
-            if ( cell(ix,iv) .ne. lstcll(ix,iv) ) samesh = .false.
-            lstcll(ix,iv) = cell(ix,iv)
-          enddo
-        enddo
+      if ( npt > 0 ) then
 
 c initialize averages with output of regular DHSCF run -----------------------
 
@@ -372,16 +352,15 @@ c loop sampling on displacements making averages ----------------------------
 
           ! Calculate the displacement for this mesh sample
           do ix = 1, 3
-             dx(ix) = 0._dp
-             do iy = 1, 3
-               dx(ix) = dx(ix)
-     &              + cell(ix,iy)*pt(iy,ipt)/dble(ntm(iy))
-             end do
+            dx(ix) = 0._dp
+            do iy = 1, 3
+              dx(ix) = dx(ix) + cell(ix,iy)*pt(iy,ipt)/dble(ntm(iy))
+            end do
           end do
 
           do ia = 1, na
-             xanew(:,ia) = xa(:,ia) + dx(:)
-          enddo
+            xanew(:,ia) = xa(:,ia) + dx(:)
+          end do
 
           ! Copy back the initial (pre-mesh) forces so we may
           ! correctly calculate the averaged forces
@@ -392,7 +371,7 @@ c loop sampling on displacements making averages ----------------------------
           if ( IONode ) then
            write(*,'(2(a,i0))') 'grdsam: Grid-cell sampling: ',ipt,
      &          ' / ',npt
-          endif
+          end if
 
           ! We have to call dhscf_init, among other things, to
           ! initialize the mesh structures
@@ -549,7 +528,6 @@ c loop sampling on displacements making averages ----------------------------
       call write_debug( '    POS grdsam' )
 #endif
 
-      return
       end subroutine grdsam
 
       end module m_grdsam
