@@ -88,7 +88,7 @@ PRIVATE ! Nothing is declared public beyond this point
   integer, parameter :: dp = selected_real_kind(14,100)
 
 ! Internal parameters for filter subroutine
-  integer, parameter:: nmesh = 128        ! Number of radial integr. points
+  integer, parameter:: nmesh = 1024       ! Number of radial integr. points
   integer, parameter:: minj  = 10         ! Min. num. of Bessel functions
   real(dp),parameter:: njkr  = 0.65_dp    ! Num. Bess. funcs. / (kc*rc)
   real(dp),parameter:: emax  = 1.e-2_dp   ! Min. accepted eigval
