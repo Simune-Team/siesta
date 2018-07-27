@@ -141,7 +141,7 @@ module m_tbt_proj
   public :: proj_update
   public :: proj_Mt_mix, proj_bMtk
   public :: proj_cdf_save
-  public :: proj_cdf_save_J
+  public :: proj_cdf_save_sp_dev
   public :: proj_cdf_save_bgammak
   public :: proj_cdf_save_S_D
   public :: proj_cdf2ascii
@@ -210,12 +210,13 @@ contains
     if ( ltmp ) then
       save_DATA = save_DATA // ('proj-only'.kv.1)
     end if
-
+    
     ! Should we calculate DOS of spectral function
     ltmp = fdf_get('TBT.Projs.DOS.A',('DOS-A'.in.save_DATA))
     if ( ltmp ) then
       save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
     end if
+
     ltmp = fdf_get('TBT.Projs.Current.Orb', .false. )
     if ( ltmp .and. ('proj-DOS-A'.in.save_DATA) ) then
       save_DATA = save_DATA // ('proj-orb-current'.kv.1)
@@ -224,6 +225,34 @@ contains
           &of the projections, the spectral function needs to be &
           &calculated for this to apply.'
     end if
+
+    ltmp = fdf_get('TBT.Projs.DM.A', .false.)
+    if ( ltmp .and. ('proj-DOS-A'.in.save_DATA)) then
+      save_DATA = save_DATA // ('proj-DM-A'.kv.1)
+    else if ( ltmp .and. IONode ) then
+      write(*,'(2(/,a))')'WARNING: Will not calculate the density matrix (A), &
+          &the spectral function DOS needs to be calculated for this to &
+          &apply.','Set TBT.Projs.DOS.A T to calculate density matrix (A).'
+    end if
+
+    ltmp = fdf_get('TBT.Projs.COOP.A', .false. )
+    if ( ltmp .and. ('proj-DOS-A'.in.save_DATA)) then
+      save_DATA = save_DATA // ('proj-COOP-A'.kv.1)
+    else if ( ltmp .and. IONode ) then
+      write(*,'(2(/,a))')'WARNING: Will not calculate the COOP (A) curve, &
+          &the spectral function DOS needs to be calculated for this to &
+          &apply.','Set TBT.Projs.DOS.A T to calculate COOP (A) curves.'
+    end if
+
+    ltmp = fdf_get('TBT.Projs.COHP.A', .false. )
+    if ( ltmp .and. ('proj-DOS-A'.in.save_DATA)) then
+      save_DATA = save_DATA // ('proj-COHP-A'.kv.1)
+    else if ( ltmp .and. IONode ) then
+      write(*,'(2(/,a))')'WARNING: Will not calculate the COHP (A) curve, &
+          &the spectral function DOS needs to be calculated for this to &
+          &apply.','Set TBT.Projs.DOS.A T to calculate COHP (A) curves.'
+    end if
+
 
     ! First read in the molecules
     do while ( fdf_bline(bfdf,pline) )
@@ -1355,17 +1384,18 @@ contains
     integer :: no, im, Np, ip, i, ik, iN, iE
     integer :: it, ipt
     logical :: exist, is_same, isGamma, save_state
-    logical :: debug_state
+    logical :: debug_state, sme
     type(dict) :: dic
     character(len=NF90_MAX_NAME) :: tmp
     ! Create allocatables, they are easier to maintain
     integer :: iLUMO, mol_nkpt
     real(dp), allocatable :: eig(:)
     real(dp), allocatable :: rv(:,:), rS_sq(:,:)
-    real(dp) :: dn
+    real(dp) :: dn, mem
+    character(len=2) :: unit
     complex(dp), allocatable :: zv(:,:), zS_sq(:,:)
     complex(dp) :: zn
-    integer :: prec_DOS, prec_T, prec_Teig, prec_J
+    integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP, prec_DM
     integer :: nnzs_dev, N_eigen
     type(OrbitalDistribution) :: fdit
 #ifdef MPI
@@ -1383,6 +1413,8 @@ contains
     call tbt_cdf_precision('T','single',prec_T)
     call tbt_cdf_precision('T.Eig','single',prec_Teig)
     call tbt_cdf_precision('Current','single',prec_J)
+    call tbt_cdf_precision('COOP','single',prec_COOP)
+    call tbt_cdf_precision('DM','single',prec_DM)
     
     if ( 'T-eig' .in. save_DATA ) then
       call assign_int(N_eigen,save_DATA,'T-eig')
@@ -1460,6 +1492,9 @@ contains
       call check(dic,is_same,'Dimensions in the PROJ.nc file does not conform &
           &to the current simulation.')
 
+      ! Clean up
+      call delete(dic)
+
       ! Check the variables
       dic = ('lasto'.kvp. TSHS%lasto(1:TSHS%na_u) )
       dic = dic // ('xa'.kvp. TSHS%xa) // ('cell'.kvp.TSHS%cell)
@@ -1473,6 +1508,7 @@ contains
       call ncdf_assert(ncdf,is_same,vars=dic, d_EPS = 1.e-4_dp )
       call check(dic,is_same,'lasto, xa or cell in the PROJ.nc file does &
           &not conform to the current simulation.',.false.)
+      call delete(dic, dealloc=.false.)
       call rgn_delete(r_tmp)
 
       ! Check the k-points
@@ -1501,6 +1537,7 @@ contains
         call ncdf_assert(grp,is_same,dims = dic )
         call check(dic,is_same,'Projection atoms, orbitals and/or number of &
             &projections does not conform to the current simulation.')
+        call delete(dic)
 
         ! Check that the projection atoms and levels are the is_same
         ! we have another group for each lvl
@@ -1508,6 +1545,7 @@ contains
         call ncdf_assert(grp,is_same,vars = dic )
         call check(dic,is_same,'Projection atom list &
             &does not conform to the current simulation.',.false.)
+        call delete(dic, dealloc=.false.)
 
         ! The variable 'eig' have to be present,
         ! We do not save the wave-function. 
@@ -1517,6 +1555,7 @@ contains
         call ncdf_assert(grp,is_same,has_vars=dic)
         call check(dic,is_same,'Projection eigen values &
             &does not exist in the current simulation.')
+        call delete(dic)
 
         ! Loop all groups
         Np = size(mols(im)%proj)
@@ -1528,6 +1567,7 @@ contains
           call ncdf_assert(grp2,is_same,dims = dic )
           call check(dic,is_same,'Projection levels does not &
               &conform to the current simulation.')
+          call delete(dic)
 
           call rgn_copy(mols(im)%proj(ip),r_tmp)
           do iE = 1 , r_tmp%n
@@ -1539,6 +1579,7 @@ contains
           call ncdf_assert(grp2,is_same,vars = dic )
           call check(dic,is_same,'Projection level list &
               &does not conform to the current simulation.',.false.)
+          call delete(dic, dealloc=.false.)
 
         end do
 
@@ -1574,6 +1615,8 @@ contains
     if ( Node == 0 ) then
       write(*,'(2a)')'tbt: Initializing projection data file: ',trim(fname)
     end if
+
+    mem = 0._dp
     
     call timer('proj_init',1)
 
@@ -1598,8 +1641,8 @@ contains
     call ncdf_def_dim(ncdf,'one',1)
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
-    call ncdf_def_dim(ncdf,'nkpt',NF90_UNLIMITED)
-    call ncdf_def_dim(ncdf,'ne',NF90_UNLIMITED)
+    call ncdf_def_dim(ncdf,'nkpt',nkpt)
+    call ncdf_def_dim(ncdf,'ne',NE)
     call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
     call ncdf_def_dim(ncdf,'n_btd',btd%n)
 
@@ -1623,15 +1666,15 @@ contains
     dic = dic//('info'.kv.'State levels are wrt. HOMO=-1,Ef=0,LUMO=1')
 #endif
     if ( all(TSHS%nsc(:) == 1) ) then
-      dic = dic // ('Gamma'.kv.'true')
+      dic = dic//('Gamma'.kv.'true')
     else
-      dic = dic // ('Gamma'.kv.'false')
+      dic = dic//('Gamma'.kv.'false')
     end if
     if ( TSHS%nspin > 1 ) then
       if ( ispin == 1 ) then
-        dic = dic // ('spin'.kv.'UP')
+        dic = dic//('spin'.kv.'UP')
       else
-        dic = dic // ('spin'.kv.'DOWN')
+        dic = dic//('spin'.kv.'DOWN')
       end if
     end if
     call ncdf_put_gatt(ncdf, atts = dic )
@@ -1641,45 +1684,56 @@ contains
     dic = ('info'.kv.'Last orbitals of the equivalent atom')
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, TSHS%na_u)
+    
     dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
         atts = dic)
+    
     dic = dic//('info'.kv.'Atomic coordinates')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
     call delete(dic)
 
     dic = ('info'.kv.'Supercell offsets')
     call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
         atts = dic)
-    dic = ('info'.kv.'Number of supercells in each direction')
+    mem = mem + calc_mem(NF90_INT, 3, product(TSHS%nsc))
+    
+    dic = dic//('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
         atts = dic)
 
     dic = dic//('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, r%n)
 
-    dic = dic // ('info'.kv.'Blocks in BTD for the pivot table')
+    dic = dic//('info'.kv.'Blocks in BTD for the pivot table')
     call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, btd%n)
 
     dic = dic//('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, a_Dev%n)
 
     if ( a_Buf%n > 0 ) then
       dic = dic//('info'.kv.'Index of buffer atoms')
       call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
           atts = dic)
+      mem = mem + calc_mem(NF90_INT, a_Buf%n)
     end if
 
-    dic = ('info'.kv.'k point weights')
+    dic = dic//('info'.kv.'k point weights')
     call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
         atts = dic)
     dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
     call ncdf_def_var(ncdf,'kpt',NF90_DOUBLE,(/'xyz ','nkpt'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt) ! kpt and wkpt
 
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
@@ -1687,6 +1741,7 @@ contains
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, NE)
 
     dic = dic//('info'.kv.'Imaginary part for device')
     call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
@@ -1723,7 +1778,11 @@ contains
 
     call ncdf_put_var(ncdf,'eta',Eta)
 
-    if ( 'proj-orb-current' .in. save_DATA ) then
+    sme = 'proj-orb-current' .in. save_DATA
+    sme = sme .or. ('proj-COOP-A' .in. save_DATA)
+    sme = sme .or. ('proj-COHP-A' .in. save_DATA)
+    sme = sme .or. ('proj-DM-A' .in. save_DATA)
+    if ( sme ) then
 
       ! In case we need to save the device sparsity pattern
       ! Create dimensions
@@ -1735,11 +1794,13 @@ contains
       dic = ('info'.kv.'Number of non-zero elements per row')
       call ncdf_def_var(ncdf,'n_col',NF90_INT,(/'no_u'/), &
           atts=dic)
+       mem = mem + calc_mem(NF90_INT, TSHS%no_u)
 
       dic = dic//('info'.kv. &
           'Supercell column indices in the sparse format ')
       call ncdf_def_var(ncdf,'list_col',NF90_INT,(/'nnzs'/), &
           compress_lvl=cmp_lvl,atts=dic )
+       mem = mem + calc_mem(NF90_INT, nnzs_dev)
 
 #ifdef MPI
       call newDistribution(TSHS%no_u,MPI_Comm_Self,fdit,name='TBT-fake dist')
@@ -1749,9 +1810,10 @@ contains
 
       call cdf_w_Sp(ncdf,fdit,sp_dev_sc)
       call delete(fdit)
-      call delete(dic)
 
     end if
+
+    call delete(dic)
 
     do im = 1 , N_mol
 
@@ -1791,33 +1853,40 @@ contains
       call ncdf_def_var(grp,'lvl',NF90_INT,(/'nlvl'/),atts=dic)
       call ncdf_put_var(grp,'lvl',mols(im)%lvls%r)
 
-      dic = ('info'.kv.'|i> = S^(1/2)|v_i> for unique projections')
+      dic = dic//('info'.kv.'|i> = S^(1/2)|v_i> for unique projections')
       if ( isGamma ) then
         call ncdf_def_var(grp,'state',NF90_DOUBLE,(/'no  ','nlvl'/),atts=dic , &
             compress_lvl = cmp_lvl , chunks = (/no,1/) )
+        mem = mem + calc_mem(NF90_DOUBLE, mols(im)%lvls%n, no)
       else
         call ncdf_def_var(grp,'state',NF90_DOUBLE_COMPLEX, &
             (/'no  ','nlvl','nkpt'/),atts=dic, &
-            compress_lvl = cmp_lvl , chunks = (/no,1,1/) ) 
+            compress_lvl = cmp_lvl , chunks = (/no,1,1/) )
+        mem = mem + calc_mem(NF90_DOUBLE, mols(im)%lvls%n, no, nkpt, 2)
       end if
 
       ! Define variables to contain the molecule
-      dic = ('info'.kv.'Projection atoms')
+      dic = dic//('info'.kv.'Projection atoms')
       call ncdf_def_var(grp,'atom',NF90_INT,(/'na'/),atts=dic)
       call ncdf_put_var(grp,'atom',mols(im)%atom%r)
+      mem = mem + calc_mem(NF90_INT, mols(im)%atom%n)
+
       dic = dic//('info'.kv.'Projection orbitals')
       call ncdf_def_var(grp,'orb',NF90_INT,(/'no'/),atts=dic)
       call ncdf_put_var(grp,'orb',mols(im)%orb%r)
+      mem = mem + calc_mem(NF90_INT, no)
+
       if ( save_state ) then
         dic = dic//('info'.kv.'State |i> = |v_i> for all i')
         if ( isGamma ) then
           call ncdf_def_var(grp,'states',NF90_DOUBLE,(/'no','no'/),atts=dic, &
               compress_lvl = cmp_lvl , chunks = (/no,1/) )
+          mem = mem + calc_mem(NF90_DOUBLE, no, no)
         else
           call ncdf_def_var(grp,'states',NF90_DOUBLE_COMPLEX, &
               (/'no  ','no  ','nkpt'/),atts=dic, &
               compress_lvl = cmp_lvl , chunks = (/no,1,1/) )
-
+          mem = mem + calc_mem(NF90_DOUBLE, no, no, nkpt, 2)
         end if
       end if
 #ifdef TBT_PHONON
@@ -1828,9 +1897,11 @@ contains
       if ( isGamma ) then
         call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no'/),atts=dic, &
             compress_lvl = cmp_lvl )
+          mem = mem + calc_mem(NF90_DOUBLE, no)
       else
         call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no  ','nkpt'/),atts=dic, &
             compress_lvl = cmp_lvl , chunks = (/no,1/) )
+        mem = mem + calc_mem(NF90_DOUBLE, no, nkpt)
       end if
       call delete(dic)
 
@@ -1841,13 +1912,16 @@ contains
         ! Save the diagonal |><| overlap variable
         !dic = dic//('info'.kv.'Single projected diagonal overlap matrix')
         !call ncdf_def_var(grp,'kb_SD',NF90_DOUBLE_COMPLEX,(/'no  ','nlvl','nkpt'/), atts = dic)
+        !mem = mem + calc_mem(NF90_DOUBLE, no, nlvl, nkpt, 2)
 
         !dic = dic//('info'.kv.'<|Gf|> / Pi')
         !call ncdf_def_var(grp,'bGfk',NF90_DOUBLE_COMPLEX,(/'nlvl','ne  ','nkpt'/), atts = dic)
+        !mem = mem + calc_mem(NF90_DOUBLE, nlvl, NE, nkpt, 2)
 
         ! Create the DOS variable (actually just kb_SD * bGfk)
         !dic = dic//('info'.kv.'Single projected density of states <|Gf|>kb_SD')
         !call ncdf_def_var(grp,'DOS',prec_DOS,(/'no  ','nlvl','ne  ','nkpt'/), atts = dic)
+        !mem = mem + calc_mem(prec_DOS, nlvl, NE, nkpt)
 
       end if
 
@@ -1857,11 +1931,15 @@ contains
       ! Create the projections
       do ip = 1 , Np
 
+        call delete(dic)
+        
         call ncdf_def_grp(grp,mols(im)%proj(ip)%name,grp2)
         call ncdf_def_dim(grp2,'nlvl',mols(im)%proj(ip)%n)
 
-        dic = dic//('info'.kv.'State levels associated with this projection')
+        dic = ('info'.kv.'State levels associated with this projection')
         call ncdf_def_var(grp2,'lvl',NF90_INT,(/'nlvl'/), atts = dic)
+        mem = mem + calc_mem(NF90_INT, mols(im)%proj(ip)%n)
+
         ! Create the correct indices
         call rgn_copy(mols(im)%proj(ip),r_tmp)
         do iE = 1 , r_tmp%n
@@ -1884,6 +1962,7 @@ contains
         Elec_p: do iE = 1 , N_Elec
           do it = 1 , N_proj_T
             call delete(dic)
+            
             if ( ProjMolEl_same(proj_T(it)%L, &
                 Elecs(iE),mols(im),ip) ) then
               ! we have transport from this electrode molecular projection
@@ -1908,16 +1987,38 @@ contains
                 call ncdf_def_var(grp3,'ADOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
                     atts = dic, &
                     compress_lvl = cmp_lvl, chunks = (/r%n,1,1/))
+                mem = mem + calc_mem(prec_DOS, r%n, NE, nkpt)
               end if
 
+              if ( 'proj-DM-A' .in. save_DATA ) then
+                dic = dic//('info'.kv.'Spectral function density matrix')//('unit'.kv.'1/Ry')
+                call ncdf_def_var(grp,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
+                    atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
+                mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
+              end if
+
+              if ( 'proj-COOP-A' .in. save_DATA ) then
+                dic = dic//('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
+                call ncdf_def_var(grp,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+                    atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
+                mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
+              end if
+
+              if ( 'proj-COHP-A' .in. save_DATA ) then
+                dic = dic//('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
+                call ncdf_def_var(grp,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+                    atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
+                mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
+              end if
+
+              ! Prepare for orb-current
               call delete(dic)
 
               if ( 'proj-orb-current' .in. save_DATA ) then
                 dic = ('info'.kv.'Orbital current')
                 call ncdf_def_var(grp3,'J',prec_J,(/'nnzs', 'ne  ', 'nkpt'/), &
-                    atts = dic, compress_lvl = cmp_lvl , &
-                    chunks = (/nnzs_dev,1,1/) )
-
+                    atts = dic, chunks = (/nnzs_dev/), compress_lvl = cmp_lvl)
+                mem = mem + calc_mem(prec_J, nnzs_dev, NE, nkpt)
               end if
 
               ! Now we create all transport related quantities
@@ -1933,6 +2034,7 @@ contains
                     call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                         atts = dic, chunks =(/NE, 1/) )
                     dic = dic//('info'.kv.'Out transmission correction')
+                    mem = mem + calc_mem(prec_T, NE, nkpt)
                     tmp = trim(tmp)//'.C'
                   else
                     tmp = trim(tmp)//'.T'
@@ -1944,6 +2046,7 @@ contains
                     call ncdf_def_var(grp3,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
                         atts = dic, chunks =(/NE, 1/) )
                     dic = dic//('info'.kv.'Out transmission correction')
+                    mem = mem + calc_mem(prec_T, NE, nkpt)
                     tmp = trim(tmp)//'.C'
                   else
                     tmp = trim(tmp)//'.T'
@@ -1952,12 +2055,14 @@ contains
 
                 call ncdf_def_var(grp3,tmp,prec_T, (/'ne  ','nkpt'/), &
                     atts = dic, chunks = (/NE, 1/) )
+                mem = mem + calc_mem(prec_T, NE, nkpt)
 
                 if ( N_eigen > 0 ) then
                   dic = dic//('info'.kv.'Transmission eigenvalues')
                   call ncdf_def_var(grp3,trim(tmp)//'.Eig',prec_Teig, &
                       (/'neig','ne  ','nkpt'/), &
                       atts = dic, chunks =(/N_eigen, NE, 1/) )
+                  mem = mem + calc_mem(prec_Teig, N_eigen, NE, nkpt)
                 end if
 
               end do
@@ -2246,6 +2351,7 @@ contains
       call ncdf_def_var(grp,tmp,NF90_DOUBLE_COMPLEX, &
           (/'nlvl','nlvl','ne  ','nkpt'/), atts = dic, &
           compress_lvl = cmp_lvl , chunks = (/i,i,1,1/) )
+      mem = mem + calc_mem(NF90_DOUBLE, i*i, NE, nkpt, 2)
 
     end do
 
@@ -2276,6 +2382,7 @@ contains
           call ncdf_def_var(grp,trim(tmp)//'.T',prec_T, (/'ne  ','nkpt'/), &
               atts = dic)
           dic = dic//('info'.kv.'Out transmission correction')
+          mem = mem + calc_mem(prec_T, NE, nkpt)
           tmp = trim(tmp)//'.C'
         else
           dic = dic//('info'.kv.'Transmission')
@@ -2284,12 +2391,14 @@ contains
 
         call ncdf_def_var(grp,tmp,prec_T, (/'ne  ','nkpt'/), &
             atts = dic)
+        mem = mem + calc_mem(prec_T, NE, nkpt)
 
         if ( N_eigen > 0 ) then
           dic = dic//('info'.kv.'Transmission eigenvalues')
           call ncdf_def_var(grp,trim(tmp)//'.Eig',prec_Teig, &
-              (/'neig','ne  ','nkpt'/), &
-              atts = dic )
+              (/'neig','ne  ','nkpt'/), atts = dic )
+          mem = mem + calc_mem(prec_Teig, N_eigen, NE, nkpt)
+
         end if
 
       end do
@@ -2301,6 +2410,10 @@ contains
     call ncdf_close(ncdf)
 
     if ( Node == 0 ) then
+      call pretty_memory(mem, unit)
+      write(*,'(3a,f8.3,tr1,a/)') 'tbt: Estimated file size of ', trim(fname), ':', &
+          mem, unit
+      
       write(*,'(a)') 'tbt: Please ensure the projection eigenvalues &
           &are aligned as you suspect.'
       write(*,'(a)') 'tbt: Molecular states hybridize in proximity &
@@ -2339,6 +2452,47 @@ contains
         call die(msg)
       end if
     end subroutine check
+
+    pure function calc_mem(prec_nf90, n1, n2, n3, n4) result(kb)
+      use precision, only: dp
+      integer, intent(in) :: prec_nf90, n1
+      integer, intent(in), optional :: n2, n3, n4
+      real(dp) :: kb
+
+      kb = real(n1, dp) / 1024._dp
+      if ( present(n2) ) kb = kb * real(n2, dp)
+      if ( present(n3) ) kb = kb * real(n3, dp)
+      if ( present(n4) ) kb = kb * real(n4, dp)
+      
+      select case ( prec_nf90 )
+      case ( NF90_INT, NF90_FLOAT )
+        kb = kb * 4
+      case ( NF90_DOUBLE )
+        kb = kb * 8
+      end select
+      
+    end function calc_mem
+
+    pure subroutine pretty_memory(mem, unit)
+      use precision, only: dp
+      real(dp), intent(inout) :: mem
+      character(len=2), intent(out) :: unit
+
+      unit = 'KB'
+      if ( mem > 1024._dp ) then
+        mem = mem / 1024._dp
+        unit = 'MB'
+        if ( mem > 1024._dp ) then
+          mem = mem / 1024._dp
+          unit = 'GB'
+          if ( mem > 1024._dp ) then
+            mem = mem / 1024._dp
+            unit = 'TB'
+          end if
+        end if
+      end if
+
+    end subroutine pretty_memory
 
   end subroutine init_proj_save
 
@@ -2519,8 +2673,8 @@ contains
     
   end subroutine proj_cdf_save
 
-  subroutine proj_cdf_save_J(ncdf, ikpt, nE, &
-      LME, orb_J)
+  subroutine proj_cdf_save_sp_dev(ncdf, ikpt, nE, &
+      var_name, LME, sp_dev)
 
     use parallel, only : Node, Nodes
     use class_dSpData1D
@@ -2538,19 +2692,20 @@ contains
     type(hNCDF), intent(inout) :: ncdf
     integer, intent(in) :: ikpt
     type(tNodeE), intent(in) :: nE
+    character(len=*), intent(in) :: var_name
     type(tLvlMolEl), intent(inout) :: LME
-    type(dSpData1D), intent(inout) :: orb_J
+    type(dSpData1D), intent(inout) :: sp_dev
     
     type(hNCDF) :: gmol, gproj, gEl
     integer :: nnzs_dev, idx(3), cnt(3)
-    real(dp), pointer :: J(:)
+    real(dp), pointer :: D(:)
 #ifdef MPI
     integer :: iN
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
-
-    J => val(orb_J)
-    nnzs_dev = size(J)
+    
+    D => val(sp_dev)
+    nnzs_dev = size(D)
 
     ! We save the orbital current
     !  1. open molecule
@@ -2574,32 +2729,32 @@ contains
         idx(2) = 1
         cnt = 0
       end if
-      call ncdf_put_var(gEl,'J',J,start = idx, count=cnt)
+      call ncdf_put_var(gEl,var_name,D,start = idx, count=cnt)
 
     else
        
       ! Save the current
       if ( nE%iE(Node) > 0 ) then
-        call ncdf_put_var(gEl,'J',J,start = (/1,nE%iE(Node),ikpt/) )
+        call ncdf_put_var(gEl,var_name,D,start = (/1,nE%iE(Node),ikpt/) )
       end if
 
 #ifdef MPI
       if ( Node == 0 ) then
         do iN = 1 , Nodes - 1
           if ( nE%iE(iN) > 0 ) then
-            call MPI_Recv(J,nnzs_dev,Mpi_double_precision, &
+            call MPI_Recv(D,nnzs_dev,Mpi_double_precision, &
                 iN, iN, Mpi_comm_world,status,MPIerror)
-            call ncdf_put_var(gEl,'J',J,start = (/1,nE%iE(iN),ikpt/) )
+            call ncdf_put_var(gEl,var_name,D,start = (/1,nE%iE(iN),ikpt/) )
           end if
         end do
       else if ( nE%iE(Node) > 0 ) then
-        call MPI_Send(J(1),nnzs_dev,Mpi_double_precision, &
+        call MPI_Send(D(1),nnzs_dev,Mpi_double_precision, &
             0, Node, Mpi_comm_world,MPIerror)
       end if
 #endif
     end if
     
-  end subroutine proj_cdf_save_J
+  end subroutine proj_cdf_save_sp_dev
   
   ! Returns the projection state for the designated
   ! molecule projection.

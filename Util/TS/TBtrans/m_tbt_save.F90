@@ -558,12 +558,10 @@ contains
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
         atts = dic)
     mem = mem + calc_mem(NF90_INT, TSHS%na_u)
-    dic = dic//('info'.kv.'Unit cell')
-    dic = dic//('unit'.kv.'Bohr')
+    dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
          atts = dic)
     dic = dic//('info'.kv.'Atomic coordinates')
-    dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
          atts = dic , chunks = (/3, TSHS%na_u/) )
     call delete(dic)
