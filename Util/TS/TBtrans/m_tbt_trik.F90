@@ -116,7 +116,7 @@ contains
     use m_tbt_proj, only : proj_update, proj_cdf_save_S_D
     use m_tbt_proj, only : proj_bMtk, proj_cdf_save_bGammak
     use m_tbt_proj, only : proj_Mt_mix, proj_cdf_save
-    use m_tbt_proj, only : proj_cdf_save_J
+    use m_tbt_proj, only : proj_cdf_save_sp_dev
     use m_tbt_proj, only : open_cdf_proj
 
     use m_tbt_delta, only : read_delta_next, clean_delta
@@ -684,13 +684,20 @@ contains
     deallocate(prep_El)
 
 #ifdef NCDF_4
-    if ( calc_orb_current .or. ('proj-orb-current'.in.save_DATA) .or. &
-         calc_DM_Gf .or. calc_DM_A .or. & 
-         calc_COOP_Gf .or. calc_COOP_A .or. & 
-         calc_COHP_Gf .or. calc_COHP_A ) then
-       
+    iEl = 0
+    if ( calc_orb_current .or. calc_DM_Gf .or. calc_DM_A .or. & 
+        calc_COOP_Gf .or. calc_COOP_A .or. & 
+        calc_COHP_Gf .or. calc_COHP_A ) then
+      iEl = 1
+    end if
+    if ( ('proj-orb-current'.in.save_DATA) .or. &
+        ('proj-DM-A'.in.save_DATA) .or. &
+        ('proj-COOP-A'.in.save_DATA) .or. &
+        ('proj-COHP-A'.in.save_DATA) ) then
+      iEl = 1
+    end if
+    if ( iEl == 1 ) then
        call newdSpData1D(sp_dev_sc,fdist,dev_M,name='TBT sparse')
-       
     end if
 #endif
 
@@ -1272,16 +1279,25 @@ contains
 
              if ( cE%fake ) then
 #ifdef NCDF_4
-                ! We need to fake the IO node to call the save routine
-                ! this aint pretty, however it relieves a lot of
-                ! superfluous checks in the following block
-                if ( ('proj-orb-current' .in. save_DATA) .and. p_E%idx > 0 ) then
-
-                   call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, dev_M)
-
-                end if
+               ! We need to fake the IO node to call the save routine
+               ! this aint pretty, however it relieves a lot of
+               ! superfluous checks in the following block
+               if ( p_E%idx > 0 ) then
+                 if ( 'proj-DM-A' .in. save_DATA ) then
+                   call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'DM', p_E, dev_M)
+                 end if
+                 if ( 'proj-COOP-A' .in. save_DATA ) then
+                   call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COOP', p_E, dev_M)
+                 end if
+                 if ( 'proj-COHP-A' .in. save_DATA ) then
+                   call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COHP', p_E, dev_M)
+                 end if
+                 if ( 'proj-orb-current' .in. save_DATA ) then
+                   call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'J', p_E, dev_M)
+                 end if
+               end if
 #endif
-                cycle
+               cycle
              end if
             ! We have now calculated all block diagonal entries
             ! of the Green's function.
@@ -1373,27 +1389,41 @@ contains
 #endif
                
 #ifdef NCDF_4
+               if ( 'proj-DM-A' .in. save_DATA ) then
+                 call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
+                 call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'DM', p_E, dev_M)
+               end if
+               if ( 'proj-COOP-A' .in. save_DATA ) then
+                 call A_COP(r_oDev,zwork_tri,pvt, &
+                     TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
+                 call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COOP', p_E, dev_M)
+               end if
+               if ( 'proj-COHP-A' .in. save_DATA ) then
+                 call A_COP(r_oDev,zwork_tri,pvt, &
+                     TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
+                 if ( dH%lvl > 0 ) then
+                   call A_COHP_add_dH(dH%d, TSHS%sc_off, &
+                       kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
+                 end if
+                 call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COHP', p_E, dev_M)
+               end if
+               
                if ( 'proj-orb-current' .in. save_DATA ) then
-
 #ifdef TBT_PHONON
-                  call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                       kpt, phase, &
-                       cOmega,zwork_tri,r_oDev,dev_M,pvt)
+                 call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                     kpt, phase, &
+                     cOmega,zwork_tri,r_oDev,dev_M,pvt)
 #else
-                  call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
-                       kpt, phase, &
-                       cE,zwork_tri,r_oDev,dev_M,pvt)
+                 call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
+                     kpt, phase, &
+                     cE,zwork_tri,r_oDev,dev_M,pvt)
 #endif
-                  if ( dH%lvl > 0 ) then
-                     call orb_current_add_dH(dH%d, TSHS%sc_off, &
-                          kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
-                  end if
-                     
-                  ! We need to save it immediately, we
-                  ! do not want to have several arrays in the
-                  ! memory
-                  call proj_cdf_save_J(PROJcdf, ikpt, nE, p_E, dev_M)
+                 if ( dH%lvl > 0 ) then
+                   call orb_current_add_dH(dH%d, TSHS%sc_off, &
+                       kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
+                 end if
 
+                 call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'J', p_E, dev_M)
                end if
 #endif
                
