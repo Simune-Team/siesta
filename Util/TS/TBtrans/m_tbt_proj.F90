@@ -1689,6 +1689,7 @@ contains
     dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, 3)
     
     dic = dic//('info'.kv.'Atomic coordinates')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
@@ -1704,6 +1705,7 @@ contains
     dic = dic//('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, 3)
 
     dic = dic//('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
@@ -1851,6 +1853,7 @@ contains
       ! A list the used projections
       dic = ('info'.kv.'Unique projections')
       call ncdf_def_var(grp,'lvl',NF90_INT,(/'nlvl'/),atts=dic)
+      mem = mem + calc_mem(NF90_INT, mols(im)%lvls%n)
       call ncdf_put_var(grp,'lvl',mols(im)%lvls%r)
 
       dic = dic//('info'.kv.'|i> = S^(1/2)|v_i> for unique projections')
@@ -1892,7 +1895,7 @@ contains
 #ifdef TBT_PHONON
       dic = dic//('info'.kv.'Eigen frequency')//('unit'.kv.'Ry')
 #else
-      dic = dic//('info'.kv.'Eigen energy')//('unit'.kv.'Ry')
+      dic = dic//('info'.kv.'Eigenstate energy')//('unit'.kv.'Ry')
 #endif
       if ( isGamma ) then
         call ncdf_def_var(grp,'eig',NF90_DOUBLE,(/'no'/),atts=dic, &
@@ -1992,21 +1995,21 @@ contains
 
               if ( 'proj-DM-A' .in. save_DATA ) then
                 dic = dic//('info'.kv.'Spectral function density matrix')//('unit'.kv.'1/Ry')
-                call ncdf_def_var(grp,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
+                call ncdf_def_var(grp3,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
                     atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
                 mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
               end if
 
               if ( 'proj-COOP-A' .in. save_DATA ) then
                 dic = dic//('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
-                call ncdf_def_var(grp,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+                call ncdf_def_var(grp3,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                     atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
                 mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
               end if
 
               if ( 'proj-COHP-A' .in. save_DATA ) then
                 dic = dic//('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
-                call ncdf_def_var(grp,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
+                call ncdf_def_var(grp3,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                     atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
                 mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
               end if

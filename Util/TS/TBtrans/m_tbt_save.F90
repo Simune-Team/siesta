@@ -558,14 +558,17 @@ contains
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
         atts = dic)
     mem = mem + calc_mem(NF90_INT, TSHS%na_u)
+    
     dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
-         atts = dic)
+        atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, 3)
+    
     dic = dic//('info'.kv.'Atomic coordinates')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
          atts = dic , chunks = (/3, TSHS%na_u/) )
-    call delete(dic)
     mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
+    call delete(dic)
 
     dic = ('info'.kv.'Supercell offsets')
     call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
@@ -575,6 +578,7 @@ contains
     dic = dic // ('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
          atts = dic)
+    mem = mem + calc_mem(NF90_INT, 3)
 
     dic = dic // ('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
