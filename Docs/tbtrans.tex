@@ -2571,6 +2571,32 @@ the molecule.
   
 \end{fdflogicalF}
 
+\begin{fdflogicalF}{TBT.Projs!DM.A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate the energy and $k$-resolved density matrix for the
+  projected spectral functions. The density matrix may be used to
+  construct real-space LDOS profiles.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!COOP.A}
+  \fdfdepend{TBT.Atoms!Device,TBT.Projs!DOS.A}
+
+  Calculate COOP from the projected spectral function in the device
+  region.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!COHP.A}
+  \fdfdepend{TBT.Atoms!Device,TBT.Projs!DOS.A}
+
+  Calculate COHP from the projected spectral function in the device
+  region.
+
+\end{fdflogicalF}
+
+
 \begin{fdflogicalF}{TBT.Projs!T.All}%
 
   Same as \fdf{TBT.T!All}, but for projections. If differing
