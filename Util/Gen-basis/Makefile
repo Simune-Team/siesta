@@ -49,11 +49,11 @@ SYSOBJ=$(SYS).o
 OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           parsing.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o interpolation.o \
-	      bessph.o radfft.o  sorting.o m_filter.o \
+	      bessph.o radfft.o sorting.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
-          pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
+          pseudopotential.o pxf.o dot.o  atom_options.o ldau_specs.o arw.o  \
           timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o ldau_specs.o m_cite.o local_sys.o
+          xc.o bsc_xcmod.o m_cite.o local_sys.o
 
 OBJS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_transfer.o atm_types.o \
@@ -933,7 +933,8 @@ zm_fire_optim.o: zmatrix.o
 zmatrix.o: alloc.o local_sys.o m_cell.o parallel.o precision.o siesta_geom.o
 zmatrix.o: units.o
 gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: local_sys.o old_atmfuncs.o parallel.o precision.o
+gen-basis.o: chemical.o ldau_specs.o local_sys.o old_atmfuncs.o parallel.o
+gen-basis.o: precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o
