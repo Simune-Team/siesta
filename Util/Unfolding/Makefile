@@ -48,10 +48,10 @@ SYSOBJ=$(SYS).o
 #
 OBJS_UNFOLD=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_types.o \
-          atmparams.o radial.o  memory.o chkdim.o \
-	      pseudopotential.o chemical.o m_filter.o \
+          atmparams.o radial.o  memory.o chkdim.o get_kpoints_scale.o \
+	  pseudopotential.o chemical.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o  m_memory.o periodic_table.o pxf.o read_xc_info.o \
-          atmfuncs.o spher_harm.o interpolation.o arw.o \
+          atmfuncs.o spher_harm.o interpolation.o arw.o siesta_geom.o reclat.o \
           local_sys.o xc.o bsc_xcmod.o xml.o m_walltime.o unfold.o ldau_specs.o m_cite.o $(SYSOBJ)
 
 
@@ -965,7 +965,7 @@ zm_fire_optim.o: m_fire.o parallel.o precision.o siesta_options.o units.o
 zm_fire_optim.o: zmatrix.o
 zmatrix.o: alloc.o local_sys.o m_cell.o parallel.o precision.o siesta_geom.o
 zmatrix.o: units.o
-unfold.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
+unfold.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o get_kpoints_scale.o
 band.o: bands.o
 class_cdata1d.o: class_Data1D.o
 class_cdata2d.o: class_Data2D.o
