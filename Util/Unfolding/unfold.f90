@@ -8,8 +8,8 @@
 
 program unfold
 
-! Reads the .fdf, .ion, and .WFSX files of a SIESTA calculation and generates
-! unfolded bands bands.
+! Reads the .fdf, .ion, .psf and .WFSX files of a SIESTA calculation and generates
+! unfolded bands.
 ! Ref: "Band unfolding made simple", S.Garcia-Mayo and J.M.Soler, Draft to be published
 ! S.Garcia-Mayo and J.M.Soler, Aug.2018
 
@@ -26,6 +26,8 @@ program unfold
   use basis_io,     only: read_ion_ascii
   use sys,          only: die
   use fdf
+  use m_radfft,     only: radfft
+  use spher_harm,   only: rlylm
 
   implicit none
 
@@ -35,7 +37,7 @@ program unfold
   ! Internal variables
   integer  :: iostat, iorb, ir, isp, maxorb, norb
   real(dp) :: dr, grad, gradv(3), r, rc
-  real(dp),allocatable:: phi(:,:,:)
+  real(dp),allocatable:: phir(:,:,:), phik(:,:,:)
   type(species_info), pointer :: spp
   character(len=50):: filein
 
@@ -59,7 +61,8 @@ program unfold
     call read_ion_ascii(spp)
     maxorb = max(maxorb,nofis(isp))
   enddo
-  allocate(phi(nsp,maxorb,nr))
+  allocate(phir(nsp,maxorb,nr))
+  allocate(phik(nsp,maxorb,nr))
 
   ! Find atomic orbitals in real space
   do isp = 1,nsp
@@ -70,10 +73,23 @@ program unfold
       dr = rc/nr
       do ir=0,nr
         r = dr*ir
-        call rphiatm(isp,iorb,r,phi(isp,iorb,ir),grad)
+        call rphiatm(isp,iorb,r,phir(isp,iorb,ir),grad)
       enddo
     enddo ! iorb
   enddo ! isp
+
+  ! Fourier transform orbitals
+  do isp = 1,nsp
+    write(6,*) 'isp = ', isp 
+    do iorb = 1,nofis(isp)
+      write(6,*) 'iorb = ', iorb
+      call radfft(lofio(isp,iorb),nr,rcut(isp,iorb),phir(isp,iorb,:),phik(isp,iorb,:))
+!      write(6,*) phik(isp,iorb,:)
+    enddo
+  enddo
+
+  ! Spherical harmonics
+  
 
 end program unfold
 
