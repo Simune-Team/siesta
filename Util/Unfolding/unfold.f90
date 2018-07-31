@@ -8,8 +8,8 @@
 
 program unfold
 
-! Reads the .fdf, .ion, and .WFSX files of a SIESTA calculation and generates
-! unfolded bands bands.
+! Reads the .fdf, .ion, .psf and .WFSX files of a SIESTA calculation and generates
+! unfolded bands.
 ! Ref: "Band unfolding made simple", S.Garcia-Mayo and J.M.Soler, Draft to be published
 ! S.Garcia-Mayo and J.M.Soler, Aug.2018
 
@@ -27,7 +27,9 @@ program unfold
                           fdf_bnames, fdf_bvalues, fdf_convfac, fdf_init, parsed_line
   use m_get_kpoints_scale, &
                     only: get_kpoints_scale
-  
+  use m_radfft,     only: radfft
+  use spher_harm,   only: rlylm
+
   implicit none
 
   ! Internal parameters
@@ -39,7 +41,7 @@ program unfold
               maxorb, nlines, ne(maxlines), norb, nq(maxlines)
   real(dp) :: dr, emax(maxlines), emin(maxlines), grad, gradv(3), &
               latConst, r, rc, qcell(3,3), qmax(3,maxlines)
-  real(dp),allocatable:: phi(:,:,:)
+  real(dp),allocatable:: phir(:,:,:), phik(:,:,:)
   logical  :: found
   character(len=50):: eunit, filein
   type(species_info),pointer :: spp
@@ -66,7 +68,8 @@ program unfold
     call read_ion_ascii(spp)
     maxorb = max(maxorb,nofis(isp))
   enddo
-  allocate(phi(nsp,maxorb,nr))
+  allocate(phir(nsp,maxorb,nr))
+  allocate(phik(nsp,maxorb,nr))
 
   ! Find atomic orbitals in real space
   do isp = 1,nsp
@@ -77,10 +80,20 @@ program unfold
       dr = rc/nr
       do ir=0,nr
         r = dr*ir
-        call rphiatm(isp,iorb,r,phi(isp,iorb,ir),grad)
+        call rphiatm(isp,iorb,r,phir(isp,iorb,ir),grad)
       enddo
     enddo ! iorb
   enddo ! isp
+
+  ! Fourier transform orbitals
+  do isp = 1,nsp
+    write(6,*) 'isp = ', isp 
+    do iorb = 1,nofis(isp)
+      write(6,*) 'iorb = ', iorb
+      call radfft(lofio(isp,iorb),nr,rcut(isp,iorb),phir(isp,iorb,:),phik(isp,iorb,:))
+!      write(6,*) phik(isp,iorb,:)
+    enddo
+  enddo
 
   ! Read UnfoldedBandLines
   call get_kpoints_scale('BandLinesScale',qcell,ierr)
@@ -109,7 +122,6 @@ program unfold
       call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
     endif
   enddo
-    
 
 end program unfold
 
