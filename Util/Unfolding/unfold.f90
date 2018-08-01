@@ -13,7 +13,7 @@ program unfold
 ! Ref: "Band unfolding made simple", S.Garcia-Mayo and J.M.Soler, Draft to be published
 ! S.Garcia-Mayo and J.M.Soler, Aug.2018
 
-  use precision,    only: dp
+  use precision,    only: dp, sp
   use chemical,     only: species_label
   use atm_types,    only: species_info, nspecies, species
   use atmfuncs,     only: lofio, mofio, nofis, rcut, rphiatm, zetafio
@@ -29,6 +29,7 @@ program unfold
                     only: get_kpoints_scale
   use m_radfft,     only: radfft
   use spher_harm,   only: rlylm
+!  use files,        only: slabel
 
   implicit none
 
@@ -37,16 +38,22 @@ program unfold
   integer, parameter :: maxlines = 100  ! max number of unfolded band lines
 
   ! Internal variables
-  integer  :: ierr, iostat, iorb, ir, isp, & 
-              maxorb, nlines, ne(maxlines), norb, nq(maxlines)
-  real(dp) :: dr, emax(maxlines), emin(maxlines), grad, gradv(3), &
-              latConst, r, rc, qcell(3,3), qmax(3,maxlines)
-  real(dp),allocatable:: phir(:,:,:), phik(:,:,:)
-  logical  :: found
-  character(len=50):: eunit, filein
+  integer  :: ierr, iik, iispin, ik, indwf, iostat, iorb, ir, isp, & 
+              ispin, iu, iw, j, lmax, maxorb, nk, nlines, ne(maxlines), &
+              norb, nq(maxlines), nspin, nuotot, nwflist
+  integer, allocatable:: iaorb(:), iphorb(:), cnfigfio(:)
+  real(sp), allocatable :: psi(:,:)
+  real(dp) :: dr, emax(maxlines), emin(maxlines), energy, grad, gradv(3), &
+              latConst, modk, r, rc, qcell(3,3), qmax(3,maxlines)
+  real(dp),allocatable:: k(:,:), phir(:,:,:), phik(:,:,:), ylm(:,:), &
+                         gylm(:,:)
+  logical  :: found, gamma
+  character(len=50):: eunit, filein, fname
+  character(len=20), allocatable :: symfio(:), labelfis(:)
   type(species_info),pointer :: spp
   type(block_fdf)            :: bfdf
   type(parsed_line), pointer :: pline
+
 
   ! Read and process input file
   filein = "stdin"
@@ -86,14 +93,12 @@ program unfold
   enddo ! isp
 
   ! Fourier transform orbitals
-  do isp = 1,nsp
-    write(6,*) 'isp = ', isp 
+  do isp = 1,nsp 
     do iorb = 1,nofis(isp)
-      write(6,*) 'iorb = ', iorb
       call radfft(lofio(isp,iorb),nr,rcut(isp,iorb),phir(isp,iorb,:),phik(isp,iorb,:))
-!      write(6,*) phik(isp,iorb,:)
     enddo
   enddo
+  print*,'Orbitals fourier-transformed'
 
   ! Read UnfoldedBandLines
   call get_kpoints_scale('BandLinesScale',qcell,ierr)
@@ -123,6 +128,65 @@ program unfold
     endif
   enddo
 
-end program unfold
+  ! Read wavefunctions at k points of the BZ
+  fname = 'si_bulk.fullBZ.WFSX'
+!  fname = trim(slabel) // '.WFSX'                  NOT WORKING
+!  call io_assing(iu)
+  open(iu, file=fname, form='unformatted', status='old' )
+  print*,'unfold, read wfsx'  ! ERROR HERE (last mod 31.07 20:24)
+  rewind (iu)
+  read(iu) nk, gamma
+  allocate(k(nk,3))
+  read(iu) nspin
+  read(iu) nuotot
+  if (gamma) then
+    allocate(psi(1,nuotot))
+  else
+    allocate(psi(2,nuotot))
+  endif
+  allocate(iaorb(nuotot),labelfis(nuotot),iphorb(nuotot),cnfigfio(nuotot), &
+           symfio(nuotot))
+  read(iu) (iaorb(j),labelfis(j),iphorb(j),cnfigfio(j),symfio(j),j=1,nuotot)
+  do iik = 1,nk
+    do iispin = 1,nspin
+      read(iu) ik,k(iik,1),k(iik,2),k(iik,3)   ! save all kpoints coord
+      if (ik .ne. iik) &
+        call die('unfold: ERROR in index of k-point')
+      read(iu) ispin
+      if (ispin .ne. iispin) &
+        call die('unfold: ERROR in index of spin')
+      read(iu) nwflist
+      do iw = 1,nwflist
+        read(iu) indwf
+        read(iu) energy
+        read(iu) (psi(1:,j), j=1,nuotot)
+      enddo
+    enddo
+  enddo
+  close (iu)
 
+  
+  ! Spherical harmonics: computed at k(nk,3) as we want to interpolate DOS
+  ! rlylm( lmax, k(3), rly(0:) grly(1:,0:)) --- we give k normalized
+  do iik = 1,nk
+    modk = k(iik,1)**2 + k(iik,2)**2 + k(iik,3)**2
+    k(iik,1) = k(iik,1)/modk
+    k(iik,2) = k(iik,2)/modk
+    k(iik,3) = k(iik,3)/modk
+  enddo
+  PRINT*,'START SPH HARM'
+  lmax = 0
+  do isp = 1,nsp
+    lmax = max(lmax,lofio(isp,nofis(isp)))
+  enddo
+  allocate(ylm(nk,lmax*lmax),gylm(3,lmax*lmax))
+  PRINT*,'CHECKPOINT'
+  do iik = 1,nk
+    call rlylm(lmax,k(iik,:),ylm(iik,:),gylm(:,:))
+  enddo
+  print*, 'lmax=',lmax, 'ylm=',ylm(1,2,3) 
+  print*,'unfold, end spher_harm'
+
+
+end program unfold
 
