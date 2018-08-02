@@ -46,14 +46,17 @@ SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS_UNFOLD=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
-          parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o atm_types.o \
-          atmparams.o radial.o  memory.o chkdim.o get_kpoints_scale.o \
-	  pseudopotential.o chemical.o m_filter.o \
-          basis_specs.o atom.o memoryinfo.o  m_memory.o periodic_table.o pxf.o read_xc_info.o \
-          atmfuncs.o spher_harm.o interpolation.o arw.o siesta_geom.o reclat.o \
-          local_sys.o xc.o bsc_xcmod.o xml.o m_walltime.o unfold.o ldau_specs.o m_cite.o $(SYSOBJ)
-
+OBJS_UNFOLD= \
+          alloc.o arw.o atmfuncs.o atmparams.o atm_types.o atom.o atom_options.o \
+          basis_io.o basis_specs.o basis_types.o bsc_xcmod.o \
+          cellsubs.o chemical.o chkdim.o coor.o digcel.o \
+          f2kcli.o get_kpoints_scale.o idiag.o interpolation.o io.o \
+          kgrid.o kgridinit.o ldau_specs.o local_sys.o \
+          m_cell.o m_cite.o memory.o memoryinfo.o  m_filter.o \
+          m_getopts.o m_memory.o m_io.o m_walltime.o \
+          parallel.o parsing.o periodic_table.o precision.o pseudopotential.o pxf.o \
+          radial.o read_xc_info.o reclat.o redcel.o siesta_geom.o spher_harm.o \
+          unfold.o volcel.o xc.o xml.o zmatrix.o $(SYSOBJ)
 
 #
 # Compile XC in a private directory, without MPI
