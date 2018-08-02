@@ -503,193 +503,172 @@ contains
 
     percent_tracker = fdf_get('TBT.Progress',5.)
     percent_tracker = max(0., percent_tracker)
-
+    
     ! Reading the Transiesta solution method
     chars = fdf_get('TBT.SolutionMethod','BTD')
     if ( leqi(chars,'BTD').or.leqi(chars,'tri') ) then
-       ts_method = TS_BTD
+      ts_method = TS_BTD
     else
-       call die('Unrecognized TBtrans solution method: '//trim(chars))
+      call die('Unrecognized TBtrans solution method: '//trim(chars))
     end if
 
     chars = fdf_get('TS.BTD.Optimize','speed')
     chars = fdf_get('TBT.BTD.Optimize',trim(chars))
     if ( leqi(chars,'speed') ) then
-       BTD_method = 0
+      BTD_method = 0
     else if ( leqi(chars,'memory') ) then
-       BTD_method = 1
+      BTD_method = 1
     else
-       call die('Could not determine flag TBT.BTD.Optimize, please &
-            &see manual.')
+      call die('Could not determine flag TBT.BTD.Optimize, please &
+          &see manual.')
     end if
-
+    
     ! Read spectral calculation method for BTD method
     if ( N_Elec > 3 ) then
-       chars = fdf_get('TS.BTD.Spectral','column')
+      chars = fdf_get('TS.BTD.Spectral','column')
     else
-       chars = fdf_get('TS.BTD.Spectral','propagation')
+      chars = fdf_get('TS.BTD.Spectral','propagation')
     end if
     chars = fdf_get('TBT.BTD.Spectral',trim(chars))
     if ( leqi(chars,'column') ) then
-       ts_A_method = TS_BTD_A_COLUMN
+      ts_A_method = TS_BTD_A_COLUMN
     else if ( leqi(chars,'propagation') ) then
-       ts_A_method = TS_BTD_A_PROPAGATION
+      ts_A_method = TS_BTD_A_PROPAGATION
     else
-       call die('TBT.BTD.Spectral option is not column or propagation. &
-            &Please correct input.')
+      call die('TBT.BTD.Spectral option is not column or propagation. &
+          &Please correct input.')
     end if
 
     ! initial
     only_T_Gf = .true.
-
+    
     ! Whether we should assert and calculate
     ! all transmission amplitudes
     ltmp = fdf_get('TBT.T.Elecs.All',N_Elec == 1)
     ltmp = fdf_get('TBT.T.All',N_Elec == 1)
     if ( ltmp ) then
-       save_DATA = save_DATA // ('T-all'.kv.1)
+      save_DATA = save_DATA // ('T-all'.kv.1)
     end if
-
+    
     N_eigen = fdf_get('TBT.T.Eig',0)
     if ( N_eigen > 0 ) then
-       save_DATA = save_DATA // ('T-eig'.kv.N_eigen)
-       only_T_Gf = .false.
+      save_DATA = save_DATA // ('T-eig'.kv.N_eigen)
+      only_T_Gf = .false.
     end if
-
+    
     ! Should we calculate DOS of electrode bulk Green function
     ltmp = fdf_get('TBT.DOS.Elecs', .false. )
     if ( ltmp ) then
-       save_DATA = save_DATA // ('DOS-Elecs'.kv.1)
+      save_DATA = save_DATA // ('DOS-Elecs'.kv.1)
     end if
-
-    ltmp = fdf_get('TBT.T.Bulk',N_Elec == 1)
+    
+    ltmp = fdf_get('TBT.T.Bulk', N_Elec == 1)
     if ( ltmp ) then
-       ! when calculating the DOS for the electrode
-       ! we also get the bulk transmission.
-       save_DATA = save_DATA // ('DOS-Elecs'.kv.1)
+      ! when calculating the DOS for the electrode
+      ! we also get the bulk transmission.
+      save_DATA = save_DATA // ('DOS-Elecs'.kv.1)
     end if
-
+    
     ! Should we calculate DOS of Green function
-    ltmp = fdf_get('TBT.DOS.Gf', N_Elec == 1 )
+    ltmp = fdf_get('TBT.DOS.Gf', N_Elec == 1)
     if ( ltmp ) then
-       save_DATA = save_DATA // ('DOS-Gf'.kv.1)
-       only_T_Gf = .false.
+      save_DATA = save_DATA // ('DOS-Gf'.kv.1)
+      only_T_Gf = .false.
     end if
 
     ! Should we calculate DOS of spectral function
-    ltmp = fdf_get('TBT.DOS.A',N_Elec == 1)
+    ltmp = fdf_get('TBT.DOS.A', N_Elec == 1)
     if ( ltmp ) then
-       save_DATA = save_DATA // ('DOS-A'.kv.1)
-       only_T_Gf = .false.
+      save_DATA = save_DATA // ('DOS-A'.kv.1)
+      only_T_Gf = .false.
     end if
 
     ! Should we calculate DOS of all spectral functions
-    ltmp = fdf_get('TBT.DOS.A.All',N_Elec == 1)
+    ltmp = fdf_get('TBT.DOS.A.All', N_Elec == 1)
     if ( ltmp ) then
-       save_DATA = save_DATA // ('DOS-A'.kv.1)
-       save_DATA = save_DATA // ('DOS-A-all'.kv.1)
-       only_T_Gf = .false.
+      save_DATA = save_DATA // ('DOS-A'.kv.1)
+      save_DATA = save_DATA // ('DOS-A-all'.kv.1)
+      only_T_Gf = .false.
     end if
-
+    
     ! Should we calculate orbital current
     ltmp = fdf_get('TBT.Current.Orb', .false. )
-    if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
-       save_DATA = save_DATA // ('orb-current'.kv.1)
-       only_T_Gf = .false.
-    else if ( ltmp .and. IONode ) then
-       write(*,'(2(/,a))')'WARNING: Will not calculate the orbital currents, &
-            &the spectral function needs to be calculated for this to &
-            &apply.','Set TBT.DOS.A T to calculate orbital currents.'
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('DOS-A'.kv.1)
+      save_DATA = save_DATA // ('orb-current'.kv.1)
+      only_T_Gf = .false.
     end if
 
     ! Options for density-matrix calculations
     ltmp = fdf_get('TBT.DM.Gf', .false.)
-    if ( ltmp .and. ('DOS-Gf'.in.save_DATA)) then
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('DOS-Gf'.kv.1)
       save_DATA = save_DATA // ('DM-Gf'.kv.1)
-    else if ( ltmp .and. IONode ) then
-      write(*,'(2(/,a))')'WARNING: Will not calculate the density matrix (Gf), &
-          &the Green function DOS needs to be calculated for this to &
-          &apply.','Set TBT.DOS.Gf T to calculate density matrix (Gf).'
     end if
 
     ltmp = fdf_get('TBT.DM.A', .false.)
-    if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
-       save_DATA = save_DATA // ('DM-A'.kv.1)
-    else if ( ltmp .and. IONode ) then
-       write(*,'(2(/,a))')'WARNING: Will not calculate the density matrix (A), &
-            &the spectral function DOS needs to be calculated for this to &
-            &apply.','Set TBT.DOS.A T to calculate density matrix (A).'
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('DOS-A'.kv.1)
+      save_DATA = save_DATA // ('DM-A'.kv.1)
     end if
-
+    
     
     ! Options for COOP and COHP curves.
     ! These are orbital (energy) populations that can be used to determine the
     ! bonding nature of the material.
     ltmp = fdf_get('TBT.COOP.Gf', .false.)
-    if ( ltmp .and. ('DOS-Gf'.in.save_DATA)) then
-       save_DATA = save_DATA // ('COOP-Gf'.kv.1)
-    else if ( ltmp .and. IONode ) then
-       write(*,'(2(/,a))')'WARNING: Will not calculate the COOP (Gf) curve, &
-            &the Green function DOS needs to be calculated for this to &
-            &apply.','Set TBT.DOS.Gf T to calculate COOP (Gf) curves.'
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('DOS-Gf'.kv.1)
+      save_DATA = save_DATA // ('COOP-Gf'.kv.1)
     end if
 
     ltmp = fdf_get('TBT.COOP.A', .false. )
-    if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
-       save_DATA = save_DATA // ('COOP-A'.kv.1)
-    else if ( ltmp .and. IONode ) then
-       write(*,'(2(/,a))')'WARNING: Will not calculate the COOP (A) curve, &
-            &the spectral function DOS needs to be calculated for this to &
-            &apply.','Set TBT.DOS.A T to calculate COOP (A) curves.'
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('DOS-A'.kv.1)
+      save_DATA = save_DATA // ('COOP-A'.kv.1)
     end if
 
     ltmp = fdf_get('TBT.COHP.Gf', .false. )
-    if ( ltmp .and. ('DOS-Gf'.in.save_DATA)) then
-       save_DATA = save_DATA // ('COHP-Gf'.kv.1)
-    else if ( ltmp .and. IONode ) then
-       write(*,'(2(/,a))')'WARNING: Will not calculate the COHP (Gf) curve, &
-            &the Green function DOS needs to be calculated for this to &
-            &apply.','Set TBT.DOS.Gf T to calculate COHP (Gf) curves.'
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('DOS-Gf'.kv.1)
+      save_DATA = save_DATA // ('COHP-Gf'.kv.1)
     end if
 
     ltmp = fdf_get('TBT.COHP.A', .false. )
-    if ( ltmp .and. ('DOS-A'.in.save_DATA)) then
-       save_DATA = save_DATA // ('COHP-A'.kv.1)
-    else if ( ltmp .and. IONode ) then
-       write(*,'(2(/,a))')'WARNING: Will not calculate the COHP (A) curve, &
-            &the spectral function DOS needs to be calculated for this to &
-            &apply.','Set TBT.DOS.A T to calculate COHP (A) curves.'
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('DOS-A'.kv.1)
+      save_DATA = save_DATA // ('COHP-A'.kv.1)
     end if
 
     ltmp = fdf_get('TBT.T.Out',N_Elec == 1)
     if ( ltmp ) then
-       save_DATA = save_DATA // ('T-sum-out'.kv.1)
+      save_DATA = save_DATA // ('T-sum-out'.kv.1)
     end if
     
     ! We cannot calculate the transmission for more than 3
     ! electrodes if using the diagonal
     if ( only_T_Gf .and. N_Elec > 3 ) then
-       only_T_Gf = .false.
+      only_T_Gf = .false.
     end if
 
     if ( only_T_Gf ) then
-       ! TODO, consider changing this to .true.
-       only_T_Gf = fdf_get('TBT.T.Gf',.false.)
+      ! TODO, consider changing this to .true.
+      only_T_Gf = fdf_get('TBT.T.Gf',.false.)
     end if
     if ( only_T_Gf ) then
-       save_DATA = save_DATA // ('T-Gf'.kv.1)
-       ts_A_method = TS_BTD_A_COLUMN
+      save_DATA = save_DATA // ('T-Gf'.kv.1)
+      ts_A_method = TS_BTD_A_COLUMN
 
-       ! We get sum-out for free, so save it
-       save_DATA = save_DATA // ('T-sum-out'.kv.1)
+      ! We get sum-out for free, so save it
+      save_DATA = save_DATA // ('T-sum-out'.kv.1)
 
-       if ( N_Elec > 2 ) then
-          ! When having more than one electrode
-          ! we *must* calculate all transmissions
-          ! to be able to get the actual transmissions
-          ! using the diagonal Green function
-          save_DATA = save_DATA // ('T-all'.kv.1)
-       end if
+      if ( N_Elec > 2 ) then
+        ! When having more than one electrode
+        ! we *must* calculate all transmissions
+        ! to be able to get the actual transmissions
+        ! using the diagonal Green function
+        save_DATA = save_DATA // ('T-all'.kv.1)
+      end if
 
     end if
 
@@ -707,21 +686,21 @@ contains
 
     ! Check for Gamma in each direction
     do i = 1 , 3
-       if ( kdispl(i) /= 0._dp ) then
-          Gamma3(i) = .false.
-       else if ( sum(kscell(i,:)) > 1 ) then
-          ! Note it is the off-diagonal for this unit-cell
-          ! direction
-          Gamma3(i) = .false.
-       else
-          Gamma3(i) = .true.
-       end if
+      if ( kdispl(i) /= 0._dp ) then
+        Gamma3(i) = .false.
+      else if ( sum(kscell(i,:)) > 1 ) then
+        ! Note it is the off-diagonal for this unit-cell
+        ! direction
+        Gamma3(i) = .false.
+      else
+        Gamma3(i) = .true.
+      end if
     end do
-
+    
     do i = 1 , N_Elec
-       ! Initialize the electrode quantities for the stored values
-       call check_Elec_sim(Elecs(i), nspin, cell, na_u, xa, &
-            Elecs_xa_EPS, lasto, Gamma3)
+      ! Initialize the electrode quantities for the stored values
+      call check_Elec_sim(Elecs(i), nspin, cell, na_u, xa, &
+          Elecs_xa_EPS, lasto, Gamma3)
     end do
 
   end subroutine read_tbt_after_Elec
@@ -741,6 +720,7 @@ contains
     use m_tbt_dH, only: print_dH_options
     use m_tbt_dSE, only: print_dSE_options
     use m_tbt_sigma_save, only: print_Sigma_options
+    use m_tbt_proj, only: print_proj_options
     use m_tbt_hs, only: Volt, IsVolt, spin_idx
 
     integer, intent(in) :: nspin
@@ -820,6 +800,7 @@ contains
     call print_dSE_options( )
 
     call print_save_options()
+    call print_proj_options( save_DATA )
 
     write(*,f11)'          >> Electrodes << '
     do i = 1 , size(Elecs)

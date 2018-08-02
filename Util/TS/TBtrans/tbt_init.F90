@@ -241,6 +241,8 @@ subroutine tbt_init()
   call read_tbt_after_Elec(TSHS%nspin, TSHS%cell, TSHS%na_u, TSHS%lasto, &
        TSHS%xa, TSHS%no_u, kscell, kdispl)
 
+  call read_proj_options( save_DATA )
+
   ! Print options
   call print_tbt_options( TSHS%nspin )
 
