@@ -769,6 +769,10 @@ calculation has completed.
 
   See \fdf{TBT.Atoms!Device.Connect}.
 
+  In case any of \fdf{TBT.DM!Gf}, \fdf{TBT.COOP!Gf} or
+  \fdf{TBT.COHP!Gf} is \fdftrue\ this flag will be set to \fdftrue\ as
+  well.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DOS!A}
@@ -781,6 +785,10 @@ calculation has completed.
   This generates \sysfile{ADOS\_<>} and \sysfile{AVADOS\_<>}.
 
   See \fdf{TBT.Atoms!Device.Connect}.
+
+  In case any of \fdf{TBT.Current!Orb}, \fdf{TBT.DM!A}, \fdf{TBT.COOP!A} or
+  \fdf{TBT.COHP!A} is \fdftrue\ this flag will be set to \fdftrue\ as
+  well.
 
 \end{fdflogicalF}
 
@@ -857,7 +865,7 @@ Population may also be calculated. These are only available if
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COOP!A}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A.All}
 
   Calculate COOP from the spectral function in the device region.
 
@@ -869,15 +877,12 @@ Population may also be calculated. These are only available if
   The COOP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COHP!Gf}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!Gf}
+  \fdfdepend{TBT.Atoms!Device}
 
   Calculate COHP from the Green function in the device region.
 
@@ -889,15 +894,12 @@ Population may also be calculated. These are only available if
   The COHP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COHP!A}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A.All}
 
   Calculate COHP from the spectral function in the device region.
 
@@ -908,9 +910,6 @@ Population may also be calculated. These are only available if
   \end{equation}
   The COHP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
-
-  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
 
   \note Untested!
 
@@ -2557,11 +2556,14 @@ the molecule.
 
   Save the spectral density of states for the projections. In case you
   have set \fdf{TBT.DOS!A} this will default to that flag.
-  
+
+  In case any of \fdf{TBT.Projs!Current.Orb}, \fdf{TBT.Projs!DM.A},
+  \fdf{TBT.Projs!COOP.A} or \fdf{TBT.Projs!COHP.A} is \fdftrue\ this
+  flag will be set to \fdftrue\ as well.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Projs!Current.Orb}%
-  \fdfdepend{TBT.Projs!DOS.A}
 
   Will calculate and save the orbital current for the device with the
   projections.
@@ -2581,7 +2583,7 @@ the molecule.
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Projs!COOP.A}
-  \fdfdepend{TBT.Atoms!Device,TBT.Projs!DOS.A}
+  \fdfdepend{TBT.Atoms!Device}
 
   Calculate COOP from the projected spectral function in the device
   region.
@@ -2589,7 +2591,7 @@ the molecule.
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Projs!COHP.A}
-  \fdfdepend{TBT.Atoms!Device,TBT.Projs!DOS.A}
+  \fdfdepend{TBT.Atoms!Device}
 
   Calculate COHP from the projected spectral function in the device
   region.

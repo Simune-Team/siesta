@@ -76,7 +76,7 @@ module m_tbt_proj
   !   ... more proj <Name> blocks, if needed
   ! %endblock TBT.Proj.mol-1
 
-  integer, parameter :: PROJ_NAME_LEN = 30
+  integer, parameter :: PROJ_NAME_LEN = 32
 
   type :: tProjMol
     ! Name of the "molecule"
@@ -148,9 +148,12 @@ module m_tbt_proj
 
 #endif
 
-#ifdef NCDF_4
+  public :: read_proj_options
+  public :: print_proj_options
 
 contains
+
+#ifdef NCDF_4
 
   subroutine proj_LME_assoc(lhs,rhs)
     type(tLvlMolEl), pointer :: lhs
@@ -162,7 +165,6 @@ contains
     
     use fdf
     use fdf_extra
-    use parallel, only : IONode 
 
     use dictionary
 
@@ -178,105 +180,14 @@ contains
     integer :: im, ip
     character(len=PROJ_NAME_LEN) :: char, name
     type(tRgn) :: r_tmp, r_tmp2
-    logical :: ltmp
 
-    ! Count number of molecules
-    N_mol = 0
+    ! This routine assumes the projection names are already read in.
+    if ( N_mol == 0 ) return
 
     ! If the user has requested only to calculate the 
     ! self-energies, we should not read in the projections.
     if ( ('Sigma-only'.in.save_DATA) ) return
 
-    ! If the projection block exists
-    ! it means the user is requesting projections.
-    if ( .not. fdf_defined('TBT.Projs') ) return
-
-    if ( .not. fdf_block('TBT.Projs',bfdf) ) then
-      call die('TBT.Projs is not a block, please correct')
-    end if
-
-    ! Whether we should assert and calculate
-    ! all transmission amplitudes for the projections
-    ltmp = fdf_get('TBT.Projs.T.Elecs.All', ('T-all'.in.save_DATA) )
-    ltmp = fdf_get('TBT.Projs.T.All', ltmp )
-    if ( ltmp ) then
-      save_DATA = save_DATA // ('proj-T-all'.kv.1)
-    end if
-    ltmp = fdf_get('TBT.Projs.T.Out', ('T-sum-out'.in.save_DATA) )
-    if ( ltmp ) then
-      save_DATA = save_DATA // ('proj-T-sum-out'.kv.1)
-    end if
-    ltmp = fdf_get('TBT.Projs.Only', .false. )
-    if ( ltmp ) then
-      save_DATA = save_DATA // ('proj-only'.kv.1)
-    end if
-    
-    ! Should we calculate DOS of spectral function
-    ltmp = fdf_get('TBT.Projs.DOS.A',('DOS-A'.in.save_DATA))
-    if ( ltmp ) then
-      save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
-    end if
-
-    ltmp = fdf_get('TBT.Projs.Current.Orb', .false. )
-    if ( ltmp .and. ('proj-DOS-A'.in.save_DATA) ) then
-      save_DATA = save_DATA // ('proj-orb-current'.kv.1)
-    else if ( ltmp .and. IONode ) then
-      write(*,'(a)')'WARNING: Will not calculate the orbital currents &
-          &of the projections, the spectral function needs to be &
-          &calculated for this to apply.'
-    end if
-
-    ltmp = fdf_get('TBT.Projs.DM.A', .false.)
-    if ( ltmp .and. ('proj-DOS-A'.in.save_DATA)) then
-      save_DATA = save_DATA // ('proj-DM-A'.kv.1)
-    else if ( ltmp .and. IONode ) then
-      write(*,'(2(/,a))')'WARNING: Will not calculate the density matrix (A), &
-          &the spectral function DOS needs to be calculated for this to &
-          &apply.','Set TBT.Projs.DOS.A T to calculate density matrix (A).'
-    end if
-
-    ltmp = fdf_get('TBT.Projs.COOP.A', .false. )
-    if ( ltmp .and. ('proj-DOS-A'.in.save_DATA)) then
-      save_DATA = save_DATA // ('proj-COOP-A'.kv.1)
-    else if ( ltmp .and. IONode ) then
-      write(*,'(2(/,a))')'WARNING: Will not calculate the COOP (A) curve, &
-          &the spectral function DOS needs to be calculated for this to &
-          &apply.','Set TBT.Projs.DOS.A T to calculate COOP (A) curves.'
-    end if
-
-    ltmp = fdf_get('TBT.Projs.COHP.A', .false. )
-    if ( ltmp .and. ('proj-DOS-A'.in.save_DATA)) then
-      save_DATA = save_DATA // ('proj-COHP-A'.kv.1)
-    else if ( ltmp .and. IONode ) then
-      write(*,'(2(/,a))')'WARNING: Will not calculate the COHP (A) curve, &
-          &the spectral function DOS needs to be calculated for this to &
-          &apply.','Set TBT.Projs.DOS.A T to calculate COHP (A) curves.'
-    end if
-
-
-    ! First read in the molecules
-    do while ( fdf_bline(bfdf,pline) )
-      ! skip empty line
-      if ( fdf_bnnames(pline) == 0 ) cycle
-      N_mol = N_mol + 1
-    end do
-    allocate(mols(N_mol))
-    
-    ! rewind to read again
-    call fdf_brewind(bfdf)
-
-    ! Retrieve the names
-    im = 0
-    do while ( fdf_bline(bfdf,pline) )
-      ! empty line
-      if ( fdf_bnnames(pline) == 0 ) cycle
-      im = im + 1
-      mols(im)%name = fdf_bnames(pline,1)
-      if ( index(mols(im)%name,'.') > 0 ) then
-        call die('Projections cannot be named with .!')
-      end if
-    end do
-    
     ! Read in the data
     do im = 1 , N_mol
 
@@ -3352,6 +3263,139 @@ contains
     
   end subroutine proj_sort
 
+  subroutine read_proj_options( save_DATA )
+    
+    use fdf
+
+    use dictionary
+
+    type(dict), intent(inout) :: save_DATA
+
+    ! Local variables
+    type(block_fdf) :: bfdf
+    type(parsed_line), pointer :: pline
+    logical :: ltmp
+    integer :: i
+
+    ! Reset the projection molecules
+    N_mol = 0
+    
+    ! If the user has requested only to calculate the 
+    ! self-energies, we should not read in the projections.
+    if ( ('Sigma-only'.in.save_DATA) ) return
+
+    ! If the projection block exists
+    ! it means the user is requesting projections.
+    if ( .not. fdf_defined('TBT.Projs') ) return
+
+    if ( .not. fdf_block('TBT.Projs',bfdf) ) then
+      call die('TBT.Projs is not a block, please correct')
+    end if
+
+    ! First read in the molecules
+    do while ( fdf_bline(bfdf,pline) )
+      ! skip empty line
+      if ( fdf_bnnames(pline) == 0 ) cycle
+      N_mol = N_mol + 1
+    end do
+    allocate(mols(N_mol))
+    
+    ! rewind to read again
+    call fdf_brewind(bfdf)
+
+    ! Retrieve the names
+    i = 0
+    do while ( fdf_bline(bfdf,pline) )
+      ! empty line
+      if ( fdf_bnnames(pline) == 0 ) cycle
+      i = i + 1
+      mols(i)%name = fdf_bnames(pline,1)
+      if ( index(mols(i)%name,'.') > 0 ) then
+        call die('Projections cannot be named with .!')
+      end if
+    end do
+
+
+    ! Whether we should assert and calculate
+    ! all transmission amplitudes for the projections
+    ltmp = fdf_get('TBT.Projs.T.Elecs.All', ('T-all'.in.save_DATA) )
+    ltmp = fdf_get('TBT.Projs.T.All', ltmp )
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-T-all'.kv.1)
+    end if
+    ltmp = fdf_get('TBT.Projs.T.Out', ('T-sum-out'.in.save_DATA) )
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-T-sum-out'.kv.1)
+    end if
+    ltmp = fdf_get('TBT.Projs.Only', .false. )
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-only'.kv.1)
+    end if
+    
+    ! Should we calculate DOS of spectral function
+    ltmp = fdf_get('TBT.Projs.DOS.A', ('DOS-A'.in.save_DATA))
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
+    end if
+
+    ltmp = fdf_get('TBT.Projs.Current.Orb', .false. )
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
+      save_DATA = save_DATA // ('proj-orb-current'.kv.1)
+    end if
+
+    ltmp = fdf_get('TBT.Projs.DM.A', .false.)
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
+      save_DATA = save_DATA // ('proj-DM-A'.kv.1)
+    end if
+
+    ltmp = fdf_get('TBT.Projs.COOP.A', .false. )
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
+      save_DATA = save_DATA // ('proj-COOP-A'.kv.1)
+    end if
+
+    ltmp = fdf_get('TBT.Projs.COHP.A', .false. )
+    if ( ltmp ) then
+      save_DATA = save_DATA // ('proj-DOS-A'.kv.1)
+      save_DATA = save_DATA // ('proj-COHP-A'.kv.1)
+    end if
+
+  end subroutine read_proj_options
+  
+  subroutine print_proj_options( save_DATA )
+    
+    use parallel, only: IONode
+    use dictionary
+    
+    type(dict), intent(inout) :: save_DATA
+
+    character(len=*), parameter :: f1 ='(''tbt-proj: '',a,t53,''='',tr4,l1)'
+
+    if ( .not. IONode ) return
+    if ( N_mol == 0 ) return
+
+    write(*,f1) 'Calc. T between all electrodes',('proj-T-all'.in.save_DATA)
+    write(*,f1) 'Calc. total T out of electrodes',('proj-T-sum-out'.in.save_DATA)
+    write(*,f1) 'Saving DOS from spectral functions',('proj-DOS-A' .in. save_DATA)
+    write(*,f1) 'Saving bond currents (orb-orb)',('proj-orb-current'.in.save_DATA)
+    write(*,f1) 'Saving DM from spectral functions',('proj-DM-A'.in.save_DATA)
+    write(*,f1) 'Saving COOP from spectral functions',('proj-COOP-A'.in.save_DATA)
+    write(*,f1) 'Saving COHP from spectral functions',('proj-COHP-A'.in.save_DATA)
+
+  end subroutine print_proj_options
+#else
+  
+  subroutine read_proj_options( save_DATA )
+    use dictionary
+    type(dict), intent(inout) :: save_DATA
+  end subroutine read_proj_options
+  
+  subroutine print_proj_options( save_DATA )
+    use dictionary
+    type(dict), intent(inout) :: save_DATA
+  end subroutine print_proj_options
 #endif
 
 end module m_tbt_proj
