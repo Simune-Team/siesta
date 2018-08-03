@@ -41,21 +41,23 @@ program unfold
 
   ! Internal variables
   integer          :: i1, i2, i3, ia, ierr, ik, ikx(3), iline, &
-                      io, iostat, ir, isp, ispin, iu, iw, & 
-                      j, jk, jspin, jw, kdsc(3,3), kscell(3,3), lmax, &
+                      io, iostat, ir, isp, ispin, iu, iw, iy  & 
+                      j, jk, jspin, jw, kdsc(3,3), kscell(3,3), lmaxt, &
                       maux(3,3,2), maxorb, maxw, mk, ml(3,3), mr(3,3), &
                       na, ne(maxlines), nk, nktot, nkx(3), nlines, nlm, no, &
                       nq(maxlines), nspin, nw, proj(3,3)
   real(dp)         :: dkcell(3,3), dr, dscell(3,3), &
                       emax(maxlines), emin(maxlines), &
                       grad, gradv(3), k0(3), kcell(3,3), kmax, modq, pi, &
-                      r, rc, qcell(3,3), qmax(3,maxlines), scell(3,3)
+                      r, rc, qcell(3,3), qmax(3,maxlines), qmaxunit(3),  &
+                      qmod, scell(3,3)
   logical          :: found, gamma
   character(len=50):: eunit, fname, slabel
   type(block_fdf)  :: bfdf
 
   ! Allocatable arrays and pointers
-  integer,          allocatable:: cnfigfio(:), iaorb(:), indk(:,:,:), iphorb(:)
+  integer,          allocatable:: cnfigfio(:), iaorb(:), indk(:,:,:), iphorb(:), &
+                                  lmax(:), nlm(:)
   real(sp),         allocatable:: ek(:,:,:), psi(:,:,:,:,:)
   real(dp),         allocatable:: k(:,:), gylm(:,:), phir(:,:,:), phiq(:,:,:), &
                                   wk(:), ylm(:,:)
@@ -90,12 +92,12 @@ program unfold
 
   ! Find atomic orbitals in real space
   print*,'unfold: reading atomic orbitals'
-  lmax = 0
+  lmaxt = 0
   do isp = 1,nsp            ! species index
     do io = 1,nofis(isp)    ! orbital index within species
-!      write(6,*) "# Orbital (#, l, z, m, rc):", &
+!      write(6,*) "Orb(l,z,m,rc):", &
 !        lofio(isp,io), zetafio(isp,io), mofio(isp,io), rcut(isp,io)
-      lmax = max(lmax,lofio(isp,io))
+      lmaxt = max(lmaxt,lofio(isp,io))
       rc = rcut(isp,io)
       dr = rc/nr
       do ir=0,nr
@@ -104,7 +106,7 @@ program unfold
       enddo
     enddo ! io
   enddo ! isp
-!  print*, 'lmax=',lmax
+!  print*, 'lmaxt=',lmaxt
 
   ! Fourier transform atomic orbitals
   print*,'unfold: Fourier-transforming atomic orbitals'
@@ -163,7 +165,7 @@ program unfold
   if (any(indk==0)) &
     call die('unfold ERROR: some k-points in FBZ not found')
 !  print'(a,/,(3i4,i6,l6))','unfold: indk =', &
-!    (((i1,i2,i3,indk(i1,i2,i3),cc(i1,i2,i3),i1=1,nkx(1)),i2=1,nkx(2)),i3=1,nkx(3))
+!   (((i1,i2,i3,indk(i1,i2,i3),cc(i1,i2,i3),i1=1,nkx(1)),i2=1,nkx(2)),i3=1,nkx(3))
 
   ! Read band energies and wavefunctions at k points of the FBZ
   print*,'unfold: reading wavefunctions'
@@ -235,13 +237,85 @@ program unfold
   enddo
 
   ! Spherical harmonics for q vectors
+!  print*,'unfold: finding spherical harmonics'
+!  nlm = (lmax+1)**2
+!  allocate(ylm(nlm,nk),gylm(3,nlm))
+!  do iline = 1,nlines
+!    modq = sum(qmax(:,iline)**2)
+!    call rlylm( lmax, qmax(:,iline)/modq, ylm(:,iline), gylm )
+!  enddo
+
+
+  ! rlylm( lmax, k(3), rly(0:) grly(1:,0:)) --- REVISAR
+  print*,' '
   print*,'unfold: finding spherical harmonics'
-  nlm = (lmax+1)**2
-  allocate(ylm(nlm,nk),gylm(3,nlm))
-  do iline = 1,nlines
-    modq = sum(qmax(:,iline)**2)
-    call rlylm( lmax, qmax(:,iline)/modq, ylm(:,iline), gylm )
+  allocate(lmax(nsp),nlm(nsp))
+  lmax = 0
+  do isp = 1,nsp
+    do io = 1,nofis(isp)
+      lmax(isp) = max(lmax(isp),lofio(isp,io))
+    enddo
+    nlm(isp) = (lmax(isp)+1)*(lmax(isp)+1) 
+    allocate(ylm(1:nlm(isp)), gylm(1:3,1:nlm(isp)))
+    do iline = 1,nlines
+      qmod = qmax(1,iline)**2.0 + qmax(2,iline)**2.0 + qmax(3,iline)**2.0
+      qmod = sqrt(qmod)
+      qmaxunit(:) = qmax(:,iline)/qmod
+      print*,'Line:',iline,'unitary unfolding direction:'
+      print*,qmaxunit(:)
+      call rlylm(lmax(isp), qmaxunit(:), ylm(:), gylm(:,:))
+      do iy = 1,nlm(isp)
+        PRINT*,'ylm(',iy,') =',ylm(iy)
+      enddo
+      print*,' '
+    enddo
+    deallocate(ylm,gylm)
   enddo
+
+  ! Find ilm index
+  allocate(ilm(0:lmax-1,-lmax:lmax))
+  jlm = 0
+  do l = 0,lmax
+    do m = -l,l
+      jlm=jlm+1
+      ilm(l,m) = jlm
+    enddo
+  enddo
+
+  ! phi(q)*ylm: 13 phi, 9 ylm 
+  ! orden phi: 3s ", 3py 3pz 3px " " ", 3dxy 3dyz 3dz2 3xz 3x2-y2
+  ! orden ylm: 1,  y  z  x,  xy  yz  3z2-r2  xz  x2-y2
+!  do iq = 0:nr
+!  do iw = 1,nw
+!    de = (emax(iline)-emin(iline))/ne(iline)
+!    ie = floor((ek(iw,ik,ispin)-emin(iline))/de(iline))
+!    we = (ek(iw,ik,ispin)-emin(iline)-ie*de(iline))/de(iline)
+!    do io = 1:norb
+!      ia = iaorb(io)
+!      isp = isa(ia)
+!      iao = iphorb(io)
+!      l = lofio(isp,iao)
+!      m = mofio(isp,iao)
+!      irq = qmod/dq(isp,io)
+!      drq = qmod-irq*dq(isp,io)
+!      wk = drq/dq(isp,io)
+!      phi = phiq(isp,io,irq)*(1-wk) + phiq(isp,io,irq+1)*wk
+!      phi = phi*ylm(ilm(l,m))
+!      ikx = floor(matmul(q(:,iq),dscell)/(2*pi))
+!      ikx = modulo(ikx,nkx)+1
+!      ik = indk(ikx(1),ikx(2),ikx(3))
+!      psik = psi(:,io,iw,ik,ispin)
+!      if (cc(ikx(1),ikx(2),ikx(3)) then
+!        psiq = psiq + conj(psik)*phi
+!      else
+!        psiq = psiq + psik*phi
+!      endif
+!    enddo
+!    dos(iq,ie) = dos(iq,ie) + abs(psiq)**2*(1-we)
+!    dos(iq,ie+1) = dos(i1,ie+1) + abs(psiq)**2*we
+  enddo
+  enddo
+
 
 end program unfold
 
