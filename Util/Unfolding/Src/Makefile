@@ -26,11 +26,11 @@ OBJDIR=Obj
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 
-VPATH:=$(shell pwd)/../../Src
+VPATH:=$(shell pwd)/../../../Src
 
 default: unfold
 
-ARCH_MAKE=../../$(OBJDIR)/arch.make
+ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
 
 FC_DEFAULT:=$(FC)

@@ -14,6 +14,7 @@ program unfold
 ! S.Garcia-Mayo and J.M.Soler, Aug.2018
 
   use precision,    only: dp, sp
+  use alloc,        only: re_alloc
   use chemical,     only: species_label
   use atm_types,    only: species_info, nspecies, species
   use atmfuncs,     only: lofio, mofio, nofis, rcut, rphiatm, zetafio
@@ -37,26 +38,30 @@ program unfold
 
   ! Internal parameters
   integer, parameter :: nr=1024         ! number of radial points for basis orbitals
+  integer, parameter :: maxl = 5        ! max angular momentum
   integer, parameter :: maxlines = 100  ! max number of unfolded band lines
+  integer, parameter :: maxig = 3       ! max number of refolding G vectors
 
   ! Internal variables
-  integer          :: i1, i2, i3, i123(3), ia, iao, ierr, ik, ikx(3), &
+  integer          :: i, i1, i2, i3, i123(3), ia, iao, ierr, ig, ik, ikx(3), &
                       ikq(8), iline, io, iostat, iq, iqx(3), ir, irq, &
                       isp, ispin, iispin, iu, iw, &
                       j, je(0:1), jk, jlm, jspin(maxlines), jw, &
-                      kdsc(3,3), kscell(3,3), l, lmax, &
+                      kdsc(3,3), kscell(3,3), l, lastq(0:maxlines), lmax, &
                       m, maux(3,3,2), maxorb, maxw, mk, &
                       ml(3,3), mr(3,3), mw, &
-                      na, ne(maxlines), nk, nktot, nkx(3), nlines, &
-                      nlm, no, nq(maxlines), nspin, nw, proj(3,3), t
-  real(dp)         :: c0, dkcell(3,3), de, deline, dq, dqline(3), dqx(3), &
-                      dr, drq,  dscell(3,3), emax(maxlines), emin(maxlines), &
-                      g(3,8), grad, gradv(3), k0(3), kcell(3,3), kmax, kq(3,8), &
-                      phi, pi, q(3), qmod, qcell(3,3), qmax(3,maxlines), qx(3), &
-                      r, rc, scell(3,3), vol, wkq(8), wq
-  complex(dp)      :: ii, psik, psiq
+                      na, ne, ng, nk, nktot, nkx(3), nlines, &
+                      nlm, no, nq, nqline, nrq, nspin, nw, proj(3,3), t
+  real(dp)         :: alat, c0, dkcell(3,3), de, dek, dq, dqline(3), dqx(3), &
+                      dr, drq, dscell(3,3), emax, emin, &
+                      gcut, gq(3,8), gnew(3), gnorm, grad, gylm(3,maxl*maxl), &
+                      k0(3), kcell(3,3), kmax, kq(3,8), pi, &
+                      qmod, qcell(3,3), qline(3), qmax(3,maxlines), qx(3), &
+                      r, rc, refoldCell(3,3), refoldBcell(3,3), rq, &
+                      scell(3,3), vol, wkq(8), wq, ylm(maxl*maxl)
+  complex(dp)      :: ii, phi, psik, psiq
   logical          :: ccq(8), found, gamma
-  character(len=50):: eunit, fname, formatstr,  slabel
+  character(len=50):: eunit, fname, formatstr,  numstr, slabel
   type(block_fdf)  :: bfdf
 
   ! Allocatable arrays and pointers
@@ -64,9 +69,10 @@ program unfold
                                   indk(:,:,:), iphorb(:)
   real(sp),         allocatable:: psi(:,:,:,:,:)
   real(dp),         allocatable:: dos(:,:,:), dossum(:,:), ek(:,:,:), &
-                                  k(:,:), gylm(:,:), &
+                                  k(:,:), &
                                   phir(:,:,:), phiq(:,:,:), &
-                                  we(:,:,:,:), wk(:), ylm(:,:)
+                                  we(:,:,:,:), wk(:)
+  real(dp),         pointer    :: g(:,:)=>null(), q(:,:)=>null()
   logical,          allocatable:: cc(:,:,:)
   character(len=20),allocatable:: symfio(:), labelfis(:)
   type(species_info),  pointer :: spp
@@ -124,6 +130,7 @@ program unfold
 
   ! Find unit cell and initialize atomic coords
   print'(a,/,(3f12.6))','unfold: reading system geometry'
+  alat = fdf_get('LatticeConstant',1._dp,'bohr')
   call coor(na,ucell)
   vol = volcel(ucell)
 !  print'(a,/,(3f12.6))','unfold: unit_cell (bohr) =',ucell
@@ -230,143 +237,181 @@ program unfold
   found = fdf_block('UnfoldedBandLines',bfdf)
   if (.not.found) &
     call die('unfold ERROR: fdf block UnfoldedBandLines not found')
+  if (.not.(fdf_bline(bfdf,pline).and.fdf_bmatch(pline,'ivvs'))) &
+    call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
+  ne    = fdf_bintegers(pline,1)
+  eunit = fdf_bnames(pline,1)          ! energy unit
+  emin  = fdf_bvalues(pline,1,after=1)*fdf_convfac(eunit,'eV')
+  emax  = fdf_bvalues(pline,2,after=1)*fdf_convfac(eunit,'eV')
   nlines = 0
+  nq = 0
+  lastq(0) = 0
   do while( fdf_bline(bfdf,pline) )
-    if ( fdf_bmatch(pline,'iivvvvvs') .or. fdf_bmatch(pline,'iivvvvvsv') ) then
-      nlines = nlines+1
-      if (nlines>maxlines) &
-        call die('unfold ERROR: parameter maxlines too small')
-      nq(nlines) = fdf_bintegers(pline,1)
-      ne(nlines) = fdf_bintegers(pline,2)
-      qmax(:,nlines) = qcell(:,1)*fdf_bvalues(pline,1,after=2) &
-                     + qcell(:,2)*fdf_bvalues(pline,2,after=2) &
-                     + qcell(:,3)*fdf_bvalues(pline,3,after=2)
-      eunit        = fdf_bnames(pline,1)          ! energy unit
-      emin(nlines) = fdf_bvalues(pline,1,after=5)*fdf_convfac(eunit,'eV')
-      emax(nlines) = fdf_bvalues(pline,2,after=5)*fdf_convfac(eunit,'eV')
-      if (fdf_bnvalues(pline,after=7)>0) then
-        jspin(nlines) = fdf_bvalues(pline,1,after=7)
+    if (fdf_bmatch(pline,'ivvv').or.fdf_bmatch(pline,'ivvvs')) then
+      nqline = fdf_bintegers(pline,1)
+!      print*,'unfold: nqline=',nqline
+      qline = qcell(:,1)*fdf_bvalues(pline,1,after=1) &
+            + qcell(:,2)*fdf_bvalues(pline,2,after=1) &
+            + qcell(:,3)*fdf_bvalues(pline,3,after=1)
+      if (nqline==1) then
+        nlines = nlines+1
+        if (nlines>maxlines) &
+          call die('unfold ERROR: parameter maxlines too small')
+        nq = nq+1
+        call re_alloc(q,1,3,1,nq)
+        q(:,nq) = qline
       else
-        jspin(nlines) = 0
-      endif
-!      print*,'iline,nq,ne,qmax,emin,emax=', &
-!        nlines,nq(nlines),ne(nlines),qmax(:,nlines),emin(nlines),emax(nlines)
+        call re_alloc(q,1,3,1,nq+nqline)
+        do iq = 1,nqline
+          q(:,nq+iq) = q(:,nq) + (qline-q(:,nq))*iq/nqline
+        enddo
+        nq = nq+nqline
+        lastq(nlines) = nq
+      endif 
     else
       call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
     endif
   enddo
 
-  ! Spherical harmonics for q vectors
-  print*,'unfold: finding spherical harmonics'
-  nlm = (lmax+1)**2
-  allocate(ylm(nlm,nk),gylm(3,nlm))
-  do iline = 1,nlines
-    qmod = sqrt(sum(qmax(:,iline)**2))
-    call rlylm( lmax, qmax(:,iline)/qmod, ylm(:,iline), gylm )
+! Read fdf block RefoldingLatticeVectors
+  print*,'unfold: reading RefoldingLatticeVectors block'
+  gcut = sqrt( fdf_get('MeshCutoff',100._dp,'ry') )
+  if (fdf_block('RefoldingLatticeVectors',bfdf)) then
+    print*,'unfold: block RefoldingLatticeVectors found'
+    do j = 1,3
+      if (.not.(fdf_bline(bfdf,pline).and.fdf_bmatch(pline,'vvv'))) &
+        call die('unfold ERROR: wrong format in fdf block RefoldingLatticeVectors')
+      do i = 1,3
+        refoldCell(i,j)  = fdf_bvalues(pline,i)*alat
+      enddo
+    enddo
+    call reclat(refoldCell,refoldBcell,1)
+    ng = 0
+    do i3 = -maxig,maxig
+    do i2 = -maxig,maxig
+    do i1 = -maxig,maxig
+      gnew = refoldBcell(:,1)*i1 + refoldBcell(:,2)*i2 + refoldBcell(:,3)*i3
+      gnorm = sqrt(sum(gnew**2))
+      if (gnorm<gcut) then
+        ng = ng+1
+        call re_alloc(g,1,3,1,ng)
+        g(:,ng) = gnew
+      endif
+    enddo
+    enddo
+    enddo
+  else
+    ng = 1
+    call re_alloc(g,1,3,1,ng)
+    g(:,1) = 0
+  endif
+  print'(a,/,(3f12.6))','unfold: refoldCell=',refoldCell
+  print*,'unfold: alat,gcut,ng=',alat,gcut,ng
+
+!  print'(a,/,(i6,3f12.6))','unfold: iq,q=',(iq,q(:,iq),iq=1,nq)
+!  print*,'unfold: nlines,lastq=',nlines,lastq(0:nlines)
+
+  ! Find index and weight of band energies
+  allocate( ie(0:1,nw,nk,nspin), we(0:1,nw,nk,nspin) )
+  de = (emax-emin)/ne
+  do ispin = 1,nspin
+    do ik = 1,nk
+      do iw = 1,nw
+        ie(0,iw,ik,ispin) = floor((ek(iw,ik,ispin)-emin)/de)
+        ie(1,iw,ik,ispin) = ie(0,iw,ik,ispin)+1
+        dek = emin + ie(1,iw,ik,ispin)*de - ek(iw,ik,ispin)
+        we(0,iw,ik,ispin) = dek/de
+        we(1,iw,ik,ispin) = 1-we(0,iw,ik,ispin)
+      enddo
+    enddo
   enddo
 
   ! Loop on unfolded band lines
-  allocate( ie(0:1,nw,nk,nspin), we(0:1,nw,nk,nspin) )
+  print*,'unfold: main loop'
   ii = cmplx(0,1)
+  nlm = (lmax+1)**2
   c0 = (2*pi)**1.5_dp / vol
   do iline = 1,nlines
-    allocate( dos(0:nq(iline),0:ne(iline),nspin) )
+    allocate( dos(lastq(iline-1)+1:lastq(iline),0:ne,nspin) )
     dos = 0
-    iu = 12
-    if (iline<10) then
-      formatstr = '(A16,I1,A4)'
-    else
-      formatstr = '(A16,I2,A4)'
-    endif
-    write(fname,formatstr) 'unfoldedBandLine',iline,'.out'
-    print*, fname
-    open(iu,file=fname,status='unknown',form='formatted',action='write')
-!    write(iu,*) nq(iline), ne(iline), jspin(iline)
-    dqline(:) = qmax(:,iline)/nq(iline)
-    deline = (emax(iline)-emin(iline))/ne(iline)
     do iw = 1,nw
-      do ispin = 1,nspin
-        do ik = 1,nk
-          ie(0,iw,ik,ispin) = floor((ek(iw,ik,ispin)-emin(iline))/deline)
-          ie(1,iw,ik,ispin) = ie(0,iw,ik,ispin)+1
-          de = emin(iline) + ie(1,iw,ik,ispin)*deline - ek(iw,ik,ispin)
-          we(0,iw,ik,ispin) = de/deline
-          we(1,iw,ik,ispin) = 1-we(0,iw,ik,ispin)
-        enddo
-      enddo
-      do iq = 0,nq(iline)
-        q = qmax(:,iline)*iq/nq(iline)
-        qx = matmul(q-k0,dscell)/(2*pi)
-        iqx = floor(qx)
-        dqx = iqx+1-qx
-        j = 0
-        do i3 = 0,1
-        do i2 = 0,1
-        do i1 = 0,1
-          j = j+1
-          i123 = (/i1,i2,i3/)
-          ikx = modulo(iqx+i123,nkx)+1
-          ikq(j) = indk(ikx(1),ikx(2),ikx(3))
-          wkq(j) = product(i123-(2*i123-1)*dqx(:))
-          ccq(j) = cc(ikx(1),ikx(2),ikx(3))
-          kq(:,j) = matmul(dkcell,real(ikx-1,dp))
-          g(:,j) = q(:) - kq(:,j)   
-        enddo
-        enddo
-        enddo
-        do io = 1,no
-          ia = iaorb(io)
-          isp = isa(ia)
-          iao = iphorb(io)
-          l = lofio(isp,iao)
-          m = mofio(isp,iao)
-          jlm = l*(l+1) + m+1                 !! ilm(l,m)
-          qmod = sqrt(sum(q**2))
-          dq = pi/rcut(isp,iao)
-          irq = floor(qmod/dq)      ! irq, qmod, dq
-          drq = (irq+1)*dq-qmod
-          wq = drq/dq                ! drq, dq, wq
-          phi = phiq(irq,isp,io)*wq + phiq(irq+1,isp,io)*(1-wq)
-          phi = phi*ylm(jlm,iline)
-          do j = 1,8
-            do ispin = 1,nspin
-              if (size(psi,1)==2) then
-                psik = cmplx(psi(1,io,iw,ikq(j),ispin), &
-                             psi(2,io,iw,ikq(j),ispin))
-                if (ccq(j)) psik = conjg(psik)
-              else
-                psik = psi(1,io,iw,ikq(j),ispin)
-              endif
-              psiq = c0*phi*psik*exp(-ii*sum(g(:,j)*xa(:,ia)))
-              je(:) = ie(:,iw,ikq(j),ispin)
-              if (je(0)>=0 .and. je(1)<=ne(iline)) then
-                dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
-                            + we(:,iw,ikq(j),ispin)*wkq(j)*abs(psiq)**2
-!                print'(a,6e15.6)','unfold: we,wkq,psi2,dos=', &
-!                  we(:,iw,ikq(j),ispin),wkq(j),abs(psiq)**2,dos(iq,je(:),ispin)
-              endif
-            enddo ! ispin
-          enddo ! j
-        enddo ! io
+      do iq = lastq(iline-1)+1,lastq(iline)
+        do ig = 1,ng
+          qmod = sqrt(sum((q(:,iq)+g(:,ig))**2))+1.e-15
+          call rlylm( lmax, (q(:,iq)+g(:,ig))/qmod, ylm, gylm )
+          qx = matmul(q(:,iq)+g(:,ig)-k0,dscell)/(2*pi)
+          iqx = floor(qx)
+          dqx = iqx+1-qx
+          j = 0
+          do i3 = 0,1
+          do i2 = 0,1
+          do i1 = 0,1
+            j = j+1
+            i123 = (/i1,i2,i3/)
+            ikx = modulo(iqx+i123,nkx)+1
+            ikq(j) = indk(ikx(1),ikx(2),ikx(3))
+            wkq(j) = product(i123-(2*i123-1)*dqx(:))
+            ccq(j) = cc(ikx(1),ikx(2),ikx(3))
+            kq(:,j) = matmul(dkcell,real(ikx-1,dp))
+            gq(:,j) = q(:,iq)+g(:,ig) - kq(:,j)   
+          enddo
+          enddo
+          enddo
+          do io = 1,no
+            ia = iaorb(io)
+            isp = isa(ia)
+            iao = iphorb(io)
+            l = lofio(isp,iao)
+            m = mofio(isp,iao)
+            jlm = l*(l+1) + m+1                 !! ilm(l,m)
+            qmod = sqrt(sum((q(:,iq)+g(:,ig))**2))
+            dq = pi/rcut(isp,iao)
+            irq = floor(qmod/dq)      ! irq, qmod, dq
+            drq = (irq+1)*dq-qmod
+            wq = drq/dq                ! drq, dq, wq
+            phi = phiq(irq,isp,io)*wq + phiq(irq+1,isp,io)*(1-wq)
+            phi = (-ii)**l * ylm(jlm) * phi
+            do j = 1,8
+              do ispin = 1,nspin
+                if (size(psi,1)==2) then
+                  psik = cmplx(psi(1,io,iw,ikq(j),ispin), &
+                               psi(2,io,iw,ikq(j),ispin))
+                  if (ccq(j)) psik = conjg(psik)
+                else
+                  psik = psi(1,io,iw,ikq(j),ispin)
+                endif
+                psiq = c0*phi*psik*exp(-ii*sum(gq(:,j)*xa(:,ia)))
+                je(:) = ie(:,iw,ikq(j),ispin)
+                if (je(0)>=0 .and. je(1)<=ne) then
+                  dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
+                              + we(:,iw,ikq(j),ispin)*wkq(j)*abs(psiq)**2
+!                  print'(a,6e15.6)','unfold: we,wkq,psi2,dos=', &
+!                    we(:,iw,ikq(j),ispin),wkq(j),abs(psiq)**2,dos(iq,je(:),ispin)
+                endif
+              enddo ! ispin
+            enddo ! j
+          enddo ! io
+        enddo ! ig
       enddo ! iq
     enddo ! iw
-    ispin = jspin(iline)
-    do iq = 0,nq(iline)
-      if (nspin==2) then
-        if (ispin==0) then
-          write(iu,*) dos(iq,:,1) + dos(iq,:,2)
-        else
-          write(iu,*) dos(iq,:,ispin)
-        endif
+
+    do ispin = 1,nspin
+      iu = 12
+      write(numstr,*) iline
+      fname = 'unfoldedBandLine'//adjustl(numstr)
+      if (nspin==2 .and. ispin==1) then
+        fname = trim(fname)//'spinUp.out'
+      elseif (nspin==2 .and. ispin==2) then
+        fname = trim(fname)//'spinDown.out'
       else
-        if (ispin==0) then
-          write(iu,*) 2*dos(iq,:,1)
-        else
-          write(iu,*) dos(iq,:,1)
-        endif
+        fname = trim(fname)//'.out'
       endif
-    enddo ! iq
-    close(iu)
+      open(iu,file=fname,status='unknown',form='formatted',action='write')
+      do iq = lastq(iline-1)+1,lastq(iline)
+        write(iu,*) q(:,iq), dos(iq,:,ispin)
+      enddo ! iq
+      close(iu)
+    enddo
     deallocate(dos)
   enddo ! iline
 
