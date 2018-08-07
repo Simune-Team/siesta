@@ -30,8 +30,6 @@ module m_ts_tri_scat
 
 contains
 
-  
-
   ! The problem of this routine is that we wish not to
   ! overwrite the old half-inverted matrix, that would mean
   ! that we need to do the full calculation for each electrode

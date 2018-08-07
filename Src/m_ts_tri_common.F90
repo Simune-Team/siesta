@@ -49,7 +49,8 @@ contains
     ! depends on the size of the connecting region
     ! Hence we need to check the connecting region
     ! size
-    do io = 1 , N_Elec
+    no_max = Elecs(1)%o_inD%n
+    do io = 2 , N_Elec
       no_max = max(no_max,Elecs(io)%o_inD%n)
     end do
 #else
@@ -72,8 +73,11 @@ contains
     ! to get the first matrix element of the current processing
     ! block (with an index shift of 1, so actually previous element
     ! of what is needed)
-    tn = els - sum(tri(:)) * no_max
-    ! Initialize the padding
+    ! Note that this number *may* be negative which simply corresponds
+    ! to a very large electrode width. Such cases will immediately
+    ! increase the tn variable in the first loop.
+    tn = int(els - sum(tri(:)) * int(no_max, i8b))
+    ! Initialize the padding to 0
     padding = 0
 
     cur_n = 0
@@ -150,9 +154,9 @@ contains
     integer, intent(in) :: N_tri, tri(N_tri)
     integer :: elem, i
     
-    elem = tri(N_tri)**2
-    do i = 1 , N_tri - 1
-       elem = elem + tri(i)*( tri(i) + 2 * tri(i+1) )
+    elem = tri(1) ** 2
+    do i = 2 , N_tri
+      elem = elem + tri(i)*( tri(i) + 2 * tri(i-1) )
     end do
     
   end function nnzs_tri
@@ -162,9 +166,9 @@ contains
     integer(i8b) :: elem
     integer :: i
     
-    elem = tri(N_tri)**2
-    do i = 1 , N_tri - 1
-       elem = elem + tri(i)*( tri(i) + 2 * tri(i+1) )
+    elem = int(tri(1) ** 2, i8b)
+    do i = 2 , N_tri
+       elem = elem + int(tri(i)*( tri(i) + 2 * tri(i-1) ), i8b)
     end do
     
   end function nnzs_tri_i8b

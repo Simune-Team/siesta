@@ -336,9 +336,12 @@ contains
            call die('All regions must be at least 2 blocks big. Error')
 
        ! Down-folding work-arrays
-       pad_LHS = max(pad_LHS,fold_elements(ElTri(iEl)%n,ElTri(iEl)%r))
-       
-       if ( .not. Elecs(iEl)%out_of_core ) then
+       io = fold_elements(ElTri(iEl)%n,ElTri(iEl)%r)
+       pad_LHS = max(pad_LHS, io)
+
+       if ( Elecs(iEl)%out_of_core ) then
+         io = 0
+       else
          ! In case we are doing in-core calculations, 
          ! we need a certain size for the electrode calculation.
          ! Sadly this is "pretty" big.
@@ -426,21 +429,21 @@ contains
        
        ! pre-allocate arrays for retrieving sizes
        nullify(zwork)
-       allocate(zwork(no))
+       allocate(zwork(no+1))
        eig => zwork(:)
        
        ! 'no' is the maximum size of the electrodes
        ! Work-query of eigenvalue calculations
-       call zgeev('N','N',no,zwork,no,eig,zwork,1,zwork,1, &
-            zwork,-1,Teig(1,1,1),info)
+       call zgeev('N','N',no,zwork(2),no,eig,zwork(2),1,zwork(2),1, &
+            zwork(1),-1,Teig(1,1,1),info)
        if ( info /= 0 ) then
-          print *,info
-          call die('zgeev: could not determine optimal workarray &
-               &size.')
+         print *,info
+         call die('zgeev: could not determine optimal workarray size.')
        end if
+       
        ! Minimum padding (eigenvalues) + lwork size
        ! The optimal lwork is stored in zwork(1)
-       info = zwork(1)
+       info = int(zwork(1))
        info = info + no
        deallocate(zwork)
        pad_LHS = max(pad_LHS,info)
@@ -472,7 +475,7 @@ contains
     pad_RHS = max(pad_RHS,nGFGGF)
 
     ! Ensure that at least one of the work arrays has
-    ! elements for the few supercells
+    ! elements for the few supercells that we host
     io = product(TSHS%nsc)
     if ( pad_LHS < io .and. pad_RHS < io ) then
       pad_LHS = io
