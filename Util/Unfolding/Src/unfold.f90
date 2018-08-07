@@ -40,7 +40,8 @@ program unfold
   integer, parameter :: nr=1024         ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
   integer, parameter :: maxlines = 100  ! max number of unfolded band lines
-  integer, parameter :: maxig = 3       ! max number of refolding G vectors
+  integer, parameter :: maxig = 8       ! max index of refolding G vectors
+  real(dp),parameter :: g2c = 200_dp    ! default mesh cutoff (ry)
 
   ! Internal variables
   integer          :: i, i1, i2, i3, i123(3), ia, iao, ierr, ig, ik, ikx(3), &
@@ -56,10 +57,10 @@ program unfold
                       dr, drq, dscell(3,3), emax, emin, &
                       gcut, gq(3,8), gnew(3), gnorm, grad, gylm(3,maxl*maxl), &
                       k0(3), kcell(3,3), kmax, kq(3,8), pi, &
-                      qmod, qcell(3,3), qline(3), qmax(3,maxlines), qx(3), &
+                      qmod, qcell(3,3), qg(3), qline(3), qmax(3,maxlines), qx(3), &
                       r, rc, refoldCell(3,3), refoldBcell(3,3), rq, &
                       scell(3,3), vol, wkq(8), wq, ylm(maxl*maxl)
-  complex(dp)      :: ii, phi, psik, psiq
+  complex(dp)      :: ii, phi, ck, ukg(8)
   logical          :: ccq(8), found, gamma
   character(len=50):: eunit, fname, formatstr,  numstr, slabel
   type(block_fdf)  :: bfdf
@@ -118,7 +119,9 @@ program unfold
       enddo
     enddo ! io
   enddo ! isp
-!  print*, 'lmax=',lmax
+  print*, 'lmax=',lmax
+  print'(a,/,(2i4,f12.6))','unfold: isp,io,rc=', &
+    ((isp,io,rcut(isp,io),io=1,nofis(isp)),isp=1,nsp)
 
   ! Fourier transform atomic orbitals
   print*,'unfold: Fourier-transforming atomic orbitals'
@@ -221,6 +224,8 @@ program unfold
           call die('unfold ERROR: unexpected band index')
         read(iu) ek(iw,ik,ispin)                  ! band energy
         read(iu) (psi(:,io,iw,ik,ispin),io=1,no)  ! wavefunction coeffs.
+!        print'(a,2i4,15e12.3)','unfold: iw,ik,psi=',iw,ik,psi(1,:,iw,ik,1)
+!        print'(a,2i4,e15.6)','unfold: iw,ik,norm(psi)=',iw,ik,sum(psi(:,:,iw,ik,1)**2)
       enddo
     enddo
   enddo
@@ -275,7 +280,7 @@ program unfold
 
 ! Read fdf block RefoldingLatticeVectors
   print*,'unfold: reading RefoldingLatticeVectors block'
-  gcut = sqrt( fdf_get('MeshCutoff',100._dp,'ry') )
+  gcut = 0.5*sqrt( fdf_get('MeshCutoff',g2c,'ry') )
   if (fdf_block('RefoldingLatticeVectors',bfdf)) then
     print*,'unfold: block RefoldingLatticeVectors found'
     do j = 1,3
@@ -337,9 +342,10 @@ program unfold
     do iw = 1,nw
       do iq = lastq(iline-1)+1,lastq(iline)
         do ig = 1,ng
-          qmod = sqrt(sum((q(:,iq)+g(:,ig))**2))+1.e-15
-          call rlylm( lmax, (q(:,iq)+g(:,ig))/qmod, ylm, gylm )
-          qx = matmul(q(:,iq)+g(:,ig)-k0,dscell)/(2*pi)
+          qg = q(:,iq)+g(:,ig)
+          qmod = sqrt(sum(qg**2))+1.e-15
+          call rlylm( lmax, qg/qmod, ylm, gylm )
+          qx = matmul(qg-k0,dscell)/(2*pi)
           iqx = floor(qx)
           dqx = iqx+1-qx
           j = 0
@@ -353,44 +359,45 @@ program unfold
             wkq(j) = product(i123-(2*i123-1)*dqx(:))
             ccq(j) = cc(ikx(1),ikx(2),ikx(3))
             kq(:,j) = matmul(dkcell,real(ikx-1,dp))
-            gq(:,j) = q(:,iq)+g(:,ig) - kq(:,j)   
+            gq(:,j) = qg - kq(:,j)   
           enddo
           enddo
           enddo
-          do io = 1,no
-            ia = iaorb(io)
-            isp = isa(ia)
-            iao = iphorb(io)
-            l = lofio(isp,iao)
-            m = mofio(isp,iao)
-            jlm = l*(l+1) + m+1                 !! ilm(l,m)
-            qmod = sqrt(sum((q(:,iq)+g(:,ig))**2))
-            dq = pi/rcut(isp,iao)
-            irq = floor(qmod/dq)      ! irq, qmod, dq
-            drq = (irq+1)*dq-qmod
-            wq = drq/dq                ! drq, dq, wq
-            phi = phiq(irq,isp,io)*wq + phiq(irq+1,isp,io)*(1-wq)
-            phi = (-ii)**l * ylm(jlm) * phi
-            do j = 1,8
-              do ispin = 1,nspin
+          do ispin = 1,nspin
+            ukg = 0
+            do io = 1,no
+              ia = iaorb(io)
+              isp = isa(ia)
+              iao = iphorb(io)
+              l = lofio(isp,iao)
+              m = mofio(isp,iao)
+              jlm = l*(l+1) + m+1                 !! ilm(l,m)
+              qmod = sqrt(sum(qg**2))
+              dq = pi/rcut(isp,iao)
+              irq = floor(qmod/dq)      ! irq, qmod, dq
+              drq = (irq+1)*dq-qmod
+              wq = drq/dq                ! drq, dq, wq
+              phi = phiq(irq,isp,io)*wq + phiq(irq+1,isp,io)*(1-wq)
+              phi = (-ii)**l * ylm(jlm) * phi
+              do j = 1,8
                 if (size(psi,1)==2) then
-                  psik = cmplx(psi(1,io,iw,ikq(j),ispin), &
-                               psi(2,io,iw,ikq(j),ispin))
-                  if (ccq(j)) psik = conjg(psik)
+                  ck = cmplx(psi(1,io,iw,ikq(j),ispin), &
+                             psi(2,io,iw,ikq(j),ispin))
+                  if (ccq(j)) ck = conjg(ck)
                 else
-                  psik = psi(1,io,iw,ikq(j),ispin)
+                  ck = psi(1,io,iw,ikq(j),ispin)
                 endif
-                psiq = c0*phi*psik*exp(-ii*sum(gq(:,j)*xa(:,ia)))
-                je(:) = ie(:,iw,ikq(j),ispin)
-                if (je(0)>=0 .and. je(1)<=ne) then
-                  dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
-                              + we(:,iw,ikq(j),ispin)*wkq(j)*abs(psiq)**2
-!                  print'(a,6e15.6)','unfold: we,wkq,psi2,dos=', &
-!                    we(:,iw,ikq(j),ispin),wkq(j),abs(psiq)**2,dos(iq,je(:),ispin)
-                endif
-              enddo ! ispin
+                ukg(j) = ukg(j) + c0*ck*phi*exp(-ii*sum(gq(:,j)*xa(:,ia)))
+              enddo ! j
+            enddo ! io
+            do j = 1,8
+              je(:) = ie(:,iw,ikq(j),ispin)
+              if (je(0)>=0 .and. je(1)<=ne) then
+                dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
+                              + vol*we(:,iw,ikq(j),ispin)*wkq(j)*abs(ukg(j))**2
+              endif
             enddo ! j
-          enddo ! io
+          enddo ! ispin
         enddo ! ig
       enddo ! iq
     enddo ! iw
