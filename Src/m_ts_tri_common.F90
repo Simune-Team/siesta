@@ -18,7 +18,6 @@ module m_ts_tri_common
   private
 
   public :: GFGGF_needed_worksize
-  public :: needed_mem
   public :: nnzs_tri, nnzs_tri_i8b, nnzs_tri_dp
 
   public :: ts_pivot_tri_sort
@@ -121,36 +120,7 @@ contains
 
   end subroutine GFGGF_needed_worksize
 
-  subroutine needed_mem(IsVolt, N_Elec, Elecs, N_tri, tri, worksize)
-
-    use m_ts_electype
-
-    logical, intent(in) :: IsVolt
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
-    integer, intent(in) :: N_tri
-    integer, intent(in) :: tri(N_tri)
-    integer, intent(out) :: worksize
-
-#ifdef TRANSIESTA_GFGGF_COLUMN
-    integer :: pad, n
-#endif
-    
-    ! find at which point they will cross...
-    ! worksize for ONE array
-    worksize = nnzs_tri(N_tri,tri)
-
-#ifdef TRANSIESTA_GFGGF_COLUMN
-    if ( IsVolt ) then
-       call GFGGF_needed_worksize(N_tri, tri, &
-            N_Elec, Elecs, pad, n)
-       worksize = worksize + pad + n
-    end if
-#endif
-    
-  end subroutine needed_mem
-
-  function nnzs_tri(N_tri,tri) result(elem)
+  pure function nnzs_tri(N_tri,tri) result(elem)
     integer, intent(in) :: N_tri, tri(N_tri)
     integer :: elem, i
     
@@ -161,7 +131,7 @@ contains
     
   end function nnzs_tri
 
-  function nnzs_tri_i8b(N_tri,tri) result(elem)
+  pure function nnzs_tri_i8b(N_tri,tri) result(elem)
     integer, intent(in) :: N_tri, tri(N_tri)
     integer(i8b) :: elem
     integer :: i
@@ -173,7 +143,7 @@ contains
     
   end function nnzs_tri_i8b
 
-  function nnzs_tri_dp(N_tri,tri) result(elem)
+  pure function nnzs_tri_dp(N_tri,tri) result(elem)
     use precision, only: dp
     integer, intent(in) :: N_tri, tri(N_tri)
     real(dp) :: elem
