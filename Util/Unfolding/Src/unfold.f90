@@ -37,7 +37,7 @@ program unfold
   implicit none
 
   ! Internal parameters
-  integer, parameter :: nr=1024         ! number of radial points for basis orbitals
+  integer, parameter :: nr = 2048       ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
   integer, parameter :: maxlines = 100  ! max number of unfolded band lines
   integer, parameter :: maxig = 8       ! max index of refolding G vectors
@@ -53,17 +53,20 @@ program unfold
                       ml(3,3), mr(3,3), mw, &
                       na, ne, ng, nk, nktot, nkx(3), nlines, &
                       nlm, no, nq, nqline, nrq, nspin, nw, proj(3,3), t
-  real(dp)         :: alat, c0, dkcell(3,3), de, dek, dq, dqline(3), dqx(3), &
-                      dr, drq, dscell(3,3), emax, emin, &
+  real(dp)         :: alat, c0, dkcell(3,3), de, dek, diqx(3), dq, dqline(3), &
+                      dqx(3), dr, drq, dscell(3,3), emax, emin, &
                       gcut, gq(3,8), gnew(3), gnorm, grad, gylm(3,maxl*maxl), &
                       k0(3), kcell(3,3), kmax, kq(3,8), pi, &
-                      qmod, qcell(3,3), qg(3), qline(3), qmax(3,maxlines), qx(3), &
-                      r, rc, refoldCell(3,3), refoldBcell(3,3), rq, &
+                      qc, qmod, qcell(3,3), qg(3), qline(3), qmax, qx(3), &
+                      r, rc, refoldCell(3,3), refoldBcell(3,3), rmax, rq, &
                       scell(3,3), vol, wkq(8), wq, ylm(maxl*maxl)
   complex(dp)      :: ii, phi, ck, ukg(8)
   logical          :: ccq(8), found, gamma
   character(len=50):: eunit, fname, formatstr,  numstr, slabel
   type(block_fdf)  :: bfdf
+
+  integer :: nx
+  real(dp):: dg, drmin, dx, gmod, gvec(3), normphiq, normphir, x(3), wr, xmod
 
   ! Allocatable arrays and pointers
   integer,          allocatable:: cnfigfio(:), iaorb(:), ie(:,:,:,:), &
@@ -103,31 +106,119 @@ program unfold
   allocate(phir(0:nr,nsp,maxorb))
   allocate(phiq(0:nr,nsp,maxorb))
 
+  ! Find cutoffs of atomic orbitals
+  lmax = 0
+  rmax = 0
+  drmin = 1.e50_dp
+  do isp = 1,nsp            ! species index
+    do io = 1,nofis(isp)    ! orbital index within species
+      rc = rcut(isp,io)
+      dr = rc/nr
+      rmax = max(rmax,rc)
+      drmin = min(drmin,dr)
+      lmax = max(lmax,lofio(isp,io))
+    enddo ! io
+  enddo ! isp
+  print*, 'lmax,rmax,drmin=',lmax,rmax,drmin
+
   ! Find atomic orbitals in real space
   print*,'unfold: reading atomic orbitals'
-  lmax = 0
+  rc = 50*rmax
+  dr = rc/nr
   do isp = 1,nsp            ! species index
     do io = 1,nofis(isp)    ! orbital index within species
 !      write(6,*) "# Orbital (#, l, z, m, rc):", &
 !        lofio(isp,io), zetafio(isp,io), mofio(isp,io), rcut(isp,io)
-      lmax = max(lmax,lofio(isp,io))
-      rc = rcut(isp,io)
-      dr = rc/nr
       do ir=0,nr
         r = dr*ir
         call rphiatm(isp,io,r,phir(ir,isp,io),grad)
       enddo
     enddo ! io
   enddo ! isp
-  print*, 'lmax=',lmax
   print'(a,/,(2i4,f12.6))','unfold: isp,io,rc=', &
     ((isp,io,rcut(isp,io),io=1,nofis(isp)),isp=1,nsp)
 
   ! Fourier transform atomic orbitals
   print*,'unfold: Fourier-transforming atomic orbitals'
+  pi = acos(-1._dp)
+  qc = pi/dr
+  dq = qc/nr
   do isp = 1,nsp
     do io = 1,nofis(isp)
-      call radfft(lofio(isp,io),nr,rcut(isp,io),phir(:,isp,io),phiq(:,isp,io))
+      call radfft(lofio(isp,io),nr,rc,phir(:,isp,io),phiq(:,isp,io))
+    enddo
+  enddo
+
+  open(21,file='sr.dat',status='unknown',form='formatted',action='write')
+  write(21,'(2f12.6)') (ir*dr,phir(ir,1,1),ir=0,nr)
+  close(21)
+  open(21,file='pr.dat',status='unknown',form='formatted',action='write')
+  write(21,'(2f12.6)') (ir*dr,phir(ir,2,1),ir=0,nr)
+  close(21)
+  open(21,file='sq.dat',status='unknown',form='formatted',action='write')
+  write(21,'(2f12.6)') (iq*dq,phiq(iq,1,1),iq=0,nr)
+  close(21)
+  open(21,file='pq.dat',status='unknown',form='formatted',action='write')
+  write(21,'(2f12.6)') (iq*dq,phiq(iq,1,2),iq=0,nr)
+  close(21)
+
+  dx = 0.1_dp
+  nx = ceiling(rmax/dx)
+  print*,'unfold: drmin,nx=',drmin,nx
+  do isp = 1,nsp            ! species index
+    do io = 1,nofis(isp)    ! orbital index within species
+      l = lofio(isp,io)
+      m = mofio(isp,io)
+      jlm = l*(l+1) + m+1                 !! ilm(l,m)
+      normphir = 0
+      do i3 = -nx,nx
+      do i2 = -nx,nx
+      do i1 = -nx,nx
+        x = (/i1,i2,i3/)*dx
+        xmod = sqrt(sum(x**2))+1.e-15
+        ir = ceiling(xmod/dr)
+        wr = (ir*dr-xmod)/dr
+        if (ir<=nr) then
+          phi = phir(ir-1,isp,io)*(1-wr) + phir(ir,isp,io)*wr
+          call rlylm(l,x/xmod,ylm,gylm)
+          phi = phi*ylm(jlm)
+          normphir = normphir + abs(phi)**2*dx**3
+        endif
+      enddo
+      enddo
+      enddo
+      print*,'ulfold: isp,io,norm(phi(r))=',isp,io,normphir
+    enddo
+  enddo
+
+  nq = nr
+!  dg = 0.05_dp
+  dg = 2*pi/(2*rmax)
+  ng = nx
+  print*,'unfold: dg,ng=',dg,ng
+  do isp = 1,nsp            ! species index
+    do io = 1,nofis(isp)    ! orbital index within species
+      l = lofio(isp,io)
+      m = mofio(isp,io)
+      jlm = l*(l+1) + m+1                 !! ilm(l,m)
+      normphiq = 0
+      do i3 = -ng,ng
+      do i2 = -ng,ng
+      do i1 = -ng,ng
+        gvec = (/i1,i2,i3/)*dg
+        gmod = sqrt(sum(gvec**2))+1.e-15
+        iq = ceiling(gmod/dq)
+        wq = (iq*dq-gmod)/dq
+        if (iq<=nq) then
+          phi = phiq(iq-1,isp,io)*(1-wq) + phiq(iq,isp,io)*wq
+          call rlylm(l,gvec/gmod,ylm,gylm)
+          phi = phi*ylm(jlm)
+          normphiq = normphiq + abs(phi)**2*dg**3
+        endif
+      enddo
+      enddo
+      enddo
+      print*,'ulfold: isp,io,norm(phi(q))=',isp,io,normphiq
     enddo
   enddo
 
@@ -149,7 +240,6 @@ program unfold
   call kgrid( ucell, kscell, k0, nk, k, wk )     ! generate k vectors
 
   ! Find cell vectors of k grid (see kgrid.F)
-  pi = acos(-1._dp)
   call idiag( 3, kscell, kdsc, ml, mr, maux )    ! kdsc = diagonal supercell
   proj = 0
   forall(j=1:3) proj(j,j)=sign(1,kdsc(j,j))
@@ -271,8 +361,8 @@ program unfold
           q(:,nq+iq) = q(:,nq) + (qline-q(:,nq))*iq/nqline
         enddo
         nq = nq+nqline
-        lastq(nlines) = nq
       endif 
+      lastq(nlines) = nq
     else
       call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
     endif
@@ -343,11 +433,10 @@ program unfold
       do iq = lastq(iline-1)+1,lastq(iline)
         do ig = 1,ng
           qg = q(:,iq)+g(:,ig)
-          qmod = sqrt(sum(qg**2))+1.e-15
-          call rlylm( lmax, qg/qmod, ylm, gylm )
           qx = matmul(qg-k0,dscell)/(2*pi)
           iqx = floor(qx)
-          dqx = iqx+1-qx
+          diqx = iqx+1-qx
+          dqx = matmul(dkcell,diqx)
           j = 0
           do i3 = 0,1
           do i2 = 0,1
@@ -356,13 +445,17 @@ program unfold
             i123 = (/i1,i2,i3/)
             ikx = modulo(iqx+i123,nkx)+1
             ikq(j) = indk(ikx(1),ikx(2),ikx(3))
-            wkq(j) = product(i123-(2*i123-1)*dqx(:))
+            wkq(j) = product(i123-(2*i123-1)*diqx(:))
             ccq(j) = cc(ikx(1),ikx(2),ikx(3))
             kq(:,j) = matmul(dkcell,real(ikx-1,dp))
-            gq(:,j) = qg - kq(:,j)   
+!            gq(:,j) = qg - kq(:,j)
+            gq(:,j) = qg-(kq(:,j)-dqx)
           enddo
           enddo
           enddo
+!          print*,'unfold: iq,ig,iw,sum(wkq)=',iq,ig,iw,sum(wkq)
+          qmod = sqrt(sum(qg**2))+1.e-15
+          call rlylm( lmax, qg/qmod, ylm, gylm )
           do ispin = 1,nspin
             ukg = 0
             do io = 1,no
