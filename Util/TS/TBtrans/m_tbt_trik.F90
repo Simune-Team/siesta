@@ -154,6 +154,7 @@ contains
     logical :: calc_T_Gf, calc_T_out
     logical :: calc_DOS_Elecs
     logical :: calc_DOS_Gf, calc_DOS_A
+    logical :: calc_T_all, calc_DOS_A_all
 #ifdef NCDF_4
     logical :: calc_orb_current
     logical :: calc_DM_Gf, calc_DM_A
@@ -208,7 +209,6 @@ contains
     type(tRgn) :: pvt
     real(dp) :: kpt(3), bkpt(3), wkpt
     integer :: info
-    logical :: T_all, ADOS_all
 #ifdef TBT_PHONON
     type(ts_c_idx) :: cOmega
     real(dp) :: omega
@@ -218,7 +218,7 @@ contains
 
 ! ******************** Loop variables ************************
     type(itt1) :: Kp
-    integer :: N_E
+    integer :: N_E, N_Elec1, N_Elec2
     integer, pointer :: ikpt
     integer :: iEl, jEl
 #ifdef NCDF_4
@@ -246,13 +246,13 @@ contains
     real :: last_progress, cur_progress
 ! ************************************************************
 
-    calc_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
     calc_T_Gf = 'T-Gf' .in. save_DATA
     calc_T_out = 'T-sum-out' .in. save_DATA
+    calc_T_all = 'T-all' .in. save_DATA
+    calc_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
     calc_DOS_Gf = 'DOS-Gf' .in. save_DATA
     calc_DOS_A = 'DOS-A' .in. save_DATA
-    T_all = 'T-all' .in. save_DATA
-    ADOS_all = 'DOS-A-all' .in. save_DATA
+    calc_DOS_A_all = 'DOS-A-all' .in. save_DATA
 #ifdef NCDF_4
     calc_orb_current = 'orb-current' .in. save_DATA
     calc_DM_Gf = 'DM-Gf' .in. save_DATA
@@ -265,6 +265,19 @@ contains
     only_sigma = 'Sigma-only' .in. save_DATA
     cdf_save = (.not. only_sigma) .and. (.not. only_proj)
 #endif
+
+    ! Fix the looping variables
+    if ( calc_T_Gf ) then
+      if ( calc_T_all ) then
+        N_Elec1 = N_Elec
+      else
+        N_Elec1 = N_Elec - 1
+      end if
+    else if ( calc_T_all .or. calc_DOS_A_all ) then
+      N_Elec1 = N_Elec
+    else
+      N_Elec1 = N_Elec - 1
+    end if
 
     ! Create the back-pivoting region
     call rgn_init(pvt,nrows_g(TSHS%sp),val=0)
@@ -336,9 +349,12 @@ contains
            call die('All regions must be at least 2 blocks big. Error')
 
        ! Down-folding work-arrays
-       pad_LHS = max(pad_LHS,fold_elements(ElTri(iEl)%n,ElTri(iEl)%r))
-       
-       if ( .not. Elecs(iEl)%out_of_core ) then
+       io = fold_elements(ElTri(iEl)%n,ElTri(iEl)%r)
+       pad_LHS = max(pad_LHS, io)
+
+       if ( Elecs(iEl)%out_of_core ) then
+         io = 0
+       else
          ! In case we are doing in-core calculations, 
          ! we need a certain size for the electrode calculation.
          ! Sadly this is "pretty" big.
@@ -426,21 +442,21 @@ contains
        
        ! pre-allocate arrays for retrieving sizes
        nullify(zwork)
-       allocate(zwork(no))
+       allocate(zwork(no+1))
        eig => zwork(:)
        
        ! 'no' is the maximum size of the electrodes
        ! Work-query of eigenvalue calculations
-       call zgeev('N','N',no,zwork,no,eig,zwork,1,zwork,1, &
-            zwork,-1,Teig(1,1,1),info)
+       call zgeev('N','N',no,zwork(2),no,eig,zwork(2),1,zwork(2),1, &
+            zwork(1),-1,Teig(1,1,1),info)
        if ( info /= 0 ) then
-          print *,info
-          call die('zgeev: could not determine optimal workarray &
-               &size.')
+         print *,info
+         call die('zgeev: could not determine optimal workarray size.')
        end if
+       
        ! Minimum padding (eigenvalues) + lwork size
        ! The optimal lwork is stored in zwork(1)
-       info = zwork(1)
+       info = int(zwork(1))
        info = info + no
        deallocate(zwork)
        pad_LHS = max(pad_LHS,info)
@@ -472,7 +488,7 @@ contains
     pad_RHS = max(pad_RHS,nGFGGF)
 
     ! Ensure that at least one of the work arrays has
-    ! elements for the few supercells
+    ! elements for the few supercells that we host
     io = product(TSHS%nsc)
     if ( pad_LHS < io .and. pad_RHS < io ) then
       pad_LHS = io
@@ -605,7 +621,7 @@ contains
     allocate(prep_El(N_Elec))
     ! Default to all electrode Green function parts
     prep_El = .true.
-    if ( (.not. T_all) .and. (.not. ADOS_all) ) then
+    if ( .not. (calc_T_all .or. calc_DOS_A_all) ) then
        
        ! We only need to prepare the Green function
        ! for Gf.G.Gf product for all electrodes
@@ -619,63 +635,61 @@ contains
 #ifdef NCDF_4
     if ( N_proj_ME > 0 ) then
        allocate(proj_parts(DevTri%n))
-       proj_parts = .true.
+       proj_parts(:) = .true.
     end if
 #endif
     
     allocate(A_parts(DevTri%n))
-    A_parts = .true.
+    A_parts(:) = .true.
     ! If the user ONLY wants the transmission function then we
     ! should tell the program not to calculate any more
     ! than needed.
     if ( .not. calc_DOS_A ) then
 
-       ! We have a couple of options that requires
-       ! special parts of the Green function
+      ! We have a couple of options that requires
+      ! special parts of the Green function
+      
+      ! The first partition is whether we want
+      ! certain quantities from all electrodes
+      A_parts(:) = .false.
+      if ( calc_T_all .or. calc_T_out ) then
+        ! Everything is needed
+        N_Elec2 = 1
+      else
+        ! we only want the spectral function in regions
+        ! of all electrodes but the first
+        N_Elec2 = 2
+      end if
 
-       ! The first partition is whether we want
-       ! certain quantities from all electrodes
-       A_parts(:) = .false.
-       if ( T_all .or. calc_T_out ) then
-
-          ! We need _all_ diagonal blocks of the spectral function
-          do iEl = 1 , N_Elec
-             do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
-                A_parts(jEl) = .true.
-             end do
-          end do
-
-       else
-          
-          ! we only want the spectral function
-          ! for all other electrodes than the first one
-          do iEl = 2 , N_Elec
-             do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
-                A_parts(jEl) = .true.
-             end do
-          end do
-
-       end if
+      ! Figure out which parts are needed
+      do jEl = N_Elec2 , N_Elec
+        iEl = huge(1)
+        iE = 0
+        do io = 1 , Elecs(jEl)%o_inD%n
+          iEl = min(iEl, pvt%r(Elecs(jEl)%o_inD%r(io)))
+          iE = max(iE, pvt%r(Elecs(jEl)%o_inD%r(io)))
+        end do
+        A_parts(which_part(Gf_tri, iEl)) = .true.
+        A_parts(which_part(Gf_tri, iE)) = .true.
+      end do
        
     end if
 
     ! Initialize
-    if ( 'T-Gf' .in. save_DATA ) then
+    if ( calc_T_Gf ) then
        
        ! The only thing we are calculating is the
        ! transmission.
        ! In this case we can limit the calculation
        ! space to speed things up
        prep_El(:) = .true.
-       if ( .not. T_all ) then
+       if ( .not. calc_T_all ) then
           prep_El(N_Elec) = .false.
        end if
 
        ! reset all parts (A_parts is not used when
        ! only using the Green function)
-       A_parts = .false.
+       A_parts(:) = .false.
 
     end if
 
@@ -1082,8 +1096,7 @@ contains
              ! We are allowed to calculate the transmission
              ! only by using the diagonal
              if ( .not. cE%fake ) then
-                do iEl = 1 , N_Elec
-                   if ( iEl == N_Elec .and. .not. T_all ) cycle
+                do iEl = 1 , N_Elec1
                    
                    call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                         r_oDev, pvt, Elecs(iEl)%o_inD,only_diag=.true.)
@@ -1095,29 +1108,28 @@ contains
                 end do
                 
                 ! Retrieve actual transmissions
-                call GF_T_solve(N_Elec,T,T_all)
+                call GF_T_solve(N_Elec,T,calc_T_all)
 
              end if
 
           else
 
           ! We loop over all electrodes
-          do iEl = 1 , N_Elec
-             if ( iEl == N_Elec .and. ( &
-                  (.not. T_all) .and. (.not. ADOS_all ) ) ) cycle
+          do iEl = 1 , N_Elec1
 
-             if ( ts_A_method == TS_BTD_A_COLUMN ) then
-              ! ******************
-              ! * calc GF-column *
-              ! ******************
-              if ( .not. cE%fake ) then
+             if ( .not. cE%fake ) then
+
+               if ( ts_A_method == TS_BTD_A_COLUMN ) then
+                 ! ******************
+                 ! * calc GF-column *
+                 ! ******************
                  call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
-                      r_oDev, pvt, Elecs(iEl)%o_inD)
- 
+                     r_oDev, pvt, Elecs(iEl)%o_inD)
+
                  if ( calc_T_out ) then
-                    call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
+                   call Gf_Gamma(zwork_tri,Elecs(iEl),T(N_Elec+1,iEl))
                  end if
- 
+
                  ! This small conversion of data, ensures
                  ! that we do not need to create two EXACT
                  ! same functions.
@@ -1125,26 +1137,23 @@ contains
                  ! is that the down-folded Gamma will NEVER
                  ! have any repetition.
                  call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
-                      A_parts, &
-                      nGFGGF, GFGGF_work)
-                 
-              end if
-              
-             else
-              
-              ! *****************
-              ! * calc A-matrix *
-              ! *****************
-              if ( .not. cE%fake ) then
+                     A_parts, &
+                     nGFGGF, GFGGF_work)
+
+               else
+                 ! *****************
+                 ! * calc A-matrix *
+                 ! *****************
                  if ( calc_T_out ) then
-                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
-                         Elecs(iEl), A_parts, &
-                         TrGfG = T(N_Elec+1,iEl))
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
+                       Elecs(iEl), A_parts, &
+                       TrGfG = T(N_Elec+1,iEl))
                  else
-                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
-                         Elecs(iEl), A_parts)
+                   call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
+                       Elecs(iEl), A_parts)
                  end if
-              end if
+                 
+               end if
              end if
              
              if ( calc_DOS_A ) then
@@ -1205,15 +1214,21 @@ contains
 #endif
              end if
 
-             do jEl = 1 , N_Elec
-                ! Calculating iEl -> jEl is the
-                ! same as calculating jEl -> iEl, hence if we
-                ! do not wish to assert this is true, we do not
-                ! calculate this.
-                if ( (.not. T_all) .and. &
-                     jEl < iEl ) cycle
-                if ( (.not. calc_T_out) .and. iEl == jEl ) cycle
+             if ( calc_T_all ) then
+               ! Calculate all terms
+               N_Elec2 = N_Elec
+             else if ( calc_T_out ) then
+               ! Requesting calculating the "diagonal" transmission
+               N_Elec2 = iEl
+             else
+               ! Calculating iEl -> jEl is the
+               ! same as calculating jEl -> iEl, hence if we
+               ! do not wish to assert this is true, we do not
+               ! calculate this.
+               N_Elec2 = iEl - 1
+             end if
 
+             do jEl = 1 , N_Elec2
                 ! Notice that the Gf.G1.Gf.G2 can be performed
                 ! for all other electrodes as long as we
                 ! have the block diagonal that constitutes the 

@@ -757,7 +757,7 @@ contains
     
     cum = nrows_g(M,p)
     eIdx = no * cum - 1
-    cum = crows(parts(M)) - crows(p) + cum
+    cum = nrows_g(M) - crows(p) + cum
     
     ! This is the number of elements already occupied
     sIdx = elements(M, all=.true.) - no * cum + 1
