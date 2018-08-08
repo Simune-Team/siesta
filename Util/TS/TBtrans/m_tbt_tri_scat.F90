@@ -1542,10 +1542,14 @@ contains
     integer, intent(out) :: p, n
 
     ! Local variables
-    integer :: idx_Elec, i
+    integer :: idx_Elec, i, sIdx, eIdx
+    integer, pointer :: crows(:)
     
     idx_Elec = El%inDpvt%r(current)
     p = which_part(Tri,idx_Elec)
+    crows => cum_rows(Tri)
+    eIdx = crows(p)
+    sIdx = eIdx - nrows_g(Tri,p) + 1
 
     n = 1
     do while ( current + n <= El%inDpvt%n )
@@ -1554,7 +1558,7 @@ contains
       if ( i - idx_Elec /= n ) exit
       ! In case the block changes, then
       ! we cut the block size here.
-      if ( p /= which_part(Tri,i) ) exit
+      if ( i < sIdx .or. eIdx < i ) exit
       n = n + 1
     end do
 

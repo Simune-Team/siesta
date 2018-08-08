@@ -646,34 +646,32 @@ contains
     ! than needed.
     if ( .not. calc_DOS_A ) then
 
-       ! We have a couple of options that requires
-       ! special parts of the Green function
+      ! We have a couple of options that requires
+      ! special parts of the Green function
+      
+      ! The first partition is whether we want
+      ! certain quantities from all electrodes
+      A_parts(:) = .false.
+      if ( calc_T_all .or. calc_T_out ) then
+        ! Everything is needed
+        N_Elec2 = 1
+      else
+        ! we only want the spectral function in regions
+        ! of all electrodes but the first
+        N_Elec2 = 2
+      end if
 
-       ! The first partition is whether we want
-       ! certain quantities from all electrodes
-       A_parts(:) = .false.
-       if ( calc_T_all .or. calc_T_out ) then
-
-          ! We need _all_ diagonal blocks of the spectral function
-          do iEl = 1 , N_Elec
-             do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
-                A_parts(jEl) = .true.
-             end do
-          end do
-
-       else
-          
-          ! we only want the spectral function
-          ! for all other electrodes than the first one
-          do iEl = 2 , N_Elec
-             do io = 1 , Elecs(iEl)%o_inD%n
-                jEl = which_part(Gf_tri, pvt%r(Elecs(iEl)%o_inD%r(io)))
-                A_parts(jEl) = .true.
-             end do
-          end do
-
-       end if
+      ! Figure out which parts are needed
+      do jEl = N_Elec2 , N_Elec
+        iEl = huge(1)
+        iE = 0
+        do io = 1 , Elecs(jEl)%o_inD%n
+          iEl = min(iEl, pvt%r(Elecs(jEl)%o_inD%r(io)))
+          iE = max(iE, pvt%r(Elecs(jEl)%o_inD%r(io)))
+        end do
+        A_parts(which_part(Gf_tri, iEl)) = .true.
+        A_parts(which_part(Gf_tri, iE)) = .true.
+      end do
        
     end if
 
