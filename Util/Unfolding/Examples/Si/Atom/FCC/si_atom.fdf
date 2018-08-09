@@ -1,0 +1,66 @@
+SystemName		Si atom
+SystemLabel		si_atom
+NumberOfAtoms		1
+NumberOfSpecies		1
+
+%block ChemicalSpeciesLabel
+	1	14	Si
+%endblock ChemicalSpeciesLabel
+
+LatticeConstant	  5.43 Ang
+
+%block LatticeVectors
+	0.000	0.500	0.500
+	0.500	0.000	0.500
+	0.500	0.500	0.000
+%endblock LatticeVectors
+
+AtomicCoordinatesFormat	ScaledCartesian
+
+%block AtomicCoordinatesAndAtomicSpecies
+    0.0   0.0   0.0   1  Si
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+PAO.BasisSize  SZ
+
+%block kgrid.MonkhorstPack
+   8   0   0   0.5
+   0   8   0   0.5
+   0   0   8   0.5
+%endblock kgrid.MonkhorstPack
+
+%block BandLines
+   1   1.0  1.0  1.0  L
+  10   0.0  0.0  0.0  \Gamma
+  12   2.0  0.0  0.0  X
+  15   2.0  2.0  2.0  \Gamma
+%endblock BandLines
+
+BandLinesScale  pi/a
+
+#%block UnfoldedBandLines
+# 100  -20.0 30.0 eV
+#   1   0.0  0.0  0.0
+# 100  10.0  0.0  0.0
+#   1   0.0  0.0  0.0
+# 100   1.0  1.0  1.0
+# 100  -20.0 30.0 eV
+#%endblock UnfoldedBandLines
+
+%block UnfoldedBandLines
+  100  -20.0 30.0 eV
+   1   1.0  1.0  1.0  L
+  10   0.0  0.0  0.0  \Gamma
+  12   2.0  0.0  0.0  X
+  15   2.0  2.0  2.0  \Gamma
+%endblock UnfoldedBandLines
+
+%block RefoldingLatticeVectors
+  0.000  0.500  0.500
+  0.500  0.000  0.500
+  0.500  0.500  0.000
+%endblock RefoldingLatticeVectors
+
+COOP.Write
+WriteBnads
+

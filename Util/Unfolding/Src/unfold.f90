@@ -61,7 +61,7 @@ program unfold
                       q0(3), qmod, qcell(3,3), qg(3), qline(3), qmax, qx(3), &
                       r, rc, rcell(3,3), refoldCell(3,3), refoldBcell(3,3), rmax, rq, &
                       scell(3,3), vol, wkq(8), wq, xmax, ylm(maxl*maxl)
-  complex(dp)      :: ii, phi, ck, ukg(8)
+  complex(dp)      :: ck, ii, phi, psik, ukg(8)
   logical          :: ccq(8), found, gamma
   character(len=50):: eunit, fname, formatstr,  iostr, isstr, numstr, slabel
   type(block_fdf)  :: bfdf
@@ -490,9 +490,10 @@ program unfold
                 else
                   ck = cmplx(psi(1,io,iw,ikq(j),ispin), &
                              psi(2,io,iw,ikq(j),ispin))
-                  if (ccq(j)) ck = conjg(ck)
                 endif
-                ukg(j) = ukg(j) + c0*ck*phi*exp(-ii*sum(gq(:,j)*xa(:,ia)))
+                psik = c0*ck*phi*exp(-ii*sum(gq(:,j)*xa(:,ia)))
+                if (ccq(j)) psik = conjg(psik)
+                ukg(j) = ukg(j) + psik
               enddo ! j
             enddo ! io
             do j = 1,8
@@ -519,8 +520,12 @@ program unfold
         fname = trim(fname)//'.out'
       endif
       open(iu,file=fname,status='unknown',form='formatted',action='write')
+      write(iu,*) lastq(iline)-lastq(iline-1),ne+1,emin,emax
       do iq = lastq(iline-1)+1,lastq(iline)
-        write(iu,*) q(:,iq), dos(iq,:,ispin)
+        write(iu,*) q(:,iq)
+        do j = 0,ne
+          write(iu,'(f12.6)') dos(iq,j,ispin)
+        enddo
       enddo ! iq
       close(iu)
     enddo
