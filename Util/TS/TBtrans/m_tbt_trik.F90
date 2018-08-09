@@ -149,6 +149,7 @@ contains
     type(zSpData1D) :: spH, spS
     type(Sparsity), pointer :: sp
     real(dp), pointer :: H2D(:,:), S(:), H(:)
+    
     ! To figure out which parts of the tri-diagonal blocks we need
     ! to calculate
     logical :: calc_T_Gf, calc_T_out
@@ -160,6 +161,11 @@ contains
     logical :: calc_DM_Gf, calc_DM_A
     logical :: calc_COOP_Gf, calc_COOP_A
     logical :: calc_COHP_Gf, calc_COHP_A
+
+    ! Projection variables
+    logical :: calc_proj_orb_current, calc_proj_T_out
+    logical :: calc_proj_DOS_A, calc_proj_DM_A
+    logical :: calc_proj_COOP_A, calc_proj_COHP_A
 #endif
     logical, allocatable :: prep_El(:)
     integer, allocatable :: part_cols(:,:)
@@ -261,9 +267,18 @@ contains
     calc_COOP_A = 'COOP-A' .in. save_DATA
     calc_COHP_Gf = 'COHP-Gf' .in. save_DATA
     calc_COHP_A = 'COHP-A' .in. save_DATA
+
+    ! Projection stuff
+    calc_proj_T_out = 'proj-T-sum-out' .in. save_DATA
+    calc_proj_DOS_A = 'proj-DOS-A' .in. save_DATA
+    calc_proj_orb_current = 'proj-orb-current' .in. save_DATA
+    calc_proj_DM_A = 'proj-DM-A' .in. save_DATA
+    calc_proj_COOP_A = 'proj-COOP-A' .in. save_DATA
+    calc_proj_COHP_A = 'proj-COHP-A' .in. save_DATA
+
     only_proj = 'proj-only' .in. save_DATA
     only_sigma = 'Sigma-only' .in. save_DATA
-    cdf_save = (.not. only_sigma) .and. (.not. only_proj)
+    cdf_save = .not. (only_sigma .or. only_proj)
 #endif
 
     ! Fix the looping variables
@@ -369,7 +384,7 @@ contains
          io = io + no * 8
          ! One more array is requred when we need to invert the matrix
          if ( Elecs(iEl)%no_u /= Elecs(iEl)%no_used ) io = io + no
-         if ( 'DOS-Elecs' .in. save_DATA ) io = io + no
+         if ( calc_DOS_Elecs ) io = io + no
          
        end if
 
@@ -603,7 +618,7 @@ contains
     ! Allocate data-collecting arrays
     io = r_oDev%n
     jEl = 0
-    if ( 'DOS-Elecs' .in. save_DATA ) then
+    if ( calc_DOS_Elecs ) then
        ! Allocate density of states for the electrodes
        do iEl = 1 , N_Elec
           jEl = max(jEl,Elecs(iEl)%no_u)
@@ -704,10 +719,8 @@ contains
         calc_COHP_Gf .or. calc_COHP_A ) then
       iEl = 1
     end if
-    if ( ('proj-orb-current'.in.save_DATA) .or. &
-        ('proj-DM-A'.in.save_DATA) .or. &
-        ('proj-COOP-A'.in.save_DATA) .or. &
-        ('proj-COHP-A'.in.save_DATA) ) then
+    if ( calc_proj_orb_current .or. calc_proj_DM_A .or. &
+        calc_proj_COOP_A .or. calc_proj_COHP_A ) then
       iEl = 1
     end if
     if ( iEl == 1 ) then
@@ -740,10 +753,9 @@ contains
 
 #ifdef NCDF_4
     ! Open the NetCDF handles
-    if ( ('proj-only'.nin.save_DATA) .and. &
-         ( 'Sigma-only'.nin.save_DATA ) ) then
-       ! *.TBT.nc file
-       call open_cdf_save(cdf_fname, TBTcdf)
+    if ( .not. (only_proj .or. only_sigma) ) then
+      ! *.TBT.nc file
+      call open_cdf_save(cdf_fname, TBTcdf)
     end if
     ! *.TBT.Proj.nc file
     call open_cdf_proj(cdf_fname_proj, PROJcdf)
@@ -1297,17 +1309,17 @@ contains
                ! We need to fake the IO node to call the save routine
                ! this aint pretty, however it relieves a lot of
                ! superfluous checks in the following block
-               if ( p_E%idx > 0 ) then
-                 if ( 'proj-DM-A' .in. save_DATA ) then
+               if ( calc_proj_DOS_A .and. p_E%idx > 0 ) then
+                 if ( calc_proj_DM_A ) then
                    call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'DM', p_E, dev_M)
                  end if
-                 if ( 'proj-COOP-A' .in. save_DATA ) then
+                 if ( calc_proj_COOP_A ) then
                    call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COOP', p_E, dev_M)
                  end if
-                 if ( 'proj-COHP-A' .in. save_DATA ) then
+                 if ( calc_proj_COHP_A ) then
                    call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COHP', p_E, dev_M)
                  end if
-                 if ( 'proj-orb-current' .in. save_DATA ) then
+                 if ( calc_proj_orb_current ) then
                    call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'J', p_E, dev_M)
                  end if
                end if
@@ -1345,12 +1357,12 @@ contains
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                      r_oDev, pvt, El_p%o_inD)
 
-                if ( 'proj-T-sum-out' .in. save_DATA ) then
+                if ( calc_proj_T_out ) then
                    call Gf_Gamma(zwork_tri,El_p, &
                         bTk(size(proj_T(ipt)%R)+1,ipt))
                 end if
                else
-                if ( 'proj-T-sum-out' .in. save_DATA ) then
+                if ( calc_proj_T_out ) then
                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         El_p, proj_parts, &
                         TrGfG = bTk(size(proj_T(ipt)%R)+1,ipt) )
@@ -1372,12 +1384,12 @@ contains
                 call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                      r_oDev, pvt, Elecs(iEl)%o_inD)
 
-                if ( 'proj-T-sum-out' .in. save_DATA ) then
+                if ( calc_proj_T_out ) then
                    call Gf_Gamma(zwork_tri,Elecs(iEl), &
                         bTk(1+size(proj_T(ipt)%R),ipt))
                 end if
                else
-                if ( 'proj-T-sum-out' .in. save_DATA ) then
+                if ( calc_proj_T_out ) then
                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                         Elecs(iEl), proj_parts, &
                         TrGfG = bTk(1+size(proj_T(ipt)%R),ipt))
@@ -1395,7 +1407,7 @@ contains
                     nGFGGF, GFGGF_work)
             end if
 
-            if ( ('proj-DOS-A' .in. save_DATA) .and. p_E%idx > 0 ) then
+            if ( calc_proj_DOS_A .and. p_E%idx > 0 ) then
 
                ! Calculate the DOS from the spectral function
                call A_DOS(r_oDev,zwork_tri,spS,pvt,pDOS(:,2,ipt))
@@ -1404,16 +1416,16 @@ contains
 #endif
                
 #ifdef NCDF_4
-               if ( 'proj-DM-A' .in. save_DATA ) then
+               if ( calc_proj_DM_A ) then
                  call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'DM', p_E, dev_M)
                end if
-               if ( 'proj-COOP-A' .in. save_DATA ) then
+               if ( calc_proj_COOP_A ) then
                  call A_COP(r_oDev,zwork_tri,pvt, &
                      TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COOP', p_E, dev_M)
                end if
-               if ( 'proj-COHP-A' .in. save_DATA ) then
+               if ( calc_proj_COHP_A ) then
                  call A_COP(r_oDev,zwork_tri,pvt, &
                      TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
                  if ( dH%lvl > 0 ) then
@@ -1423,7 +1435,7 @@ contains
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COHP', p_E, dev_M)
                end if
                
-               if ( 'proj-orb-current' .in. save_DATA ) then
+               if ( calc_proj_orb_current ) then
 #ifdef TBT_PHONON
                  call orb_current(TSHS%sp,H,S,TSHS%sc_off, &
                      kpt, phase, &
