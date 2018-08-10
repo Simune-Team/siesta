@@ -1255,13 +1255,6 @@ contains
                       ! Copy the eigenvalues over
                       do io = 1 , N_eigen
                          Teig(io,jEl,iEl) = dreal(eig(io))
-#ifdef TBT_PHONON
-                         if ( Teig(io,jEl,iEl) >= 0._dp ) then
-                            Teig(io,jEl,iEl) = sqrt( Teig(io,jEl,iEl) )
-                         else
-                            Teig(io,jEl,iEl) = - sqrt( -Teig(io,jEl,iEl) )
-                         end if
-#endif
                       end do
                    else
                       call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
@@ -1477,13 +1470,6 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
-#ifdef TBT_PHONON
-                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
-                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
-                        else
-                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
-                        end if
-#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
@@ -1500,13 +1486,6 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
-#ifdef TBT_PHONON
-                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
-                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
-                        else
-                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
-                        end if
-#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
