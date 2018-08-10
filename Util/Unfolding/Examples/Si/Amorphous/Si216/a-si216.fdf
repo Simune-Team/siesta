@@ -1,0 +1,58 @@
+SystemName		amorphous Si (216 atoms)
+SystemLabel		a-si216
+NumberOfAtoms		216
+NumberOfSpecies		1
+
+%block ChemicalSpeciesLabel
+	1	14	Si
+%endblock ChemicalSpeciesLabel
+
+LatticeConstant		16.2813 Ang
+
+%block LatticeVectors
+	1.000	0.000	0.000
+	0.000	1.000	0.000
+	0.000	0.000	1.000
+%endblock LatticeVectors
+
+AtomicCoordinatesFormat		Ang
+
+%include a-si216.coord.fdf
+
+PAO.BasisSize 	 SZ
+
+DM.MixingWeight   0.1
+COOP.Write			.true.
+WriteBands			.true.
+TimeReversalSymmetryForKpoints	.false.
+
+%block kgrid.MonkhorstPack
+   2   0   0   0.5
+   0   2   0   0.5
+   0   0   2   0.5
+%endblock kgrid.MonkhorstPack
+
+BandLinesScale  pi/a
+
+%block UnfoldedBandLines
+ 400  -25.0 70.0 eV
+   1   4.0  4.0  4.0
+ 130   0.0  0.0  0.0
+ 140   7.0  0.0  0.0
+%endblock UnfoldedBandLines
+
+#%block UnfoldedBandLines
+#  320  -20.0 60.0 eV
+#   1   1.0  1.0  1.0  L
+#  20   0.0  0.0  0.0  \Gamma
+#  25   2.0  0.0  0.0  X
+#  30   2.0  2.0  2.0  \Gamma
+#%endblock UnfoldedBandLines
+
+#%block RefoldingLatticeVectors
+#  0.000  0.500  0.500
+#  0.500  0.000  0.500
+#  0.500  0.500  0.000
+#%endblock RefoldingLatticeVectors
+
+

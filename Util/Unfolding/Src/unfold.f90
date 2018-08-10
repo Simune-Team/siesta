@@ -462,6 +462,7 @@ program unfold
           wkq(j) = product(i123-(2*i123-1)*diqx(:))
           ccq(j) = cc(ikx(1),ikx(2),ikx(3))
           kq = k(:,ikq(j))
+          if (ccq(j)) kq = -kq
           gq(:,j) = qg-kq
         enddo
         enddo
@@ -491,8 +492,8 @@ program unfold
                   ck = cmplx(psi(1,io,iw,ikq(j),ispin), &
                              psi(2,io,iw,ikq(j),ispin))
                 endif
+                if (ccq(j)) ck = conjg(ck)
                 psik = c0*ck*phi*exp(-ii*sum(gq(:,j)*xa(:,ia)))
-                if (ccq(j)) psik = conjg(psik)
                 ukg(j) = ukg(j) + psik
               enddo ! j
             enddo ! io

@@ -1,7 +1,7 @@
 % plotdos.m
 
 clear
-wdir = '../Examples/Si/Defects/Vacancy/';
+wdir = '../Examples/Si/Amorphous/Si216/';
 fname = [wdir,'unfoldedBandLine1.out'];
 
 % Read DOS
@@ -43,12 +43,12 @@ if nq==1
     ylabel('dos')
     grid on
 else
-    surf(qpath',e',dos',min(dos',1.0))
+%    surf(qpath',e',dos',min(dos',0.6))
 %    surf(qpath',e',cumsum(dos,2)',min(cumsum(dos,2)',2))
-%    surf(qpath',e',log10(dos+1e-3)')
+    surf(qpath',e',max(log10(dos),-2)')
     xlabel('qpath')
     ylabel('energy')
     zlabel('dos')
-    axis([0,qpath(end),emin,30,0,2])
+    axis([0,qpath(end),emin,10,0,0])
 end
 colorbar
