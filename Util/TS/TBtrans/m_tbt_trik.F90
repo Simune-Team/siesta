@@ -1228,19 +1228,19 @@ contains
 
              if ( calc_T_all ) then
                ! Calculate all terms
-               N_Elec2 = N_Elec
+               N_Elec2 = 1
              else if ( calc_T_out ) then
                ! Requesting calculating the "diagonal" transmission
                N_Elec2 = iEl
              else
                ! Calculating iEl -> jEl is the
                ! same as calculating jEl -> iEl, hence if we
-               ! do not wish to assert this is true, we do not
-               ! calculate this.
-               N_Elec2 = iEl - 1
+               ! do not wish to assert this is true, we only calculate
+               ! for jEl > iEl.
+               N_Elec2 = iEl + 1
              end if
 
-             do jEl = 1 , N_Elec2
+             do jEl = N_Elec2 , N_Elec
                 ! Notice that the Gf.G1.Gf.G2 can be performed
                 ! for all other electrodes as long as we
                 ! have the block diagonal that constitutes the 
