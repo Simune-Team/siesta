@@ -387,6 +387,7 @@ contains
     ! Now calculate the column where we need G
     i_Elec = 1
     idx = 1
+    n = sPart
     do while ( i_Elec <= no )
 
        ! get orbital index for the current column/row
@@ -399,6 +400,9 @@ contains
        if ( idx_Elec <= crows(sPart) ) then
          n = sPart
        else
+         ! If we skip to a new block we must add sN
+         ! to account for the new diagonal position
+         if ( n == sPart ) idx = idx + sN
          n = ePart
        end if
        sN = nrows_g(A_tri,n)
@@ -499,12 +503,6 @@ contains
        ! Update current segment of the electrode copied entries.
        i_Elec = i_Elec + nb
        idx = idx + nb * sNc
-
-       ! If we skip to a new block we must add sN
-       ! to account for the new diagonal position
-       if ( idx_Elec > crows(n) ) then
-         idx = idx + sN
-       end if
 
     end do
 
