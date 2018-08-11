@@ -916,8 +916,8 @@ contains
              if ( calc_DOS_Elecs ) then
                 call read_next_GS(1, ikpt, bkpt, &
                      cE, N_Elec, uGF, Elecs, &
-                     nzwork, zwork, .false., forward = .false. , &
-                     DOS = DOS_El , T = T(:,1))
+                     nzwork, zwork, .false., forward=.false. , &
+                     DOS=DOS_El , T=T(:,1))
 
                 ! Immediately save the DOS
 #ifdef NCDF_4
@@ -931,7 +931,7 @@ contains
              else
                 call read_next_GS(1, ikpt, bkpt, &
                      cE, N_Elec, uGF, Elecs, &
-                     nzwork, zwork, .false., forward = .false. )
+                     nzwork, zwork, .false., forward=.false. )
              end if
           else
              call calc_GS_k(1, cE, N_Elec, Elecs, uGF, &
@@ -959,7 +959,7 @@ contains
              ! create the Gamma.
              ! Hence it is a waste of time if this is done in this
              ! loop....
-             call UC_expansion(cE, Elecs(iEl), nzwork, zwork, non_Eq = .false. ) 
+             call UC_expansion(cE, Elecs(iEl), nzwork, zwork, non_Eq=.false. ) 
 
              ! Down-fold immediately :)
 #ifdef TBT_PHONON
@@ -1159,7 +1159,7 @@ contains
                  if ( calc_T_out ) then
                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                        Elecs(iEl), A_parts, &
-                       TrGfG = T(N_Elec+1,iEl))
+                       TrGfG=T(N_Elec+1,iEl))
                  else
                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                        Elecs(iEl), A_parts)
@@ -1274,8 +1274,7 @@ contains
                DOS, T, N_eigen, Teig, save_DATA)
 #else
           call state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
-               N_eigen, Teig, &
-               save_DATA )
+               N_eigen, Teig, save_DATA )
 #endif
 
           call timer('analysis',2)

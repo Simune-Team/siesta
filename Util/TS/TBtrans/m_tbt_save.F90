@@ -775,6 +775,9 @@ contains
        call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
        dic = dic//('info'.kv.'Imaginary part for self-energies')
+#ifdef TBT_PHONON
+       dic = dic//('unit'.kv.'Ry**2')
+#endif
        call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
        call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
 
@@ -1175,8 +1178,7 @@ contains
   end subroutine cdf_save_E
 
   subroutine state_cdf_save(ncdf, ikpt, nE, N_Elec, Elecs, DOS, T, &
-       N_eigen, Teig, &
-       save_DATA)
+       N_eigen, Teig, save_DATA)
     
     use parallel, only : Node, Nodes
 
