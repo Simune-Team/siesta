@@ -541,7 +541,7 @@ contains
     write(*,opt_n) '             >> TBtrans contour << '
 #ifdef TBT_PHONON
     write(*,opt_g_u) 'Device Green function imaginary Eta', &
-         sqrt(tbt_Eta)/eV,'eV'
+         tbt_Eta/eV**2,'eV**2'
 #else
     write(*,opt_g_u) 'Device Green function imaginary Eta',tbt_Eta/eV,'eV'
 #endif

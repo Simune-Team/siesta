@@ -916,8 +916,8 @@ contains
              if ( calc_DOS_Elecs ) then
                 call read_next_GS(1, ikpt, bkpt, &
                      cE, N_Elec, uGF, Elecs, &
-                     nzwork, zwork, .false., forward = .false. , &
-                     DOS = DOS_El , T = T(:,1))
+                     nzwork, zwork, .false., forward=.false. , &
+                     DOS=DOS_El , T=T(:,1))
 
                 ! Immediately save the DOS
 #ifdef NCDF_4
@@ -931,7 +931,7 @@ contains
              else
                 call read_next_GS(1, ikpt, bkpt, &
                      cE, N_Elec, uGF, Elecs, &
-                     nzwork, zwork, .false., forward = .false. )
+                     nzwork, zwork, .false., forward=.false. )
              end if
           else
              call calc_GS_k(1, cE, N_Elec, Elecs, uGF, &
@@ -959,7 +959,7 @@ contains
              ! create the Gamma.
              ! Hence it is a waste of time if this is done in this
              ! loop....
-             call UC_expansion(cE, Elecs(iEl), nzwork, zwork, non_Eq = .false. ) 
+             call UC_expansion(cE, Elecs(iEl), nzwork, zwork, non_Eq=.false. ) 
 
              ! Down-fold immediately :)
 #ifdef TBT_PHONON
@@ -1159,7 +1159,7 @@ contains
                  if ( calc_T_out ) then
                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                        Elecs(iEl), A_parts, &
-                       TrGfG = T(N_Elec+1,iEl))
+                       TrGfG=T(N_Elec+1,iEl))
                  else
                    call dir_GF_Gamma_GF(Gf_tri, zwork_tri, r_oDev, pvt, &
                        Elecs(iEl), A_parts)
@@ -1255,13 +1255,6 @@ contains
                       ! Copy the eigenvalues over
                       do io = 1 , N_eigen
                          Teig(io,jEl,iEl) = dreal(eig(io))
-#ifdef TBT_PHONON
-                         if ( Teig(io,jEl,iEl) >= 0._dp ) then
-                            Teig(io,jEl,iEl) = sqrt( Teig(io,jEl,iEl) )
-                         else
-                            Teig(io,jEl,iEl) = - sqrt( -Teig(io,jEl,iEl) )
-                         end if
-#endif
                       end do
                    else
                       call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
@@ -1281,8 +1274,7 @@ contains
                DOS, T, N_eigen, Teig, save_DATA)
 #else
           call state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
-               N_eigen, Teig, &
-               save_DATA )
+               N_eigen, Teig, save_DATA )
 #endif
 
           call timer('analysis',2)
@@ -1477,13 +1469,6 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
-#ifdef TBT_PHONON
-                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
-                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
-                        else
-                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
-                        end if
-#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
@@ -1500,13 +1485,6 @@ contains
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
                         bTkeig(io,jEl,ipt) = dreal(eig(io))
-#ifdef TBT_PHONON
-                        if ( bTkeig(io,jEl,ipt) >= 0._dp ) then
-                           bTkeig(io,jEl,ipt) = sqrt( bTkeig(io,jEl,ipt) )
-                        else
-                           bTkeig(io,jEl,ipt) = - sqrt( -bTkeig(io,jEl,ipt) )
-                        end if
-#endif
                      end do
                   else
                      call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))

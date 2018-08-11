@@ -812,7 +812,7 @@ region via this simple expression
   \rho_{\mathrm{bound-states}} = \rho_{\mathbf G} - 
   \sum_i \rho_{\mathbf A_i},
 \end{equation}
-where the sum is over all electrodes, $\mathbf G$ and $\mathbf A$ are
+where the sum is over all electrodes, $\mathbf G$ and $\mathbf A_i$ are
 the Green and spectral function, respectively. Note that typically
 $\rho_{\mathrm{bound-states}}=0$.
 
@@ -1918,6 +1918,18 @@ flag controls the partitioning for the device region.
   tight-binding calculations where the device region is chosen far
   from this electrode and normal to the electrode-plane. 
 
+\end{fdfentry}
+
+\begin{fdfentry}{TBT.BTD!Spectral}[string]<propagation|column>
+
+  Method used for calculating the spectral function ($\mathbf A_i$).
+  For 4 or more electrodes the \fdf*{column} option is the default
+  while \fdf*{propagation} is the default for less electrodes.
+
+  \note this option may heavily influence performance. Test for a
+  single $k$-point and single energy point to figure out the
+  implications of using one over the other.
+  
 \end{fdfentry}
 
 \begin{fdflogicalF}{TBT!Analyze}
