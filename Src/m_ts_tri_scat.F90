@@ -274,8 +274,8 @@ contains
       end if
       oi = i
 #endif
-      sPart = min(sPart, i)
-      ePart = max(ePart, i)
+      if ( i < sPart ) sPart = i
+      if ( ePart < i ) ePart = i
     end do
     sPart = which_part(A_tri, sPart)
     ePart = which_part(A_tri, ePart)
