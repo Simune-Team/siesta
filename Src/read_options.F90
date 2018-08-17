@@ -1564,6 +1564,7 @@ subroutine read_options( na, ns, nspin )
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   writmd                 = fdf_get( 'WriteMDhistory', .false. )
   writpx                 = fdf_get( 'WriteMDXmol', .not. writec )
+  save_ORB_INDX          = fdf_get( 'WriteOrbitalIndex', .true. )
   ! Do options of graphviz
   ctmp = fdf_get( 'Write.Graphviz', 'none' )
   write_GRAPHVIZ = 0
