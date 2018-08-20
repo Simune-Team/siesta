@@ -274,8 +274,8 @@ contains
       end if
       oi = i
 #endif
-      sPart = min(sPart, i)
-      ePart = max(ePart, i)
+      if ( i < sPart ) sPart = i
+      if ( ePart < i ) ePart = i
     end do
     sPart = which_part(A_tri, sPart)
     ePart = which_part(A_tri, ePart)
@@ -298,14 +298,14 @@ contains
 
     ! So we start by calculating the triple-product
     ! of the electrode diagonal elements
-    sN = nrows_g(A_tri,sPart)
+    sN = nrows_g(A_tri, sPart)
     ! get first column/row in this part
     i = crows(sPart) - sN + 1
     ! get starting index
     sIdx = index(A_tri,i,i) - 1
     
     ! do the same for the last part with
-    sNc = nrows_g(A_tri,ePart)
+    sNc = nrows_g(A_tri, ePart)
     i = crows(ePart)
     ! get ending index
     eIdx = index(A_tri,i,i) + 1
@@ -402,10 +402,10 @@ contains
        else
          ! If we skip to a new block we must add sN
          ! to account for the new diagonal position
-         if ( n == sPart ) idx = idx + sN
+         idx = idx + nrows_g(A_tri, sPart) ! add the offset for the first
          n = ePart
        end if
-       sN = nrows_g(A_tri,n)
+       sN = nrows_g(A_tri, n)
        eIdx = crows(n)
        sIdx = eIdx - sN + 1
 
@@ -451,7 +451,7 @@ contains
        do in = n - 1 , sPart , - 1
 
           ! Number of orbitals in the other segment
-          sNo = nrows_g(Gf_tri,in)
+          sNo = nrows_g(Gf_tri, in)
           sIdx = eIdx - sNo
 
           ! grab the Yn matrix to perform the 
@@ -480,7 +480,7 @@ contains
        do in = n + 1 , ePart
 
           ! Number of orbitals in the other segment
-          sNo = nrows_g(Gf_tri,in)
+          sNo = nrows_g(Gf_tri, in)
           eIdx = sIdx + i
 
           ! grab the Xn matrix to perform the 
@@ -504,6 +504,9 @@ contains
        i_Elec = i_Elec + nb
        idx = idx + nb * sNc
 
+       ! Revert offset in case the Gamma is split multiple times in the blocks
+       if ( n /= sPart ) idx = idx - nrows_g(A_tri, sPart)
+
     end do
 
     ! now we have calculated the column for the blocks that
@@ -520,7 +523,7 @@ contains
     ! starting index:
     off = 0 ! offset from block start
     n = sPart
-    sN = nrows_g(Gf_tri,sPart)
+    sN = nrows_g(Gf_tri, sPart)
     idx_Elec = crows(sPart) - sN + 1 ! current row in BTD
     i_Elec = 1 ! loop row
     do while ( i_Elec <= sNc )
@@ -568,7 +571,7 @@ contains
        do in = sPart , ePart
 
           ! get number of columns of this part
-          sNo = nrows_g(A_tri,in)
+          sNo = nrows_g(A_tri, in)
           fA => val(A_tri,n,in)
           
           ! do Gf.Gamma.Gf^dagger (with correct offset of fA)
@@ -591,7 +594,7 @@ contains
        if ( idx_Elec > crows(n) ) then
          off = off + sN
          n = n + 1
-         sN = nrows_g(A_tri,n)
+         sN = nrows_g(A_tri, n)
        end if
 
     end do

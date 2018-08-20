@@ -20,7 +20,7 @@
       use class_dSpData1D, only : val
       use sparse_matrices
       use siesta_geom
-      use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
+      use atomlist, only: qa, lasto, no_u, no_s, indxuo, 
      &                    qtot, Qtots, no_l
       use sys, only: die, bye
       use kpoint_scf_m, only: kpoint_scf, gamma_scf
@@ -268,12 +268,6 @@ c$$$     &           S, 'S.matrix')
      &                         overwrite=.true. )
       endif
 #endif
-
-! Write orbital indexes. JMS Dec.2009
-      if (IOnode .and. iscf==1) then
-         call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
-     .        iaorb, iphorb, indxuo, nsc, ucell )
-      endif
 
 !     Normalize density matrix to exact charge
 !     Placed here for now to avoid disturbing EHarris
