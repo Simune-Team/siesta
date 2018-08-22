@@ -272,8 +272,8 @@ contains
   subroutine GF_COP(r,Gfd_tri,Gfo_tri,pvt,sp,M,sc_off,k,ph,COP)
     use class_Sparsity
     use class_dSpData1D
-    use intrinsic_missing, only : SFIND
     use geom_helper,       only : UCORB
+    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
 
     type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
@@ -292,6 +292,7 @@ contains
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
     integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
     integer :: no_u, br, io, ind, iind, bc
+    type(ssearch_t) :: ss
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-COP',1)
@@ -336,7 +337,7 @@ contains
     Gfd => val(Gfd_tri)
     Gfo => val(Gfo_tri)
 
-!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc,GfGfd)
+!$OMP parallel default(shared), private(br,io,ind,iind,bc,ss,GfGfd)
 
 !$OMP workshare
     C(:) = 0._dp
@@ -347,13 +348,13 @@ contains
       io = r%r(br)
       
       ! Get lookup columns for the COOP
-      c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+      call ssearch_init(ss, ccol(cptr(io)+1:cptr(io)+cncol(io)))
       
       ! Loop on overlap entries here...
       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
         
         ! Check if the orbital exists in the region
-        iind = cptr(io) + SFIND(c_col, l_col(ind))
+        iind = cptr(io) + ssearch_find(ss, l_col(ind))
         
         ! if zero the element does not exist
         ! This is the case on the elements connecting out
@@ -554,8 +555,8 @@ contains
   subroutine A_COP(r,A_tri,pvt,sp,M,sc_off,k,ph,COP)
     use class_Sparsity
     use class_dSpData1D
-    use intrinsic_missing, only : SFIND
     use geom_helper,       only : UCORB
+    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
 
     type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: A_tri
@@ -571,8 +572,9 @@ contains
     real(dp), pointer :: C(:)
     complex(dp), pointer :: A(:)
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:)
     integer :: no_u, br, io, ind, iind, bc
+    type(ssearch_t) :: ss
 
 #ifdef TBTRANS_TIMING
     call timer('A-COP',1)
@@ -614,7 +616,7 @@ contains
 
     A => val(A_tri)
 
-!$OMP parallel default(shared), private(br,io,c_col,ind,iind,bc)
+!$OMP parallel default(shared), private(br,io,ind,iind,bc,ss)
 
 !$OMP workshare
     C(:) = 0._dp
@@ -625,13 +627,13 @@ contains
       io = r%r(br)
 
       ! Get lookup columns for the COOP
-      c_col => ccol(cptr(io)+1:cptr(io)+cncol(io))
+      call ssearch_init(ss, ccol(cptr(io)+1:cptr(io)+cncol(io)))
 
       ! Loop on overlap entries here...
       do ind = l_ptr(io) + 1 , l_ptr(io) + ncol(io)
 
         ! Check if the orbital exists in the region
-        iind = cptr(io) + SFIND(c_col, l_col(ind))
+        iind = cptr(io) + ssearch_find(ss, l_col(ind))
 
         ! if zero the element does not exist
         ! This is the case on the elements connecting out
@@ -1571,8 +1573,8 @@ contains
     use class_Sparsity
     use class_zSpData1D
     use class_dSpData1D
-    use intrinsic_missing, only : SFIND
     use geom_helper,       only : UCORB
+    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
 
     use m_ts_cctype, only: ts_c_idx
 
@@ -1590,7 +1592,7 @@ contains
     type(tRgn), intent(in) :: pvt
 
     type(Sparsity), pointer :: i_sp
-    integer, pointer :: i_ncol(:), i_ptr(:), i_col(:), icol(:)
+    integer, pointer :: i_ncol(:), i_ptr(:), i_col(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
 
     complex(dp), pointer :: A(:)
@@ -1598,6 +1600,7 @@ contains
     real(dp), pointer :: J(:)
     real(dp) :: E
     integer :: no_u, iu, io, ind, iind, ju, jo
+    type(ssearch_t) :: ss
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',1)
@@ -1625,7 +1628,7 @@ contains
     end do
 
     A => val(A_tri)
-!$OMP parallel default(shared), private(iu,io,ju,jo,iind,ind,Hi,icol)
+!$OMP parallel default(shared), private(iu,io,ju,jo,iind,ind,Hi,ss)
 
     ! we need this in case the device region gets enlarged due to dH
 !$OMP workshare
@@ -1642,13 +1645,13 @@ contains
 #endif
 
       ! Get lookup columns for the orbital current
-      icol => i_col(i_ptr(io)+1:i_ptr(io)+i_ncol(io))
+      call ssearch_init(ss, i_col(i_ptr(io)+1:i_ptr(io)+i_ncol(io)))
 
       ! Loop on Hamiltonian entries here...
       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
         ! Check if the orbital exists in the region
-        iind = i_ptr(io) + SFIND(icol, l_col(ind))
+        iind = i_ptr(io) + ssearch_find(ss, l_col(ind))
         ! if zero the element does not exist
         ! This is the case on the elements connecting out
         ! of the device region

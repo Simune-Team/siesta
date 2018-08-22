@@ -1691,7 +1691,6 @@ contains
     use class_zTriMat
     use m_ts_cctype, only : ts_c_idx
     use m_tbt_tri_scat, only : insert_Self_Energy_Dev
-    use intrinsic_missing, only : SFIND
 #ifdef NCDF_4
     use m_tbt_delta, only : add_zdelta_TriMat
     use m_tbt_dH, only : dH
@@ -2272,7 +2271,7 @@ contains
     use class_Sparsity
     use class_zSpData1D
     use m_tbt_tri_scat, only : insert_Self_Energy
-    use intrinsic_missing, only : SFIND
+    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
 
 #ifdef NCDF_4
     use m_tbt_delta, only : add_zdelta_Mat
@@ -2298,6 +2297,7 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: H(:), S(:)
     integer :: io, iu, ind, ju
+    type(ssearch_t) :: ss
 
     sp => spar(spH)
     H  => val (spH)
@@ -2306,7 +2306,7 @@ contains
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! We will only loop in the region
-!$OMP parallel do default(shared), private(iu,io,ind,ju)
+!$OMP parallel do default(shared), private(iu,io,ind,ju,ss)
     do iu = 1 , n2
        io = r%r(off2+iu) ! get the orbital in the sparsity pattern
 
@@ -2315,12 +2315,14 @@ contains
 
        if ( l_ncol(io) /= 0 ) then
 
+       call ssearch_init(ss, l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)))
+       
        ! Loop on entries here...
        do ju = 1 , n1
  
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
-          ind = SFIND(l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)),r%r(off1+ju))
+          ind = ssearch_find(ss, r%r(off1+ju))
           if ( ind == 0 ) cycle
           ind = l_ptr(io) + ind
 
