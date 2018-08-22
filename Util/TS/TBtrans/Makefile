@@ -115,6 +115,7 @@ TBTOBJS  = version.o m_verbosity.o
 TBTOBJS += tbt_init.o tbt_end.o tbt_reinit.o m_tbt_hs.o m_tbt_regions.o
 TBTOBJS += m_tbt_options.o m_tbt_tri_init.o
 TBTOBJS += m_tbt_contour.o m_tbt_kpoint.o m_tbt_gf.o
+TBTOBJS += sorted_search_t.o
 
 # Different solution methods
 TBTOBJS += m_tbtrans.o m_tbt_trik.o m_tbt_tri_scat.o
@@ -1251,7 +1252,8 @@ m_tbt_tri_init.o: m_ts_tri_common.o m_verbosity.o parallel.o precision.o
 m_tbt_tri_scat.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_tbt_tri_scat.o: class_TriMat.o geom_helper.o intrinsic_missing.o m_region.o
 m_tbt_tri_scat.o: m_tbt_proj.o m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o
-m_tbt_tri_scat.o: m_ts_tri_scat.o m_ts_trimat_invert.o precision.o units.o
+m_tbt_tri_scat.o: m_ts_tri_scat.o m_ts_trimat_invert.o precision.o
+m_tbt_tri_scat.o: sorted_search_t.o units.o
 m_tbt_trik.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_tbt_trik.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o class_TriMat.o
 m_tbt_trik.o: intrinsic_missing.o m_iterator.o m_mat_invert.o m_pivot_array.o
@@ -1262,7 +1264,7 @@ m_tbt_trik.o: m_tbt_sigma_save.o m_tbt_sparse_helper.o m_tbt_tri_init.o
 m_tbt_trik.o: m_tbt_tri_scat.o m_timer.o m_trimat_invert.o m_ts_cctype.o
 m_tbt_trik.o: m_ts_elec_se.o m_ts_electype.o m_ts_method.o m_ts_sparse_helper.o
 m_tbt_trik.o: m_ts_tri_common.o m_ts_trimat_invert.o m_verbosity.o parallel.o
-m_tbt_trik.o: precision.o units.o
+m_tbt_trik.o: precision.o sorted_search_t.o units.o
 m_tbtrans.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_tbtrans.o: class_SpData2D.o class_Sparsity.o m_region.o m_sparsity_handling.o
 m_tbtrans.o: m_tbt_contour.o m_tbt_dH.o m_tbt_dSE.o m_tbt_delta.o m_tbt_hs.o
@@ -1270,6 +1272,7 @@ m_tbtrans.o: m_tbt_kpoint.o m_tbt_kregions.o m_tbt_options.o m_tbt_proj.o
 m_tbtrans.o: m_tbt_regions.o m_tbt_save.o m_tbt_sigma_save.o m_tbt_tri_init.o
 m_tbtrans.o: m_tbt_trik.o m_ts_electype.o m_ts_gf.o m_verbosity.o parallel.o
 m_tbtrans.o: precision.o units.o
+sorted_search_t.o: intrinsic_missing.o
 tbt_end.o: alloc.o m_tbt_dH.o m_tbt_dSE.o m_tbt_delta.o m_wallclock.o
 tbt_end.o: parallel.o timestamp.o
 tbt_init.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o files.o
