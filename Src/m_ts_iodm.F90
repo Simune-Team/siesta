@@ -27,7 +27,7 @@ module m_ts_iodm
 
 contains
   
-  subroutine read_ts_dm( file, dit, DM, EDM, Ef, found, Bcast)
+  subroutine read_ts_dm( file, dit, nsc, DM, EDM, Ef, found, Bcast)
 
 #ifdef MPI
   use mpi_siesta
@@ -38,6 +38,7 @@ contains
 ! **********************
     character(len=*), intent(in) :: file
     type(OrbitalDistribution), intent(in) :: dit
+    integer, intent(inout) :: nsc(3)
     type(dSpData2D), intent(inout) :: DM, EDM
     real(dp), intent(inout) :: Ef
     logical, intent(out) :: found
@@ -49,7 +50,7 @@ contains
     type(Sparsity) :: sp
     character(len=500) :: fn
     logical :: lBcast
-    integer :: iu, two(2), no_u, nspin
+    integer :: iu, five(5), no_u, nspin, ierr
     integer, allocatable, target :: gncol(:)
 #ifdef MPI
     integer :: MPIerror
@@ -79,15 +80,23 @@ contains
        call io_assign(iu)
        open( iu, file=file, form='unformatted', status='old' )
        rewind(iu)
-       read(iu) two
+       read(iu,iostat=ierr) five
+       if ( ierr /= 0 ) then
+         rewind(iu)
+         read(iu) five(1), five(2)
+         five(3:5) = 0
+       end if
     end if
     
 #ifdef MPI
-    call MPI_Bcast(two,2,MPI_integer,0,MPI_Comm_World,MPIerror)
+    call MPI_Bcast(five,5,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-    no_u = two(1)
-    nspin = two(2)
+    no_u = five(1)
+    nspin = five(2)
+    nsc(1) = five(3)
+    nsc(2) = five(4)
+    nsc(3) = five(5)
 
     allocate(gncol(no_u))
     gncol(1) = 1
@@ -134,12 +143,13 @@ contains
 
   end subroutine read_ts_dm
 
-  subroutine write_ts_dm(file, DM, EDM, Ef )
+  subroutine write_ts_dm(file, nsc, DM, EDM, Ef )
     
 ! **********************
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: file
+    integer, intent(in) :: nsc(3)
     type(dSpData2D), intent(inout) :: DM, EDM
     real(dp), intent(in) :: Ef
     
@@ -168,7 +178,7 @@ contains
        open( iu, file=file, form='unformatted', status='unknown' )
        rewind(iu)
        
-       write(iu) no_u, nspin
+       write(iu) no_u, nspin, nsc
 
     end if
 

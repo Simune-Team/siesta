@@ -588,6 +588,7 @@ contains
     character(len=256) :: fname
     ! Number of spin-components read from the DM/TSDE file
     integer :: nspin_read
+    integer :: nsc_read(3)
 
     ! The currently read stuff
     type(dSpData2D) :: DM_read
@@ -609,7 +610,7 @@ contains
        fname = fdf_get('File.TSDE.Init',trim(slabel)//'.TSDE')
 
        ! Try and read the file
-       call read_ts_dm(trim(fname), dit, DM_read, EDM_read, Ef, TSDE_found)
+       call read_ts_dm(trim(fname), dit, nsc_read, DM_read, EDM_read, Ef, TSDE_found)
 
        if ( TSDE_found ) then
           ! Signal we have read TSDE
@@ -629,7 +630,7 @@ contains
        ! Retrieve the name of the initialization file.
        fname = fdf_get('File.DM.Init',trim(slabel)//'.DM')
 
-       call read_DM(trim(fname), dit, DM_read, DM_found)
+       call read_DM(trim(fname), dit, nsc_read, DM_read, DM_found)
 
        if ( DM_found ) then
           ! Signal that the DM file has been found

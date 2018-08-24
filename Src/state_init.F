@@ -631,7 +631,7 @@
 
 #ifdef TEST_IO
       ! We test the io-performance here
-      call time_io(spin%H,H_2D)
+      call time_io(spin%H,nsc,H_2D)
 #endif
 
 !     Write out the ORB_INDX file (if requested)

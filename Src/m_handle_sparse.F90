@@ -46,8 +46,8 @@ contains
     type(dSpData2D) :: fDM_2D
     real(dp) :: fcell(3,3), fkdispl(3), fEf, fQtot, fTemp
     real(dp), pointer :: fxa(:,:) => null()
-    integer :: fnsc(3), fna_u, fno_u, fnspin, fkscell(3,3), at, fn_s
-    integer :: Tile(3), Reps(3)
+    integer :: fnsc(3), fna_u, fno_u, fnspin, fkcell(3,3), at, fn_s
+    integer :: Tile(3), Reps(3), fnsc_DM(3)
     real(dp) :: def_xa_EPS, xa_EPS
 
     integer, pointer :: flasto(:) => null(), fisc_off(:,:) => null()
@@ -145,7 +145,7 @@ contains
       call ts_read_TSHS(HSfile, &
           d_log1, d_log2, d_log3, &
           fcell, fnsc, fna_u, fno_u, fnspin,  &
-          fkscell, fkdispl, &
+          fkcell, fkdispl, &
           fxa, flasto, &
           fsp, fDM_2D, tmp_1D, fisc_off, &
           fEf, fQtot, fTemp, &
@@ -173,7 +173,8 @@ contains
       ! exactly the same, except that TSDE has an extra EDM and Ef
       ! at the end, we do not care about that! :)
       ! read in DM file
-      call read_DM( DMfile, fake_dit, fDM_2D, d_log1, Bcast=.true.)
+      call read_DM( DMfile, fake_dit, fnsc_DM, fDM_2D, d_log1, Bcast=.true.)
+      if ( fnsc_DM(1) == 0 ) fnsc_DM = fnsc
       if ( size(fDM_2D, 2) /= fnspin ) then
         call die('bulk_expand: DM and TSHS does not have the same spin')
       end if
@@ -497,7 +498,7 @@ contains
     integer :: no_u, no_l
     integer :: io, i, i_ind, o_ind, isc(3)
     integer :: i_is, o_is, o_hsc(3)
-    integer :: discarded(2)
+    integer :: discarded(2), dim_min
 
     ! arrays for the sparsity patterns
     integer, pointer :: o_ptr(:), o_ncol(:), o_col(:)

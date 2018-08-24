@@ -26,6 +26,7 @@
       use m_matio,              only:  write_mat
       use m_spin,               only:  nspin, h_spin_dim
       use atomlist,             only:  no_l
+      use siesta_geom,          only:  nsc
       use siesta_options,       only:  writedm, writedm_cdf
       use siesta_options,       only:  writedm_cdf_history
       use siesta_options,       only:  idyn, nmove
@@ -109,7 +110,7 @@
      $              userfile=trim(file)//'.blocked',compatible=.false.)
             else
                ! The filename falls back to the standard one     
-               call write_dm(trim(slabel)//'.DM', DM_2D)
+               call write_dm(trim(slabel)//'.DM', nsc, DM_2D)
             end if
          end do
          call timer('IO-W-DM',2)
@@ -126,12 +127,12 @@
       if ( do_it ) then
          if ( TSrun ) then
             call write_ts_dm(trim(slabel)//'.TSDE',
-     &           DM_2D, EDM_2D, Ef)
+     &           nsc, DM_2D, EDM_2D, Ef)
          else
-            call write_dm(trim(slabel)//'.DM', DM_2D)
+            call write_dm(trim(slabel)//'.DM', nsc, DM_2D)
             if ( TS_DE_save ) then
                call write_ts_dm(trim(slabel)//'.TSDE',
-     &              DM_2D, EDM_2D, Ef)
+     &              nsc, DM_2D, EDM_2D, Ef)
             end if
          end if
       end if
