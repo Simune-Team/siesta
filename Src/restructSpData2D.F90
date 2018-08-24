@@ -2,11 +2,11 @@ module m_restruct_SpData2D
 
   implicit none
 
-  public :: restructdSpData2D
+  public :: restruct_dSpData2D
   
 contains
   
-  subroutine restructdSpData2D(SpMin, sp_out, SpMout, dim2)
+  subroutine restruct_dSpData2D(SpMin, sp_out, SpMout, dim2, show_warning)
 
     use class_dSpData2D
     use class_dData2D
@@ -25,6 +25,7 @@ contains
     ! set to zero. Presumably, elements which dissappear from
     ! the pattern were very close to zero to begin with.
     ! (that could be checked)
+    logical, intent(in), optional :: show_warning
 
     ! Limitations:
     !       It is assumed that the number of rows and columns of the
@@ -50,6 +51,9 @@ contains
     integer, dimension(:), pointer :: list_in, list_out
 
     real(dp), allocatable  :: aux(:)
+    type(OrbitalDistribution) :: dit
+
+    logical :: lshow_warning
 
     ! For non-block-cyclic distributions, we are assuming
     ! that the distribution pattern is the same (it might not
@@ -61,6 +65,8 @@ contains
        call die("Incompatible nrows in SpMatrices")
     endif
 
+    lshow_warning = .true.
+    if ( present(show_warning) ) lshow_warning = show_warning
 
     n_col_in => n_col(SpMin)
     n_col_out => n_col(sp_out)
@@ -68,9 +74,6 @@ contains
     listptr_out => list_ptr(sp_out)
     list_in => list_col(SpMin)
     list_out => list_col(sp_out)
-    !print *, &
-    !     maxval(abs(n_col_in-n_col_out)), &
-    !     maxval(abs(list_in-list_out)),node,nnzs(SpMin),nnzs(sp_out)
 
     size_in  = nnzs(SpMin)
     size_out = nnzs(sp_out)
@@ -81,7 +84,7 @@ contains
     maxval_j_out = (maxval(list_out(1:size_out))-1)/nrows_g(sp_out)
     maxval_j_out = ( maxval_j_out + 1 ) * nrows_g(sp_out)
 
-    if ( maxval_j_in /= maxval_j_out ) then
+    if ( maxval_j_in /= maxval_j_out .and. lshow_warning ) then
        ! Print out the different values
        write(*,'(a,tr2,i0,a,tr2,i0)') &
             'WARNING: Connected supercells may have changed: [in]/[out]', &
@@ -111,28 +114,32 @@ contains
     ! The alternative could be prone to cache misses
     ! (there will be also cache misses due to the sparse de-referencing,
     ! though.
+    aux(:) = 0.0_dp
 
     do k = 1, dim2_min
-       do i=1,nrows(SpMin)
-          aux(:) = 0.0_dp
-          do in=1,n_col_in(i)
-             ind = listptr_in(i) + in
-             j = list_in(ind)
-             aux(j) = a_in(ind,k)
-          enddo
-          do in=1,n_col_out(i)
-             ind = listptr_out(i) + in
-             j = list_out(ind)
-             a_out(ind,k) = aux(j)
-          enddo
-       enddo
-    enddo
+       do i = 1, nrows(SpMin)
+          do ind = listptr_in(i) + 1, listptr_in(i) + n_col_in(i)
+            aux(list_in(ind)) = a_in(ind,k)
+          end do
+          do ind = listptr_out(i) + 1, listptr_out(i) + n_col_out(i)
+            a_out(ind,k) = aux(list_out(ind))
+          end do
+          do ind = listptr_in(i) + 1, listptr_in(i) + n_col_in(i)
+            aux(list_in(ind)) = 0._dp
+          end do
+       end do
+    end do
 
     deallocate(aux)
 
-    call newdSpData2D(sp_out,a2d_out,dist(SpMin), &
+    ! In cases where SpMout is equal to SpMin it is vital that
+    ! we have a pure reference to the object
+    dit = dist(SpMin)
+
+    call newdSpData2D(sp_out,a2d_out,dit, &
          SpMout,name="Re-structured SpM")
 
+    call delete(dit)
     call delete(a2d_out)
 
   contains
@@ -145,6 +152,6 @@ contains
       stop
     end subroutine die
 
-  end subroutine restructdSpData2D
+  end subroutine restruct_dSpData2D
 
 end module m_restruct_SpData2D

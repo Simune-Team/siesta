@@ -5780,35 +5780,6 @@ this should not happen in any serious calculation...)
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{NaiveAuxiliaryCell}[logical]<\fdfvalue{MD.TypeOfRun}>
-
-  The auxiliary supercell needed can be determined using the atomic positions,
-  the orbital extent and the lattice parameters. For a fixed geometry
-  configuration the tightest auxiliary supercell is uniquely defined. However,
-  when performing MD simulations (or relaxations) the displacement of
-  certain atoms may result in changes to the required auxiliary
-  supercell, thus inhibiting re-use of DM information across geometry steps.
-  When this is option is \fdftrue\ the auxiliary supercell will be computed
-  with a simpler algorithm using only the orbital extent (fixed for \emph{any}
-  calculation) and the lattice vectors. The resulting supercell might
-  be larger than strictly needed, but it will remain mostly constant
-  during the run (even when the \fdf{MD.VariableCell} option is used,
-  if the lattice changes are moderate).
-
-  By default this will be \fdffalse\ when performing single-point calculations
-  (\fdf{MD.TypeOfRun:CG} with \fdf{MD.Steps:1} or below). Otherwise
-  this will default to \fdftrue.
-
-  \note one may try to set this to \fdffalse\ for better performance,
-  at the risk of inhibiting the re-use of DM information.
-
-  \note this option may made obsolete in later versions when a
-  supercell conversion routine is in place.
-
-  \note the name of the option reflects historical usage.
-
-\end{fdfentry}
-
 
 
 \subsection{Calculation of the electronic structure}

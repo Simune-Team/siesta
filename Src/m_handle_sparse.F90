@@ -16,6 +16,7 @@ module m_handle_sparse
   public :: bulk_expand
   public :: expand_spd2spd_2D
   public :: copy_supercell_sp_d2
+  public :: correct_supercell_sp_d2
   public :: reduce_spin_size
 
 contains

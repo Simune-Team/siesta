@@ -32,7 +32,7 @@ MODULE siesta_geom
   integer, pointer :: isc_off(:,:) => null()
    
   ! Previous diagonal elements of supercell
-  integer :: nscold(3) = 0
+  integer :: nsc_old(3) = 0
 
   ! Matrix of auxiliary supercell
   integer :: mscell(3,3)

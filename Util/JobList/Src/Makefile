@@ -42,6 +42,3 @@ clean:
 	rm -f *.o *.mod countJobs runJobs getResults horizontal
 
 # DO NOT DELETE THIS LINE - used by make depend
-countJobs.o: jobList.o
-getResults.o: jobList.o
-runJobs.o: jobList.o

@@ -46,9 +46,3 @@ clean:
 	rm -f *.o *.mod swarm simplex
 
 # DO NOT DELETE THIS LINE - used by make depend
-amoeba.o: precision.o vars_module.o
-minimizer.o: vars_module.o
-simplex.o: amoeba.o minimizer.o precision.o vars_module.o
-swarm.o: minimizer.o precision.o vars_module.o
-vars_module.o: parse.o precision.o sys.o
-m_amoeba.o: amoeba.o
