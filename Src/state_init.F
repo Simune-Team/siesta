@@ -300,6 +300,12 @@
           call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
         endif
 
+!       TODO Here we should convert all DM_history
+!       entries from nscold to nsc.
+!       This would allow us to re-use the DM history across
+!       supercell changes
+!       TODO
+
         mscell = 0.0_dp
         do i = 1, 3
            mscell(i,i) = nsc(i)
@@ -613,7 +619,7 @@
 !     the analysis section (with nscf=0) or to start a mix-H scf cycle.
 !
 !     Initialize density matrix
-      ! The resizing of Dscf is done inside new_dm
+!     The resizing of Dscf is done inside new_dm
       call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)

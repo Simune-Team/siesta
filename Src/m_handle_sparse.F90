@@ -15,6 +15,7 @@ module m_handle_sparse
 
   public :: bulk_expand
   public :: expand_spd2spd_2D
+  public :: copy_supercell_sp_d2
   public :: reduce_spin_size
 
 contains
@@ -473,8 +474,7 @@ contains
   ! Copy one super-cell sparse pattern to another super-cell sparse
   ! pattern. This will copy [in] to [out].
   subroutine copy_supercell_sp_d2(d2_out, nsc_out, d2_in, nsc_in)
-
-    use class_OrbitalDistribution
+    
     use class_Sparsity
     use class_dSpData2D
 #ifdef MPI
@@ -492,12 +492,11 @@ contains
 
     ! We are ready to check and copy the sparsity pattern...
     type(Sparsity), pointer :: sp_i, sp_o
-    type(OrbitalDistribution), pointer :: dit_i, dit_o
 
     ! Local variables
     integer :: no_u, no_l
     integer :: io, i, i_ind, o_ind, isc(3)
-    integer :: i_is, o_is, o_hsc(3)
+    integer :: i_is, o_is, o_hsc(3), new_col
     integer :: discarded(2), dim_min
 
     ! arrays for the sparsity patterns
@@ -507,13 +506,11 @@ contains
     integer, allocatable :: o_isc(:,:,:), i_isc(:,:)
     integer, allocatable :: out_index(:)
 
-    dit_i => dist(d2_in)
     sp_i => spar(d2_in)
     a_i => val(d2_in)
-    dit_o => dist(d2_out)
     sp_o => spar(d2_out)
     a_o => val(d2_out)
-
+    
     call attach(sp_i,n_col=i_ncol, list_ptr=i_ptr, list_col=i_col, &
         nrows=no_l, nrows_g=no_u)
     call attach(sp_o,n_col=o_ncol, list_ptr=o_ptr, list_col=o_col, &
@@ -541,17 +538,21 @@ contains
 
     ! We need to check whether in-put SC is too large
     o_hsc = nsc_out / 2
+
+    ! Since we are going to copy, then we have to set it to zero...
+    a_o(:,:) = 0._dp
+
     do io = 1, no_l
       
-      ! copy output lookup table
+      ! copy output lookup table to not search every element
       do i = 1, o_ncol(io)
-        out_index(o_col(o_ptr(io)+i)) = i
+        out_index(o_col(o_ptr(io)+i)) = o_ptr(io) + i
       end do
 
       ! Now we can do the copy...
       inner_columns: do i = 1, i_ncol(io)
         i_ind = i_ptr(io) + i
-        i_is = i_col(i_ind) / no_u
+        i_is = (i_col(i_ind)-1) / no_u
 
         ! Get isc
         isc = i_isc(:, i_is)
@@ -567,9 +568,9 @@ contains
         o_is = o_isc(isc(1),isc(2),isc(3))
         
         ! Transfer the orbital index to the correct supercell
-        o_ind = o_is * no_u + ucorb(i_col(i_ind), no_u)
+        o_ind = out_index(o_is * no_u + ucorb(i_col(i_ind), no_u))
         
-        if ( out_index(o_ind) == 0 ) then
+        if ( o_ind == 0 ) then
           ! The orbital interaction does not exist
           discarded(2) = discarded(2) + 1
         else
@@ -586,76 +587,155 @@ contains
     end do
 
     deallocate(o_isc, i_isc, out_index)
-    
-  contains
-
-    subroutine generate_linear_isc(nsc, isc)
-      integer, intent(in) :: nsc(3)
-      integer, allocatable :: isc(:,:)
-
-      integer :: x, y, z, i
-      integer :: nx, ny, nz
-
-      allocate(isc(3,0:product(nsc)-1))
-
-      i = 0
-      do z = 0, nsc(3) - 1
-        nz = linear2pm(z, nsc(3))
-        do y = 0, nsc(2) - 1
-          ny = linear2pm(y, nsc(2))
-          do x = 0, nsc(1) - 1
-            nx = linear2pm(x, nsc(1))
-            i = i + 1
-            isc(1,i) = nx
-            isc(2,i) = ny
-            isc(3,i) = nz
-          end do
-        end do
-      end do
-
-    end subroutine generate_linear_isc
-    
-    subroutine generate_isc(nsc, isc)
-      integer, intent(in) :: nsc(3)
-      integer, allocatable :: isc(:,:,:)
-
-      integer :: x, y, z, i
-      integer :: nx, ny, nz
-      integer :: halve_nsc(3)
-
-      ! nsc % 2 == 1, nsc / 2 % 2 == 0
-      halve_nsc = nsc / 2
-
-      allocate(isc(-halve_nsc(1):halve_nsc(1), &
-          -halve_nsc(2):halve_nsc(2), &
-          -halve_nsc(3):halve_nsc(3)))
-
-      i = 0
-      do z = 0, nsc(3) - 1
-        nz = linear2pm(z, nsc(3))
-        do y = 0, nsc(2) - 1
-          ny = linear2pm(y, nsc(2))
-          do x = 0, nsc(1) - 1
-            nx = linear2pm(x, nsc(1))
-            isc(nx,ny,nz) = i
-            i = i + 1
-          end do
-        end do
-      end do
-
-    end subroutine generate_isc
-      
-    pure function linear2pm(i,n) result(j)
-      integer, intent(in) :: i, n
-      integer :: j
-      if ( i > n / 2 ) then
-        j = -n + i
-      else
-        j = i
-      end if
-    end function linear2pm
 
   end subroutine copy_supercell_sp_d2
+
+  ! Correct a sparse pattern (in-place) from an old NSC to a new NSC
+  subroutine correct_supercell_sp_d2(nsc_old, D2, nsc_new)
+
+    use class_Sparsity
+    use class_dSpData2D
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    type(dSpData2D), intent(inout) :: D2
+    integer, intent(in) :: nsc_old(3)
+    integer, intent(in) :: nsc_new(3)
+
+    ! Local variables
+    type(Sparsity), pointer :: sp
+    integer :: no_u, no_l
+    integer :: io, i, ind, isc(3)
+    integer :: old_n_s, new_outside
+    integer :: old_is, new_is, new_hsc(3)
+
+    ! arrays for the sparsity patterns
+    integer, pointer :: ptr(:), ncol(:), col(:)
+    integer, allocatable :: old_isc(:,:), new_isc(:,:,:)
+    real(dp), pointer :: a2(:,:)
+
+    sp => spar(D2)
+    call attach(sp,n_col=ncol, list_ptr=ptr, list_col=col, &
+        nrows=no_l, nrows_g=no_u)
+
+    ! Required to set removed elements to 0
+    A2 => val(D2)
+
+    ! Now create the conversion tables
+    call generate_linear_isc(nsc_old, old_isc)
+    call generate_isc(nsc_new, new_isc)
+
+    ! Calculate total number of supercells
+    old_n_s = product(nsc_old)
+    new_outside = product(nsc_new) * no_u
+
+    ! We need to check whether in-put SC is too large
+    new_hsc = nsc_new / 2
+    do io = 1, no_l
+
+      ! Now we can do the copy...
+      inner_columns: do i = 1, ncol(io)
+        ind = ptr(io) + i
+        old_is = (col(ind)-1) / no_u
+
+        if ( old_is >= old_n_s ) then ! it should be removed
+          ! Set it to zero
+          A2(ind, :) = 0._dp
+          ! Also set the column index to a position outside the new sparse pattern
+          col(ind) = ucorb(col(ind), no_u) + new_outside
+          cycle inner_columns
+        end if
+
+        ! Get isc
+        isc = old_isc(:, old_is)
+
+        ! Check that the out supercell exists
+        if ( any(abs(isc) > new_hsc) ) then
+          ! Set it to zero
+          a2(ind, :) = 0._dp
+          ! Also set the column index to a position higher
+          col(ind) = ucorb(col(ind), no_u) + new_outside
+          cycle inner_columns
+        end if
+
+        ! We know the supercell exists, so convert column
+        new_is = new_isc(isc(1),isc(2),isc(3))
+        
+        ! Transfer the orbital index to the correct supercell
+        col(ind) = ucorb(col(ind), no_u) + new_is * no_u
+        
+      end do inner_columns
+      
+    end do
+
+    deallocate(old_isc, new_isc)
+    
+  end subroutine correct_supercell_sp_d2
+
+  subroutine generate_linear_isc(nsc, isc)
+    integer, intent(in) :: nsc(3)
+    integer, allocatable :: isc(:,:)
+
+    integer :: x, y, z, i
+    integer :: nx, ny, nz
+
+    allocate(isc(3,0:product(nsc)-1))
+
+    i = 0
+    do z = 0, nsc(3) - 1
+      nz = linear2pm(z, nsc(3))
+      do y = 0, nsc(2) - 1
+        ny = linear2pm(y, nsc(2))
+        do x = 0, nsc(1) - 1
+          nx = linear2pm(x, nsc(1))
+          isc(1,i) = nx
+          isc(2,i) = ny
+          isc(3,i) = nz
+          i = i + 1
+        end do
+      end do
+    end do
+
+  end subroutine generate_linear_isc
+
+  subroutine generate_isc(nsc, isc)
+    integer, intent(in) :: nsc(3)
+    integer, allocatable :: isc(:,:,:)
+
+    integer :: x, y, z, i
+    integer :: nx, ny, nz
+    integer :: hsc(3)
+
+    ! nsc % 2 == 1, nsc / 2 % 2 == 0
+    hsc = nsc / 2
+
+    allocate(isc(-hsc(1):hsc(1),-hsc(2):hsc(2),-hsc(3):hsc(3)))
+
+    i = 0
+    do z = 0, nsc(3) - 1
+      nz = linear2pm(z, nsc(3))
+      do y = 0, nsc(2) - 1
+        ny = linear2pm(y, nsc(2))
+        do x = 0, nsc(1) - 1
+          nx = linear2pm(x, nsc(1))
+          isc(nx,ny,nz) = i
+          i = i + 1
+        end do
+      end do
+    end do
+
+  end subroutine generate_isc
+
+  pure function linear2pm(i,n) result(j)
+    integer, intent(in) :: i, n
+    integer :: j
+    if ( i > n / 2 ) then
+      j = -n + i
+    else
+      j = i
+    end if
+  end function linear2pm
 
   subroutine reduce_spin_size(ispin,H_2D,S_1D,Ef)
     use class_OrbitalDistribution
