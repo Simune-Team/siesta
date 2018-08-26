@@ -48,7 +48,7 @@ contains
 ! * LOCAL variables      *
 ! ************************
     type(Sparsity) :: sp
-    character(len=500) :: fn
+    character(len=256) :: fn
     logical :: lBcast
     integer :: iu, five(5), no_u, nspin, ierr
     integer, allocatable, target :: gncol(:)
@@ -89,7 +89,12 @@ contains
     end if
     
 #ifdef MPI
-    call MPI_Bcast(five,5,MPI_integer,0,MPI_Comm_World,MPIerror)
+    if ( lBcast ) then
+      call MPI_Bcast(five,5,MPI_integer,0,MPI_Comm_World,MPIerror)
+    else
+      ierr = dist_comm(dit)
+      call MPI_Bcast(five,5,MPI_integer,0,ierr,MPIerror)
+    end if
 #endif
 
     no_u = five(1)
@@ -137,8 +142,14 @@ contains
     end if
 
 #ifdef MPI
-    call MPI_BCast(Ef,1,MPI_Double_Precision, &
-         0,MPI_Comm_World, MPIerror)
+    if ( lBcast ) then
+      call MPI_BCast(Ef,1,MPI_Double_Precision, &
+          0,MPI_Comm_World, MPIerror)
+    else
+      ierr = dist_comm(dit)
+      call MPI_Bcast(Ef,1,MPI_Double_Precision, &
+          0,ierr,MPIerror)
+    end if
 #endif
 
   end subroutine read_ts_dm
