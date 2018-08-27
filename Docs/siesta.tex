@@ -6478,6 +6478,7 @@ allowed. Therefore, only spin-polarized calculations with
 appropriately. For non-$\Gamma$ point calculations, the number of
 electrons is set to be equal at all k points. Non-colinear
 calculations (see \fdf{Spin}) are not supported at present.
+The OMM implementation was initially developed by Fabiano Corsetti.
 
 It is important to note that the OMM requires all occupied Kohn-Sham
 eigenvalues to be negative; this can be achieved by applying a shift
@@ -10131,6 +10132,16 @@ Parrinello-Rahman dynamics) are also stored in this file.
 
 \end{fdflogicalF}
 
+
+\begin{fdflogicalT}{Write.OrbitalIndex}
+
+  If \fdftrue\ it causes the writing of an extra file
+  named \sysfile{ORB\_INDX} containing all orbitals used in the
+  calculation.
+
+  Its formatting is clearly specified at the end of the file.
+  
+\end{fdflogicalT}
 
 
 \subsection{Restarting geometry optimizations and MD runs}

@@ -769,6 +769,10 @@ calculation has completed.
 
   See \fdf{TBT.Atoms!Device.Connect}.
 
+  In case any of \fdf{TBT.DM!Gf}, \fdf{TBT.COOP!Gf} or
+  \fdf{TBT.COHP!Gf} is \fdftrue\ this flag will be set to \fdftrue\ as
+  well.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DOS!A}
@@ -781,6 +785,10 @@ calculation has completed.
   This generates \sysfile{ADOS\_<>} and \sysfile{AVADOS\_<>}.
 
   See \fdf{TBT.Atoms!Device.Connect}.
+
+  In case any of \fdf{TBT.Current!Orb}, \fdf{TBT.DM!A}, \fdf{TBT.COOP!A} or
+  \fdf{TBT.COHP!A} is \fdftrue\ this flag will be set to \fdftrue\ as
+  well.
 
 \end{fdflogicalF}
 
@@ -804,7 +812,7 @@ region via this simple expression
   \rho_{\mathrm{bound-states}} = \rho_{\mathbf G} - 
   \sum_i \rho_{\mathbf A_i},
 \end{equation}
-where the sum is over all electrodes, $\mathbf G$ and $\mathbf A$ are
+where the sum is over all electrodes, $\mathbf G$ and $\mathbf A_i$ are
 the Green and spectral function, respectively. Note that typically
 $\rho_{\mathrm{bound-states}}=0$.
 
@@ -857,7 +865,7 @@ Population may also be calculated. These are only available if
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COOP!A}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A.All}
 
   Calculate COOP from the spectral function in the device region.
 
@@ -869,15 +877,12 @@ Population may also be calculated. These are only available if
   The COOP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COHP!Gf}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!Gf}
+  \fdfdepend{TBT.Atoms!Device}
 
   Calculate COHP from the Green function in the device region.
 
@@ -889,15 +894,12 @@ Population may also be calculated. These are only available if
   The COHP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COHP!A}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A.All}
 
   Calculate COHP from the spectral function in the device region.
 
@@ -908,9 +910,6 @@ Population may also be calculated. These are only available if
   \end{equation}
   The COHP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
-
-  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
 
   \note Untested!
 
@@ -1921,6 +1920,18 @@ flag controls the partitioning for the device region.
 
 \end{fdfentry}
 
+\begin{fdfentry}{TBT.BTD!Spectral}[string]<propagation|column>
+
+  Method used for calculating the spectral function ($\mathbf A_i$).
+  For 4 or more electrodes the \fdf*{column} option is the default
+  while \fdf*{propagation} is the default for less electrodes.
+
+  \note this option may heavily influence performance. Test for a
+  single $k$-point and single energy point to figure out the
+  implications of using one over the other.
+  
+\end{fdfentry}
+
 \begin{fdflogicalF}{TBT!Analyze}
 
   As the pivoting algorithm \emph{highly} influences the performance
@@ -2557,11 +2568,14 @@ the molecule.
 
   Save the spectral density of states for the projections. In case you
   have set \fdf{TBT.DOS!A} this will default to that flag.
-  
+
+  In case any of \fdf{TBT.Projs!Current.Orb}, \fdf{TBT.Projs!DM.A},
+  \fdf{TBT.Projs!COOP.A} or \fdf{TBT.Projs!COHP.A} is \fdftrue\ this
+  flag will be set to \fdftrue\ as well.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Projs!Current.Orb}%
-  \fdfdepend{TBT.Projs!DOS.A}
 
   Will calculate and save the orbital current for the device with the
   projections.
@@ -2570,6 +2584,32 @@ the molecule.
   the cut-out device region sparsity pattern. 
   
 \end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!DM.A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate the energy and $k$-resolved density matrix for the
+  projected spectral functions. The density matrix may be used to
+  construct real-space LDOS profiles.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!COOP.A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate COOP from the projected spectral function in the device
+  region.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!COHP.A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate COHP from the projected spectral function in the device
+  region.
+
+\end{fdflogicalF}
+
 
 \begin{fdflogicalF}{TBT.Projs!T.All}%
 

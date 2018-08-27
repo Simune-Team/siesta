@@ -584,8 +584,7 @@ contains
 
        else if ( leqi(ln,'Eta') ) then
 
-         call pline_E_parse(pline,1,ln, &
-               val = this%Eta, before=3)
+         call pline_E_parse(pline,1,ln, val=this%Eta, before=3)
 #ifdef TBTRANS
 #ifdef TBT_PHONON
           ! eta value needs to be squared as it is phonon spectrum
@@ -2131,7 +2130,7 @@ contains
 #endif
 #ifdef TBTRANS
 #ifdef TBT_PHONON
-    write(*,f9)  '  Electrode self-energy imaginary Eta', sqrt(this%Eta)/eV,' eV'
+    write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV**2,' eV**2'
 #else
     write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
 #endif

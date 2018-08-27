@@ -618,11 +618,12 @@ contains
           ! (and SET) the k-point for the electrode.
           ! This is necessary for the expansion to work.
           if ( present(DOS) ) then
-             call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
-                  nzwork, zwork, DOS(:,i) , T(i) )
+            j = Elecs(i)%no_u
+            call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &
+                nzwork, zwork, DOS(1:j,i) , T(i) )
 #ifdef TBT_PHONON
-             ! For phonons, we also require a factor of 2
-             DOS(:,i) = 2._dp * real(cE%e,dp) * DOS(:,i)
+             ! For phonons, we also require a factor of 2 * omega
+             DOS(1:j,i) = 2._dp * real(cE%e,dp) * DOS(1:j,i)
 #endif
           else
              call calc_next_GS_Elec(Elecs(i),ispin,kpt,c%e, &

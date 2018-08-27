@@ -30,8 +30,6 @@ module m_ts_tri_scat
 
 contains
 
-  
-
   ! The problem of this routine is that we wish not to
   ! overwrite the old half-inverted matrix, that would mean
   ! that we need to do the full calculation for each electrode
@@ -266,19 +264,21 @@ contains
     oi = 0
 #endif
     do n = 1 , no
-       i = pvt%r(El%o_inD%r(n))
+      i = pvt%r(El%o_inD%r(n))
 #ifndef TS_NOCHECKS
-       if ( oi > i ) then
-          call rgn_print(r)
-          call rgn_print(El%o_inD)
-          print *,n,oi,i
-          call die('BTD error in sorting of o_inD for electrode.')
-       end if
-       oi = i
+      if ( oi > i ) then
+        call rgn_print(r)
+        call rgn_print(El%o_inD)
+        print *,n,oi,i
+        call die('BTD error in sorting of o_inD for electrode.')
+      end if
+      oi = i
 #endif
-       sPart = min(sPart,which_part(A_tri,i))
-       ePart = max(ePart,which_part(A_tri,i))
+      if ( i < sPart ) sPart = i
+      if ( ePart < i ) ePart = i
     end do
+    sPart = which_part(A_tri, sPart)
+    ePart = which_part(A_tri, ePart)
     if ( ePart - sPart > 1 ) then
        print *,sPart, ePart
        call die('Gamma filling more than 2 blocks, how is that &
@@ -298,14 +298,14 @@ contains
 
     ! So we start by calculating the triple-product
     ! of the electrode diagonal elements
-    sN = nrows_g(A_tri,sPart)
+    sN = nrows_g(A_tri, sPart)
     ! get first column/row in this part
     i = crows(sPart) - sN + 1
     ! get starting index
     sIdx = index(A_tri,i,i) - 1
     
     ! do the same for the last part with
-    sNc = nrows_g(A_tri,ePart)
+    sNc = nrows_g(A_tri, ePart)
     i = crows(ePart)
     ! get ending index
     eIdx = index(A_tri,i,i) + 1
@@ -387,29 +387,29 @@ contains
     ! Now calculate the column where we need G
     i_Elec = 1
     idx = 1
+    n = sPart
     do while ( i_Elec <= no )
 
        ! get orbital index for the current column/row
        idx_Elec = pvt%r(El%o_inD%r(i_Elec))
-
-       ! If we skip to a new block we must add sN
-       ! to account for the new diagonal position
-       if ( 1 < i_Elec ) then
-          ! Note that 'n' and 'sN' are
-          ! from the previous iteration
-          if ( n /= which_part(A_tri,idx_Elec) ) then
-             idx = idx + sN
-          end if
-       end if
        
        ! We start by copying over the Gfnn in blocks
 
        ! ... create a region of consecutive
        ! memory.
-       n = which_part(A_tri,idx_Elec)
-       sN = nrows_g(A_tri,n)
+       if ( idx_Elec <= crows(sPart) ) then
+         n = sPart
+       else
+         ! If we skip to a new block we must add sN
+         ! to account for the new diagonal position
+         idx = idx + nrows_g(A_tri, sPart) ! add the offset for the first
+         n = ePart
+       end if
+       sN = nrows_g(A_tri, n)
+       eIdx = crows(n)
+       sIdx = eIdx - sN + 1
 
-       ! we only require up to no columns
+       ! we only require up to 'no' columns
        nb = 1
        do while ( i_Elec + nb <= no )
           i = pvt%r(El%o_inD%r(i_Elec+nb))
@@ -417,7 +417,7 @@ contains
           if ( i - idx_Elec /= nb ) exit
           ! In case the block changes, then
           ! we cut the block size here.
-          if ( n /= which_part(A_tri,i) ) exit
+          if ( i < sIdx .or. eIdx < i ) exit
           nb = nb + 1
        end do
        
@@ -451,7 +451,7 @@ contains
        do in = n - 1 , sPart , - 1
 
           ! Number of orbitals in the other segment
-          sNo = nrows_g(Gf_tri,in)
+          sNo = nrows_g(Gf_tri, in)
           sIdx = eIdx - sNo
 
           ! grab the Yn matrix to perform the 
@@ -480,7 +480,7 @@ contains
        do in = n + 1 , ePart
 
           ! Number of orbitals in the other segment
-          sNo = nrows_g(Gf_tri,in)
+          sNo = nrows_g(Gf_tri, in)
           eIdx = sIdx + i
 
           ! grab the Xn matrix to perform the 
@@ -503,7 +503,10 @@ contains
        ! Update current segment of the electrode copied entries.
        i_Elec = i_Elec + nb
        idx = idx + nb * sNc
-       
+
+       ! Revert offset in case the Gamma is split multiple times in the blocks
+       if ( n /= sPart ) idx = idx - nrows_g(A_tri, sPart)
+
     end do
 
     ! now we have calculated the column for the blocks that
@@ -520,21 +523,11 @@ contains
     ! starting index:
     off = 0 ! offset from block start
     n = sPart
-    sN = nrows_g(Gf_tri,sPart)
+    sN = nrows_g(Gf_tri, sPart)
     idx_Elec = crows(sPart) - sN + 1 ! current row in BTD
     i_Elec = 1 ! loop row
     do while ( i_Elec <= sNc )
-
-       if ( i_Elec > 1 ) then
-          if ( which_part(A_tri,idx_Elec) /= n ) then
-             off = off + sN
-          end if
-       end if
        
-       ! get current row/column
-       n = which_part(A_tri,idx_Elec)
-       sN = nrows_g(A_tri,n)
-
        ! the maximum size is nrtmp
        ! the minimum size is remaining elements in current block
        nb = min(nrtmp,sN - (i_Elec - off) + 1)
@@ -578,7 +571,7 @@ contains
        do in = sPart , ePart
 
           ! get number of columns of this part
-          sNo = nrows_g(A_tri,in)
+          sNo = nrows_g(A_tri, in)
           fA => val(A_tri,n,in)
           
           ! do Gf.Gamma.Gf^dagger (with correct offset of fA)
@@ -596,7 +589,14 @@ contains
 
        i_Elec = i_Elec + nb
        idx_Elec = idx_Elec + nb
-       
+
+       ! We are stepping to the next block
+       if ( idx_Elec > crows(n) ) then
+         off = off + sN
+         n = n + 1
+         sN = nrows_g(A_tri, n)
+       end if
+
     end do
 
 #ifdef TBTRANS

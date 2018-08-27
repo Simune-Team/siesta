@@ -45,7 +45,7 @@
       use m_pivot_methods, only: sp2graphviz
 
       use siesta_geom
-      use atomlist,          only: iphorb, iphkb, indxua,
+      use atomlist,          only: iphorb, iphkb, indxua, iaorb,
      &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
      &                             lastkb, lasto, superc, indxuo,
      &                             no_u, no_s, no_l, iza, qtots
@@ -721,6 +721,14 @@
       call time_io(spin%H,H_2D)
 #endif
 
+!     Write out the ORB_INDX file (if requested)
+      if ( save_ORB_INDX ) then
+        if ( IOnode .and. istep == inicoor ) then
+          call write_orb_indx( na_u, na_s, no_u, no_s, isa, xa,
+     .        iaorb, iphorb, indxuo, nsc, ucell )
+        end if
+      end if
+      
 !     If onlyS, Save overlap matrix and exit
       if ( onlyS ) then
          fname = fname_TSHS(slabel, onlyS = .true. )

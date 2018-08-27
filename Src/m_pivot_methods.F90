@@ -2103,7 +2103,7 @@ contains
        call rgn_grow(queue, nel - nadded)
 
        ! Get the next level
-       call next_level(clvl%v, queue)
+       call next_level(n,nnzs,n_col,l_ptr,l_col,clvl%v, queue, priority)
 
        ! Allocate next level and prepare
        allocate(clvl%next)
@@ -2118,7 +2118,10 @@ contains
 
   contains
 
-    subroutine next_level(qin, qout)
+    subroutine next_level(n,nnzs,n_col,l_ptr,l_col, qin, qout, priority)
+      integer, intent(in) :: n, nnzs, n_col(n), l_ptr(n), l_col(nnzs)
+      integer, intent(in), optional :: priority(n)
+      
       type(tRgn), intent(in) :: qin
       type(tRgn), intent(inout) :: qout
       integer :: i, ind, el, eln
@@ -3146,7 +3149,7 @@ contains
 
 
   subroutine sp2graphviz_sp(file,sp,types,method,pvt)
-    use class_Sparsity
+    use class_Sparsity, only: Sparsity, attach
     character(len=*), intent(in) :: file
     type(Sparsity), intent(inout) :: sp
     ! Methods applied

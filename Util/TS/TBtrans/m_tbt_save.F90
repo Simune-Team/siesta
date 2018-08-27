@@ -558,16 +558,17 @@ contains
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
         atts = dic)
     mem = mem + calc_mem(NF90_INT, TSHS%na_u)
-    dic = dic//('info'.kv.'Unit cell')
-    dic = dic//('unit'.kv.'Bohr')
+    
+    dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
-         atts = dic)
+        atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, 3)
+    
     dic = dic//('info'.kv.'Atomic coordinates')
-    dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
          atts = dic , chunks = (/3, TSHS%na_u/) )
-    call delete(dic)
     mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
+    call delete(dic)
 
     dic = ('info'.kv.'Supercell offsets')
     call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
@@ -577,6 +578,7 @@ contains
     dic = dic // ('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
          atts = dic)
+    mem = mem + calc_mem(NF90_INT, 3)
 
     dic = dic // ('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
@@ -773,6 +775,9 @@ contains
        call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
        dic = dic//('info'.kv.'Imaginary part for self-energies')
+#ifdef TBT_PHONON
+       dic = dic//('unit'.kv.'Ry**2')
+#endif
        call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
        call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
 
@@ -1173,8 +1178,7 @@ contains
   end subroutine cdf_save_E
 
   subroutine state_cdf_save(ncdf, ikpt, nE, N_Elec, Elecs, DOS, T, &
-       N_eigen, Teig, &
-       save_DATA)
+       N_eigen, Teig, save_DATA)
     
     use parallel, only : Node, Nodes
 

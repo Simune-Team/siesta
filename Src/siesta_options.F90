@@ -71,6 +71,7 @@ MODULE siesta_options
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
   logical :: write_coop    ! Write information for COOP/COHP analysis ?
+  logical :: save_ORB_INDX ! Write orbital information to ORB_INDX file ?
 
   ! Create graphviz information to visualize connectivity graph
   integer :: write_GRAPHVIZ

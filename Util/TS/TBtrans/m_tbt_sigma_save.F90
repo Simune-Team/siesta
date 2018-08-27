@@ -389,6 +389,9 @@ contains
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
 
     dic = dic//('info'.kv.'Imaginary part for device')
+#ifdef TBT_PHONON
+    dic = dic//('unit'.kv.'Ry**2')
+#endif
     call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
     call delete(dic)
@@ -476,7 +479,11 @@ contains
       call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
 
       dic = dic//('info'.kv.'Downfolded self-energy')
+#ifdef TBT_PHONON
+      dic = dic//('unit'.kv.'Ry**2')
+#else
       dic = dic//('unit'.kv.'Ry')
+#endif
       ! Chunking greatly reduces IO cost
       call ncdf_def_var(grp,'SelfEnergy', prec_Sigma, &
           (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
