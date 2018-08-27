@@ -114,7 +114,7 @@
       use siesta_dicts, only : dict_repopulate_MD
 #endif
 
-      use m_handle_sparse, only: correct_supercell_sp_d2
+      use m_handle_sparse, only: correct_supercell_SpD
       use m_restruct_SpData2D, only: restruct_dSpData2D
 
       implicit none
@@ -469,7 +469,11 @@
       call delete(tmp_2D) ! decrement container...
       xijo => val(xij_2D)
 
-      ! Calculate the super-cell offsets...
+!     Convert the xijo array into a super cell offset array
+!     isc_off (located in siesta_geom).
+!     This array is primarily used in TranSiesta but may easily
+!     be used elsewhere to figure out orbital/atomic placements
+!     in the sparsity pattern.
       if ( .not. use_aux_cell ) then
          ! Here we create the super-cell offsets
          call re_alloc(isc_off,1,3,1,1)
@@ -565,17 +569,22 @@
 
 !     Before proceeding we need to "fix" a few things before we can
 !     successfully read the new DM.
-!     In cases where the atomic displacements yields a new sparse
+!     1. Cases where the atomic displacements yields a new sparse
 !     pattern it is vital to remove the elements that does not exist.
-!     Additionally if the supercell has changed it is necessary to
+!     Such cases are often encountered because atoms move in/out of
+!     neighbouring atoms orbital ranges. Everytime two orbitals meet,
+!     new sparse elements are added, and everytime two orbitals flee
+!     sparse elements are removed.
+!     2. If the supercell has changed size it is necessary to
 !     remove/translate the old/new supercells such that they are
 !     conforming with the new sparse pattern.
+!     For details regarding the sparsity pattern, see sparse_matrices.F90
       do i = 1, n_items(DM_history)
         pair => get_pointer(DM_history,i)
         call secondp(pair,tmp_Sp2D)
 !       Now we have the old history DM, now fix it...
         if ( auxchanged ) then
-          call correct_supercell_sp_d2(nsc_old, tmp_Sp2D, nsc)
+          call correct_supercell_SpD(nsc_old, tmp_Sp2D, nsc)
         end if
         call restruct_dSpData2D(tmp_Sp2D, sparse_pattern, tmp_Sp2D,
      &      show_warning = .false.)

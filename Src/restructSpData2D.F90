@@ -28,14 +28,10 @@ contains
     logical, intent(in), optional :: show_warning
 
     ! Limitations:
-    !       It is assumed that the number of rows and columns of the
-    !       underlying matrix is the same. The number of columns might
-    !       conceivably change, but if so, are we guaranteed that the
-    !       smaller-numbered columns are the same in both patterns?
-    !       (i.e., when the auxiliary supercell changes, does column
-    !       number 32 refer to the same atom as before, even if column
-    !       235 refers to a completely new image atom?)
-    ! 
+    !       This assumes that a prior fixing of the number of columns has
+    !       been corrected to account for changing supercell information etc.
+    !       I.e. this routine assumes the supercell indices are coherent between
+    !       the two sparse patterns.
 
     integer, parameter :: dp = selected_real_kind(10,100)
 

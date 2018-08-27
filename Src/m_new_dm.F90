@@ -556,7 +556,7 @@ contains
     ! stored in the TSDE file.
     use m_ts_global_vars,only: TSmode
 
-    use m_handle_sparse, only: correct_supercell_sp_d2
+    use m_handle_sparse, only: correct_supercell_SpD
     use m_restruct_SpData2D, only: restruct_dSpData2D
     
     ! ********* INPUT ***************************************************
@@ -667,6 +667,7 @@ contains
           end if
           
           DM_found = .false.
+          TSDE_found = .false.
           
        end if
 
@@ -677,30 +678,28 @@ contains
        
     end if
 
-    ! In case the sparsity pattern does not conform we update 
-    ! the TSDE_found, note that DM_found is a logic containing
-    ! information regarding the sparsity pattern
-    if ( TSDE_found ) TSDE_found = DM_found
 
     ! Density matrix size checks
     if ( DM_found ) then
 
       correct_nsc = .false.
       if ( nsc_read(1) /= 0 .and. any(nsc /= nsc_read) ) then
+        
         ! Correct the supercell information
-        ! Even for EDM this will work because correct_supercell_sp_d2
+        ! Even for EDM this will work because correct_supercell_SpD
         ! changes the sparse pattern in-place and EDM and DM have
         ! a shared sp
-        call correct_supercell_sp_d2(nsc_read, DM_read, nsc)
+        call correct_supercell_SpD(nsc_read, DM_read, nsc)
         correct_nsc = .true.
+
       end if
 
       nspin_read = size(DM_read, 2)
-      
-      if ( spin%DM == nspin_read .and. IONode ) then
-        write(*,'(a)') 'Succeeded...'
-      else if ( spin%DM /= nspin_read .and. IONode ) then
-        if ( spin%DM < nspin_read ) then
+
+      if ( IONode ) then
+        if ( spin%DM == nspin_read ) then
+          write(*,'(a)') 'Succeeded...'
+        else if ( spin%DM < nspin_read ) then
           write(*,'(a)') 'Succeeded by reducing spin-components...'
         else
           write(*,'(a)') 'Succeeded by increasing spin-components...'

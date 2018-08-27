@@ -15,9 +15,19 @@ module m_handle_sparse
 
   public :: bulk_expand
   public :: expand_spd2spd_2D
-  public :: copy_supercell_sp_d2
-  public :: correct_supercell_sp_d2
+  public :: copy_supercell_SpD
+  public :: correct_supercell_SpD
   public :: reduce_spin_size
+
+  interface copy_supercell_SpD
+    module procedure copy_supercell_Sp1D
+    module procedure copy_supercell_Sp2D
+  end interface copy_supercell_SpD
+
+  interface correct_supercell_SpD
+    module procedure correct_supercell_Sp1D
+    module procedure correct_supercell_Sp2D
+  end interface correct_supercell_SpD
 
 contains
 
@@ -474,7 +484,13 @@ contains
 
   ! Copy one super-cell sparse pattern to another super-cell sparse
   ! pattern. This will copy [in] to [out].
-  subroutine copy_supercell_sp_d2(d2_out, nsc_out, d2_in, nsc_in)
+  ! The data D2_in contains one sparsity pattern with nsc_in supercells.
+  ! See sparse_matrices.F90 for details regarding the sparsity pattern layout.
+  ! The data D2_out contains the "new" sparsity pattern we want to retain.
+  ! I.e. if the number of supercells change, we only retain the equivalent supercell
+  ! elements. And if the number of non-zero elements change we retain only the
+  ! new ones (discarding the older ones).
+  subroutine copy_supercell_Sp2D(d2_out, nsc_out, d2_in, nsc_in)
     
     use class_Sparsity
     use class_dSpData2D
@@ -506,6 +522,8 @@ contains
     real(dp), pointer :: a_o(:,:), a_i(:,:)
     integer, allocatable :: o_isc(:,:,:), i_isc(:,:)
     integer, allocatable :: out_index(:)
+
+    if ( all(nsc_out == nsc_in) ) return
 
     sp_i => spar(d2_in)
     a_i => val(d2_in)
@@ -589,10 +607,135 @@ contains
 
     deallocate(o_isc, i_isc, out_index)
 
-  end subroutine copy_supercell_sp_d2
+  end subroutine copy_supercell_Sp2D
+
+  subroutine copy_supercell_Sp1D(d1_out, nsc_out, d1_in, nsc_in)
+    
+    use class_Sparsity
+    use class_dSpData1D
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    ! output D1 sparse pattern
+    type(dSpData1D), intent(inout) :: d1_out
+    ! output D1 number of supercells
+    integer, intent(in) :: nsc_out(3)
+    ! input D1 sparse pattern
+    type(dSpData1D), intent(inout) :: d1_in
+    ! input D1 number of supercells
+    integer, intent(in) :: nsc_in(3)
+
+    ! We are ready to check and copy the sparsity pattern...
+    type(Sparsity), pointer :: sp_i, sp_o
+
+    ! Local variables
+    integer :: no_u, no_l
+    integer :: io, i, i_ind, o_ind, isc(3)
+    integer :: i_is, o_is, o_hsc(3), new_col
+    integer :: discarded(2), dim_min
+
+    ! arrays for the sparsity patterns
+    integer, pointer :: o_ptr(:), o_ncol(:), o_col(:)
+    integer, pointer :: i_ptr(:), i_ncol(:), i_col(:)
+    real(dp), pointer :: a_o(:), a_i(:)
+    integer, allocatable :: o_isc(:,:,:), i_isc(:,:)
+    integer, allocatable :: out_index(:)
+
+    if ( all(nsc_out == nsc_in) ) return
+
+    sp_i => spar(d1_in)
+    a_i => val(d1_in)
+    sp_o => spar(d1_out)
+    a_o => val(d1_out)
+    
+    call attach(sp_i,n_col=i_ncol, list_ptr=i_ptr, list_col=i_col, &
+        nrows=no_l, nrows_g=no_u)
+    call attach(sp_o,n_col=o_ncol, list_ptr=o_ptr, list_col=o_col, &
+        nrows=io, nrows_g=i)
+
+    if ( no_u /= i ) &
+        call die('copy_supercell_sp_d2: error in number of global orbitals.')
+    if ( no_l /= io ) &
+        call die('copy_supercell_sp_d2: error in number of local orbitals.')
+
+    ! Now create the conversion tables
+    call generate_isc(nsc_out, o_isc)
+    call generate_linear_isc(nsc_in, i_isc)
+
+    ! Allocate look-up table
+    allocate(out_index(product(nsc_out)*no_u))
+    ! Set all elements to zero
+    out_index(:) = 0
+
+    ! Count the number of discarded non-zero elements
+    !   (1) is the supercell discarded (for missing supercells)
+    !   (2) is because the orbital interaction does not exist
+    discarded = 0
+
+    ! We need to check whether in-put SC is too large
+    o_hsc = nsc_out / 2
+
+    ! Since we are going to copy, then we have to set it to zero...
+    a_o(:) = 0._dp
+
+    do io = 1, no_l
+      
+      ! copy output lookup table to not search every element
+      do i = 1, o_ncol(io)
+        out_index(o_col(o_ptr(io)+i)) = o_ptr(io) + i
+      end do
+
+      ! Now we can do the copy...
+      inner_columns: do i = 1, i_ncol(io)
+        i_ind = i_ptr(io) + i
+        i_is = (i_col(i_ind)-1) / no_u
+
+        ! Get isc
+        isc = i_isc(:, i_is)
+
+        ! Check that the out supercell exists
+        if ( any(abs(isc) > o_hsc) ) then
+          discarded(1) = discarded(1) + 1
+          cycle inner_columns
+        end if
+
+        ! We know the supercell exists, lets see if the orbital connection
+        ! exists.
+        o_is = o_isc(isc(1),isc(2),isc(3))
+        
+        ! Transfer the orbital index to the correct supercell
+        o_ind = out_index(o_is * no_u + ucorb(i_col(i_ind), no_u))
+        
+        if ( o_ind == 0 ) then
+          ! The orbital interaction does not exist
+          discarded(2) = discarded(2) + 1
+        else
+          a_o(o_ind) = a_i(i_ind)
+        end if
+        
+      end do inner_columns
+
+      ! restore lookup table
+      do i = 1, o_ncol(io)
+        out_index(o_col(o_ptr(io)+i)) = 0
+      end do
+      
+    end do
+
+    deallocate(o_isc, i_isc, out_index)
+
+  end subroutine copy_supercell_Sp1D
 
   ! Correct a sparse pattern (in-place) from an old NSC to a new NSC
-  subroutine correct_supercell_sp_d2(nsc_old, D2, nsc_new)
+  ! A supercell sparse matrix layout is described in sparse_matrices.F90
+  ! Each column value also holds the supercell index by an offset equal to
+  ! the supercell index X no_u such that all columns and supercells are
+  ! unique.
+  ! Here we take one sparse data pattern and change all supercell indices
+  ! from the nsc_old indices to nsc_new.
+  ! If nsc_old == nsc_new, nothing will happen.
+  subroutine correct_supercell_Sp2D(nsc_old, D2, nsc_new)
 
     use class_Sparsity
     use class_dSpData2D
@@ -615,6 +758,8 @@ contains
     integer, pointer :: ptr(:), ncol(:), col(:)
     integer, allocatable :: old_isc(:,:), new_isc(:,:,:)
     real(dp), pointer :: a2(:,:)
+
+    if ( all(nsc_old == nsc_new) ) return
 
     sp => spar(D2)
     call attach(sp,n_col=ncol, list_ptr=ptr, list_col=col, &
@@ -672,8 +817,96 @@ contains
 
     deallocate(old_isc, new_isc)
     
-  end subroutine correct_supercell_sp_d2
+  end subroutine correct_supercell_Sp2D
 
+  subroutine correct_supercell_Sp1D(nsc_old, D1, nsc_new)
+
+    use class_Sparsity
+    use class_dSpData1D
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    type(dSpData1D), intent(inout) :: D1
+    integer, intent(in) :: nsc_old(3)
+    integer, intent(in) :: nsc_new(3)
+
+    ! Local variables
+    type(Sparsity), pointer :: sp
+    integer :: no_u, no_l
+    integer :: io, i, ind, isc(3)
+    integer :: old_n_s, new_outside
+    integer :: old_is, new_is, new_hsc(3)
+
+    ! arrays for the sparsity patterns
+    integer, pointer :: ptr(:), ncol(:), col(:)
+    integer, allocatable :: old_isc(:,:), new_isc(:,:,:)
+    real(dp), pointer :: A1(:)
+
+    if ( all(nsc_old == nsc_new) ) return
+
+    sp => spar(D1)
+    call attach(sp,n_col=ncol, list_ptr=ptr, list_col=col, &
+        nrows=no_l, nrows_g=no_u)
+
+    ! Required to set removed elements to 0
+    A1 => val(D1)
+
+    ! Now create the conversion tables
+    call generate_linear_isc(nsc_old, old_isc)
+    call generate_isc(nsc_new, new_isc)
+
+    ! Calculate total number of supercells
+    old_n_s = product(nsc_old)
+    new_outside = product(nsc_new) * no_u
+
+    ! We need to check whether in-put SC is too large
+    new_hsc = nsc_new / 2
+    do io = 1, no_l
+
+      ! Now we can do the copy...
+      inner_columns: do i = 1, ncol(io)
+        ind = ptr(io) + i
+        old_is = (col(ind)-1) / no_u
+
+        if ( old_is >= old_n_s ) then ! it should be removed
+          ! Set it to zero
+          A1(ind) = 0._dp
+          ! Also set the column index to a position outside the new sparse pattern
+          col(ind) = ucorb(col(ind), no_u) + new_outside
+          cycle inner_columns
+        end if
+
+        ! Get isc
+        isc = old_isc(:, old_is)
+
+        ! Check that the out supercell exists
+        if ( any(abs(isc) > new_hsc) ) then
+          ! Set it to zero
+          A1(ind) = 0._dp
+          ! Also set the column index to a position higher
+          col(ind) = ucorb(col(ind), no_u) + new_outside
+          cycle inner_columns
+        end if
+
+        ! We know the supercell exists, so convert column
+        new_is = new_isc(isc(1),isc(2),isc(3))
+        
+        ! Transfer the orbital index to the correct supercell
+        col(ind) = ucorb(col(ind), no_u) + new_is * no_u
+        
+      end do inner_columns
+      
+    end do
+
+    deallocate(old_isc, new_isc)
+    
+  end subroutine correct_supercell_Sp1D
+
+  ! Routine which generates the Siesta sorted supercell
+  ! indices.
+  ! This is basically the equivalent as found in
+  ! atomlist::superx.
   subroutine generate_linear_isc(nsc, isc)
     integer, intent(in) :: nsc(3)
     integer, allocatable :: isc(:,:)
@@ -700,6 +933,10 @@ contains
 
   end subroutine generate_linear_isc
 
+  ! Routine which generates the Siesta sorted supercell
+  ! indices.
+  ! This is basically the equivalent as found in
+  ! atomlist::superx.
   subroutine generate_isc(nsc, isc)
     integer, intent(in) :: nsc(3)
     integer, allocatable :: isc(:,:,:)
