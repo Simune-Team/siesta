@@ -15,13 +15,14 @@ program unfold
 
   use precision,    only: dp, sp
   use alloc,        only: re_alloc
-  use chemical,     only: species_label
+  use chemical,     only: read_chemical_types, number_of_species, species_label
   use atm_types,    only: species_info, nspecies, species
   use atmfuncs,     only: lofio, mofio, nofis, rcut, rphiatm, zetafio
   use atom_options, only: get_atom_options
   use atom,         only: setup_atom_tables
   use basis_specs,  only: read_basis_specs
-  use basis_types,  only: nsp, basis_specs_transfer, write_basis_specs
+  use basis_types,  only: nsp, basis_parameters, basis_specs_transfer, &
+                          initialize, write_basis_specs
   use basis_io,     only: read_ion_ascii
   use sys,          only: die
   use fdf,          only: block_fdf, fdf_bintegers, fdf_bline, fdf_block, &
@@ -89,12 +90,18 @@ program unfold
   call fdf_init('stdin','unfold_fdf.log')
   call get_atom_options()
   call read_xc_info()
+  call read_chemical_types(.true.)
+  nsp = number_of_species()
+  nspecies = nsp
+  allocate(basis_parameters(nsp))
+  do isp=1,nsp
+    call initialize(basis_parameters(isp))
+  enddo
   call read_basis_specs()
   call basis_specs_transfer()
   call setup_atom_tables(nsp)
 
   ! Allocate arrays for atomic orbitals
-  nspecies = nsp
   allocate(species(nsp))
   maxorb = 0               ! max. number of orbitals in any atom
   do isp=1,nsp
