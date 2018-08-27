@@ -51,14 +51,14 @@ program unfold
                       isp, ispin, iispin, iu, iw, &
                       j, je(0:1), jk, jlm, jspin(maxlines), jw, &
                       kdsc(3,3), kscell(3,3), l, lastq(0:maxlines), lmax, &
-                      m, maux(3,3,2), maxorb, maxw, mk, &
+                      m, maux(3,3,2), maxorb, maxw, &
                       ml(3,3), mr(3,3), mw, &
                       na, ne, ng, nk, nktot, nkx(3), nlines, &
                       nlm, no, nq, nqline, nrq, nspin, nw, proj(3,3), t
   real(dp)         :: alat, c0, dkcell(3,3), de, dek, diqx(3), dq, dqline(3), &
                       dqx(3), dr, drq, dscell(3,3), emax, emin, &
                       gcut, gq(3,8), gnew(3), gnorm, grad, gylm(3,maxl*maxl), &
-                      k0(3), kcell(3,3), kmax, knew(3), kq(3), pi, &
+                      k0(3), kcell(3,3), kmax, kq(3), pi, &
                       q0(3), qmod, qcell(3,3), qg(3), qline(3), qmax, qx(3), &
                       r, rc, rcell(3,3), refoldCell(3,3), refoldBcell(3,3), rmax, rq, &
                       scell(3,3), vol, wkq(8), wq, xmax, ylm(maxl*maxl)
@@ -77,7 +77,7 @@ program unfold
   real(dp),         allocatable:: dos(:,:,:), dossum(:,:), ek(:,:,:), &
                                   k(:,:), &
                                   phir(:,:,:), phiq(:,:,:), &
-                                  we(:,:,:,:), wk(:)
+                                  we(:,:,:,:)
   real(dp),         pointer    :: g(:,:)=>null(), q(:,:)=>null()
   logical,          allocatable:: cc(:,:,:)
   character(len=20),allocatable:: symfio(:), labelfis(:)
@@ -249,8 +249,6 @@ program unfold
   kmax = 0
   call kgridinit( ucell, kscell, k0, kmax, nk )  ! read kscell from fdf file
   print*,'unfold: from kgridinit nk=',nk
-  allocate( k(3,nk), wk(nk) )
-  call kgrid( ucell, kscell, k0, nk, k, wk )     ! generate k vectors
 
   ! Find cell vectors of k grid (see kgrid.F)
   call idiag( 3, kscell, kdsc, ml, mr, maux )    ! kdsc = diagonal supercell
@@ -264,9 +262,54 @@ program unfold
   call reclat(ucell,kcell,1)                     ! kcell = reciprocal lattice vecs
   k0 = matmul(dkcell,k0)                         ! k-grid origin
   nktot = nint(volcel(kcell)/volcel(dkcell))     ! total num. of k vecs in FBZ
-  print'(a,i6,/,(3f12.6))','unfold: nk, dkcell =',nk,dkcell
+  print'(a,i6,/,(3f12.6))','unfold: nktot, dkcell =',nktot,dkcell
 !  print'(a,/,(i6,3f12.6,3x,3f9.3))','unfolding: k, indk =', &
 !    (ik,k(:,ik),matmul((k(:,ik)-k0),dscell)/(2*pi),ik=1,nk)
+
+  ! Read band energies and wavefunctions at k points of the FBZ
+  print*,'unfold: reading wavefunctions'
+  slabel = fdf_get('SystemLabel','unknown')
+  fname = trim(slabel)//'.fullBZ.WFSX'
+  iu = 11
+  open(iu, file=fname, form='unformatted', status='old' )
+  read(iu) nk, gamma    ! number of k-points in FBZ, gamma-point only?
+  read(iu) nspin        ! number of spin components
+  read(iu) no           ! number of atomic orbitals in unit cell
+  maxw = no             ! max number of bands
+  if (gamma) then
+    allocate(psi(1,no,maxw,nk,nspin))
+  else
+    allocate(psi(2,no,maxw,nk,nspin))
+  endif
+  allocate( k(3,nk), ek(maxw,nk,nspin) )
+  allocate( iaorb(no), labelfis(no), iphorb(no), cnfigfio(no), symfio(no) )
+  read(iu) (iaorb(io),labelfis(io),iphorb(io),cnfigfio(io),symfio(io),io=1,no)
+  do ik = 1,nk
+    do ispin = 1,nspin
+      read(iu) jk, k(:,ik)  ! k-point coordinates
+      if (jk/=ik) &
+        call die('unfold ERROR: unexpected k-point index')
+      read(iu) iispin                
+      if (iispin/=ispin) &
+        call die('unfold ERROR: unexpected spin index')
+      read(iu) nw           ! number of wavefunctions (bands)
+      if (ik==1 .and. ispin==1) then
+        mw = nw
+      else if (nw/=mw) then
+          call die('unfold ERROR: number of bands not constant')
+      endif
+      do iw = 1,nw
+        read(iu) jw
+        if (jw/=iw) &
+          call die('unfold ERROR: unexpected band index')
+        read(iu) ek(iw,ik,ispin)                  ! band energy
+        read(iu) (psi(:,io,iw,ik,ispin),io=1,no)  ! wavefunction coeffs.
+!        print'(a,2i4,15e12.3)','unfold: iw,ik,psi=',iw,ik,psi(1,:,iw,ik,1)
+!        print'(a,2i4,e15.6)','unfold: iw,ik,norm(psi)=',iw,ik,sum(psi(:,:,iw,ik,1)**2)
+      enddo
+    enddo
+  enddo
+  close (iu)
 
   ! Find index of all vectors in FBZ
   print*,'unfold: indexing k vectors, nk=',nk
@@ -291,58 +334,6 @@ program unfold
 !  print'(a,/,(3i4,i6,6f12.6))','unfold: ikx,indk,k,kfrac =', &
 !    (((i1,i2,i3,indk(i1,i2,i3),k(:,indk(i1,i2,i3)), &
 !    matmul(k(:,indk(i1,i2,i3)),ucell)/(2*pi),i1=1,nkx(1)),i2=1,nkx(2)),i3=1,nkx(3))
-
-  ! Read band energies and wavefunctions at k points of the FBZ
-  print*,'unfold: reading wavefunctions'
-  slabel = fdf_get('SystemLabel','unknown')
-  fname = trim(slabel)//'.fullBZ.WFSX'
-  iu = 11
-  open(iu, file=fname, form='unformatted', status='old' )
-  read(iu) mk, gamma    ! number of k-points in FBZ, gamma-point only?
-  if (mk/=nk) &
-    call die('unfold ERROR: unexpected nk in .WFSX file')
-  read(iu) nspin        ! number of spin components
-  read(iu) no           ! number of atomic orbitals in unit cell
-  maxw = no             ! max number of bands
-  if (gamma) then
-    allocate(psi(1,no,maxw,nk,nspin))
-  else
-    allocate(psi(2,no,maxw,nk,nspin))
-  endif
-  allocate( ek(maxw,nk,nspin) )
-  allocate( iaorb(no), labelfis(no), iphorb(no), cnfigfio(no), symfio(no) )
-  read(iu) (iaorb(io),labelfis(io),iphorb(io),cnfigfio(io),symfio(io),io=1,no)
-  do ik = 1,nk
-    do ispin = 1,nspin
-      read(iu) jk, knew  ! k-point coordinates
-      if (jk/=ik) &
-        call die('unfold ERROR: unexpected k-point index')
-      if (sqrt(sum((knew-k(:,ik))**2))>1.e-12_dp) &
-        call die('unfold ERROR: unexpected k vector')
-      read(iu) iispin                
-      if (iispin/=ispin) &
-        call die('unfold ERROR: unexpected spin index')
-      read(iu) nw           ! number of wavefunctions (bands)
-      if (ik==1 .and. ispin==1) then
-        mw = nw
-      else if (nw/=mw) then
-          call die('unfold ERROR: number of bands not constant')
-      endif
-      do iw = 1,nw
-        read(iu) jw
-        if (jw/=iw) &
-          call die('unfold ERROR: unexpected band index')
-        read(iu) ek(iw,ik,ispin)                  ! band energy
-        read(iu) (psi(:,io,iw,ik,ispin),io=1,no)  ! wavefunction coeffs.
-!        print'(a,2i4,15e12.3)','unfold: iw,ik,psi=',iw,ik,psi(1,:,iw,ik,1)
-!        print'(a,2i4,e15.6)','unfold: iw,ik,norm(psi)=',iw,ik,sum(psi(:,:,iw,ik,1)**2)
-      enddo
-    enddo
-  enddo
-  close (iu)
-
-!  print'(a,/,(i6,3f12.6,3x,3f9.3))','unfolding: k, indk =', &
-!    (ik,k(:,ik),matmul((k(:,ik)-k0),dscell)/(2*pi),ik=1,nk)
 !  print'(a,/,(2i6,e15.6))','unfold: ik,iw,ek =',((ik,iw,ek(iw,ik,1),iw=1,nw),ik=1,nk)
   print*,'unfold: ekmin =', minval(ek),' eV'
 

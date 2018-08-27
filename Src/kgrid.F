@@ -59,12 +59,11 @@ c Internal variables
       type(block_fdf) :: bfdf
 
       external          idiag, reclat
-      logical           spiral, timereversal
+      logical           spiral
       parameter (tiny   = 1.d-12)
 
 C Find out if there is spiral arrangement of spins
       spiral = fdf_block('SpinSpiral',bfdf)
-      timereversal = fdf_get('TimeReversalSymmetryForKpoints',.true.)
 
 C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -121,7 +120,7 @@ C Find total range of grid indexes
 
 C Find number of points with time-reversal (inversion) symmetry,
 C (if not spiral) after reflection on each alternative plane
-      if (spiral .or. .not.timereversal) then
+      if (spiral) then
 C       If spin-spiral, use all k points
         nk = nktot
       else

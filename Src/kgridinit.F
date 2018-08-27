@@ -81,7 +81,7 @@ C Internal variables
      .                  gridk(3,3), gscell(3,3), huge, pi,  
      .                  scell(3,3), scmin(3,3), tiny, vmod
       real(dp)          ctransf(3,3)
-      logical           genlogic, spiral, timereversal
+      logical           genlogic, spiral
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -93,7 +93,6 @@ C Internal variables
       genlogic = .false.
 C Find out if there is spiral arrangement of spins 
       spiral = fdf_block('SpinSpiral',bfdf)
-      timereversal = fdf_get('TimeReversalSymmetryForKpoints',.true.)
 
 C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -263,7 +262,7 @@ C Find total range of grid indexes
 
 C Find number of points with time-reversal (inversion) symmetry,
 C (if not spiral) after reflection on each alternative plane
-      if (spiral .or. .not.timereversal) then
+      if (spiral) then
 C If spiral, use all k points
         nk = nktot
       else
