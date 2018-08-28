@@ -6,7 +6,9 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 module sparse_matrices
-  
+      !! See [this page](|url|/page/sparse.html)
+      !! for background information on sparsity in SIESTA
+
   use precision
   use class_dSpData1D
   use class_dSpData2D
@@ -127,7 +129,8 @@ module sparse_matrices
   ! Orbital distance matrix (constant for complete SCF loop, changes per MD)
   real(dp), public, pointer :: xijo(:,:) => null()
   type(dSpData2D), public :: xij_2D
-
+      !! Inter-orbital [vector](|url|/page/auxiliary_supercell.html)).
+      
   ! Pieces of H that do not depend on the SCF density matrix
   ! Formerly there was a single array H0 for this
   type(dSpData1D), public :: H_vkb_1D, H_kin_1D
