@@ -139,7 +139,8 @@ SUBROUTINE ioeigenvalues (totime, eigen, lastistp, rstart_time, &
    IF (frstme) THEN
      eigenfile = trim(slabel) // '.TDEIG'
      fform = 'formatted'
-     OPEN (NEWUNIT=iuu, FILE=eigenfile, FORM=fform, POSITION='APPEND',      &
+     call io_newunit(iuu)
+     OPEN (UNIT=iuu, FILE=eigenfile, FORM=fform, POSITION='APPEND',      &
           STATUS='REPLACE')
      WRITE(iuu,*) '#  ', nspin, nk
      frstme = .false.
@@ -154,6 +155,19 @@ SUBROUTINE ioeigenvalues (totime, eigen, lastistp, rstart_time, &
   END IF ! IONode
 END SUBROUTINE ioeigenvalues 
 
+  subroutine io_newunit(lun)
+      integer, intent(out) :: lun
+      logical used
+      integer iostat
+
+!     Looks for a free unit and assigns it to lun
+
+      do lun= 10, 99
+            inquire(unit=lun, opened=used, iostat=iostat)
+            if (iostat .ne. 0) used = .true.
+            if (.not. used) return
+      enddo
+  end subroutine io_newunit
 
 
 

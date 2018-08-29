@@ -968,7 +968,7 @@ contains
     if ( neig > 0 ) then
        call timer('cdiag4',1)
        if ( Serial ) then
-          call ztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp),S,n,Z,n)
+          call ztrsm('L',uplo,trans,'N',n,neig,cmplx(1._dp,0._dp,dp),S,n,Z,n)
 #ifdef MPI
        else
 # ifdef SIESTA__ELPA
