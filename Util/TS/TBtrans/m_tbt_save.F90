@@ -2254,7 +2254,7 @@ contains
 
        call io_assign(iu)
        open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
-       write(iu,'(a)') '# DOS calculated from the Greens function, k-resolved'
+       write(iu,'(a)') '# DOS calculated from the Green function, k-resolved'
        write(iu,'(a)') '# Date: '//trim(tmp)
        write(iu,'(a,tr1,i0)')"# Normalization:", no_d
        write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
