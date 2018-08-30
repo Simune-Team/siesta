@@ -373,6 +373,7 @@ $(NCDF): $(FDICT)
 cranknic_evolk.o: $(FDF)
 cranknic_evolg.o: $(FDF)
 sankey_change_basis.o iotdxv.o: $(FDF)
+semicore_info_froyen.o: $(NCPS)
 
 #
 # Linear algebra routines
