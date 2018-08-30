@@ -257,6 +257,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer, pointer  :: my_row_ptr2(:) => null()
   integer  :: i, ih, ispin, spin_rank
   real(dp) :: ets_spin
+  integer  :: date_stamp
 
   integer, pointer  :: my_col_idx(:)
   real(dp), pointer :: my_S(:)
@@ -486,9 +487,20 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
      ! Energy is already summed over spins
      call elsi_dm_real_sparse(elsi_h, my_H, my_S, my_DM, energy)
      call elsi_get_edm_real_sparse(elsi_h, my_EDM)
-     !... but we still need to sum the entropy over spins
      call elsi_get_entropy(elsi_h, ets_spin)
+#ifdef SIESTA__ELSI__OLD_SPIN_CONVENTION
+     ! NOTE**
+     ! For ELSI versions before 2018-08-17 we still need to sum the entropy over spins
+     ! ... but to figure out the version is not trivial, as the relevant routines changed...
      call globalize_sum(ets_spin, ets, comm=elsi_Spin_comm)
+#else
+     ! If this gives an error, then your version of ELSI is old, and you should
+     ! be using the pre-processor symbol above
+     ! (This works because 'elsi_get_datestamp' was added just
+     ! around the same time as the spin-reduction-convention change) (Aug 17 vs Aug 21, 2018...)
+     ! If you are unlucky enough to have an ELSI version in between, get rid of it.
+     call elsi_get_datestamp(date_stamp)
+#endif
   endif
 
   call elsi_get_mu(elsi_h, ef)
@@ -1449,8 +1461,20 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
      call elsi_get_edm_complex_sparse(elsi_h, my_EDM)
      !... but we still need to sum the entropy over spins
      call elsi_get_entropy(elsi_h, ets_spin)
+#ifdef SIESTA__ELSI__OLD_SPIN_CONVENTION
+     ! NOTE**
+     ! For ELSI versions before 2018-08-17 we still need to sum the entropy over spins
+     ! ... but to figure out the version is not trivial, as the relevant routines changed...
      call globalize_sum(ets_spin, ets, comm=elsi_Spin_comm)
-     ! And over kpoints??  -- not necessary
+#else
+     ! If this gives an error, then your version of ELSI is old, and you should
+     ! be using the pre-processor symbol above
+     ! (This works because 'elsi_get_datestamp' was added just
+     ! around the same time as the spin-reduction-convention change) (Aug 17 vs Aug 21, 2018...)
+     ! If you are unlucky enough to have an ELSI version in between, get rid of it.
+     call elsi_get_datestamp(date_stamp)
+#endif
+     ! And over kpoints??  -- not necessary, ever
   endif
 
   call elsi_get_mu(elsi_h, ef)
