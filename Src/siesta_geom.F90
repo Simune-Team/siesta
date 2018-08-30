@@ -28,7 +28,7 @@ MODULE siesta_geom
 
   !> Diagonal elements of supercell
   integer :: nsc(3) = 1
-  !> The supercell offsets for the equivalent indices (size: 3, product(nsc))
+  !> The supercell offsets for the equivalent indices (size: `3, product(nsc)`)
   integer, pointer :: isc_off(:,:) => null()
    
   !> Previous geometry diagonal elements of supercell

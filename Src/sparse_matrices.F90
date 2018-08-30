@@ -5,9 +5,10 @@
 !  or http://www.gnu.org/copyleft/gpl.txt .
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
+
+!> See [this page](|page|/datastructures/2-sparse.html)
+!> for background information on sparsity in SIESTA
 module sparse_matrices
-      !! See [this page](|url|/page/sparse.html)
-      !! for background information on sparsity in SIESTA
 
   use precision
   use class_dSpData1D
@@ -105,31 +106,40 @@ module sparse_matrices
   !  and thus the sparse pattern is not specific to any array, but is more a global
   !  definition of all sparse matrices used in Siesta.
 
-  ! Sparse pattern sizes
+  !> Global sparse pattern used for H/DM/EDM/S matrices, see [sparse pattern](|page|/datastructures/2-sparse.html) for details
   type(Sparsity), public :: sparse_pattern
+  
+  !> Number of non-zero elements in the sparse matrix (local to MPI Node)
   integer, public :: maxnh = 0
+  !> Column indices in the CSR matrix (local to MPI Node)
   integer, public, pointer :: listh(:) => null()
+  !> Index pointer to `listh` for each row in the CSR matrix, 0-based (local to MPI Node)
   integer, public, pointer :: listhptr(:) => null()
+  !> Number of non-zero elements per row in the CSR matrix (local to MPI Node)
   integer, public, pointer :: numh(:) => null()
 
   ! Density matrix for in and out
   real(dp), public, pointer :: Dold(:,:) => null(), Dscf(:,:) => null()
+  !> Current SCF step density matrix
   type(dSpData2D), public :: DM_2D
   ! Energy density matrix for in and out
   real(dp), public, pointer :: Eold(:,:) => null(), Escf(:,:) => null()
+  !> Current SCF step energy density matrix
   type(dSpData2D), public :: EDM_2D
   ! Hamiltonian matrix for in and out
   real(dp), public, pointer :: Hold(:,:) => null(), H(:,:) => null()
+  !> Current SCF step Hamiltonian matrix
   type(dSpData2D), public :: H_2D
 
   ! Overlap matrix (constant for complete SCF loop, changes per MD)
   real(dp), public, pointer :: S(:) => null()
+  !> Current MD step overlap matrix
   type(dSpData1D), public :: S_1D
   
   ! Orbital distance matrix (constant for complete SCF loop, changes per MD)
   real(dp), public, pointer :: xijo(:,:) => null()
+  !> Inter-orbital [vector](|page|/implementation/1-auxiliary-supercell.html)
   type(dSpData2D), public :: xij_2D
-      !! Inter-orbital [vector](|url|/page/auxiliary_supercell.html)).
       
   ! Pieces of H that do not depend on the SCF density matrix
   ! Formerly there was a single array H0 for this
@@ -137,11 +147,12 @@ module sparse_matrices
   ! LDA+U and spin-orbit coupling Hamiltonian
   type(dSpData2D), public :: H_ldau_2D, H_so_2D
 
+  !> Geometry density matrix history, see [here](|page|/implementation/1-auxiliary-supercell.html)
   type(Fstack_Pair_Geometry_dSpData2D), public :: DM_history
 
-  ! Orbital distribution descriptor
+  !> MPI block distribution of the orbitals in the [sparse matrices](|page|/datastructures/2-sparse.html)
   type(OrbitalDistribution), public :: block_dist
-  ! Always store a distribution with 1 Node *only*
+  !> Dummy local distribution
   type(OrbitalDistribution), public :: single_dist
 
   public :: resetSparseMatrices
