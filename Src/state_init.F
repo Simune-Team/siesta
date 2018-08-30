@@ -567,25 +567,26 @@
       if (ionode) call print_type(S_1D)
       S => val(S_1D)
 
-!     Before proceeding we need to "fix" a few things before we can
-!     successfully read the new DM.
-!     1. Cases where the atomic displacements yields a new sparse
-!     pattern it is vital to remove the elements that does not exist.
-!     Such cases are often encountered because atoms move in/out of
-!     neighbouring atoms orbital ranges. Everytime two orbitals meet,
-!     new sparse elements are added, and everytime two orbitals flee
-!     sparse elements are removed.
-!     2. If the supercell has changed size it is necessary to
-!     remove/translate the old/new supercells such that they are
-!     conforming with the new sparse pattern.
-!     For details regarding the sparsity pattern, see sparse_matrices.F90
+!>    Before proceeding we need to "fix" a few things before we can
+!>    successfully read the new DM.
+!>    1. Cases where the atomic displacements yields a new sparse
+!>    pattern it is vital to remove the elements that does not exist.
+!>    Such cases are often encountered because atoms move in/out of
+!>    neighbouring atoms orbital ranges. Everytime two orbitals meet,
+!>    new sparse elements are added, and everytime two orbitals flee
+!>    sparse elements are removed.
+!>    2. If the supercell has changed size it is necessary to
+!>    remove/translate the old/new supercells such that they are
+!>    conforming with the new sparse pattern.
+!>    For details regarding the sparsity pattern, see sparse_matrices.F90
       do i = 1, n_items(DM_history)
         pair => get_pointer(DM_history,i)
         call secondp(pair,tmp_Sp2D)
-!       Now we have the old history DM, now fix it...
         if ( auxchanged ) then
+!         Transfer the old mixing matrix to the new supercell pattern
           call correct_supercell_SpD(nsc_old, tmp_Sp2D, nsc)
         end if
+!       Only retain the new orbital interactions
         call restruct_dSpData2D(tmp_Sp2D, sparse_pattern, tmp_Sp2D,
      &      show_warning = .false.)
       end do
