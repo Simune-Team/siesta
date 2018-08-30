@@ -113,10 +113,12 @@ Generically one may find that the following list of actions are carried out:
 
 1. [[siesta_init]]: figure out initial number of supercells and call [[atomlist:superc]]
 2. Begin MD iterations
-   1. [[state_init]]: figure out number of supercells for this geometry configuration
-   2. If any of the supercells has changed we need to copy the old information to the
-      new supercell information
-   3. Perform SCF, move atoms and go to 1.
+
+	1. [[state_init]]: figure out number of supercells for this geometry configuration
+	2. If any of the supercells has changed we need to copy the old information to the
+       new supercell information
+	3. Perform SCF, move atoms and go to 2.1.
+  
 3. End Siesta and analyse
 
 The step 2.1 and 2.2 requries some further explanation. Siesta keeps a history of SCF converged
