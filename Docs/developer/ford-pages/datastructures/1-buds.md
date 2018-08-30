@@ -1,4 +1,4 @@
-title: Reference-counted data structures
+title: Reference-counted derived types
 
 (Work in progress)
 

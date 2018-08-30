@@ -26,12 +26,12 @@ MODULE siesta_geom
 
   real(dp)                        :: volume_of_some_cell
 
-  ! Diagonal elements of supercell (it is a diagonal matrix)
+  !> Diagonal elements of supercell
   integer :: nsc(3) = 1
-  ! The super-cell offsets
+  !> The supercell offsets for the equivalent indices (size: 3, product(nsc))
   integer, pointer :: isc_off(:,:) => null()
    
-  ! Previous diagonal elements of supercell
+  !> Previous geometry diagonal elements of supercell
   integer :: nsc_old(3) = 0
 
   ! Matrix of auxiliary supercell
