@@ -2218,7 +2218,7 @@ contains
   ! data.
   ! NOTE that ASCII data will only be created in case
   ! of Netcdf not being compiled in
-  subroutine init_save(iounits,ispin,nspin,N_Elec,Elecs, &
+  subroutine init_save(iounits,ispin,nspin,no_d, N_Elec, Elecs, &
        N_eigen, save_DATA)
     
     use parallel, only : Node
@@ -2229,6 +2229,7 @@ contains
 
     integer, intent(inout) :: iounits(:)
     integer, intent(in)    :: ispin, nspin
+    integer, intent(in)    :: no_d
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: N_eigen
@@ -2255,6 +2256,7 @@ contains
        open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
        write(iu,'(a)') '# DOS calculated from the Greens function, k-resolved'
        write(iu,'(a)') '# Date: '//trim(tmp)
+       write(iu,'(a,tr1,i0)')"# Normalization:", no_d
        write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
        
        iounits(cu) = iu
@@ -2281,6 +2283,7 @@ contains
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
           write(iu,'(a)') '# DOS calculated from the spectral function, k-resolved'
           write(iu,'(a)') '# Date: '//trim(tmp)
+          write(iu,'(a,tr1,i0)')"# Normalization:", no_d
           write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
 
           iounits(cu) = iu
@@ -2404,6 +2407,7 @@ contains
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
           write(iu,'(a)') '# Bulk DOS, k-resolved'
           write(iu,'(a)') '# Date: '//trim(tmp)
+          write(iu,'(a,tr1,i0)')"# Normalization:", Elecs(iEl)%no_u
           write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
 
           iounits(cu) = iu
@@ -2496,7 +2500,7 @@ contains
   ! data.
   ! NOTE that ASCII data will only be created in case
   ! of Netcdf not being compiled in
-  subroutine state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
+  subroutine state_save(iounits,no_d, nE,N_Elec,Elecs, DOS, T, &
        N_eigen, Teig, &
        save_DATA )
     
@@ -2508,6 +2512,7 @@ contains
     use m_ts_electype
 
     integer, intent(in)    :: iounits(:)
+    integer, intent(in)    :: no_d
     type(tNodeE), intent(in) :: nE
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -2545,7 +2550,7 @@ contains
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
-       call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,1),fact=eV)
+       call local_save_DAT(iounits(cu),nE,ipvt,no_d,DOS(1:no_d,1),fact=eV)
 
        cu = cu + 1
 
@@ -2563,7 +2568,7 @@ contains
        
        if ( 'DOS-A' .in. save_DATA ) then
 
-          call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,1+iEl),fact=eV)
+          call local_save_DAT(iounits(cu),nE,ipvt,no_d,DOS(1:no_d,1+iEl),fact=eV)
           
           cu = cu + 1
           

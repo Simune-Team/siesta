@@ -766,7 +766,7 @@ contains
     ! Allocate units for IO ASCII
     allocate(iounits(1+(N_Elec*2+2)*N_Elec)) ! maximum number of units
     iounits = -100
-    call init_save(iounits,ispin,TSHS%nspin,N_Elec,Elecs, N_eigen, &
+    call init_save(iounits,ispin,TSHS%nspin,r_oDev%n, N_Elec,Elecs, N_eigen, &
          save_DATA)
     allocate(iounits_El(N_Elec*2)) ! maximum number of units
     iounits_El = -100
@@ -1273,7 +1273,7 @@ contains
           call state_cdf_save(TBTcdf, ikpt, nE, N_Elec, Elecs, &
                DOS, T, N_eigen, Teig, save_DATA)
 #else
-          call state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
+          call state_save(iounits,r_oDev%n, nE,N_Elec,Elecs,DOS, T, &
                N_eigen, Teig, save_DATA )
 #endif
 
