@@ -1805,9 +1805,12 @@ contains
   end function IDX_SPC_PROJ_dp
 
 
-  ! Scalar projection of 'vin=a' onto 'vec=b' (i.e. the fraction of the
-  ! vector along 'vec')
+  ! Scalar projection of 'vin=a' onto 'vec=b'.
   !   a . b / |b|
+  ! I.e. for these vectors:
+  !   vec = [2, 0, 0]
+  !   vin = [3, 1, 1]
+  ! a = [3, 0, 0]
   pure function VEC_PROJ_SCA_sp(vec,vin) result(a)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: a

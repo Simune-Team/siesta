@@ -11554,6 +11554,26 @@ variables:
 
 \end{fdfentry}
 
+\begin{fdfentry}{TS!Hartree.Fix.Elec}[string]<electrode name>
+  \fdfdepend{TS!Hartree.Fix}
+
+  Specifically select an electrode's boundary plane to be used as the
+  constant potential boundary. The electrode unit-cell plane is
+  integrated and subtracted from all potential grid-points to ensure a
+  constant potential at the interface between the electrode in the
+  pristine calculation and in the device calculation.
+
+  \tsiesta\ defaults to select the electrode plane which has the
+  largest area.
+
+  \note this may be important in $N>2$ electrode calculations where
+  some electrodes may have a huge semi-infinite surface plane but a
+  limited amount of atoms. It is heavily advised to select the
+  electrode with the largest number of atoms in a plane-cut
+  perpendicular to the semi-infinite direction.
+
+\end{fdfentry}
+
 \begin{fdfentry}{TS!Hartree.Fix!Frac}[real]<$1.$>
 
   Fraction of the correction that is applied.
