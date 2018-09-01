@@ -1623,7 +1623,7 @@ contains
     real(dp), intent(in) :: rW(N_E)
     type(dict), intent(in) :: save_DATA
 
-    character(len=250) :: ascii_file, tmp
+    character(len=256) :: ascii_file, tmp
     type(hNCDF) :: ncdf, grp
     logical :: exist
     integer :: iEl, jEl, i, N_eigen
@@ -1685,15 +1685,8 @@ contains
     ! Create pivot table
     call crt_pivot(NE,rE,pvt)
 
-    call ncdf_inq_var(ncdf,'kpt',exist=exist)
-    if ( exist ) then
-      call ncdf_get_var(ncdf,'kpt',rkpt)
-      call ncdf_get_var(ncdf,'wkpt',rwkpt)
-    else
-      ! It MUST be a Gamma calculation
-      rkpt = 0._dp
-      rwkpt = 1._dp
-    end if
+    call ncdf_get_var(ncdf,'kpt',rkpt)
+    call ncdf_get_var(ncdf,'wkpt',rwkpt)
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
@@ -1999,7 +1992,7 @@ contains
           do io = 1, no
             DOS = DOS + r3(io,ie,ik)
           end do
-          r2(ie,ik) = DOS * eV / no
+          r2(ie,ik) = DOS * eV
         end do
       end do
 !$OMP end parallel do
@@ -2025,9 +2018,6 @@ contains
 
       write(iu,'(a)') trim(header)
       write(iu,'(a)') '# Date: '//trim(tmp)
-      if ( N > 0 ) then
-        write(iu,'(a,tr1,i0)')"# Normalization:", N
-      end if
 #ifdef TBT_PHONON
       write(iu,'(a,a9,tr1,a16)')"#","Omega [eV]", value
 #else
@@ -2038,15 +2028,13 @@ contains
       do ik = 1 , nkpt 
 !$OMP master
         if ( nkpt > 1 ) then
-          write(iu,'(/,a6,3(f10.6,'', ''),a,e13.6)') &
-              '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
+          write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') '# kb= ',kpt(:,ik) ,'w= ',wkpt(ik)
         end if
         do i = 1 , NE
-          ! We sum the orbital contributions
 #ifdef TBT_PHONON
-          write(iu,'(f10.6,tr1,e16.8)') E(ipiv(i)),DAT(ipiv(i),ik)
+          write(iu,'(f10.6,tr1,e16.8)') E(ipiv(i)), DAT(ipiv(i),ik)
 #else
-          write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)),DAT(ipiv(i),ik)
+          write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)), DAT(ipiv(i),ik)
 #endif
         end do
 !$OMP end master ! no implicit barrier
@@ -2101,12 +2089,11 @@ contains
       do ik = 1 , nkpt 
 !$OMP master
         if ( nkpt > 1 ) then
-          write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-              '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
+          write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') &
+              '# kb= ',kpt(:,ik) ,'w= ',wkpt(ik)
         end if
         do i = 1 , NE
-          ! We sum the orbital contributions
-          write(iu,fmt) E(ipiv(i)),EIG(:,ipiv(i),ik)
+          write(iu,fmt) E(ipiv(i)), EIG(:,ipiv(i),ik)
         end do
 !$OMP end master
         if ( nkpt > 1 ) then
@@ -2256,7 +2243,6 @@ contains
        open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
        write(iu,'(a)') '# DOS calculated from the Green function, k-resolved'
        write(iu,'(a)') '# Date: '//trim(tmp)
-       write(iu,'(a,tr1,i0)')"# Normalization:", no_d
        write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
        
        iounits(cu) = iu
@@ -2283,7 +2269,6 @@ contains
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
           write(iu,'(a)') '# DOS calculated from the spectral function, k-resolved'
           write(iu,'(a)') '# Date: '//trim(tmp)
-          write(iu,'(a,tr1,i0)')"# Normalization:", no_d
           write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
 
           iounits(cu) = iu
@@ -2407,7 +2392,6 @@ contains
           open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
           write(iu,'(a)') '# Bulk DOS, k-resolved'
           write(iu,'(a)') '# Date: '//trim(tmp)
-          write(iu,'(a,tr1,i0)')"# Normalization:", Elecs(iEl)%no_u
           write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
 
           iounits(cu) = iu
@@ -2463,8 +2447,7 @@ contains
     subroutine wrt_k(iu,bkpt,wkpt)
       integer, intent(in) :: iu
       real(dp) :: bkpt(3), wkpt
-      write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-           '# kb = ',bkpt(:) ,'w = ',wkpt
+      write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') '# kb= ',bkpt(:) ,'w= ',wkpt
     end subroutine wrt_k
     
   end subroutine step_kpt_save
@@ -2714,13 +2697,12 @@ contains
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
-    if ( N == 1 ) then
-       rnd = 1._dp
+    if ( present(fact) ) then
+      rnd = fact
     else
-       rnd = 1._dp / N
+      rnd = 1._dp
     end if
-    if ( present(fact) ) rnd = rnd * fact
-
+    
     if ( Node == 0 ) then
        do iN = 0 , Nodes - 1
           i = ipvt(iN+1) ! sorting E
@@ -2728,12 +2710,12 @@ contains
           if ( nE%iE(i) <= 0 ) cycle ! if the energy point is fake, discard
 #endif
           if ( i == 0 ) then ! local node
-             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(DATA(:)) * rnd
+             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV, sum(DATA(1:N)) * rnd
           else
 #ifdef MPI
-             call MPI_Recv(rbuff1d(1),N,MPI_double_precision,i,i, &
+             call MPI_Recv(rbuff1d(1),1,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
-             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(rbuff1d(1:N)) * rnd
+             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV, rbuff1d(1)
 #else
              call die('Error')
 #endif
@@ -2741,8 +2723,9 @@ contains
        end do
     else if ( nE%iE(Node) > 0 ) then
 #ifdef MPI
-       call MPI_Send(DATA(1),N,MPI_double_precision,0,Node, &
-            Mpi_comm_world,MPIerror)
+      rnd = sum(DATA(1:N)) * rnd
+      call MPI_Send(rnd,1,MPI_double_precision,0,Node, &
+          Mpi_comm_world,MPIerror)
 #endif
     end if
 
@@ -2779,12 +2762,12 @@ contains
           if ( nE%iE(i) <= 0 ) cycle ! if the energy point is fake, discard
 #endif
           if ( i == 0 ) then ! local node
-             write(iu,fmt) nE%E(i) / eV,EIG(:)
+             write(iu,fmt) nE%E(i) / eV, EIG(:)
           else
 #ifdef MPI
              call MPI_Recv(rbuff1d(1),N,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
-             write(iu,fmt) nE%E(i) / eV,rbuff1d(1:N)
+             write(iu,fmt) nE%E(i) / eV, rbuff1d(1:N)
 #else
              call die('Error')
 #endif
