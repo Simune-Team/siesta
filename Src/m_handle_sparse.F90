@@ -735,11 +735,21 @@ contains
   !> Expand an nsc == 1 DM to an nsc_ == * supercell.
   !>
   !> In cases where the DM is constructed from all(nsc == 1) we know that
-  !> all elements in the supercell has the same elements as in folded DM.
+  !> all elements in the supercell have the same value as in the folded DM.
+  !>
+  !> @note
+  !> This will actually work even in the presence of degenerate folding
+  !> (the S(io,io)>1 case mentioned below). This will only happen if a
+  !> supercell is not used, i.e. k-points are not used, so no phases are
+  !> needed. The DM elements in the base cell are just the products of
+  !> appropriate wavefunction coefficients, and they can be replicated
+  !> to the rest of the supercell. Note that it is S (or H) that is folded,
+  !> not the DM.
+  !> @endnote
   !>
   !> However, IFF one has a DM with folded elements (S(io,io) > 1.)
   !> we have a problem because the DM elements are made of sums of
-  !> supercell and primary unit-cell contributians.
+  !> supercell and primary unit-cell contributions.
   subroutine unfold_noauxiliary_supercell_Sp2D(sp_sc, D2)
 
     use class_Sparsity
@@ -752,7 +762,7 @@ contains
 
     !> Input supercell sparsity pattern (this will contain periodic connections)
     type(Sparsity), intent(inout) :: sp_sc
-    !> Input/Output 2D data with associated non-supercell sparse pattern, upon exit
+    !> Input/Output 2D data with associated non-supercell sparse pattern. Upon exit
     !> this contains as many non-zero elements as in sp_sc with expanded elements.
     type(dSpData2D), intent(inout) :: D2
 
@@ -782,7 +792,7 @@ contains
 
     ! Create array that hosts the new data
     ind = size(A2, dim=2)
-    call newdData2D(A2D, io, ind,"(unfold 2D)")
+    call newdData2D(A2D, io, ind,"(unfolded DM vals)")
     A2_sc => val(A2D)
     A2_sc(:,:) = 0._dp
 
@@ -804,32 +814,39 @@ contains
     end do
 
     dit = dist(D2)
-    call newdSpData2D(sp_sc, A2D, dit, D2, name="Unfolded Sp2D")
+    call newdSpData2D(sp_sc, A2D, dit, D2, name="Unfolded DM")
 
     call delete(dit)
     call delete(A2D)
 
   end subroutine unfold_noauxiliary_supercell_Sp2D
 
-  !> Correct a sparse pattern (in-place) from an old NSC to a new NSC
-  !
+  !> Correct a sparse pattern (in-place) from an old NSC to a new NSC.
+  !>
   !> Here we take a sparse data pattern and change all column indices
-  !> so that they are appropriate for the new supercell.\
+  !> so that they are appropriate for the new supercell.  
   !> The supercell sparse matrix layout is described in sparse_matrices.F90
   !> Recall that each column value also holds implicitly the image cell index,
-  !> using an offset `image_index times no_u`.
+  !> using an offset `image_index*no_u`.
   !>  
   !> If the original supercell is larger than the new one, the elements
   !> associated to image cells that no longer exist will be set to zero,
-  !> and their column indexes set to something beyond the acceptable values.\
+  !> and their column indexes set to something beyond the acceptable values.  
   !> The elements in the retained image cells have their column indexes recomputed,
-  !> as the image cell indexes depend on the size of the supercell.\
+  !> as the image cell indexes depend on the size of the supercell.
+  !>
   !> If nsc_old == nsc_new, nothing is done.
-  !> 
+  !>
+  !> @note
   !> The sparse pattern and the nsc multipliers live independently. This could
   !> lead to errors. A possible improvement is to have nsc as part of the sparse-pattern
   !> information.
-  !> 
+  !> @endnote
+  !>
+  !> @note
+  !> After a call to this routine, we still need to purge from the sparse index arrays
+  !> those elements of D2 which are no longer needed.
+  !> @endnote
   
   subroutine correct_supercell_Sp2D(nsc_old, D2, nsc_new)
 
@@ -936,9 +953,6 @@ contains
 
     deallocate(old_isc, new_isc)
 
-    !> After a call to this routine, we still need to purge
-    !> those elements of D2 which are no longer needed from the
-    !> sparse indexing.
   end subroutine correct_supercell_Sp2D
 
   subroutine correct_supercell_Sp1D(nsc_old, D1, nsc_new)
@@ -1111,10 +1125,10 @@ contains
   end subroutine generate_isc
 
   !> Routine to reorder the [0,nsc-1] range of cell images
-  !> so that it follows the [[atomlist:superx]] convention\
-  !> Example: nsc=5  (2*4+1)\
-  !> in:   0  1  2  3  4\
-  !> out:  0  1  2 -2 -1\
+  !> so that it follows the [[atomlist:superx]] convention  
+  !> Example: nsc=5  (2*4+1)  
+  !> in:   0  1  2  3  4  
+  !> out:  0  1  2 -2 -1  \
   !> This corresponds to starting at the center cell, going to the right,
   !> and then moving to the far left and get back towards the center:
   !>

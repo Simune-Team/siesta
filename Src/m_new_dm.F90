@@ -688,10 +688,12 @@ contains
 
         ! There are two cases:
         if ( all(nsc_read == 1) .and. fdf_get('DM.Init.Unfold', .true.) ) then
-          ! 1. The readed DM is created from a Gamma-only calculation and thus nsc == 1, always.
+          ! 1. The read DM is created from a Gamma-only calculation and thus nsc == 1, always.
           !    In this case we know that the DM elements in the Gamma calculation (io,jo)
-          !    is equal to the all existing supercell interactions (io, jo + i_s * no_u) where
-          !    since there are no k-points.
+          !    are replicated in all image cells (io, jo + i_s * no_u) where i_s is the image cell
+          !    offfset, since there are no k-points and thus no phases to worry about.
+          !
+          !    I do not understand this.
           !    However, in case the DM has been generated as an example input DM it may
           !    be known that all elements are *only* on-site terms and shouldn't be unfolded.
           !    The user may control this with DM.Init.Unfold false
@@ -703,9 +705,9 @@ contains
           end if
 
         else
-          ! 2. The readed DM has a different supercell size. In this case there is a
-          !    one-to-one correspondance between the different elements and we only copy those
-          !    that we know exists.
+          ! 2. The read DM has a different supercell size. In this case there is a
+          !    one-to-one correspondence between the different elements and we only copy those
+          !    that we know exist.
          
           ! Correct the supercell information
           ! Even for EDM this will work because correct_supercell_SpD
