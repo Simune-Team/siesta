@@ -557,6 +557,7 @@ contains
     use m_ts_global_vars,only: TSmode
 
     use m_handle_sparse, only: correct_supercell_SpD
+    use m_handle_sparse, only: unfold_noauxiliary_supercell_SpD
     use m_restruct_SpData2D, only: restruct_dSpData2D
     
     ! ********* INPUT ***************************************************
@@ -574,21 +575,21 @@ contains
     !                                   2 == .TSDE read
     ! *******************************************************************
 
-    ! The spin-configuration that is used to determine the spin-order.
+    !> The spin-configuration that is used to determine the spin-order.
     type(tSpin), intent(in) :: spin
-    ! Number of orbitals in the unit-cell
+    !> Number of orbitals in the unit-cell
     integer, intent(in) :: no_u
-    ! Number of supercells along each direction
+    !> Number of supercells along each direction
     integer, intent(in) :: nsc(3)
-    ! Parallel distribution of DM/EDM
+    !> Parallel distribution of DM/EDM
     type(OrbitalDistribution), intent(in) :: dit
-    ! Sparse pattern for DM/EDM
+    !> Sparse pattern for DM/EDM
     type(Sparsity), intent(inout) :: sp
-    ! The DM and EDM, these will be initialiazed upon return
-    ! if the routine could read the files
+    !> The DM and EDM, these will be initialiazed upon return
+    !> if the routine could read the files
     type(dSpData2D), intent(inout) :: DM_2D, EDM_2D
 
-    ! To signal the method by which we have read DM/EDM
+    !> To signal the method by which we have read DM/EDM
     integer, intent(out) :: init_method
 
     
@@ -684,13 +685,36 @@ contains
 
       correct_nsc = .false.
       if ( nsc_read(1) /= 0 .and. any(nsc /= nsc_read) ) then
-        
-        ! Correct the supercell information
-        ! Even for EDM this will work because correct_supercell_SpD
-        ! changes the sparse pattern in-place and EDM and DM have
-        ! a shared sp
-        call correct_supercell_SpD(nsc_read, DM_read, nsc)
-        correct_nsc = .true.
+
+        ! There are two cases:
+        if ( all(nsc_read == 1) .and. fdf_get('DM.Init.Unfold', .true.) ) then
+          ! 1. The readed DM is created from a Gamma-only calculation and thus nsc == 1, always.
+          !    In this case we know that the DM elements in the Gamma calculation (io,jo)
+          !    is equal to the all existing supercell interactions (io, jo + i_s * no_u) where
+          !    since there are no k-points.
+          !    However, in case the DM has been generated as an example input DM it may
+          !    be known that all elements are *only* on-site terms and shouldn't be unfolded.
+          !    The user may control this with DM.Init.Unfold false
+          
+          ! We simply expand it (direct copying)
+          call unfold_noauxiliary_supercell_SpD(sp, DM_read)
+          if ( TSDE_found ) then
+            call unfold_noauxiliary_supercell_SpD(sp, EDM_read)
+          end if
+
+        else
+          ! 2. The readed DM has a different supercell size. In this case there is a
+          !    one-to-one correspondance between the different elements and we only copy those
+          !    that we know exists.
+         
+          ! Correct the supercell information
+          ! Even for EDM this will work because correct_supercell_SpD
+          ! changes the sparse pattern in-place and EDM and DM have
+          ! a shared sp
+          call correct_supercell_SpD(nsc_read, DM_read, nsc)
+          correct_nsc = .true.
+          
+        end if
 
       end if
 
@@ -731,7 +755,7 @@ contains
       type(dSpData2D), intent(inout) :: in_2D, out_2D
       logical, intent(in) :: show_warning
       integer :: nspin_read, i
-      real(dp), pointer :: ar2(:,:)
+      real(dp), pointer :: A2(:,:)
 
       nspin_read = size(in_2D, 2)
       
@@ -740,10 +764,10 @@ contains
          
          ! The readed DM has, at least 2!
          ! Thus we sum the spinors to form the non-polarized
-         ar2 => val(in_2D)
+         A2 => val(in_2D)
 !$OMP parallel do default(shared), private(i)
-         do i = 1 , size(ar2, 1)
-            ar2(i,1) = ar2(i,1) + ar2(i,2)
+         do i = 1 , size(A2, 1)
+            A2(i,1) = A2(i,1) + A2(i,2)
          end do
 !$OMP end parallel do
 
@@ -757,11 +781,11 @@ contains
          ! This SCF has more than 2 spin-components.
          ! The readed DM has 1.
          ! Thus we divide the spinors to form the polarized case.
-         ar2 => val(out_2D)
+         A2 => val(out_2D)
 !$OMP parallel do default(shared), private(i)
-         do i = 1 , size(ar2, 1)
-            ar2(i,1) = ar2(i,1) * 0.5_dp
-            ar2(i,2) = ar2(i,1)
+         do i = 1 , size(A2, 1)
+            A2(i,1) = A2(i,1) * 0.5_dp
+            A2(i,2) = A2(i,1)
          end do
 !$OMP end parallel do
          
