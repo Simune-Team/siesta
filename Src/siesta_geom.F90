@@ -9,8 +9,10 @@ MODULE siesta_geom
   use precision
   implicit none
 
+  save
+  
   ! Number of atoms in supercell, unit cell
-  integer, save                   :: na_s, na_u
+  integer                         :: na_s, na_u
 
   !unit cell/supercell vectors by columns
   real(dp)                        :: ucell(3,3), ucell_last(3,3)

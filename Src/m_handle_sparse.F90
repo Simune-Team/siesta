@@ -750,7 +750,7 @@ contains
     ! Local variables
     type(Sparsity), pointer :: sp
     integer :: no_u, no_l
-    integer :: io, i, ind, isc(3)
+    integer :: io, ind, isc(3)
     integer :: old_n_s, new_outside
     integer :: old_is, new_is, new_hsc(3)
 
@@ -769,7 +769,11 @@ contains
     A2 => val(D2)
 
     ! Now create the conversion tables
+    !> The linear isc is a list of index offsets (equivalent to isc_off)
+    !> The order of indices may be found in [[atomlist:superx]] (or in the ORB_INDX output file)
     call generate_linear_isc(nsc_old, old_isc)
+    !> Create the isc_off in supercell format such that:
+    !>   new_isc(1, 1, 1) yields the index for the [1, 1, 1] supercell.
     call generate_isc(nsc_new, new_isc)
 
     ! Calculate total number of supercells
@@ -781,9 +785,10 @@ contains
     do io = 1, no_l
 
       ! Now we can do the copy...
-      inner_columns: do i = 1, ncol(io)
-        ind = ptr(io) + i
+      inner_columns: do ind = ptr(io) + 1, ptr(io) + ncol(io)
+        !> Calculate the old supercell index (supercell offset is old_isc(:, old_is))
         old_is = (col(ind)-1) / no_u
+        isc = old_isc(:, old_is)
 
         if ( old_is >= old_n_s ) then ! it should be removed
           ! Set it to zero
@@ -793,13 +798,10 @@ contains
           cycle inner_columns
         end if
 
-        ! Get isc
-        isc = old_isc(:, old_is)
-
         ! Check that the out supercell exists
         if ( any(abs(isc) > new_hsc) ) then
           ! Set it to zero
-          a2(ind, :) = 0._dp
+          A2(ind, :) = 0._dp
           ! Also set the column index to a position higher
           col(ind) = ucorb(col(ind), no_u) + new_outside
           cycle inner_columns
@@ -834,7 +836,7 @@ contains
     ! Local variables
     type(Sparsity), pointer :: sp
     integer :: no_u, no_l
-    integer :: io, i, ind, isc(3)
+    integer :: io, ind, isc(3)
     integer :: old_n_s, new_outside
     integer :: old_is, new_is, new_hsc(3)
 
@@ -853,7 +855,11 @@ contains
     A1 => val(D1)
 
     ! Now create the conversion tables
+    !> The linear isc is a list of index offsets (equivalent to isc_off)
+    !> The order of indices may be found in [[atomlist:superx]] (or in the ORB_INDX output file)
     call generate_linear_isc(nsc_old, old_isc)
+    !> Create the isc_off in supercell format such that:
+    !>   new_isc(1, 1, 1) yields the index for the [1, 1, 1] supercell.
     call generate_isc(nsc_new, new_isc)
 
     ! Calculate total number of supercells
@@ -865,20 +871,21 @@ contains
     do io = 1, no_l
 
       ! Now we can do the copy...
-      inner_columns: do i = 1, ncol(io)
-        ind = ptr(io) + i
+      inner_columns: do ind = ptr(io) + 1, ptr(io) + ncol(io)
+        !> Calculate the old supercell index (supercell offset is old_isc(:, old_is))
         old_is = (col(ind)-1) / no_u
+        isc = old_isc(:, old_is)
 
+        ! Simple error handling in case a user has supplied a too large column index
         if ( old_is >= old_n_s ) then ! it should be removed
           ! Set it to zero
           A1(ind) = 0._dp
           ! Also set the column index to a position outside the new sparse pattern
+          ! since it isn't defined in the old sparse pattern, it can't be defined in
+          ! the new one.
           col(ind) = ucorb(col(ind), no_u) + new_outside
           cycle inner_columns
         end if
-
-        ! Get isc
-        isc = old_isc(:, old_is)
 
         ! Check that the out supercell exists
         if ( any(abs(isc) > new_hsc) ) then
@@ -903,10 +910,16 @@ contains
     
   end subroutine correct_supercell_Sp1D
 
-  ! Routine which generates the Siesta sorted supercell
-  ! indices.
-  ! This is basically the equivalent as found in
-  ! atomlist::superx.
+  !> Generate supercells in order of the indices 2 dimensions of size `3`, `0:product(nsc)-1`
+  !>
+  !> The given supercell offsets for a given supercell is:
+  !>
+  !> ```fortran
+  !>   isc(:, is)
+  !> ```
+  !>
+  !> where `is` is the supercell index `(list_col(ind) - 1)/no_u`.
+  !> The order is equivalent to those generated in [[atomlist::superx]].
   subroutine generate_linear_isc(nsc, isc)
     integer, intent(in) :: nsc(3)
     integer, allocatable :: isc(:,:)
@@ -933,10 +946,17 @@ contains
 
   end subroutine generate_linear_isc
 
-  ! Routine which generates the Siesta sorted supercell
-  ! indices.
-  ! This is basically the equivalent as found in
-  ! atomlist::superx.
+  !> Generate a supercell index array comprising of 3 dimensions of size `nx`, `ny` and `nz`
+  !>
+  !> To obtain the index of a given supercell simply do:
+  !>
+  !> ```fortran
+  !>   isc(ix, iy, iz)
+  !> ```
+  !>
+  !> where `ix`, `iy` and `iz` are the supercells for the individiual
+  !> lattice vector directions. The order of supercells is equivalent to
+  !> those generated in [[atomlist::superx]].
   subroutine generate_isc(nsc, isc)
     integer, intent(in) :: nsc(3)
     integer, allocatable :: isc(:,:,:)
