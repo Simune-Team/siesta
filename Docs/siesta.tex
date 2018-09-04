@@ -512,6 +512,10 @@ files for compilation of \siesta\ with \shell{gfortran} and
 \shell{Obj/intel.make}, respectively. Please use those as guidelines
 for creating the final \file{arch.make}.
 
+Note that Intel compilers default to high optimizations which tends to
+break \siesta. We advice to use \shell{-fp-model source} flag and not
+compile with higher optimizations than \shell{-O2}.
+
 % You can also get
 % inspiration by looking at the actual \file{arch.make} examples in
 % the \shell{Src/Sys} subdirectory. If you intend to create a parallel
