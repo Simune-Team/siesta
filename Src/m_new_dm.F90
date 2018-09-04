@@ -722,6 +722,7 @@ contains
 
       nspin_read = size(DM_read, 2)
 
+      ! These messages are too optimistic, since we only deal with a few cases
       if ( IONode ) then
         if ( spin%DM == nspin_read ) then
           write(*,'(a)') 'Succeeded...'
@@ -736,8 +737,12 @@ contains
         write(*,'(a)') "DM from file:"
         call print_type(DM_read)
       end if
-      
+
       call restruct_Data(spin%DM, DM_read, DM_2D, .not. correct_nsc)
+      if ( IONode ) then
+        write(*,'(a)') "DM to be used:"
+        call print_type(DM_2D)
+      end if
       if ( TSDE_found ) then
         call restruct_Data(spin%EDM, EDM_read, EDM_2D, .false.)
       end if
@@ -752,10 +757,22 @@ contains
 
   contains
 
+    !> Driver to fix both the spin dimension and the sparsity pattern
+    !> of a DM object, which typically has been read from file.
+    !>
+    !> Note that only the cases in which one of the spin dimensions is 1
+    !> are treated.
+    
     subroutine restruct_Data(nspin, in_2D, out_2D, show_warning)
+      !> Current spin dimension in the program
       integer, intent(in) :: nspin
-      type(dSpData2D), intent(inout) :: in_2D, out_2D
+      !> Input (DM) bud, to be mined for info
+      type(dSpData2D), intent(inout) :: in_2D
+      !> Output (DM) bud, created
+      type(dSpData2D), intent(inout) :: out_2D
+      !> Whether to show sanity-check warnings 
       logical, intent(in) :: show_warning
+      
       integer :: nspin_read, i
       real(dp), pointer :: A2(:,:)
 
@@ -764,8 +781,8 @@ contains
       if ( nspin == 1 .and. nspin /= nspin_read ) then
          ! This SCF has 1 spin-component.
          
-         ! The readed DM has, at least 2!
-         ! Thus we sum the spinors to form the non-polarized
+         ! The read DM has at least 2!
+         ! Thus we sum the spinors to form the non-polarized version
          A2 => val(in_2D)
 !$OMP parallel do default(shared), private(i)
          do i = 1 , size(A2, 1)
@@ -775,13 +792,20 @@ contains
 
       end if
 
-      ! Restructure the sparsity data to the output DM
-      ! with maximum spin%DM number of spin-components
+      !> Calls [[restruct_dSpData2D]] to re-structure the sparsity
+      !> data to match the output DM, with maximum spin%DM number of
+      !> spin-components. It returns a new out_2D bud.
+      !> @note
+      !> The current sparsity pattern `sp` is known here by host association from
+      !> the parent routine, which is a bit confusing. 
+      !> `out_2D` in the called routine. Here it is the `out` sparsity, corresponding
+      !> to the current target sparsity in the program.
+      !> @endnote
       call restruct_dSpData2D(in_2D, sp, out_2D, nspin, show_warning=show_warning)
 
       if ( nspin_read == 1 .and. nspin /= nspin_read ) then
          ! This SCF has more than 2 spin-components.
-         ! The readed DM has 1.
+         ! The read DM has 1.
          ! Thus we divide the spinors to form the polarized case.
          A2 => val(out_2D)
 !$OMP parallel do default(shared), private(i)
