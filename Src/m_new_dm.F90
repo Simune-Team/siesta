@@ -495,15 +495,14 @@ contains
 
   end subroutine init_DM
 
-
+  !> Routine for reading the DM from a file.  
+  !> This is a simple read-inset routine which reads
+  !> a DM/TSDE file, and inserts the quantities
+  !> into the the resulting DM (and/or EDM).
   subroutine init_DM_file(spin, no_u, nsc, &
        dit, sp, DM_2D, EDM_2D, &
        init_method)
 
-    ! Routine for reading the DM from a file.
-    ! This is a simple read-inset routine which reads
-    ! a DM/TSDE file, and inserts the quantities
-    ! into the the resulting DM (and/or EDM).
 
     ! If the readed DM file has a different number of spin-components,
     ! this routine will easily extrapolate the quantities:

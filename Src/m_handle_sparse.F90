@@ -886,8 +886,8 @@ contains
     ! Required to set removed elements to 0
     A2 => val(D2)
 
-    !> Calls [[generate_linear_isc]] to create a table (naming confusing!).\
-    !> The linear isc is a list of index offsets (equivalent to isc_off)\
+    !> Calls [[generate_linear_isc]] to create a table (naming confusing!).  
+    !> The linear isc is a list of index offsets (equivalent to isc_off)  
     !> The order of indices may be found in [[atomlist:superx]] (or in the ORB_INDX output file)
     !>
     call generate_linear_isc(nsc_old, old_isc)
@@ -895,11 +895,12 @@ contains
     !>   new_isc(1, 1, 1) yields the index for the [1, 1, 1] supercell.
     !>
     !> Calls [[generate_isc]] to create
-    !> *another* table with the same naming convention
+    !> *another* table with the same naming convention  
     call generate_isc(nsc_new, new_isc)
 
-    ! Calculate total number of supercells
+    ! Calculate total number of image cells in old supercell
     old_n_s = product(nsc_old)
+    ! Offset to mark un-needed elements
     new_outside = product(nsc_new) * no_u
 
     ! Maximum cell image extents on either side. 
@@ -907,11 +908,12 @@ contains
     ! (5,3,5) ==> (2,1,2) 
     new_hsc = nsc_new / 2
 
+    !> Calls [[intrinsic_missing:modp]] (renamed to `ucorb`)
+    !> to map the column index to the unit cell
     do io = 1, no_l
 
       inner_columns: do ind = ptr(io) + 1, ptr(io) + ncol(io)
         ! Calculate the old image cell index
-        ! The supercell offset is old_isc(:, old_is)
         old_is = (col(ind)-1) / no_u
 
         ! This is just sanity checking, in case the column indexes are obviously wrong
@@ -927,6 +929,7 @@ contains
           cycle inner_columns
         end if
 
+        ! The image cell coordinates
         isc(:) = old_isc(:, old_is)
 
         ! Check that the new supercell has room for this cell image
@@ -944,7 +947,6 @@ contains
           ! orbital index to the correct image cell using the new offset.
           new_is = new_isc(isc(1),isc(2),isc(3))
           col(ind) = ucorb(col(ind), no_u) + new_is * no_u
-          
        endif
        
       end do inner_columns
