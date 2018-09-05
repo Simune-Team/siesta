@@ -15,6 +15,7 @@ module m_handle_sparse
 
   public :: bulk_expand
   public :: expand_spd2spd_2D
+  public :: fold_auxiliary_supercell_SpD
   public :: unfold_noauxiliary_supercell_SpD
   public :: copy_supercell_SpD
   public :: correct_supercell_SpD
@@ -24,6 +25,10 @@ module m_handle_sparse
     module procedure copy_supercell_Sp1D
     module procedure copy_supercell_Sp2D
   end interface copy_supercell_SpD
+
+  interface fold_auxiliary_supercell_SpD
+    module procedure fold_auxiliary_supercell_Sp2D
+  end interface fold_auxiliary_supercell_SpD
 
   interface unfold_noauxiliary_supercell_SpD
     module procedure unfold_noauxiliary_supercell_Sp2D
@@ -70,7 +75,7 @@ contains
     integer, pointer :: flasto(:) => null(), fisc_off(:,:) => null()
 
     integer :: allowed(na_u), itmp, s_na, c_na
-    character(len=400) :: HSfile, DMfile, ln
+    character(len=256) :: HSfile, DMfile, ln
     logical :: d_log1, d_log2, d_log3
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
@@ -518,7 +523,7 @@ contains
     ! Local variables
     integer :: no_u, no_l
     integer :: io, i, i_ind, o_ind, isc(3)
-    integer :: i_is, o_is, o_hsc(3), new_col
+    integer :: i_is, o_is, o_hsc(3)
     integer :: discarded(2), dim_min
 
     ! arrays for the sparsity patterns
@@ -637,8 +642,8 @@ contains
     ! Local variables
     integer :: no_u, no_l
     integer :: io, i, i_ind, o_ind, isc(3)
-    integer :: i_is, o_is, o_hsc(3), new_col
-    integer :: discarded(2), dim_min
+    integer :: i_is, o_is, o_hsc(3)
+    integer :: discarded(2)
 
     ! arrays for the sparsity patterns
     integer, pointer :: o_ptr(:), o_ncol(:), o_col(:)
@@ -739,7 +744,8 @@ contains
   !>
   !> However, IFF one has a DM with folded elements (S(io,io) > 1.)
   !> we have a problem because the DM elements are made of sums of
-  !> supercell and primary unit-cell contributians.
+  !> supercell and primary unit-cell contributians, so splitting the
+  !> contributions requires the overlap matrix.
   subroutine unfold_noauxiliary_supercell_Sp2D(sp_sc, D2)
 
     use class_Sparsity
@@ -810,6 +816,81 @@ contains
     call delete(A2D)
 
   end subroutine unfold_noauxiliary_supercell_Sp2D
+
+  !> Fold an nsc > 1 DM to an nsc_ == 1 supercell.
+  !>
+  !> In cases where the DM is constructed from any(nsc > 1) we know that
+  !> double connected orbitals should be summed to the equivalent orbital.
+  subroutine fold_auxiliary_supercell_Sp2D(sp_uc, D2)
+
+    use class_Sparsity
+    use class_OrbitalDistribution
+    use class_dSpData2D
+    use class_dData2D
+#ifdef MPI
+    use mpi_siesta
+#endif
+
+    !> Input sparsity pattern (no auxiliary supercell)
+    type(Sparsity), intent(inout) :: sp_uc
+    !> Input/Output 2D data with associated supercell sparse pattern, upon exit
+    !> this contains as many non-zero elements as in sp_uc with expanded elements.
+    type(dSpData2D), intent(inout) :: D2
+
+    ! Local variables
+    type(OrbitalDistribution) :: dit
+    type(Sparsity), pointer :: sp
+    type(dData2D) :: A2D
+
+    real(dp), pointer :: A2(:,:), A2_uc(:,:)
+    integer :: no_u, no_l
+    integer :: io, jo, ind, ucind
+
+    ! arrays for the sparsity patterns
+    integer, pointer :: ptr(:), ncol(:), col(:)
+    integer, pointer :: ucptr(:), ucncol(:), uccol(:)
+
+    ! This will silently assume same sizes in the sparse patterns
+
+    sp => spar(D2)
+    A2 => val(D2)
+    call attach(sp,n_col=ncol, list_ptr=ptr, list_col=col, &
+        nrows=no_l, nrows_g=no_u)
+
+    ! Primary unit-cell sparsity pattern
+    call attach(sp_uc, n_col=ucncol, list_ptr=ucptr, list_col=uccol, &
+        nnzs=io)
+
+    ! Create array that hosts the new data
+    ind = size(A2, dim=2)
+    call newdData2D(A2D, io, ind,"(fold 2D)")
+    A2_uc => val(A2D)
+    A2_uc(:,:) = 0._dp
+
+    do io = 1, no_l
+
+      ! Loop unitcell sparse pattern
+      do ucind = ucptr(io) + 1, ucptr(io) + ucncol(io)
+
+        ! Strictly not needed, but retained for consistency!
+        jo = ucorb(uccol(ucind), no_u)
+        
+        do ind = ptr(io) + 1, ptr(io) + ncol(io)
+          if ( ucorb(col(ind), no_u) == jo ) then
+            A2_uc(ucind, :) = A2_uc(ucind, :) + A2(ind, :)
+          end if
+        end do
+        
+      end do
+    end do
+
+    dit = dist(D2)
+    call newdSpData2D(sp_uc, A2D, dit, D2, name="Folded Sp2D")
+
+    call delete(dit)
+    call delete(A2D)
+
+  end subroutine fold_auxiliary_supercell_Sp2D
 
   ! Correct a sparse pattern (in-place) from an old NSC to a new NSC
   ! A supercell sparse matrix layout is described in sparse_matrices.F90

@@ -558,6 +558,7 @@ contains
 
     use m_handle_sparse, only: correct_supercell_SpD
     use m_handle_sparse, only: unfold_noauxiliary_supercell_SpD
+    use m_handle_sparse, only: fold_auxiliary_supercell_SpD
     use m_restruct_SpData2D, only: restruct_dSpData2D
     
     ! ********* INPUT ***************************************************
@@ -686,7 +687,7 @@ contains
       correct_nsc = .false.
       if ( nsc_read(1) /= 0 .and. any(nsc /= nsc_read) ) then
 
-        ! There are two cases:
+        ! There are three cases:
         if ( all(nsc_read == 1) .and. fdf_get('DM.Init.Unfold', .true.) ) then
           ! 1. The readed DM is created from a Gamma-only calculation and thus nsc == 1, always.
           !    In this case we know that the DM elements in the Gamma calculation (io,jo)
@@ -696,14 +697,23 @@ contains
           !    be known that all elements are *only* on-site terms and shouldn't be unfolded.
           !    The user may control this with DM.Init.Unfold false
           
-          ! We simply expand it (direct copying)
           call unfold_noauxiliary_supercell_SpD(sp, DM_read)
           if ( TSDE_found ) then
             call unfold_noauxiliary_supercell_SpD(sp, EDM_read)
           end if
 
+        else if ( all(nsc == 1) ) then
+          ! 2. The readed DM is created from an auxiliary calculation and the current
+          !    calculation is Gamma-only. In this case it is necessary to fold back
+          !    all supercell DM entries.
+
+          call fold_auxiliary_supercell_SpD(sp, DM_read)
+          if ( TSDE_found ) then
+            call fold_auxiliary_supercell_SpD(sp, EDM_read)
+          end if
+            
         else
-          ! 2. The readed DM has a different supercell size. In this case there is a
+          ! 3. The readed DM has a different supercell size. In this case there is a
           !    one-to-one correspondance between the different elements and we only copy those
           !    that we know exists.
          
