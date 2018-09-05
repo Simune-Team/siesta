@@ -740,7 +740,17 @@ contains
   !> Expand an nsc == 1 DM to an nsc_ == * supercell.
   !>
   !> In cases where the DM is constructed from all(nsc == 1) we know that
-  !> all elements in the supercell has the same elements as in folded DM.
+  !> all elements in the supercell have the same value as in the folded DM.
+  !>
+  !> @note
+  !> This will actually work even in the presence of degenerate folding
+  !> (the S(io,io)>1 case mentioned below). This will only happen if a
+  !> supercell is not used, i.e. k-points are not used, so no phases are
+  !> needed. The DM elements in the base cell are just the products of
+  !> appropriate wavefunction coefficients, and they can be replicated
+  !> to the rest of the supercell. Note that it is S (or H) that is folded,
+  !> not the DM.
+  !> @endnote
   !>
   !> However, IFF one has a DM with folded elements (S(io,io) > 1.)
   !> we have a problem because the DM elements are made of sums of
@@ -758,7 +768,7 @@ contains
 
     !> Input supercell sparsity pattern (this will contain periodic connections)
     type(Sparsity), intent(inout) :: sp_sc
-    !> Input/Output 2D data with associated non-supercell sparse pattern, upon exit
+    !> Input/Output 2D data with associated non-supercell sparse pattern. Upon exit
     !> this contains as many non-zero elements as in sp_sc with expanded elements.
     type(dSpData2D), intent(inout) :: D2
 
@@ -788,7 +798,7 @@ contains
 
     ! Create array that hosts the new data
     ind = size(A2, dim=2)
-    call newdData2D(A2D, io, ind,"(unfold 2D)")
+    call newdData2D(A2D, io, ind,"(unfolded DM vals)")
     A2_sc => val(A2D)
     A2_sc(:,:) = 0._dp
 
@@ -810,7 +820,7 @@ contains
     end do
 
     dit = dist(D2)
-    call newdSpData2D(sp_sc, A2D, dit, D2, name="Unfolded Sp2D")
+    call newdSpData2D(sp_sc, A2D, dit, D2, name="Unfolded DM")
 
     call delete(dit)
     call delete(A2D)
@@ -892,14 +902,32 @@ contains
 
   end subroutine fold_auxiliary_supercell_Sp2D
 
-  ! Correct a sparse pattern (in-place) from an old NSC to a new NSC
-  ! A supercell sparse matrix layout is described in sparse_matrices.F90
-  ! Each column value also holds the supercell index by an offset equal to
-  ! the supercell index X no_u such that all columns and supercells are
-  ! unique.
-  ! Here we take one sparse data pattern and change all supercell indices
-  ! from the nsc_old indices to nsc_new.
-  ! If nsc_old == nsc_new, nothing will happen.
+  !> Correct a sparse pattern (in-place) from an old NSC to a new NSC.
+  !>
+  !> Here we take a sparse data pattern and change all column indices
+  !> so that they are appropriate for the new supercell.  
+  !> The supercell sparse matrix layout is described in sparse_matrices.F90
+  !> Recall that each column value also holds implicitly the image cell index,
+  !> using an offset `image_index*no_u`.
+  !>  
+  !> If the original supercell is larger than the new one, the elements
+  !> associated to image cells that no longer exist will be set to zero,
+  !> and their column indexes set to something beyond the acceptable values.  
+  !> The elements in the retained image cells have their column indexes recomputed,
+  !> as the image cell indexes depend on the size of the supercell.
+  !>
+  !> If nsc_old == nsc_new, nothing is done.
+  !>
+  !> @note
+  !> The sparse pattern and the nsc multipliers live independently. This could
+  !> lead to errors. A possible improvement is to have nsc as part of the sparse-pattern
+  !> information.
+  !> @endnote
+  !>
+  !> @note
+  !> After a call to this routine, we still need to purge from the sparse index arrays
+  !> those elements of D2 which are no longer needed.
+  !> @endnote
   subroutine correct_supercell_Sp2D(nsc_old, D2, nsc_new)
 
     use class_Sparsity
@@ -908,8 +936,13 @@ contains
     use mpi_siesta
 #endif
 
+    !> A sparse-matrix object, containing a sparse pattern
     type(dSpData2D), intent(inout) :: D2
+    !> Auxiliary supercell multipliers for D2, typically read
+    !> from file at the same time as other D2 information
+    !> (see, for example, the new DM file format)
     integer, intent(in) :: nsc_old(3)
+    !> New auxiliary supercell multipliers for D2
     integer, intent(in) :: nsc_new(3)
 
     ! Local variables
@@ -933,29 +966,42 @@ contains
     ! Required to set removed elements to 0
     A2 => val(D2)
 
-    ! Now create the conversion tables
-    !> The linear isc is a list of index offsets (equivalent to isc_off)
+    !> Calls [[generate_linear_isc]] to create a table (naming confusing!).  
+    !> The linear isc is a list of index offsets (equivalent to isc_off)  
     !> The order of indices may be found in [[atomlist:superx]] (or in the ORB_INDX output file)
+    !>
     call generate_linear_isc(nsc_old, old_isc)
     !> Create the isc_off in supercell format such that:
     !>   new_isc(1, 1, 1) yields the index for the [1, 1, 1] supercell.
+    !>
+    !> Calls [[generate_isc]] to create
+    !> *another* table with the same naming convention  
     call generate_isc(nsc_new, new_isc)
 
-    ! Calculate total number of supercells
+    ! Calculate total number of image cells in old supercell
     old_n_s = product(nsc_old)
+    ! Offset to mark un-needed elements
     new_outside = product(nsc_new) * no_u
 
-    ! We need to check whether in-put SC is too large
+    ! Maximum cell image extents on either side. 
+    ! This assumes that nsc(:) are all odd. For example
+    ! (5,3,5) ==> (2,1,2) 
     new_hsc = nsc_new / 2
+
+    !> Calls [[intrinsic_missing:modp]] (renamed to `ucorb`)
+    !> to map the column index to the unit cell
     do io = 1, no_l
 
-      ! Now we can do the copy...
       inner_columns: do ind = ptr(io) + 1, ptr(io) + ncol(io)
-        !> Calculate the old supercell index (supercell offset is old_isc(:, old_is))
+        ! Calculate the old image cell index
         old_is = (col(ind)-1) / no_u
-        isc = old_isc(:, old_is)
 
+        ! This is just sanity checking, in case the column indexes are obviously wrong
         if ( old_is >= old_n_s ) then ! it should be removed
+
+          ! It is better to stop the program
+          call die("Mismatch in sparsity pattern and nsc values")
+
           ! Set it to zero
           A2(ind, :) = 0._dp
           ! Also set the column index to a position outside the new sparse pattern
@@ -963,27 +1009,32 @@ contains
           cycle inner_columns
         end if
 
-        ! Check that the out supercell exists
+        ! The image cell coordinates
+        isc(:) = old_isc(:, old_is)
+
+        ! Check that the new supercell has room for this cell image
         if ( any(abs(isc) > new_hsc) ) then
           ! Set it to zero
           A2(ind, :) = 0._dp
-          ! Also set the column index to a position higher
+          ! Also set the column index to a position outside the new sparse pattern
+          ! since it isn't defined in the old sparse pattern, it can't be defined in
+          ! the new one.
           col(ind) = ucorb(col(ind), no_u) + new_outside
-          cycle inner_columns
-        end if
 
-        ! We know the supercell exists, so convert column
-        new_is = new_isc(isc(1),isc(2),isc(3))
-        
-        ! Transfer the orbital index to the correct supercell
-        col(ind) = ucorb(col(ind), no_u) + new_is * no_u
-        
+       else
+
+          ! We know the image cell exists, so convert the column
+          ! orbital index to the correct image cell using the new offset.
+          new_is = new_isc(isc(1),isc(2),isc(3))
+          col(ind) = ucorb(col(ind), no_u) + new_is * no_u
+       endif
+       
       end do inner_columns
       
     end do
 
     deallocate(old_isc, new_isc)
-    
+
   end subroutine correct_supercell_Sp2D
 
   subroutine correct_supercell_Sp1D(nsc_old, D1, nsc_new)
@@ -1075,16 +1126,18 @@ contains
     
   end subroutine correct_supercell_Sp1D
 
-  !> Generate supercells in order of the indices 2 dimensions of size `3`, `0:product(nsc)-1`
+  !> Generate image cell offsets in a supercell
   !>
   !> The given supercell offsets for a given supercell is:
   !>
-  !> ```fortran
+  !>```fortran
   !>   isc(:, is)
-  !> ```
+  !>```
   !>
   !> where `is` is the supercell index `(list_col(ind) - 1)/no_u`.
+  !> and the first dimension is the cell direction (x,y,z)
   !> The order is equivalent to those generated in [[atomlist::superx]].
+  !
   subroutine generate_linear_isc(nsc, isc)
     integer, intent(in) :: nsc(3)
     integer, allocatable :: isc(:,:)
@@ -1094,6 +1147,7 @@ contains
 
     allocate(isc(3,0:product(nsc)-1))
 
+    !> Calls [[linear2pm]] to set the correct ordering
     i = 0
     do z = 0, nsc(3) - 1
       nz = linear2pm(z, nsc(3))
@@ -1115,13 +1169,14 @@ contains
   !>
   !> To obtain the index of a given supercell simply do:
   !>
-  !> ```fortran
+  !>```fortran
   !>   isc(ix, iy, iz)
-  !> ```
+  !>```
   !>
   !> where `ix`, `iy` and `iz` are the supercells for the individiual
   !> lattice vector directions. The order of supercells is equivalent to
-  !> those generated in [[atomlist::superx]].
+  !> those generated in [[atomlist:superx]].
+  !
   subroutine generate_isc(nsc, isc)
     integer, intent(in) :: nsc(3)
     integer, allocatable :: isc(:,:,:)
@@ -1135,6 +1190,7 @@ contains
 
     allocate(isc(-hsc(1):hsc(1),-hsc(2):hsc(2),-hsc(3):hsc(3)))
 
+    !> Calls [[linear2pm]] to get the correct ordering
     i = 0
     do z = 0, nsc(3) - 1
       nz = linear2pm(z, nsc(3))
@@ -1150,9 +1206,21 @@ contains
 
   end subroutine generate_isc
 
+  !> Routine to reorder the [0,nsc-1] range of cell images
+  !> so that it follows the [[atomlist:superx]] convention  
+  !> Example: nsc=5  (2*4+1)  
+  !> in:   0  1  2  3  4  
+  !> out:  0  1  2 -2 -1  \
+  !> This corresponds to starting at the center cell, going to the right,
+  !> and then moving to the far left and get back towards the center:
+  !>
+  !>        3  4  0  1  2
+  !>
   pure function linear2pm(i,n) result(j)
     integer, intent(in) :: i, n
     integer :: j
+    !> Note that n needs to be odd for left-right symmetry to
+    !> be preserved
     if ( i > n / 2 ) then
       j = -n + i
     else

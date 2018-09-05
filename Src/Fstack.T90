@@ -22,6 +22,7 @@ type Fstack_
     character(len=36)  :: id = "null_id"
     !-------------------------------------
     character(len=256) :: name = "(null Fstack_)"
+    !> See [[_T_(type)]]
     type(_T_), pointer :: val(:) => null()
     integer            :: size = 0
     integer            :: nvals = 0

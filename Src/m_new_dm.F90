@@ -495,15 +495,14 @@ contains
 
   end subroutine init_DM
 
-
+  !> Routine for reading the DM from a file.  
+  !> This is a simple read-inset routine which reads
+  !> a DM/TSDE file, and inserts the quantities
+  !> into the the resulting DM (and/or EDM).
   subroutine init_DM_file(spin, no_u, nsc, &
        dit, sp, DM_2D, EDM_2D, &
        init_method)
 
-    ! Routine for reading the DM from a file.
-    ! This is a simple read-inset routine which reads
-    ! a DM/TSDE file, and inserts the quantities
-    ! into the the resulting DM (and/or EDM).
 
     ! If the readed DM file has a different number of spin-components,
     ! this routine will easily extrapolate the quantities:
@@ -689,10 +688,12 @@ contains
 
         ! There are three cases:
         if ( all(nsc_read == 1) .and. fdf_get('DM.Init.Unfold', .true.) ) then
-          ! 1. The readed DM is created from a Gamma-only calculation and thus nsc == 1, always.
+          ! 1. The read DM is created from a Gamma-only calculation and thus nsc == 1, always.
           !    In this case we know that the DM elements in the Gamma calculation (io,jo)
-          !    is equal to the all existing supercell interactions (io, jo + i_s * no_u) where
-          !    since there are no k-points.
+          !    are replicated in all image cells (io, jo + i_s * no_u) where i_s is the image cell
+          !    offfset, since there are no k-points and thus no phases to worry about.
+          !
+          !    I do not understand this.
           !    However, in case the DM has been generated as an example input DM it may
           !    be known that all elements are *only* on-site terms and shouldn't be unfolded.
           !    The user may control this with DM.Init.Unfold false
@@ -713,8 +714,8 @@ contains
           end if
             
         else
-          ! 3. The readed DM has a different supercell size. In this case there is a
-          !    one-to-one correspondance between the different elements and we only copy those
+          ! 3. The read DM has a different supercell size. In this case there is a
+          !    one-to-one correspondence between the different elements and we only copy those
           !    that we know exists.
          
           ! Correct the supercell information
@@ -730,6 +731,7 @@ contains
 
       nspin_read = size(DM_read, 2)
 
+      ! These messages are too optimistic, since we only deal with a few cases
       if ( IONode ) then
         if ( spin%DM == nspin_read ) then
           write(*,'(a)') 'Succeeded...'
@@ -744,8 +746,12 @@ contains
         write(*,'(a)') "DM from file:"
         call print_type(DM_read)
       end if
-      
+
       call restruct_Data(spin%DM, DM_read, DM_2D, .not. correct_nsc)
+      if ( IONode ) then
+        write(*,'(a)') "DM to be used:"
+        call print_type(DM_2D)
+      end if
       if ( TSDE_found ) then
         call restruct_Data(spin%EDM, EDM_read, EDM_2D, .false.)
       end if
@@ -760,10 +766,22 @@ contains
 
   contains
 
+    !> Driver to fix both the spin dimension and the sparsity pattern
+    !> of a DM object, which typically has been read from file.
+    !>
+    !> Note that only the cases in which one of the spin dimensions is 1
+    !> are treated.
+    
     subroutine restruct_Data(nspin, in_2D, out_2D, show_warning)
+      !> Current spin dimension in the program
       integer, intent(in) :: nspin
-      type(dSpData2D), intent(inout) :: in_2D, out_2D
+      !> Input (DM) bud, to be mined for info
+      type(dSpData2D), intent(inout) :: in_2D
+      !> Output (DM) bud, created
+      type(dSpData2D), intent(inout) :: out_2D
+      !> Whether to show sanity-check warnings 
       logical, intent(in) :: show_warning
+      
       integer :: nspin_read, i
       real(dp), pointer :: A2(:,:)
 
@@ -772,8 +790,8 @@ contains
       if ( nspin == 1 .and. nspin /= nspin_read ) then
          ! This SCF has 1 spin-component.
          
-         ! The readed DM has, at least 2!
-         ! Thus we sum the spinors to form the non-polarized
+         ! The read DM has at least 2!
+         ! Thus we sum the spinors to form the non-polarized version
          A2 => val(in_2D)
 !$OMP parallel do default(shared), private(i)
          do i = 1 , size(A2, 1)
@@ -783,13 +801,20 @@ contains
 
       end if
 
-      ! Restructure the sparsity data to the output DM
-      ! with maximum spin%DM number of spin-components
+      !> Calls [[restruct_dSpData2D]] to re-structure the sparsity
+      !> data to match the output DM, with maximum spin%DM number of
+      !> spin-components. It returns a new out_2D bud.
+      !> @note
+      !> The current sparsity pattern `sp` is known here by host association from
+      !> the parent routine, which is a bit confusing. 
+      !> `out_2D` in the called routine. Here it is the `out` sparsity, corresponding
+      !> to the current target sparsity in the program.
+      !> @endnote
       call restruct_dSpData2D(in_2D, sp, out_2D, nspin, show_warning=show_warning)
 
       if ( nspin_read == 1 .and. nspin /= nspin_read ) then
          ! This SCF has more than 2 spin-components.
-         ! The readed DM has 1.
+         ! The read DM has 1.
          ! Thus we divide the spinors to form the polarized case.
          A2 => val(out_2D)
 !$OMP parallel do default(shared), private(i)

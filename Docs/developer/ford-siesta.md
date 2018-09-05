@@ -6,7 +6,8 @@ output_dir: ./doc-ford-build
 page_dir: ./ford-pages
 media_dir: ./ford-media
 display: public
-source: false
+         private
+source: true
 search: false
 graph: false
 exclude_dir: ../../Src/MPI

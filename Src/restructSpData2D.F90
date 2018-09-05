@@ -6,6 +6,18 @@ module m_restruct_SpData2D
   
 contains
   
+  !> Changes the sparsity pattern of a matrix, re-using
+  !> as much information as possible.  
+  !> Newly appearing elements are
+  !> set to zero. Presumably, elements which dissappear from
+  !> the pattern were very close to zero to begin with.
+  !> (that could be checked)
+  !> @note
+  !>      This assumes that a prior fixing of the column indexes has
+  !>      been carried to account for changing supercell information etc.
+  !>      I.e. this routine assumes the supercell indices are coherent between
+  !>      the two sparse patterns.
+  !> @endnote
   subroutine restruct_dSpData2D(SpMin, sp_out, SpMout, dim2, show_warning)
 
     use class_dSpData2D
@@ -13,25 +25,19 @@ contains
     use class_Sparsity
     use class_OrbitalDistribution
 
+    !> Input (DM) bud, to be mined for information
     type(dSpData2D), intent(in) :: SpMin
+    !> Target sparsity pattern to be used for SpMout
     type(Sparsity), intent(in) :: sp_out
-    ! Note!!  inout is essential to avoid memory leaks...
+    !> Target (DM) bud, to be created here.  
+    !> The `inout` intent is essential to avoid memory leaks...
     type(dSpData2D), intent(inout) :: SpMout
-    ! The size of the second dimension in SpMout
-    ! This is only used if passed, otherwise it defaults to size(SpMin, 2)
+    !> The size of the second dimension in SpMout, only used if passed,
+    !> otherwise it defaults to size(SpMin, 2)
     integer, intent(in), optional :: dim2
-    ! Changes the sparsity pattern of a matrix, re-using
-    ! as much information as possible. Newly appearing elements are
-    ! set to zero. Presumably, elements which dissappear from
-    ! the pattern were very close to zero to begin with.
-    ! (that could be checked)
+    !> Whether to show sanity-check warnings
     logical, intent(in), optional :: show_warning
 
-    ! Limitations:
-    !       This assumes that a prior fixing of the number of columns has
-    !       been corrected to account for changing supercell information etc.
-    !       I.e. this routine assumes the supercell indices are coherent between
-    !       the two sparse patterns.
 
     integer, parameter :: dp = selected_real_kind(10,100)
 
@@ -74,12 +80,16 @@ contains
     size_in  = nnzs(SpMin)
     size_out = nnzs(sp_out)
 
-    ! We need to check the maximum supercell...
+    ! We need to check the value of the
+    ! maximum image cell indexes in the supercells...
     maxval_j_in  = (maxval(list_in(1:size_in))-1)/nrows_g(SpMin)
     maxval_j_in  = ( maxval_j_in + 1 ) * nrows_g(SpMin)
+    
     maxval_j_out = (maxval(list_out(1:size_out))-1)/nrows_g(sp_out)
     maxval_j_out = ( maxval_j_out + 1 ) * nrows_g(sp_out)
 
+    ! Here we only show the warning if we have NOT corrected the
+    ! supercell column information
     if ( maxval_j_in /= maxval_j_out .and. lshow_warning ) then
        ! Print out the different values
        write(*,'(a,tr2,i0,a,tr2,i0)') &
@@ -88,12 +98,19 @@ contains
     end if
 
     ! Maximum "column" index
+    ! If we HAVE corrected the column indexes, in the case of a contraction
+    ! of the supercell some of the column indexes in SpMin will be beyond
+    ! the standard bounds (see [[m_handle_sparse:correct_supercell_Sp2D]]).
+    
     max_col = max(maxval_j_in, maxval_j_out)
     allocate(aux(1:max_col))
 
     a_in => val(SpMin)
     ! This enables the use of the same density matrix in
     ! two different cases
+    ! In new_dm, at the time of reading the DM, dim2=nspin, the spin dimension
+    ! of the "out" DM. Elsewhere (extrapolation, etc), dim2 is absent.
+    ! Maybe handy, but confusing
     dim2_in = size(a_in,dim=2)
     if ( present(dim2) ) then
        ldim2 = dim2
@@ -101,25 +118,29 @@ contains
        ldim2 = dim2_in
     end if
 
-    ! This is the actual number of components.
-    dim2_min = min(dim2_in, ldim2)
     call newdData2D(a2d_out,size_out,ldim2,"(new in restruct)")
     a_out => val(a2d_out)
+
+    ! We cannot transfer more than the minimum number of dimensions
+    ! which is
+    dim2_min = min(dim2_in, ldim2)
 
     ! Use two loops, the outer one to cover the extra dimension
     ! The alternative could be prone to cache misses
     ! (there will be also cache misses due to the sparse de-referencing,
     ! though.
     aux(:) = 0.0_dp
-
+    
     do k = 1, dim2_min
        do i = 1, nrows(SpMin)
           do ind = listptr_in(i) + 1, listptr_in(i) + n_col_in(i)
+            ! Some of these entries will lay beyond the range of interest.
             aux(list_in(ind)) = a_in(ind,k)
           end do
           do ind = listptr_out(i) + 1, listptr_out(i) + n_col_out(i)
             a_out(ind,k) = aux(list_out(ind))
           end do
+          ! clear for next row
           do ind = listptr_in(i) + 1, listptr_in(i) + n_col_in(i)
             aux(list_in(ind)) = 0._dp
           end do
@@ -129,7 +150,7 @@ contains
     deallocate(aux)
 
     ! In cases where SpMout is equal to SpMin it is vital that
-    ! we have a pure reference to the object
+    ! we have a pure reference to the distribution object
     dit = dist(SpMin)
 
     call newdSpData2D(sp_out,a2d_out,dit, &
@@ -137,16 +158,6 @@ contains
 
     call delete(dit)
     call delete(a2d_out)
-
-  contains
-    
-    subroutine die(str)
-      character(len=*), optional :: str
-      if (present(str)) then
-         print *, trim(str)
-      endif
-      stop
-    end subroutine die
 
   end subroutine restruct_dSpData2D
 
