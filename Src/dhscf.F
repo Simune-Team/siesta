@@ -106,7 +106,7 @@
      $                                  doping_active
       use m_rhog,                 only: rhog, rhog_in
       use m_rhog,                 only: order_rhog
-      use siesta_options,         only: mix_charge
+      use siesta_options,         only: mix_charge, write_cdf
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -250,7 +250,9 @@ C ----------------------------------------------------------------------
 #ifdef NCDF_4
       ! Initialize the box for each node...
       call cdf_init_mesh( ntm, nsm )
-      call cdf_init_grid( trim(slabel)//'.nc', ntm)
+      if ( write_cdf ) then
+        call cdf_init_grid( trim(slabel)//'.nc', ntm)
+      end if
 #endif
 
 C     Stop time counter for mesh initialization
