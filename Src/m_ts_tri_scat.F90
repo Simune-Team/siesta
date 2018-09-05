@@ -527,7 +527,10 @@ contains
     idx_Elec = crows(sPart) - sN + 1 ! current row in BTD
     i_Elec = 1 ! loop row
     do while ( i_Elec <= sNc )
-       
+
+       ! Get current number of orbitals in this block
+       sN = nrows_g(A_tri, n)
+
        ! the maximum size is nrtmp
        ! the minimum size is remaining elements in current block
        nb = min(nrtmp,sN - (i_Elec - off) + 1)
@@ -594,7 +597,6 @@ contains
        if ( idx_Elec > crows(n) ) then
          off = off + sN
          n = n + 1
-         sN = nrows_g(A_tri, n)
        end if
 
     end do

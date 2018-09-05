@@ -89,6 +89,8 @@
 
       use iogrid_netcdf, only: set_box_limits
 #ifdef NCDF_4
+      use files,         only  : slabel
+      use m_ncdf_siesta, only : cdf_init_grid
       use m_ncdf_io, only : cdf_init_mesh
 #endif
 #ifdef BSC_CELLXC
@@ -105,6 +107,9 @@
       use m_rhog,                 only: rhog, rhog_in
       use m_rhog,                 only: order_rhog
       use siesta_options,         only: mix_charge
+#ifdef NCDF_4
+      use siesta_options,         only: write_cdf
+#endif
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -248,6 +253,9 @@ C ----------------------------------------------------------------------
 #ifdef NCDF_4
       ! Initialize the box for each node...
       call cdf_init_mesh( ntm, nsm )
+      if ( write_cdf ) then
+        call cdf_init_grid( trim(slabel)//'.nc', ntm)
+      end if
 #endif
 
 C     Stop time counter for mesh initialization

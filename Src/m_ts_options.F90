@@ -771,11 +771,8 @@ contains
     
     ! Read in options again, at this point we have
     ! the correct ts_tidx
-    call read_ts_hartree_options( )
+    call read_ts_hartree_options(N_Elec, Elecs, cell, na_u, xa)
     
-    ! Find the "biggest" electrode
-    call ts_hartree_elec( N_Elec, Elecs , cell, na_u, xa )
-
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus, ts_kT, IsVolt, Volt )
 

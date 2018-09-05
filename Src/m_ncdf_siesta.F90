@@ -26,6 +26,8 @@ module m_ncdf_siesta
 #ifdef NCDF_4
 
   public :: cdf_init_file
+  public :: cdf_init_grid
+
   public :: cdf_save_settings
   public :: cdf_save_basis
   public :: cdf_save_md
@@ -40,23 +42,17 @@ contains
 #ifdef NCDF_4
 
   subroutine cdf_init_file(fname, is_md, is_fc)
-    use fdf, only : fdf_get, leqi
     use class_Sparsity
     use files, only : slabel
     use atomlist, only: no_u, no_s, lasto, Qtot
     use siesta_geom, only: na_u, nsc
     use sparse_matrices, only: sparse_pattern
     use m_spin, only : spin
-    use m_ntm, only : ntm
     use siesta_options, only: sname, isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN
     use siesta_options, only: SOLVE_MINIM, SOLVE_TRANSI
     use siesta_options, only: SOLVE_PEXSI
     use siesta_options, only: savehs
-    use siesta_options, only: saverho, savedrho, savevh, savevna
-    use siesta_options, only: savevt, savepsch, savetoch, saverhoxc
-    use siesta_options, only: savebader
-    use siesta_options, only: save_initial_charge_density
     use siesta_options, only: fixspin, total_spin
     use siesta_options, only: ia1, ia2, dx ! FC information
     use m_timestamp, only: datestring
@@ -71,10 +67,8 @@ contains
     ! Local variables
     type(hNCDF) :: ncdf, grp, grp2
     type(dict) :: dic, d
-    character(len=DICT_KEY_LENGTH) :: key
     integer :: n_nzs, tmp, i, chks(3), iEl
     integer, allocatable :: ibuf(:)
-    logical :: exists
     logical :: lis_md, lis_fc
 #ifdef MPI
     integer :: MPIerror
@@ -229,96 +223,14 @@ contains
     ! Create grid group
     call ncdf_def_grp(ncdf,'GRID',grp)
 
-    d = ('DIMnx'.kv.ntm(1))//('DIMny'.kv.ntm(2))//('DIMnz'.kv.ntm(3))
     ! Note that there are now 2 spin dimensions
     ! 1. in the top level NC file and one in the GRID group
     ! This is because for spin-orbit coupling the grid and
     ! matrix dimensions are not the same (4 vs 8, respectively)
-    d = d//('DIMspin'.kv.spin%Grid)
-    call ncdf_crt(grp,d)
+    d = ('DIMspin' .kv. spin%Grid)
+    call ncdf_crt(grp, d)
 
-    ! Create the grid functions...
-
-    ! all grids are using the grid_p precision
-    if ( grid_p == dp ) then
-       i = NF90_DOUBLE
-       ! In case the user thinks the double precision
-       ! is needed, but only single precision
-       ! is needed saving, we allow that.
-       key = fdf_get('CDF.Grid.Precision','double')
-       if ( leqi(key,'single') ) i = NF90_FLOAT
-       if ( leqi(key,'float') )  i = NF90_FLOAT
-    else
-       ! The grid is in single precision, so
-       ! we save it in that precision.
-       i = NF90_FLOAT
-    end if
-
-    chks = (/ntm(1),ntm(2),1/)
-    
-    if ( save_initial_charge_density ) then
-       dic = dic//('info'.kv.'Initial charge density')
-       call ncdf_def_var(grp,'RhoInit',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( saverho ) then
-       dic = dic//('info'.kv.'Charge density')
-       call ncdf_def_var(grp,'Rho',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( savepsch ) then
-       dic = dic//('info'.kv.'Diffuse ionic charge')
-       call ncdf_def_var(grp,'Chlocal',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( savetoch ) then
-       dic = dic//('info'.kv.'Total charge')
-       call ncdf_def_var(grp,'RhoTot',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( savedrho ) then
-       dic = dic//('info'.kv.'Density difference from atomic densities')
-       call ncdf_def_var(grp,'RhoDelta',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( saverhoxc ) then
-       dic = dic//('info'.kv.'Density used to calculate XC functional')
-       call ncdf_def_var(grp,'RhoXC',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( savebader ) then
-       dic = dic//('info'.kv.'Bader charge')
-       call ncdf_def_var(grp,'RhoBader',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    ! The remaining grids have unit Ry
-    dic = dic//('unit'.kv.'Ry')
-
-    if ( savevna ) then
-       dic = dic//('info'.kv.'Neutral atom potential')
-       call ncdf_def_var(grp,'Vna',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( savevh ) then
-       dic = dic//('info'.kv.'Electrostatic potential')
-       call ncdf_def_var(grp,'Vh',i,(/'nx','ny','nz'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
-    if ( savevt ) then
-       dic = dic//('info'.kv.'Total potential')
-       call ncdf_def_var(grp,'Vt',i,(/'nx  ','ny  ','nz  ','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-    end if
-
+    call delete(d)
     call delete(dic)
 
     call ncdf_def_grp(ncdf,'SETTINGS',grp)
@@ -552,10 +464,128 @@ contains
 
   end subroutine cdf_init_file
 
+  subroutine cdf_init_grid(fname, ntm)
+    use fdf, only : fdf_get, leqi
+    use siesta_options, only: saverho, savedrho, savevh, savevna
+    use siesta_options, only: savevt, savepsch, savetoch, saverhoxc
+    use siesta_options, only: savebader
+    use siesta_options, only: save_initial_charge_density
+
+    character(len=*), intent(in) :: fname
+    integer, intent(in) :: ntm(3)
+
+    ! Local variables
+    type(hNCDF) :: ncdf, grp
+    integer :: prec, chks(3)
+    character(len=64) :: key
+    type(dict) :: dic
+
+    ! We always re-write the file...
+    call ncdf_open(ncdf,fname, &
+        mode=ior(NF90_WRITE,NF90_NETCDF4))
+
+    ! Create grid group
+    call ncdf_open_grp(ncdf,'GRID', grp)
+
+    call ncdf_def_dim(grp,'nx',ntm(1))
+    call ncdf_def_dim(grp,'ny',ntm(2))
+    call ncdf_def_dim(grp,'nz',ntm(3))
+
+    ! Create the grid functions...
+
+    ! all grids are using the grid_p precision
+    if ( grid_p == dp ) then
+      prec = NF90_DOUBLE
+      ! In case the user thinks the double precision
+      ! is needed, but only single precision
+      ! is needed saving, we allow that.
+      key = fdf_get('CDF.Grid.Precision','double')
+      if ( leqi(key,'single') ) prec = NF90_FLOAT
+      if ( leqi(key,'float') )  prec = NF90_FLOAT
+    else
+      ! The grid is in single precision, so
+      ! we save it in that precision.
+      prec = NF90_FLOAT
+    end if
+    
+    chks = (/ntm(1),ntm(2),1/)
+
+    ! Define the units for all charge variables
+    dic = ('unit'.kv.'e/Bohr**3')
+
+    if ( save_initial_charge_density ) then
+      dic = dic//('info'.kv.'Initial charge density')
+      call ncdf_def_var(grp,'RhoInit',prec,(/'nx  ','ny  ','nz  ','spin'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( saverho ) then
+      dic = dic//('info'.kv.'Charge density')
+      call ncdf_def_var(grp,'Rho',prec,(/'nx  ','ny  ','nz  ','spin'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( savepsch ) then
+      dic = dic//('info'.kv.'Diffuse ionic charge')
+      call ncdf_def_var(grp,'Chlocal',prec,(/'nx','ny','nz'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( savetoch ) then
+      dic = dic//('info'.kv.'Total charge')
+      call ncdf_def_var(grp,'RhoTot',prec,(/'nx','ny','nz'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( savedrho ) then
+      dic = dic//('info'.kv.'Density difference from atomic densities')
+      call ncdf_def_var(grp,'RhoDelta',prec,(/'nx  ','ny  ','nz  ','spin'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( saverhoxc ) then
+      dic = dic//('info'.kv.'Density used to calculate XC functional')
+      call ncdf_def_var(grp,'RhoXC',prec,(/'nx  ','ny  ','nz  ','spin'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( savebader ) then
+      dic = dic//('info'.kv.'Bader charge')
+      call ncdf_def_var(grp,'RhoBader',prec,(/'nx','ny','nz'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    ! Define the units for the potential grids
+    dic = dic//('unit'.kv.'Ry')
+
+    if ( savevna ) then
+      dic = dic//('info'.kv.'Neutral atom potential')
+      call ncdf_def_var(grp,'Vna',prec,(/'nx','ny','nz'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( savevh ) then
+      dic = dic//('info'.kv.'Electrostatic potential')
+      call ncdf_def_var(grp,'Vh',prec,(/'nx','ny','nz'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    if ( savevt ) then
+      dic = dic//('info'.kv.'Total potential')
+      call ncdf_def_var(grp,'Vt',prec,(/'nx  ','ny  ','nz  ','spin'/), &
+          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    end if
+
+    call delete(dic)
+
+    ! Close the file
+    call ncdf_close(ncdf)
+
+  end subroutine cdf_init_grid
+
   subroutine cdf_save_settings(fname)
 
     use kpoint_scf_m,   only: kpoint_scf
-    use siesta_options, only: cdf_w_parallel
     use siesta_options, only: dDtol, dHtol, charnet, wmix, temp, g2cut
     use siesta_options, only: isolve
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN, SOLVE_TRANSI
@@ -600,7 +630,7 @@ contains
   subroutine cdf_save_state(fname,dic_save)
     !    use m_gamma, only : Gamma
     use m_energies, only: Ef, Efs
-    use atomlist, only : Qtot, Qtots
+    use atomlist, only : Qtot
     use siesta_options, only: fixspin, total_spin
     use siesta_geom, only: na_u, ucell, xa, va
     use siesta_geom, only: nsc, isc_off
@@ -982,7 +1012,6 @@ contains
 
   subroutine cdf_save_fc(fname,istep)
     use siesta_geom, only: na_u
-    use siesta_options, only: ia1
     use m_forces, only: fa
 
     character(len=*), intent(in) :: fname

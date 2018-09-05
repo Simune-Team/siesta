@@ -514,6 +514,10 @@ files for compilation of \siesta\ with \shell{gfortran} and
 \shell{Obj/intel.make}, respectively. Please use those as guidelines
 for creating the final \file{arch.make}.
 
+Note that Intel compilers default to high optimizations which tends to
+break \siesta. We advice to use \shell{-fp-model source} flag and not
+compile with higher optimizations than \shell{-O2}.
+
 % You can also get
 % inspiration by looking at the actual \file{arch.make} examples in
 % the \shell{Src/Sys} subdirectory. If you intend to create a parallel
@@ -12013,6 +12017,26 @@ variables:
   because the plane should be at a fixed position in the cell. 
 
   \note generally this need not be changed.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Hartree.Fix.Elec}[string]<electrode name>
+  \fdfdepend{TS!Hartree.Fix}
+
+  Specifically select an electrode's boundary plane to be used as the
+  constant potential boundary. The electrode unit-cell plane is
+  integrated and subtracted from all potential grid-points to ensure a
+  constant potential at the interface between the electrode in the
+  pristine calculation and in the device calculation.
+
+  \tsiesta\ defaults to select the electrode plane which has the
+  largest area.
+
+  \note this may be important in $N>2$ electrode calculations where
+  some electrodes may have a huge semi-infinite surface plane but a
+  limited amount of atoms. It is heavily advised to select the
+  electrode with the largest number of atoms in a plane-cut
+  perpendicular to the semi-infinite direction.
 
 \end{fdfentry}
 

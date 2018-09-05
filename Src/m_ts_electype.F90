@@ -852,23 +852,23 @@ contains
     !  2. subtract half the unit-cell vector of the
     !     electrode.
     !  3. Create the box from the electrode unit-cell
-
     do i = 1 , 3
 
-       ! Calculate the Cartesian ith contribution
-       contrib = sum(this%cell(i,:)) * 0.5_dp
+      ! Calculate the Cartesian ith contribution
+      contrib = sum(this%cell(i,:) * this%Bloch) * 0.5_dp
 
-       ! Calculate average position
-       ! and find the lower left corner of the electrode
-       p(i) = sum(xa(i,ia:ia+na-1)) / na
-       
-       ! transfer to the corner of the Hartree box
-       this%box%c(i) = p(i) - contrib
+      ! Calculate average position
+      ! and find the lower left corner of the electrode
+      p(i) = sum(xa(i,ia:ia+na-1)) / na
+
+      ! transfer to the corner of the Hartree box
+      this%box%c(i) = p(i) - contrib
+
+      ! The box is the same as the electrode cell multiplied
+      ! by the Bloch-expansion
+      this%box%v(:,i) = this%cell(:,i) * this%Bloch(i)
 
     end do
-
-    ! The box is the same as the electrode cell
-    this%box%v = this%cell
     
     ! If we do not use all the atoms we need to reduce
     ! the cell vector in the semi-infinite direction
