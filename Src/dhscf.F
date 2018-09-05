@@ -106,7 +106,10 @@
      $                                  doping_active
       use m_rhog,                 only: rhog, rhog_in
       use m_rhog,                 only: order_rhog
-      use siesta_options,         only: mix_charge, write_cdf
+      use siesta_options,         only: mix_charge
+#ifdef NCDF_4
+      use siesta_options,         only: write_cdf
+#endif
 #ifdef MPI
       use mpi_siesta
 #endif
