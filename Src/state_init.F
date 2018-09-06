@@ -109,6 +109,7 @@
 #endif
 #ifdef SIESTA__FLOOK
       use siesta_dicts, only : dict_repopulate_MD
+      use siesta_dicts, only : dict_repopulate_sparse_matrices
 #endif
 
       implicit none
@@ -634,6 +635,10 @@
       call time_io(spin%H,H_2D)
 #endif
 
+#ifdef SIESTA__FLOOK
+      call dict_repopulate_sparse_matrices()
+#endif
+      
 !     Write out the ORB_INDX file (if requested)
       if ( save_ORB_INDX ) then
         if ( IOnode .and. istep == inicoor ) then
