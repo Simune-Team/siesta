@@ -73,13 +73,13 @@ contains
           call fdf_blists(pline,il,i1,list(n+1:))
           if ( i1 + n > size(list) ) then
             print *,'Parsed line: ',trim(pline%line)
-            call die('fdf_extra: number of elements in block list &
+            call die('fdf_brange: number of elements in block list &
                 &is too many to fit the maximal range of the &
                 &list. Please correct.')
           end if
           if ( i1 == 0 ) then
             print *,'Parsed line: ',trim(pline%line)
-            call die('fdf_extra: a block list with zero elements is not &
+            call die('fdf_brange: a block list with zero elements is not &
                 &allowed, please correct input.')
           end if
 
@@ -102,14 +102,14 @@ contains
       g = fdf_bnames(pline,2)
       if ( .not. leqi(g,'from') ) then
         print *,'Parsed line: ',trim(pline%line)
-        call die('fdf_extra: error in range block: &
+        call die('fdf_brange: error in range block: &
             &from <int> to/plus/minus <int> is ill formatted')
       end if
 
       g = fdf_bnames(pline,3)
       if ( fdf_bnintegers(pline) < 2 ) then
         print *,'Parsed line: ',trim(pline%line)
-        call die('fdf_extra: error in range block &
+        call die('fdf_brange: error in range block &
             &from <int> to/plus/minus <int> is ill formatted')
       end if
 
@@ -135,7 +135,7 @@ contains
         i2 = i1 - i2 + 1
       else
         print *,'Parsed line: ',trim(pline%line)
-        call die('fdf_extra: unrecognized designator of ending range, &
+        call die('fdf_brange: unrecognized designator of ending range, &
             &[to, plus, minus] accepted.')
       end if
 
@@ -153,7 +153,7 @@ contains
           (i1 > i2 .and. step > 0) ) then
         print *,'Parsed line: ',trim(pline%line)
         print *,i1,i2,step
-        call die('fdf_extra: block range is not consecutive')
+        call die('fdf_brange: block range is not consecutive')
       end if
 
       ! Create list
@@ -166,14 +166,14 @@ contains
     else
 
       print *,'Parsed line: ',trim(pline%line)
-      call die('fdf_extra: error in range block, input not recognized')
+      call die('fdf_brange: error in range block, input not recognized')
 
     end if
 
     do j = 1 , n
       if ( list(j) < low .or. high < list(j) ) then
         print *,'Parsed line: ',trim(pline%line)
-        call die('fdf_extra: error in range block. Input is beyond range')
+        call die('fdf_brange: error in range block. Input is beyond range')
       end if
     end do
 
@@ -240,16 +240,16 @@ contains
     n_r = 0
     if ( allocated(rgns) ) deallocate(rgns)
 
-    ! If the block does not exist, simply return
-    if ( .not. fdf_block(bName,bfdf) ) return
+    ! Get number of regions
+    il = fdf_block_linecount(bName)
+    if ( il == 0 ) return
 
-    ! the initial number of regions
-    il = 0
-    do while ( fdf_bnext(bfdf,pline) ) 
-      il = il + 1
-    end do
+    if ( .not. fdf_block(bName,bfdf) ) then
+      call die('fdf_bregions: failed implementation.')
+    end if
+
+    ! allocate
     allocate(rlist(il))
-    call fdf_brewind(bfdf)
 
     ! first count number of differently named regions
     do while ( fdf_bnext(bfdf,pline) ) 
@@ -302,7 +302,7 @@ contains
         call fdf_brange(pline,r1,1,n)
         if ( r1%n == 0 ) then
           print *,'Region: ',trim(g)
-          call die('fdf_extra: Could not read in anything in region!')
+          call die('fdf_bregions: Could not read in anything in region!')
         end if
         call rgn_union(rgns(il),r1,rgns(il))
         rgns(il)%name = trim(g)
@@ -312,7 +312,7 @@ contains
         call fdf_brange(pline,r1,1,n)
         if ( r1%n == 0 ) then
           print *,'Region: ',trim(g)
-          call die('fdf_extra: Could not read in anything in region!')
+          call die('fdf_bregions: Could not read in anything in region!')
         end if
         call rgn_union(rgns(ic),r1,rgns(ic))
         rgns(ic)%name = trim(g)

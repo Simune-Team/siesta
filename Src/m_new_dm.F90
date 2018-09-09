@@ -981,7 +981,7 @@ contains
       
       ! Read the data from the block and then we populate DM
       na = 0
-      do while( fdf_bline(bfdf,pline) .and. na < na_u )
+      do while( fdf_bline(bfdf,pline) )
          
          ! Read number of names, integers and reals on this line
          ni = fdf_bnintegers(pline)

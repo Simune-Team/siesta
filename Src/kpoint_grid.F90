@@ -145,6 +145,7 @@ MODULE Kpoint_grid
               kdispl(i) = 0._dp
             end if
          enddo
+         call fdf_bclose(bfdf)
          firm_displ = .true.
 
       else

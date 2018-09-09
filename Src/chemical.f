@@ -115,22 +115,17 @@
       if ( present(silent) ) lsilent = silent
       if ( Node /= 0 ) lsilent = .true.
 
+      ! Default to 0
+      nsp = fdf_integer('Number_of_species',0)
+
       ! The most important thing to find is
       ! the block containing the species
-      found = fdf_block('Chemical_species_label',bfdf)
+      found = fdf_block('Chemical_species_label', bfdf)
       if (.not. found )
      $     call die("Block Chemical_species_label does not exist.")
 
-      ! Default to 0
-      nsp = fdf_integer('Number_of_species',0)
       if ( nsp == 0 ) then
-         ! try and guess the number of species
-         ns_read = 0
-         do while( fdf_bline(bfdf,pline) )
-            if ( fdf_bmatch(pline,'iin') ) then
-               ns_read = ns_read + 1
-            end if
-         end do
+         ns_read = fdf_block_linecount('Chemical_species_label', 'iin')
       else
          ns_read = nsp
       end if
@@ -143,9 +138,6 @@
       allocate(chemical_list%spec_label(nsp))
       allocate(chemical_list%z(nsp))
       chemical_list%no_of_species = nsp
-
-      ! Rewind the block
-      call fdf_brewind(bfdf)
 
       ns_read = 0
       do while( fdf_bline(bfdf,pline) )
