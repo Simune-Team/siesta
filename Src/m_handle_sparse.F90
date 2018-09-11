@@ -493,18 +493,15 @@ contains
   !>
   !> @note
   !> This will actually work even in the presence of degenerate folding
-  !> (the S(io,io)>1 case mentioned below). This will only happen if a
-  !> supercell is not used, i.e. k-points are not used, so no phases are
+  !> (S(io,io)>1). This can only appear if a
+  !> supercell is not used, so k-points are not used, so no phases are
   !> needed. The DM elements in the base cell are just the products of
   !> appropriate wavefunction coefficients, and they can be replicated
   !> to the rest of the supercell. Note that it is S (or H) that is folded,
   !> not the DM.
   !> @endnote
   !>
-  !> However, IFF one has a DM with folded elements (S(io,io) > 1.)
-  !> we have a problem because the DM elements are made of sums of
-  !> supercell and primary unit-cell contributians, so splitting the
-  !> contributions requires the overlap matrix.
+
   subroutine unfold_noauxiliary_supercell_Sp2D(sp_sc, D2)
 
     use class_Sparsity
@@ -578,8 +575,13 @@ contains
 
   !> Fold an nsc > 1 DM to an nsc_ == 1 supercell.
   !>
-  !> In cases where the DM is constructed from any(nsc > 1) we know that
-  !> double connected orbitals should be summed to the equivalent orbital.
+  !> In cases where the DM is constructed from any(nsc > 1), some orbital
+  !> connections are kept in image cells, and not in the unit cell that
+  !> is going to be retained, so we need to copy them. This is a special
+  !> sub-case of the "new supercell is smaller than the old one" case
+  !> treated more coarsely in routine [[correct_supercell_SpD]]
+  !> The name `fold` is not completely appropriate.
+  
   subroutine fold_auxiliary_supercell_Sp2D(sp_uc, D2)
 
     use class_Sparsity
@@ -636,7 +638,14 @@ contains
         
         do ind = ptr(io) + 1, ptr(io) + ncol(io)
           if ( ucorb(col(ind), no_u) == jo ) then
-            A2_uc(ucind, :) = A2_uc(ucind, :) + A2(ind, :)
+             ! Just copy. Do not add. Remember that the DM
+             ! is not folded. Only H and S are.
+             A2_uc(ucind, :) = A2(ind, :)
+             ! and we are done for this io,jo combination
+             ! As a refinement, we could store an average of
+             ! all elements with the same ucorb jo, but this
+             ! is probably not worth it.
+             cycle
           end if
         end do
         
