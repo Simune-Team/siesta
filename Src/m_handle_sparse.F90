@@ -581,6 +581,20 @@ contains
   !> sub-case of the "new supercell is smaller than the old one" case
   !> treated more coarsely in routine [[correct_supercell_SpD]]
   !> The name `fold` is not completely appropriate.
+
+  !> In more detail: the elements which in A2 are already in the
+  !> leftmost square of the rectangular interaction matrix should be
+  !> retained, even if for some reason they are not the first in the
+  !> series of elements of A2 with that ucorb jo. 
+
+  !> In the absence of other information, the criterion 'closer is
+  !> more important' is likely the right one, rather than averages or
+  !> tests for size of the DM element. If the old calculation was
+  !> simply a Gamma-point-with-auxcell one, all this is irrelevant, as
+  !> *all* the DM entries in A2 for a given jo are identical, but if
+  !> it came from a real k-point calculation, phases might be at work
+  !> and we do not know how. So the copying code below gives preference to
+  !> col(ind) == jo elements, and, if not present, to other images.
   
   subroutine fold_auxiliary_supercell_Sp2D(sp_uc, D2)
 
@@ -628,6 +642,9 @@ contains
     A2_uc => val(A2D)
     A2_uc(:,:) = 0._dp
 
+    ! Copy relevant elements. Do not add. Remember that the DM
+    ! is not folded, only H and S are.
+
     do io = 1, no_l
 
       ! Loop unitcell sparse pattern
@@ -637,15 +654,32 @@ contains
         jo = ucorb(uccol(ucind), no_u)
         
         do ind = ptr(io) + 1, ptr(io) + ncol(io)
-          if ( ucorb(col(ind), no_u) == jo ) then
-            ! Just copy. Do not add. Remember that the DM
-            ! is not folded. Only H and S are.
+          
+          ! We look for A2 elements with ucorb(col) == jo, giving
+          ! preference to those coming from 000 interactions
+          
+          if ( col(ind) == jo ) then
+
             A2_uc(ucind, :) = A2(ind, :)
-            ! and we are done for this io,jo combination
-            ! As a refinement, we could store an average of
-            ! all elements with the same ucorb jo, but this
-            ! is probably not worth it.
+            ! and we are done for this io,jo combination,
+            ! as this 000 element has preference
+            exit
+
+          else if ( ucorb(col(ind), no_u) == jo ) then
+
+            ! tentatively copy
+            A2_uc(ucind, :) = A2(ind, :)
+            ! but we keep looking for more elements for this io,jo combination, in
+            ! case one satisfying the first test appears.
+
             cycle
+
+            ! Other possibilities such as storing averages of all
+            ! elements with the same ucorb jo, or the element with
+            ! maximum magnitude, are probably not worth it, lacking
+            ! more information. Perhaps some statistical analysis
+            ! might help, but it would be overkill.
+
           end if
         end do
         
