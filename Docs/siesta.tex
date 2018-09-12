@@ -4984,6 +4984,27 @@ The Density matrix can be:
 
 \end{fdflogicalF}
 
+\begin{fdflogicalT}{DM!Init.Unfold}
+  \fdfdepend{DM!UseSaveDM}
+  \index{reading saved data!density matrix}
+
+  When reading the DM from a previous calculation there may be
+  inconsistencies in the auxiliary supercell. E.g. if the previous
+  calculation did not use an auxiliary supercell and the current
+  calculation does (adding $k$-point sampling). \siesta\ will
+  automatically \emph{unfold} the $\Gamma$-only DM to the auxiliary
+  supercell elements (if \fdftrue).
+
+  For \fdffalse\ the DM elements are assumed to originate from an
+  auxiliary supercell calculation and the sparse elements are not
+  unfolded but directly copied.
+
+  \note Generally this shouldn't not be touched, however, if the
+  initial DM is generated using \sisl\cite{sisl} and only on-site DM
+  elements are set, this should be set to \fdffalse.
+
+\end{fdflogicalT}
+
 \begin{fdflogicalF}{DM!FormattedFiles}
   \index{reading saved data!density matrix}
 
@@ -5783,35 +5804,6 @@ option must be enabled for them if self-folding is present. (Note that
 this should not happen in any serious calculation...)
 
 \end{fdflogicalF}
-
-\begin{fdfentry}{NaiveAuxiliaryCell}[logical]<\fdfvalue{MD.TypeOfRun}>
-
-  The auxiliary supercell needed can be determined using the atomic positions,
-  the orbital extent and the lattice parameters. For a fixed geometry
-  configuration the tightest auxiliary supercell is uniquely defined. However,
-  when performing MD simulations (or relaxations) the displacement of
-  certain atoms may result in changes to the required auxiliary
-  supercell, thus inhibiting re-use of DM information across geometry steps.
-  When this is option is \fdftrue\ the auxiliary supercell will be computed
-  with a simpler algorithm using only the orbital extent (fixed for \emph{any}
-  calculation) and the lattice vectors. The resulting supercell might
-  be larger than strictly needed, but it will remain mostly constant
-  during the run (even when the \fdf{MD.VariableCell} option is used,
-  if the lattice changes are moderate).
-
-  By default this will be \fdffalse\ when performing single-point calculations
-  (\fdf{MD.TypeOfRun:CG} with \fdf{MD.Steps:1} or below). Otherwise
-  this will default to \fdftrue.
-
-  \note one may try to set this to \fdffalse\ for better performance,
-  at the risk of inhibiting the re-use of DM information.
-
-  \note this option may made obsolete in later versions when a
-  supercell conversion routine is in place.
-
-  \note the name of the option reflects historical usage.
-
-\end{fdfentry}
 
 
 

@@ -1460,6 +1460,10 @@ subroutine read_options( na, ns, nspin )
 
   harrisfun = fdf_get('Harris_functional',.false.)
 
+  ! First read in, then later correct depending on
+  ! the other usages
+  use_aux_cell = fdf_get('ForceAuxCell', .false.)
+
   if (harrisfun) then
      mixH = .false.
      mix_charge = .false.
@@ -1597,14 +1601,6 @@ subroutine read_options( na, ns, nspin )
   end if
 
 
-  ! Default variable depending on the action required
-  if ( idyn == 0 .and. nmove <= 0 ) then
-    ! Single-point calculation: use the tight auxiliary supercell by default
-    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .false. )
-  else
-    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .true. )
-  end if
-  
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   savehs                 = fdf_get( 'SaveHS', .false. )
   initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )

@@ -114,7 +114,7 @@
       integer :: i, is, ispin, n_dm_items
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
-      logical :: user_wants_supercell, not_using_auxcell
+      logical :: not_using_auxcell
       real(dp) :: walltime_m, walltime_s
 
       integer :: World_Group
@@ -601,26 +601,15 @@ C     Initialise MPI and set processor number
 !     auxiliary supercell and hermitian version, even if using only
 !     the gamma point
 !
-      user_wants_supercell = fdf_get( 'ForceAuxCell', .false. )
-      if (user_wants_supercell) not_using_auxcell = .false.
+!     In case the user has requested the use of auxiliary
+!     cell we simply use that option.
+      if ( .not. not_using_auxcell ) use_aux_cell = .true.
 
 !     Find required supercell
 !     2*rmaxh is used to guarantee that two given orbitals in the
 !     supercell can only overlap once
-      if ( not_using_auxcell ) then
+      if ( .not. use_aux_cell ) then
         nsc(1:3) = 1
-      else if ( naive_aux_cell ) then
-        ! This scheme gives a safe supercell, not necessarily the tightest,
-        ! using only unit cell size information. It is appropriate for cases
-        ! in which the geometry might change, such as MD and relaxations. It
-        ! is expected that this supercell will stay mostly constant, allowing
-        ! the reuse of DM information across geometry steps. 
-        ! The auxiliary supercell is symmetric in the connections,
-        ! hence we need a factor of 2.
-        do i = 1 , 3
-          veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-          nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
-        end do
       else
         ! Determine the tightest auxiliary supercell using
         ! also the atomic positions 
@@ -630,7 +619,7 @@ C     Initialise MPI and set processor number
       mscell = 0.0_dp
       do i = 1, 3
         mscell(i,i) = nsc(i)
-        nscold(i)   = nsc(i)
+        nsc_old(i)  = nsc(i)
       enddo
 
 !     Find auxiliary supercell (required only for k sampling)

@@ -124,4 +124,4 @@ module extrae_eventllist
   end subroutine deleteList
 
 end module extrae_eventllist
-#endif TRACING
+#endif /* TRACING */

@@ -378,7 +378,7 @@ m_geom_objects.o: m_geom_square.o
 m_geom_plane.o: intrinsic_missing.o m_geom_aux.o
 m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
 m_getopts.o: f2kcli.o
-m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
+m_handle_sparse.o: class_Data2D.o class_OrbitalDistribution.o class_SpData1D.o
 m_handle_sparse.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_iodm.o
 m_handle_sparse.o: m_os.o m_region.o m_ts_io.o parallel.o precision.o units.o
 m_hartree_add.o: intrinsic_missing.o m_cite.o m_geom_objects.o m_mesh_node.o
@@ -468,7 +468,7 @@ m_sparsity_handling.o: precision.o
 m_spin.o: alloc.o local_sys.o parallel.o precision.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
-m_supercell.o: intrinsic_missing.o parallel.o parallelsubs.o precision.o
+m_supercell.o: parallel.o parallelsubs.o precision.o
 m_svd.o: precision.o
 m_target_stress.o: local_sys.o parallel.o precision.o units.o
 m_test_io.o: class_SpData2D.o class_Sparsity.o m_iodm.o m_matio.o parallel.o
@@ -640,7 +640,6 @@ madelung.o: local_sys.o parallel.o precision.o
 matel_registry.o: local_sys.o m_trialorbitalclass.o precision.o radial.o
 matel_registry.o: spher_harm.o
 md_out.o: files.o local_sys.o m_energies.o precision.o units.o
-md_utils.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 memory_all.o: rusage.o
 memory_snapshot.o: rusage.o
@@ -752,7 +751,8 @@ rhoofdsp.o: mesh.o meshdscf.o meshphi.o precision.o
 save_density_matrix.o: atomlist.o files.o iodm_netcdf.o m_energies.o m_iodm.o
 save_density_matrix.o: m_matio.o m_ncdf_siesta.o m_spin.o m_steps.o
 save_density_matrix.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
-save_density_matrix.o: precision.o siesta_options.o sparse_matrices.o
+save_density_matrix.o: precision.o siesta_geom.o siesta_options.o
+save_density_matrix.o: sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 scfconvergence_test.o: atomlist.o ldau.o ldau_specs.o m_convergence.o
 scfconvergence_test.o: m_energies.o m_spin.o m_wallclock.o parallel.o
@@ -845,18 +845,21 @@ state_analysis.o: m_fixed.o m_forces.o m_ntm.o m_spin.o m_stress.o
 state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
 state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 state_analysis.o: units.o write_subs.o zmatrix.o
-state_init.o: alloc.o atomlist.o class_Data2D.o class_SpData1D.o
-state_init.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
-state_init.o: domain_decom.o files.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
-state_init.o: ioxv.o kpoint_grid.o ldau_specs.o local_sys.o m_energies.o m_eo.o
+state_init.o: alloc.o atomlist.o class_Data2D.o
+state_init.o: class_Fstack_Pair_Geometry_SpData2D.o
+state_init.o: class_Pair_Geometry_SpData2D.o class_SpData1D.o class_SpData2D.o
+state_init.o: class_Sparsity.o create_Sparsity_SC.o domain_decom.o files.o
+state_init.o: hsparse.o iodm_netcdf.o iodmhs_netcdf.o ioxv.o kpoint_grid.o
+state_init.o: ldau_specs.o local_sys.o m_energies.o m_eo.o m_handle_sparse.o
 state_init.o: m_mixing.o m_mixing_scf.o m_mpi_utils.o m_ncdf_siesta.o
 state_init.o: m_new_dm.o m_os.o m_pivot_methods.o m_rmaxh.o m_sparse.o
 state_init.o: m_sparsity_handling.o m_spin.o m_steps.o m_supercell.o
 state_init.o: m_test_io.o m_ts_charge.o m_ts_electype.o m_ts_global_vars.o
 state_init.o: m_ts_io.o m_ts_kpoints.o m_ts_options.o m_ts_sparse.o
 state_init.o: m_ts_tri_init.o normalize_dm.o overlap.o parallel.o
-state_init.o: proximity_check.o siesta_cml.o siesta_dicts.o siesta_geom.o
-state_init.o: siesta_options.o sparse_matrices.o units.o write_subs.o zmatrix.o
+state_init.o: proximity_check.o restructSpData2D.o siesta_cml.o siesta_dicts.o
+state_init.o: siesta_geom.o siesta_options.o sparse_matrices.o units.o
+state_init.o: write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o ioxv.o m_exp_coord.o
 struct_init.o: m_iostruct.o m_mpi_utils.o m_steps.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_master.o siesta_options.o
