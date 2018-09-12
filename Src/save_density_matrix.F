@@ -125,16 +125,26 @@
       end select
 
       if ( do_it ) then
-         if ( TSrun ) then
+        if ( TSmode ) then
+!         Performing a TranSiesta calculation:
+          if ( TSrun ) then
+!           If we are running TranSiesta we should save the TSDE file
             call write_ts_dm(trim(slabel)//'.TSDE',
-     &           nsc, DM_2D, EDM_2D, Ef)
-         else
+     &          nsc, DM_2D, EDM_2D, Ef)
+          else
+!           If we are running the Siesta initialization we should
+!           store the DM file
             call write_dm(trim(slabel)//'.DM', nsc, DM_2D)
-            if ( TS_DE_save ) then
-               call write_ts_dm(trim(slabel)//'.TSDE',
-     &              nsc, DM_2D, EDM_2D, Ef)
-            end if
-         end if
+          end if
+        else
+!         Always write out the DM file
+          call write_dm(trim(slabel)//'.DM', nsc, DM_2D)
+          if ( TS_DE_save ) then
+!           IN case the user also wants the TSDE file, store this
+            call write_ts_dm(trim(slabel)//'.TSDE',
+     &          nsc, DM_2D, EDM_2D, Ef)
+          end if
+        end if
       end if
 
       end subroutine save_density_matrix

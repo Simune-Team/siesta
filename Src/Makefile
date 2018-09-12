@@ -396,7 +396,7 @@ ifeq ($(COMPILER_VERSION),)
   COMPILER_VERSION := Unknown version
 endif
 
-.PHONY: version.o
+.PHONY: version version.o
 version.o: version
 version: version.F90
 	@echo
