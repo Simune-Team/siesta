@@ -7,7 +7,12 @@
 ! ---
 
 module class_Sparsity
-  
+  !! Implements a reference-counted derived type ([bud](|url|/page/buds.html))
+  !! to hold the [sparsity pattern](|url|/page/sparse.html)  of the program's matrices
+  !! Objects of this type (notably [[sparse_matrices:sparse_pattern]] can be passed around
+  !! and put in container types.
+  !! The legacy indexing arrays can be linked to this bud's data [[class_Sparsity:attach]]
+  !! when necessary.
   use alloc, only: re_alloc, de_alloc
   
   implicit none

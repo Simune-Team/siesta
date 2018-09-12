@@ -6,7 +6,7 @@ contains
 
   ! Module to test various IO-routines
 
-  subroutine time_io(nspin,D_2D)
+  subroutine time_io(nspin,nsc,D_2D)
 
     use precision, only : dp
     use parallel, only : Node
@@ -16,6 +16,7 @@ contains
     use m_iodm
 
     integer, intent(in) :: nspin
+    integer, intent(in) :: nsc(3)
     type(dSpData2D), intent(inout) :: D_2D
 
     type(Sparsity), pointer :: sp
@@ -58,7 +59,7 @@ contains
 
     call timer('NICK-io',1)
     do i = 1 , N_WRITES
-       call write_dm('TESTIO.DM',D_2D)
+       call write_dm('TESTIO.DM',nsc,D_2D)
     end do
     call timer('NICK-io',2)
 

@@ -20,16 +20,15 @@ contains
 
     use precision, only: dp
     use siesta_options
-    use fdf,         only: fdf_block, block_fdf
+    use fdf,         only: fdf_isblock
     use kpoint_ldos_m, only: setup_kpoint_ldos
     use parallel,    only: IOnode
 
     real(dp), intent(in) :: ucell(3,3)
-    type(block_fdf) :: bfdf
 
     !-------------------------------------------------------------------------BEGIN
     !     Compute the projected density of states
-    do_ldos = fdf_block('LocalDensityOfStates', bfdf)
+    do_ldos = fdf_isblock('LocalDensityOfStates')
     if ( .not. do_ldos ) return
 
     if ( isolve /= SOLVE_DIAGON ) then

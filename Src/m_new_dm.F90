@@ -60,7 +60,9 @@ contains
   subroutine new_DM(SC_changed, DM_history, DM_2D, EDM_2D)
 
     use siesta_options
-    use siesta_geom,      only: ucell, xa, na_u, isc_off, nsc
+    use siesta_geom,      only: ucell, xa, na_u, isc_off
+    use siesta_geom,      only: nsc, nsc_old
+
     use sparse_matrices,  only: sparse_pattern, block_dist
     use atomlist,         only: Datm, iaorb, lasto, no_u
     use m_steps,          only: istp
@@ -82,7 +84,7 @@ contains
     use m_energies, only: Ef
 
     logical, intent(in) :: SC_changed ! Has auxiliary supercell changed?
-    type(Fstack_Pair_Geometry_dSpData2D), intent(inout)      :: DM_history
+    type(Fstack_Pair_Geometry_dSpData2D), intent(inout) :: DM_history
     type(dSpData2D), intent(inout) :: DM_2D, EDM_2D
 
     ! Local variables
@@ -100,7 +102,7 @@ contains
 
     if ( IONode ) then
        write(*,"(a,i5)") "new_DM -- step: ", istp
-    endif
+    end if
 
     ! In principle we allow the re-use of the DM (i.e, we do not initialize it)
     ! Initialization is either:
@@ -147,8 +149,9 @@ contains
             DM_init = .true.
     end if
 
+#ifdef TO_BE_REMOVED
     ! ... or if the auxiliary cell has changed
-    ! (in this case we have to  avoid reading back saved copy from file)
+    ! (in this case we have to avoid reading back saved copy from file)
     if ( SC_changed ) then
        
        if ( initDMaux ) then
@@ -167,7 +170,8 @@ contains
              write(*,"(a)") "** Warning: since 'ReinitialiseDM' is set to .false."
           end if
        end if
-    end if
+     end if
+#endif
 
     if ( DM_init ) then
        
@@ -175,7 +179,7 @@ contains
           write(*,"(a)") "Initializing Density Matrix..."
        end if
 
-       call init_DM(spin, na_u, no_u, lasto, iaorb, &
+       call init_DM(spin, na_u, no_u, nsc, lasto, iaorb, &
             Datm, &
             block_dist, sparse_pattern, &
             DM_2D, EDM_2D, &
@@ -193,7 +197,7 @@ contains
        if ( IONode ) then
           write(*,'(a,i0)') "Number of DMs in history: ", DM_in_history
        end if
-       call extrapolate_dm_with_coords(DM_history, na_u, xa(:,1:na_u), &
+       call extrapolate_DM_with_coords(DM_history, na_u, xa(:,1:na_u), &
             sparse_pattern, DM_2D)
        if ( IONode ) then
           write(*,'(a)') "New DM after history re-use:"
@@ -356,7 +360,7 @@ contains
   !  1) reading a DM/TSDE(transiesta) file
   !  2) fall-back to atomic initialization using
   !     a possibly user-defined spin-configuration.
-  subroutine init_DM(spin, na_u, no_u, lasto, iaorb, &
+  subroutine init_DM(spin, na_u, no_u, nsc, lasto, iaorb, &
        DM_atom, &
        dit, sp, DM_2D, EDM_2D, &
        read_DM, &
@@ -381,6 +385,7 @@ contains
     ! type(tSpin) spin              : spin configuration for this system
     ! integer na_u                  : number of atoms in unit-cell
     ! integer no_u                  : number of orbitals in unit-cell
+    ! integer nsc(3)                : number of supercells along each direction
     ! integer lasto(0:na_u)         : last orbital of each atom
     ! integer iaorb(no_u)           : the atomic index of the corresponding orbital
     ! real(dp) DM_atom(no_u)        : atomic density based on atomic configuration
@@ -401,6 +406,8 @@ contains
     integer, intent(in) :: na_u
     ! Number of orbitals in the unit-cell
     integer, intent(in) :: no_u
+    ! Number of supercells along each direction
+    integer, intent(in) :: nsc(3)
     ! The last orbital on each atom
     integer, intent(in) :: lasto(0:na_u)
     ! The atom containing orbital "io"
@@ -434,7 +441,7 @@ contains
     if ( read_DM ) then
        
        ! Try and read the DM from the files
-       call init_DM_file(spin, no_u, &
+       call init_DM_file(spin, no_u, nsc, &
             dit, sp, DM_2D, EDM_2D, &
             init_method)
 
@@ -488,15 +495,14 @@ contains
 
   end subroutine init_DM
 
-
-  subroutine init_DM_file(spin, no_u, &
+  !> Routine for reading the DM from a file.  
+  !> This is a simple read-inset routine which reads
+  !> a DM/TSDE file, and inserts the quantities
+  !> into the the resulting DM (and/or EDM).
+  subroutine init_DM_file(spin, no_u, nsc, &
        dit, sp, DM_2D, EDM_2D, &
        init_method)
 
-    ! Routine for reading the DM from a file.
-    ! This is a simple read-inset routine which reads
-    ! a DM/TSDE file, and inserts the quantities
-    ! into the the resulting DM (and/or EDM).
 
     ! If the readed DM file has a different number of spin-components,
     ! this routine will easily extrapolate the quantities:
@@ -549,11 +555,14 @@ contains
     ! stored in the TSDE file.
     use m_ts_global_vars,only: TSmode
 
-    use m_restruct_SpData2D, only: restructdSpData2D
+    use m_handle_sparse, only: correct_supercell_SpD
+    use m_handle_sparse, only: unfold_noauxiliary_supercell_SpD
+    use m_handle_sparse, only: fold_auxiliary_supercell_SpD
     
     ! ********* INPUT ***************************************************
     ! type(tSpin) spin              : spin configuration for this system
     ! integer no_u                  : number of orbitals in unit-cell
+    ! integer nsc(3)                : number of supercells along each direction
     ! type(OrbitalDistribution) dit : the distribution used for the orbitals
     ! type(Sparsity) sp             : sparsity pattern of DM
     ! type(dSpData2D) DM_2D         : the density matrix 
@@ -565,29 +574,33 @@ contains
     !                                   2 == .TSDE read
     ! *******************************************************************
 
-    ! The spin-configuration that is used to determine the spin-order.
+    !> The spin-configuration that is used to determine the spin-order.
     type(tSpin), intent(in) :: spin
-    ! Number of orbitals in the unit-cell
+    !> Number of orbitals in the unit-cell
     integer, intent(in) :: no_u
-    ! Parallel distribution of DM/EDM
+    !> Number of supercells along each direction
+    integer, intent(in) :: nsc(3)
+    !> Parallel distribution of DM/EDM
     type(OrbitalDistribution), intent(in) :: dit
-    ! Sparse pattern for DM/EDM
+    !> Sparse pattern for DM/EDM
     type(Sparsity), intent(inout) :: sp
-    ! The DM and EDM, these will be initialiazed upon return
-    ! if the routine could read the files
+    !> The DM and EDM, these will be initialiazed upon return
+    !> if the routine could read the files
     type(dSpData2D), intent(inout) :: DM_2D, EDM_2D
 
-    ! To signal the method by which we have read DM/EDM
+    !> To signal the method by which we have read DM/EDM
     integer, intent(out) :: init_method
 
     
     ! *** Local variables:
+    logical :: corrected_nsc
     logical :: DM_found
     logical :: TSDE_found
     ! The file we should read
     character(len=256) :: fname
     ! Number of spin-components read from the DM/TSDE file
     integer :: nspin_read
+    integer :: nsc_read(3)
 
     ! The currently read stuff
     type(dSpData2D) :: DM_read
@@ -609,13 +622,14 @@ contains
        fname = fdf_get('File.TSDE.Init',trim(slabel)//'.TSDE')
 
        ! Try and read the file
-       call read_ts_dm(trim(fname), dit, DM_read, EDM_read, Ef, TSDE_found)
+       call read_ts_dm(trim(fname), dit, nsc_read, DM_read, EDM_read, Ef, TSDE_found)
 
        if ( TSDE_found ) then
           ! Signal we have read TSDE
           init_method = 2
 
           DM_found = .true.
+
        else if ( IONode ) then
           write(*,'(a)') 'Failed...'
        end if
@@ -629,11 +643,12 @@ contains
        ! Retrieve the name of the initialization file.
        fname = fdf_get('File.DM.Init',trim(slabel)//'.DM')
 
-       call read_DM(trim(fname), dit, DM_read, DM_found)
+       call read_DM(trim(fname), dit, nsc_read, DM_read, DM_found)
 
        if ( DM_found ) then
-          ! Signal that the DM file has been found
-          init_method = 1
+         ! Signal that the DM file has been found
+         init_method = 1
+         
        end if
        
     end if
@@ -652,6 +667,7 @@ contains
           end if
           
           DM_found = .false.
+          TSDE_found = .false.
           
        end if
 
@@ -662,35 +678,81 @@ contains
        
     end if
 
-    ! In case the sparsity pattern does not conform we update 
-    ! the TSDE_found, note that DM_found is a logic containing
-    ! information regarding the sparsity pattern
-    if ( TSDE_found ) TSDE_found = DM_found
 
     ! Density matrix size checks
     if ( DM_found ) then
 
-       nspin_read = size(DM_read, 2)
+      corrected_nsc = .false.
+      if ( nsc_read(1) /= 0 .and. any(nsc /= nsc_read) ) then
 
-       if ( spin%DM == nspin_read .and. IONode ) then
-          write(*,'(a)') 'Succeeded...'
-       else if ( spin%DM /= nspin_read .and. IONode ) then
-          if ( spin%DM < nspin_read ) then
-             write(*,'(a)') 'Succeeded by reducing spin-components...'
-          else
-             write(*,'(a)') 'Succeeded by increasing spin-components...'
+        ! There are three cases:
+        if ( all(nsc_read == 1) .and. fdf_get('DM.Init.Unfold', .true.) ) then
+
+          ! 1. The read DM was created from a Gamma-only calculation and thus nsc == 1, always.
+          !    In this case we know that the DM elements in the Gamma calculation (io,jo)
+          !    are replicated in all image cells (io, jo + i_s * no_u) where i_s is the image cell
+          !    offfset, since there are no k-points and thus no phases to worry about.
+          !
+          !    In very special circumstances the user may avoid this behavior by
+          !    by setting 'DM.Init.Unfold false' 
+          
+          call unfold_noauxiliary_supercell_SpD(sp, DM_read)
+          if ( TSDE_found ) then
+            call unfold_noauxiliary_supercell_SpD(sp, EDM_read)
           end if
-       end if
 
-       if ( IONode ) then
-          write(*,'(a)') "DM from file:"
-          call print_type(DM_read)
-       end if
+        else if ( all(nsc == 1) ) then
 
-       call restruct_Data(spin%DM, DM_read, DM_2D)
-       if ( TSDE_found ) then
-          call restruct_Data(spin%EDM, EDM_read, EDM_2D)
-       end if
+          ! 2. The read DM was created from a calculation with a non-trivial auxiliary cell, 
+          !    and the current calculation is Gamma-only. In this case it is necessary to fold back
+          !    all supercell DM entries.
+
+          call fold_auxiliary_supercell_SpD(sp, DM_read)
+          if ( TSDE_found ) then
+            call fold_auxiliary_supercell_SpD(sp, EDM_read)
+          end if
+            
+        else
+
+          ! 3. The read DM has a different supercell size. In this case we only copy those
+          !    elements that we know exists in the call below.
+         
+          ! Correct the supercell information
+          ! Even for EDM this will work because correct_supercell_SpD
+          ! changes the sparse pattern in-place and EDM and DM have
+          ! a shared sp
+          call correct_supercell_SpD(nsc_read, DM_read, nsc)
+          corrected_nsc = .true.
+          
+        end if
+
+      end if
+
+      nspin_read = size(DM_read, 2)
+
+      if ( IONode ) then
+        if ( spin%DM == nspin_read ) then
+          write(*,'(a)') 'Succeeded...'
+        else if ( spin%DM < nspin_read ) then
+          write(*,'(a)') 'Succeeded by reducing the number of spin-components...'
+        else
+          write(*,'(a)') 'Succeeded by increasing the number of spin-components...'
+        end if
+      end if
+      
+      if ( IONode ) then
+        write(*,'(a)') "DM from file:"
+        call print_type(DM_read)
+      end if
+
+      call restruct_Data(spin%DM, DM_read, DM_2D, .not. corrected_nsc)
+      if ( IONode ) then
+        write(*,'(a)') "DM to be used:"
+        call print_type(DM_2D)
+      end if
+      if ( TSDE_found ) then
+        call restruct_Data(spin%EDM, EDM_read, EDM_2D, .false.)
+      end if
 
     end if
 
@@ -702,43 +764,64 @@ contains
 
   contains
 
-    subroutine restruct_Data(nspin, in_2D, out_2D)
+    !> Driver to fix both the spin dimension and the sparsity pattern
+    !> of a DM object, which typically has been read from file.
+    !>
+    !> Note that only the cases in which one of the spin dimensions is 1
+    !> are treated.
+    
+    subroutine restruct_Data(nspin, in_2D, out_2D, show_warning)
+      
+      use m_restruct_SpData2D, only: restruct_dSpData2D
+      
+      !> Current spin dimension in the program
       integer, intent(in) :: nspin
-      type(dSpData2D), intent(inout) :: in_2D, out_2D
+      !> Input (DM) bud, to be mined for info
+      type(dSpData2D), intent(inout) :: in_2D
+      !> Output (DM) bud, created
+      type(dSpData2D), intent(inout) :: out_2D
+      !> Whether to show sanity-check warnings 
+      logical, intent(in) :: show_warning
       
       integer :: nspin_read, i
-      real(dp), pointer :: ar2(:,:)
+      real(dp), pointer :: A2(:,:)
 
       nspin_read = size(in_2D, 2)
       
       if ( nspin == 1 .and. nspin /= nspin_read ) then
          ! This SCF has 1 spin-component.
          
-         ! The readed DM has, at least 2!
-         ! Thus we sum the spinors to form the non-polarized
-         ar2 => val(in_2D)
+         ! The read DM has at least 2!
+         ! Thus we sum the spinors to form the non-polarized version
+         A2 => val(in_2D)
 !$OMP parallel do default(shared), private(i)
-         do i = 1 , size(ar2, 1)
-            ar2(i,1) = ar2(i,1) + ar2(i,2)
+         do i = 1 , size(A2, 1)
+            A2(i,1) = A2(i,1) + A2(i,2)
          end do
 !$OMP end parallel do
 
       end if
 
-      ! Restructure the sparsity data to the output DM
-      ! with maximum spin%DM number of spin-components
-      call restructdSpData2D(in_2D, sp, out_2D, nspin)
+      !> Calls [[restruct_dSpData2D]] to re-structure the sparsity
+      !> data to match the output DM, with maximum spin%DM number of
+      !> spin-components. It returns a new out_2D bud.
+      !> @note
+      !> The current sparsity pattern `sp` is known here by host association from
+      !> the parent routine, which is a bit confusing. 
+      !> `out_2D` in the called routine. Here it is the `out` sparsity, corresponding
+      !> to the current target sparsity in the program.
+      !> @endnote
+      call restruct_dSpData2D(in_2D, sp, out_2D, nspin, show_warning=show_warning)
 
       if ( nspin_read == 1 .and. nspin /= nspin_read ) then
          ! This SCF has more than 2 spin-components.
-         ! The readed DM has 1.
-         ! Thus we divide the spinors to form the polarized
-         ! case.
-         ar2 => val(out_2D)
+         ! The read DM has 1.
+         ! Thus we divide the spinors to form the polarized case.
+         A2 => val(out_2D)
 !$OMP parallel do default(shared), private(i)
-         do i = 1 , size(ar2, 1)
-            ar2(i,1) = ar2(i,1) * 0.5_dp
-            ar2(i,2) = ar2(i,1)
+         do i = 1 , size(A2, 1)
+            A2(i,1) = A2(i,1) * 0.5_dp
+            A2(i,2) = A2(i,1)
          end do
 !$OMP end parallel do
          
@@ -981,7 +1064,7 @@ contains
       
       ! Read the data from the block and then we populate DM
       na = 0
-      do while( fdf_bline(bfdf,pline) .and. na < na_u )
+      do while( fdf_bline(bfdf,pline) )
          
          ! Read number of names, integers and reals on this line
          ni = fdf_bnintegers(pline)
@@ -1244,7 +1327,7 @@ contains
     use class_Pair_Geometry_dSpData2D
     use class_Fstack_Pair_Geometry_dSpData2D
 
-    use m_restruct_SpData2D, only: restructdSpData2D
+    use m_restruct_SpData2D, only: restruct_dSpData2D
     use fdf, only: fdf_get
 
     type(Fstack_Pair_Geometry_dSpData2D), intent(in) :: DM_history
@@ -1327,7 +1410,7 @@ contains
        !           if (.not. associated(orb_dist,dist(dm))) then
        !              call die("Different orbital distributions in DM history stack")
        !           endif
-       call restructdSpData2D(dm,sparse_pattern,DMtmp)
+       call restruct_dSpData2D(dm,sparse_pattern,DMtmp)
        ai => val(DMtmp)
 !$OMP parallel workshare default(shared)
        a = a + c(i) * ai

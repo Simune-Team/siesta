@@ -1944,7 +1944,7 @@ contains
     type(dSpData2D) :: f_DM_2D, f_EDM_2D
     real(dp), pointer :: DM(:,:), EDM(:,:)
     real(dp) :: tmp, Ef
-    integer :: Tile(3), Reps(3)
+    integer :: Tile(3), Reps(3), fnsc(3)
     integer :: i
     logical :: found, alloc(3), is_TSDE
 
@@ -1960,10 +1960,10 @@ contains
     is_TSDE = ( this%DEfile(i-3:i) == 'TSDE' )
     if ( is_TSDE ) then
        call read_ts_dm( this%DEfile, fake_dit, &
-            f_DM_2D, f_EDM_2D, Ef, found, &
+            fnsc, f_DM_2D, f_EDM_2D, Ef, found, &
             Bcast = .true. )
     else
-       call read_dm( this%DEfile, fake_dit, f_DM_2D, found, &
+       call read_dm( this%DEfile, fake_dit, fnsc, f_DM_2D, found, &
             Bcast = .true. )
     end if
     if ( .not. found ) call die('Could not read file: '//trim(this%DEfile))
@@ -1972,6 +1972,8 @@ contains
        call die('Bulk electrode expansion, read in sparsity pattern, &
             &does not match the TSHS sparsity pattern.')
     end if
+    ! Correct the number of supercells (currently not used)
+    if ( fnsc(1) == 0 ) fnsc = this%nsc
 
     ! We must delete the additional arrays read in
     call delete(this%H)

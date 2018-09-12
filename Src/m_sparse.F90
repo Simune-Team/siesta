@@ -294,6 +294,17 @@ contains
 
   end subroutine list_col_correct_sp
 
+  ! Routine used for calculation the supercell offsets using
+  ! the xij_2D array.
+  ! Basically this routine runs through all xijo elements
+  ! and calculates the cell distance:
+  !    R(col(ind) % no_u) = xij(ind) - (xa(j) - xa(i))
+  ! This should result in vectors R(...) which are integer
+  ! multiples of the lattice vectors:
+  !   cell X = R
+  ! returns X as integers.
+  ! This routine will quit/exit if two supercell indices
+  !   col(ind) % no_u does not yield the same R vector.
   subroutine xij_offset_sp(cell,nsc,na_u,xa,lasto, &
        xij_2D,isc_off,Bcast)
     

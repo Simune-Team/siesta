@@ -115,12 +115,19 @@
       use class_dSpData2D
       use class_zSpData2D
       use class_dData2D
+      use class_Pair_Geometry_dSpData2D
+      use class_Fstack_Pair_Geometry_dSpData2D
+
 #ifdef TEST_IO
       use m_test_io
 #endif
 #ifdef SIESTA__FLOOK
       use siesta_dicts, only : dict_repopulate_MD
+      use siesta_dicts, only : dict_repopulate_sparse_matrices
 #endif
+
+      use m_handle_sparse, only: correct_supercell_SpD
+      use m_restruct_SpData2D, only: restruct_dSpData2D
 
       implicit none
 
@@ -160,15 +167,17 @@
       character(len=256)            :: oname
 
       type(dData2D) :: tmp_2D
+
+!     Variables required to correct the DM in the history
+      type(dSpData2D), pointer :: tmp_Sp2D
+      type(Pair_Geometry_dSpData2D), pointer :: pair
+
       real(dp) :: dummy_qspin(8)
-      logical  :: not_using_auxcell
 !------------------------------------------------------------------- BEGIN
       call timer( 'IterGeom', 1 )
 
       call timer( 'state_init', 1 )
 
-      not_using_auxcell = (no_s == no_u)
-      
       istp = istp + 1
 
       if (IOnode) then
@@ -267,8 +276,9 @@
       call iotdxv('write',ucell,vcell,na_u,isa,iza,xa,va,foundxv)
       end if  
 
-!     Actualize things if variable cell 
-      auxchanged = .false.
+!     Actualize things if variable cell
+!     These checks are made to ensure that the k-points
+!     and Madelung terms are corrected in case the cell is changed.
       cell_can_change = ( varcel .or.
      &                    (idyn .eq. 8)  ! Force/stress evaluation
      &                  )
@@ -288,7 +298,7 @@
 
         if ( .not. gamma_scf ) then
 
-!       Will print k-points also
+!       Will print k-points also (on every MD step... :( )
         call kpoint_delete(kpoint_scf)
         call setup_kpoint_scf( ucell )
 
@@ -304,39 +314,24 @@
         call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 
      &                 'qo', 'state_init' )
 
-!       Find required supercell
-        if (not_using_auxcell) then
-           nsc(1:3) = 1
-        else if ( naive_aux_cell ) then
-          ! This scheme gives a safe supercell, not necessarily the
-          ! tightest, using only unit cell size information. It is
-          ! appropriate for cases in which the geometry might change,
-          ! such as MD and relaxations. It is expected that this
-          ! supercell will stay mostly constant, allowing the reuse of
-          ! DM information across geometry steps.  The auxiliary
-          ! supercell is symmetric in the connections, hence we need a
-          ! factor of 2.
-          do i = 1 , 3
-            veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-            nsc(i) = 1 + 2 * ceiling( rmaxh / veclen )
-          end do
-        else
-          ! Determine the tightest auxiliary supercell using
-          ! also the atomic positions 
-          call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
-        endif
-
-        mscell = 0.0_dp
-        do i = 1, 3
-           mscell(i,i) = nsc(i)
-           if (nsc(i) /= nscold(i)) auxchanged = .true.
-           nscold(i) = nsc(i)
-        enddo
-
-        end if
-      endif
+      end if
 !     End variable cell actualization
 
+!     Always (in case of auxiliary cell) check the new sparse pattern
+      auxchanged = .false.
+      if ( use_aux_cell ) then
+!       Determine the tightest auxiliary supercell using
+!       also the atomic positions 
+        call exact_sc_ag(negl,ucell,na_u,isa,xa,nsc)
+        
+        mscell = 0.0_dp
+        do i = 1, 3
+          mscell(i,i) = nsc(i)
+          if (nsc(i) /= nsc_old(i)) auxchanged = .true.
+        end do
+        
+      end if
+      
 !     Auxiliary supercell
 !     Do not move from here, as the coordinates might have changed
 !     even if not the unit cell
@@ -425,14 +420,14 @@
       call delete(xij_2D) ! as xijo will be reallocated
       nullify(xijo)
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto,
-     &              lastkb, iphorb, iphKB, maxnh, not_using_auxcell,
+     &              lastkb, iphorb, iphKB, maxnh, .not. use_aux_cell,
      $              set_xijo=.true., folding=folding1,
      $              diagonal_folding=diag_folding1,
      $              debug_folding=fdf_get('debug-folding',.false.))
 !
       call globalize_or(diag_folding1,diag_folding)
       call globalize_or(folding1,folding)
-      if (diag_folding .and. not_using_auxcell) then
+      if (diag_folding .and. .not. use_aux_cell ) then
          call message("WARNING","Gamma-point calculation " //
      $         "with interaction between periodic images")
          call message("WARNING",
@@ -443,7 +438,7 @@
      $                              "'force-aux-cell T'")
 
       else if (folding) then
-         if (not_using_auxcell) then
+         if ( .not. use_aux_cell ) then
                call message("INFO","Gamma-point calculation " //
      $                      "with multiply-connected orbital pairs")
                call message("INFO",
@@ -545,15 +540,18 @@
       call delete(tmp_2D) ! decrement container...
       xijo => val(xij_2D)
 
-      ! Calculate the super-cell offsets...
-      if ( not_using_auxcell ) then
+!     Convert the xijo array into a super cell offset array
+!     isc_off (located in siesta_geom).
+!     This array is primarily used in TranSiesta but may easily
+!     be used elsewhere to figure out orbital/atomic placements
+!     in the sparsity pattern.
+      if ( .not. use_aux_cell ) then
          ! Here we create the super-cell offsets
          call re_alloc(isc_off,1,3,1,1)
          isc_off(:,:) = 0
       else
          call xij_offset(ucell,nsc, na_u,xa,lasto, 
-     &        xij_2D, isc_off,
-     &        Bcast=.true.)
+     &        xij_2D, isc_off, Bcast=.true.)
       end if
 
       
@@ -564,7 +562,7 @@
          ! Force the creation of the full sparsity pattern
          call ts_sparse_init(slabel,IsVolt, N_Elec, Elecs, 
      &        ucell, nsc, na_u, xa, lasto, block_dist, sparse_pattern, 
-     &        not_using_auxcell, isc_off)
+     &        .not. use_aux_cell, isc_off)
 
          ! create the tri-diagonal matrix
          call ts_tri_analyze( block_dist, sparse_pattern , N_Elec,
@@ -644,6 +642,31 @@
       if (ionode) call print_type(S_1D)
       S => val(S_1D)
 
+!>    Before proceeding we need to "fix" a few things before we can
+!>    successfully read the new DM.
+!>    1. Cases where the atomic displacements yields a new sparse
+!>    pattern it is vital to remove the elements that does not exist.
+!>    Such cases are often encountered because atoms move in/out of
+!>    neighbouring atoms orbital ranges. Everytime two orbitals meet,
+!>    new sparse elements are added, and everytime two orbitals flee
+!>    sparse elements are removed.
+!>    2. If the supercell has changed size it is necessary to
+!>    remove/translate the old/new supercells such that they are
+!>    conforming with the new sparse pattern.
+!>    For details regarding the sparsity pattern, see sparse_matrices.F90
+      do i = 1, n_items(DM_history)
+        pair => get_pointer(DM_history,i)
+        call secondp(pair,tmp_Sp2D)
+        if ( auxchanged ) then
+!         Transfer the old mixing matrix to the new supercell pattern
+          call correct_supercell_SpD(nsc_old, tmp_Sp2D, nsc)
+        end if
+!       Only retain the new orbital interactions
+        call restruct_dSpData2D(tmp_Sp2D, sparse_pattern, tmp_Sp2D,
+     &      show_warning = .false.)
+      end do
+
+      
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &    lasto, iphorb, isa, numh, listhptr, listh, S )
@@ -699,12 +722,16 @@
 !     the analysis section (with nscf=0) or to start a mix-H scf cycle.
 !
 !     Initialize density matrix
-      ! The resizing of Dscf is done inside new_dm
+!     The resizing of Dscf is done inside new_dm
       call new_DM(auxchanged, DM_history, DM_2D, EDM_2D)
 
       Dscf => val(DM_2D)
       Escf => val(EDM_2D)
       if (spin%H > 1) call print_spin(dummy_qspin)
+
+!     The number of old supercells is used in new_DM. Hence we may first
+!     update the oldnsc here.
+      if ( auxchanged ) nsc_old(:) = nsc(:)
 
       ! Initialize energy-density matrix to zero for first call to overfsm
       ! Only part of Escf is updated in TS, so if it is put as zero here
@@ -718,9 +745,13 @@
 
 #ifdef TEST_IO
       ! We test the io-performance here
-      call time_io(spin%H,H_2D)
+      call time_io(spin%H,nsc,H_2D)
 #endif
 
+#ifdef SIESTA__FLOOK
+      call dict_repopulate_sparse_matrices()
+#endif
+      
 !     Write out the ORB_INDX file (if requested)
       if ( save_ORB_INDX ) then
         if ( IOnode .and. istep == inicoor ) then
@@ -735,7 +766,7 @@
          ! We include H as S, well-knowing that we only write one of
          ! them, there is no need to allocate space for no reason!
          call ts_write_tshs(fname, 
-     &        .true., not_using_auxcell, ts_Gamma_file,
+     &        .true., .not. use_aux_cell, ts_Gamma_file,
      &        ucell, nsc, isc_off, na_u, no_s, spin%H,
      &        ts_kscell_file, ts_kdispl_file,
      &        xa, lasto, 
