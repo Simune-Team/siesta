@@ -299,21 +299,22 @@
         if ( .not. gamma_scf ) then
 
 !       Will print k-points also (on every MD step... :( )
-        call kpoint_delete(kpoint_scf)
-        call setup_kpoint_scf( ucell )
+          call kpoint_delete(kpoint_scf)
+          call setup_kpoint_scf( ucell )
 
-        if ( TSmode ) then
-          call kpoint_delete( ts_kpoint_scf )
-        else
-          call kpoint_nullify( ts_kpoint_scf )
+          if ( TSmode ) then
+            call kpoint_delete( ts_kpoint_scf )
+          else
+            call kpoint_nullify( ts_kpoint_scf )
+          end if
+          call setup_ts_kpoint_scf( ucell, kpoint_scf )
+          
+          call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N,
+     &        'eo', 'state_init')
+          call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 
+     &        'qo', 'state_init' )
+          
         end if
-        call setup_ts_kpoint_scf( ucell, kpoint_scf )
-
-        call re_alloc( eo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N,
-     &                 'eo', 'state_init')
-        call re_alloc( qo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 
-     &                 'qo', 'state_init' )
-
       end if
 !     End variable cell actualization
 

@@ -304,8 +304,8 @@ kpoint_convert.o: local_sys.o precision.o units.o
 kpoint_dos.o: kpoint_t.o m_spin.o parallel.o precision.o siesta_options.o
 kpoint_ldos.o: kpoint_dos.o kpoint_t.o m_spin.o parallel.o precision.o
 kpoint_ldos.o: siesta_options.o
-kpoint_pdos.o: find_kgrid.o kpoint_dos.o kpoint_t.o local_sys.o m_spin.o
-kpoint_pdos.o: minvec.o parallel.o precision.o siesta_options.o units.o
+kpoint_pdos.o: kpoint_dos.o kpoint_t.o m_spin.o parallel.o precision.o
+kpoint_pdos.o: siesta_options.o
 kpoint_scf.o: kpoint_t.o m_spin.o parallel.o precision.o siesta_options.o
 kpoint_t.o: alloc.o files.o find_kgrid.o m_char.o m_io.o m_os.o minvec.o
 kpoint_t.o: parallel.o precision.o siesta_cml.o units.o

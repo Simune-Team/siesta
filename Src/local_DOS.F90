@@ -125,7 +125,10 @@ contains
       else
         call die('local_DOS: ERROR in LocalDensityOfStates block!')
       end if
-      
+
+      ! Close block
+      call fdf_bclose(bfdf)
+
       if ( IONode ) then
         write(*,'(a,tr1,f8.3," -- ",f8.3)') 'siesta: E1 -- E2 [eV]:', e1/eV, e2/eV
       end if

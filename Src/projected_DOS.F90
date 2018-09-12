@@ -119,6 +119,9 @@ contains
       sigma = fdf_breals(pline,3) * factor
       nhist = fdf_bintegers(pline,1)
 
+      ! Close block
+      call fdf_bclose(bfdf)
+
       if ( IOnode ) then
         write(*,'(a,f8.3," -- ",2(f8.3,tr1),i0)') 'siesta: E1 -- E2, sigma [eV], nhist: ', &
             e1/eV, e2/eV, sigma/eV, nhist
