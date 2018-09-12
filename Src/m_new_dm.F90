@@ -558,7 +558,6 @@ contains
     use m_handle_sparse, only: correct_supercell_SpD
     use m_handle_sparse, only: unfold_noauxiliary_supercell_SpD
     use m_handle_sparse, only: fold_auxiliary_supercell_SpD
-    use m_restruct_SpData2D, only: restruct_dSpData2D
     
     ! ********* INPUT ***************************************************
     ! type(tSpin) spin              : spin configuration for this system
@@ -594,7 +593,7 @@ contains
 
     
     ! *** Local variables:
-    logical :: correct_nsc
+    logical :: corrected_nsc
     logical :: DM_found
     logical :: TSDE_found
     ! The file we should read
@@ -683,20 +682,19 @@ contains
     ! Density matrix size checks
     if ( DM_found ) then
 
-      correct_nsc = .false.
+      corrected_nsc = .false.
       if ( nsc_read(1) /= 0 .and. any(nsc /= nsc_read) ) then
 
         ! There are three cases:
         if ( all(nsc_read == 1) .and. fdf_get('DM.Init.Unfold', .true.) ) then
-          ! 1. The read DM is created from a Gamma-only calculation and thus nsc == 1, always.
+
+          ! 1. The read DM was created from a Gamma-only calculation and thus nsc == 1, always.
           !    In this case we know that the DM elements in the Gamma calculation (io,jo)
           !    are replicated in all image cells (io, jo + i_s * no_u) where i_s is the image cell
           !    offfset, since there are no k-points and thus no phases to worry about.
           !
-          !    I do not understand this.
-          !    However, in case the DM has been generated as an example input DM it may
-          !    be known that all elements are *only* on-site terms and shouldn't be unfolded.
-          !    The user may control this with DM.Init.Unfold false
+          !    In very special circumstances the user may avoid this behavior by
+          !    by setting 'DM.Init.Unfold false' 
           
           call unfold_noauxiliary_supercell_SpD(sp, DM_read)
           if ( TSDE_found ) then
@@ -704,8 +702,9 @@ contains
           end if
 
         else if ( all(nsc == 1) ) then
-          ! 2. The readed DM is created from an auxiliary calculation and the current
-          !    calculation is Gamma-only. In this case it is necessary to fold back
+
+          ! 2. The read DM was created from a calculation with a non-trivial auxiliary cell, 
+          !    and the current calculation is Gamma-only. In this case it is necessary to fold back
           !    all supercell DM entries.
 
           call fold_auxiliary_supercell_SpD(sp, DM_read)
@@ -714,16 +713,16 @@ contains
           end if
             
         else
-          ! 3. The read DM has a different supercell size. In this case there is a
-          !    one-to-one correspondence between the different elements and we only copy those
-          !    that we know exists.
+
+          ! 3. The read DM has a different supercell size. In this case we only copy those
+          !    elements that we know exists in the call below.
          
           ! Correct the supercell information
           ! Even for EDM this will work because correct_supercell_SpD
           ! changes the sparse pattern in-place and EDM and DM have
           ! a shared sp
           call correct_supercell_SpD(nsc_read, DM_read, nsc)
-          correct_nsc = .true.
+          corrected_nsc = .true.
           
         end if
 
@@ -731,14 +730,13 @@ contains
 
       nspin_read = size(DM_read, 2)
 
-      ! These messages are too optimistic, since we only deal with a few cases
       if ( IONode ) then
         if ( spin%DM == nspin_read ) then
           write(*,'(a)') 'Succeeded...'
         else if ( spin%DM < nspin_read ) then
-          write(*,'(a)') 'Succeeded by reducing spin-components...'
+          write(*,'(a)') 'Succeeded by reducing the number of spin-components...'
         else
-          write(*,'(a)') 'Succeeded by increasing spin-components...'
+          write(*,'(a)') 'Succeeded by increasing the number of spin-components...'
         end if
       end if
       
@@ -747,7 +745,7 @@ contains
         call print_type(DM_read)
       end if
 
-      call restruct_Data(spin%DM, DM_read, DM_2D, .not. correct_nsc)
+      call restruct_Data(spin%DM, DM_read, DM_2D, .not. corrected_nsc)
       if ( IONode ) then
         write(*,'(a)') "DM to be used:"
         call print_type(DM_2D)
@@ -773,6 +771,9 @@ contains
     !> are treated.
     
     subroutine restruct_Data(nspin, in_2D, out_2D, show_warning)
+      
+      use m_restruct_SpData2D, only: restruct_dSpData2D
+      
       !> Current spin dimension in the program
       integer, intent(in) :: nspin
       !> Input (DM) bud, to be mined for info
