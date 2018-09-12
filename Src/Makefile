@@ -828,7 +828,7 @@ m_geom_objects.o: m_geom_square.o
 m_geom_plane.o: intrinsic_missing.o m_geom_aux.o
 m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
 m_getopts.o: f2kcli.o
-m_handle_sparse.o: class_OrbitalDistribution.o class_SpData1D.o
+m_handle_sparse.o: class_Data2D.o class_OrbitalDistribution.o class_SpData1D.o
 m_handle_sparse.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_iodm.o
 m_handle_sparse.o: m_os.o m_region.o m_ts_io.o parallel.o precision.o units.o
 m_hartree_add.o: intrinsic_missing.o m_cite.o m_geom_objects.o m_mesh_node.o
@@ -918,7 +918,7 @@ m_sparsity_handling.o: precision.o
 m_spin.o: alloc.o parallel.o precision.o sys.o units.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
-m_supercell.o: intrinsic_missing.o parallel.o parallelsubs.o precision.o
+m_supercell.o: parallel.o parallelsubs.o precision.o
 m_svd.o: precision.o
 m_target_stress.o: parallel.o precision.o sys.o units.o
 m_test_io.o: class_SpData2D.o class_Sparsity.o m_iodm.o m_matio.o parallel.o

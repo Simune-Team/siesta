@@ -53,3 +53,6 @@ dep:
 		*.f90 *.F90 *.f *.F
 
 # DO NOT DELETE THIS LINE - used by make depend
+eigfat2plot.o: f2kcli.o m_getopts.o
+gnubands.o: f2kcli.o m_getopts.o
+m_getopts.o: f2kcli.o
