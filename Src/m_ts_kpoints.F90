@@ -131,6 +131,7 @@ contains
                   'kgrid_Monkhorst_Pack block' )
           endif
        enddo
+       call fdf_bclose(bfdf)
        ts_firm_displ = .true.
        
     else

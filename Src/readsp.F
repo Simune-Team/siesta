@@ -84,6 +84,7 @@ C Spiral arrangement for spins ........................................
           call die('redata: ERROR: ReciprocalCoordinates must be' //
      .             ' ''Cubic'' or ''ReciprocalLatticeVectors''')
         endif
+        call fdf_bclose(bfdf)
       else
         spiral = .false.
         q(1) = 0.d0

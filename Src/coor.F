@@ -138,13 +138,8 @@ C Read atomic coordinates and species
       if ( na == 0 ) then
        ! estimate the number of atoms by reading the block
        ! Currently we do not try to estimate from a Z-matrix
-       if (fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf)) then
-        na = 0
-        do while ( fdf_bline(bfdf,pline) )
-           ! each line should contain one atom
-           na = na + 1
-        end do
-       end if
+        na = fdf_block_linecount('AtomicCoordinatesAndAtomicSpecies',
+     &      'vvvi')
       end if
       if ( na == 0 ) then
          call die("Must specify number of atoms AND coordinates!")
@@ -170,6 +165,7 @@ C Find origin with which to translate all coordinates
          origin(1) = fdf_bvalues(pline,1)
          origin(2) = fdf_bvalues(pline,2)
          origin(3) = fdf_bvalues(pline,3)
+         call fdf_bclose(bfdf)
       else
          origin = 0._dp
       endif
@@ -195,7 +191,7 @@ C       Generate Cartesian coordinates from Z-matrix
       else
 
 C If Z matrix hasn't been found, read regular atomic coordinates
-        if (fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf)) then
+        if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf) ) then
           do ia= 1, nua
             if (.not. fdf_bline(bfdf,pline))
      .        call die('coor: ERROR in ' //
@@ -209,7 +205,7 @@ C If Z matrix hasn't been found, read regular atomic coordinates
             endif
 
           enddo
-
+          call fdf_bclose(bfdf)
         else
           call die("coor: You must specify the atomic coordinates")
         endif

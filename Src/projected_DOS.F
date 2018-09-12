@@ -22,17 +22,15 @@
       subroutine init_projected_DOS()
 
       USE siesta_options
-      use fdf,         only: fdf_block, block_fdf
+      use fdf,         only: fdf_block, fdf_isblock
       use Kpoint_pdos
       use parallel,    only: IOnode, Nodes
       use siesta_geom, only: ucell
       use m_spin,      only: spin
 
-      type(block_fdf) :: bfdf
-      
 !-------------------------------------------------------------------------BEGIN
 !     Compute the projected density of states
-      do_pdos = fdf_block('ProjectedDensityOfStates', bfdf)
+      do_pdos = fdf_isblock('ProjectedDensityOfStates')
       if ( .not. do_pdos ) return
          
       if (isolve.ne.SOLVE_DIAGON) then
@@ -108,6 +106,7 @@
      $        'siesta: e1, e2, sigma, nhist: ',
      $        e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
       end if
+      call fdf_bclose(bfdf) 
 
 ! If the k points have been set specifically for the PDOS then use this set
       if (different_pdos_grid) then

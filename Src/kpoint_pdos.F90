@@ -159,7 +159,8 @@ MODULE Kpoint_pdos
             else
                kdispl(i) = 0._dp
             end if
-         enddo
+          enddo
+          call fdf_bclose(bfdf)
          firm_displ = .true.
 
       else

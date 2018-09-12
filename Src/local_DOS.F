@@ -70,6 +70,7 @@
         factor = fdf_convfac( fdf_bnames(pline,1), 'Ry' )
         e1 = fdf_bvalues(pline,1)*factor
         e2 = fdf_bvalues(pline,2)*factor
+        call fdf_bclose(bfdf)
 
         !Find the density matrix for states between e1 and e2
         if ((isolve .eq. SOLVE_DIAGON) .or.
