@@ -43,7 +43,7 @@
 #endif
       use sparse_matrices,      only:  EDM_2D
       use m_ts_iodm,            only:  write_ts_dm
-      use m_ts_global_vars,     only:  TSrun
+      use m_ts_global_vars,     only:  TSmode, TSrun
       use m_ts_options,         only:  TS_DE_save
       use m_energies,           only:  Ef
 
