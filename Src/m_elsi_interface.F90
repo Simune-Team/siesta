@@ -58,6 +58,7 @@ module m_elsi_interface
   integer :: which_solver
 
   real(dp), allocatable :: v_old(:,:)    ! For mu update in PEXSI solver
+  real(dp), allocatable :: delta_v(:,:)   ! For mu update in PEXSI solver
 
   public :: elsi_getdm
   public :: elsi_finalize_scfloop
@@ -257,13 +258,14 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer, pointer  :: my_row_ptr2(:) => null()
   integer  :: i, ih, ispin, spin_rank
   real(dp) :: ets_spin
-  integer  :: date_stamp
 
   integer, pointer  :: my_col_idx(:)
   real(dp), pointer :: my_S(:)
   real(dp), pointer :: my_H(:)
   real(dp), pointer :: my_DM(:) => null()
   real(dp), pointer :: my_EDM(:) => null()
+
+  integer :: date_stamp
   
   external :: timer
 
@@ -1001,6 +1003,7 @@ subroutine elsi_finalize_scfloop()
 
   if (allocated(v_old)) then
     deallocate(v_old)
+    deallocate(delta_v)
   end if
 
   call elsi_finalize(elsi_h)
@@ -1012,13 +1015,15 @@ end subroutine elsi_finalize_scfloop
 ! Save Hartree + XC potential and find minimum and maximum change of it between
 ! two SCF iterations.
 !
-subroutine elsi_save_potential(n_pts, n_spin, v_scf)
+subroutine elsi_save_potential(n_pts, n_spin, v_scf, comm)
 
   use m_mpi_utils, only: globalize_min, globalize_max
 
   integer,  intent(in) :: n_pts
   integer,  intent(in) :: n_spin
   real(dp), intent(in) :: v_scf(n_pts,n_spin)
+  integer , intent(in) :: comm  ! The Siesta communicator used for grid operations
+                                ! since this routine is called from dhscf...
 
   real(dp) :: mu_min
   real(dp) :: mu_max
@@ -1029,6 +1034,7 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf)
   if (which_solver == PEXSI_SOLVER) then
     if (.not. allocated(v_old)) then
       allocate(v_old(n_pts,n_spin))
+      allocate(delta_v(n_pts,n_spin))
 
       v_old = v_scf
 
@@ -1038,16 +1044,17 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf)
       call elsi_get_pexsi_mu_min(elsi_h, mu_min)
       call elsi_get_pexsi_mu_max(elsi_h, mu_max)
 
-      v_old = v_scf-v_old
+      delta_v = v_scf - v_old
+      v_old = v_scf
 
       ! Get minimum and maximum of change of total potential
-      tmp = minval(v_old)
+      tmp = minval(delta_v)
 
-      call globalize_min(tmp, dv_min, comm=elsi_global_comm)
+      call globalize_min(tmp, dv_min, comm=comm)
 
-      tmp = maxval(v_old)
+      tmp = maxval(delta_v)
 
-      call globalize_max(tmp, dv_max, comm=elsi_global_comm)
+      call globalize_max(tmp, dv_max, comm=comm)
 
       mu_min = mu_min+dv_min
       mu_max = mu_max+dv_max
@@ -1237,6 +1244,8 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   complex(dp), pointer :: my_DM(:) => null()
   complex(dp), pointer :: my_EDM(:) => null()
   
+  integer :: date_stamp
+
   external :: timer
 
 #ifndef MPI

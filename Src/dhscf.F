@@ -1598,7 +1598,9 @@ C ----------------------------------------------------------------------
       endif
 
 #ifdef SIESTA__ELSI
-      call elsi_save_potential(ntpl,nspin,Vscf)
+      ! This routine, and the associated data, live
+      ! in the ELSI interface module
+      call elsi_save_potential(ntpl,nspin,Vscf,comm=MPI_Comm_World)
 #endif
 
 C ----------------------------------------------------------------------
