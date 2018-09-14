@@ -208,14 +208,14 @@ contains
              write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              if ( tmp_one(4:4) == 'l' ) then ! left
                 Eq_io(i)%ca = '-40. eV + V/2'
-                Eq_io(i)%a  = - 40._dp * eV + Volt * .5_dp
+                Eq_io(i)%a = - 40._dp * eV + Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT + V/2'
-                Eq_io(i)%b  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
+                Eq_io(i)%b = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
                 Eq_io(i)%ca = '-40. eV - V/2'
-                Eq_io(i)%a  = - 40._dp * eV - Volt * .5_dp
+                Eq_io(i)%a = - 40._dp * eV - Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT - V/2'
-                Eq_io(i)%b  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
+                Eq_io(i)%b = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%method = 'g-legendre'
           else
@@ -224,12 +224,12 @@ contains
              write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              Eq_io(i)%ca = 'prev'
              if ( tmp_one(4:4) == 'l' ) then ! left
-                Eq_io(i)%a  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
+                Eq_io(i)%a = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
-                Eq_io(i)%a  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
+                Eq_io(i)%a = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%cb = 'inf'
-             Eq_io(i)%b  = huge(1._dp)
+             Eq_io(i)%b = huge(1._dp)
              Eq_io(i)%method = 'g-fermi'
           end if
        else
@@ -243,18 +243,18 @@ contains
     j = 1
     do i = N - N_mu + 1, N
        if ( Eq_segs(mus(j)) == 1 ) then
-          Eq_io(i)%part   = 'cont-frac'
+          Eq_io(i)%part = 'cont-frac'
           Eq_io(i)%method = 'continued-fraction'
           ! Currently this is just a very high number
           Eq_io(i)%a = 1.e10_dp * eV ! the continued fraction infinity point
        else
-          Eq_io(i)%part   = 'pole'
+          Eq_io(i)%part = 'pole'
           Eq_io(i)%method = 'residual'
           Eq_io(i)%a = mus(j)%mu
        end if
        ! assign name to the Eq_io
-       Eq_io(i)%name   = nContours(i)
-       Eq_io(i)%N      = mus(j)%N_poles
+       Eq_io(i)%name = nContours(i)
+       Eq_io(i)%N = mus(j)%N_poles
        Eq_io(i)%b = mus(j)%kT ! Save kT in the contour
        Eq_io(i)%d = mus(j)%mu ! save the chemical potential here
        j = j + 1
@@ -264,7 +264,7 @@ contains
     ! fix the read-in constants
     do i = 1 , N_mu
 
-       cur      = get_c_io_index(mus(i)%Eq_seg(1))
+       cur = get_c_io_index(mus(i)%Eq_seg(1))
        if ( cur == 0 ) then
           call die('A terrible error has occured, please inform the &
                &developers')
@@ -300,11 +300,11 @@ contains
           ! Check equilibrium settings
           isStart = leqi(Eq_io(cur)%part,'circle') .or. &
                leqi(Eq_io(cur)%part,'square') 
-          isTail  = leqi(Eq_io(cur)%part,'tail')
+          isTail = leqi(Eq_io(cur)%part,'tail')
 
           ! we should not check the pole
           do j = 1 , k
-             cur  = get_c_io_index(mus(i)%Eq_seg(j))
+             cur = get_c_io_index(mus(i)%Eq_seg(j))
              call consecutive_types(Eq_io(cur),isStart,isTail, &
                   mus(i)%mu, mus(i)%kT)
           end do
