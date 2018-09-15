@@ -1018,6 +1018,8 @@ end subroutine elsi_finalize_scfloop
 subroutine elsi_save_potential(n_pts, n_spin, v_scf, comm)
 
   use m_mpi_utils, only: globalize_min, globalize_max
+  use parallel, only: ionode, node
+  use units, only:    eV
 
   integer,  intent(in) :: n_pts
   integer,  intent(in) :: n_spin
@@ -1043,6 +1045,9 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf, comm)
     else
       call elsi_get_pexsi_mu_min(elsi_h, mu_min)
       call elsi_get_pexsi_mu_max(elsi_h, mu_max)
+      if (ionode) then
+         print *, "*-- solver mu_min, mu_max:", mu_min/eV, mu_max/eV
+      endif
 
       delta_v = v_scf - v_old
       v_old = v_scf
@@ -1055,6 +1060,9 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf, comm)
       tmp = maxval(delta_v)
 
       call globalize_max(tmp, dv_max, comm=comm)
+      if (ionode) then
+         print *, " *---- min and max Delta-V: ", dv_min/eV, dv_max/eV
+      endif
 
       mu_min = mu_min+dv_min
       mu_max = mu_max+dv_max
@@ -1063,6 +1071,9 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf, comm)
     ! Adjust chemical potential range for PEXSI
     call elsi_set_pexsi_mu_min(elsi_h, mu_min)
     call elsi_set_pexsi_mu_max(elsi_h, mu_max)
+    if (ionode) then
+       print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
+    endif
   end if
 
 end subroutine elsi_save_potential
