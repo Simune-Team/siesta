@@ -99,9 +99,9 @@ contains
     integer :: n
 
     if ( len_trim(suffix) == 0 ) then
-      n = fdf_block_linecount(trim(prefix)//'.Contours', 'l')
+      n = fdf_block_linecount(trim(prefix)//'.Contours', 'n')
     else
-      n = fdf_block_linecount(trim(prefix)//'.Contours'//trim(suffix), 'l')
+      n = fdf_block_linecount(trim(prefix)//'.Contours'//trim(suffix), 'n')
     end if
 
   end function fdf_nc_iotype

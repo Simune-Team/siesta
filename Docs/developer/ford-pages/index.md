@@ -2,9 +2,10 @@ title: Program Overview
 
 These pages provide some documentation on the internals of the SIESTA program.
 
-This is work in progress. At present just a few pages are present, and
+This is work in progress. Just a few pages are present, and
 their integration with the in-code documentation is not yet very
-complete.
+complete. This is likely to remain so in this 4.1 version, but the
+documentation will improve in further releases.
 
 * [Overall structure](|page|/overall.html)
 * [Electronic-structure subsystem](|page|/core-es.html)
