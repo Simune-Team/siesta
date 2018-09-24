@@ -12,7 +12,7 @@
 
       CONTAINS
 
-      subroutine save_density_matrix(when,file)
+      subroutine save_density_matrix(SCFconverged, when, file)
 
       ! Stores DM and EDM on files
       ! This version uses module variables.
@@ -49,6 +49,7 @@
 
       implicit none
 
+      logical, intent(in) :: SCFconverged
       logical, intent(in), optional  :: when
       character(len=*), intent(in), optional   :: file
 
@@ -139,7 +140,8 @@
         else
 !         Always write out the DM file
           call write_dm(trim(slabel)//'.DM', nsc, DM_2D)
-          if ( TS_DE_save ) then
+          ! Only write out the tsde file if converged!
+          if ( TS_DE_save .and. SCFconverged ) then
 !           IN case the user also wants the TSDE file, store this
             call write_ts_dm(trim(slabel)//'.TSDE',
      &          nsc, DM_2D, EDM_2D, Ef)

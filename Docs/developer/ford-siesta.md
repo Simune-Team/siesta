@@ -2,6 +2,8 @@ project: SIESTA
 version: {!../../version.info!} 
 author: SIESTA Group
 src_dir: ../../Src
+         ../../Util/Bands
+         ../../Util/COOP
 output_dir: ./doc-ford-build
 page_dir: ./ford-pages
 media_dir: ./ford-media

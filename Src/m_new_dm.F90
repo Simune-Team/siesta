@@ -1,47 +1,35 @@
-module m_new_dm
+!>  Prepares a starting density matrix for a new geometry iteration
 
-  !     Prepares a starting density matrix for a new geometry iteration
-  !     This DM can be:
-  !     1. Synthesized directly from atomic occupations (not idempotent)
-  !     2. Read from file
-  !     3. Re-used (with possible extrapolation) from previous geometry step(s).
-  !
-  !     In cases 2 and 3, the structure of the read or extrapolated DM 
-  !     is automatically adapted to the current sparsity pattern.
-  !
-  !     Special cases:
-  !            Harris: The matrix is always initialized
-  !            Force calculation: The DM should be written to disk
-  !                               at the time of the "no displacement"
-  !                               calculation and read from file at
-  !                               every subsequent step.
-  !            Variable-cell calculation:
-  !              If the auxiliary cell changes, the DM is forced to be
-  !              initialized (conceivably one could rescue some important
-  !              information from an old DM, but it is too much trouble
-  !              for now). NOTE that this is a change in policy with respect
-  !              to previous versions of the program, in which a (blind?)
-  !              re-use was allowed, except if 'ReInitialiseDM' was 'true'.
-  !              Now 'ReInitialiseDM' is 'true' by default. Setting it to
-  !              'false' is not recommended. (This fdf variable maps to the
-  !              'initdmaux' module variable)
-  !
-  !              In all other cases (including "server operation"), the
-  !              default is to allow DM re-use (with possible extrapolation)
-  !              from previous geometry steps.
-  !              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
-  !              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and
-  !              both 'true' by default) can be used to change this behavior.
-  !
-  !              There is no re-use of the DM for "Forces", and "Phonon"
-  !              dynamics types (i.e., the DM is re-initialized)
-  !
-  !              For "CG" calculations, the default is not to extrapolate the
-  !              DM (unless requested by setting 'DM.AllowExtrapolation' to
-  !              "true"). The previous step's DM is reused.
-  !
-  !     Alberto Garcia, September 2007, April 2012
-  !
+!>     This DM can be:
+!>         1. Synthesized directly from atomic occupations (not idempotent)
+!>         2. Read from file
+!>         3. Re-used (with possible extrapolation) from previous geometry step(s).
+
+!>     In cases 2 and 3, the structure of the read or extrapolated DM 
+!>     is automatically adapted to the current sparsity pattern.
+
+!>     Special cases:
+!>            Harris: The matrix is always initialized
+!>            Force calculation: The DM should be written to disk
+!>                               at the time of the "no displacement"
+!>                               calculation and read from file at
+!>                               every subsequent step.
+
+!>              In all other cases (including "server operation"), the
+!>              default is to allow DM re-use (with possible extrapolation)
+!>              from previous geometry steps.
+!>              The fdf variables 'DM.AllowReuse' and 'DM.AllowExtrapolation'
+!>              (mapped to 'allow_dm_reuse' and 'allow_dm_extrapolation', and
+!>              both 'true' by default) can be used to change this behavior.
+!>
+!>              There is no re-use of the DM for "Forces", and "Phonon"
+!>              dynamics types (i.e., the DM is re-initialized)
+!>
+!>              For "CG" calculations, the default is not to extrapolate the
+!>              DM (unless requested by setting 'DM.AllowExtrapolation' to
+!>              "true"). The previous step's DM is reused.
+
+module m_new_dm
 
   use sys, only: die
   use parallel, only: IONode
