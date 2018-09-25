@@ -1796,13 +1796,13 @@ contains
     is_cont_frac = leqi(c%c_io%part,'cont-frac')
     
     do i = 1 , size(c%c)
-       cidx%e      = c%c(i)
+       cidx%e = c%c(i)
        cidx%idx(3) = i
        call c2weight_eq(cidx,idx,1._dp,W,ZW)
        if ( is_cont_frac ) then
-          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV / Pi
+          write(unit,'(4(e20.13,tr1))') c%c(i)/eV, W / eV / Pi
        else
-          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV
+          write(unit,'(4(e20.13,tr1))') c%c(i)/eV, W / eV
        end if
     end do
     

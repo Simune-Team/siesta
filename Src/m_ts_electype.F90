@@ -1413,7 +1413,19 @@ contains
        tmp(2) = k2(this%pvt(2)) / this%Bloch(2)
        tmp(3) = k2(this%pvt(3)) / this%Bloch(3)
        ! Remove semi-infinite direction
-       tmp(this%t_dir) = 0._dp
+       select case ( this%t_dir )
+       case ( 4 )
+         tmp(2) = 0._dp
+         tmp(3) = 0._dp
+       case ( 5 )
+         tmp(1) = 0._dp
+         tmp(3) = 0._dp
+       case ( 6 )
+         tmp(1) = 0._dp
+         tmp(2) = 0._dp
+       case default
+         tmp(this%t_dir) = 0._dp
+       end select
 
        if ( iop == 1 ) then
           ! Convert back to 1 / Bohr
@@ -1649,7 +1661,7 @@ contains
     type(Elec), intent(inout) :: this
     logical, intent(in), optional :: io
 
-    logical :: lio
+    logical :: lio, has_01
 
     real(dp), pointer :: H(:,:), H00(:,:), H01(:,:)
     real(dp), pointer :: S(:), S00(:), S01(:)
@@ -1670,77 +1682,95 @@ contains
 
     H => val(this%H)
     S => val(this%S)
-    tm(:)          = TM_ALL
-    tm(this%t_dir) = 0
+    tm(:) = TM_ALL
+    has_01 = .false.
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      tm(2) = 0
+      tm(3) = 0
+    case ( 5 ) ! A-C
+      tm(1) = 0
+      tm(3) = 0
+    case ( 6 ) ! A-B
+      tm(1) = 0
+      tm(2) = 0
+    case default
+      tm(this%t_dir) = 0
+      has_01 = .true.
+    end select
     call crtSparsity_SC(this%sp,this%sp00, &
          TM=tm, ucell=this%cell, &
          isc_off=this%isc_off)
 
-    ! Notice that we create the correct electrode transfer hamiltonian...
-    if ( this%inf_dir == INF_NEGATIVE ) then
-       tm(this%t_dir) = -1
-    else if ( this%inf_dir == INF_POSITIVE ) then
-       tm(this%t_dir) =  1
-    else
-       call die('Electrode direction not recognized')
-    end if
-    call crtSparsity_SC(this%sp,this%sp01, &
-         TM=tm, ucell=this%cell, &
-         isc_off=this%isc_off)
-    
     ! create data
     call newdSpData2D(this%sp00,this%nspin,fdist,this%H00,name='E spH00')
     H00 => val(this%H00)
-    call newdSpData2D(this%sp01,this%nspin,fdist,this%H01,name='E spH01')
-    H01 => val(this%H01)
     call newdSpData1D(this%sp00,fdist,this%S00,name='E spS00')
     S00 => val(this%S00)
-    call newdSpData1D(this%sp01,fdist,this%S01,name='E spS01')
-    S01 => val(this%S01)
-
+    
     call attach(this%sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=no_l)
+        nrows=no_l)
     call attach(this%sp00,n_col=ncol00,list_ptr=ptr00,list_col=col00, &
-         nrows=iio)
-    if ( iio /= no_l ) call die('Could not do index matching due to &
-         &inconsistent sparsity patterns')
-    call attach(this%sp01,n_col=ncol01,list_ptr=ptr01,list_col=col01, &
-         nrows=iio)
+        nrows=iio)
     if ( iio /= no_l ) call die('Could not do index matching due to &
          &inconsistent sparsity patterns')
 
+    ! Notice that we create the correct electrode transfer hamiltonian...
+    if ( has_01 ) then
+      if ( this%inf_dir == INF_NEGATIVE ) then
+        tm(this%t_dir) = -1
+      else if ( this%inf_dir == INF_POSITIVE ) then
+        tm(this%t_dir) =  1
+      else
+        call die('Electrode direction not recognized')
+      end if
+      call crtSparsity_SC(this%sp,this%sp01, &
+          TM=tm, ucell=this%cell, &
+          isc_off=this%isc_off)
+      call newdSpData2D(this%sp01,this%nspin,fdist,this%H01,name='E spH01')
+      H01 => val(this%H01)
+      call newdSpData1D(this%sp01,fdist,this%S01,name='E spS01')
+      S01 => val(this%S01)
+      call attach(this%sp01,n_col=ncol01,list_ptr=ptr01,list_col=col01, &
+          nrows=iio)
+      if ( iio /= no_l ) call die('Could not do index matching due to &
+          &inconsistent sparsity patterns')
+    end if
+    
     ! loop and assign data elements
     do i = 1 , no_l
+      
+      ! Shift out of the buffer region
+      iio = index_local_to_global(fdist,i)
+      ia = iaorb(iio,this%lasto)
 
-       ! Shift out of the buffer region
-       iio = index_local_to_global(fdist,i)
-       ia = iaorb(iio,this%lasto)
+      ! Loop number of entries in the row...
+      do j = 1 , ncol00(i)
 
-       ! Loop number of entries in the row...
-       do j = 1 , ncol00(i)
+        ! The index in the pointer array is retrieved
+        ind00 = ptr00(i) + j
 
-          ! The index in the pointer array is retrieved
-          ind00 = ptr00(i) + j
+        ! Loop in the super-set sparsity pattern
+        idx00: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
 
-          ! Loop in the super-set sparsity pattern
-          idx00: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
+          ! If we have the same column index it must be
+          ! the same entry they represent
+          if ( col00(ind00) == l_col(ind) ) then
 
-             ! If we have the same column index it must be
-             ! the same entry they represent
-             if ( col00(ind00) == l_col(ind) ) then
+            H00(ind00,:) = H(ind,:)
+            S00(ind00)   = S(ind)
 
-                H00(ind00,:) = H(ind,:)
-                S00(ind00)   = S(ind)
+            exit idx00
+          end if
 
-                exit idx00
-             end if
+        end do idx00
 
-          end do idx00
+      end do
+      
+      if ( has_01 ) then
 
-       end do
-
-       ! Loop number of entries in the row...
-       do j = 1 , ncol01(i)
+        ! Loop number of entries in the row...
+        do j = 1 , ncol01(i)
 
           ! The index in the pointer array is retrieved
           ind01 = ptr01(i) + j
@@ -1748,28 +1778,29 @@ contains
           ! Loop in the super-set sparsity pattern
           idx01: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
 
-             ! If we have the same column index it must be
-             ! the same entry they represent
-             if ( col01(ind01) == l_col(ind) ) then
+            ! If we have the same column index it must be
+            ! the same entry they represent
+            if ( col01(ind01) == l_col(ind) ) then
 
-                H01(ind01,:) = H(ind,:)
-                S01(ind01)   = S(ind)
+              H01(ind01,:) = H(ind,:)
+              S01(ind01)   = S(ind)
 
-                exit idx01
-             end if
-             
+              exit idx01
+            end if
+
           end do idx01
-
-       end do
+        end do
+      end if
     end do
 
     if ( IONode .and. lio ) then
-       call print_type(this%sp00)
-       call print_type(this%sp01)
+      call print_type(this%sp00)
+      if ( has_01 ) &
+          call print_type(this%sp01)
     end if
 
     ! Check that there is a transfer matrix!
-    if ( nnzs(this%sp01) == 0 ) then
+    if ( has_01 .and.  (nnzs(this%sp01) == 0) ) then
        if ( IONode ) then
           write(*,'(a)') 'Electrode '//trim(this%name)//' has no transfer matrix.'
        end if
@@ -1852,6 +1883,11 @@ contains
     ! Print-out values stored...
     real(dp) :: maxH, maxS
     integer :: maxi, maxj, maxia, maxja
+
+    if ( this%t_dir > 3 ) then
+      good = .true.
+      return
+    end if
 
     ! Retrieve distribution
     fdist => dist(this%H)

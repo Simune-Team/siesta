@@ -593,7 +593,19 @@ contains
        kpt(3) = bkpt(Elecs(i)%pvt(3)) / Elecs(i)%Bloch(3)
 
        ! Ensure zero in the semi-infinite direction
-       kpt(Elecs(i)%t_dir) = 0._dp
+       select case ( Elecs(i)%t_dir )
+       case ( 4 )
+         kpt(2) = 0._dp
+         kpt(3) = 0._dp
+       case ( 5 )
+         kpt(1) = 0._dp
+         kpt(3) = 0._dp
+       case ( 6 )
+         kpt(1) = 0._dp
+         kpt(2) = 0._dp
+       case default
+         kpt(Elecs(i)%t_dir) = 0._dp
+       end select
        
        ! If the index for the contour is negative
        ! It means that we are dealing with a Fermi

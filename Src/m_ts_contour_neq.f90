@@ -926,7 +926,7 @@ contains
        call c2weight_nEq(c,nEq_ID%ID,1._dp,W,imu,ZW)
        if ( imu < 1 ) cycle
 
-       write(unit,'(3(e13.6,tr1))') nEq_c(c%idx(2))%c(c%idx(3)) / eV, &
+       write(unit,'(3(e20.13,tr1))') nEq_c(c%idx(2))%c(c%idx(3)) / eV, &
             real(W,dp) / eV
        
     end do
