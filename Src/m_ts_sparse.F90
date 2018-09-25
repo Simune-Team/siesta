@@ -331,12 +331,30 @@ contains
        ! Calculate the transport direction in the device cell.
        ! We expect there to be only one and thus find the transport
        ! direction in the big cell
-       i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
-
        old_nz = nnzs(ts_sp)
-       ! Remove connections from this electrode across the boundary...
-       call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, &
-            i, ts_sp, r = r_tmp2)
+       select case ( Elecs(iEl)%t_dir )
+       case ( 4 ) ! B-C
+         i = Elecs(iEl)%pvt(2)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(3)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+       case ( 5 ) ! A-C
+         i = Elecs(iEl)%pvt(1)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(3)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+       case ( 6 ) ! A-B
+         i = Elecs(iEl)%pvt(1)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(2)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+       case default
+         i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
+         ! Remove connections from this electrode across the boundary...
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, &
+             i, ts_sp, r = r_tmp2)
+       end select
+
        ! Update init_nz for the valid removed elements
        init_nz = init_nz - (old_nz - nnzs(ts_sp))
 

@@ -502,6 +502,9 @@ contains
        
        ! Calculate the normal vector along the semi-infinite direction
        ! of the first electrode.
+       if ( Elecs(fan1)%t_dir > 3 ) then
+         call die('Pivoting fan/front/* with real-space self-energies will not work')
+       end if
        p_n(:,1) = Elecs(fan1)%cell(:,Elecs(fan1)%t_dir)
        p_n(:,1) = p_n(:,1) / VNORM(p_n(:,1))
        
@@ -568,6 +571,9 @@ contains
        end if
 
        ! Calculate the plane-crossing between the first two electrodes
+       if ( Elecs(fan2)%t_dir > 3 ) then
+         call die('Pivoting fan/front/* with real-space self-energies will not work')
+       end if
        p_n(:,2) = Elecs(fan2)%cell(:,Elecs(fan2)%t_dir)
        p_n(:,2) = p_n(:,2) / VNORM(p_n(:,2))
        ! 2nd electrode points outwards

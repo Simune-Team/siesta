@@ -373,55 +373,71 @@ contains
        
        ! We select the input
        if ( leqi(ln,'HS') .or. leqi(ln,'HS-file') .or. &
-            leqi(ln,'TSHS') .or. &
-            leqi(ln,'TSHS-file') ) then
+            leqi(ln,'TSHS') .or. leqi(ln,'TSHS-file') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('HS name not supplied')
           this%HSfile = trim(fdf_bnames(pline,2))
           info(1) = .true.
 
        else if ( leqi(ln,'semi-inf-direction') .or. &
             leqi(ln,'semi-inf-dir') .or. leqi(ln,'semi-inf') ) then
+         
+         tmp = 'Semi-infinite direction not understood correctly, &
+             &allowed format: [-+][a-c|a[1-3]]'
 
-          tmp = 'Semi-infinite direction not understood correctly, &
-                  &allowed format: [-+][a-c|a[1-3]]'
+         ! This possibility exists
+         !  semi-inf [-+][ ][a-c|a[1-3]] -> [direction] [vector]
+         if ( fdf_bnnames(pline) < 2 ) then
+           call die(trim(tmp))
+         end if
 
-          ! This possibility exists
-          !  semi-inf [-+][ ][a-c|a[1-3]] -> [direction] [vector]
-          if ( fdf_bnnames(pline) < 2 ) then
+         ln = fdf_bnames(pline,2)
+         if ( fdf_bnnames(pline) > 2 ) then
+           if ( len_trim(ln) /= 1 ) then
              call die(trim(tmp))
-          end if
-          
-          ln = fdf_bnames(pline,2)
-          if ( fdf_bnnames(pline) > 2 ) then
-             if ( len_trim(ln) /= 1 ) then
-                call die(trim(tmp))
-             end if
+           end if
 
-             ln = trim(ln) // fdf_bnames(pline,3)
+           ln = trim(ln) // fdf_bnames(pline,3)
 
-          end if
-          
-          ! now for testing
-          if ( ln(1:1) == '+' ) then
-             this%inf_dir = INF_POSITIVE
-          else if ( ln(1:1) == '-' ) then
-             this%inf_dir = INF_NEGATIVE
-          else
-             call die(trim(tmp))
-          end if
+         end if
 
-          ! copy over remaining part...
-          ln = ln(2:)
-          if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
+         ! preset
+         this%t_dir = 0           
+
+         ! now for testing
+         if ( ln(1:1) == '+' ) then
+           this%inf_dir = INF_POSITIVE
+         else if ( ln(1:1) == '-' ) then
+           this%inf_dir = INF_NEGATIVE
+           ! The 3 below cases are *special* in the sense that they require the user
+           ! to supply the GF files (TranSiesta/TBtrans cannot calculate the self-energies of
+           ! real-space Green functions).
+         else if ( leqi(ln,'ab') .or. leqi(ln, 'ba') ) then
+           this%t_dir = 6 ! Voigt notation
+         else if ( leqi(ln,'ac') .or. leqi(ln, 'ca') ) then
+           this%t_dir = 5
+         else if ( leqi(ln,'bc') .or. leqi(ln, 'cb') ) then
+           this%t_dir = 4
+         else
+           call die(trim(tmp))
+         end if
+
+         if ( this%t_dir > 3 ) then
+           ! This flag has no influence
+           this%inf_dir = INF_NEGATIVE
+         else
+           ! figure out direction...
+           ln = ln(2:)
+           if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
              this%t_dir = 1
-          else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
+           else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
              this%t_dir = 2
-          else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
+           else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
              this%t_dir = 3
-          else
+           else
              call die(trim(tmp))
-          end if
-          info(2) = .true.
+           end if
+         end if
+         info(2) = .true.
           
        else if ( leqi(ln,'chemical-potential') .or. &
             leqi(ln,'chem-pot') .or. leqi(ln,'mu') ) then
@@ -605,8 +621,8 @@ contains
     end do
     
     if ( any(this%Bloch(:) < 1) ) then
-       call die("Bloch expansion in "//trim(this%name)//" electrode must be >= 1.")
-    end if
+      call die("Bloch expansion in "//trim(this%name)//" electrode must be >= 1.")
+    end if      
 
     if ( .not. all(info(1:4)) ) then
        write(*,*)'You need to supply at least:'
@@ -688,23 +704,78 @@ contains
     fmin =  huge(1._dp)
     fmax = -huge(1._dp)
     call reclat(this%cell,rcell,0)
-    do i = 1 , this%na_u
-       rc = sum(this%xa(:,i) * rcell(:,this%t_dir))
-       fmin = min(fmin,rc)
-       fmax = max(fmax,rc)
-    end do
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,2))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+        rc = sum(this%xa(:,i) * rcell(:,3))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    case ( 5 ) ! A-C
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,1))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+        rc = sum(this%xa(:,i) * rcell(:,3))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    case ( 6 ) ! A-B
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,1))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+        rc = sum(this%xa(:,i) * rcell(:,2))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    case default
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,this%t_dir))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    end select
     ! Get distance to the cell boundary
     rc = 1._dp - (fmax-fmin)
     ! Calculate the inter-layer distance
-    this%dINF_layer = VNORM( rc * this%cell(:,this%t_dir) )
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      fmin = VNORM( rc * this%cell(:,2) )
+      fmax = VNORM( rc * this%cell(:,3) )
+      this%dINF_layer = min(fmin, fmax)
+    case ( 5 ) ! A-C
+      fmin = VNORM( rc * this%cell(:,1) )
+      fmax = VNORM( rc * this%cell(:,3) )
+      this%dINF_layer = min(fmin, fmax)
+    case ( 6 ) ! A-B
+      fmin = VNORM( rc * this%cell(:,1) )
+      fmax = VNORM( rc * this%cell(:,2) )
+      this%dINF_layer = min(fmin, fmax)
+    case default
+      this%dINF_layer = VNORM( rc * this%cell(:,this%t_dir) )
+    end select
 
     ! We deallocate xa and lasto as they are not needed
     deallocate(this%xa,this%lasto)
 
     ! Check that the Bloch expansion is not in the transport-direction
-    if ( this%Bloch(this%t_dir) /= 1 ) then
-       call die('Bloch expansion in the transport direction &
+    if ( this%t_dir > 3 ) then
+      if ( any(this%Bloch /= 1) ) then
+        call die('Bloch expansion for real-space self-energies &
             &is not allowed.')
+      end if
+      if ( this%na_used /= this%na_u ) then
+        call die('Real-space self-energies requires using the full electrode!')
+      end if
+    else
+      if ( this%Bloch(this%t_dir) /= 1 ) then
+        call die('Bloch expansion in the transport direction &
+            &is not allowed.')
+      end if
     end if
 
                                  ! Same criteria as IsVolt
@@ -798,7 +869,19 @@ contains
     ! Create the basal plane of the electrode
     ! Decide which end of the electrode we use
     ! Calculate planes of the electrodes
-    p = this%cell(:,this%t_dir)
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      p = this%cell(:,2)
+      p = this%cell(:,3)
+    case ( 5 ) ! A-C
+      p = this%cell(:,1)
+      p = this%cell(:,3)
+    case ( 6 ) ! A-B
+      p = this%cell(:,1)
+      p = this%cell(:,2)
+    case default
+      p = this%cell(:,this%t_dir)
+    end select
     p = p / VNORM(p)
 
     ! Select the atom farthest from the device region
@@ -886,8 +969,8 @@ contains
     call dgetri(3,this%box%v,3,ipiv,work,12,i)
     if ( i /= 0 ) then
        call die('Electrode inversion of cell vectors failed')
-    end if
-    
+     end if
+
   end subroutine init_Elec_sim
 
   ! Initialize variables for the electrode according
@@ -1392,26 +1475,30 @@ contains
     integer, intent(out) :: imin(3), imax(3)
 
     real(dp) :: LHS(3,3), RHS(3), cell(3,3), contrib
-    integer :: idx(3), i
+    integer :: idx(3), i, B(3)
 
     ! Initialize the indices
     imin = huge(1)
     imax = -huge(1)
 
-    contrib = real(this%na_used,dp) / real(this%na_u,dp)
-    i = this%t_dir
-    ! Scale semi-infinite direction
+    B = this%Bloch
     cell = this%cell
-    cell(:,i) = cell(:,i) * contrib
+    ! Along the semi-infinite direction we need to limit the length
+    ! Scale semi-infinite direction
+    if ( this%na_used /= this%na_u ) then
+      i = this%t_dir
+      contrib = real(this%na_used,dp) / real(this%na_u,dp)
+      cell(:,i) = cell(:,i) * contrib
+    end if
 
     call get_idx(0,0,0,imin,imax)
-    call get_idx(1,0,0,imin,imax)
-    call get_idx(0,1,0,imin,imax)
-    call get_idx(0,0,1,imin,imax)
-    call get_idx(1,1,0,imin,imax)
-    call get_idx(1,0,1,imin,imax)
-    call get_idx(0,1,1,imin,imax)
-    call get_idx(1,1,1,imin,imax)
+    call get_idx(B(1),0,0,imin,imax)
+    call get_idx(0,B(2),0,imin,imax)
+    call get_idx(0,0,B(3),imin,imax)
+    call get_idx(B(1),B(2),0,imin,imax)
+    call get_idx(B(1),0,B(3),imin,imax)
+    call get_idx(0,B(2),B(3),imin,imax)
+    call get_idx(B(1),B(2),B(3),imin,imax)
 
     ! This pre-step will move them both simultaneously
     ! as that corresponds to equal shifts and no crossing
@@ -2086,20 +2173,29 @@ contains
       write(*,f15) '  Electrode Bloch unity [E1 x E2 x E3]', this%Bloch(:)
     end if
     write(*,f20) '  Position in geometry', this%idx_a, &
-         this%idx_a + TotUsedAtoms(this) - 1
-    if ( this%t_dir == 1 ) then
-       chars = 'E1'
-    else if ( this%t_dir == 2 ) then
-       chars = 'E2'
-    else if ( this%t_dir == 3 ) then
-       chars = 'E3'
-    end if
+        this%idx_a + TotUsedAtoms(this) - 1
+    select case ( this%t_dir )
+    case ( 1 )
+      chars = 'E1'
+    case ( 2 )
+      chars = 'E2'
+    case ( 3 )
+      chars = 'E3'
+    case ( 4 )
+      chars = 'E2/E3'
+    case ( 5 )
+      chars = 'E1/E3'
+    case ( 6 )
+      chars = 'E1/E2'
+    end select
     if ( this%inf_dir == INF_POSITIVE ) then
-       chars = 'positive wrt. '//trim(chars)
+      chars = 'positive wrt. '//trim(chars)
     else
-       chars = 'negative wrt. '//trim(chars)
+      chars = 'negative wrt. '//trim(chars)
     end if
-    write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
+    if ( this%t_dir <= 3 ) then
+      write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
+    end if
     write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
     write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
     write(*,f1)  '  Bulk values in electrode', this%Bulk
@@ -2153,14 +2249,16 @@ contains
     end if
     if ( present(box) ) then
     if ( box ) then
-       write(*,f11) '  Hartree potential box:'
-       contrib = real(this%na_used,dp) / real(this%na_u,dp)
-       cell = this%cell
-       cell(:,this%t_dir) = cell(:,this%t_dir) * contrib
-       write(*,f3)  '    box origo',this%box%c / Ang, ' Ang'
-       write(*,f3)  '    box v1', cell(:,1) / Ang, ' Ang'
-       write(*,f3)  '    box v2', cell(:,2) / Ang, ' Ang'
-       write(*,f3)  '    box v3', cell(:,3) / Ang, ' Ang'
+      write(*,f11) '  Hartree potential box:'
+      cell = this%cell
+      if ( this%na_used /= this%na_u ) then
+        contrib = real(this%na_used,dp) / real(this%na_u,dp)
+        cell(:,this%t_dir) = cell(:,this%t_dir) * contrib
+      end if
+      write(*,f3)  '    box origo',this%box%c / Ang, ' Ang'
+      write(*,f3)  '    box v1', cell(:,1) / Ang, ' Ang'
+      write(*,f3)  '    box v2', cell(:,2) / Ang, ' Ang'
+      write(*,f3)  '    box v3', cell(:,3) / Ang, ' Ang'
     end if
     end if
 #endif
