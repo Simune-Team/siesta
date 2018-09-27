@@ -1751,7 +1751,7 @@ contains
     write(unit,'(a)') '# This segment belongs to the chemical potential: '//trim(Name(mu))
     write(unit,'(a)') '# It has the chemical potential:'
     write(unit,'(a,tr1,f10.5,tr1,a)') '#',mu%mu/eV,'eV'
-    write(unit,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Re(w)','Im(w)'
+    write(unit,'(a,a19,3(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','Re(w)','Im(w)'
 
     cidx%idx(1) = CONTOUR_EQ
     do i = 1 , Eq_segs(mu)
@@ -1796,13 +1796,13 @@ contains
     is_cont_frac = leqi(c%c_io%part,'cont-frac')
     
     do i = 1 , size(c%c)
-       cidx%e      = c%c(i)
+       cidx%e = c%c(i)
        cidx%idx(3) = i
        call c2weight_eq(cidx,idx,1._dp,W,ZW)
        if ( is_cont_frac ) then
-          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV / Pi
+          write(unit,'(4(e20.13,tr1))') c%c(i)/eV, W / eV / Pi
        else
-          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV
+          write(unit,'(4(e20.13,tr1))') c%c(i)/eV, W / eV
        end if
     end do
     

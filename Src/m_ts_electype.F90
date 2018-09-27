@@ -373,55 +373,71 @@ contains
        
        ! We select the input
        if ( leqi(ln,'HS') .or. leqi(ln,'HS-file') .or. &
-            leqi(ln,'TSHS') .or. &
-            leqi(ln,'TSHS-file') ) then
+            leqi(ln,'TSHS') .or. leqi(ln,'TSHS-file') ) then
           if ( fdf_bnnames(pline) < 2 ) call die('HS name not supplied')
           this%HSfile = trim(fdf_bnames(pline,2))
           info(1) = .true.
 
        else if ( leqi(ln,'semi-inf-direction') .or. &
             leqi(ln,'semi-inf-dir') .or. leqi(ln,'semi-inf') ) then
+         
+         tmp = 'Semi-infinite direction not understood correctly, &
+             &allowed format: [-+][a-c|a[1-3]]'
 
-          tmp = 'Semi-infinite direction not understood correctly, &
-                  &allowed format: [-+][a-c|a[1-3]]'
+         ! This possibility exists
+         !  semi-inf [-+][ ][a-c|a[1-3]] -> [direction] [vector]
+         if ( fdf_bnnames(pline) < 2 ) then
+           call die(trim(tmp))
+         end if
 
-          ! This possibility exists
-          !  semi-inf [-+][ ][a-c|a[1-3]] -> [direction] [vector]
-          if ( fdf_bnnames(pline) < 2 ) then
+         ln = fdf_bnames(pline,2)
+         if ( fdf_bnnames(pline) > 2 ) then
+           if ( len_trim(ln) /= 1 ) then
              call die(trim(tmp))
-          end if
-          
-          ln = fdf_bnames(pline,2)
-          if ( fdf_bnnames(pline) > 2 ) then
-             if ( len_trim(ln) /= 1 ) then
-                call die(trim(tmp))
-             end if
+           end if
 
-             ln = trim(ln) // fdf_bnames(pline,3)
+           ln = trim(ln) // fdf_bnames(pline,3)
 
-          end if
-          
-          ! now for testing
-          if ( ln(1:1) == '+' ) then
-             this%inf_dir = INF_POSITIVE
-          else if ( ln(1:1) == '-' ) then
-             this%inf_dir = INF_NEGATIVE
-          else
-             call die(trim(tmp))
-          end if
+         end if
 
-          ! copy over remaining part...
-          ln = ln(2:)
-          if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
+         ! preset
+         this%t_dir = 0           
+
+         ! now for testing
+         if ( ln(1:1) == '+' ) then
+           this%inf_dir = INF_POSITIVE
+         else if ( ln(1:1) == '-' ) then
+           this%inf_dir = INF_NEGATIVE
+           ! The 3 below cases are *special* in the sense that they require the user
+           ! to supply the GF files (TranSiesta/TBtrans cannot calculate the self-energies of
+           ! real-space Green functions).
+         else if ( leqi(ln,'ab') .or. leqi(ln, 'ba') ) then
+           this%t_dir = 6 ! Voigt notation
+         else if ( leqi(ln,'ac') .or. leqi(ln, 'ca') ) then
+           this%t_dir = 5
+         else if ( leqi(ln,'bc') .or. leqi(ln, 'cb') ) then
+           this%t_dir = 4
+         else
+           call die(trim(tmp))
+         end if
+
+         if ( this%t_dir > 3 ) then
+           ! This flag has no influence
+           this%inf_dir = INF_NEGATIVE
+         else
+           ! figure out direction...
+           ln = ln(2:)
+           if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
              this%t_dir = 1
-          else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
+           else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
              this%t_dir = 2
-          else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
+           else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
              this%t_dir = 3
-          else
+           else
              call die(trim(tmp))
-          end if
-          info(2) = .true.
+           end if
+         end if
+         info(2) = .true.
           
        else if ( leqi(ln,'chemical-potential') .or. &
             leqi(ln,'chem-pot') .or. leqi(ln,'mu') ) then
@@ -605,8 +621,8 @@ contains
     end do
     
     if ( any(this%Bloch(:) < 1) ) then
-       call die("Bloch expansion in "//trim(this%name)//" electrode must be >= 1.")
-    end if
+      call die("Bloch expansion in "//trim(this%name)//" electrode must be >= 1.")
+    end if      
 
     if ( .not. all(info(1:4)) ) then
        write(*,*)'You need to supply at least:'
@@ -688,23 +704,78 @@ contains
     fmin =  huge(1._dp)
     fmax = -huge(1._dp)
     call reclat(this%cell,rcell,0)
-    do i = 1 , this%na_u
-       rc = sum(this%xa(:,i) * rcell(:,this%t_dir))
-       fmin = min(fmin,rc)
-       fmax = max(fmax,rc)
-    end do
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,2))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+        rc = sum(this%xa(:,i) * rcell(:,3))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    case ( 5 ) ! A-C
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,1))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+        rc = sum(this%xa(:,i) * rcell(:,3))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    case ( 6 ) ! A-B
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,1))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+        rc = sum(this%xa(:,i) * rcell(:,2))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    case default
+      do i = 1 , this%na_u
+        rc = sum(this%xa(:,i) * rcell(:,this%t_dir))
+        fmin = min(fmin,rc)
+        fmax = max(fmax,rc)
+      end do
+    end select
     ! Get distance to the cell boundary
     rc = 1._dp - (fmax-fmin)
     ! Calculate the inter-layer distance
-    this%dINF_layer = VNORM( rc * this%cell(:,this%t_dir) )
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      fmin = VNORM( rc * this%cell(:,2) )
+      fmax = VNORM( rc * this%cell(:,3) )
+      this%dINF_layer = min(fmin, fmax)
+    case ( 5 ) ! A-C
+      fmin = VNORM( rc * this%cell(:,1) )
+      fmax = VNORM( rc * this%cell(:,3) )
+      this%dINF_layer = min(fmin, fmax)
+    case ( 6 ) ! A-B
+      fmin = VNORM( rc * this%cell(:,1) )
+      fmax = VNORM( rc * this%cell(:,2) )
+      this%dINF_layer = min(fmin, fmax)
+    case default
+      this%dINF_layer = VNORM( rc * this%cell(:,this%t_dir) )
+    end select
 
     ! We deallocate xa and lasto as they are not needed
     deallocate(this%xa,this%lasto)
 
     ! Check that the Bloch expansion is not in the transport-direction
-    if ( this%Bloch(this%t_dir) /= 1 ) then
-       call die('Bloch expansion in the transport direction &
+    if ( this%t_dir > 3 ) then
+      if ( any(this%Bloch /= 1) ) then
+        call die('Bloch expansion for real-space self-energies &
             &is not allowed.')
+      end if
+      if ( this%na_used /= this%na_u ) then
+        call die('Real-space self-energies requires using the full electrode!')
+      end if
+    else
+      if ( this%Bloch(this%t_dir) /= 1 ) then
+        call die('Bloch expansion in the transport direction &
+            &is not allowed.')
+      end if
     end if
 
                                  ! Same criteria as IsVolt
@@ -798,7 +869,19 @@ contains
     ! Create the basal plane of the electrode
     ! Decide which end of the electrode we use
     ! Calculate planes of the electrodes
-    p = this%cell(:,this%t_dir)
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      p = this%cell(:,2)
+      p = this%cell(:,3)
+    case ( 5 ) ! A-C
+      p = this%cell(:,1)
+      p = this%cell(:,3)
+    case ( 6 ) ! A-B
+      p = this%cell(:,1)
+      p = this%cell(:,2)
+    case default
+      p = this%cell(:,this%t_dir)
+    end select
     p = p / VNORM(p)
 
     ! Select the atom farthest from the device region
@@ -886,8 +969,8 @@ contains
     call dgetri(3,this%box%v,3,ipiv,work,12,i)
     if ( i /= 0 ) then
        call die('Electrode inversion of cell vectors failed')
-    end if
-    
+     end if
+
   end subroutine init_Elec_sim
 
   ! Initialize variables for the electrode according
@@ -1330,7 +1413,19 @@ contains
        tmp(2) = k2(this%pvt(2)) / this%Bloch(2)
        tmp(3) = k2(this%pvt(3)) / this%Bloch(3)
        ! Remove semi-infinite direction
-       tmp(this%t_dir) = 0._dp
+       select case ( this%t_dir )
+       case ( 4 )
+         tmp(2) = 0._dp
+         tmp(3) = 0._dp
+       case ( 5 )
+         tmp(1) = 0._dp
+         tmp(3) = 0._dp
+       case ( 6 )
+         tmp(1) = 0._dp
+         tmp(2) = 0._dp
+       case default
+         tmp(this%t_dir) = 0._dp
+       end select
 
        if ( iop == 1 ) then
           ! Convert back to 1 / Bohr
@@ -1392,26 +1487,30 @@ contains
     integer, intent(out) :: imin(3), imax(3)
 
     real(dp) :: LHS(3,3), RHS(3), cell(3,3), contrib
-    integer :: idx(3), i
+    integer :: idx(3), i, B(3)
 
     ! Initialize the indices
     imin = huge(1)
     imax = -huge(1)
 
-    contrib = real(this%na_used,dp) / real(this%na_u,dp)
-    i = this%t_dir
-    ! Scale semi-infinite direction
+    B = this%Bloch
     cell = this%cell
-    cell(:,i) = cell(:,i) * contrib
+    ! Along the semi-infinite direction we need to limit the length
+    ! Scale semi-infinite direction
+    if ( this%na_used /= this%na_u ) then
+      i = this%t_dir
+      contrib = real(this%na_used,dp) / real(this%na_u,dp)
+      cell(:,i) = cell(:,i) * contrib
+    end if
 
     call get_idx(0,0,0,imin,imax)
-    call get_idx(1,0,0,imin,imax)
-    call get_idx(0,1,0,imin,imax)
-    call get_idx(0,0,1,imin,imax)
-    call get_idx(1,1,0,imin,imax)
-    call get_idx(1,0,1,imin,imax)
-    call get_idx(0,1,1,imin,imax)
-    call get_idx(1,1,1,imin,imax)
+    call get_idx(B(1),0,0,imin,imax)
+    call get_idx(0,B(2),0,imin,imax)
+    call get_idx(0,0,B(3),imin,imax)
+    call get_idx(B(1),B(2),0,imin,imax)
+    call get_idx(B(1),0,B(3),imin,imax)
+    call get_idx(0,B(2),B(3),imin,imax)
+    call get_idx(B(1),B(2),B(3),imin,imax)
 
     ! This pre-step will move them both simultaneously
     ! as that corresponds to equal shifts and no crossing
@@ -1562,7 +1661,7 @@ contains
     type(Elec), intent(inout) :: this
     logical, intent(in), optional :: io
 
-    logical :: lio
+    logical :: lio, has_01
 
     real(dp), pointer :: H(:,:), H00(:,:), H01(:,:)
     real(dp), pointer :: S(:), S00(:), S01(:)
@@ -1583,77 +1682,95 @@ contains
 
     H => val(this%H)
     S => val(this%S)
-    tm(:)          = TM_ALL
-    tm(this%t_dir) = 0
+    tm(:) = TM_ALL
+    has_01 = .false.
+    select case ( this%t_dir )
+    case ( 4 ) ! B-C
+      tm(2) = 0
+      tm(3) = 0
+    case ( 5 ) ! A-C
+      tm(1) = 0
+      tm(3) = 0
+    case ( 6 ) ! A-B
+      tm(1) = 0
+      tm(2) = 0
+    case default
+      tm(this%t_dir) = 0
+      has_01 = .true.
+    end select
     call crtSparsity_SC(this%sp,this%sp00, &
          TM=tm, ucell=this%cell, &
          isc_off=this%isc_off)
 
-    ! Notice that we create the correct electrode transfer hamiltonian...
-    if ( this%inf_dir == INF_NEGATIVE ) then
-       tm(this%t_dir) = -1
-    else if ( this%inf_dir == INF_POSITIVE ) then
-       tm(this%t_dir) =  1
-    else
-       call die('Electrode direction not recognized')
-    end if
-    call crtSparsity_SC(this%sp,this%sp01, &
-         TM=tm, ucell=this%cell, &
-         isc_off=this%isc_off)
-    
     ! create data
     call newdSpData2D(this%sp00,this%nspin,fdist,this%H00,name='E spH00')
     H00 => val(this%H00)
-    call newdSpData2D(this%sp01,this%nspin,fdist,this%H01,name='E spH01')
-    H01 => val(this%H01)
     call newdSpData1D(this%sp00,fdist,this%S00,name='E spS00')
     S00 => val(this%S00)
-    call newdSpData1D(this%sp01,fdist,this%S01,name='E spS01')
-    S01 => val(this%S01)
-
+    
     call attach(this%sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=no_l)
+        nrows=no_l)
     call attach(this%sp00,n_col=ncol00,list_ptr=ptr00,list_col=col00, &
-         nrows=iio)
-    if ( iio /= no_l ) call die('Could not do index matching due to &
-         &inconsistent sparsity patterns')
-    call attach(this%sp01,n_col=ncol01,list_ptr=ptr01,list_col=col01, &
-         nrows=iio)
+        nrows=iio)
     if ( iio /= no_l ) call die('Could not do index matching due to &
          &inconsistent sparsity patterns')
 
+    ! Notice that we create the correct electrode transfer hamiltonian...
+    if ( has_01 ) then
+      if ( this%inf_dir == INF_NEGATIVE ) then
+        tm(this%t_dir) = -1
+      else if ( this%inf_dir == INF_POSITIVE ) then
+        tm(this%t_dir) =  1
+      else
+        call die('Electrode direction not recognized')
+      end if
+      call crtSparsity_SC(this%sp,this%sp01, &
+          TM=tm, ucell=this%cell, &
+          isc_off=this%isc_off)
+      call newdSpData2D(this%sp01,this%nspin,fdist,this%H01,name='E spH01')
+      H01 => val(this%H01)
+      call newdSpData1D(this%sp01,fdist,this%S01,name='E spS01')
+      S01 => val(this%S01)
+      call attach(this%sp01,n_col=ncol01,list_ptr=ptr01,list_col=col01, &
+          nrows=iio)
+      if ( iio /= no_l ) call die('Could not do index matching due to &
+          &inconsistent sparsity patterns')
+    end if
+    
     ! loop and assign data elements
     do i = 1 , no_l
+      
+      ! Shift out of the buffer region
+      iio = index_local_to_global(fdist,i)
+      ia = iaorb(iio,this%lasto)
 
-       ! Shift out of the buffer region
-       iio = index_local_to_global(fdist,i)
-       ia = iaorb(iio,this%lasto)
+      ! Loop number of entries in the row...
+      do j = 1 , ncol00(i)
 
-       ! Loop number of entries in the row...
-       do j = 1 , ncol00(i)
+        ! The index in the pointer array is retrieved
+        ind00 = ptr00(i) + j
 
-          ! The index in the pointer array is retrieved
-          ind00 = ptr00(i) + j
+        ! Loop in the super-set sparsity pattern
+        idx00: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
 
-          ! Loop in the super-set sparsity pattern
-          idx00: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
+          ! If we have the same column index it must be
+          ! the same entry they represent
+          if ( col00(ind00) == l_col(ind) ) then
 
-             ! If we have the same column index it must be
-             ! the same entry they represent
-             if ( col00(ind00) == l_col(ind) ) then
+            H00(ind00,:) = H(ind,:)
+            S00(ind00)   = S(ind)
 
-                H00(ind00,:) = H(ind,:)
-                S00(ind00)   = S(ind)
+            exit idx00
+          end if
 
-                exit idx00
-             end if
+        end do idx00
 
-          end do idx00
+      end do
+      
+      if ( has_01 ) then
 
-       end do
-
-       ! Loop number of entries in the row...
-       do j = 1 , ncol01(i)
+        ! Loop number of entries in the row...
+        do j = 1 , ncol01(i)
 
           ! The index in the pointer array is retrieved
           ind01 = ptr01(i) + j
@@ -1661,28 +1778,29 @@ contains
           ! Loop in the super-set sparsity pattern
           idx01: do ind = l_ptr(i) + 1 , l_ptr(i) + l_ncol(i)
 
-             ! If we have the same column index it must be
-             ! the same entry they represent
-             if ( col01(ind01) == l_col(ind) ) then
+            ! If we have the same column index it must be
+            ! the same entry they represent
+            if ( col01(ind01) == l_col(ind) ) then
 
-                H01(ind01,:) = H(ind,:)
-                S01(ind01)   = S(ind)
+              H01(ind01,:) = H(ind,:)
+              S01(ind01)   = S(ind)
 
-                exit idx01
-             end if
-             
+              exit idx01
+            end if
+
           end do idx01
-
-       end do
+        end do
+      end if
     end do
 
     if ( IONode .and. lio ) then
-       call print_type(this%sp00)
-       call print_type(this%sp01)
+      call print_type(this%sp00)
+      if ( has_01 ) &
+          call print_type(this%sp01)
     end if
 
     ! Check that there is a transfer matrix!
-    if ( nnzs(this%sp01) == 0 ) then
+    if ( has_01 .and.  (nnzs(this%sp01) == 0) ) then
        if ( IONode ) then
           write(*,'(a)') 'Electrode '//trim(this%name)//' has no transfer matrix.'
        end if
@@ -1765,6 +1883,11 @@ contains
     ! Print-out values stored...
     real(dp) :: maxH, maxS
     integer :: maxi, maxj, maxia, maxja
+
+    if ( this%t_dir > 3 ) then
+      good = .true.
+      return
+    end if
 
     ! Retrieve distribution
     fdist => dist(this%H)
@@ -2086,18 +2209,27 @@ contains
       write(*,f15) '  Electrode Bloch unity [E1 x E2 x E3]', this%Bloch(:)
     end if
     write(*,f20) '  Position in geometry', this%idx_a, &
-         this%idx_a + TotUsedAtoms(this) - 1
-    if ( this%t_dir == 1 ) then
-       chars = 'E1'
-    else if ( this%t_dir == 2 ) then
-       chars = 'E2'
-    else if ( this%t_dir == 3 ) then
-       chars = 'E3'
-    end if
-    if ( this%inf_dir == INF_POSITIVE ) then
-       chars = 'positive wrt. '//trim(chars)
-    else
-       chars = 'negative wrt. '//trim(chars)
+        this%idx_a + TotUsedAtoms(this) - 1
+    select case ( this%t_dir )
+    case ( 1 )
+      chars = 'E1'
+    case ( 2 )
+      chars = 'E2'
+    case ( 3 )
+      chars = 'E3'
+    case ( 4 )
+      chars = 'E2 and E3'
+    case ( 5 )
+      chars = 'E1 and E3'
+    case ( 6 )
+      chars = 'E1 and E2'
+    end select
+    if ( this%t_dir <= 3 ) then
+      if ( this%inf_dir == INF_POSITIVE ) then
+        chars = 'positive wrt. '//trim(chars)
+      else
+        chars = 'negative wrt. '//trim(chars)
+      end if
     end if
     write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
     write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
@@ -2153,14 +2285,16 @@ contains
     end if
     if ( present(box) ) then
     if ( box ) then
-       write(*,f11) '  Hartree potential box:'
-       contrib = real(this%na_used,dp) / real(this%na_u,dp)
-       cell = this%cell
-       cell(:,this%t_dir) = cell(:,this%t_dir) * contrib
-       write(*,f3)  '    box origo',this%box%c / Ang, ' Ang'
-       write(*,f3)  '    box v1', cell(:,1) / Ang, ' Ang'
-       write(*,f3)  '    box v2', cell(:,2) / Ang, ' Ang'
-       write(*,f3)  '    box v3', cell(:,3) / Ang, ' Ang'
+      write(*,f11) '  Hartree potential box:'
+      cell = this%cell
+      if ( this%na_used /= this%na_u ) then
+        contrib = real(this%na_used,dp) / real(this%na_u,dp)
+        cell(:,this%t_dir) = cell(:,this%t_dir) * contrib
+      end if
+      write(*,f3)  '    box origo',this%box%c / Ang, ' Ang'
+      write(*,f3)  '    box v1', cell(:,1) / Ang, ' Ang'
+      write(*,f3)  '    box v2', cell(:,2) / Ang, ' Ang'
+      write(*,f3)  '    box v3', cell(:,3) / Ang, ' Ang'
     end if
     end if
 #endif
