@@ -340,7 +340,7 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    real(dp), parameter :: EPS = 1.d-7
+    real(dp), parameter :: EPS = 1.d-6
     integer :: read_Size, read_Size_HS
 
 #ifdef MPI
@@ -436,9 +436,9 @@ contains
        ! The test of the energy-point is performed on
        ! the calculating node...
        if ( Node == iNode ) then
-          if ( cdabs(cE%e-ZE_cur) > EPS ) then
+          if ( cdabs(cE%e-ZE_cur) > 10._dp * EPS ) then
              write(*,*) 'GF-file: '//trim(El%GFfile)
-             write(*,'(2(a,2(tr1,g12.5)))') 'Energies, TS / Gf:', &
+             write(*,'(2(a,2(tr1,g20.13)))') 'Energies, TS / Gf:', &
                   cE%e / eV, ' /', ZE_cur / eV
              call die('Energy point in GF file does &
                   &not match the internal energy-point in transiesta. &
@@ -668,7 +668,7 @@ contains
     use mpi_siesta, only: MPI_logical, MPI_Bcast
 #endif
     use m_ts_electype
-    real(dp) , parameter :: EPS = 1.e-7_dp
+    real(dp) , parameter :: EPS = 1.e-6_dp
     
 ! ***********************
 ! * INPUT variables     *
@@ -825,7 +825,7 @@ contains
     use m_ts_cctype
     use m_ts_electype
 
-    real(dp) , parameter :: EPS = 1d-7
+    real(dp) , parameter :: EPS = 1d-6
 
 ! ***********************
 ! * INPUT variables     *

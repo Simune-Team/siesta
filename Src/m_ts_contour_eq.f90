@@ -1751,7 +1751,7 @@ contains
     write(unit,'(a)') '# This segment belongs to the chemical potential: '//trim(Name(mu))
     write(unit,'(a)') '# It has the chemical potential:'
     write(unit,'(a,tr1,f10.5,tr1,a)') '#',mu%mu/eV,'eV'
-    write(unit,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Re(w)','Im(w)'
+    write(unit,'(a,a19,3(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','Re(w)','Im(w)'
 
     cidx%idx(1) = CONTOUR_EQ
     do i = 1 , Eq_segs(mu)

@@ -306,10 +306,10 @@ contains
     integer :: init_nz, old_nz
 
     if ( r_oBuf%n > 0 ) then
-       ! Remove buffer atoms...
-       call Sp_remove_region(dit,s_sp,r_oBuf,ts_sp)
+      ! Remove buffer atoms...
+      call Sp_remove_region(dit,s_sp,r_oBuf,ts_sp)
     else
-       ts_sp = s_sp
+      ts_sp = s_sp
     end if
 
     ! Get initial number of nnz
@@ -332,28 +332,26 @@ contains
        ! We expect there to be only one and thus find the transport
        ! direction in the big cell
        old_nz = nnzs(ts_sp)
+ 
        select case ( Elecs(iEl)%t_dir )
        case ( 4 ) ! B-C
          i = Elecs(iEl)%pvt(2)
          call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
          i = Elecs(iEl)%pvt(3)
-         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
        case ( 5 ) ! A-C
          i = Elecs(iEl)%pvt(1)
          call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
          i = Elecs(iEl)%pvt(3)
-         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
        case ( 6 ) ! A-B
          i = Elecs(iEl)%pvt(1)
          call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
          i = Elecs(iEl)%pvt(2)
-         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
        case default
          i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
-         ! Remove connections from this electrode across the boundary...
-         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, &
-             i, ts_sp, r = r_tmp2)
        end select
+
+       ! Remove connections from this electrode across the boundary...
+       call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
 
        ! Update init_nz for the valid removed elements
        init_nz = init_nz - (old_nz - nnzs(ts_sp))
@@ -375,11 +373,11 @@ contains
     i = nnzs(ts_sp)
     if ( i < init_nz .and. IONode ) then
        write(*,'(/a,i0,a/)')'*** WARNING! Removed ',init_nz - i, ' elements &
-            &which connect electrodes across the device region!'
+           &which connect electrodes across the device region!'
     end if
     
     do iEl = 1 , N_Elec
-       call rgn_delete(r_oE(iEl))
+      call rgn_delete(r_oE(iEl))
     end do
 
   end subroutine ts_Sp_calculation

@@ -123,6 +123,7 @@ contains
     type(ts_c_idx) :: cE
     real(dp)    :: kw
     complex(dp) :: W, ZW
+    logical :: eq_full_Gf
 ! ************************************************************
 
 ! ******************** Loop variables ************************
@@ -250,6 +251,9 @@ contains
        end if
     end if
 
+    ! Whether we should always calculate the full Green function
+    eq_full_Gf = all(Elecs(:)%DM_update /= 0)
+
     ! start the itterators
     call itt_init  (Sp,end=nspin)
     ! point to the index iterators
@@ -321,24 +325,24 @@ contains
 #ifdef TS_DEV
 io=100+iE+node
 open(io,form='unformatted')
-write(io) cE%e
+write(io) cE%e / eV
 write(io) no_u_TS,no_u_TS
-write(io) zwork(1:no_u_TS**2)
+write(io) zwork(1:no_u_TS**2) / eV
 close(io)
 #endif
 
           ! *******************
           ! * calc GF         *
           ! *******************
-          if ( all(Elecs(:)%DM_update /= 0) ) then
+          if ( eq_full_Gf ) then
              call calc_GF(cE,no_u_TS, zwork, GF)
 
 #ifdef TS_DEV
 io=300+iE+node
 open(io,form='unformatted')
-write(io) cE%e
+write(io) cE%e / eV
 write(io) no_u_TS, no_u_TS
-write(io) gf(1:no_u_TS**2)
+write(io) gf(1:no_u_TS**2) * eV
 close(io)
 #endif
 
@@ -460,11 +464,11 @@ close(io)
 #ifdef TS_DEV
 io = 500 + iE + Node
 open(io,form='unformatted')
-write(io) cE%e
+write(io) cE%e / eV
 write(io) no_u_TS, TotUsedOrbs(Elecs(1))
-write(io) GF(1:no_u_TS * totusedorbs(Elecs(1)))
+write(io) GF(1:no_u_TS * totusedorbs(Elecs(1))) * eV
 write(io) no_u_TS, TotUsedOrbs(Elecs(2))
-write(io) GF(no_u_TS*totusedorbs(Elecs(1))+1:no_u_TS * sum(totusedorbs(Elecs)))
+write(io) GF(no_u_TS*totusedorbs(Elecs(1))+1:no_u_TS * sum(totusedorbs(Elecs))) * eV
 close(io)
 #endif
 
@@ -806,7 +810,7 @@ integer :: i
           write(i) dcmplx(100._dp,100._dp)
           write(i) no_u
           write(i) no_u
-          write(i) GFinv(1:no_u**2)
+          write(i) GFinv(1:no_u**2) / eV
           write(i) no_u
           GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
           do io = 1, no_u

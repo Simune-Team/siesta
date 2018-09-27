@@ -2218,20 +2218,20 @@ contains
     case ( 3 )
       chars = 'E3'
     case ( 4 )
-      chars = 'E2/E3'
+      chars = 'E2 and E3'
     case ( 5 )
-      chars = 'E1/E3'
+      chars = 'E1 and E3'
     case ( 6 )
-      chars = 'E1/E2'
+      chars = 'E1 and E2'
     end select
-    if ( this%inf_dir == INF_POSITIVE ) then
-      chars = 'positive wrt. '//trim(chars)
-    else
-      chars = 'negative wrt. '//trim(chars)
-    end if
     if ( this%t_dir <= 3 ) then
-      write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
+      if ( this%inf_dir == INF_POSITIVE ) then
+        chars = 'positive wrt. '//trim(chars)
+      else
+        chars = 'negative wrt. '//trim(chars)
+      end if
     end if
+    write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
     write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
     write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
     write(*,f1)  '  Bulk values in electrode', this%Bulk
