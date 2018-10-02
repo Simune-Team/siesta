@@ -358,14 +358,14 @@ contains
     ! Here we calculate the maximum size we need to
     ! be able to down-fold the self-energies to the requested
     ! region.
-    pad_LHS = 0
+    call UC_minimum_worksize(.false., N_Elec, Elecs, pad_LHS)
     do iEl = 1 , N_Elec
        if ( ElTri(iEl)%n < 2 ) &
            call die('All regions must be at least 2 blocks big. Error')
 
        ! Down-folding work-arrays
-       io = fold_elements(ElTri(iEl)%n,ElTri(iEl)%r)
-       pad_LHS = max(pad_LHS, io)
+       no = fold_elements(ElTri(iEl)%n,ElTri(iEl)%r)
+       pad_LHS = max(pad_LHS, no)
 
        if ( Elecs(iEl)%out_of_core ) then
          io = 0
@@ -379,23 +379,15 @@ contains
          no = Elecs(iEl)%no_u ** 2
          ! Determine work array size
          ! H00, H01, S00 and S01 in the work array
-         io = no * 4
-         ! For the Lopez-Sancho algorithm
-         io = io + no * 8
+         ! and 8 for the Lopez-Sancho algorithm
+         io = no * (4 + 8)
          ! One more array is requred when we need to invert the matrix
          if ( Elecs(iEl)%no_u /= Elecs(iEl)%no_used ) io = io + no
          if ( calc_DOS_Elecs ) io = io + no
          
        end if
 
-       ! These are work-arrays required for expansion of the self-energy
-       if ( Elecs(iEl)%Bulk ) then
-         no = TotUsedOrbs(Elecs(iEl)) ** 2 ! We already have H, S
-       else
-         no = TotUsedOrbs(Elecs(iEl)) ** 2 * 2
-       end if
-
-       pad_LHS = max(pad_LHS,io,no)
+       pad_LHS = max(pad_LHS, io)
     end do
 
     ! Correct the actual padding by subtracting the 

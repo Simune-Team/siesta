@@ -96,7 +96,7 @@ contains
     ! Gf calculation
     use m_ts_trimat_invert
 
-    use m_ts_tri_common, only : GFGGF_needed_worksize
+    use m_ts_tri_common, only : GFGGF_needed_worksize, nnzs_tri
 
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
@@ -194,6 +194,10 @@ contains
        padding = 0
        GFGGF_size = 0
     end if
+    ! Now figure out the required worksize for SE expansion
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, idx)
+    io = nnzs_tri(c_Tri%n, c_Tri%r)
+    padding = max(padding, idx - io)
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
     nzwork = elements(zwork_tri,all=.true.)

@@ -184,9 +184,9 @@ contains
 
     ! prepare the LHS of MUMPS-solver.
     ! This is the same no matter the contour type
-    call prep_LHS(mum,N_Elec,Elecs)
-    nzwork = mum%NZ
+    call prep_LHS(IsVolt,mum,N_Elec,Elecs)
     zwork => mum%A(:)
+    nzwork = size(zwork)
 
     ! analyzation step
     call analyze_MUMPS(mum)
