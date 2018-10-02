@@ -9,22 +9,25 @@ module m_save_density_matrix
   
   implicit none
   public :: save_density_matrix
-  
+
 contains
   
-  subroutine save_density_matrix(SCFconverged, when,file)
-
+  subroutine save_density_matrix(SCFconverged, when, file)
+    
     ! Stores DM and EDM on files
     ! This version uses module variables.
     ! Eventually it can be a cleaner routine
     
     use precision,            only:  dp
-    use sparse_matrices,      only:  maxnh, numh
+    use sparse_matrices,      only:  maxnh
+#ifdef TIMING_IO
+    use sparse_matrices,      only:  numh
     use sparse_matrices,      only:  listh, listhptr
+#endif
     use files, only : slabel
     use m_iodm,               only:  write_dm
     use m_matio,              only:  write_mat
-    use m_spin,               only:  nspin, h_spin_dim
+    use m_spin,               only:  spin
     use atomlist,             only:  no_l
     use siesta_geom,          only:  nsc
     use siesta_options,       only:  writedm, writedm_cdf
@@ -43,7 +46,7 @@ contains
 #endif
     use sparse_matrices,      only:  EDM_2D
     use m_ts_iodm,            only:  write_ts_dm
-    use m_ts_global_vars,     only:  TSmode, TSrun
+    use m_ts_global_vars,     only:  TSrun
     use m_ts_options,         only:  TS_DE_save
     use m_energies,           only:  Ef
 
@@ -53,7 +56,7 @@ contains
     logical, intent(in), optional  :: when
     character(len=*), intent(in), optional   :: file
     
-    logical :: do_it, is_MD
+    logical :: do_write
     
 #ifdef CDF
 #ifdef NCDF_4
@@ -68,22 +71,23 @@ contains
     ! This gives more flexibility
     ! We retain the "writedm" default condition for compatibility
     
-    if (present(when)) then
-      do_it = when
+    if ( present(when) ) then
+      do_write = when
     else
-      do_it = writedm
-    endif
+      do_write = writedm
+    end if
 
 #ifdef CDF
     ! Save density matrix on disk, after mixing, to
     ! be used for re-starting the SCF cycle.
-    if (writedm_cdf_history) then
-      call write_dm_netcdf( no_l, maxnh, h_spin_dim, Dscf, overwrite=.false. )
-    else if (writedm_cdf) then
-      call write_dm_netcdf( no_l, maxnh, h_spin_dim, Dscf, overwrite=.true. )
+    if ( writedm_cdf_history ) then
+      call write_dm_netcdf( no_l, maxnh, spin%H, Dscf, overwrite=.false. )
+    else if ( writedm_cdf ) then
+      call write_dm_netcdf( no_l, maxnh, spin%H, Dscf, overwrite=.true. )
     end if
+    
 #ifdef NCDF_4
-    if ( write_cdf .and. do_it ) then
+    if ( write_cdf .and. do_write ) then
       
       if ( (idyn == 0 .and. nmove == 0) .or. &
           (idyn == 6 .and. istp == 1 ) ) then
@@ -100,11 +104,11 @@ contains
 #endif
 
 #ifdef TIMING_IO
-    if ( do_it ) then
+    if ( do_write ) then
       call timer('IO-W-DM',1)
       do i = 1 , 100
         if (fdf_get("Use.Blocked.WriteMat",.false.)) then
-          call write_mat (maxnh, no_l, h_spin_dim, &
+          call write_mat (maxnh, no_l, spin%H, &
               numh, listhptr, listh, Dscf, &
               userfile=trim(file)//'.blocked',compatible=.false.)
         else
@@ -120,30 +124,30 @@ contains
     ! Check wheter we should write
     select case ( idyn )
     case ( 6, 7, 9 )
-      if ( istp /= 1 ) do_it = .false.
+      if ( istp /= 1 ) do_write = .false.
     end select
-    
-    if ( do_it ) then
-      if ( TSmode ) then
-        ! Performing a TranSiesta calculation:
-        if ( TSrun ) then
-          ! If we are running TranSiesta we should save the TSDE file
-          call write_ts_dm(trim(slabel)//'.TSDE', &
-              nsc, DM_2D, EDM_2D, Ef)
-        else
-          ! If we are running the Siesta initialization we should
-          ! store the DM file
-          call write_dm(trim(slabel)//'.DM', nsc, DM_2D)
-        end if
-      else
-        ! Always write out the DM file
+
+    ! Figure out when to write TSDE
+    if ( TSrun ) then
+      ! We should only store based on the input of the super routine.
+      ! I.e. if the user does not request storing the mixed DM, then
+      ! we need not save the TSDE since it is already stored from the
+      ! previous iteration.
+    else
+      if ( do_write ) then
+        ! If we are running the Siesta initialization we should
+        ! store the DM file, but only if do_write allows it ;)
         call write_dm(trim(slabel)//'.DM', nsc, DM_2D)
-        ! Only write out the tsde file if converged!
-        if ( TS_DE_save .and. SCFconverged ) then
-          ! IN case the user also wants the TSDE file, store this
-          call write_ts_dm(trim(slabel)//'.TSDE', nsc, DM_2D, EDM_2D, Ef)
-        end if
       end if
+      
+      ! This is not a transiesta run, possibly the siesta initialization run
+      ! Here we should only store the TSDE file if it has converged *AND*
+      ! if TS_DE is requested to be saved
+      do_write = SCFconverged .and. TS_DE_save
+    end if
+
+    if ( do_write ) then
+      call write_ts_dm(trim(slabel)//'.TSDE', nsc, DM_2D, EDM_2D, Ef)
     end if
     
   end subroutine save_density_matrix
