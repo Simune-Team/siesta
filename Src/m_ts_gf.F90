@@ -817,9 +817,9 @@ contains
 ! ## Checks information an returns number of atoms and orbitals   ##
 ! ##################################################################
   subroutine check_Green(funit,El, &
-       c_ucell,c_nkpar,c_kpar,c_wkpar, &
-       c_NEn,c_ce, &
-       xa_Eps, errorGF)
+      c_ucell,c_nkpar,c_kpar,c_wkpar, &
+      c_NEn,c_ce, &
+      xa_Eps, errorGF)
 
     use units, only: Ang, eV
     use m_ts_cctype
@@ -896,106 +896,106 @@ contains
     read(funit) mu
 
     if ( El%nspin /= nspin ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of spin is wrong!"
-       write(*,'(2(a,i2))') "Found: ",nspin,", expected: ",El%nspin
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of spin is wrong!"
+      write(*,'(2(a,i0))') "Found: ",nspin,", expected: ",El%nspin
+      localErrorGf = .true.
     end if
     if ( any(abs(El%cell-ucell) > EPS) ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Unit-cell is not consistent!"
-       write(*,*) "Found (Ang):"
-       write(*,'(3(3(tr1,f10.5),/))') ucell/Ang
-       write(*,*) "Expected (Ang):"
-       write(*,'(3(3(tr1,f10.5),/))') El%cell/Ang
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Unit-cell is not consistent!"
+      write(*,*) "Found (Ang):"
+      write(*,'(3(3(tr1,f14.8),/))') ucell/Ang
+      write(*,*) "Expected (Ang):"
+      write(*,'(3(3(tr1,f14.8),/))') El%cell/Ang
+      localErrorGf = .true.
     end if
     if ( El%na_u /= na_u ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of atoms is wrong!"
-       write(*,'(2(a,i2))') "Found: ",na_u,", expected: ",El%na_u
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of atoms is wrong!"
+      write(*,'(2(a,i0))') "Found: ",na_u,", expected: ",El%na_u
+      localErrorGf = .true.
     end if
     if ( El%na_used /= na ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of used atoms is wrong!"
-       write(*,'(2(a,i2))') "Found: ",na,", expected: ",El%na_used
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of used atoms is wrong!"
+      write(*,'(2(a,i0))') "Found: ",na,", expected: ",El%na_used
+      localErrorGf = .true.
     end if
     if ( El%no_u /= no_u ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of orbitals is wrong!"
-       write(*,'(2(a,i2))') "Found: ",no_u,", expected: ",El%no_u
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of orbitals is wrong!"
+      write(*,'(2(a,i0))') "Found: ",no_u,", expected: ",El%no_u
+      localErrorGf = .true.
     end if
     if ( El%no_used /= no ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of used orbitals is wrong!"
-       write(*,'(2(a,i2))') "Found: ",no,", expected: ",El%no_used
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of used orbitals is wrong!"
+      write(*,'(2(a,i0))') "Found: ",no,", expected: ",El%no_used
+      localErrorGf = .true.
     end if
-    
+
     ! Initialize error parameter
     eXa = .false.
     ! We check elsewhere that the electrode is consistent with
     ! the FDF input
+    kpt(:) = xa(:, 1) - El%xa_used(:, 1)
     do ia = 1 , min(na,El%na_used) ! in case it is completely wrong
-       do i = 1 , 3
-          eXa= eXa .or. &
-               abs(xa(i,ia)-El%xa_used(i,ia)) > xa_Eps
-       end do
+      do i = 1 , 3
+        eXa = eXa .or. &
+            abs(xa(i,ia) - El%xa_used(i,ia) - kpt(i)) > xa_Eps
+      end do
     end do
     if ( eXa ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Atomic coordinates are wrong:"
-       write(*,'(1x,a,t35,a)') &
-            "Structure of GF electrode","| Electrode:"
-       write(*,'(t3,3a10,''  |'',3a10)') &
-            "X (Ang)","Y (Ang)","Z (Ang)", &
-            "X (Ang)","Y (Ang)","Z (Ang)"
-       do ia = 1, na
-          write(*,'(t3,3f10.5,''  |'',3f10.5)') &
-               xa(:,ia)/Ang, El%xa_used(:,ia)/Ang
-       end do
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Atomic coordinates are wrong:"
+      write(*,'(1x,a,t35,a)') "Structure of GF electrode","| Electrode:"
+      write(*,'(t3,3a15,''  |'',3a15)') &
+          "X (Ang)","Y (Ang)","Z (Ang)", &
+          "X (Ang)","Y (Ang)","Z (Ang)"
+      do ia = 1, na
+        write(*,'(t3,3(tr1,f14.8),''  |'',3(tr1,f14.8))') &
+            xa(:,ia)/Ang, El%xa_used(:,ia)/Ang
+      end do
+      localErrorGf = .true.
     end if
     deallocate(xa)
 
     if ( any(lasto - El%lasto_used /= 0) ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of orbitals on used atoms is wrong!"
-       write(*,'(a,1000i3)') "Found    lasto: ",lasto
-       write(*,'(a,1000i3)') "Expected lasto: ",El%lasto_used
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of orbitals on used atoms is wrong!"
+      write(*,'(a,1000i3)') "Found    lasto: ",lasto
+      write(*,'(a,1000i3)') "Expected lasto: ",El%lasto_used
+      localErrorGf = .true.
     end if
     deallocate(lasto)
 
     if ( any(El%Bloch(:)/=Bloch(:)) ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of Bloch expansions is wrong!"
-       write(*,'(2(a,i3))') "Found Bloch-A1: ",Bloch(1),", expected: ",El%Bloch(1)
-       write(*,'(2(a,i3))') "Found Bloch-A2: ",Bloch(2),", expected: ",El%Bloch(2)
-       write(*,'(2(a,i3))') "Found Bloch-A3: ",Bloch(3),", expected: ",El%Bloch(3)
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of Bloch expansions is wrong!"
+      write(*,'(2(a,i3))') "Found Bloch-A1: ",Bloch(1),", expected: ",El%Bloch(1)
+      write(*,'(2(a,i3))') "Found Bloch-A2: ",Bloch(2),", expected: ",El%Bloch(2)
+      write(*,'(2(a,i3))') "Found Bloch-A3: ",Bloch(3),", expected: ",El%Bloch(3)
+      localErrorGf = .true.
     end if
     if ( El%repeat .neqv. repeat ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*) 'Ordering of Bloch repetitions is not the same (repeat or tile)'
-       localErrorGf = .true.
-     end if
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*) 'Ordering of Bloch repetitions is not the same (repeat or tile)'
+      localErrorGf = .true.
+    end if
     if ( product(El%Bloch) > 1 ) then
-       if ( pre_expand /= El%pre_expand ) then
-          write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-          write(*,*)"Expecting a pre-expanded self-energy!"
-          localErrorGf = .true.
-       end if
+      if ( pre_expand /= El%pre_expand ) then
+        write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+        write(*,*)"Expecting a pre-expanded self-energy!"
+        localErrorGf = .true.
+      end if
     end if
     if ( abs(El%mu%mu-mu) > EPS ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"The chemical shift in the electrode does not match the &
-            &required shift! [eV]"
-       write(*,'(2(a,f12.6))')"Found: ",mu / eV,", expected: ",El%mu%mu / eV
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"The chemical shift in the electrode does not match the &
+          &required shift! [eV]"
+      write(*,'(2(a,f12.6))')"Found: ",mu / eV,", expected: ",El%mu%mu / eV
+      localErrorGf = .true.
     end if
 
     ! Read in general information about the context
@@ -1004,38 +1004,38 @@ contains
     read(funit) kpar,wkpar
 
     if ( c_nkpar /= nkpar ) then
-       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
-       write(*,*)"Number of k-points is wrong!"
-       write(*,'(2(a,i4))') "Found: ",nkpar,", expected: ",c_nkpar
-       localErrorGf = .true.
+      write(*,*)"ERROR: Green function file: "//trim(curGFfile)
+      write(*,*)"Number of k-points is wrong!"
+      write(*,'(2(a,i4))') "Found: ",nkpar,", expected: ",c_nkpar
+      localErrorGf = .true.
     end if
-    
+
     ! Check k-points
     do i = 1 , min(c_nkpar,nkpar)
-       ! As the k-points are in the Electrode unit cell
-       ! we need to compare that with those of the CONTACT cell!
-       ! The advantage of this is that the GF files can be re-used for
-       ! the same system with different lengths between the electrode layers.
-       call Elec_kpt(El,c_ucell,c_kpar(:,i),kpt, opt = 2)
-       if ( abs(kpar(1,i)-kpt(1)) > EPS .or. &
-            abs(kpar(2,i)-kpt(2)) > EPS .or. &
-            abs(kpar(3,i)-kpt(3)) > EPS ) then
-          write(*,*)"k-points are not the same:"
-          do j = 1 , min(c_nkpar,nkpar)
-             call Elec_kpt(El,c_ucell,c_kpar(:,j),kpt, opt = 2)
-             write(*,'(3f12.5,a,3f12.5)') kpt(:),'  :  ',kpar(:,j)
-          end do
-          localErrorGf = .true.
-          exit
-       end if
-       if ( dabs(c_wkpar(i)-wkpar(i)) > EPS ) then
-          write(*,*)"k-point weights are not the same:"
-          do j = 1 , c_nkpar
-             write(*,'(f12.5,a,f12.5)') c_wkpar(j),'  :  ',wkpar(j)
-          end do
-          localErrorGf = .true.
-          exit
-       end if
+      ! As the k-points are in the Electrode unit cell
+      ! we need to compare that with those of the CONTACT cell!
+      ! The advantage of this is that the GF files can be re-used for
+      ! the same system with different lengths between the electrode layers.
+      call Elec_kpt(El,c_ucell,c_kpar(:,i),kpt, opt = 2)
+      if ( abs(kpar(1,i)-kpt(1)) > EPS .or. &
+          abs(kpar(2,i)-kpt(2)) > EPS .or. &
+          abs(kpar(3,i)-kpt(3)) > EPS ) then
+        write(*,*)"k-points are not the same:"
+        do j = 1 , min(c_nkpar,nkpar)
+          call Elec_kpt(El,c_ucell,c_kpar(:,j),kpt, opt = 2)
+          write(*,'(3(tr1,f14.10),a,3(tr1,f14.10))') kpt(:),'  :  ',kpar(:,j)
+        end do
+        localErrorGf = .true.
+        exit
+      end if
+      if ( dabs(c_wkpar(i)-wkpar(i)) > EPS ) then
+        write(*,*)"k-point weights are not the same:"
+        do j = 1 , c_nkpar
+          write(*,'(f14.10,a,f14.10)') c_wkpar(j),'  :  ',wkpar(j)
+        end do
+        localErrorGf = .true.
+        exit
+      end if
     end do
     deallocate(kpar,wkpar)
 
