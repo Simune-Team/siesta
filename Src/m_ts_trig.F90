@@ -90,7 +90,7 @@ contains
     ! Gf calculation
     use m_ts_trimat_invert
 
-    use m_ts_tri_common, only : GFGGF_needed_worksize
+    use m_ts_tri_common, only : GFGGF_needed_worksize, nnzs_tri
     
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
@@ -182,14 +182,18 @@ contains
     ! than, yes, work.
 
     if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
-       ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
-       ! Hence, we will minimum require this...
-       call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
-            N_Elec, Elecs, padding, GFGGF_size)
+      ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
+      ! Hence, we will minimum require this...
+      call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
+          N_Elec, Elecs, padding, GFGGF_size)
     else
-       padding = 0
-       GFGGF_size = 0
+      padding = 0
+      GFGGF_size = 0
     end if
+    ! Now figure out the required worksize for SE expansion
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, idx)
+    io = nnzs_tri(c_Tri%n, c_Tri%r)
+    padding = max(padding, idx - io)
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
     nzwork = elements(zwork_tri,all=.true.)

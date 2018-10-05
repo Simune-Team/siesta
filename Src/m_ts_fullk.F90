@@ -201,7 +201,8 @@ contains
 
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require the full matrix...
-    nzwork = no_u_TS ** 2
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, no)
+    nzwork = max(no_u_TS ** 2, no)
     allocate(zwork(nzwork),stat=ierr)
     if (ierr/=0) call die('Could not allocate space for zwork')
     call memory('A','Z',nzwork,'transiesta')

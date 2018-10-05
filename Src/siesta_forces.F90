@@ -414,9 +414,9 @@ contains
              ! Save for possible restarts
              if ( mixH ) then
                 call write_spmatrix(H,file="H_MIXED",when=writeH)
-                call save_density_matrix(file="DM_OUT",when=writeDM)
+                call save_density_matrix(SCFconverged, file="DM_OUT",when=writeDM)
              else
-                call save_density_matrix(file="DM_MIXED",when=writeDM)
+                call save_density_matrix(SCFconverged, file="DM_MIXED",when=writeDM)
                 call write_spmatrix(H,file="H_DMGEN",when=writeH)
              end if
           end if
@@ -502,7 +502,7 @@ contains
 
     if ( .not. SIESTA_worker ) return
 
-    call end_of_cycle_save_operations()
+    call end_of_cycle_save_operations(SCFconverged)
 
     if ( .not. SCFconverged ) then
        if ( SCFMustConverge ) then
@@ -650,8 +650,9 @@ contains
     ! is guaranteed that the DM is "pure out" and that
     ! we can recover the right H if mixing H.
     !
-    subroutine end_of_cycle_save_operations()
+    subroutine end_of_cycle_save_operations(SCFconverged)
 
+      logical, intent(in) :: SCFconverged
       logical :: DM_write, H_write
 
       ! Depending on the option we should overwrite the
@@ -671,14 +672,14 @@ contains
          ! If we have been saving them, there is no point in doing
          ! it one more time
          if ( mixH ) then
-            call save_density_matrix(file="DM_OUT", when=DM_write)
+            call save_density_matrix(SCFconverged, file="DM_OUT", when=DM_write)
             call write_spmatrix(H,file="H_MIXED", when=H_write)
          else
-            call save_density_matrix(file="DM_MIXED", when=DM_write)
+            call save_density_matrix(SCFconverged, file="DM_MIXED", when=DM_write)
             call write_spmatrix(H,file="H_DMGEN", when=H_write)
          end if
       else
-         call save_density_matrix(file="DM_OUT", when=DM_write)
+         call save_density_matrix(SCFconverged, file="DM_OUT", when=DM_write)
          call write_spmatrix(H,file="H_DMGEN", when=H_write)
       end if
 

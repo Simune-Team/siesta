@@ -27,7 +27,8 @@ contains
   elemental function nf_z(z) result(nf)
     complex(dp), intent(in) :: z
     complex(dp) :: nf
-    nf = dcmplx(1._dp,0._dp)/(dcmplx(1._dp,0._dp) + exp(z))
+    complex(dp), parameter :: ONE_Z = cmplx(1.0_dp,0.0_dp,dp)
+    nf = ONE_Z /(ONE_Z + exp(z))
   end function nf_z
 
   ! Double fermi function

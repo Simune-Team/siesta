@@ -138,6 +138,7 @@ C Read BZ sampling grid
           nmeshk(1) = fdf_bintegers(pline,1)
           nmeshk(2) = fdf_bintegers(pline,2)
           nmeshk(3) = fdf_bintegers(pline,3)
+          call fdf_bclose(bfdf)
         endif
 
 C Read whether this is a polarised, unpolarised or polycrystal calc

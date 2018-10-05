@@ -5,7 +5,7 @@
    use class_Sparsity
    use class_OrbitalDistribution
 
-   use m_restruct_SpData2D, only: restructdSpData2D
+   use m_restruct_SpData2D, only: restruct_dSpData2D
 
    type(dSpData2D), intent(in)    :: SpM1, SpM2
    type(Sparsity), intent(in)    :: sp_out
@@ -20,8 +20,8 @@
    integer                              :: dim2
    real(dp), dimension(:,:), pointer    :: a_1, a_2, a_out
 
-   call restructdSpData2D(SpM1,sp_out,SpM1_out)
-   call restructdSpData2D(SpM2,sp_out,SpM2_out)
+   call restruct_dSpData2D(SpM1,sp_out,SpM1_out)
+   call restruct_dSpData2D(SpM2,sp_out,SpM2_out)
 
    a_1  => val(SpM1_out)
    a_2  => val(SpM2_out)

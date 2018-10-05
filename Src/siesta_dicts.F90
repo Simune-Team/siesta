@@ -360,6 +360,35 @@ contains
     
   end subroutine dict_repopulate_MD
 
+  subroutine dict_repopulate_sparse_matrices()
+
+    use class_dSpData1D, only: val
+    use sparse_matrices, only: maxnh
+    use sparse_matrices, only: listh, listhptr, numh
+    use sparse_matrices, only: Dscf, Escf, H, S, xijo
+    use sparse_matrices, only: H_vkb_1D, H_kin_1D
+
+    real(dp), pointer :: r1(:)
+
+    call dict_variable_add('sparse.n_col', numh)
+    call dict_variable_add('sparse.list_ptr', listhptr)
+    call dict_variable_add('sparse.list_col', listh)
+    call dict_variable_add('sparse.nnzs', maxnh)
+
+    call dict_variable_add('sparse.S', S)
+    call dict_variable_add('sparse.H', H)
+    call dict_variable_add('sparse.DM', Dscf)
+    call dict_variable_add('sparse.EDM', Escf)
+    call dict_variable_add('sparse.xij', xijo)
+
+    ! Now add the specific matrices
+    r1 => val(H_vkb_1D)
+    call dict_variable_add('sparse.H_Vkb', r1)
+    r1 => val(H_kin_1D)
+    call dict_variable_add('sparse.H_kin', r1)
+    
+  end subroutine dict_repopulate_sparse_matrices
+
   subroutine dict_variable_add_v_0d(name,val)
     character(len=*), intent(in) :: name
     character(len=*), intent(in) :: val

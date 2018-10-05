@@ -63,7 +63,7 @@ c Internal variables
       parameter (tiny   = 1.d-12)
 
 C Find out if there is spiral arrangement of spins
-      spiral = fdf_block('SpinSpiral',bfdf)
+      spiral = fdf_isblock('SpinSpiral')
 
 C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +

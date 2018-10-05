@@ -224,15 +224,30 @@ contains
 
     !**********************************************!
 
-    open(newunit=err_unit,file='MatrixSwitch.err',status='replace')
-    write(err_unit,'(a)'), 'FATAL ERROR in matrix_switch!'
-    if (present(message)) write(err_unit,'(a)'), message
+    call io_assign(err_unit)
+    open(unit=err_unit,file='MatrixSwitch.err',status='replace')
+    write(err_unit,'(a)') 'FATAL ERROR in matrix_switch!'
+    if (present(message)) write(err_unit,'(a)') message
 #ifdef HAVE_MPI
-    write(err_unit,'(a,1x,i5)'), 'MPI rank:', ms_mpi_rank
+    write(err_unit,'(a,1x,i5)') 'MPI rank:', ms_mpi_rank
 #endif
     close(err_unit)
     stop 1
 
   end subroutine die
+
+  subroutine io_assign(lun)
+      integer, intent(out) :: lun
+      logical used
+      integer iostat
+
+!     Looks for a free unit and assigns it to lun
+
+      do lun= 10, 99
+            inquire(unit=lun, opened=used, iostat=iostat)
+            if (iostat .ne. 0) used = .true.
+            if (.not. used) return
+      enddo
+  end subroutine io_assign
 
 end module MatrixSwitch_ops

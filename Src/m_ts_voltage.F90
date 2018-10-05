@@ -124,7 +124,7 @@ contains
                 write(*,'(3a,i0)')'Electrode ', &
                 trim(Elecs(iEl)%name),&
                 ' does not reside within the defined Hartree box &
-                & for the potential. Please ensure unit-cell &
+                &for the potential. Please ensure unit-cell &
                 &vectors have the _correct_ direction: ',iia
             bool = .true.
           end if

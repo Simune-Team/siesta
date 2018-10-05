@@ -147,18 +147,20 @@ contains
 
   end subroutine analyze_MUMPS
 
-  subroutine prep_LHS(mum,N_Elec,Elecs)
+  subroutine prep_LHS(IsVolt, mum,N_Elec,Elecs)
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_Self
 #endif
     use class_OrbitalDistribution
     use class_Sparsity
+    use m_ts_elec_se, only: UC_minimum_worksize
     use m_ts_sparse, only : ts_sp_uc
     use m_ts_electype
     use m_ts_method, only : orb_offset
     use create_Sparsity_Union, only: crtSparsity_Union
     include 'zmumps_struc.h'
 
+    logical, intent(in) :: IsVolt
     type(zMUMPS_STRUC), intent(inout) :: mum
     integer, intent(in) :: N_Elec
     type(Elec), intent(inout) :: Elecs(N_Elec)
@@ -197,6 +199,8 @@ contains
     call attach(tmpSp2,list_ptr=l_ptr, &
          n_col=l_ncol,list_col=l_col,nrows_g=nr, &
          nnzs=mum%NZ)
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, io)
+    io = max(mum%NZ, io)
 
     ! Allocate LHS, first we need to
     ! calculate the actual size of the matrix
@@ -205,8 +209,8 @@ contains
     call memory('A', 'I', mum%NZ * 2, 'prep_LHS')
     allocate( mum%IRN( mum%NZ ) )
     allocate( mum%JCN( mum%NZ ) )
-    call memory('A', 'Z', mum%NZ, 'prep_LHS')
-    allocate( mum%A( mum%NZ ) )
+    call memory('A', 'Z', io, 'prep_LHS')
+    allocate( mum%A( io ) )
 
 !$OMP parallel do default(shared), &
 !$OMP&private(io,ioff,ind)

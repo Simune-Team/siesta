@@ -52,7 +52,6 @@
 
       real(dp),   intent(out)     :: input_field(3)
 
-      logical                    :: found
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline => null()
 
@@ -63,10 +62,8 @@
 
       input_field(1:3) = 0.0_dp
 
-      found = fdf_block('ExternalElectricField',bfdf)
-      if (.not. found ) RETURN
-      loop: DO
-        if (.not. fdf_bline(bfdf,pline)) exit loop
+      if (.not. fdf_block('ExternalElectricField',bfdf) ) RETURN
+      do while ( fdf_bline(bfdf,pline) )
         if (.not. fdf_bmatch(pline,"vvvn"))
      $     call die("Wrong format in ElectricField block")
         eunits = fdf_bnames(pline,1)
@@ -74,7 +71,7 @@
         do ix = 1,3
            input_field(ix) = fdf_bvalues(pline,ix) * cfactor
         enddo
-      enddo loop
+      enddo
 
       end subroutine get_user_specified_field
 !----------------------------------------------------------------

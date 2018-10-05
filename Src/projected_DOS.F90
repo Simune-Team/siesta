@@ -21,17 +21,16 @@ contains
     
     use precision, only: dp
     use siesta_options
-    use fdf,         only: fdf_block, block_fdf
+    use fdf,         only: fdf_isblock
     ! This is to get the reference kpoints in case PDOS.kgrid* has not
     ! been specified
     use kpoint_pdos_m, only: setup_kpoint_pdos
     use parallel, only: IOnode, Nodes
     
     real(dp), intent(in) :: ucell(3,3)
-    type(block_fdf) :: bfdf
     
     ! Compute the projected density of states
-    do_pdos = fdf_block('ProjectedDensityOfStates', bfdf)
+    do_pdos = fdf_isblock('ProjectedDensityOfStates')
     if ( .not. do_pdos ) return
     
     if (isolve.ne.SOLVE_DIAGON) then
@@ -119,6 +118,9 @@ contains
       ! Get sigma and n-hist
       sigma = fdf_breals(pline,3) * factor
       nhist = fdf_bintegers(pline,1)
+
+      ! Close block
+      call fdf_bclose(bfdf)
 
       if ( IOnode ) then
         write(*,'(a,f8.3," -- ",2(f8.3,tr1),i0)') 'siesta: E1 -- E2, sigma [eV], nhist: ', &

@@ -358,14 +358,14 @@ contains
     ! Here we calculate the maximum size we need to
     ! be able to down-fold the self-energies to the requested
     ! region.
-    pad_LHS = 0
+    call UC_minimum_worksize(.false., N_Elec, Elecs, pad_LHS)
     do iEl = 1 , N_Elec
        if ( ElTri(iEl)%n < 2 ) &
            call die('All regions must be at least 2 blocks big. Error')
 
        ! Down-folding work-arrays
-       io = fold_elements(ElTri(iEl)%n,ElTri(iEl)%r)
-       pad_LHS = max(pad_LHS, io)
+       no = fold_elements(ElTri(iEl)%n,ElTri(iEl)%r)
+       pad_LHS = max(pad_LHS, no)
 
        if ( Elecs(iEl)%out_of_core ) then
          io = 0
@@ -379,23 +379,15 @@ contains
          no = Elecs(iEl)%no_u ** 2
          ! Determine work array size
          ! H00, H01, S00 and S01 in the work array
-         io = no * 4
-         ! For the Lopez-Sancho algorithm
-         io = io + no * 8
+         ! and 8 for the Lopez-Sancho algorithm
+         io = no * (4 + 8)
          ! One more array is requred when we need to invert the matrix
          if ( Elecs(iEl)%no_u /= Elecs(iEl)%no_used ) io = io + no
          if ( calc_DOS_Elecs ) io = io + no
          
        end if
 
-       ! These are work-arrays required for expansion of the self-energy
-       if ( Elecs(iEl)%Bulk ) then
-         no = TotUsedOrbs(Elecs(iEl)) ** 2 ! We already have H, S
-       else
-         no = TotUsedOrbs(Elecs(iEl)) ** 2 * 2
-       end if
-
-       pad_LHS = max(pad_LHS,io,no)
+       pad_LHS = max(pad_LHS, io)
     end do
 
     ! Correct the actual padding by subtracting the 
@@ -766,7 +758,7 @@ contains
     ! Allocate units for IO ASCII
     allocate(iounits(1+(N_Elec*2+2)*N_Elec)) ! maximum number of units
     iounits = -100
-    call init_save(iounits,ispin,TSHS%nspin,N_Elec,Elecs, N_eigen, &
+    call init_save(iounits,ispin,TSHS%nspin,r_oDev%n, N_Elec,Elecs, N_eigen, &
          save_DATA)
     allocate(iounits_El(N_Elec*2)) ! maximum number of units
     iounits_El = -100
@@ -1273,7 +1265,7 @@ contains
           call state_cdf_save(TBTcdf, ikpt, nE, N_Elec, Elecs, &
                DOS, T, N_eigen, Teig, save_DATA)
 #else
-          call state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
+          call state_save(iounits,r_oDev%n, nE,N_Elec,Elecs,DOS, T, &
                N_eigen, Teig, save_DATA )
 #endif
 
@@ -1779,107 +1771,6 @@ contains
 #endif
 
   end subroutine prepare_invGF
-
-#ifdef NOT_USED
-  ! There are two variants of populating the
-  ! Green function for each energy point.
-  ! If you have a very small device region it is
-  ! beneficial to search the sparsity pattern for the
-  ! indices.
-  ! On the other hand for a very large device region
-  ! it is better to loop the sparsity pattern and search
-  ! the device region.
-  ! This routine decides which is better by doing a
-  ! one-time loop for comparison
-  ! * NOT USED
-  ! This was used in the old setup.
-  ! When one wants to reduce memory requirement
-  ! this can be reinstantiated.
-  ! However, then we are talking about more
-  ! than 2,000,000 elements...
-  subroutine prep_Gfinv_algo(dev_tri,sp,r,pvt,loop_dev)
-
-    use class_Sparsity
-    use class_zTriMat
-    use intrinsic_missing, only : SFIND
-
-    type(zTriMat), intent(inout) :: dev_tri
-    type(Sparsity), intent(inout) :: sp
-    type(tRgn), intent(in) :: r, pvt
-    logical, intent(out) :: loop_dev
-
-    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer :: io, iu, ind
-    integer :: itot
-#ifdef _OPENMP
-    real(dp) :: t_d, t_s
-#else
-    real :: t_d, t_s, tt
-#endif
-
-    call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
-
-    ! search some middle orbital
-    io = r%r(r%n/2)
-
-    ! Time: loop_dev
-    itot = 0
-#ifdef _OPENMP
-    t_d = omp_get_wtime( )
-#else
-    call cpu_time( tt )
-    t_d = tt
-#endif
-    do iu = 1 , r%n
-          
-       ind = SFIND(l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io)),r%r(iu))
-       if ( ind == 0 ) cycle
-       ind = l_ptr(io) + ind
-
-       ! This is only to dis-allow the optimizer from removing
-       ! this entire loop
-       itot = itot + ind
-
-    end do
-#ifdef _OPENMP
-    t_d = omp_get_wtime( ) - t_d
-#else
-    call cpu_time( tt )
-    t_d = tt - t_d
-#endif
-    
-    itot = 0
-    ! Time: loop_sparsity
-#ifdef _OPENMP
-    t_s = omp_get_wtime( )
-#else
-    call cpu_time( tt )
-    t_s = tt
-#endif
-    do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-       iu = pvt%r(l_col(ind))
-       ! Important to check this as we cannot ensure
-       ! the entire sparsity pattern in this
-       ! tri-diagonal matrix
-       if ( iu == 0 ) cycle
-       itot = itot + iu
-       
-    end do
-#ifdef _OPENMP
-    t_s = omp_get_wtime( ) - t_s
-#else
-    call cpu_time( tt )
-    t_s = tt - t_s
-#endif
-
-    ! if the timing for the searching of
-    ! sparsity is slower than looping the
-    ! device, we prefer to loop the device
-    loop_dev = t_s > t_d
-
-  end subroutine prep_Gfinv_algo
-#endif
 
   subroutine downfold_SE(cE, El, spH, spS, r, &
        np, p, sc_off, kpt, nwork, work)

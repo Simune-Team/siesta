@@ -22,7 +22,7 @@ FPP = $(FC) -E -P
 FC = ifort
 FC_SERIAL = ifort
 
-FFLAGS = -O2 -fPIC
+FFLAGS = -O2 -fPIC -fp-model source
 
 AR = ar
 RANLIB = ranlib
@@ -43,7 +43,7 @@ LIBS =
 
 # Dependency rules ---------
 
-FFLAGS_DEBUG = -g -O1   # your appropriate flags here...
+FFLAGS_DEBUG = -g -O1 -fp-model source   # your appropriate flags here...
 
 # The atom.f code is very vulnerable. Particularly the Intel compiler
 # will make an erroneous compilation of atom.f with high optimization

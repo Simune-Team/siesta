@@ -221,9 +221,9 @@ contains
 
     !**** INPUT ***********************************!
 
+    integer, intent(in) :: num_matrices ! number of matrices to use
     character(*), intent(in) :: keys(num_matrices) ! mapping keys
 
-    integer, intent(in) :: num_matrices ! number of matrices to use
 
     !**********************************************!
 

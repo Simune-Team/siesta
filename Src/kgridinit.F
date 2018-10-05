@@ -92,7 +92,7 @@ C Internal variables
 
       genlogic = .false.
 C Find out if there is spiral arrangement of spins 
-      spiral = fdf_block('SpinSpiral',bfdf)
+      spiral = fdf_isblock('SpinSpiral')
 
 C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -118,6 +118,7 @@ C Look for kscell or cutoff in input fdf file
                displ(i) = 0._dp
             end if
           enddo
+          call fdf_bclose(bfdf)
           nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
      .                 kscell(2,1) * kscell(3,2) * kscell(1,3) +
      .                 kscell(3,1) * kscell(1,2) * kscell(2,3) -
