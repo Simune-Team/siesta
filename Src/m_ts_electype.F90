@@ -135,6 +135,10 @@ module m_ts_electype
      type(Sparsity)  :: sp
      type(dSpData2D) :: H
      type(dSpData1D) :: S
+     ! If .false. the self-energy and H, S matrices are k-dependent.
+     ! If .true. it means that the parent system only had periodicity along
+     ! the semi-infinite direction
+     logical :: is_gamma = .false.
      ! Supercell offsets
      integer :: nsc(3)
      integer, pointer :: isc_off(:,:) => null()
@@ -714,6 +718,7 @@ contains
         fmin = min(fmin,rc)
         fmax = max(fmax,rc)
       end do
+      this%is_Gamma = this%nsc(1) == 1
     case ( 5 ) ! A-C
       do i = 1 , this%na_u
         rc = sum(this%xa(:,i) * rcell(:,1))
@@ -723,6 +728,7 @@ contains
         fmin = min(fmin,rc)
         fmax = max(fmax,rc)
       end do
+      this%is_Gamma = this%nsc(2) == 1
     case ( 6 ) ! A-B
       do i = 1 , this%na_u
         rc = sum(this%xa(:,i) * rcell(:,1))
@@ -732,12 +738,14 @@ contains
         fmin = min(fmin,rc)
         fmax = max(fmax,rc)
       end do
+      this%is_Gamma = this%nsc(3) == 1
     case default
       do i = 1 , this%na_u
         rc = sum(this%xa(:,i) * rcell(:,this%t_dir))
         fmin = min(fmin,rc)
         fmax = max(fmax,rc)
       end do
+      this%is_Gamma = product(this%nsc) / this%nsc(this%t_dir) == 1
     end select
     ! Get distance to the cell boundary
     rc = 1._dp - (fmax-fmin)
@@ -2234,7 +2242,8 @@ contains
     write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
     write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
     write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
-    write(*,f1)  '  Bulk values in electrode', this%Bulk
+    write(*,f1)  '  Gamma-only electrode', this%is_gamma
+    write(*,f1)  '  Bulk H, S in electrode region', this%Bulk
     if ( product(this%Bloch) > 1 .and. this%out_of_core ) then
        if ( this%pre_expand == 0 ) then
           chars = 'none'

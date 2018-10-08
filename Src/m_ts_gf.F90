@@ -33,7 +33,7 @@ module m_ts_GF
 
   public :: do_Green, do_Green_Fermi
   public :: read_Green, check_Green
-
+  public :: reread_Gamma_Green
   public :: read_next_GS
 
   private
@@ -59,20 +59,20 @@ contains
 
     implicit none
     
-! ***********************
-! * INPUT variables     *
-! ***********************
-    type(Elec), intent(inout)     :: El
-    integer, intent(in)           :: nkpnt ! Number of k-points
-    real(dp), intent(in)          :: kpoint(3,nkpnt) ! k-points
-    real(dp), intent(in)          :: kweight(nkpnt) ! weights of kpoints
-    real(dp), intent(in)          :: xa_Eps ! coordinate precision check
-    real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
-    logical, intent(in)           :: CalcDOS
+    ! ***********************
+    ! * INPUT variables     *
+    ! ***********************
+    type(Elec), intent(inout) :: El
+    integer, intent(in) :: nkpnt ! Number of k-points
+    real(dp), intent(in) :: kpoint(3,nkpnt) ! k-points
+    real(dp), intent(in) :: kweight(nkpnt) ! weights of kpoints
+    real(dp), intent(in) :: xa_Eps ! coordinate precision check
+    real(dp), dimension(3,3) :: ucell ! The unit cell of the CONTACT
+    logical, intent(in) :: CalcDOS
 
-! ***********************
-! * LOCAL variables     *
-! ***********************
+    ! ***********************
+    ! * LOCAL variables     *
+    ! ***********************
     integer :: uGF, i, iE, NEn
     logical :: errorGF, exist, cReUseGF
     complex(dp), allocatable :: ce(:)
@@ -89,23 +89,23 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE do_Green' )
 #endif
-    
+
     ! check the file for existance
     exist = file_exist(El%GFfile, Bcast = .true. )
-    
+
     cReUseGF = El%ReUseGf
     ! If it does not find the file, calculate the GF
     if ( exist ) then
-       if (IONode ) then
-          write(*,*) 'Electrode Green function file: '//&
-               trim(El%GFfile)//' already exist.'
-          if ( .not. cReUseGF ) then
-             write(*,*)'Green function file '//&
-                  trim(El%GFfile)//' is requested overwritten.'
-          end if
-       end if
+      if (IONode ) then
+        write(*,*) 'Electrode Green function file: '//&
+            trim(El%GFfile)//' already exist.'
+        if ( .not. cReUseGF ) then
+          write(*,*)'Green function file '//&
+              trim(El%GFfile)//' is requested overwritten.'
+        end if
+      end if
     else
-       cReUseGF = .false.
+      cReUseGF = .false.
     end if
 
     errorGF = .false.
@@ -115,53 +115,50 @@ contains
     allocate(ce(NEn))
     iE = 0
     do i = 1 , N_Eq_E()
-       c = Eq_E(i)
-       ce(i) = c%e
+      c = Eq_E(i)
+      ce(i) = c%e
     end do
     iE = N_Eq_E()
     do i = 1 , N_nEq_E()
-       c = nEq_E(i)
-       ! We utilize the eta value for the electrode
-       ce(iE+i) = dcmplx(real(c%e,dp),El%Eta)
+      c = nEq_E(i)
+      ! We utilize the eta value for the electrode
+      ce(iE+i) = dcmplx(real(c%e,dp),El%Eta)
     end do
-       
+
     ! We return if we should not calculate it
-    if ( .not. cReUseGF ) then
+    if ( cReUseGF ) then
+      
+      ! Check that the Green functions are correct!
+      ! This is needed as create_Green returns if user requests not to
+      ! overwrite an already existing file.
+      ! This check will read in the number of orbitals and atoms in the
+      ! electrode surface Green function.
+      ! Check the GF file
+      if ( IONode ) then
+        call io_assign(uGF)
+        open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
+        
+        call check_Green(uGF,El, &
+            ucell, nkpnt, kpoint, kweight, NEn, ce, &
+            xa_Eps, errorGF)
+        
+        write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
+        
+        call io_close(uGF)
+      end if
 
-       call create_Green(El, &
-            ucell,nkpnt,kpoint,kweight, &
-            NEn,ce)
-
+#ifdef MPI
+      call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+#endif
     else
-
-       ! Check that the Green functions are correct!
-       ! This is needed as create_Green returns if user requests not to
-       ! overwrite an already existing file.
-       ! This check will read in the number of orbitals and atoms in the
-       ! electrode surface Green function.
-       ! Check the GF file
-       if ( IONode ) then
-          call io_assign(uGF)
-          open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
-          
-          call check_Green(uGF,El, &
-               ucell,nkpnt,kpoint,kweight, &
-               NEn, ce, &
-               xa_Eps, errorGF)
-          
-          write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
-          
-          call io_close(uGF)
-       endif
+      
+      call create_Green(El, ucell, nkpnt, kpoint, kweight, NEn, ce)
 
     end if
 
-!     Check the error in the GF file
-#ifdef MPI
-    call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-#endif
+    ! Check the error in the GF file
     if ( errorGF ) &
-         call die("Error in GFfile: "//trim(El%GFfile)//". Please move or delete")
+        call die("Error in GFfile: "//trim(El%GFfile)//". Please move or delete")
 
     deallocate(ce)
 
@@ -171,7 +168,7 @@ contains
 
   end subroutine do_Green
 
-  subroutine do_Green_Fermi(kT, El, &
+  subroutine do_Green_Fermi(El, &
        ucell,nkpnt,kpoint,kweight, &
        xa_EPS, CalcDOS )
     
@@ -188,21 +185,20 @@ contains
 
     implicit none
     
-! ***********************
-! * INPUT variables     *
-! ***********************
-    real(dp), intent(in)          :: kT
-    type(Elec), intent(inout)     :: El
-    integer, intent(in)           :: nkpnt ! Number of k-points
-    real(dp), intent(in)          :: kpoint(3,nkpnt) ! k-points
-    real(dp), intent(in)          :: kweight(nkpnt) ! weights of kpoints
-    real(dp), intent(in)          :: xa_Eps ! coordinate precision check
-    real(dp), dimension(3,3)      :: ucell ! The unit cell of the CONTACT
-    logical, intent(in)           :: CalcDOS
+    ! ***********************
+    ! * INPUT variables     *
+    ! ***********************
+    type(Elec), intent(inout) :: El
+    integer, intent(in) :: nkpnt ! Number of k-points
+    real(dp), intent(in) :: kpoint(3,nkpnt) ! k-points
+    real(dp), intent(in) :: kweight(nkpnt) ! weights of kpoints
+    real(dp), intent(in) :: xa_Eps ! coordinate precision check
+    real(dp), dimension(3,3) :: ucell ! The unit cell of the CONTACT
+    logical, intent(in) :: CalcDOS
 
-! ***********************
-! * LOCAL variables     *
-! ***********************
+    ! ***********************
+    ! * LOCAL variables     *
+    ! ***********************
     integer :: uGF
     logical :: errorGF, exist, cReUseGF
     complex(dp) :: ce(1)
@@ -247,42 +243,40 @@ contains
     ce(1) = dcmplx(0._dp, El%Eta)
 
     ! We return if we should not calculate it
-    if ( .not. cReUseGF ) then
+    if ( cReUseGF ) then
 
-       call create_Green(El, &
-            ucell,nkpnt,kpoint,kweight,1,ce)
+      ! Check that the Green functions are correct!
+      ! This is needed as create_Green returns if user requests not to
+      ! overwrite an already existing file.
+      ! This check will read in the number of orbitals and atoms in the
+      ! electrode surface Green function.
+      ! Check the GF file
+      if ( IONode ) then
+        call io_assign(uGF)
+        open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
+        
+        call check_Green(uGF, El, &
+            ucell, nkpnt, kpoint, kweight, 1, ce, &
+            xa_Eps, errorGF)
+        
+        write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
+        
+        call io_close(uGF)
+      end if
 
+#ifdef MPI
+      call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
+#endif
     else
 
-       ! Check that the Green functions are correct!
-       ! This is needed as create_Green returns if user requests not to
-       ! overwrite an already existing file.
-       ! This check will read in the number of orbitals and atoms in the
-       ! electrode surface Green function.
-       ! Check the GF file
-       if ( IONode ) then
-          call io_assign(uGF)
-          open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
-          
-          call check_Green(uGF,El, &
-               ucell,nkpnt,kpoint,kweight, &
-               1, ce, &
-               xa_Eps, errorGF)
-          
-          write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
-          
-          call io_close(uGF)
-       endif
+      call create_Green(El, ucell, nkpnt, kpoint, kweight, 1, ce)
 
     end if
 
-!     Check the error in the GF file
-#ifdef MPI
-    call MPI_Bcast(errorGF,1,MPI_Logical,0,MPI_Comm_World,MPIerror)
-#endif
+    ! Check the error in the GF file
     if ( errorGF ) &
-         call die("Error in GFfile: "//trim(El%GFfile)//". Please move or delete")
-
+        call die("Error in GFfile: "//trim(El%GFfile)//". Please move or delete")
+    
     El%GFfile = GFfile
 
 #ifdef TRANSIESTA_DEBUG
@@ -412,8 +406,11 @@ contains
     do iNode = iNodeS, iNodeE, iNodeStep
 
        if ( IONode ) then
-          ! read in header of GF-point
-          read(uGF) ikGS, iEni, ZE_cur
+         ! read in header of GF-point
+         read(uGF) ikGS, iEni, ZE_cur
+         ! For gamma-only electrodes the read k-point is always correct
+         ! I.e. there is only one!
+         if ( El%is_gamma ) ikGS = ikpt
        end if
 
 #ifdef MPI
@@ -759,7 +756,8 @@ contains
        end if
 
        ! Check # of k-points
-       if ( nkpar .ne. c_nkpar ) then
+       if ( (El%is_gamma .and. nkpar /= 1) .or. &
+           (.not. El%is_gamma .and. nkpar /= c_nkpar) ) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: Unexpected number of k-points'
           write(*,*) 'read_Green: ERROR: nkpt=',nkpar,' expected:', c_nkpar
@@ -807,6 +805,71 @@ contains
 
   end subroutine read_Green
 
+
+  !> Re-opens a Gamma-only TSGF for a k-point sampled run
+  !>
+  !> When running transiesta calculations where one electrode is made of
+  !> only periodicty along the semi-infinite direction we can skip creating
+  !> the same self-energy and re-use the file content for a single k-point.
+  !> This routine is a simple method to close/open/read-header of the
+  !> GF files.
+  !> This routine should *only* be called before incrementing the k-point
+  !> in the calculation.
+  !> This routine will do nothing if the electrode cannot re-use the Gamma-content.
+  !> This routine does not check *any* content in the file as that *must* be done prior.
+  subroutine reread_Gamma_Green(El, funit, NE, ispin)
+    use parallel, only: IONode
+    use m_ts_electype
+
+    !< Electrode which is to be re-read.
+    type(Elec), intent(in) :: El
+    !< Unit that has the TSGF file currently open
+    integer, intent(in) :: funit
+    !< Total number of energy-points stored in the GF file
+    integer, intent(in) :: NE
+    !< Current segment of the spin components. I.e. if ispin == 2 the first spin-component will be read past
+    integer, intent(in) :: ispin
+
+    ! Local variables
+    integer :: nk
+    integer :: ie
+
+    ! Only reread if io-node, the GF file is in use AND it is Gamma-only
+    if ( .not. IONode ) return
+    if ( .not. El%out_of_core ) return
+    if ( .not. El%is_gamma ) return
+
+    ! Close file
+    close(funit)
+    open(FILE=El%GFfile,UNIT=funit,FORM='UNFORMATTED')
+    
+    read(funit) ! nspin, ucell
+    read(funit) ! na_u, no_u ! total atoms and total orbitals
+    read(funit) ! na, no ! used atoms and used orbitals
+    read(funit) ! xa, lasto
+    read(funit) ! repeat, Bloch(:), pre_expand
+    read(funit) ! mu
+    ! read contour information
+    read(funit) nk
+    if ( nk /= 1 ) call die('reread_Green: nk must be 1, please delete the GF file and rerun')
+    read(funit) ! kpoints, kweight
+    read(funit) ! NEn
+    read(funit) ! ce
+
+    if ( ispin == 2 ) then
+
+      ! We have to read past the first spin-component
+      read(funit) ! H
+      read(funit) ! S
+      do iE = 1, NE
+        read(funit) ! ik, ie, E
+        ! We know H, S is actually just after iE == 1, however, since we are discarding the blocks
+        read(funit) ! SE
+      end do
+ 
+    end if
+    
+  end subroutine reread_Gamma_Green
 
 
 ! ##################################################################
