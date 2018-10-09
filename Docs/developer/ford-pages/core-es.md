@@ -13,7 +13,7 @@ in the appropriate
 and then, in what is called a self-consistent-field cycle:
 
 * Solve the H/S generalized problem to generate a new density
-matrix.
+  matrix [[m_compute_dm:compute_dm]]
 * Maybe mix the input and output DMs to generate a new one [[mixer]]
 * Generate a new H and iterate until self-consistency [[setup_hamiltonian]]
 
