@@ -249,12 +249,12 @@ contains
           write(*,'(a,t22,a,i0,a,f12.5)') &
               trim(name(Elecs(i))),'/ device [C',i,'] :',Q(4+(i-1)*2,1)
         end do
-        write(*,'(a,f12.5,/)') &
-            'Other                         [O]  :',Q(0,1)
         if ( has_buffer ) then
           write(*,'(a,f12.5)') &
             'Buffer                        [B]  :',Q(1,1)
         end if
+        write(*,'(a,f12.5,/)') &
+            'Other                         [O]  :',Q(0,1)
       end if
 
     else if ( lmethod == TS_INFO_SCF ) then
@@ -282,7 +282,7 @@ contains
           write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
         end do
         if ( has_buffer ) then
-          write(*,'(a,1x,f9.3)',advance='no') Q(1,ispin)
+          write(*,'(1x,f9.3)',advance='no') Q(1,ispin)
         end if
         if ( ispin > 1 .and. ispin == nspin ) then
           write(*,'(2(1x,es9.3e1))') sum(Q(:,ispin)) - sQtot,sum(Q) - Qtot
