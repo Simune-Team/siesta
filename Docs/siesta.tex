@@ -11081,9 +11081,6 @@ options. We describe here only the additional options available for
 and variables are described in the previous sections of this User's
 Guide.
 
-Starting from 4.1 \tsiesta\ is intrinsic to the \siesta\ executable
-and thus there is no need for two separate executables.
-
 An accompanying Python toolbox is available which will assist with
 \tsiesta\ calculations. Please use (and cite) \sisl\cite{sisl}.
 
@@ -11096,7 +11093,9 @@ set of modules whose file names begin with \texttt{m\_ts} or
 
 \subsection{Compilation}
 
-Simply compile \siesta\ and \tsiesta\ is enabled, see
+Prior to \siesta\ 4.1 \tsiesta\ was a separate executable. Now
+\tsiesta\ is fully incorporated into \siesta. Hence simply compile
+\siesta\ and the full functionality is present.
 Sec.~\ref{sec:compilation} for details on compiling \siesta.
 
 \subsection{Brief description}
@@ -11130,7 +11129,7 @@ sampling for transverse directions. Additional extensions was
 added by Nick R. Papior during 2012.
 
 The current \tsiesta\ module has been completely rewritten by Nick
-R. Papior and encompass a highly advanced inversion algorithm as well
+R. Papior and encompass highly advanced inversion algorithms as well
 as allowing $N$ electrode setups among many new features. Furthermore,
 the utility \tbtrans\ has also been fully re-coded (by Nick R. Papior)
 to be a generic tight-binding code capable of analyzing physics from

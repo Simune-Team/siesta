@@ -111,7 +111,9 @@ contains
     use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
     use m_ts_contour_neq, only : nEq_E, has_cE_nEq
     use m_ts_contour_neq, only : N_nEq_ID, c2weight_neq
-    
+    use m_ts_contour_eq, only : N_Eq_E
+    use m_ts_contour_neq, only : N_nEq_E
+
     use m_iterator
 
     ! Gf calculation
@@ -161,6 +163,7 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
+    integer :: NE
     real(dp)    :: kw, kpt(3), bkpt(3)
     complex(dp) :: W, ZW
 ! ************************************************************
@@ -282,6 +285,9 @@ contains
        end if
     end if
 
+    ! Total number of energy points
+    NE = N_Eq_E() + N_nEq_E()
+
     ! start the itterators
     call itt_init  (SpKp,end1=nspin,end2=ts_kpoint_scf%N)
     ! point to the index iterators
@@ -295,9 +301,12 @@ contains
        ! However, the extra computation should be negligible to the gain.
 
        if ( itt_stepped(SpKp,1) ) then ! spin has incremented
-          call init_DM(sp_dist, sparse_pattern, &
-               n_nzs, DM(:,ispin), EDM(:,ispin), &
-               tsup_sp_uc, Calc_Forces)
+         call init_DM(sp_dist, sparse_pattern, &
+             n_nzs, DM(:,ispin), EDM(:,ispin), &
+             tsup_sp_uc, Calc_Forces)
+         do iEl = 1, N_Elec
+           call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+         end do
        end if
 
        ! Include spin factor and 1/(2\pi)
@@ -436,6 +445,9 @@ close(io)
 
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
+          do iEl = 1, N_Elec
+            call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+          end do
 
           cycle
 
@@ -599,7 +611,9 @@ close(io)
        call timer('TS_weight',2)
 #endif
 
-       ! We don't need to do anything here..
+       do iEl = 1, N_Elec
+         call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+       end do
 
     end do ! spin
 

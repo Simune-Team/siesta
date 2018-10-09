@@ -766,6 +766,13 @@ contains
          save_DATA)
 #endif
 
+    if ( ispin == 2 ) then
+      ! skip to the 2nd spin component
+      do iEl = 1, N_Elec
+        call reread_Gamma_Green(Elecs(iEl), uGF(iEl), N_E, ispin)
+      end do
+    end if
+
     ! The current progress is 0%
     last_progress = 0.
 
@@ -1530,6 +1537,10 @@ contains
 
        ! Stop timer
        call timer_stop('E-loop')
+
+       do iEl = 1, N_Elec
+         call reread_Gamma_Green(Elecs(iEl), uGF(iEl), N_E, ispin)
+       end do
 
     end do ! k-point
 
