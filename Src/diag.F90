@@ -619,9 +619,10 @@ contains
     end if
 
     ! Perform work-size query
-    lwork = 1
-    lrwork = 1
-    liwork = 1
+    ! ScaLAPACK typically uses a bit more of the work-size elements
+    lwork = 10
+    lrwork = 10
+    liwork = 10
     call re_alloc(work, 1, lwork, name='work')
     call re_alloc(rwork, 1, lrwork, name='rwork')
     call re_alloc(iwork, 1, liwork, name='iwork')
@@ -1603,8 +1604,9 @@ contains
     end if
 
     ! Perform work-size query
-    lwork = 1
-    liwork = 1
+    ! ScaLAPACK typically uses a bit more of the work-size elements
+    lwork = 10
+    liwork = 10
     call re_alloc(work, 1, lwork, name='work')
     call re_alloc(iwork, 1, liwork, name='iwork')
 
