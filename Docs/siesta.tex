@@ -493,7 +493,7 @@ where \shell{ObjName} is the name of the object directory of your
 choice. Be sure to type \shell{make clean} before attempting to
 re-compile a utility program.
 
-(The pristine Src directory should be kept "clean", without objects, or else
+(The pristine Src directory should be kept ``clean'', without objects, or else
 the compilation in the build directories will get confused)
 
 
@@ -1556,13 +1556,13 @@ sets and some performance tests can be found in the references quoted
 below.
 
 \noindent
-``Numerical atomic orbitals for linear-scaling calculations",
+``Numerical atomic orbitals for linear-scaling calculations'',
 J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
 \textbf{64}, 235111, (2001)
 
 An important point here is that the basis set selection is a
 variational problem and, therefore, minimizing the energy with respect
-to any parameters defining the basis is an ``ab initio" way to
+to any parameters defining the basis is an ``ab initio'' way to
 define them.
 
 We have also devised a quite simple and systematic way of generating
@@ -1572,7 +1572,7 @@ for a given basis size but it has the important advantages mentioned above.
 More about it in:
 
 \noindent
-``Linear-scaling ab-initio calculations for large and complex systems",
+``Linear-scaling ab-initio calculations for large and complex systems'',
 E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
 J. M. Soler, Phys. Stat. Sol. (b) \textbf{215}, 809 (1999).
 
@@ -2189,7 +2189,7 @@ the reference energies of the wavefunctions used to build them.
 The specification of the reference energies is optional. If these
 energies are not given, the program will use the eigenfunctions with an
 increasing number of nodes (if there is not bound state with
-the corresponding number of nodes, the ``eigenstates" are taken to be just
+the corresponding number of nodes, the ``eigenstates'' are taken to be just
 functions which are made zero at very long distance of the nucleus).
 The units for the energy can be optionally specified, if not, the
 program will assumed that are given in Rydbergs.
@@ -2236,7 +2236,7 @@ states at -1.0 and -6.0 Rydberg.
 
 The analysis looking for possible \textit{ghost} states is only performed
 when a single projector is used.  Using several projectors some
-attention should be paid to the ``KB cosine" (kbcos), given in the
+attention should be paid to the ``KB cosine'' (kbcos), given in the
 output of the program.  The KB cosine gives the value of the overlap
 between the reference state and the projector generated from it.  If
 these numbers are very small ( $<$ 0.01, for example) for \textbf{all}
@@ -6044,7 +6044,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   specified by the user are stored. If they are insufficient, the
   program stops.  A rule of thumb to select the number of eigenvectors
   to store is to count the number of electrons and divide by two, and
-  then apply a "safety factor" of around 1.1-1.2 to take into account
+  then apply a ``safety factor'' of around 1.1-1.2 to take into account
   fractional occupations and band overlaps.
 
   A new file \file{OCCS} is produced with information about the number
@@ -12853,6 +12853,10 @@ directory. Some of them have been directly or indirectly mentioned in
 this manual. Their documentation is the appropriate sub-directory of
 \texttt{Util}. See \texttt{Util/README}.
 
+In addition to the shipped utilities \siesta\ is also officially
+supported by \sisl\cite{sisl} which is a Python library enabling many
+of most commonly encountered things.
+
 \section{SCRIPTING}
 
 In the \texttt{Util/Scripting} directory we provide an experimental
@@ -12862,7 +12866,7 @@ group at DTU, Denmark.
 
 (NOTE: ``ASE version 2'', not the new version 3, is needed)
 
-There are objects implementing the "Siesta as server/subroutine" feature, and
+There are objects implementing the ``Siesta as server/subroutine'' feature, and
 also hooks for file-oriented-communication usage. This interface is
 different from the \siesta-specific functionality already
 contained in the ASE framework.
