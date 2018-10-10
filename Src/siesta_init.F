@@ -597,9 +597,11 @@ C     Initialise MPI and set processor number
       call setup_kpoint_scf( ucell )
       not_using_auxcell = gamma_scf
 #ifdef SIESTA__ELSI
-      if (mod(Nodes,kpoint_scf%N*spin%spinor) /=0) then
-       call die("The number of MPI processes " //
-     $          "must be a multiple of nk*nspin")
+      if (isolve == SOLVE_ELSI) then
+         if (mod(Nodes,kpoint_scf%N*spin%spinor) /=0) then
+            call die("The number of MPI processes " //
+     $           "must be a multiple of nk*nspin")
+         endif
       endif
 #endif
 !     Call initialisation of PDOS here since we need to check if 
