@@ -314,17 +314,28 @@ contains
        ! starting from this electrode
        call rgn_sp_connect(r_oEl_alone(iEl), dit, sp, r_tmp)
        call rgn_union(r_oEl_alone(iEl), r_tmp, r_tmp2)
-
-       ! Calculate the transport direction in the device cell.
-       i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
-
        ! o_inD is used in the subsequent pivoting routines
        call rgn_copy(r_oEl_alone(iEl),Elecs(iEl)%o_inD)
+
+       select case ( Elecs(iEl)%t_dir )
+       case ( 4 ) ! B-C
+         i = Elecs(iEl)%pvt(2)
+         call Sp_remove_crossterms(dit,sp,nsc,isc_off, i, sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(3)
+       case ( 5 ) ! A-C
+         i = Elecs(iEl)%pvt(1)
+         call Sp_remove_crossterms(dit,sp,nsc,isc_off, i, sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(3)
+       case ( 6 ) ! A-B
+         i = Elecs(iEl)%pvt(1)
+         call Sp_remove_crossterms(dit,sp,nsc,isc_off, i, sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(2)
+       case default
+         i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
+       end select
        
        ! Remove connections from this electrode across the boundary...
-       call Sp_remove_crossterms(dit,sp,nsc,isc_off, &
-            i, &
-            sp, r = r_tmp2)
+       call Sp_remove_crossterms(dit,sp,nsc,isc_off, i, sp, r = r_tmp2)
 
        ! Check that the device region does not overlap
        if ( rgn_overlaps(r_aEl_alone(iEl),r_aDev) ) then

@@ -14,6 +14,7 @@ module m_ts_elec_se
 
   private
 
+  public :: UC_minimum_worksize
   public :: UC_expansion
   !public :: UC_expansion_Sigma_Bulk
   !public :: UC_expansion_Sigma
@@ -22,6 +23,38 @@ module m_ts_elec_se
 
 contains
 
+  !> Determine the minimum worksize required for expanding the SE
+  subroutine UC_minimum_worksize(IsVolt, NElec, Elecs, nwork)
+    !> Whether this is a bias calculation
+    logical, intent(in) :: IsVolt
+    !> Number of electrodes
+    integer, intent(in) :: NElec
+    !> Electrodes
+    type(Elec), intent(in) :: Elecs(NElec)
+    !> Minimum worksize required by UC_expansion
+    integer, intent(out) :: nwork
+
+    ! Local variables
+    integer :: iE
+
+    ! Initialize
+    nwork = 0
+    if ( IsVolt ) then
+      do iE = 1, NElec
+        nwork = max(nwork, TotUsedOrbs(Elecs(iE)) ** 2 * 2)
+      end do
+    else
+      do iE = 1, NElec
+        if ( Elecs(iE)%Bulk ) then
+          nwork = max(nwork, TotUsedOrbs(Elecs(iE)) ** 2)
+        else
+          nwork = max(nwork, TotUsedOrbs(Elecs(iE)) ** 2 * 2)
+        end if
+      end do
+    end if
+
+  end subroutine UC_minimum_worksize
+  
   subroutine UC_expansion(cE, El, nwork, work, non_Eq)
 ! ********************
 ! * INPUT variables  *

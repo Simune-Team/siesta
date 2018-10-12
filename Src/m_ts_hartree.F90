@@ -198,7 +198,19 @@ contains
        
        if ( TS_HA == TS_HA_ELEC ) then
          ! calculate cell area of plane by non-semi-inf vectors
-         tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
+         select case ( Elecs(iE)%t_dir )
+         case ( 4 ) ! B-C
+           tmp = max(tmp / VNORM(Elecs(iE)%cell(:,2)), &
+               tmp / VNORM(Elecs(iE)%cell(:,3)))
+         case ( 5 ) ! A-C
+           tmp = max(tmp / VNORM(Elecs(iE)%cell(:,1)), &
+               tmp / VNORM(Elecs(iE)%cell(:,3)))
+         case ( 6 ) ! A-B
+           tmp = max(tmp / VNORM(Elecs(iE)%cell(:,1)), &
+               tmp / VNORM(Elecs(iE)%cell(:,2)))
+         case default
+           tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
+         end select
        else if ( TS_HA == TS_HA_ELEC_BOX ) then
           ! do nothing, volume check
        end if
@@ -349,24 +361,26 @@ contains
                &inside unit cell (Ang):'
           write(*,'(a,3(tr1,f13.5))') 'ts: Plane, point in plane (Ang):', El%p%c / Ang
           write(*,'(a,3(tr1,f13.5))') 'ts: Plane, normal vector  (Ang):', El%p%n
-          write(*,'(a,3(tr1,f13.5))') 'ts: Projected point onto semi-infinite direction (Ang):', &
-              VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
-          write(*,'(a)') 'ts: The following block will most likely be usable (otherwise try different displacements)'
-
-          write(*,'(/,a)') '%block AtomicCoordinatesOrigin'
-          rtmp = VEC_PROJ_SCA(cell(:,El%pvt(El%t_dir)), El%p%c) / VNORM(cell(:,El%pvt(El%t_dir)))
-          if ( rtmp > 1._dp ) then
-            rtmp = rtmp - 1._dp
-            write(*,'(tr2,3(tr1,f13.5))') - cell(:,El%pvt(El%t_dir)) * rtmp / Ang
-          else if ( rtmp < 0._dp ) then
-            write(*,'(tr2,3(tr1,f13.5))') cell(:,El%pvt(El%t_dir)) * rtmp / Ang
-          else
-            ! The point is most probably very close to the boundary
-            ! So shift it
-            rtmp = El%dINF_layer * 0.5_dp / VNORM(cell(:,El%pvt(El%t_dir)))
-            write(*,'(tr2,3(tr1,f13.5))') - cell(:,El%pvt(El%t_dir)) * rtmp / Ang
+          if ( El%t_dir <= 3 ) then
+            write(*,'(a,3(tr1,f13.5))') 'ts: Projected point onto semi-infinite direction (Ang):', &
+                VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
+            write(*,'(a)') 'ts: The following block will most likely be usable (otherwise try different displacements)'
+            
+            write(*,'(/,a)') '%block AtomicCoordinatesOrigin'
+            rtmp = VEC_PROJ_SCA(cell(:,El%pvt(El%t_dir)), El%p%c) / VNORM(cell(:,El%pvt(El%t_dir)))
+            if ( rtmp > 1._dp ) then
+              rtmp = rtmp - 1._dp
+              write(*,'(tr2,3(tr1,f13.5))') - cell(:,El%pvt(El%t_dir)) * rtmp / Ang
+            else if ( rtmp < 0._dp ) then
+              write(*,'(tr2,3(tr1,f13.5))') cell(:,El%pvt(El%t_dir)) * rtmp / Ang
+            else
+              ! The point is most probably very close to the boundary
+              ! So shift it
+              rtmp = El%dINF_layer * 0.5_dp / VNORM(cell(:,El%pvt(El%t_dir)))
+              write(*,'(tr2,3(tr1,f13.5))') - cell(:,El%pvt(El%t_dir)) * rtmp / Ang
+            end if
+            write(*,'(a,/)') '%endblock'
           end if
-          write(*,'(a,/)') '%endblock'
        end if
     end if
 

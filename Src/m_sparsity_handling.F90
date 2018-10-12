@@ -263,7 +263,7 @@ contains
        
     end do
     if ( n_nzs /= indx ) then
-       call die('Could not ensure sparsity pattern')
+       call die('Sp_remove_crossterms: could not ensure sparsity pattern')
     end if
 
     deallocate(log_r)

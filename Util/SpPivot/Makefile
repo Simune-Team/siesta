@@ -536,8 +536,8 @@ m_ts_kpoints.o: m_ts_global_vars.o m_ts_tdir.o minvec.o parallel.o precision.o
 m_ts_kpoints.o: siesta_cml.o siesta_options.o
 m_ts_method.o: alloc.o fdf_extra.o geom_helper.o m_region.o m_ts_electype.o
 m_ts_mumps_init.o: class_OrbitalDistribution.o class_Sparsity.o
-m_ts_mumps_init.o: create_Sparsity_Union.o m_ts_electype.o m_ts_method.o
-m_ts_mumps_init.o: m_ts_sparse.o precision.o
+m_ts_mumps_init.o: create_Sparsity_Union.o m_ts_elec_se.o m_ts_electype.o
+m_ts_mumps_init.o: m_ts_method.o m_ts_sparse.o precision.o
 m_ts_mumps_scat.o: m_ts_electype.o precision.o
 m_ts_mumpsg.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_mumpsg.o: class_SpData2D.o class_Sparsity.o intrinsic_missing.o

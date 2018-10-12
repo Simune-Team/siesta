@@ -403,11 +403,13 @@
            endif
            ! Save for possible restarts
            if (MixH) then
-              call write_spmatrix(H,file="H_MIXED",when=writeH)
-              call save_density_matrix(file="DM_OUT",when=writedm)
+             call write_spmatrix(H,file="H_MIXED",when=writeH)
+             call save_density_matrix(SCFconverged,
+     &           file="DM_OUT",when=writedm)
            else
-              call save_density_matrix(file="DM_MIXED",when=writedm)
-              call write_spmatrix(H,file="H_DMGEN",when=writeH)
+             call save_density_matrix(SCFconverged,
+     &           file="DM_MIXED",when=writedm)
+             call write_spmatrix(H,file="H_DMGEN",when=writeH)
            endif
         endif
 
@@ -492,7 +494,7 @@
 
       if (.not. SIESTA_worker) RETURN
 
-      call end_of_cycle_save_operations()
+      call end_of_cycle_save_operations(SCFconverged)
       
       if (.not.SCFconverged) then
          if (SCFMustConverge) then
@@ -636,24 +638,25 @@
       ! is guaranteed that the DM is "pure out" and that
       ! we can recover the right H if mixing H.
       !
-      subroutine end_of_cycle_save_operations()
+      subroutine end_of_cycle_save_operations(SCFconverged)
+      logical, intent(in) :: SCFconverged
 
       if (mix_after_convergence) then
             ! If we have been saving them, there is no point in doing
             ! it one more time
          if (MixH) then
-            call save_density_matrix(file="DM_OUT",
+            call save_density_matrix(SCFconverged, file="DM_OUT",
      $          when=((.not. writedm) .and. write_dm_at_end_of_cycle))
             call write_spmatrix(H,file="H_MIXED", 
      $          when=((.not. writeH) .and. write_H_at_end_of_cycle))
          else
-            call save_density_matrix(file="DM_MIXED",
+            call save_density_matrix(SCFconverged, file="DM_MIXED",
      $          when=((.not. writedm) .and. write_dm_at_end_of_cycle))
             call write_spmatrix(H,file="H_DMGEN", 
      $          when=((.not. writeH) .and. write_H_at_end_of_cycle))
          endif
       else
-         call save_density_matrix(file="DM_OUT",
+         call save_density_matrix(SCFconverged, file="DM_OUT",
      $                            when=write_dm_at_end_of_cycle)
          if (MixH) then
              ! Make sure that we keep the H actually used 
