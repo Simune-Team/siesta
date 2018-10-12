@@ -48,11 +48,13 @@ support containers of various types.
 For example, the sparsity pattern "bud" is defined in [[class_sparsity]], and
 the containers involved in density-matrix extrapolation are
 
-* A "sparse-2D matrix" bud, defined in 
-* A pair container, defined in "class_Pair..."
-* A finite-stack container, defined in " ...."
+* A "sparse-2D matrix" bud, defined in [[class_dSpData2D]] (double precision version)
 
-Template files have `.T90` extensions.
+* A pair container, defined in [[class_Pair_Geometry_dSpData2D]] by
+  including the ``Pair.T90`` template file.
+
+* A finite-stack container, defined in [[class_Fstack_Pair_Geometry_dSpData2D]] by including
+  the ``Fstack.T90`` template file.
 
 The basic implementation of reference counting and the associated
 functionality is in the [[basic_type.inc]] file.

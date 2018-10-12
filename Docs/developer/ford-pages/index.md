@@ -9,6 +9,7 @@ documentation will improve in further releases.
 
 * [Overall structure](|page|/overall.html)
 * [Electronic-structure subsystem](|page|/core-es.html)
+* [The real-space mesh](|page|/grid.html)
 * [The outer loop: MD, relaxations, and more](|page|/outer-loop.html)
 * [Analysis and utilities](|page|/analysis-utils.html)
 
