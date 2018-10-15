@@ -49,7 +49,6 @@
       use parallel,           only: Node, Nodes, PEXSINodes, IOnode
       use parallel,           only: SIESTA_worker
       use parallel,           only: SIESTA_Group, SIESTA_Comm
-      use densematrix,        only: Haux, Saux, Psi
       use m_energies
       use m_steps
       use m_spin,             only: init_spin, spin

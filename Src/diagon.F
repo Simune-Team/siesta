@@ -99,7 +99,7 @@ C
       use precision
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
-      use densematrix,  only : Haux, Saux, psi
+      use densematrix,  only : Haux, Saux, psi, resetDenseMatrix
       use sys,          only : die
 
       use fdf
@@ -306,6 +306,7 @@ C Call apropriate routine
 
 C Free local arrays
       call de_alloc( aux, name='aux', routine='diagon' )
+      call resetDenseMatrix()
 
 C Stop time counter
       call timer( 'diagon', 2 )

@@ -298,9 +298,9 @@ kpoints:                                                             &
 
   enddo kpoints
 
-  call de_alloc( Haux,    name='Haux',    routine='diagonalizeHk' )
-  call de_alloc( Saux,    name='Saux',    routine='diagonalizeHk' )
-  call de_alloc( psi,     name='psi',     routine='diagonalizeHk' )
+  call de_alloc( Haux,    name='Haux',    routine='densematrix' )
+  call de_alloc( Saux,    name='Saux',    routine='densematrix' )
+  call de_alloc( psi,     name='psi',     routine='densematrix' )
   call de_alloc( epsilon, name='epsilon', routine='diagonalizeHk' )
 
   call timer('diagonalizeHk',2)

@@ -357,7 +357,7 @@ C
       use precision,    only : dp
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs
-      use densematrix,  only : Haux, Saux, psi
+      use densematrix,  only : Haux, Saux, psi, resetDenseMatrix
       use alloc,        only : re_alloc, de_alloc
       use files,        only : slabel, label_length
       use atomlist,     only : iaorb, iphorb
@@ -605,7 +605,8 @@ C Close output file
 
 C Free local arrays
       call de_alloc( aux, 'aux', 'bands' )
-
+      call resetDenseMatrix()
+      
 C This is the only exit point
   999 continue
       call timer( 'bands', 2 )
