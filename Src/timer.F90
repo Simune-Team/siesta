@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 ! This is now a wrapper for the functionality in modules m_timer_tree
 ! and m_timer
@@ -27,15 +24,16 @@
 !  WRITTEN BY J.SOLER. JUL.2009
 !=============================================================================
 module timer_options
- logical, public :: use_tree_timer
+ logical, public :: use_tree_timer = .true.
+ logical, public :: use_parallel_timer = .false.
 end module timer_options
 
-subroutine timer( prog, iOpt )
+recursive subroutine timer( prog, iOpt )
 
 ! Module procedures used
   use sys,     only: die           ! Termination routine
   use parallel,only: node
-  use timer_options, only: use_tree_timer
+  use timer_options, only: use_tree_timer, use_parallel_timer
 
   ! New 'tree-based' module by A. Garcia
   use m_timer_tree, only: timer_on   ! Start counting time
@@ -48,29 +46,52 @@ subroutine timer( prog, iOpt )
   use m_timer, only: timer_stop    ! Stop counting time
   use m_timer, only: jms_timer_report=>timer_report  ! Write all times
 
+#ifdef TRACING
+  use extrae_module
+  use extrae_eventllist
+#endif
+
 ! Arguments
   implicit none
   character(len=*),intent(in):: prog   ! Name of program to time
   integer,         intent(in):: iOpt   ! Action option
 
-! Select action
+#ifdef TRACING
+  integer*8                           :: extrae_eventnumber, zero8
+
   if (iOpt==0) then
-     call timer_init()
+    extrae_maxEventNumber = 0
+
   else if (iOpt==1) then
-    call timer_start( prog )
+    ! check if prog is in list, find eventnumber or add to list with new number
+    extrae_eventnumber = getNumber(eventlist, prog)
+    if (extrae_eventnumber == NOT_FOUND) then
+      extrae_eventnumber = addToList(eventlist, prog)
+    end if
+    call extrae_eventandcounters(1000, extrae_eventnumber)
+
   else if (iOpt==2) then
-    call timer_stop( prog )
+    call extrae_eventandcounters(1000, zero8)
+
   else if (iOpt==3) then
-    call jms_timer_report( prog, printNow=.true. )
+    ! write file with eventnumber-map
+! if (Node == 0) write (*,*) 'extraeLIST write list '
+!     if (Node == 0) then
+!       call writeList(eventlist)
+!     end if
+!     call deleteList(eventlist)
   else
     call die('timer: ERROR: invalid iOpt value')
   end if
 
-if ((Node == 0)  .and. use_tree_timer) then
+#endif
+
+if (use_tree_timer) then
 
   ! New method, based on walltime in the master node only,
   ! and with a tree structure for the report
 
+ if (Node == 0) then
   if (iOpt==0) then
     ! The timer is initialized in the first call to timer_on...
     !     call timer_init()
@@ -80,6 +101,23 @@ if ((Node == 0)  .and. use_tree_timer) then
     call timer_off( prog )
   else if (iOpt==3) then
     call timer_report(prog) 
+  else
+    call die('timer: ERROR: invalid iOpt value')
+  end if
+ end if
+
+endif
+
+if (use_parallel_timer) then
+! Select action
+  if (iOpt==0) then
+     call timer_init()
+  else if (iOpt==1) then
+    call timer_start( prog )
+  else if (iOpt==2) then
+    call timer_stop( prog )
+  else if (iOpt==3) then
+    call jms_timer_report( prog, printNow=.true. )
   else
     call die('timer: ERROR: invalid iOpt value')
   end if

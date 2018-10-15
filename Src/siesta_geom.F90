@@ -1,9 +1,18 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 MODULE siesta_geom
   use precision
   implicit none
 
+  save
+  
   ! Number of atoms in supercell, unit cell
-  integer, save                   :: na_s, na_u
+  integer                         :: na_s, na_u
 
   !unit cell/supercell vectors by columns
   real(dp)                        :: ucell(3,3), ucell_last(3,3)
@@ -19,11 +28,13 @@ MODULE siesta_geom
 
   real(dp)                        :: volume_of_some_cell
 
-  ! Diagonal elements of supercell (it is a diagonal matrix)
+  !> Diagonal elements of supercell
   integer :: nsc(3) = 1
+  !> The supercell offsets for the equivalent indices (size: `3, product(nsc)`)
+  integer, pointer :: isc_off(:,:) => null()
    
-  ! Previous diagonal elements of supercell
-  integer :: nscold(3) = 0
+  !> Previous geometry diagonal elements of supercell
+  integer :: nsc_old(3) = 0
 
   ! Matrix of auxiliary supercell
   integer :: mscell(3,3)

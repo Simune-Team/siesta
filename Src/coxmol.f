@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine coxmol(iza, xa, na )
 c *******************************************************************
@@ -22,27 +19,24 @@ c ******************************************************************
       use precision,      only: dp
       use periodic_table, only: symbol
       use files,          only: slabel, label_length
+      use units, only : Ang
 
       implicit          none
 
       character(len=2) :: sym
-      character(len=label_length+4) :: paste
       integer                       :: na
       integer                       :: iza(na)
       real(dp)                      :: xa(3,na)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
  
       character(len=label_length+4) :: fname
       integer                       :: unit, i, ia
-      real(dp)                      :: Ang
 
-      Ang  = 1.d0 / 0.529177d0
 
 c Find file name
-
-      fname = paste(slabel,'.xyz')
+      fname = trim(slabel) // '.xyz'
 
       write(6,'(/,2a)')'coxmol: Writing XMOL coordinates into file ',
      .                  fname

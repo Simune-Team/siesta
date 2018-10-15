@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !==================================================================
 !
 program fatband
@@ -43,7 +50,7 @@ program fatband
   real(dp) :: minimum_spec_eigval = -huge(1.0_dp)
   real(dp) :: maximum_spec_eigval = huge(1.0_dp)
 
-  integer  :: fat_u, ib, nbands
+  integer  :: ib, nbands
 
   !
   !     Process options
@@ -190,7 +197,6 @@ program fatband
   ! but the total charge is read as qtot.
 
   call read_hs_file(trim(sflnm)//".HSX")
-  if (gamma_wfsx .neqv. gamma) STOP "Gamma mismatch"
 
   if (energies_only) STOP
 
@@ -333,7 +339,7 @@ program fatband
      nbands = max_band - min_band + 1
      allocate(eig(nbands,nspin), fat(nbands,nspin))
 
-     if (gamma) then
+     if (gamma_wfsx) then
         allocate(wf(1,1:no_u))
      else
         allocate(wf(2,1:no_u))
@@ -462,7 +468,7 @@ program fatband
                                 !AG: Corrected:  (qcos, qsin) = conjg(C_1)*(C_2)
                                 ! We might want to avoid recomputing this
 
-                                if (gamma) then
+                                if (gamma_wfsx) then
                                    qcos = wf(1,io1)*wf(1,io2) 
                                    qsin = 0.0_dp
                                 else
@@ -480,7 +486,7 @@ program fatband
                              ! Common factor computed here
                              factor =  (qcos*cos(alfa)-qsin*sin(alfa))
 
-                             fat(iw,is) = fat(iw,is) + Sover(ind)*factor
+                             fat(ib,is) = fat(ib,is) + Sover(ind)*factor
 
                         enddo   ! i2
                     enddo  ! i1

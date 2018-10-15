@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine initparallel( no_u, na_u, lasto, xa,
      &                         ucell, rmaxh )
@@ -17,14 +14,14 @@ C  Julian Gale, NRI, Curtin Uni, March 2004
 C
       use precision
       use fdf
-      use m_fdf_global, only: fdf_global_get
       use siesta_options, only: want_domain_decomposition
       use siesta_options, only: want_spatial_decomposition
-      use siesta_options, only: isolve, SOLVE_ORDERN
+      use siesta_options, only: isolve, SOLVE_ORDERN, SOLVE_PEXSI
       use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
       use parallelsubs, only : WhichNodeOrb, GetNodeOrbs
       use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
+      use parallelsubs, only : pexsi_dist, pexsi_bs
       use spatial
       use sys
       use alloc,        only : re_alloc
@@ -32,7 +29,11 @@ C
       use parallelsubs, only : set_processorY, set_processorYdefault
 #ifdef MPI
       use parallelsubs, only : set_BlockSizeDefault
+      use mpi_siesta,   only: MPI_Comm_World, MPI_Comm_Self
 #endif
+      use class_OrbitalDistribution
+      use sparse_matrices,     only : block_dist, single_dist
+
       implicit none
 
 #ifdef MPI
@@ -124,7 +125,18 @@ C Set ProcessorY
 #ifdef MPI
       call set_processorYdefault(Nodes,procYdefault)
       procYval = fdf_integer('processorY',procYdefault)
-      call set_processorY(procYval)
+      ! Sanity check
+      if (procYval > Nodes) then
+         if (Node.eq.0) then
+            write(6,'(a)')
+     .       '* Warning: ProcessorY > Nodes in fdf file. '//
+     $       'Reset to estimated optimal value.'
+         endif
+         call set_processorY(procYdefault)
+      else
+         call set_processorY(procYval)
+      endif
+         
 #else
       call set_processorY(1)
 #endif
@@ -185,13 +197,25 @@ C Check that cut-off is less than cell parameter
       if (.not. lspatial) then
 C Set BlockSize
 #ifdef MPI
+        pexsi_dist = .false.
         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
         BlockSize = fdf_integer('blocksize',blocksizedefault)
-
+        call newDistribution(blocksize,MPI_Comm_World,block_dist)
 #else
         BlockSize = 8
+        call newDistribution(blocksize,-1,block_dist)
 #endif
       endif
+
+      ! Create single communicator
+#ifdef MPI
+      call newDistribution(no_u,MPI_Comm_Self,single_dist,
+     &     name='Single-dist')
+#else
+      call newDistribution(no_u,-1           ,single_dist,
+     &     name='Singledist')
+#endif
+
 
 #ifdef MPI
 C Output indication of parallel parameters
@@ -201,7 +225,7 @@ C Output indication of parallel parameters
      .        '* Spatial decomposition: Cutoff = ',rcmax
         else
            write(6,'(/,a,2i4,/)')
-     .        '* ProcessorY, Blocksize: ', procYval, Blocksize
+     .        '* ProcessorY, Blocksize: ', processorY, Blocksize
         endif
         n1 = numroc(no_u,Blocksize,0,0,Nodes)
         nn = numroc(no_u,Blocksize,Nodes-1,0,Nodes)

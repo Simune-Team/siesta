@@ -1,19 +1,10 @@
-Siesta Version: trunk-424--ts-npa-24
-Architecture  : x86_64-linux-Intel
-Compiler flags: /opt/openmpi/1.6.3/intel-12.0.4/bin/mpif90 -O3 -xHost -ip -prec-div -prec-sqrt -opt-prefetch -fp-model fast=1 -opt-matmul -mkl=sequential -I/opt/netcdf/4.2.1.1/intel-12.0.4/include -I/opt/hdf5/1.8.10/intel-12.0.4/include -I/opt/pnetcdf/1.3.1/intel-12.0.4/include
-PP flags      : -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DTRANSIESTA  -DTRANSIESTA
-PARALLEL version
-TRANSIESTA support
-NetCDF support
-
-* Running on    4 nodes in parallel
->> Start of run:  28-NOV-2012  14:11:28
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
                            ***********************       
 
 reinit: Reading from standard input
+reinit: Dumped input in INPUT_TMP.05502
 ************************** Dump of input data file ****************************
 SolutionMethod        diagon
 SystemName  Au electrode (100)
@@ -90,11 +81,26 @@ WriteEigenvalues                yes
 reinit: -----------------------------------------------------------------------
 reinit: System Name: Au electrode (100
 reinit: -----------------------------------------------------------------------
-reinit: System Label: elec_au_100                                                 
+reinit: System Label: elec_au_100
 reinit: -----------------------------------------------------------------------
+Siesta Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK  -DTRANSIESTA
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
+PARALLEL version
+TRANSIESTA support
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  22:28:20
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Au Atomic number:          79
+Species number:   1 Atomic number:   79 Label: Au
+
 Ground state valence configuration:   6s01  5d10
 Reading pseudopotential information in formatted form from Au.psf
 
@@ -120,6 +126,9 @@ L=0  Nsemic=0  Cnfigmx=6
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=6
@@ -128,6 +137,9 @@ L=2  Nsemic=0  Cnfigmx=5
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000    
             lambdas:    1.0000    
 -------------------------------------------------------------------------------
@@ -203,9 +215,9 @@ SPLIT: energy shift=  0.005000 Ry
                  lambda =    1.000000
                      rc =    5.106662
                  energy =   -0.503595
-                kinetic =    4.974614
-    potential(screened) =   -5.478210
-       potential(ionic) =  -15.919607
+                kinetic =    4.974612
+    potential(screened) =   -5.478207
+       potential(ionic) =  -15.919605
 
 POLgen: Perturbative polarization orbital with L=  1
 
@@ -266,54 +278,86 @@ siesta: System type = bulk
 
 initatomlists: Number of atoms, orbitals, and projectors:      4    36    64
 
+coxmol: Writing XMOL coordinates into file elec_au_100.xyz                                                     
+
 siesta: ******************** Simulation parameters ****************************
 siesta:
 siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     F
-redata: Number of spin components        =     1
-redata: Long output                      =     F
-redata: Number of Atomic Species         =        1
+redata: Spin configuration                          = none
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   100.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Min. number of SCF Iter          =        0
-redata: Max. number of SCF Iter          =      300
-redata: Performing Pulay mixing using    =     5 iterations
-redata: Mix DM in first SCF step ?       =     T
-redata: Write Pulay info on disk?        =     F
-redata: Discard 1st Pulay DM after  kick =     F
-redata: New DM Mixing Weight             =     0.0500
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Mesh Cutoff                                 =   100.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =      300
+redata: SCF mix quantity                            = Hamiltonian
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: New DM Mixing Weight                        =     0.0500
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require Energy convergence for SCF =     F
-redata: DM Energy tolerance for SCF      =     0.000100 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000100 eV
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     T
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     CG coord. optimization
-redata: Variable cell                    =     F
-redata: Use continuation files for CG    =     F
-redata: Max atomic displ per move        =     0.2000  Bohr
-redata: Maximum number of CG moves       =        0
-redata: Force tolerance                  =     0.0016  Ry/Bohr
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: Require Harris convergence for SCF          =   F
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.0001
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   T
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Single-point calculation
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 5
+mix.SCF:    Linear mixing weight                 =     0.050000
+mix.SCF:    Mixing weight                        =     0.050000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: Save all siesta data in one NC              =   F
 redata: ***********************************************************************
+
+%block SCF.Mixers
+  Pulay
+%endblock SCF.Mixers
+
+%block SCF.Mixer.Pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.0500
+  weight.linear 0.0500
+  history 5
+%endblock SCF.Mixer.Pulay
+
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
 Total number of electrons:    44.000000
 Total ionic charge:    44.000000
 
-* ProcessorY, Blocksize:    2   9
+* ProcessorY, Blocksize:    2   4
+
+
+* Orbital distribution balance (max,min):     8     4
 
 k-point displ. along   1 input, could be:     0.00    0.50
 k-point displ. along   2 input, could be:     0.00    0.50
@@ -327,29 +371,37 @@ siesta: k-grid:    6   0   0      0.000
 siesta: k-grid:    0   6   0      0.000
 siesta: k-grid:    0   0  10      0.000
 
-ts_read_options: **************************************************************
-ts_read_options: Save H and S matrices        =    T
-ts_read_options: Mixing Hamiltonian           =    F
-ts_read_options: Save S and quit (onlyS)      =    F
+superc: Internal auxiliary supercell:     7 x     7 x     3  =     147
+superc: Number of atoms, orbitals, and projectors:    588   5292   9408
+
 k-point displ. along   1 input, could be:     0.00    0.50
 k-point displ. along   2 input, could be:     0.00    0.50
- Kpoints in:           24 . Kpoints trimmed:           22
+k-point displ. along   3 input, could be:     0.00    0.50
+ Kpoints in:          216 . Kpoints trimmed:          204
 
-transiesta: ts_k-grid: Number of Transport k-points =    22
-transiesta: ts_k-grid: Supercell and displacements
-transiesta: ts_k-grid:    6   0   0      0.000
-transiesta: ts_k-grid:    0   6   0      0.000
-Naive supercell factors:     8    8    3
+transiesta: k-grid: Number of Green function k-points =   204
+transiesta: k-grid: Supercell and displacements
+transiesta: k-grid:    6   0   0      0.000
+transiesta: k-grid:    0   6   0      0.000
+transiesta: k-grid:    0   0  10      0.000
 
-superc: Internal auxiliary supercell:     8 x     8 x     3  =     192
-superc: Number of atoms, orbitals, and projectors:    768   6912  12288
+ts: **************************************************************
+ts: Save H and S matrices                           =    T
+ts: Save DM and EDM matrices                        =    F
+ts: Fix Hartree potential                           =    F
+ts: Only save the overlap matrix S                  =    F
+ts: **************************************************************
 
-siesta:                 ==============================
-                            Begin CG move =      0
-                        ==============================
+************************ Begin: TS CHECKS AND WARNINGS ************************
+************************ End: TS CHECKS AND WARNINGS **************************
 
-superc: Internal auxiliary supercell:     8 x     8 x     3  =     192
-superc: Number of atoms, orbitals, and projectors:    768   6912  12288
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+superc: Internal auxiliary supercell:     7 x     7 x     3  =     147
+superc: Number of atoms, orbitals, and projectors:    588   5292   9408
 
 outcell: Unit cell vectors (Ang):
         2.883720    0.000000    0.000000
@@ -359,82 +411,120 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    2.883720    2.883720    8.156400
 outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
 outcell: Cell volume (Ang**3)        :     67.8273
-New_DM. Step:     1
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=36 nrows=8 sparsity=8.9691 nnzs=11624, refcount: 7>
+  <dData1D:(new from dSpData1D) n=11624, refcount: 1>
+refcount: 1>
+new_DM -- step:     1
 Initializing Density Matrix...
+
+Attempting to read DM from file... Failed...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 0
+    nrows_g=36 nrows=8 sparsity=8.9691 nnzs=11624, refcount: 8>
+  <dData2D:DM n=11624 m=1, refcount: 1>
+refcount: 1>
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      76     267
 New grid distribution:   1
-           1       1:    9    1:    5    1:   13
-           2       1:    9    1:    5   14:   25
-           3       1:    9    6:    9    1:   13
-           4       1:    9    6:    9   14:   25
+           1       1:    9    1:    5    1:    7
+           2       1:    9    1:    5    8:   13
+           3       1:    9    1:    5   14:   19
+           4       1:    9    1:    5   20:   25
+           5       1:    9    6:    9    1:    7
+           6       1:    9    6:    9    8:   13
+           7       1:    9    6:    9   14:   19
+           8       1:    9    6:    9   20:   25
 
 InitMesh: MESH =    18 x    18 x    50 =       16200
 InitMesh: (bp) =     9 x     9 x    25 =        2025
 InitMesh: Mesh cutoff (required, used) =   100.000   103.859 Ry
-ExtMesh (bp) on 0 =    57 x    53 x    61 =      184281
+ExtMesh (bp) on 0 =    57 x    53 x    55 =      166155
 New grid distribution:   2
-           1       1:    9    1:    9    1:    6
-           2       1:    9    1:    9   19:   25
-           3       1:    9    1:    9    7:   12
-           4       1:    9    1:    9   13:   18
+           1       1:    9    6:    9   13:   18
+           2       1:    9    6:    9    7:   12
+           3       1:    9    1:    5   13:   18
+           4       1:    9    1:    5   19:   25
+           5       1:    9    1:    5    7:   12
+           6       1:    9    1:    5    1:    6
+           7       1:    9    6:    9    1:    6
+           8       1:    9    6:    9   19:   25
 New grid distribution:   3
-           1       1:    9    1:    9    1:    7
-           2       1:    9    1:    9   14:   19
-           3       1:    9    1:    9    8:   13
-           4       1:    9    1:    9   20:   25
+           1       1:    9    1:    5    1:    7
+           2       1:    9    6:    9    1:    7
+           3       1:    9    1:    5   14:   19
+           4       1:    9    6:    9    8:   13
+           5       1:    9    1:    5    8:   13
+           6       1:    9    1:    5   20:   25
+           7       1:    9    6:    9   14:   19
+           8       1:    9    6:    9   20:   25
 Setting up quadratic distribution...
-ExtMesh (bp) on 0 =    57 x    57 x    54 =      175446
-PhiOnMesh: Number of (b)points on node 0 =                  486
-PhiOnMesh: nlist on node 0 =                43196
+ExtMesh (bp) on 0 =    57 x    52 x    54 =      160056
+PhiOnMesh: Number of (b)points on node 0 =                  216
+PhiOnMesh: nlist on node 0 =                19252
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -271.229246
+siesta: Ebs     =      -339.779577
 siesta: Eions   =      3801.028149
-siesta: Ena     =        13.426522
-siesta: Ekin    =      2727.131193
-siesta: Enl     =     -1779.638646
-siesta: DEna    =         0.000001
-siesta: DUscf   =         0.000000
+siesta: Ena     =        13.426543
+siesta: Ekin    =      2560.662637
+siesta: Enl     =     -1648.981821
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         5.153614
+siesta: DUscf   =         3.056084
 siesta: DUext   =         0.000000
-siesta: Exc     =     -2895.443309
+siesta: Exc     =     -2865.037069
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -5735.085113
-siesta: Etot    =     -5735.552388
-siesta: FreeEng =     -5735.552388
+siesta: Eharris =     -5727.577472
+siesta: Etot    =     -5732.748161
+siesta: FreeEng =     -5732.752600
 
-siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)    dDmax  Ef(eV)
-siesta:    1    -5735.0851    -5735.5524    -5735.5524  0.24801 -1.7952
-timer: Routine,Calls,Time,% =    IterSCF     1       1.200  40.93
-siesta:    2    -5734.8631    -5735.5233    -5735.5277  0.24098 -1.8728
-siesta:    3    -5733.5333    -5733.6584    -5733.6627  0.11698 -2.9525
-siesta:    4    -5733.5109    -5733.6304    -5733.6340  0.09025 -2.9096
-siesta:    5    -5733.4885    -5733.4161    -5733.4197  0.00094 -2.8059
-siesta:    6    -5733.4885    -5733.4264    -5733.4300  0.00112 -2.8064
-siesta:    7    -5733.4885    -5733.4784    -5733.4820  0.00020 -2.8053
-siesta:    8    -5733.4885    -5733.4833    -5733.4869  0.00007 -2.8052
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
+   scf:    1    -5727.577472    -5732.748161    -5732.752600  0.248013 -1.795205  1.827345
+timer: Routine,Calls,Time,% = IterSCF        1       2.691  65.55
+   scf:    2    -5732.962787    -5732.856148    -5732.860388  0.005365 -1.872259  1.693308
+   scf:    3    -5733.927129    -5733.488498    -5733.492106  0.061676 -2.787863  0.025229
+   scf:    4    -5733.484369    -5733.486763    -5733.490370  0.003526 -2.843003  0.082674
+   scf:    5    -5733.489771    -5733.488416    -5733.492024  0.002106 -2.814627  0.020840
+   scf:    6    -5733.488022    -5733.488226    -5733.491834  0.000482 -2.820386  0.033662
+   scf:    7    -5733.488732    -5733.488502    -5733.492111  0.000827 -2.809643  0.009713
+   scf:    8    -5733.488543    -5733.488526    -5733.492135  0.000306 -2.805151  0.000238
+   scf:    9    -5733.488526    -5733.488526    -5733.492135  0.000008 -2.805062  0.000003
 
-siesta: E_KS(eV) =            -5733.4869
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|         :     0.0000084718
+max |H_out - H_in|      (eV) :     0.0000028366
+SCF cycle converged after 9 iterations
 
-siesta: E_KS - E_eggbox =     -5733.4869
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      76     267
+
+siesta: E_KS(eV) =            -5733.4885
+
+siesta: E_KS - E_eggbox =     -5733.4885
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot   -0.000000   -0.000000   -0.000000
 ----------------------------------------
    Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):     -222.93     -222.93     -202.66        0.00        0.00        0.00
-(Free)E + p*V (eV/cell)    -5724.3391
-Target enthalpy (eV/cell)    -5733.4905
- 
+Stress-tensor-Voigt (kbar):     -222.88     -222.88     -202.63        0.00       -0.00        0.00
+(Free)E + p*V (eV/cell)    -5724.3424
+Target enthalpy (eV/cell)    -5733.4921
+
 mulliken: Atomic and Orbital Populations:
 
 Species: Au                  
@@ -452,7 +542,7 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =       44.000
 
-coxmol: Writing XMOL coordinates into file elec_au_100.xyz                                                 
+coxmol: Writing XMOL coordinates into file elec_au_100.xyz                                                     
 
 siesta: Eigenvalues (eV):
   ik is    eps
@@ -488,7 +578,7 @@ siesta: Eigenvalues (eV):
          -7.18  -7.17  -7.01  -6.80  -6.58  -6.58  -6.47  -6.47  -5.93  -5.91
          -4.64  -4.31  -4.31   1.68   3.71   6.35   8.51  11.08  11.08  11.41
          11.41  19.21  19.21  20.64  20.64  23.26
-   9  1 -11.93 -10.08 -10.08  -9.76  -9.39  -8.51  -8.51  -7.96  -7.61  -7.61
+   9  1 -11.93 -10.08 -10.08  -9.76  -9.39  -8.51  -8.51  -7.96  -7.61  -7.60
          -7.55  -7.50  -6.94  -6.94  -6.42  -6.14  -6.03  -5.53  -5.53  -5.49
          -5.38  -5.38  -4.86   0.46   3.51   6.68  10.37  10.37  10.71  16.27
          16.27  20.66  20.66  20.97  20.97  23.68
@@ -500,7 +590,7 @@ siesta: Eigenvalues (eV):
          -7.26  -7.26  -7.23  -7.23  -6.51  -6.30  -6.27  -5.75  -5.75  -5.30
          -4.97  -3.18  -3.18   0.70   4.41   4.41   4.68   5.80  10.85  13.57
          13.57  13.93  14.16  19.20  19.20  20.92
-  12  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.04
+  12  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.03
          -7.38  -7.38  -6.57  -6.57  -6.04  -6.04  -5.71  -5.71  -5.06  -5.05
          -2.96  -2.96  -1.52  -1.52   0.37   0.37   8.48   8.48   8.83   8.83
          15.81  15.81  16.17  16.17  16.98  16.98
@@ -508,19 +598,19 @@ siesta: Eigenvalues (eV):
          -7.54  -7.45  -7.00  -6.79  -6.65  -6.65  -6.33  -5.44  -5.23  -5.09
          -5.09  -4.48  -4.48  -0.06   3.72   3.72   4.14   6.07  14.40  14.50
          14.55  17.99  17.99  19.65  19.65  22.67
-  14  1 -11.93 -10.08 -10.08  -9.76  -9.39  -8.51  -8.51  -7.96  -7.61  -7.61
+  14  1 -11.93 -10.08 -10.08  -9.76  -9.39  -8.51  -8.51  -7.96  -7.61  -7.60
          -7.55  -7.50  -6.94  -6.94  -6.42  -6.14  -6.03  -5.53  -5.53  -5.49
          -5.38  -5.38  -4.86   0.46   3.51   6.68  10.37  10.37  10.71  16.27
          16.27  20.66  20.66  20.97  20.97  23.68
   15  1 -12.47 -10.36 -10.36 -10.08  -9.81  -8.86  -8.86  -7.74  -7.74  -7.74
-         -6.97  -6.97  -6.51  -6.51  -6.51  -6.51  -6.21  -6.21  -5.65  -5.64
+         -6.97  -6.97  -6.51  -6.51  -6.51  -6.51  -6.21  -6.21  -5.64  -5.64
          -5.02  -4.64  -4.64  -1.65   4.28   9.25   9.25  15.52  15.52  15.52
          15.52  20.67  20.67  23.70  23.70  23.70
-  16  1 -10.35 -10.35  -9.12  -9.12  -8.28  -8.28  -7.90  -7.90  -7.79  -7.78
+  16  1 -10.35 -10.35  -9.12  -9.12  -8.28  -8.28  -7.90  -7.90  -7.78  -7.78
          -7.78  -7.78  -6.83  -6.83  -6.23  -6.23  -4.98  -4.98  -4.98  -4.97
          -3.75  -3.75  -3.15  -3.15   0.35   0.35   8.58   8.58   8.69   8.69
          19.01  19.01  19.02  19.02  19.26  19.26
-  17  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.04
+  17  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.03
          -7.38  -7.38  -6.57  -6.57  -6.04  -6.04  -5.71  -5.71  -5.06  -5.05
          -2.96  -2.96  -1.52  -1.52   0.37   0.37   8.48   8.48   8.83   8.83
          15.81  15.81  16.17  16.17  16.98  16.98
@@ -532,15 +622,15 @@ siesta: Eigenvalues (eV):
          -6.46  -6.46  -6.10  -6.09  -5.25  -5.25  -5.07  -5.07  -4.96  -4.96
          -2.35  -2.35   0.97   0.97   1.62   1.62   7.26   7.26   9.11   9.11
           9.59   9.60  10.11  10.11  11.81  11.81
-  20  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.04
+  20  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.03
          -7.38  -7.38  -6.57  -6.57  -6.04  -6.04  -5.71  -5.71  -5.06  -5.05
          -2.96  -2.96  -1.52  -1.52   0.37   0.37   8.48   8.48   8.83   8.83
          15.81  15.81  16.17  16.17  16.98  16.98
-  21  1 -10.35 -10.35  -9.12  -9.12  -8.28  -8.28  -7.90  -7.90  -7.79  -7.78
+  21  1 -10.35 -10.35  -9.12  -9.12  -8.28  -8.28  -7.90  -7.90  -7.78  -7.78
          -7.78  -7.78  -6.83  -6.83  -6.23  -6.23  -4.98  -4.98  -4.98  -4.97
          -3.75  -3.75  -3.15  -3.15   0.35   0.35   8.58   8.58   8.69   8.69
          19.01  19.01  19.02  19.02  19.26  19.26
-  22  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.04
+  22  1  -9.86  -9.86  -9.03  -9.02  -8.81  -8.81  -8.10  -8.10  -8.04  -8.03
          -7.38  -7.38  -6.57  -6.57  -6.04  -6.04  -5.71  -5.71  -5.06  -5.05
          -2.96  -2.96  -1.52  -1.52   0.37   0.37   8.48   8.48   8.83   8.83
          15.81  15.81  16.17  16.17  16.98  16.98
@@ -698,7 +788,7 @@ siesta: Eigenvalues (eV):
           8.35   8.35   9.16   9.16   9.21   9.22
   61  1  -9.81  -9.37  -9.31  -9.07  -9.00  -8.75  -8.58  -8.33  -8.27  -7.78
          -7.05  -6.55  -6.46  -6.24  -5.95  -5.70  -5.69  -5.56  -5.49  -4.88
-         -4.77  -2.44  -0.75   1.95   3.02   5.00   6.01   6.31   7.74   7.83
+         -4.77  -2.44  -0.75   1.96   3.02   5.00   6.01   6.31   7.74   7.83
           9.82  11.60  11.86  14.98  15.24  15.87
   62  1 -10.12  -9.83  -9.45  -8.81  -8.68  -8.61  -8.19  -7.98  -7.91  -7.55
          -7.52  -7.34  -7.20  -7.03  -6.78  -6.36  -5.87  -5.81  -5.50  -5.34
@@ -706,7 +796,7 @@ siesta: Eigenvalues (eV):
          12.39  14.80  15.72  17.58  20.04  20.80
   63  1 -10.51 -10.38  -9.94  -9.24  -8.41  -8.16  -8.00  -7.66  -7.61  -7.48
          -7.45  -7.37  -7.22  -6.90  -6.55  -6.51  -6.49  -5.40  -5.36  -5.31
-         -5.28  -4.95  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
+         -5.28  -4.94  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
          16.78  16.95  17.87  19.32  20.30  22.42
   64  1 -10.12  -9.83  -9.45  -8.81  -8.68  -8.61  -8.19  -7.98  -7.91  -7.55
          -7.52  -7.34  -7.20  -7.03  -6.78  -6.36  -5.87  -5.81  -5.50  -5.34
@@ -714,7 +804,7 @@ siesta: Eigenvalues (eV):
          12.39  14.80  15.72  17.58  20.04  20.80
   65  1  -9.81  -9.37  -9.31  -9.07  -9.00  -8.75  -8.58  -8.33  -8.27  -7.78
          -7.05  -6.55  -6.46  -6.24  -5.95  -5.70  -5.69  -5.56  -5.49  -4.88
-         -4.77  -2.44  -0.75   1.95   3.02   5.00   6.01   6.31   7.74   7.83
+         -4.77  -2.44  -0.75   1.96   3.02   5.00   6.01   6.31   7.74   7.83
           9.82  11.60  11.86  14.98  15.24  15.87
   66  1  -9.75  -9.75  -9.43  -9.43  -9.12  -9.12  -8.61  -8.61  -7.69  -7.69
          -6.34  -6.34  -6.20  -6.20  -5.57  -5.57  -5.03  -5.03  -4.84  -4.84
@@ -746,13 +836,13 @@ siesta: Eigenvalues (eV):
          15.84  15.84  16.13  16.13  16.68  16.68
   73  1 -10.51 -10.38  -9.94  -9.24  -8.41  -8.16  -8.00  -7.66  -7.61  -7.48
          -7.45  -7.37  -7.22  -6.90  -6.55  -6.51  -6.49  -5.40  -5.36  -5.31
-         -5.28  -4.95  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
+         -5.28  -4.94  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
          16.78  16.95  17.87  19.32  20.30  22.42
   74  1 -11.84 -10.63  -9.73  -9.71  -9.35  -8.76  -8.28  -7.95  -7.54  -7.53
          -7.51  -7.46  -7.19  -6.63  -6.36  -6.19  -6.19  -6.13  -5.67  -5.62
          -5.12  -4.83  -4.66  -0.58   4.51   7.56   8.60  10.96  12.42  14.42
          17.81  18.29  19.24  22.09  22.22  23.25
-  75  1 -12.37 -10.99 -10.05  -9.97  -9.77  -9.17  -8.54  -7.80  -7.69  -7.69
+  75  1 -12.37 -10.99 -10.05  -9.97  -9.76  -9.17  -8.54  -7.80  -7.69  -7.69
          -6.95  -6.93  -6.93  -6.51  -6.28  -6.18  -6.02  -6.02  -5.83  -5.46
          -5.05  -4.76  -4.76  -2.50   5.73   9.54   9.54  13.49  13.49  17.37
          17.73  17.73  22.62  23.21  23.21  23.70
@@ -762,7 +852,7 @@ siesta: Eigenvalues (eV):
          17.81  18.29  19.24  22.09  22.22  23.25
   77  1 -10.51 -10.38  -9.94  -9.24  -8.41  -8.16  -8.00  -7.66  -7.61  -7.48
          -7.45  -7.37  -7.22  -6.90  -6.55  -6.51  -6.49  -5.40  -5.36  -5.31
-         -5.28  -4.95  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
+         -5.28  -4.94  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
          16.78  16.95  17.87  19.32  20.30  22.42
   78  1 -10.29 -10.29  -9.39  -9.39  -8.10  -8.10  -7.81  -7.81  -7.73  -7.73
          -7.68  -7.68  -7.03  -7.03  -6.00  -6.00  -5.41  -5.41  -5.06  -5.06
@@ -794,7 +884,7 @@ siesta: Eigenvalues (eV):
          15.84  15.84  16.13  16.13  16.68  16.68
   85  1  -9.81  -9.37  -9.31  -9.07  -9.00  -8.75  -8.58  -8.33  -8.27  -7.78
          -7.05  -6.55  -6.46  -6.24  -5.95  -5.70  -5.69  -5.56  -5.49  -4.88
-         -4.77  -2.44  -0.75   1.95   3.02   5.00   6.01   6.31   7.74   7.83
+         -4.77  -2.44  -0.75   1.96   3.02   5.00   6.01   6.31   7.74   7.83
           9.82  11.60  11.86  14.98  15.24  15.87
   86  1 -10.12  -9.83  -9.45  -8.81  -8.68  -8.61  -8.19  -7.98  -7.91  -7.55
          -7.52  -7.34  -7.20  -7.03  -6.78  -6.36  -5.87  -5.81  -5.50  -5.34
@@ -802,7 +892,7 @@ siesta: Eigenvalues (eV):
          12.39  14.80  15.72  17.58  20.04  20.80
   87  1 -10.51 -10.38  -9.94  -9.24  -8.41  -8.16  -8.00  -7.66  -7.61  -7.48
          -7.45  -7.37  -7.22  -6.90  -6.55  -6.51  -6.49  -5.40  -5.36  -5.31
-         -5.28  -4.95  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
+         -5.28  -4.94  -3.16   0.12   2.37   2.45   5.25   8.29  11.82  14.64
          16.78  16.95  17.87  19.32  20.30  22.42
   88  1 -10.12  -9.83  -9.45  -8.81  -8.68  -8.61  -8.19  -7.98  -7.91  -7.55
          -7.52  -7.34  -7.20  -7.03  -6.78  -6.36  -5.87  -5.81  -5.50  -5.34
@@ -810,7 +900,7 @@ siesta: Eigenvalues (eV):
          12.39  14.80  15.72  17.58  20.04  20.80
   89  1  -9.81  -9.37  -9.31  -9.07  -9.00  -8.75  -8.58  -8.33  -8.27  -7.78
          -7.05  -6.55  -6.46  -6.24  -5.95  -5.70  -5.69  -5.56  -5.49  -4.88
-         -4.77  -2.44  -0.75   1.95   3.02   5.00   6.01   6.31   7.74   7.83
+         -4.77  -2.44  -0.75   1.96   3.02   5.00   6.01   6.31   7.74   7.83
           9.82  11.60  11.86  14.98  15.24  15.87
   90  1  -9.75  -9.75  -9.43  -9.43  -9.12  -9.12  -8.61  -8.61  -7.69  -7.69
          -6.34  -6.34  -6.20  -6.20  -5.57  -5.57  -5.03  -5.03  -4.84  -4.84
@@ -872,7 +962,7 @@ siesta: Eigenvalues (eV):
          -7.36  -7.32  -7.17  -6.96  -6.80  -6.65  -6.08  -5.86  -5.83  -5.79
          -5.15  -4.91  -3.13  -0.49   6.04   6.90   8.70   9.06   9.98  14.05
          14.22  16.40  17.90  17.97  22.56  23.28
- 105  1 -11.73 -10.90  -9.70  -9.63  -9.30  -8.89  -8.17  -7.94  -7.51  -7.50
+ 105  1 -11.73 -10.90  -9.70  -9.63  -9.29  -8.89  -8.17  -7.94  -7.51  -7.50
          -7.41  -7.37  -7.29  -6.45  -6.37  -6.30  -6.29  -6.24  -5.82  -5.76
          -5.02  -4.82  -4.12  -1.37   5.19   7.82   8.72  11.26  13.54  13.59
          15.99  18.20  19.31  22.43  22.58  22.73
@@ -892,7 +982,7 @@ siesta: Eigenvalues (eV):
          -7.41  -7.34  -7.25  -7.02  -6.71  -6.64  -6.31  -5.57  -5.53  -5.34
          -5.20  -4.93  -2.40   0.33   1.29   1.91   6.14   9.90  10.53  14.82
          16.25  16.56  18.00  19.98  20.26  22.11
- 110  1 -11.73 -10.90  -9.70  -9.63  -9.30  -8.89  -8.17  -7.94  -7.51  -7.50
+ 110  1 -11.73 -10.90  -9.70  -9.63  -9.29  -8.89  -8.17  -7.94  -7.51  -7.50
          -7.41  -7.37  -7.29  -6.45  -6.37  -6.30  -6.29  -6.24  -5.82  -5.76
          -5.02  -4.82  -4.12  -1.37   5.19   7.82   8.72  11.26  13.54  13.59
          15.99  18.20  19.31  22.43  22.58  22.73
@@ -900,7 +990,7 @@ siesta: Eigenvalues (eV):
          -7.12  -7.12  -6.84  -6.36  -6.15  -6.06  -5.91  -5.77  -5.77  -5.37
          -5.09  -4.90  -4.90  -3.25   7.23   9.91   9.91  12.57  12.57  15.33
          18.84  18.84  22.63  22.63  23.14  23.70
- 112  1 -11.73 -10.90  -9.70  -9.63  -9.30  -8.89  -8.17  -7.94  -7.51  -7.50
+ 112  1 -11.73 -10.90  -9.70  -9.63  -9.29  -8.89  -8.17  -7.94  -7.51  -7.50
          -7.41  -7.37  -7.29  -6.45  -6.37  -6.30  -6.29  -6.24  -5.82  -5.76
          -5.02  -4.82  -4.12  -1.37   5.19   7.82   8.72  11.26  13.54  13.59
          15.99  18.20  19.31  22.43  22.58  22.73
@@ -920,7 +1010,7 @@ siesta: Eigenvalues (eV):
          -7.36  -7.32  -7.17  -6.96  -6.80  -6.65  -6.08  -5.86  -5.83  -5.79
          -5.15  -4.91  -3.13  -0.49   6.04   6.90   8.70   9.06   9.98  14.05
          14.22  16.40  17.90  17.97  22.56  23.28
- 117  1 -11.73 -10.90  -9.70  -9.63  -9.30  -8.89  -8.17  -7.94  -7.51  -7.50
+ 117  1 -11.73 -10.90  -9.70  -9.63  -9.29  -8.89  -8.17  -7.94  -7.51  -7.50
          -7.41  -7.37  -7.29  -6.45  -6.37  -6.30  -6.29  -6.24  -5.82  -5.76
          -5.02  -4.82  -4.12  -1.37   5.19   7.82   8.72  11.26  13.54  13.59
          15.99  18.20  19.31  22.43  22.58  22.73
@@ -1272,50 +1362,56 @@ siesta: Eigenvalues (eV):
          -6.31  -6.31  -5.58  -5.58  -5.57  -5.57  -4.64  -4.64  -4.64  -4.64
           0.57   0.57   0.57   0.57   3.89   3.89   3.89   3.89   7.43   7.43
           7.43   7.43   8.71   8.71   8.71   8.71
-siesta: Fermi energy =      -2.805152 eV
+siesta: Fermi energy =      -2.805062 eV
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -319.334143
+siesta: Ebs     =      -319.329863
 siesta: Eions   =      3801.028149
-siesta: Ena     =        13.426522
-siesta: Ekin    =      2613.071455
-siesta: Enl     =     -1689.696992
-siesta: DEna    =         3.637156
-siesta: DUscf   =         1.466470
+siesta: Ena     =        13.426543
+siesta: Ekin    =      2613.072497
+siesta: Enl     =     -1689.699261
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         3.637107
+siesta: DUscf   =         1.466406
 siesta: DUext   =         0.000000
-siesta: Exc     =     -2874.363357
+siesta: Exc     =     -2874.363669
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -5733.488524
-siesta: Etot    =     -5733.486895
-siesta: FreeEng =     -5733.490505
+siesta: Eharris =     -5733.488526
+siesta: Etot    =     -5733.488526
+siesta: FreeEng =     -5733.492135
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -319.334143
-siesta:       Kinetic =    2613.071455
-siesta:       Hartree =     408.940708
+siesta:  Band Struct. =    -319.329863
+siesta:       Kinetic =    2613.072497
+siesta:       Hartree =     408.941457
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =   -2874.363357
-siesta:  Ion-electron =   -2809.042396
-siesta:       Ion-ion =   -3072.093305
+siesta:   Exch.-corr. =   -2874.363669
+siesta:  Ion-electron =   -2809.045768
+siesta:       Ion-ion =   -3072.093043
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -5733.486895
+siesta:         Total =   -5733.488526
+siesta:         Fermi =      -2.805062
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.139139    0.000000    0.000000
-siesta:     0.000000   -0.139139    0.000000
-siesta:     0.000000    0.000000   -0.126490
+siesta:    -0.139110    0.000000    0.000000
+siesta:     0.000000   -0.139110   -0.000000
+siesta:     0.000000   -0.000000   -0.126470
 
 siesta: Cell volume =         67.827326 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00146948          0.00146948  Ry/Bohr**3
-siesta:           0.13492254          0.13492254  eV/Ang**3
-siesta:         216.17207407        216.17207407  kBar
-(Free)E+ p_basis*V_orbitals  =       -5730.718810
-(Free)Eharris+ p_basis*V_orbitals  =       -5730.724058
->> End of run:  28-NOV-2012  14:11:41
+siesta:           0.00146920          0.00146920  Ry/Bohr**3
+siesta:           0.13489694          0.13489694  eV/Ang**3
+siesta:         216.13106599        216.13106598  kBar
+(Free)E+ p_basis*V_orbitals  =       -5730.720441
+(Free)Eharris+ p_basis*V_orbitals  =       -5730.720441
+>> End of run:   2-JUL-2017  22:28:46
+Job completed

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_iostruct
 
@@ -42,20 +39,13 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
       real(dp) :: xfrac(3)
       integer  :: dummy
-      character(len=label_length+10), save :: fname
-      integer                              :: ia, iu, iv
-      integer                              :: ix, iostat
-      logical,                        save :: frstme = .true.
-      character(len=label_length+10)       :: paste
-      external          io_assign, io_close, paste
+      character(len=label_length+10) :: fname
+      integer                        :: ia, iu, iv
+      integer                        :: ix, iostat
+      external          io_assign, io_close
 
 
-      if (frstme) then
-         if (IOnode) then
-            fname = paste( slabel, '.STRUCT_IN' )
-         endif
-         frstme = .false.
-      endif
+      fname = trim(slabel) // '.STRUCT_IN'
 
       if (IOnode) then
          call io_assign( iu )
@@ -111,8 +101,7 @@ c                          one after application of forces/stress.
       real(dp), intent(in) ::          cell(3,3), xa(3,na)
       logical, intent(in), optional :: moved
 
-      character(len=label_length+11)       :: paste
-      external          io_assign, io_close, paste, reclat
+      external          io_assign, io_close, reclat
 
 c     Internal variables and arrays
       real(dp)                             :: celli(3,3)
@@ -132,10 +121,10 @@ C     Only do reading and writing for IOnode
       endif
 
       if (atoms_moved_after_forces) then
-         fname = paste( slabel, '.STRUCT_NEXT_ITER' )
+         fname = trim(slabel) // '.STRUCT_NEXT_ITER'
       else
-         fname = paste( slabel, '.STRUCT_OUT' )
-      endif
+         fname = trim(slabel) // '.STRUCT_OUT'
+      end if
 
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      

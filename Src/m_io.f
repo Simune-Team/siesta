@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !!@LICENSE
 c
 c     MODULE m_io
@@ -55,15 +62,7 @@ c
       integer, save:: stdout = 6
       integer, save:: stderr = 0
       logical, save:: lun_is_free(min_lun:max_lun) = .true.
-c
-c-----------------------------------------------------------------
-c
-c     Internal and dummy variables
-c
-      integer  :: i, iostat
-      logical  :: used, named, opened
-      character:: filename*50, form*11
-c
+
       CONTAINS
 c
 c-----------------------------------------------------------------
@@ -102,6 +101,8 @@ c     Logical unit management
 c
       subroutine io_assign(lun)
       integer,intent(out):: lun
+      integer :: iostat
+      logical :: used
 c
 c     Looks for a free unit and assigns it to lun
 c
@@ -121,6 +122,8 @@ c------------------------------------------------------------------
 c
       subroutine io_reserve(lun)
       integer,intent(in):: lun
+      integer :: iostat
+      logical :: used
 c
 c     Useful to specify that one needs to use a particular unit number
 c
@@ -153,11 +156,15 @@ c
 c
 c------------------------------------------------------------------     
 c
-      subroutine io_status
+      subroutine io_status()
 c
 c     Prints a list of the connected logical units and the names of
 c     the associated files
 c
+      character(len=128) :: filename
+      character(len=32) :: form
+      logical :: opened, named
+      integer :: i, iostat
 
       write(stdout,'(a)') '******** io_status ********'
       do i = 0, max_lun

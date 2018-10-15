@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine diagpol( ispin, nspin, nuo, no, nuotot,
      .                    maxnh, numh, listhptr, listh, H, S,
@@ -52,6 +49,7 @@ C eo H.
 C *********************************************************************
 
       use precision
+      use parallel,      only : BlockSize
       use sys
 
       implicit          none
@@ -64,7 +62,7 @@ C *********************************************************************
      .  eo(nuotot), H(maxnh,nspin), kpoint(3), S(maxnh), 
      .  xij(3,*), psi(ng,nuotot,nuo), Haux(ng,nuotot,nuo),
      .  Saux(ng,nuotot,nuo)
-      external          cdiag
+      external          rdiag, cdiag
 
 C  Internal variables .............................................
       integer
@@ -98,10 +96,10 @@ C Solve eigenvalue problem .........................................
       enddo
       if(ng.eq.2) then 
        call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       else
        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       endif
 C Check error flag and take appropriate action
       if (ierror.gt.0) then
@@ -133,10 +131,10 @@ C Repeat diagonalisation with increased memory to handle clustering
       enddo
       if(ng.eq.2) then
        call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       else
        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       endif
 
       endif

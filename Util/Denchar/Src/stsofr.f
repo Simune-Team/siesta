@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       SUBROUTINE STSOFR( NA, NO, NUO, MAXNA, NSPIN, 
      .                  ISA, IPHORB, INDXUO, LASTO, XA, CELL,
@@ -96,11 +103,11 @@ C **********************************************************************
 
       CHARACTER
      .  SNAME*40, FNAME*60, 
-     .  PASTE*60, CHAR1*10, CHAR2*10, 
+     .  CHAR1*10, CHAR2*10, 
      .  EXT*20, EXT2*25
 
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE, NEIGHB
+     .  IO_ASSIGN, IO_CLOSE, NEIGHB
 
 C **********************************************************************
 C INTEGER IA               : Atom whose neighbours are needed.
@@ -183,7 +190,7 @@ C Assign the point where STS will be computed
 
 C Open file to store sts spectrum   -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME = PASTE(SNAME,'.STS')
+      FNAME = TRIM(SNAME)//'.STS'
       CALL IO_ASSIGN(UNIT)
       OPEN(UNIT = UNIT, FILE = FNAME, STATUS = 'UNKNOWN',
      .     FORM = 'FORMATTED')

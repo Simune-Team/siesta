@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 !-------------------------------------------------------------
 !     
@@ -34,7 +31,7 @@
      &                     nm, nml, ntm, ntml, ntpl, dvol)
 
 !  Modules
-      use precision,     only : dp
+      use precision,     only : dp, i8b
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
       use moreMeshSubs,  only : initMeshDistr, setMeshDistr
@@ -114,7 +111,7 @@ C
 C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
      &                           ity, j, nep, j1, j2, j3, indi
-      integer*8               :: ntp
+      integer(i8b)            :: ntp
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           volume
       logical                 :: within
@@ -143,7 +140,7 @@ C     Functions
 ! Note needed integer*8 !
 !!AG** Check proper kind name
 
-      ntp = product(INT(ntm,kind=8))
+      ntp = product(INT(ntm,kind=i8b))
 
 C     Create the first mesh distribution
       call initMeshDistr( oDistr=UNIFORM, nm=nm )
@@ -207,8 +204,11 @@ C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
       ne(:) = ne(:) + 1
 
 C     Find sub-points
-      isp = 0
+!$OMP parallel default(shared), private(i1,i2,i3,i,isp)
+
+!$OMP do
       do i3 = 0, nsm-1
+        isp = i3 * nsm ** 2
         do i2 = 0, nsm-1
           do i1 = 0, nsm-1
             isp = isp + 1
@@ -220,9 +220,13 @@ C     Find sub-points
           enddo
         enddo
       enddo
+!$OMP end do
 
 ! Find number of points within rmax (orbital points)
+!$OMP single ! Only used for OpenMP
       mop = 0
+!$OMP end single 
+!$OMP do private(dxp,within,dx,r), reduction(+:mop)
       do i3 = -ne(3), ne(3)    ! Loop over neighbor (super) points
         do i2 = -ne(2), ne(2)
           do i1 = -ne(1), ne(1)
@@ -245,6 +249,9 @@ C     Find sub-points
           enddo ! i1
         enddo ! i2
       enddo ! i3
+!$OMP end do nowait
+
+!$OMP end parallel
 
 C     Create extended mesh arrays for the first data distribution
       call setupExtMesh( UNIFORM, rmax )
@@ -327,10 +334,11 @@ C     Create extended mesh arrays for the first data distribution
         else
            call die('initmesh: ERROR in MeshSizes block')
         endif
+        call fdf_bclose(bfdf)
         RealCutoff = huge(1.0_dp)
         call chkgmx( k0, rcell, ntm, RealCutoff )
         if (RealCutoff < G2max) then
-           call message("Read mesh sizes give a smaller"
+           call message("WARNING","Read mesh sizes give a smaller"
      $                   // " cutoff than requested")
         endif
         if (any(mod(ntm,nsm) /= 0)) then
@@ -469,6 +477,9 @@ C     If cell has changed then it is necessary to reinitialise coordinates
       use mesh, only: ne       ! Points in rmax along each lat. vector
       use mesh, only: nmsc     ! Mesh points in each supercell vector
       use mesh, only: rcmesh   ! Reciprocal mesh cell vectors
+      use mesh, only: iatfold  ! Supercell vector that keeps track of the
+                               ! of the folding of the atomic coordinates
+                               ! in the mesh
       use alloc,only: re_alloc ! (Re)allocation routine
       use moreMeshSubs, only : allocIpaDistr
       implicit none
@@ -481,6 +492,7 @@ C     If cell has changed then it is necessary to reinitialise coordinates
       integer,             save :: lastna = 0  ! Number of atoms on last call
       integer                   :: ia, ixa(3), jsc(3), jxa(3), nem(3),
      &                             j1, j2, j3, myBox(2,3), myExtBox(2,3)
+      integer                   :: ixabeffold(3)
       real(dp)                  :: cxa(3)
 
 #ifdef DEBUG
@@ -490,6 +502,7 @@ C     If cell has changed then it is necessary to reinitialise coordinates
       call allocIpaDistr( distr, na )
       if (na.ne.lastna) then
         call re_alloc( dxa, 1,3, 1,na, myName//'dxa' )
+        call re_alloc( iatfold, 1,3, 1,na, myName//'iatfold' )
       endif
       lastna = na
 
@@ -509,12 +522,14 @@ C     If cell has changed then it is necessary to reinitialise coordinates
 
 !       Find atomic coordinates in mesh basis vectors
         cxa(:) = matmul( xa(:,ia), rcmesh(:,:) )
+        ixabeffold(:) = floor(cxa(:))
         ! fix: Make sure we consider equivalent positions
         !      inside the cell, even if some atoms are outside.
         cxa(:) = modulo( cxa(:), real(nmsc(:),dp) )
 
 !       Find indexes of mesh cell in which atom is
         ixa(:) = floor(cxa(:))
+        iatfold(:,ia) = ( ixa(:) - ixabeffold(:) ) / nmsc(:)
 
 !       Find atom position within mesh cell
         cxa(:) = cxa(:) - ixa(:)                  ! Mesh coordinates
@@ -539,6 +554,10 @@ C     If cell has changed then it is necessary to reinitialise coordinates
                 jxa(:) = jxa(:) - myExtBox(1,:)
                 ipa(ia) = 1 + jxa(1) + nem(1)*jxa(2)
      &                      + nem(1)*nem(2)*jxa(3)
+
+                iatfold(1,ia) = iatfold(1,ia) + j1
+                iatfold(2,ia) = iatfold(2,ia) + j2
+                iatfold(3,ia) = iatfold(3,ia) + j3
                 
                 exit sc
               end if
@@ -834,8 +853,7 @@ C           Loop over sub-points
       subroutine ModelCoreChargeOnMesh( na, isa, ntpl,
      $                                  ModelCore, indxua )
 C
-C     Uses the "local charge" information to construct a model total
-C     core charge, useful for Bader analysis
+C     Constructs a model total core charge, useful for Bader analysis
 C
 C ----------------------------------------------------------------------
 C Input :
@@ -852,10 +870,11 @@ C real    ModelCore(ntpl)     : Sum of model core charge densities
 C ----------------------------------------------------------------------
 
       use precision,     only : dp, grid_p
-      use atmfuncs, only: rcut, psch, izofis, zvalfis
+      use atmfuncs, only: izofis, zvalfis
       use atm_types, only : species
-      use radial, only : rad_func
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+      use fdf
+      use parallel, only: ionode
 
       implicit none
 
@@ -872,50 +891,59 @@ C
       integer
      .  ia, iop, ip, ip0, is, isp, iua
 
-      real(dp) dx(3), grpsch(3), r, ra, charge_ratio
-      real(dp) core_charge, beta, pschloc
+      real(dp) dx(3), ra, charge_ratio, r
+      real(dp) core_charge
+      real(dp), parameter :: pi = 3.141592653589793_dp
 
-      type(rad_func), pointer            :: func
+        ! We want a total core charge of (Z-Zval), localized in a
+        ! region of around 1.0 bohr.
+        ! Note that we put 1 electron (extra!) for Hydrogen atoms,
+        ! to provide the necessary "cuspy" behavior for the reference
+        ! file for Bader analysis. For H, the radius is 0.6 bohr
+       real(dp) :: radius_standard, radius_h
 
-C Initialise array to zero
-      ModelCore(1:ntpl) = 0.0_grid_p
+        ! The model function is N*f(r/ra), where 
+        !  f(x) = exp( - (sinh(2.0_dp*x)/sinh(1.0_dp))**2 )
+        !  f(1) is zero to within 10^-5
+        ! For normalization, we need \int_{0,1} { x*x*f(x) }, which is:
+        real(dp), parameter :: Integral = 0.0411548_dp
 
-      do ia = 1,na
-        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
-        iua = indxua(ia)
-        is = isa(ia)
-        func => species(is)%chlocal
-        ra = func%cutoff
-
-        ! We will take advantage of the existing "local charge"
-        ! by rescaling.
-
-        ! The total local charge is Z_val
-        ! We want a total extra core charge of (Z-Zval),
-        ! and with the opposite sign, localized in a
-        ! region of around 1.0 bohr for "normal" atoms and
-        ! 0.4 bohr (= 0.21 Ang) for Hydrogen.
+        ! so that N above is Q/(4*pi*Integral*ra**3)
+        
         ! Note that this is quite a small confinement region, so
         ! you might need a high cutoff (of the order of 300-500 Ry)
         ! to represent it on the grid. It might be better to use
         ! Denchar for this, rather than performing a Siesta calculation
         ! (even if it reads the converged DM)
 
-        ! --- For Hydrogen, add an artificial core with 1 electron
-        ! Else choose the normal core charge
-        !
-        ! The cutoff for chlocal is divided by beta to obtain the
-        ! tighter localization radius. Note the factor of beta^3
-        ! for normalization of the new function.
 
+      ! Initialise array to zero
+      ModelCore(1:ntpl) = 0.0_grid_p
+        
+      radius_standard = fdf_get("bader-core-radius-standard",
+     $                      1.0_dp,"Bohr")
+      radius_h = fdf_get("bader-core-radius-hydrogen",
+     $                      0.6_dp,"Bohr")
+      
+      if (ionode) then
+         write(6,"(a,2f6.3)") "Bader Analysis core-charge setup. " //
+     $                        "Radii (standard, H): ",
+     $                        radius_standard, radius_h
+      endif
+      
+      do ia = 1,na
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
+        is = isa(ia)
         if (izofis(is) == 1) then
-           beta = ra / 0.4_dp
-           charge_ratio = -1.0_dp * beta**3
+           ra = radius_h
+           charge_ratio =  1.0_dp /
+     $             (4.0_dp*pi*Integral*ra**3.0_dp)
         else
-           beta = ra / 1.0_dp
-           charge_ratio = - beta**3 *
-     $              (izofis(is)-zvalfis(is))/zvalfis(is)
+           ra = radius_standard
+           charge_ratio =  (izofis(is)-zvalfis(is)) /
+     $             (4.0_dp*pi*Integral*ra**3.0_dp)
         endif
+
 
 C Loop over mesh points inside rmax
         do iop = 1,mop
@@ -928,9 +956,7 @@ C Loop over sub-points
               r = sqrt(dot_product(dx,dx))
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
-                dx = beta*dx
-                call psch( is, dx, pschloc, grpsch )
-                core_charge = charge_ratio*pschloc
+                core_charge = charge_ratio*model(r/ra)
                 ModelCore(ip) = ModelCore(ip) + core_charge
               endif
             enddo
@@ -940,6 +966,15 @@ C Loop over sub-points
 
       enddo
 
+      CONTAINS
+
+      function model(x)
+      real(dp), intent(in) :: x
+      real(dp)             :: model
+      
+      model = exp( - (sinh(2.0_dp*x)/sinh(1.0_dp))**2 )
+      end function model
+      
       end subroutine ModelCoreChargeOnMesh
 !
       subroutine PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi )
@@ -1129,6 +1164,7 @@ C     Find indexes and values of atomic orbitals at mesh points
       use parallel,  only : IONode
       use mesh,      only : meshLim  ! My processor's box of mesh points
       use mesh,      only : ne       ! Points in rmax along each lat. vector
+      use mesh,      only : nem      ! Extended-mesh divisions in each direction
       use mesh,      only : nmsc     ! Mesh points in each supercell vector
       use mesh,      only : mop      ! Accumulated num. of orbital points
       use mesh,      only : nsp      ! Number of sub-points of each mesh point
@@ -1149,7 +1185,7 @@ C     Input parameters
 C     Local parameters
       integer              :: i1, i2, i3, j1, j2, j3, k1, k2, k3,
      &                        i, j, k, nep, boxWidth(3), extWidth(3),
-     &                        isp, myBox(2,3), nem(3), myExtBox(2,3)
+     &                        isp, myBox(2,3), myExtBox(2,3)
       real(dp)             :: r, dxp(3), dx(3)
       logical              :: within
 C     Functions

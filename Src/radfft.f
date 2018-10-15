@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !!@LICENSE
 !
 C *********************************************************************
@@ -11,7 +18,7 @@ C none
 C
 C   Used module procedures:
 C use m_bessph,  only: bessph    ! Spherical Bessel functions
-C use m_recipes, only: four1     ! 1D fast Fourier transform
+C use m_fft_gpfa,only: fft_gpfa_ez ! Fourier transform
 C use alloc,     only: de_alloc  ! Deallocation routines
 C use alloc,     only: re_alloc  ! (Re)allocation routines
 C
@@ -83,7 +90,7 @@ C *********************************************************************
 
       USE precision, only: dp        ! Double precision real kind
       USE m_bessph,  only: bessph    ! Spherical Bessel functions
-      USE m_recipes, only: four1     ! 1D fast Fourier transform
+      use m_fft_gpfa,only: fft_gpfa_ez     ! 1D fast Fourier transform
       USE alloc,     only: re_alloc, de_alloc
 !      USE m_timer,   only: timer_start  ! Start counting CPU time
 !      USE m_timer,   only: timer_stop   ! Stop counting CPU time
@@ -213,10 +220,10 @@ C         Find  r**2 * r**n / r**(l+1)
 C       Perform one-dimensional complex FFT
 !
 !       Only the elements from 0 to 2*NR-1 of FN are used.
-!       (a total of 2*NR). Four1 will receive a one-dimensional
+!       (a total of 2*NR). The fft routine will receive a one-dimensional
 !       array of size 2*NR.
 !
-        CALL FOUR1( FN, 2*NR, +1 )
+        CALL fft_gpfa_ez( FN, 2*NR, +1 )
 
 C       Accumulate contribution
         DO IQ = 1,NQ

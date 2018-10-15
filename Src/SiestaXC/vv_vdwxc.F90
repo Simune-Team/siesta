@@ -14,12 +14,11 @@
 !------------------------------------------------------------------------------
 ! Used module procedures:
 !  use sys,         only: die               ! termination routine
-!  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
 !  use mesh1D,      only: get_mesh          ! Returns the mesh points
 !  use m_radfft,    only: radfft            ! Radial fast Fourier transform
 !  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-!  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
-!  use m_recipes,   only: splint            ! Performs spline interpolation
+!  use interpolation, only: spline            ! Sets spline interpolation
+!  use interpolation, only: splint            ! Calculates spline interpolation
 !------------------------------------------------------------------------------
 ! Used module parameters:
 !   use precision,  only: dp                ! Real double precision type
@@ -167,20 +166,19 @@
 MODULE m_vv_vdwxc
 
 ! Used module procedures
-  use sys,         only: die               ! termination routine
-  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
-  use mesh1D,      only: get_mesh          ! Returns the mesh points
-  use m_radfft,    only: radfft            ! Radial fast Fourier transform
-  use alloc,       only: re_alloc          ! Re-allocation routine
-  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
-  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
-  use m_recipes,   only: splint            ! Performs spline interpolation
+  use sys,          only: die              ! Termination routine
+  use mesh1D,       only: get_mesh         ! Returns the mesh points
+  use m_radfft,     only: radfft           ! Radial fast Fourier transform
+  use alloc,        only: re_alloc         ! Re-allocation routine
+  use mesh1D,       only: set_mesh         ! Sets a 1D mesh
+  use interpolation,only: spline           ! Sets spline interpolation
+  use interpolation,only: splint           ! Calculates spline interpolation
 
 ! Used module parameters
-  use precision,   only: dp                ! Real double precision type
+  use precision,    only: dp               ! Real double precision type
 
 #ifdef DEBUG_XC
-  use debugXC,     only: udebug            ! File unit for debug output
+  use debugXC,      only: udebug           ! File unit for debug output
 !  use plot_module, only: plot
 #endif /* DEBUG_XC */
 
@@ -398,16 +396,16 @@ subroutine pofk( kf, kg, p, dpdkf, dpdkg )
     do ikf = 1,nkf
       pkf(:,ikf) = 0    ! ikf'th polynomial pkf(:,ikf) is one at kfmesh(ikf) 
       pkf(ikf,ikf) = 1  ! and zero at all other points
-      call generate_spline( kfmesh, pkf(:,ikf), nkf, d2pkfdkf2(:,ikf) )
-!      call generate_spline( kfmesh, pkf(:,ikf), nkf, d2pkfdkf2(:,ikf), &
-!                            0._dp, 0._dp )
+      call spline( kfmesh, pkf(:,ikf), nkf, 1.e30_dp, 1.e30_dp, &
+                   d2pkfdkf2(:,ikf) )
+!      call spline( kfmesh, pkf(:,ikf), nkf, 0._dp, 0._dp, d2pkfdkf2(:,ikf) )
     end do
     do ikg = 1,nkg
       pkg(:,ikg) = 0
       pkg(ikg,ikg) = 1
-      call generate_spline( kgmesh, pkg(:,ikg), nkg, d2pkgdkg2(:,ikg) )
-!      call generate_spline( kgmesh, pkg(:,ikg), nkg, d2pkgdkg2(:,ikg), &
-!                            0._dp, 0._dp )
+      call spline( kgmesh, pkg(:,ikg), nkg, 1.e30_dp, 1.e30_dp, &
+                   d2pkgdkg2(:,ikg) )
+!      call spline( kgmesh, pkg(:,ikg), nkg, 0._dp, 0._dp, d2pkgdkg2(:,ikg) )
     end do
 
 !   DEBUG
@@ -818,7 +816,7 @@ subroutine vv_vdw_phi( k, phi, dphidk )
     do ik2 = 1,nkfg
       do ik1 = 1,ik2
 !        call splint( dk, phik(:,ik1,ik2), d2phidk2(:,ik1,ik2), &
-!                      nk+1, k, phi(ik1,ik2), dphidk(ik1,ik2), pr )
+!                     nk+1, k, phi(ik1,ik2), dphidk(ik1,ik2), pr )
         phi(ik1,ik2) = a*phik(ik,ik1,ik2) + b*phik(ik+1,ik1,ik2) &
                 + a3*d2phidk2(ik,ik1,ik2) + b3*d2phidk2(ik+1,ik1,ik2)
         dphidk(ik1,ik2) = (-phik(ik,ik1,ik2) &
@@ -977,7 +975,7 @@ subroutine vv_vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
     end do
   else if (kernelPrefactor=='sqr_rho') then
     ! This is the right code if vv_vdw_phi_val returns sqrt(rho1*rho2)*phi
-    rho = max(rho,1.e-12)  ! to avoid division by zero
+    rho = max(rho,1.e-12_dp)  ! to avoid division by zero
     theta(1:nkfg) = p(1:nkfg) * sqrt(rho)
     do is = 1,ns
       dtdrho(1:nkfg,is) = ( dpdkf(1:nkfg)*dkfdrho &

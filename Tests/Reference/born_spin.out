@@ -1,52 +1,32 @@
-Siesta Version:                                        siesta-trunk-300
-Architecture  : nano-intel-mpi
-Compiler flags: /opt/intel/impi/3.1/bin64/mpiifort -w  -O3 -mp
-PARALLEL version
-NetCDF support
-
-* Running on    4 nodes in parallel
->> Start of run:  29-SEP-2009  17:11:04
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
                            ***********************       
 
-reinit: Reading from standard input
-************************** Dump of input data file ****************************
-Systemlabel  born_spin
-Systemname   si2 Force constants + Born charges -- spin-polarized
-LongOutput T
-SpinPolarized T
-%include FC.fdf
-BornCharge T
-%block PolarizationGrids
-7  3  3
-3  7  3
-3  3  7
-%endblock PolarizationGrids
-NumberOfSpecies 1
-%block chemicalspecieslabel
-1 14 Si
-%endblock chemicalspecieslabel
-PAO.BasisSize SZ
-MeshCutoff 130.0 Ry
-# In a real calculation, a high degree of self-consistency should be achieved
-#DM.MixingWeight  0.3
-#DM.NumberPulay    3
-#DM.Tolerance     1.0d-5
-# Here we use Harris since we are just interested in testing the displacement
-# logic
-HarrisFunctional T
-************************** End of input data file *****************************
+reinit: Reading from ../born_spin.fdf
 
 reinit: -----------------------------------------------------------------------
 reinit: System Name: si2 Force constants + Born charges -- spin-polarized
 reinit: -----------------------------------------------------------------------
-reinit: System Label: born_spin                                                   
+reinit: System Label: born_spin
 reinit: -----------------------------------------------------------------------
+Siesta Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
+PARALLEL version
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:10:43
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Si Atomic number:          14
+Species number:   1 Atomic number:   14 Label: Si
+
 Ground state valence configuration:   3s02  3p02
 Reading pseudopotential information in formatted form from Si.psf
 
@@ -62,12 +42,15 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 <basis_specs>
 ===============================================================================
 Si                   Z=  14    Mass=  28.090        Charge= 0.17977+309
-Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
@@ -75,6 +58,9 @@ L=1  Nsemic=0  Cnfigmx=3
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
                 rcs:    0.0000    
             lambdas:    1.0000    
 -------------------------------------------------------------------------------
@@ -196,45 +182,83 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
-redata: Non-Collinear-spin run           =     F
-redata: SpinPolarized (Up/Down) run      =     T
-redata: Number of spin components        =     2
-redata: Long output                      =     T
-redata: Number of Atomic Species         =        1
+redata: Spin configuration                          = collinear
+redata: Number of spin components                   = 2
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   T
+redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
-redata: Write Mulliken Pop.              =     Atomic and Orbital charges
-redata: Mesh Cutoff                      =   130.0000  Ry
-redata: Net charge of the system         =     0.0000 |e|
-redata: Max. number of SCF Iter          =       50
-redata: Mixing is linear
-redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?        =     F
-redata: New DM Mixing Weight             =     0.2500
-redata: New DM Occupancy tolerance       = 0.000000000001
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Mesh Cutoff                                 =   130.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =       50
+redata: SCF mix quantity                            = Hamiltonian
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
-redata: DM Mixing Weight for Kicks       =     0.5000
-redata: DM Tolerance for SCF             =     0.000100
-redata: Require Energy convergence for SCF =     F
-redata: DM Energy tolerance for SCF      =     0.000100 eV
-redata: Require Harris convergence for SCF =     F
-redata: DM Harris energy tolerance for SCF =     0.000100 eV
-redata: Antiferro initial spin density   =     F
-redata: Using Saved Data (generic)   =     F
-redata: Use continuation files for DM    =     F
-redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            =     Diagonalization
-redata: Divide and Conquer               =     T
-redata: Electronic Temperature           =     0.0019  Ry
-redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     Force Constants Matrix Calculation
-redata: Atomic displ for force constants  =     0.0400  Bohr
-redata: First atom to move               =        1
-redata: Last atom to move                =        2
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: Require Harris convergence for SCF          =   F
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.0001
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
+redata: Antiferro initial spin density              =   F
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Force Constants Matrix Calculation
+redata: Atomic displ for force constants            =     0.0212  Ang
+redata: First atom to move                          =        1
+redata: Last atom to move                           =        2
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.250000
+mix.SCF:    Mixing weight                        =     0.250000
+mix.SCF:    SVD condition                        = 0.1000E-07
+mix.SCF: Spin-component mixing                   all
+redata: Save all siesta data in one NC              =   F
 redata: ***********************************************************************
+
+%block SCF.Mixers
+  Pulay
+%endblock SCF.Mixers
+
+%block SCF.Mixer.Pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.2500
+  weight.linear 0.2500
+  history 2
+%endblock SCF.Mixer.Pulay
+
+DM_history_depth set to zero for 'Harris' run
+Size of DM history Fstack: 0
 Total number of electrons:     8.000000
 Total ionic charge:     8.000000
 
-* ProcessorY, Blocksize:    2   2
+* ProcessorY, Blocksize:    2   1
+
+
+* Orbital distribution balance (max,min):     1     1
 
  Kpoints in:            1 . Kpoints trimmed:            1
 
@@ -247,24 +271,22 @@ siesta: k-grid: Supercell and displacements
 siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
-Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
-* Maximum dynamic memory allocated =     1 MB
 
-siesta:                 ==============================
-                            Begin FC step =      0
-                            Undisplaced coordinates
-                        ==============================
+                     ====================================
+                        Begin FC step =      0
+                        Undisplaced coordinates
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -274,22 +296,71 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     1
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     1
 Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 0
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
 InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
-
-* Maximum dynamic memory allocated =     5 MB
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6710
 
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -55.194181
 siesta: Eions   =       380.802124
 siesta: Ena     =       115.502327
 siesta: Ekin    =        78.997046
 siesta: Enl     =        35.834927
-siesta: DEna    =        -0.000002
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         0.000000
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
 siesta: Exc     =       -66.512853
@@ -298,35 +369,41 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -193.422394
-siesta: Etot    =      -216.980678
-siesta: FreeEng =      -216.980678
+siesta: Eharris =      -193.422392
+siesta: Etot    =      -216.980676
+siesta: FreeEng =      -216.980676
 
-siesta: Eharris(eV) =    -193.422394
+siesta: Eharris(eV) =    -193.422392
 
 
-siesta: Eharris(eV) =    -193.422394
+siesta: Eharris(eV) =    -193.422392
 
-timer: Routine,Calls,Time,% = IterSCF        1       1.399  73.79
-elaps: Routine,Calls,Wall,% = IterSCF        1       0.350  73.44
+timer: Routine,Calls,Time,% = IterSCF        1       0.033  15.35
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   0  1    0.726175
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
 
 siesta: E_KS - E_eggbox =      -194.6964
 
+siesta: Total spin polarization (Qup-Qdown) =    0.000001
+
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.000000    0.000000
-     2   -0.000001    0.000000    0.000000
+     2   -0.000000   -0.000000    0.000000
 ----------------------------------------
-   Tot   -0.000001    0.000000    0.000000
+   Tot   -0.000000    0.000000    0.000000
 ----------------------------------------
-   Max    0.000001
+   Max    0.000000
    Res    0.000000    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.000001    constrained
+   Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):     -422.60     -422.60     -422.60        0.00        0.00        0.00
+Stress-tensor-Voigt (kbar):     -422.60     -422.60     -422.60       -0.00       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -184.1390
 Target enthalpy (eV/cell)     -194.6964
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -354,54 +431,51 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883664   10.883664   10.883664
-siesta: Along cartesian directions    15.391825   15.391825   15.391825
+siesta: Along the lattice vectors      3.627888    3.627888   10.883664
+siesta: Along cartesian directions    10.261217   10.261217    5.130608
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663534   27.663534   27.663534
-siesta: Along cartesian directions    39.122145   39.122145   39.122145
+siesta: Along the lattice vectors      9.221178    9.221178   27.663534
+siesta: Along cartesian directions    26.081430   26.081430   13.040715
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883664   10.883664   10.883664
-siesta: Along cartesian directions    15.391825   15.391825   15.391825
+siesta: Along the lattice vectors      3.627888    3.627888   10.883664
+siesta: Along cartesian directions    10.261217   10.261217    5.130608
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663534   27.663534   27.663534
-siesta: Along cartesian directions    39.122145   39.122145   39.122145
+siesta: Along the lattice vectors      9.221178    9.221178   27.663534
+siesta: Along cartesian directions    26.081430   26.081430   13.040715
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    30.783651   30.783651   30.783651
+siesta:    20.522434   20.522434   10.261217
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    78.244289   78.244289   78.244289
+siesta:    52.162860   52.162860   26.081430
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883664   10.883664   10.883664
+obc:    3.627888    3.627888   10.883664
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883664   10.883664   10.883664
+obc:    3.627888    3.627888   10.883664
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      1
-                            displace atom        1
-                            in direction         1
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      1
+                         displace atom 1
+                         in direction 1 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00389817   -0.00389817   -0.00389817   1       1  Si
     0.25000000    0.25000000    0.25000000   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -411,552 +485,76 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     2
+<dSpData1D:S at geom step 1
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     2
 Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 1
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
 
-siesta: Eharris(eV) =    -193.415804
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6708
+
+siesta: Eharris(eV) =    -193.415802
 
 
-siesta: Eharris(eV) =    -193.415804
+siesta: Eharris(eV) =    -193.415802
 
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   1  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1    0.831804    0.000000    0.000000
-     2   -0.841811    0.000000    0.000000
-----------------------------------------
-   Tot   -0.010007    0.000000    0.000000
-----------------------------------------
-   Max    0.841811
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841811    constrained
-
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79        0.00       21.92        0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      2
-                            displace atom        1
-                            in direction         1
-                            by         0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-   -0.00389817    0.00389817    0.00389817   1       1  Si
-    0.25000000    0.25000000    0.25000000   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     3
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1   -0.831805    0.000000    0.000000
-     2    0.841811    0.000000    0.000000
-----------------------------------------
-   Tot    0.010006    0.000000   -0.000001
-----------------------------------------
-   Max    0.841811
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841811    constrained
-
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79        0.00      -21.92        0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-siesta: Calculating polarization. 
-
-siesta: Macroscopic polarization for spin Up:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627908   10.883641   10.883641
-siesta: Along cartesian directions    15.391793   10.261215   10.261215
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221228   27.663476   27.663476
-siesta: Along cartesian directions    39.122063   26.081424   26.081424
-
-siesta: Macroscopic polarization for spin Down:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627908   10.883641   10.883641
-siesta: Along cartesian directions    15.391793   10.261214   10.261214
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221227   27.663475   27.663475
-siesta: Along cartesian directions    39.122062   26.081424   26.081424
-
-siesta: Sum along cartesian directions (a.u.): 
-siesta:    30.783586   20.522429   20.522429
-
-siesta: Sum along cartesian directions (Debye): 
-siesta:    78.244125   52.162848   52.162848
-
-obc: Macroscopic polarization for spin Up:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627908   10.883641   10.883641
-
-obc: Macroscopic polarization for spin Down:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627908   10.883641   10.883641
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      3
-                            displace atom        1
-                            in direction         2
-                            by        -0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-   -0.00389817    0.00389817   -0.00389817   1       1  Si
-    0.25000000    0.25000000    0.25000000   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     4
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.831804    0.000000
-     2    0.000000   -0.841811   -0.000001
-----------------------------------------
-   Tot    0.000000   -0.010007   -0.000001
-----------------------------------------
-   Max    0.841811
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841811    constrained
-
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79        0.00        0.00       21.92
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      4
-                            displace atom        1
-                            in direction         2
-                            by         0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-    0.00389817   -0.00389817    0.00389817   1       1  Si
-    0.25000000    0.25000000    0.25000000   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     5
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.831805   -0.000001
-     2    0.000000    0.841811    0.000000
-----------------------------------------
-   Tot    0.000000    0.010006    0.000000
-----------------------------------------
-   Max    0.841811
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841811    constrained
-
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79        0.00        0.00      -21.92
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-siesta: Calculating polarization. 
-
-siesta: Macroscopic polarization for spin Up:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883641    3.627908   10.883641
-siesta: Along cartesian directions    10.261215   15.391793   10.261215
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663476    9.221228   27.663476
-siesta: Along cartesian directions    26.081424   39.122063   26.081424
-
-siesta: Macroscopic polarization for spin Down:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883641    3.627908   10.883641
-siesta: Along cartesian directions    10.261214   15.391793   10.261214
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663476    9.221227   27.663475
-siesta: Along cartesian directions    26.081424   39.122062   26.081424
-
-siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522429   30.783586   20.522429
-
-siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162848   78.244125   52.162848
-
-obc: Macroscopic polarization for spin Up:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883641    3.627908   10.883641
-
-obc: Macroscopic polarization for spin Down:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883641    3.627908   10.883641
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      5
-                            displace atom        1
-                            in direction         3
-                            by        -0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-   -0.00389817   -0.00389817    0.00389817   1       1  Si
-    0.25000000    0.25000000    0.25000000   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     6
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000    0.831805
-     2    0.000000    0.000000   -0.841811
-----------------------------------------
-   Tot    0.000000   -0.000001   -0.010007
-----------------------------------------
-   Max    0.841811
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841811    constrained
-
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92        0.00        0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      6
-                            displace atom        1
-                            in direction         3
-                            by         0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-    0.00389817    0.00389817   -0.00389817   1       1  Si
-    0.25000000    0.25000000    0.25000000   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     7
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.831805
-     2    0.000000    0.000000    0.841811
-----------------------------------------
-   Tot    0.000000    0.000000    0.010006
-----------------------------------------
-   Max    0.841811
-   Res    0.483140    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841811    constrained
-
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92        0.00        0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-siesta: Calculating polarization. 
-
-siesta: Macroscopic polarization for spin Up:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883641   10.883641    3.627908
-siesta: Along cartesian directions    10.261215   10.261215   15.391793
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663476   27.663476    9.221228
-siesta: Along cartesian directions    26.081424   26.081424   39.122063
-
-siesta: Macroscopic polarization for spin Down:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883641   10.883641    3.627908
-siesta: Along cartesian directions    10.261214   10.261215   15.391793
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663476   27.663475    9.221228
-siesta: Along cartesian directions    26.081424   26.081424   39.122062
-
-siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522429   20.522429   30.783586
-
-siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162848   52.162848   78.244125
-
-obc: Macroscopic polarization for spin Up:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883641   10.883641    3.627908
-
-obc: Macroscopic polarization for spin Down:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883641   10.883641    3.627908
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      7
-                            displace atom        2
-                            in direction         1
-                            by        -0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-    0.00000000    0.00000000    0.00000000   1       1  Si
-    0.25389817    0.24610183    0.24610183   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     8
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1   -0.841812    0.000000    0.000000
-     2    0.831805    0.000000    0.000000
+     2   -0.841812    0.000000    0.000000
 ----------------------------------------
    Tot   -0.010008    0.000000    0.000000
 ----------------------------------------
@@ -965,10 +563,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.841812    constrained
 
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79        0.00      -21.92        0.00
+Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00       21.92       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -991,21 +589,882 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        4.000
 
-* Maximum dynamic memory allocated =     5 MB
+                     ====================================
+                        Begin FC step =      2
+                         displace atom 1
+                         in direction 1 by  0.021167 Ang
+                     ====================================
 
-siesta:                 ==============================
-                            Begin FC step =      8
-                            displace atom        2
-                            in direction         1
-                            by         0.0400 Bohr
-                        ==============================
+outcoor: Atomic coordinates (fractional):                   
+   -0.00389817    0.00389817    0.00389817   1       1  Si
+    0.25000000    0.25000000    0.25000000   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 2
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     3
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 2
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6724
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   2  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.831804   -0.000000    0.000000
+     2    0.841812   -0.000000    0.000000
+----------------------------------------
+   Tot    0.010008   -0.000000    0.000000
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00      -21.92       -0.00
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization for spin Up:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors      3.627954   10.883617   10.883617
+siesta: Along cartesian directions    15.391758   10.261230   10.261230
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors      9.221345   27.663413   27.663413
+siesta: Along cartesian directions    39.121974   26.081463   26.081463
+
+siesta: Macroscopic polarization for spin Down:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors      3.627952   10.883618   10.883618
+siesta: Along cartesian directions    15.391760   10.261229   10.261229
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors      9.221340   27.663416   27.663416
+siesta: Along cartesian directions    39.121979   26.081462   26.081462
+
+siesta: Sum along cartesian directions (a.u.): 
+siesta:    30.783518   20.522459   20.522459
+
+siesta: Sum along cartesian directions (Debye): 
+siesta:    78.243953   52.162924   52.162924
+
+obc: Macroscopic polarization for spin Up:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:    3.627954   10.883617   10.883617
+
+obc: Macroscopic polarization for spin Down:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:    3.627952   10.883618   10.883618
+
+                     ====================================
+                        Begin FC step =      3
+                         displace atom 1
+                         in direction 2 by -0.021167 Ang
+                     ====================================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00389817    0.00389817   -0.00389817   1       1  Si
+    0.25000000    0.25000000    0.25000000   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 3
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     4
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 3
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6713
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   3  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.831804    0.000000
+     2    0.000000   -0.841812    0.000000
+----------------------------------------
+   Tot    0.000000   -0.010008    0.000000
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00       21.92
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+                     ====================================
+                        Begin FC step =      4
+                         displace atom 1
+                         in direction 2 by  0.021167 Ang
+                     ====================================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00389817   -0.00389817    0.00389817   1       1  Si
+    0.25000000    0.25000000    0.25000000   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 4
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     5
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 4
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6720
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   4  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.000000   -0.831804    0.000000
+     2   -0.000000    0.841812    0.000000
+----------------------------------------
+   Tot   -0.000000    0.010008    0.000000
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00      -21.92
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization for spin Up:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     10.883617    3.627954   10.883617
+siesta: Along cartesian directions    10.261230   15.391758   10.261230
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     27.663413    9.221345   27.663413
+siesta: Along cartesian directions    26.081463   39.121974   26.081463
+
+siesta: Macroscopic polarization for spin Down:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     10.883618    3.627952   10.883618
+siesta: Along cartesian directions    10.261229   15.391760   10.261229
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     27.663416    9.221340   27.663416
+siesta: Along cartesian directions    26.081462   39.121979   26.081462
+
+siesta: Sum along cartesian directions (a.u.): 
+siesta:    20.522459   30.783518   20.522459
+
+siesta: Sum along cartesian directions (Debye): 
+siesta:    52.162924   78.243953   52.162924
+
+obc: Macroscopic polarization for spin Up:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   10.883617    3.627954   10.883617
+
+obc: Macroscopic polarization for spin Down:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   10.883618    3.627952   10.883618
+
+                     ====================================
+                        Begin FC step =      5
+                         displace atom 1
+                         in direction 3 by -0.021167 Ang
+                     ====================================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00389817   -0.00389817    0.00389817   1       1  Si
+    0.25000000    0.25000000    0.25000000   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 5
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     6
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 5
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6713
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   5  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.000000    0.831804
+     2    0.000000   -0.000000   -0.841812
+----------------------------------------
+   Tot    0.000000   -0.000000   -0.010008
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+                     ====================================
+                        Begin FC step =      6
+                         displace atom 1
+                         in direction 3 by  0.021167 Ang
+                     ====================================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00389817    0.00389817   -0.00389817   1       1  Si
+    0.25000000    0.25000000    0.25000000   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 6
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     7
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 6
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6720
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   6  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.000000   -0.831804
+     2   -0.000000   -0.000000    0.841812
+----------------------------------------
+   Tot    0.000000    0.000000    0.010008
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization for spin Up:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     10.883617   10.883617    3.627954
+siesta: Along cartesian directions    10.261230   10.261230   15.391758
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     27.663413   27.663413    9.221345
+siesta: Along cartesian directions    26.081463   26.081463   39.121974
+
+siesta: Macroscopic polarization for spin Down:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     10.883618   10.883618    3.627952
+siesta: Along cartesian directions    10.261229   10.261229   15.391760
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     27.663416   27.663416    9.221340
+siesta: Along cartesian directions    26.081462   26.081462   39.121979
+
+siesta: Sum along cartesian directions (a.u.): 
+siesta:    20.522459   20.522459   30.783518
+
+siesta: Sum along cartesian directions (Debye): 
+siesta:    52.162924   52.162924   78.243953
+
+obc: Macroscopic polarization for spin Up:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   10.883617   10.883617    3.627954
+
+obc: Macroscopic polarization for spin Down:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   10.883618   10.883618    3.627952
+
+                     ====================================
+                        Begin FC step =      7
+                         displace atom 2
+                         in direction 1 by -0.021167 Ang
+                     ====================================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1       1  Si
+    0.25389817    0.24610183    0.24610183   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 7
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     8
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 7
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6721
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   7  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.841812   -0.000000    0.000000
+     2    0.831804   -0.000000    0.000000
+----------------------------------------
+   Tot   -0.010008   -0.000000    0.000000
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00      -21.92       -0.00
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+                     ====================================
+                        Begin FC step =      8
+                         displace atom 2
+                         in direction 1 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.24610183    0.25389817    0.25389817   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -1015,30 +1474,88 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:     9
+<dSpData1D:S at geom step 8
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:     9
 Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 8
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
 
-siesta: Eharris(eV) =    -193.415804
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6724
+
+siesta: Eharris(eV) =    -193.415802
 
 
-siesta: Eharris(eV) =    -193.415804
+siesta: Eharris(eV) =    -193.415802
 
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   8  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1    0.841812    0.000000    0.000000
-     2   -0.831806    0.000000    0.000000
+     2   -0.831804    0.000000    0.000000
 ----------------------------------------
-   Tot    0.010007    0.000000    0.000000
+   Tot    0.010008    0.000000    0.000000
 ----------------------------------------
    Max    0.841812
    Res    0.483140    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.841812    constrained
 
-Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79        0.00       21.92        0.00
+Stress-tensor-Voigt (kbar):     -425.66     -425.79     -425.79       -0.00       21.92       -0.00
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1066,54 +1583,51 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627911   10.883644   10.883644
-siesta: Along cartesian directions    15.391798   10.261219   10.261219
+siesta: Along the lattice vectors      3.627936   10.883599   10.883599
+siesta: Along cartesian directions    15.391733   10.261204   10.261204
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221236   27.663484   27.663484
-siesta: Along cartesian directions    39.122074   26.081436   26.081436
+siesta: Along the lattice vectors      9.221299   27.663367   27.663367
+siesta: Along cartesian directions    39.121909   26.081397   26.081397
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors      3.627911   10.883645   10.883645
-siesta: Along cartesian directions    15.391798   10.261219   10.261219
+siesta: Along the lattice vectors      3.627934   10.883600   10.883600
+siesta: Along cartesian directions    15.391735   10.261205   10.261205
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors      9.221236   27.663484   27.663484
-siesta: Along cartesian directions    39.122075   26.081436   26.081436
+siesta: Along the lattice vectors      9.221296   27.663372   27.663372
+siesta: Along cartesian directions    39.121915   26.081398   26.081398
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    30.783595   20.522439   20.522439
+siesta:    30.783468   20.522409   20.522409
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    78.244149   52.162872   52.162872
+siesta:    78.243824   52.162796   52.162796
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627911   10.883644   10.883644
+obc:    3.627936   10.883599   10.883599
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:    3.627911   10.883645   10.883645
+obc:    3.627934   10.883600   10.883600
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =      9
-                            displace atom        2
-                            in direction         2
-                            by        -0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =      9
+                         displace atom 2
+                         in direction 2 by -0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.24610183    0.25389817    0.24610183   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -1123,30 +1637,88 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:    10
+<dSpData1D:S at geom step 9
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:    10
 Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 9
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
 
-siesta: Eharris(eV) =    -193.415804
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6717
+
+siesta: Eharris(eV) =    -193.415802
 
 
-siesta: Eharris(eV) =    -193.415804
+siesta: Eharris(eV) =    -193.415802
 
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:   9  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000   -0.841812    0.000000
-     2    0.000000    0.831805    0.000000
+     1   -0.000000   -0.841812    0.000000
+     2   -0.000000    0.831804    0.000000
 ----------------------------------------
-   Tot    0.000000   -0.010007    0.000000
+   Tot   -0.000000   -0.010008    0.000000
 ----------------------------------------
    Max    0.841812
    Res    0.483140    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.841812    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79        0.00        0.00      -21.92
+Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00      -21.92
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1169,21 +1741,18 @@ Atom  Qatom  Qorb
 
 mulliken: Qtot =        4.000
 
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =     10
-                            displace atom        2
-                            in direction         2
-                            by         0.0400 Bohr
-                        ==============================
+                     ====================================
+                        Begin FC step =     10
+                         displace atom 2
+                         in direction 2 by  0.021167 Ang
+                     ====================================
 
 outcoor: Atomic coordinates (fractional):                   
     0.00000000    0.00000000    0.00000000   1       1  Si
     0.25389817    0.24610183    0.25389817   1       2  Si
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 
 outcell: Unit cell vectors (Ang):
         0.000000    2.715000    2.715000
@@ -1193,208 +1762,88 @@ outcell: Unit cell vectors (Ang):
 outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
 outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
 outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:    11
+<dSpData1D:S at geom step 10
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:    11
 Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 10
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
 
-siesta: Eharris(eV) =    -193.415804
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6716
+
+siesta: Eharris(eV) =    -193.415802
 
 
-siesta: Eharris(eV) =    -193.415804
+siesta: Eharris(eV) =    -193.415802
 
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  10  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
 
 siesta: Atomic forces (eV/Ang):
      1    0.000000    0.841812    0.000000
-     2   -0.000001   -0.831806    0.000000
+     2    0.000000   -0.831804    0.000000
 ----------------------------------------
-   Tot    0.000000    0.010007    0.000000
-----------------------------------------
-   Max    0.841812
-   Res    0.483141    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841812    constrained
-
-Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79        0.00        0.00       21.92
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-siesta: Calculating polarization. 
-
-siesta: Macroscopic polarization for spin Up:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883644    3.627911   10.883644
-siesta: Along cartesian directions    10.261219   15.391798   10.261219
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663484    9.221236   27.663484
-siesta: Along cartesian directions    26.081436   39.122074   26.081436
-
-siesta: Macroscopic polarization for spin Down:
-
-siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883645    3.627911   10.883645
-siesta: Along cartesian directions    10.261219   15.391798   10.261219
-
-siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663484    9.221237   27.663484
-siesta: Along cartesian directions    26.081436   39.122075   26.081436
-
-siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522439   30.783595   20.522439
-
-siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162872   78.244149   52.162872
-
-obc: Macroscopic polarization for spin Up:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883644    3.627911   10.883644
-
-obc: Macroscopic polarization for spin Down:
-
-obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883645    3.627911   10.883645
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =     11
-                            displace atom        2
-                            in direction         3
-                            by        -0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-    0.00000000    0.00000000    0.00000000   1       1  Si
-    0.24610183    0.24610183    0.25389817   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:    12
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000001   -0.841813
-     2    0.000000    0.000000    0.831805
-----------------------------------------
-   Tot    0.000000    0.000001   -0.010007
-----------------------------------------
-   Max    0.841813
-   Res    0.483141    sqrt( Sum f_i^2 / 3N )
-----------------------------------------
-   Max    0.841813    constrained
-
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92        0.00        0.00
-(Free)E + p*V (eV/cell)     -184.0535
-Target enthalpy (eV/cell)     -194.6894
- 
-mulliken: Atomic and Orbital Populations:
-
-mulliken: Spin UP 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-mulliken: Spin DOWN 
-
-Species: Si                  
-Atom  Qatom  Qorb
-               3s      3py     3pz     3px     
-   1  2.000   0.500   0.500   0.500   0.500
-   2  2.000   0.500   0.500   0.500   0.500
-
-mulliken: Qtot =        4.000
-
-* Maximum dynamic memory allocated =     5 MB
-
-siesta:                 ==============================
-                            Begin FC step =     12
-                            displace atom        2
-                            in direction         3
-                            by         0.0400 Bohr
-                        ==============================
-
-outcoor: Atomic coordinates (fractional):                   
-    0.00000000    0.00000000    0.00000000   1       1  Si
-    0.25389817    0.25389817    0.24610183   1       2  Si
-
-superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
-superc: Number of atoms, orbitals, and projectors:    250  1000  2250
-
-outcell: Unit cell vectors (Ang):
-        0.000000    2.715000    2.715000
-        2.715000    0.000000    2.715000
-        2.715000    2.715000    0.000000
-
-outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
-outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
-outcell: Cell volume (Ang**3)        :     40.0258
-New_DM. Step:    13
-Initializing Density Matrix...
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Eharris(eV) =    -193.415804
-
-
-siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000    0.841812
-     2    0.000000    0.000000   -0.831805
-----------------------------------------
-   Tot    0.000000    0.000000    0.010007
+   Tot    0.000000    0.010008    0.000000
 ----------------------------------------
    Max    0.841812
    Res    0.483140    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.841812    constrained
 
-Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92        0.00        0.00
+Stress-tensor-Voigt (kbar):     -425.79     -425.66     -425.79       -0.00       -0.00       21.92
 (Free)E + p*V (eV/cell)     -184.0535
 Target enthalpy (eV/cell)     -194.6894
- 
+
 mulliken: Atomic and Orbital Populations:
 
 mulliken: Spin UP 
@@ -1422,40 +1871,326 @@ siesta: Calculating polarization.
 siesta: Macroscopic polarization for spin Up:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883644   10.883644    3.627911
-siesta: Along cartesian directions    10.261219   10.261219   15.391798
+siesta: Along the lattice vectors     10.883599    3.627936   10.883599
+siesta: Along cartesian directions    10.261204   15.391733   10.261204
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663484   27.663484    9.221236
-siesta: Along cartesian directions    26.081436   26.081436   39.122074
+siesta: Along the lattice vectors     27.663367    9.221299   27.663367
+siesta: Along cartesian directions    26.081397   39.121909   26.081397
 
 siesta: Macroscopic polarization for spin Down:
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     10.883645   10.883645    3.627911
-siesta: Along cartesian directions    10.261219   10.261219   15.391798
+siesta: Along the lattice vectors     10.883600    3.627934   10.883600
+siesta: Along cartesian directions    10.261205   15.391735   10.261205
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     27.663484   27.663484    9.221237
-siesta: Along cartesian directions    26.081436   26.081436   39.122075
+siesta: Along the lattice vectors     27.663372    9.221296   27.663372
+siesta: Along cartesian directions    26.081398   39.121915   26.081398
 
 siesta: Sum along cartesian directions (a.u.): 
-siesta:    20.522439   20.522439   30.783596
+siesta:    20.522409   30.783468   20.522409
 
 siesta: Sum along cartesian directions (Debye): 
-siesta:    52.162872   52.162872   78.244149
+siesta:    52.162796   78.243824   52.162796
 
 obc: Macroscopic polarization for spin Up:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883644   10.883644    3.627911
+obc:   10.883599    3.627936   10.883599
 
 obc: Macroscopic polarization for spin Down:
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   10.883645   10.883645    3.627911
+obc:   10.883600    3.627934   10.883600
 
-* Maximum dynamic memory allocated =     5 MB
+                     ====================================
+                        Begin FC step =     11
+                         displace atom 2
+                         in direction 3 by -0.021167 Ang
+                     ====================================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1       1  Si
+    0.24610183    0.24610183    0.25389817   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 11
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:    12
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 11
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6717
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  11  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.000000   -0.000000   -0.841812
+     2   -0.000000   -0.000000    0.831804
+----------------------------------------
+   Tot   -0.000000   -0.000000   -0.010008
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66      -21.92       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+                     ====================================
+                        Begin FC step =     12
+                         displace atom 2
+                         in direction 3 by  0.021167 Ang
+                     ====================================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1       1  Si
+    0.25389817    0.25389817    0.24610183   1       2  Si
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250   1000   2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+<dSpData1D:S at geom step 12
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 7>
+  <dData1D:(new from dSpData1D) n=170, refcount: 1>
+refcount: 1>
+new_DM -- step:    13
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 12
+    nrows_g=8 nrows=1 sparsity=2.6562 nnzs=170, refcount: 8>
+  <dData2D:DM n=170 m=2, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (Qup-Qdown) =    4.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+New grid distribution:   1
+           1       1:   12    1:    6    1:    3
+           2       1:   12    1:    6    4:    6
+           3       1:   12    1:    6    7:    9
+           4       1:   12    1:    6   10:   12
+           5       1:   12    7:   12    1:    3
+           6       1:   12    7:   12    4:    6
+           7       1:   12    7:   12    7:    9
+           8       1:   12    7:   12   10:   12
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: (bp) =    12 x    12 x    12 =        1728
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+ExtMesh (bp) on 0 =    64 x    58 x    55 =      204160
+New grid distribution:   2
+           1       1:    7    1:    6    1:    6
+           2       7:   12    7:   12    1:    6
+           3       1:    6    1:    6    7:   12
+           4       8:   12    1:    6    1:    6
+           5       7:   12    1:    6    7:   12
+           6       1:    6    7:   12    1:    6
+           7       1:    7    7:   12    7:   12
+           8       8:   12    7:   12    7:   12
+New grid distribution:   3
+           1       1:    6    7:   12    7:   12
+           2       7:   12    1:    6    1:    6
+           3       7:   12    1:    6    7:   12
+           4       7:   12    7:   12    1:    6
+           5       1:    6    1:    6    7:   12
+           6       1:    6    1:    6    1:    6
+           7       7:   12    7:   12    7:   12
+           8       1:    6    7:   12    1:    6
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    59 x    58 x    58 =      198476
+PhiOnMesh: Number of (b)points on node 0 =                  252
+PhiOnMesh: nlist on node 0 =                 6716
+
+siesta: Eharris(eV) =    -193.415802
+
+
+siesta: Eharris(eV) =    -193.415802
+
+SCF_NOT_CONV: SCF did not converge in maximum number of steps.
+Geom step, scf iteration, dmax:  12  1    0.726190
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       5      56
+
+siesta: Total spin polarization (Qup-Qdown) =    0.000011
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000   -0.000000    0.841812
+     2   -0.000000   -0.000000   -0.831804
+----------------------------------------
+   Tot   -0.000000   -0.000000    0.010008
+----------------------------------------
+   Max    0.841812
+   Res    0.483140    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.841812    constrained
+
+Stress-tensor-Voigt (kbar):     -425.79     -425.79     -425.66       21.92       -0.00       -0.00
+(Free)E + p*V (eV/cell)     -184.0535
+Target enthalpy (eV/cell)     -194.6894
+
+mulliken: Atomic and Orbital Populations:
+
+mulliken: Spin UP 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+mulliken: Spin DOWN 
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  2.000   0.500   0.500   0.500   0.500
+   2  2.000   0.500   0.500   0.500   0.500
+
+mulliken: Qtot =        4.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization for spin Up:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     10.883599   10.883599    3.627936
+siesta: Along cartesian directions    10.261204   10.261204   15.391733
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     27.663367   27.663367    9.221299
+siesta: Along cartesian directions    26.081397   26.081397   39.121909
+
+siesta: Macroscopic polarization for spin Down:
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     10.883600   10.883600    3.627934
+siesta: Along cartesian directions    10.261205   10.261205   15.391735
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     27.663372   27.663372    9.221296
+siesta: Along cartesian directions    26.081398   26.081398   39.121915
+
+siesta: Sum along cartesian directions (a.u.): 
+siesta:    20.522409   20.522409   30.783468
+
+siesta: Sum along cartesian directions (Debye): 
+siesta:    52.162796   52.162796   78.243824
+
+obc: Macroscopic polarization for spin Up:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   10.883599   10.883599    3.627936
+
+obc: Macroscopic polarization for spin Down:
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   10.883600   10.883600    3.627934
 
 siesta: Eigenvalues (eV):
   ik is    eps
@@ -1464,10 +2199,13 @@ siesta: Eigenvalues (eV):
 siesta: Fermi energy =      -2.347973 eV
 
 siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       -55.191831
 siesta: Eions   =       380.802124
 siesta: Ena     =       115.501483
 siesta: Ekin    =       115.577905
 siesta: Enl     =        29.935836
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
 siesta: DEna    =        -8.120537
 siesta: DUscf   =         1.765891
 siesta: DUext   =         0.000000
@@ -1477,127 +2215,45 @@ siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -193.415804
+siesta: Eharris =      -193.415802
 siesta: Etot    =      -194.689419
 siesta: FreeEng =      -194.689423
 
 siesta: Final energy (eV):
+siesta:  Band Struct. =     -55.191831
 siesta:       Kinetic =     115.577905
-siesta:       Hartree =      23.678138
+siesta:       Hartree =      23.678140
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =     -68.547872
-siesta:  Ion-electron =    -120.258591
-siesta:       Ion-ion =    -145.138998
+siesta:  Ion-electron =    -120.258595
+siesta:       Ion-ion =    -145.138996
 siesta:       Ekinion =       0.000000
 siesta:         Total =    -194.689419
+siesta:         Fermi =      -2.347973
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000000    0.000000    0.841812
-siesta:      2    0.000000    0.000000   -0.831805
+siesta:      1    0.000000   -0.000000    0.841812
+siesta:      2   -0.000000   -0.000000   -0.831804
 siesta: ----------------------------------------
-siesta:    Tot    0.000000    0.000000    0.010007
+siesta:    Tot   -0.000000   -0.000000    0.010008
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.265754    0.013680    0.000000
-siesta:     0.013680   -0.265754    0.000000
-siesta:     0.000000    0.000000   -0.265675
+siesta:    -0.265754    0.013680   -0.000000
+siesta:     0.013680   -0.265754   -0.000000
+siesta:    -0.000000   -0.000000   -0.265675
 
 siesta: Cell volume =         40.025752 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00289411          0.00299875  Ry/Bohr**3
-siesta:           0.26572732          0.27533514  eV/Ang**3
-siesta:         425.74669896        441.14029006  kBar
+siesta:           0.26572733          0.27533515  eV/Ang**3
+siesta:         425.74672658        441.14030693  kBar
 (Free)E+ p_basis*V_orbitals  =        -194.112723
-(Free)Eharris+ p_basis*V_orbitals  =        -170.548666
+(Free)Eharris+ p_basis*V_orbitals  =        -192.839106
 
 siesta: Total spin polarization (Qup-Qdown) =    0.000011
-
-* Maximum dynamic memory allocated : Node    0 =     5 MB
-* Maximum dynamic memory allocated : Node    1 =     5 MB
-* Maximum dynamic memory allocated : Node    2 =     5 MB
-* Maximum dynamic memory allocated : Node    3 =     5 MB
-
-* Maximum memory occured during ranger                        
-
-timer: CPU execution times:
-timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      31.042      31.042   100.00
-timer:  Setup             1       0.413       0.413     1.33
-timer:  bands             1       0.000       0.000     0.00
-timer:  writewave         1       0.004       0.004     0.01
-timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD           13       2.355      30.610    98.61
-timer:  hsparse          13       0.003       0.041     0.13
-timer:  overlap          13       0.004       0.058     0.19
-timer:  IterSCF          13       0.815      10.601    34.15
-timer:  kinefsm          26       0.002       0.061     0.20
-timer:  nlefsm           26       0.226       5.867    18.90
-timer:  DHSCF            26       0.467      12.150    39.14
-timer:  DHSCF1            1       0.345       0.345     1.11
-timer:  DHSCF2           13       0.355       4.616    14.87
-timer:  REORD           390       0.000       0.017     0.05
-timer:  POISON           39       0.004       0.172     0.55
-timer:  DHSCF3           26       0.162       4.203    13.54
-timer:  rhoofd           26       0.059       1.537     4.95
-timer:  cellXC           39       0.014       0.531     1.71
-timer:  vmat             26       0.074       1.932     6.22
-timer:  MolMec           26       0.000       0.001     0.00
-timer:  diagon           13       0.020       0.257     0.83
-timer:  c-eigval         26       0.005       0.134     0.43
-timer:  c-buildHS        26       0.000       0.000     0.00
-timer:  cdiag          1816       0.004       7.474    24.08
-timer:  cdiag1         1816       0.000       0.632     2.04
-timer:  cdiag2         1816       0.001       1.187     3.82
-timer:  cdiag3         1816       0.003       4.769    15.36
-timer:  cdiag4         1816       0.000       0.444     1.43
-timer:  c-eigvec         26       0.004       0.111     0.36
-timer:  c-buildD         26       0.000       0.005     0.02
-timer:  DHSCF4           13       0.229       2.978     9.59
-timer:  dfscf            13       0.151       1.959     6.31
-timer:  overfsm          13       0.002       0.024     0.08
-timer:  KSV_pol           7       1.227       8.591    27.67
-timer:  optical           1       0.000       0.000     0.00
-  
-
-elaps: ELAPSED times:
-elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1       7.982       7.982    99.99
-elaps:  Setup             1       0.105       0.105     1.32
-elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.001       0.001     0.01
-elaps:  KSV_init          1       0.001       0.001     0.01
-elaps:  IterMD           13       0.606       7.873    98.62
-elaps:  hsparse          13       0.001       0.010     0.13
-elaps:  overlap          13       0.001       0.013     0.16
-elaps:  IterSCF          13       0.204       2.651    33.21
-elaps:  kinefsm          26       0.000       0.012     0.15
-elaps:  nlefsm           26       0.056       1.468    18.39
-elaps:  DHSCF            26       0.115       2.996    37.53
-elaps:  DHSCF1            1       0.088       0.088     1.10
-elaps:  DHSCF2           13       0.089       1.153    14.44
-elaps:  REORD           390       0.000       0.004     0.05
-elaps:  POISON           39       0.001       0.044     0.55
-elaps:  DHSCF3           26       0.040       1.048    13.13
-elaps:  rhoofd           26       0.013       0.333     4.17
-elaps:  cellXC           39       0.003       0.136     1.71
-elaps:  vmat             26       0.019       0.482     6.03
-elaps:  MolMec           26       0.000       0.000     0.00
-elaps:  diagon           13       0.005       0.063     0.79
-elaps:  c-eigval         26       0.001       0.033     0.42
-elaps:  c-buildHS        26       0.000       0.000     0.00
-elaps:  cdiag          1816       0.001       1.896    23.76
-elaps:  cdiag1         1816       0.000       0.152     1.91
-elaps:  cdiag2         1816       0.000       0.272     3.40
-elaps:  cdiag3         1816       0.001       1.224    15.34
-elaps:  cdiag4         1816       0.000       0.100     1.25
-elaps:  c-eigvec         26       0.001       0.026     0.33
-elaps:  c-buildD         26       0.000       0.001     0.01
-elaps:  DHSCF4           13       0.054       0.705     8.83
-elaps:  dfscf            13       0.035       0.454     5.69
-elaps:  overfsm          13       0.000       0.005     0.06
-elaps:  KSV_pol           7       0.307       2.148    26.91
-elaps:  optical           1       0.000       0.000     0.00
-  
->> End of run:  29-SEP-2009  17:11:12
+>> End of run:   2-JUL-2017  11:10:47
+Job completed

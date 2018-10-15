@@ -1,6 +1,14 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module debugMpi
       logical, save     :: debugON = .false.
       integer, save     :: mpiUnit  = 23
+      integer, parameter :: local_dp = selected_real_kind(10,300)
       end module
 
       subroutine debugMpiOn( )
@@ -50,7 +58,7 @@
       use debugMpi
       implicit none
       integer        :: n
-      real*8         :: x(n)
+      real(local_dp)       :: x(n)
 !------------------------------------------------------------------------- BEGIN
       if (debugON) then
         write(mpiUnit,*) x
@@ -62,7 +70,7 @@
       subroutine write_double( x )
       use debugMpi
       implicit none
-      real*8         :: x
+      real(local_dp)       :: x
 !------------------------------------------------------------------------- BEGIN
       if (debugON) then
         write(mpiUnit,*) x

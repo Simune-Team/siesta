@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_ordern
 !
@@ -288,10 +285,13 @@ C and HOMO and LUMO levels ..........
         endif
         if (cml_p) then
           call cmlAddProperty(xf=mainXML, value=chpot/eV, 
-     .     units='siestaUnits:ev', title='Chemical potential')
+     .          dictref='siesta:chemical_pot',
+     .          units='siestaUnits:ev', title='Chemical potential')
           call cmlAddProperty(xf=mainXML, value=emax/eV,
+     .         dictref='siesta:max_eigenv',
      .     units='siestaUnits:ev', title='Maximum eigenvalue')
           call cmlAddProperty(xf=mainXML, value=emin/eV, 
+     .         dictref='siesta:min_eigenv',
      .     units='siestaUnits:ev', title='Minimum eigenvalue')
         endif
 

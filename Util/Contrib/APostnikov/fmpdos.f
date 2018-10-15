@@ -11,14 +11,16 @@ C
       parameter (ii1=11,io1=12)
       integer nt,nmax,i0,ispin,nspin,norbs,it,npts,nene,is,idos,l,lref,
      .        m,mode,mref,z,atind,n,nref,indref,index,nline,
-     .        iquoted,iparsed
+     .        iquoted,iparsed, AN, ierr
       parameter (nmax=10000)
-      double precision ene(nmax),dos(nmax,4),dos1(4)
+      double precision ene(nmax),dos(nmax,4),dos1(4), Ef
       character inpfil*60,outfil*60,string*80,llabel*80,rlabel*80,
      .          species*6,squoted*6,chlab*6,owrite*1,s1*1
+      logical P
       logical filexist,redos,nptdef
       external iquoted,squoted,iparsed
 
+	Ef = 0.d0
       do it=1,nmax
       do is=1,2
         dos(it,is)=0.d0
@@ -125,31 +127,34 @@ C --- line by line read and analyze PDOS file: -----------
         nptdef = .true.
         npts = iparsed(string,llabel,rlabel)
         goto 11
+      elseif (string(1:13).eq.'<fermi_energy') then
+        llabel = '<fermi_energy units="eV">'
+        rlabel = '</fermi_energy>'
+	! Currently not read
+        goto 11
       elseif (string(1:8).eq.'<energy_') then   !  list of energies opens:
-        nene=0
+        nene = 0
+	do 
+	  read(ii1,'(a80)') string
+	  if (string(1:16).eq.'</energy_values>') then ! list of energies closes
+	    nt = nene
+	    if (nt > nmax ) then
+	      write(6,*)'  nt=',nt,' > nmax=',nmax
+	      stop
+	    end if
+	    if ( nptdef .and. nt /= npts ) then
+	      write(6,*)'  nt=',nt,' differs from npoints=',npts
+	      stop
+	    end if
+	    exit
+	  end if
+	  
+	  ! Read next energy point
+	  nene = nene + 1
+	  read(string,*) ene(nene)
+	end do
+	
         goto 11
-      elseif (string(1:8).eq.'        ') then   !  must be an energy line:
-                                                !  read energy values
-        nene=nene+1
-        read (string,*) ene(nene)
-        goto 11
-      elseif (string(1:16).eq.'</energy_values>') then ! list of energies closes
-        nt=nene
-C       write (6,*) nt,'  energy values found:'
-C       do it=1,nt
-C         write(6,203) it,ene(it)
-C 203     format(i5, f12.6)
-C       enddo
-        if (nt.gt.nmax) then
-          write(6,*)'  nt=',nt,' > nmax=',nmax
-          stop
-        endif 
-        if (nptdef.and.nt.ne.npts) then
-          write(6,*)'  nt=',nt,' differs from npoints=',npts
-          stop
-        endif 
-        goto 11
-
       elseif (string(1:8).eq.'<orbital') then      !  new orbital follows:
         goto 11
       elseif (string(2:7).eq.'index=') then        !  orbital index line:
@@ -184,6 +189,12 @@ C         write (6,*) ' They match'
         goto 11
       elseif (string(2:3).eq.'z=') then   !  z-value:
         z = iquoted(string,nline)
+        goto 11
+      elseif (string(2:3).eq.'Z=') then   !  atomic number (Z)-value:
+        AN = iquoted(string,nline)
+        goto 11
+      elseif (string(2:3).eq.'P=') then   !  polarization-orbital:
+        P = trim(squoted(string,nline)) == 'true'
         read (ii1,'(a1)') s1    !   read in an extra line (closing > )
         goto 11
       elseif (string(1:6).eq.'<data>') then        !  list of PDOS follows:

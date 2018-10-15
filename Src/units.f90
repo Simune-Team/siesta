@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 module units
   ! Define various unit conversion factors from internal units.
@@ -31,6 +28,7 @@ module units
 !  Meter = Ang / 1.0e-10_dp
 !  Pascal = Joule/Meter**2
 !   kBar  = Pascal * 1.0e4
+!  Ryd^-1 (time) = fs/0.04837769
 !   .... and so on.
 
   real(dp), parameter :: Ang    = 1._dp / 0.529177_dp
@@ -40,6 +38,7 @@ module units
   real(dp), parameter :: Kelvin = eV / 11604.45_dp
   real(dp), parameter :: Debye  = 0.393430_dp
   real(dp), parameter :: amu    = 2.133107_dp
+  real(dp), parameter :: Ryd_time = 1._dp/0.04837769_dp
 
 ! pi to 50 digits
   real(dp), parameter :: pi = 3.14159265358979323846264338327950288419716939937510_dp

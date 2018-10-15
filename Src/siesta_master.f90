@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !-----------------------------------------------------------------------------
 !
 ! module siesta_master
@@ -96,7 +93,10 @@ MODULE siesta_master
 ! Used module parameters and procedures
   use precision, only: dp              ! Double precision real kind
   use sys,       only: die             ! Termination routine
+  use fdf,       only: fdf_get         ! Reading fdf-options
   use fdf,       only: fdf_convfac     ! Conversion of physical units
+
+  use iosockets, only: coordsFromSocket, forcesToSocket
   use iopipes,   only: coordsFromPipe  ! Read coordinates from pipe
   use iopipes,   only: forcesToPipe    ! Write forces to pipe
 
@@ -159,6 +159,7 @@ subroutine coordsFromMaster( na, xa, cell )
   integer, intent(in) :: na        ! Number of atoms
   real(dp),intent(out):: xa(3,na)  ! Atomic coordinates
   real(dp),intent(out):: cell(3,3) ! Unit cell vectors
+  character*32 :: iface            ! Interface mode
 
 ! In the pipes version, this is where we first know that we are a server
   siesta_server = .true.
@@ -170,8 +171,10 @@ subroutine coordsFromMaster( na, xa, cell )
     else
       call die('coordsFromMaster: ERROR: number-of-atoms mismatch')
     endif
-  else    ! (.not.siesta_subroutine)
-    call coordsFromPipe( na, xa, cell )
+  else  
+    iface = fdf_get( "Master.interface",  "pipe")   
+    if ( iface == "pipe") call coordsFromPipe( na, xa, cell )
+    if ( iface == "socket") call coordsFromSocket (na, xa, cell )
   end if ! (siesta_subroutine)
   
 end subroutine coordsFromMaster
@@ -185,6 +188,7 @@ subroutine forcesToMaster( na, Etot, fa, stress )
   real(dp),intent(in):: Etot        ! Total energy
   real(dp),intent(in):: fa(3,na)    ! Atomic forces
   real(dp),intent(in):: stress(3,3) ! Stress tensor
+  character*32 :: iface            ! Interface mode
 
   if (siesta_subroutine) then
     if (na==nAtoms) then
@@ -194,8 +198,10 @@ subroutine forcesToMaster( na, Etot, fa, stress )
     else ! (na/=nAtoms)
       call die('coordsFromMaster: ERROR: number-of-atoms mismatch')
     endif ! (na==nAtoms)
-  else   ! (.not.siesta_subroutine)
-    call forcesToPipe( na, Etot, fa, stress )
+  else  
+    iface = fdf_get( "Master.interface",  "pipe")     
+    if ( iface == "pipe") call forcesToPipe( na, Etot, fa, stress )
+    if ( iface == "socket") call forcesToSocket( na, Etot, fa, stress )
   end if ! (siesta_subroutine)
 
 end subroutine forcesToMaster

@@ -1,9 +1,17 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module molecularmechanics
 !
 !     Add additional interactions through pair-potentials
 !     Implementation: Julian Gale (Curtin, AU)
 !     Modified by Alberto Garcia  (stress sign fix, plots of V(r))
 !     Implemented Grimme's cutoff function (A. Garcia, April 2008)
+!     Updated for arbitrary number of potentials (N. Papior, 2016)
 !
       use precision, only: dp
       implicit none
@@ -12,222 +20,263 @@
 !     for the stress tensor.
 !     Define sign_change as +1 to recover that behavior
       integer, parameter    :: sign_change = -1
-      real(dp), parameter   :: d_grimme_default = 20.0_dp    ! 2006 Grimme paper
 
       private
 
-      integer, parameter    :: maxMMpot = 10
-      integer, save         :: nMMpot = 0
-      integer, save         :: nMMpotptr(2,maxMMpot)
-      integer, save         :: nMMpottype(maxMMpot)
-      logical, save         :: PotentialsPresent = .false.
-      real(dp), save        :: MMcutoff
-      real(dp), save        :: s6_grimme
-      real(dp), save        :: d_grimme
-      real(dp), save        :: MMpotpar(6,maxMMpot)
+      integer, save           :: nMMpot = 0
+      integer, pointer, save  :: MMpotptr(:,:) => null() ! (2,:)
+      integer, pointer, save  :: MMpottype(:)  => null() ! (:)
+      real(dp), save          :: MMcutoff
+      real(dp), save          :: s6_grimme
+      real(dp), save          :: d_grimme
+      real(dp), pointer, save :: MMpotpar(:,:) => null() ! (6,:)
 
-      public :: inittwobody, twobody
+      public :: inittwobody, twobody, reset_twobody
 
       CONTAINS
 
       subroutine inittwobody()
       use fdf
-      use units,   only : eV, Ang
       use sys,     only : die
-      use parallel,only : Node
+      use parallel,only : IONode
+
       character(len=80)  :: potential
-
-      real(dp), parameter   :: s6_grimme_default = 1.66_dp    ! Fit by Roberto Peverati for DZ basis sets
-
       character(len=80)  :: scale
+      integer            :: sizeMMpot
       integer            :: ni
       integer            :: nn
       integer            :: nr
-      real(dp)           :: Dscale
+      real(dp)           :: Lscale
       real(dp)           :: Escale
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
-#ifdef DEBUG
-      call write_debug( '  PRE inittwobody' )
-#endif
-!     Allocation of arrays formerly done here moved
-!     to top of module, as they are really static for now
-      MMpotpar(1:6,1:maxMMpot) = 0.0_dp
+      ! initialize all the arrays, and allocate them dynamically.
+      call prep_arrays()
 
+      
 !     Get potential cutoff
-      MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
+      MMcutoff = fdf_get('MM.Cutoff',30._dp,'Bohr')
 
 !     Set MM units of energy for potential parameters
-      scale = fdf_string( 'MM.UnitsEnergy','eV' )
-      if (scale.eq.'eV') then
-        Escale = eV
-      else
-        Escale = 1.0_dp
-      endif
-      scale = fdf_string( 'MM.UnitsDistance','Ang' )
-      if (scale.eq.'Ang') then
-        Dscale = Ang
-      else
-        Dscale = 1.0_dp
-      endif
+      scale = fdf_get('MM.UnitsEnergy', 'eV')
+      ! this will allow arbitrary energy conversions
+      Escale = fdf_convfac(scale, 'Ry')
+      scale = fdf_get('MM.UnitsDistance', 'Ang')
+      ! this will allow arbitrary length conversions
+      Lscale = fdf_convfac(scale, 'Bohr')
 
+      ! If there are no molecular potentials we may quickly
+      ! exit
+      if ( sizeMMpot == 0 ) then
+         nMMpot = 0
+         return
+      end if
+
+      
 !     Read in data from block
-      nMMpot = 0
-      PotentialsPresent = fdf_block('MM.Potentials',bfdf)
-      if (PotentialsPresent) then
-        if (Node.eq.0) then
+      nMMpot = 0 ! reset to count the actual number of potentials
+      if ( fdf_block('MM.Potentials', bfdf) ) then
+        if (IONode) then
           write(6,"(a)") "Reading two-body potentials"
         endif
 
-        do 
-
-!         Read and parse data line
-          if (.not. fdf_bline(bfdf,pline)) exit
+!       Read and parse data line
+        do while ( fdf_bline(bfdf,pline) )
 
           nn = fdf_bnnames(pline)
+          ! If there are no names on this line
+          ! there is no specification of the type of
+          ! potential used. Hence, we immediately skip it
+          if ( nn == 0 ) cycle
+          
           ni = fdf_bnintegers(pline)
           nr = fdf_bnreals(pline)
           potential = fdf_bnames(pline,1)
 
-          if (nn .gt. 0) then
-            if (leqi(potential,'C6')) then
-              nMMpot = nMMpot + 1
-              if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
-              endif
-              nMMpottype(nMMpot) = 1
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-              nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "C6 - two-body potential between ", &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              if (nr .ge. 2) then
+          if (leqi(potential,'C6')) then
+             call step_species(nMMpot, 1, ni, 'C6 - two-body')
+
+             if (nr .ge. 2) then
 !               C6 : Parameter one is C6 coefficient
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 !               C6 : Parameter two is damping exponent
-                MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Dscale
-              elseif (nr .eq. 1) then
+                MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Lscale
+             else if (nr .eq. 1) then
 !               C6 : Parameter one is C6 coefficient
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
-            elseif (leqi(potential,'C8')) then
-              nMMpot = nMMpot + 1
-              if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
-              endif
-              nMMpottype(nMMpot) = 2
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-              nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "C8 - two-body potential between ", &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              if (nr .ge. 2) then
+             end if
+             
+          else if (leqi(potential,'C8')) then
+             call step_species(nMMpot, 2, ni, 'C8 - two-body')
+
+             if (nr .ge. 2) then
 !               C8 : Parameter one is C8 coefficient
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 !               C8 : Parameter two is damping exponent
-                MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Dscale
-              elseif (nr .eq. 1) then
+                MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Lscale
+             elseif (nr .eq. 1) then
 !               C8 : Parameter one is C8 coefficient
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
-            elseif (leqi(potential,'C10')) then
-              nMMpot = nMMpot + 1
-              if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
-              endif
-              nMMpottype(nMMpot) = 3
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-              nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "C10 - two-body potential between ", &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              if (nr .ge. 2) then
+             end if
+
+          else if (leqi(potential,'C10')) then
+             call step_species(nMMpot, 3, ni, 'C10 - two-body')
+
+             if (nr .ge. 2) then
 !               C10 : Parameter one is C10 coefficient
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 !               C10 : Parameter two is damping exponent
-                MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Dscale
-              elseif (nr.eq.1) then
+                MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Lscale
+             else if (nr.eq.1) then
 !               C10 : Parameter one is C10 coefficient
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
-            elseif (leqi(potential,'HARM')) then
-              nMMpot = nMMpot + 1
-              if (nMMpot .gt. maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
-              endif
-              nMMpottype(nMMpot) = 4
-              if (ni .lt. 2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-              nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "Harmonic two-body potential between ",   &
-                    fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              if (nr .ge. 2) then
+             end if
+
+          else if (leqi(potential,'HARM')) then
+             call step_species(nMMpot, 4, ni, 'Harmonic - two-body')
+
+             if (nr .ge. 2) then
 !               Harm : Parameter one is force constant
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Dscale**2)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Lscale**2)
 !               Harm : Parameter two is r0
-                MMpotpar(2,nMMpot) = fdf_breals(pline,2)*Dscale
-              elseif (nr .eq. 1) then
+                MMpotpar(2,nMMpot) = fdf_breals(pline,2)*Lscale
+             else if (nr .eq. 1) then
 !               Harm : Parameter one is force constant
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Dscale**2)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Lscale**2)
                 MMpotpar(2,nMMpot) = 0.0_dp
-              endif
-            elseif (leqi(potential,'Grimme')) then
-              nMMpot = nMMpot + 1
-              if (nMMpot.gt.maxMMpot) then
-                call die('MM: Too many MM potentials - increase maxMMpot!')
-              endif
-              nMMpottype(nMMpot) = 5
-              if (ni.lt.2) then
-                call die('MM: Species numbers missing in potential input!')
-              endif
-              nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
-              nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
-              write(6,"(a,i3,a,i3)") "Grimme two-body potential between ", &
-                        fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
-              if (nr.eq.2) then
+             end if
+
+          else if (leqi(potential,'Grimme')) then
+             call step_species(nMMpot, 5, ni, 'Grimme - two-body')
+
+             if (nr.eq.2) then
 !               C6 : Parameter one is C6 coefficient
-                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+                MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Lscale**6)
 
 !               C6 : Parameter two is the sum of the van-der-Waals radii
 !               Note 1: This must be already appropriately corrected (i.e., factor of 1.1 ...)
 !               Note 2: This is a real length, as opposed to the damping parameters for the Tang-Toenes
 !                       potentials, so note the correct application of the scale factor.
-                MMpotpar(2,nMMpot) = fdf_breals(pline,2) * Dscale
+                MMpotpar(2,nMMpot) = fdf_breals(pline,2) * Lscale
 
-              else
+             else
                 call die('MM: Need both C6 and R0 values in Grimme line!')
-              endif
-            endif
-          endif
-        enddo
+             end if
+          end if
+           
+        end do
 
-        if (any(nMMpottype .eq. 5)) then
-           s6_grimme = fdf_double("MM.Grimme.S6",s6_grimme_default)
-           d_grimme = fdf_double("MM.Grimme.D",d_grimme_default)
-        endif
+        ! R. Peverati for DZ basis sets
+        s6_grimme = fdf_get("MM.Grimme.S6",1.66_dp)
+        ! 2006 Grimme paper
+        d_grimme = fdf_get("MM.Grimme.D",20._dp)
 
-        if (Node .eq. 0)  call plot_functions()
-      endif
-#ifdef DEBUG
-      call write_debug( '  POS inittwobody' )
-#endif
-      end subroutine inittwobody
+        if (IONode) call plot_functions()
+        
+     endif
 
-      subroutine twobody( na, xa, isa, cell, emm, ifa, fa, istr, stress )
-      use parallel,         only : Node
+     if ( sizeMMpot /= nMMpot ) then
+        call die("MM: Too many lines in MM.Potentials block are not &
+             &read. Please delete non-applicable lines.")
+     end if
+
+   contains
+
+     !> @param MMpot current potential index
+     !> @param method the method value for the current potential
+     !> @param ni number of integers on the line (simple check)
+     !> @param name additional print out of method name
+     subroutine step_species(MMpot, method, ni, name)
+       integer, intent(inout) :: MMpot
+       integer, intent(in) :: method, ni
+       character(len=*), intent(in) :: name
+
+       ! Step potential
+       MMpot = MMpot + 1
+
+       ! Assign potential type
+       MMpottype(MMpot) = method
+
+       ! Check whether the correct species are found
+       if ( ni < 2 ) then
+          call die('MM: Species numbers missing in potential input!')
+       end if
+
+       ! Read the species indices
+       MMpotptr(1,MMpot) = fdf_bintegers(pline,1)
+       MMpotptr(2,MMpot) = fdf_bintegers(pline,2)
+       if ( IONode ) then
+          write(*,"(a,2(a,i0))") name, " potential between ", &
+               MMpotptr(1,MMpot), " and ", MMpotptr(2,MMpot)
+       end if
+
+     end subroutine step_species
+        
+     ! dynamically create the arrays to allow 
+     ! arbitrary number of potentials attached.
+     subroutine prep_arrays()
+       use alloc, only : re_alloc
+       type(block_fdf)            :: bfdf
+       type(parsed_line), pointer :: pline
+       integer :: nn,ni,nr
+       character(len=80) :: potential
+       
+       ! the global number of potentials
+       sizeMMpot = 0
+       if ( .not. fdf_block('MM.Potentials',bfdf) ) return
+       do while ( fdf_bline(bfdf,pline) )
+
+          ! ensure that we can read the content
+          nn = fdf_bnnames(pline)
+          potential = fdf_bnames(pline,1)
+          ! we have a potential line... 
+          ! note that if it an invalid line, this will 
+          ! assert that we have (allocated potentials) > (actual potentials)
+          if ( nn > 0 ) sizeMMpot = sizeMMpot + 1
+
+       end do
+
+       if ( sizeMMpot == 0 ) return
+
+       ! allocate them
+       call re_alloc(MMpotptr , 1 , 2 , 1 , sizeMMpot, &
+            'MMpotptr','twobody')
+       call re_alloc(MMpottype , 1 , sizeMMpot, &
+            'MMpottype','twobody')
+       call re_alloc(MMpotpar , 1 , 6 , 1 , sizeMMpot, &
+            'MMpotpar','twobody')
+
+       ! initialize them to zero
+       ! ensures that we don't accidentally assign wrong
+       ! potential to a specie
+       MMpotptr(:,:) = 0
+       MMpottype(:) = 0
+       MMpotpar(:,:) = 0._dp
+
+     end subroutine prep_arrays
+
+   end subroutine inittwobody
+
+   subroutine reset_twobody()
+
+     use alloc, only: de_alloc
+
+     ! deallocate them
+     call de_alloc(MMpotptr, 'MMpotptr','twobody')
+     call de_alloc(MMpottype, 'MMpottype','twobody')
+     call de_alloc(MMpotpar, 'MMpotpar','twobody')
+     nMMpot = 0
+
+   end subroutine reset_twobody
+
+   
+   subroutine twobody( na, xa, isa, cell, emm, ifa, fa, istr, stress )
+      use parallel,         only : IONode
       use units,            only : kbar
       use alloc,            only : re_alloc, de_alloc
 
@@ -329,14 +378,8 @@
       real(dp)                :: mm_stress(3,3)
       integer                 :: jx
 
-      if (.not. PotentialsPresent) return
-
 !     Start timer
       call timer('MolMec', 1 )
-
-!     Allocate workspace arrays
-      nullify(lvalidpot)
-      call re_alloc( lvalidpot, 1, nMMpot, 'lvalidpot', 'twobody' )
 
 !     Initialise energy and mm_stress
       emm = 0.0_dp
@@ -355,6 +398,16 @@
         rvol = 1.0_dp/vol
       endif
 
+      ! quick return if no potentials are present
+      if ( nMMpot == 0 ) then
+         call timer('MolMec',2)
+         return
+      end if
+
+!     Allocate workspace arrays
+      nullify(lvalidpot)
+      call re_alloc( lvalidpot, 1, nMMpot, 'lvalidpot', 'twobody' )
+
 !     Loop over first atom
       do i = 1,na
 !       Loop over second atom 
@@ -368,12 +421,12 @@
 !         Find valid potentials
           lanyvalidpot = .false.
           do np = 1,nMMpot
-            if ( nMMpotptr(1,np).eq.isa(i) .and. &
-                 nMMpotptr(2,np).eq.isa(j)) then
+            if ( MMpotptr(1,np) == isa(i) .and. &
+                 MMpotptr(2,np) == isa(j)) then
               lanyvalidpot = .true.
               lvalidpot(np) = .true.
-            elseif ( nMMpotptr(1,np).eq.isa(j) .and. &
-                     nMMpotptr(2,np).eq.isa(i)) then
+            elseif ( MMpotptr(1,np) == isa(j) .and. &
+                     MMpotptr(2,np) == isa(i)) then
               lanyvalidpot = .true.
               lvalidpot(np) = .true.
             else
@@ -423,7 +476,7 @@
 
 !             Loop over first cell vector
               lallfound1 = .false.
-              if (idir.eq.1) then
+              if (idir == 1) then
                 ii = 0
               else
                 ii = - 1
@@ -450,7 +503,7 @@
 
 !                 Loop over second cell vector
                   lallfound2 = .false.
-                  if (jdir.eq.1) then
+                  if (jdir == 1) then
                     jj = 0
                   else
                     jj = - 1
@@ -477,7 +530,7 @@
 
 !                     Loop over third cell vector
                       lallfound3 = .false.
-                      if (kdir.eq.1) then
+                      if (kdir == 1) then
                         kk = 0
                       else
                         kk = - 1
@@ -505,8 +558,9 @@
 !                           Evaluate potentials for this valid distance
                             do np = 1,nMMpot
                               if (lvalidpot(np)) then
-                                if (nMMpottype(np).eq.1) then
-                                  if (MMpotpar(2,np).eq.0.0_dp) then
+                                select case ( MMpottype(np) )
+                                case ( 1 ) ! C6
+                                  if (MMpotpar(2,np) == 0.0_dp) then
                                     etrm = MMpotpar(1,np)/(r2**3)
                                     ftrm = 6.0_dp*factor*etrm/r2
                                     etrm = - etrm
@@ -521,8 +575,8 @@
                                     etrm = - etrm1*f6
                                     ftrm = factor*(6.0_dp*etrm1*f6 - etrm1*df6)/r2
                                   endif
-                                elseif (nMMpottype(np).eq.2) then
-                                  if (MMpotpar(2,np).eq.0.0_dp) then
+                                case ( 2 ) ! C8
+                                  if (MMpotpar(2,np) == 0.0_dp) then
                                     etrm = MMpotpar(1,np)/(r2**4)
                                     ftrm = 8.0_dp*factor*etrm/r2
                                     etrm = - etrm
@@ -538,8 +592,8 @@
                                     etrm = - etrm1*f8
                                     ftrm = factor*(8.0_dp*etrm1*f8 - etrm1*df8)/r2
                                   endif
-                                elseif (nMMpottype(np).eq.3) then
-                                  if (MMpotpar(2,np).eq.0.0_dp) then
+                                case ( 3 ) ! C10
+                                  if (MMpotpar(2,np) == 0.0_dp) then
                                     etrm = MMpotpar(1,np)/(r2**5)
                                     ftrm = 10.0_dp*factor*etrm/r2
                                     etrm = - etrm
@@ -556,12 +610,12 @@
                                     etrm = - etrm1*f10
                                     ftrm = factor*(10.0_dp*etrm1*f10 - etrm1*df10)/r2
                                   endif
-                                elseif (nMMpottype(np).eq.4) then
+                                case ( 4 ) ! Harm
                                   r = sqrt(r2)
                                   etrm = MMpotpar(1,np)*(r - MMpotpar(2,np))
                                   ftrm = factor*etrm/r
                                   etrm = 0.5_dp*etrm*(r - MMpotpar(2,np))
-                                elseif (nMMpottype(np).eq.5) then    ! Grimme
+                                case ( 5 ) ! Grimme
                                   r = sqrt(r2)
                                   R0 = MMpotpar(2,np)
                                   arg = - d_grimme*(r/R0 - 1.0_dp)
@@ -571,7 +625,7 @@
                                   fgprime = (d_grimme/R0) * earg / ( 1 + earg )**2
                                   etrm = - etrm1*fg
                                   ftrm = factor*(6.0_dp*etrm1*fg - etrm1*r*fgprime)/r2
-                                endif
+                                end select
 
                                 emm = emm + factor*etrm
                                 if (ifa.ne.0) then
@@ -630,7 +684,7 @@
                     rzj = rzj + rcz2
 !                   Check to see if this direction is complete
                     lallfound2 = (r2.gt.r2j.and.r2.gt.MMcutoff2.and. &
-                                  nvec.eq.nveck0)
+                                  nvec == nveck0)
                     r2j = r2
                   enddo     ! End loop lallfound2
                 enddo       ! End loop jdir
@@ -643,7 +697,7 @@
 
 !               Check to see if this direction is complete
                 lallfound1 = (r2.gt.r2i.and.r2.gt.MMcutoff2 .and. &
-                              nvec.eq.nvecj0)
+                              nvec == nvecj0)
                 r2i = r2
               enddo       ! End loop lallfound1
             enddo         ! End loop idir
@@ -655,7 +709,7 @@
 !     Print and add MM contribution to stress
 !
       if (istr.ne.0) then
-        if (Node .eq. 0 .and. PotentialsPresent)  then
+        if (IONode .and. nMMpot > 0)  then
           write(6,'(/,a,6f12.2)')  'MM-Stress (kbar):',   &
                (mm_stress(jx,jx)/kbar,jx=1,3),            &
                 mm_stress(1,2)/kbar,                      &
@@ -711,8 +765,9 @@
           r1 = rmin + delta * i
           r2 = r1*r1
 
-          if (nMMpottype(np).eq.1) then
-            if (MMpotpar(2,np).eq.0.0_dp) then
+          select case ( MMpottype(np) )
+          case ( 1 ) ! C6
+            if (MMpotpar(2,np) == 0.0_dp) then
               etrm = MMpotpar(1,np)/(r2**3)
               ftrm = 6.0_dp*factor*etrm/r2
               etrm = - etrm
@@ -727,8 +782,8 @@
               etrm = - etrm1*f6
               ftrm = factor*(6.0_dp*etrm1*f6 - etrm1*df6)/r2
             endif
-          elseif (nMMpottype(np).eq.2) then
-            if (MMpotpar(2,np).eq.0.0_dp) then
+          case ( 2 ) ! C8
+            if (MMpotpar(2,np) == 0.0_dp) then
               etrm = MMpotpar(1,np)/(r2**4)
               ftrm = 8.0_dp*factor*etrm/r2
               etrm = - etrm
@@ -744,8 +799,8 @@
               etrm = - etrm1*f8
               ftrm = factor*(8.0_dp*etrm1*f8 - etrm1*df8)/r2
             endif
-          elseif (nMMpottype(np).eq.3) then
-            if (MMpotpar(2,np).eq.0.0_dp) then
+          case ( 3 ) ! C10
+            if (MMpotpar(2,np) == 0.0_dp) then
               etrm = MMpotpar(1,np)/(r2**5)
               ftrm = 10.0_dp*factor*etrm/r2
               etrm = - etrm
@@ -762,12 +817,12 @@
               etrm = - etrm1*f10
               ftrm = factor*(10.0_dp*etrm1*f10 - etrm1*df10)/r2
             endif
-          elseif (nMMpottype(np).eq.4) then
+          case ( 4 ) ! HARM
             r = sqrt(r2)
             etrm = MMpotpar(1,np)*(r - MMpotpar(2,np))
             ftrm = factor*etrm/r
             etrm = 0.5_dp*etrm*(r - MMpotpar(2,np))
-          elseif (nMMpottype(np).eq.5) then    ! Grimme
+          case ( 5 ) ! Grimme
             r = sqrt(r2)
             R0 = MMpotpar(2,np)
             arg = - d_grimme*(r/R0 - 1.0_dp)
@@ -777,7 +832,7 @@
             fgprime = (d_grimme/R0) * earg / ( 1 + earg )**2
             etrm = - etrm1*fg
             ftrm = factor*(6.0_dp*etrm1*fg - etrm1*r*fgprime)/r2
-          endif
+          end select
 
           write(iu,*) r1/Ang, etrm/eV, ftrm*Ang/eV
 

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine iohs( task, gamma, no_u, no_s, nspin, indxuo, maxnh, 
      .                 numh, listhptr, listh, H, S, qtot, temp, xij)
@@ -65,14 +62,13 @@ C
       implicit          none
 
       character         task*(*)
-      character(len=label_length+3) :: paste
       logical           gamma
       integer           maxnh, no_u, no_s, nspin
       integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
       real(dp)          H(maxnh,nspin), S(maxnh),
      .                  qtot, temp, xij(3,maxnh)
 
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 C Internal variables and arrays
       character(len=label_length+3) :: fname
@@ -89,7 +85,7 @@ C Internal variables and arrays
       data frstme /.true./
 C Find name of file
       if (frstme) then
-        fname = paste( slabel, '.HS' )
+        fname = trim(slabel)//'.HS'
         frstme = .false.
       endif
 

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !!@LICENSE
 !
       module parallel
@@ -24,14 +31,15 @@ C                       this number must also be a power of 2.
 C
       implicit none
 
+      integer, save :: SIESTA_group, SIESTA_comm
+      logical, save :: SIESTA_worker = .false.
       integer, save :: Node = 0
       integer, save :: Nodes = 1
+      integer, save :: PEXSINodes = 1
       integer, save :: BlockSize  = 24
       integer, save :: ProcessorY = 1
       
       logical, save :: IOnode = .true.
-      logical, save :: ParallelOverK = .false.
-      logical, save :: ResetFirstCall = .false.
 
       public
 
@@ -46,7 +54,7 @@ C
       subroutine parallel_init()  ! Initializes Node, Nodes, and IOnode
 #ifdef MPI
       use mpi_siesta, only: MPI_Comm_World
-      logical,save:: initialized=.false.
+      logical, save:: initialized=.false.
       integer :: MPIerror
       if (.not.initialized) then
         call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )

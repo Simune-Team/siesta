@@ -1,18 +1,15 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module pseudopotential
 
       use sys, only: die
       use precision, only: dp
-      use flib_spline, only: generate_spline, evaluate_spline
+      use interpolation, only: generate_spline, evaluate_spline
       use atom_options, only: write_ion_plot_files
       
       implicit none
@@ -22,6 +19,7 @@
       private
 
       public :: pseudopotential_t, pseudo_read, pseudo_header_print
+      public :: pseudo_init_constant
       public :: pseudo_write_formatted, pseudo_reparametrize
       public :: read_ps_conf, pseudo_dump
 
@@ -42,18 +40,39 @@
         character(len=70)       :: text
         integer                 :: npotu
         integer                 :: npotd
-        real(dp), pointer       :: r(:)
-        real(dp), pointer       :: chcore(:)
-        real(dp), pointer       :: chval(:)
-        real(dp), pointer       :: vdown(:,:)
-        real(dp), pointer       :: vup(:,:)
-        integer, pointer        :: ldown(:)
-        integer, pointer        :: lup(:)
+        real(dp), pointer       :: r(:) => null()
+        real(dp), pointer       :: chcore(:) => null()
+        real(dp), pointer       :: chval(:) => null()
+        real(dp), pointer       :: vdown(:,:) => null()
+        real(dp), pointer       :: vup(:,:) => null()
+        integer, pointer        :: ldown(:) => null()
+        integer, pointer        :: lup(:) => null()
       end type pseudopotential_t
 
-        CONTAINS
+      CONTAINS
 
-        subroutine pseudo_read(label,p)
+      subroutine pseudo_init_constant(p)
+      type(pseudopotential_t), intent(inout) :: p
+
+      p%nr = 0
+      p%nrval = 0
+      p%zval = 0._dp
+      p%gen_zval = 0._dp
+      p%relativistic = .false.
+      p%correlation = ' '
+      p%icorr = ' '
+      p%irel = ' '
+      p%nicore = ' '
+      p%a = 0._dp
+      p%b = 0._dp
+      p%method(:) = ' '
+      p%text = ' '
+      p%npotu = 0
+      p%npotd = 0
+
+      end subroutine pseudo_init_constant
+
+      subroutine pseudo_read(label,p)
         character(len=*), intent(in)   :: label
         type(pseudopotential_t)                    :: p
 
@@ -380,12 +399,6 @@ c        end subroutine pseudo_header_string
                   write(6,'(/,2a)')
      .          'Pseudopotential generated from a ',
      .                 'relativistic atomic calculation'
-                  write(6,'(2a)')
-     .          'There are spin-orbit pseudopotentials ',
-     .                 'available'
-                  write(6,'(2a)')
-     .          'Spin-orbit interaction is not included in ',
-     .                 'this calculation'
                endif
 
                write(6,'(/,a)') 'Valence configuration '//
@@ -463,7 +476,7 @@ c        end subroutine pseudo_header_string
 !       Use natural spline (zero second derivative)
 !
         func => p%chcore
-        call generate_spline(p%r,func,p%nrval,y2,0.0_dp,0.0_dp)
+        call generate_spline(p%r,func,p%nrval,0.0_dp,0.0_dp,y2)
         allocate(tmp(new_nrval))
         do j = 1, new_nrval
            call evaluate_spline(p%r,func,y2,p%nrval,new_r(j),tmp(j))
@@ -474,7 +487,7 @@ c        end subroutine pseudo_header_string
         nullify(tmp)            ! To re-use tmp
 !--------------------------------------------------------------------
         func => p%chval
-        call generate_spline(p%r,func,p%nrval,y2,0.0_dp,0.0_dp)
+        call generate_spline(p%r,func,p%nrval,0.0_dp,0.0_dp,y2)
         allocate(tmp(new_nrval))
         do j = 1, new_nrval
            call evaluate_spline(p%r,func,y2,p%nrval,new_r(j),tmp(j))
@@ -490,7 +503,7 @@ c        end subroutine pseudo_header_string
         allocate(tmp2(p%npotd,new_nrval))
         do i=1,p%npotd
            func => p%vdown(i,:)
-           call generate_spline(p%r,func,p%nrval,y2,0.0_dp,0.0_dp)
+           call generate_spline(p%r,func,p%nrval,0.0_dp,0.0_dp,y2)
            do j = 1, new_nrval
             call evaluate_spline(p%r,func,y2,p%nrval,new_r(j),tmp2(i,j))
            enddo
@@ -503,7 +516,7 @@ c        end subroutine pseudo_header_string
         if (p%npotu > 0) allocate(tmp2(p%npotu,new_nrval))
         do i=1,p%npotu         ! Only executed if npotu > 0 ...
            func => p%vup(i,:)
-           call generate_spline(p%r,func,p%nrval,y2,0.0_dp,0.0_dp)
+           call generate_spline(p%r,func,p%nrval,0.0_dp,0.0_dp,y2)
            do j = 1, new_nrval
             call evaluate_spline(p%r,func,y2,p%nrval,new_r(j),tmp2(i,j))
            enddo

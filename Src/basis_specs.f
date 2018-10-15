@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module basis_specs
 ! 
@@ -85,7 +82,7 @@
 ! 
 !   The Soft-Confinement parameters 'rinn' and 'vcte' are set to 0.0
 !   The Charge-Confinement parameters 'qcoe', 'qyuk' and 'qwid' 
-!   are set to 0.0, 0.0 and 1.0
+!   are set to 0.0, 0.0 and 0.01
 ! 
 !   rc(1:nzeta) is set to 0.0
 !   lambda(1:nzeta) is set to 1.0  (this is a change from old practice)
@@ -126,6 +123,7 @@
       use basis_types, only: nsp, basis_parameters, ground_state_t
       use basis_types, only: destroy, copy_shell, initialize
       use pseudopotential, only: pseudo_read, pseudo_reparametrize
+      use pseudopotential, only: pseudo_init_constant
       use periodic_table, only: qvlofz, lmxofz, cnfig, atmass
       use chemical
       use sys
@@ -133,15 +131,11 @@
 
       Implicit None
 
-      type(basis_def_t), pointer::   basp
-      type(shell_t), pointer::  s
-      type(lshell_t), pointer::  ls
-      type(kbshell_t), pointer:: k
+      type(basis_def_t), pointer :: basp => null()
+      type(shell_t), pointer :: s => null()
+      type(lshell_t), pointer :: ls => null()
+      type(kbshell_t), pointer :: k => null()
 
-      type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
-
-      character(len=*), parameter   :: defunit='Ry'
       character(len=1), parameter   ::
      $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
@@ -165,6 +159,7 @@
       real(dp), save, public    :: rmax_radial_grid
       
       public :: read_basis_specs
+      public :: label2species
 
       private
 
@@ -179,7 +174,9 @@
       character(len=15) :: basis_size
       character(len=10) :: basistype_generic
 
-      
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       type(ground_state_t), pointer :: gs
 
       integer nns, noccs, i, ns_read, l
@@ -252,13 +249,7 @@ C Sanity checks on values
 !     Use standard routine in chemical module to process the
 !     chemical species
 !
-      call read_chemical_types()
-      nsp = number_of_species()
-
-      allocate(basis_parameters(nsp))
-      do isp=1,nsp
-        call initialize(basis_parameters(isp))
-      enddo
+      nsp = size(basis_parameters)
 
       synthetic_atoms = .false.
 
@@ -282,7 +273,8 @@ C Sanity checks on values
           basp%mass = atmass(abs(int(basp%z)))
         endif
         if (basp%bessel) then
-          ! do nothing here
+          ! Initialize a constant pseudo
+          call pseudo_init_constant(basp%pseudopotential)
         else if (basp%synthetic) then
           synthetic_atoms = .true.
           ! Will set gs later
@@ -291,7 +283,7 @@ C Sanity checks on values
           call ground_state(abs(int(basp%z)),basp%ground_state)
           call pseudo_read(basp%label,basp%pseudopotential)
         endif
-        if (reparametrize_pseudos)
+        if (reparametrize_pseudos.and. .not. basp%bessel)
      .    call pseudo_reparametrize(p=basp%pseudopotential,
      .                             a=new_a, b=new_b,label=basp%label)
       enddo
@@ -429,6 +421,9 @@ C Sanity checks on values
       integer lpol, isp, ish, i, l
       character(len=20) unitstr
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       lpol = 0
 
       if (fdf_block('PS.KBprojectors',bfdf) ) then
@@ -561,13 +556,13 @@ C Sanity checks on values
               else
                 if (fdf_bnvalues(pline) .ne. k%nkbl)
      .            call die("Wrong number of energies")
-                unitstr = defunit
+                unitstr = 'Ry'
                 if (fdf_bnnames(pline) .eq. 1)
      .            unitstr = fdf_bnames(pline,1)
                 ! Insert ref energies in erefkb
                 do i= 1, k%nkbl
                   k%erefKB(i) =
-     .                 fdf_bvalues(pline,i)*fdf_convfac(unitstr,defunit)
+     .                 fdf_bvalues(pline,i)*fdf_convfac(unitstr,'Ry')
                 enddo
               endif
             endif
@@ -592,6 +587,9 @@ C Sanity checks on values
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       if (.not. fdf_block('PAO.Basis',bfdf)) RETURN
 
@@ -1069,9 +1067,9 @@ c (according to atmass subroutine).
       subroutine semicore_check(is)
       integer, intent(in)  :: is
 
-      real*8, parameter :: tiny = 1.d-5
+      real(dp), parameter :: tiny = 1.d-5
       integer ndiff
-      real*8 zval, zval_vps, charge_loc
+      real(dp) zval, zval_vps, charge_loc
 
       basp => basis_parameters(is)
 
@@ -1144,6 +1142,7 @@ c (according to atmass subroutine).
             ls%nn = 1
             allocate(ls%shell(1:1))
             s => ls%shell(1)
+            call initialize(s)
             s%l = l
             s%n = basp%ground_state%n(l)
             if (basp%ground_state%occupied(l)) then

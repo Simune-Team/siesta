@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine iodm( task, maxnd, nbasis, nspin, numd, 
      .                 listdptr, listd, dm, found )
@@ -63,17 +60,12 @@ C Internal variables
       logical   file_exists
       integer   im, is, unit1, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
-      integer, pointer, save :: numdg(:)
+      integer, pointer :: numdg(:) => null()
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
-#ifdef ALLOC_SAVE_BUG
-      real(dp), pointer :: buffer(:)
-      integer,  pointer :: ibuffer(:)
-#else
-      real(dp), pointer, save :: buffer(:)
-      integer,  pointer, save :: ibuffer(:)
-#endif
+      real(dp), pointer :: buffer(:) => null()
+      integer,  pointer :: ibuffer(:) => null()
 #endif
       
 
@@ -111,7 +103,9 @@ C External procedures
 ! Therefore, on all steps after the first, the 
 
 C Find file name
+#ifdef IO_TIMING
       call timer( 'iodm', 1 )
+#endif
       if (ionode) then
         if (frstme) then
           fmto = fdf_boolean('DM.FormattedFiles', .false.)
@@ -486,5 +480,7 @@ C Write density matrix
 C Deallocate local buffer array for globalised numd
       call de_alloc( numdg, 'numdg', 'iodm' )
 
+#ifdef IO_TIMING
       call timer( 'iodm', 2 )
+#endif
       end subroutine iodm

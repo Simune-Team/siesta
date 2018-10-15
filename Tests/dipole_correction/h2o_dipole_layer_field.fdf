@@ -1,7 +1,12 @@
 SystemName          Water molecule layer with dipole AND compensating field
-SystemLabel         h2o
+SystemLabel         h2o_dipole_layer_field
 NumberOfAtoms       3
 NumberOfSpecies     2
+
+SCF.Mix DM
+DM.NumberPulay 6
+DM.MixingWeight 0.02
+MaxSCFIterations 3000
 
 MeshCutoff  50 Ry
 
@@ -21,8 +26,12 @@ LatticeConstant 1.0 Ang
 # This value was obtained by trial and error, until the
 # profile was flat outside the slab.
 #
+# If you set SlabDipoleCorrection to TRUE
+# the resulting dipole field will be the same as written below (with
+# the opposite sign)
+SlabDipoleCorrection F
 %block ExternalElectricField
-  0.000  0.000  0.245  V/Bohr
+  0.000  0.000  0.003444  Ry/Bohr/e
 %endblock ExternalElectricField
 
 #

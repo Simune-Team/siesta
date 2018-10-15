@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       SUBROUTINE RANGER( MODE, NX, CELL, RANGE, NA, XA,
      .                   NAMOVE, IAMOVE,
      .                   IA0, ISC, X0,
@@ -789,9 +796,12 @@ C  THEIR PRODUCT WITH DIRECT LATTICE VECTORS A IS 1 (IF IOPT=0) OR
 C  2*PI (IF IOPT=1). N IS THE SPACE DIMENSION.
 C  WRITTEN BY J.M.SOLER.
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer  :: n, iopt
       DOUBLE PRECISION A(N,N),B(N,N)
 
+      double precision c, ci
+      integer i
+      
       C=1.D0
       IF (IOPT.EQ.1) C=2.D0*ACOS(-1.D0)
 

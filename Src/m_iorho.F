@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_iorho
 !
@@ -80,9 +77,9 @@ C Internal variables and arrays
 #ifdef MPI
       integer    Ind2, MPIerror, Request,
      .           Status(MPI_Status_Size), BNode, NBlock
-      real(grid_p), save, pointer :: bdens(:) => null()
+      real(grid_p), pointer :: bdens(:) => null()
 #endif
-      real(sp),           pointer :: temp(:) => null()
+      real(sp),     pointer :: temp(:) => null()
 
 #ifdef MPI
 #ifdef DEBUG
@@ -293,9 +290,9 @@ C Internal variables and arrays
       integer    Ind2, MPIerror, Request, meshl(3),
      .           Status(MPI_Status_Size), BNode, NBlock
       logical    ltmp
-      real(grid_p), save, pointer :: bdens(:) => null()
+      real(grid_p), pointer :: bdens(:) => null()
 #endif
-      real(sp),           pointer :: temp(:) => null()
+      real(sp),     pointer :: temp(:) => null()
 
       logical    baddim, found
 

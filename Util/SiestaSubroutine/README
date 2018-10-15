@@ -1,19 +1,37 @@
-
+** Warning
+   Before compiling the programs in this directory, make sure that
+   you have compiled Siesta in Obj (or in the OBJDIR of your choice)
+**   
+   
 This directory documents support for calling siesta as a subroutine from a 
-user's program. There are two versions that use different communication modes:
+user's program. There are three versions that use different communication modes:
 - The 'pipes' version uses Unix/Linux pipes for communications between the 
   user's program and siesta, which are compiled independently. The user's
   program must be compiled with file fsiesta_pipes.f90, and call routines
   in this module to send coordinates to siesta and receive forces from it.
+- The 'sockets' version uses a Unix or Inet socket for communication between
+  the user's program and siesta, which are compiled independently. The user's
+  program must be compiled with file fsiesta_sockets.f90, and call routines
+  in this module to send coordinates to siesta and receive forces from it.
+  Inet sockets allow that siesta and the user's program run on different
+  computers. Sockets are also used for communication between siesta and 
+  the i-PI code: http://epfl-cosmo.github.io/gle4md/index.html?page=ipi
+  (The socket functionality is based on code by M. Ceriotti. See also
+   Util/Sockets)
 - The 'MPI' version requires the user's program to be compiled together
   with siesta, which becomes a true subroutine. Despite its name, this
   version works also in serial mode, not requiring MPI in this case.
-Both versions allow multiple instances of siesta to run and communicate
+All versions allow multiple instances of siesta to run and communicate
 simultaneously with the master program, without mixing their data nor
 communicating among them. However, to do this, the MPI version requires to
 run in parallel using MPI. Both versions use the same calling interfaces,
 so that the same user's code can be used with any of them (although the
 MPI version has some extra functionalities).
+
+**NOTE**: The MPI version does NOT yet work with the PEXSI library, as
+the interface assumes that all processes in the default world communicator
+are available for each instance of Siesta.
+**
 
 To use the package, you must:
 1) Write a normal fdf data file for the siesta program (see the siesta
@@ -30,10 +48,18 @@ To use the package, you must:
  - The atomic numbers, siesta basis set, and all the remaining siesta 
    parameters, other than the atomic coordinates and cell vectors will be 
    those specified in the fdf data file. If not present, they will be set by
-   siesta according to the defaults values explained in the siesta manual.
+   siesta according to the default values explained in the siesta manual.
+ - Additionally, the sockets version requires the following data to be
+   included in the fdf data file:
+     MD.TypeOfRun      master     # equivalent to 'forces'
+     Master.code       fsiesta    # ( fsiesta | i-pi )
+     Master.interface  socket     # ( pipes | socket | mpi)
+     Master.address    localhost  # e.g. 150.242.7.140
+     Master.port       10001      # 10000+siesta_process_order
+     Master.socketType inet       # ( inet | unix )
+
 2) Write a main program or subroutine(s) of your own that contains:
- - A 'use fsiesta' statement in each routine with any of the following
-   calls.
+ - A 'use fsiesta' statement in each routine with any of the following calls.
  - A single call, in the whole program, to each of: siesta_launch, 
    siesta_units, and siesta_quit.
  - Calls to siesta_forces (after those to siesta_launch and siesta_units
@@ -46,6 +72,9 @@ To use the package, you must:
  - Compile your program, with a copy, in your compilation directory, of:
    - siesta/Src/fsiesta_pipes.f90 (pipes version). See siesta/Src/Makefile
      for the appropriate compilation flags and flush routine.
+   - Files fsiesta_sockets.f90, fsockets.f90, and sockets.c from siesta/Src
+     directory (sockets version). See siesta/Src/Makefile for the appropriate 
+     compilation flags.
    - siesta/Obj/libSiestaForces.a and siesta/Obj/*.mod (MPI version)
  - Run your program.
 3) Your program may call more than one siesta process, for example to
@@ -58,8 +87,12 @@ To use the package, you must:
    want to use, with consistent label arguments. In the MPI version, the
    different siesta processes must be called from different (groups of)
    MPI processes.
+ - In the sockets version, the value of Master.port must be 10000 plus
+   the order in which each siesta process will be called by the driver.
+   I.e. the first-launched siesta process uses port 10001, the second
+   one uses 10002, etc.
 4) Depending on your compiler and operating system, it may occur that
-   the communication pipes still exist after yor program terminates
+   the communication pipes still exist after your program terminates
    (normally or abnormally). In that case, simply remove them, as if
    they were normal files (pipes version only).
 5) Make sure that you have a working "flush" subroutine in your system,
@@ -108,7 +141,7 @@ General notice about compilers:
 !   (MPI version).
 ! - If nnodes is not present among siesta_launch arguments, or nnodes<2, 
 !   a serial siesta process will be launched. Otherwise, a parallel 
-!   mpirun process will be launched (pipes version).
+!   mpirun process will be launched (pipes and sockets versions).
 ! - If siesta_units is not called, length='Ang', energy='eV' are
 !   used by default. If it is called more than once, the units in the
 !   last call become in effect.
@@ -116,12 +149,16 @@ General notice about compilers:
 !   processes launched
 ! - If siesta_forces is called without a previous call to siesta_launch
 !   for that label:
-!   - It assumes that the siesta process has been launched (and the 
-!     communication pipes created) externally in the shell. In this case, 
-!     siesta_forces only opens its end of the pipes and begins communication
-!     through them (pipes version).
-!   - The first call to siesta_forces generates a call to siesta_launch
-!     without nnodes nor mpi_comm present (MPI version).
+!   - The pipes version assumes that the siesta process has been launched 
+!     (and the communication pipes created by it) externally in the shell. 
+!     In this case, siesta_forces only opens its end of the pipes and begins 
+!     communication through them. 
+!   - In the sockets version, the siesta process must be launched after the 
+!     driver program calls siesta_forces for the first time (notice that,
+!     from a communications point of view, the driver is the server and
+!     siesta is a client).
+!   - In the MPI version, the first call to siesta_forces generates a call
+!     to siesta_launch without nnodes nor mpi_comm present .
 ! - If argument cell is not present in the call to siesta_forces, or if
 !   the cell has zero volume, it is assumed that the system is a molecule,
 !   and a supercell is generated automatically by siesta so that the 
@@ -167,9 +204,11 @@ General notice about compilers:
 The data flow between the user's 'master' program and siesta is as follows:
   Using unix pipes (master program compiled with fsiesta_pipes.F90):
     master <--> fsiesta_pipes <--pipe--> iopipes <--> siesta_master <--> siesta
+  Using unix/inet sockets (master program compiled with fsiesta_sockets.F90):
+    master <--> fsiesta_sockets <--socket--> iosockets <--> siesta_master <--> siesta
   Using MPI (master program compiled with libSiestaForces.a):
     master <--> fsiesta_mpi <--> siesta_master <--> siesta
 
-J.M.Soler and A.Garcia. Jan 2004, Dec 2006, Oct 2010, May 2014
+J.M.Soler, A.Garcia, and M.Ceriotti. Jan 2004 - Mar 2015
 
 

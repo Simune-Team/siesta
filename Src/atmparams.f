@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module atmparams
 
@@ -24,7 +21,11 @@ C                     for the same species.
 C INTEGER  NKBMX    : Maximum number of Kleinman-Bylander projectors
 C                     for each angular momentum
 
-         integer, parameter, public  :: nkbmx  =    2  
+C         For the off-site SO calculation plus semicore states
+C         there will be at least 4 KBs for each l angular momentum
+C         (for each l shell we have J = l +/- 1/2 )
+         integer, parameter, public  :: nkbmx  =    4
+
 
 C INTEGER  NSMX    : Maximum number of semicore shells for each angular
 C                    momentum present in the atom ( for normal atom nsmx=0)

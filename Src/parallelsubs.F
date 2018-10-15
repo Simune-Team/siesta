@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module parallelsubs
 C
@@ -20,6 +17,9 @@ C
      &                         ulimit, llimit, dd_invp, dd_nnode
       use sys,          only : die
       implicit none
+
+      logical, public, save :: pexsi_dist 
+      integer, public, save :: pexsi_bs
 
       contains
 
@@ -63,6 +63,20 @@ C Saved variables
       data
      .  NOrbLast / 0 /
      .  NOrbNodeLast / 0 /
+
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GetNodeOrbs")
+
+      if (pexsi_dist) then
+         remainder = Norb - pexsi_bs*Nodes
+         if (Node == Nodes-1) then
+            NorbNode = pexsi_bs + remainder
+         else
+            NorbNode = pexsi_bs
+         endif
+         
+         RETURN
+      endif
 
       if (NOrb .eq. NOrbLast) then
 C Values are the same as last call - no need to recalculate
@@ -114,6 +128,7 @@ C Save value for next call
       end subroutine GetNodeOrbs
 
       subroutine GlobalToLocalOrb( GOrb, Node, Nodes, LOrb)
+      use parallel, only: thisNode => Node
 C
 C  Converts an orbital index in the global frame to the local frame
 C  if the orbital is local to this node. Otherwise the pointer is
@@ -144,7 +159,18 @@ C
 C  Local variables
       integer OrbCheck, GBlock, LEle, LBlock
 
-      if (lspatial) then 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of GlobalToLocalOrb")
+
+      if (pexsi_dist) then
+         call WhichNodeOrb(Gorb,Nodes,OrbCheck)
+         if (OrbCheck == Node) then
+            lorb = gorb - pexsi_bs*Node
+         else
+            lorb = 0
+         endif
+         
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  -
 C-------------------------
@@ -219,7 +245,13 @@ C
 C  Local variables
       integer LEle, LBlock
 
-      if (lspatial) then 
+!      if (thisNode /= Node)
+!     $       call message("Non-local use of LocalToGlobalOrb")
+
+      if (pexsi_dist) then
+         gorb = pexsi_bs*Node + lorb
+
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 
 C-------------------------
@@ -279,7 +311,14 @@ C
 C  Local variables
       integer GBlock
 
-      if (lspatial) then 
+      if (pexsi_dist) then
+         Node = (Gorb-1)/pexsi_bs
+         ! Check for overflow: if gorb is in the "remainder" set, 
+         ! the above will be incorrect (e.g. 4 (or even 5) in a {0,1,2,3} set)
+         ! (Consider the case norbs=13, pexsi_bs=2, nodes=5)
+         if (Node > Nodes-1) Node = Nodes-1
+
+      else if (lspatial) then 
 C-------------------------
 C  Spatial distribution  - 
 C-------------------------
@@ -763,6 +802,8 @@ C Compare number of orbitals against sensible number
 
       if (nuotot.gt.24*Nodes) then
         bs = 24
+      else if (nuotot.lt.Nodes) then
+        bs = 1
       else
 
          bs = nuotot/Nodes + 1

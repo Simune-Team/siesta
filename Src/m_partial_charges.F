@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module m_partial_charges
       public :: compute_partial_charges
       logical, public :: want_partial_charges = .false.
@@ -75,7 +82,7 @@ C General initialisation
 C ----------------------------------------------------------------------
 
       if (nspin .eq. 4) then
-        call message("Hirshfeld and Voronoi populations" //
+        call message("WARNING","Hirshfeld and Voronoi populations" //
      $               " not implemented for non-collinear spin")
         return
       endif

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine outbands(iunits, nspin, maxuo, nuo, maxk, nk, 
      .                   nlines, lastk, label, kpoint, ek, ef)
@@ -56,9 +53,9 @@ C  Internal variables ...
      .  emax, emin, eV, path
 
       character(len=150):: 
-     .  fname, paste, sname, string
+     .  fname, sname, string
 
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 C ...
 
       if (iunits .eq. 0) then
@@ -70,7 +67,7 @@ C ...
       endif
 C       Find name of output file and open it
         sname = fdf_string('SystemLabel','dispersion')
-        fname = paste(sname,'.bands')
+        fname = trim(sname)//'.bands'
         call io_assign(iu)
 *       write(6,*) 'bands: iu,fname=', iu, fname
         open( iu, file=fname, status='unknown')
@@ -125,9 +122,9 @@ C       Write abscisas of line ends and their labels
           if (ik .eq. lastk(il)) then
 C           Put label between quotes
             if (label(il) .eq. ' ') then
-              string = ''' '''
+              string = "' '"
             else
-              string = paste( ''''//label(il),'''' )
+              string = "'"//trim(label(il))//"'"
             endif
             write(iu,'(f12.6,3x,a)') path, string
             il = il + 1

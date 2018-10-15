@@ -37,6 +37,9 @@
 ! use parallel,   only: myNode=>node    ! This process node
 ! use parallel,   only: totNodes=>nodes ! Total number of processor nodes
 !
+! Copy and add for limiting temporary arrays
+! use m_array, only: array_copy, array_add
+					
 !   USED MPI procedures, interfaces and types:
 ! use mpi_siesta, only: MPI_AllGather
 ! use mpi_siesta, only: MPI_Send
@@ -642,6 +645,9 @@ MODULE mesh3D
   use sorting,   only: ordix           ! Sorting routine
   use parallel,  only: parallel_init   ! Sets node and nodes variables
 
+  ! Copy and add for limiting temporary arrays
+  use m_array,   only: array_add, array_copy
+
 ! Used module parameters
   use precision, only: dp              ! Real double precision type
   use precision, only: gp=>grid_p      ! Grid-data real precision type
@@ -653,15 +659,7 @@ MODULE mesh3D
 
 ! Used MPI procedures and types
 #ifdef MPI
-  use mpi_siesta, only: MPI_AllGather
-  use mpi_siesta, only: MPI_AllReduce
-  use mpi_siesta, only: MPI_Send
-  use mpi_siesta, only: MPI_Recv
-  use mpi_siesta, only: MPI_COMM_WORLD
-  use mpi_siesta, only: MPI_STATUS_SIZE
-  use mpi_siesta, only: MPI_Integer
-  use mpi_siesta, only: MPI_Max
-  use mpi_siesta, only: MPI_grid_real
+  use mpi_siesta
 #endif
 
   implicit none
@@ -737,7 +735,7 @@ PRIVATE ! Nothing is declared public beyond this point
   integer,save:: nTaskID = 0  ! Number of assigned mesh communication task IDs
 
 #ifdef MPI
-  integer:: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPItag
+  integer:: MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
 
 CONTAINS
@@ -1620,17 +1618,10 @@ subroutine gatherBoxes( box, boxes )
   integer,intent(in) :: box(2,3)                 ! My node's mesh box
   integer,intent(out):: boxes(2,3,0:totNodes-1)  ! All node's boxes
 
-  integer,allocatable:: buffer(:)
-  integer :: box1d(6)    ! To avoid the creation of a temporary array
-
 #ifdef MPI
 ! Gather the boxes of all nodes
-  allocate( buffer(6*totNodes) )
-  box1d(1:6) = reshape(box,(/6/))
-  call MPI_AllGather( box1d , 6, MPI_Integer, &
-                      buffer, 6, MPI_Integer, MPI_COMM_WORLD, MPIerror )
-  boxes = reshape( buffer, (/2,3,totNodes/) )
-  deallocate( buffer )
+  call MPI_AllGather( box(1,1) , 6, MPI_Integer, &
+                      boxes(1,1,0), 6, MPI_Integer, MPI_COMM_WORLD, MPIerror )
 #else
 ! Copy the only node's box
   boxes(:,:,0) = box(:,:)
@@ -2014,7 +2005,7 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
   integer:: orderNode1(nNodes), orderNode2(2*nNodes)
   logical:: found
   real(dp):: nTrsfNode(2*nNodes)
-  integer,pointer:: buffer(:)=>null(), inTrsf(:,:)=>null(), &
+  integer,pointer:: inTrsf(:,:)=>null(), &
                     myTrsf(:)=>null(), outTrsf(:,:)=>null()
 
 ! In serial execution, do nothing
@@ -2043,11 +2034,8 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
   myTrsf(1:nTrsf) = trsfDir(:)*(trsfNode(:)+1)
 
 ! Gather initial transfer sequence of all nodes
-  call re_alloc( buffer, 1,maxTrsf*nNodes, name=myName//'buffer' )
   call MPI_AllGather( myTrsf, maxTrsf, MPI_Integer, &
-                      buffer, maxTrsf, MPI_Integer, MPI_COMM_WORLD, MPIerror )
-  inTrsf = reshape( buffer, (/maxTrsf,nNodes/) )
-  call de_alloc( buffer, name=myName//'buffer' )
+                      inTrsf(1,1), maxTrsf, MPI_Integer, MPI_COMM_WORLD, MPIerror )
 
 ! Find the number of transfers of each node
   nTrsfNode(1:nNodes) = count( inTrsf(:,1:nNodes)/=0, dim=1 )
@@ -2395,7 +2383,7 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer,allocatable:: dstBoxes(:,:,:), srcBoxes(:,:,:), &
                         trsfDir(:), trsfNode(:)
-  integer :: comBox(2,3), comShape(4), &
+  integer :: comBox(2,3), arrayS(4,2), &
              dstComBox(2,3,maxParts), dstNode, dstSize, &
              i, ic, ix, iNode, iPart, iTask, iTrsf, &
              maxMesh, nData, nParts, nTrsf, partSize, &
@@ -2620,12 +2608,18 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
       ! Copy data from each part of common box to a transfer buffer
       if (present(dstData)) then
         do iPart = 1,nParts
-          partSize = sizeSum(iPart) - sizeSum(iPart-1)
-          trsfBuff(sizeSum(iPart-1)+1:sizeSum(iPart)) =                    &
-            reshape( srcData(srcComBox(1,1,iPart):srcComBox(2,1,iPart),    &
-                             srcComBox(1,2,iPart):srcComBox(2,2,iPart),    &
-                             srcComBox(1,3,iPart):srcComBox(2,3,iPart),:), &
-                     (/partSize/) )
+          arrayS(1:3,1) = srcComBox(1,:,iPart) + 1
+          arrayS(4,1) = 1
+          arrayS(1:3,2) = srcComBox(2,:,iPart) + 1
+          arrayS(4,2) = nData
+          call array_copy(arrayS(:,1), arrayS(:,2), srcData(:,:,:,:), &
+               sizeSum(iPart-1)+1, sizeSum(iPart), trsfBuff(:) )
+          !partSize = sizeSum(iPart) - sizeSum(iPart-1)
+          !trsfBuff(sizeSum(iPart-1)+1:sizeSum(iPart)) =                    &
+          !  reshape( srcData(srcComBox(1,1,iPart):srcComBox(2,1,iPart),    &
+          !                   srcComBox(1,2,iPart):srcComBox(2,2,iPart),    &
+          !                   srcComBox(1,3,iPart):srcComBox(2,3,iPart),:), &
+          !           (/partSize/) )
         end do ! iPart
         trsfSize = sizeSum(nParts)
       else ! (.not.present(dstData))
@@ -2641,9 +2635,11 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
           ! Find projection of srcData in comBox
           call projection( nMesh, srcBox, srcData(:,:,:,1), comBox, prjBuff )
           ! Copy projection data onto a transfer buffer
+          call array_copy([1, 1], [3, maxMesh], prjBuff(:,:), &
+               trsfSize+1, trsfSize+3*maxMesh, trsfBuff(:))
           ! AG: Work around gfortran bug: specify 0 lbound in reshape
-          trsfBuff(trsfSize+1:trsfSize+3*maxMesh) = &
-             reshape( prjBuff(:,0:), (/3*maxMesh/) )
+          !trsfBuff(trsfSize+1:trsfSize+3*maxMesh) = &
+          !   reshape( prjBuff(:,0:), (/3*maxMesh/) )
           trsfSize = trsfSize + 3*maxMesh
         end do ! iPart
       end if ! (present(prjData))
@@ -2706,7 +2702,7 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
       if (present(prjData)) trsfSize = trsfSize + 3*maxMesh*nParts
       if (trsfSize>0) &
         call MPI_Recv( trsfBuff(1:trsfSize), trsfSize, MPI_grid_real, &
-                       srcNode, MPItag, MPI_COMM_WORLD, MPIstatus, MPIerror )
+                       srcNode, 0, MPI_COMM_WORLD, MPIstatus, MPIerror )
 
 #ifdef DEBUG_XC
 !      write(udebug,'(a,2i4,3(2x,2i4),2x,3(2x,2i4),i8)') &
@@ -2717,15 +2713,21 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
       ! Copy buffer data for each part of common box to destination array
       if (present(dstData)) then
         do iPart = 1,nParts
-          comShape(1:3) = dstComBox(2,:,iPart) - dstComBox(1,:,iPart) + 1
-          comShape(4) = nData
-          dstData(dstComBox(1,1,iPart):dstComBox(2,1,iPart),     &
-                  dstComBox(1,2,iPart):dstComBox(2,2,iPart),     &
-                  dstComBox(1,3,iPart):dstComBox(2,3,iPart),:) = &
-          dstData(dstComBox(1,1,iPart):dstComBox(2,1,iPart),     &
-                  dstComBox(1,2,iPart):dstComBox(2,2,iPart),     &
-                  dstComBox(1,3,iPart):dstComBox(2,3,iPart),:) + &
-            reshape( trsfBuff(sizeSum(iPart-1)+1:sizeSum(iPart)), comShape )
+          arrayS(1:3,1) = dstComBox(1,:,iPart) + 1
+          arrayS(4,1) = 1
+          arrayS(1:3,2) = dstComBox(2,:,iPart) + 1
+          arrayS(4,2) = nData
+          call array_add(sizeSum(iPart-1)+1, sizeSum(iPart), trsfBuff(:), &
+               arrayS(:,1), arrayS(:,2), dstData(:,:,:,:))
+          !comShape(1:3) = dstComBox(2,:,iPart) - dstComBox(1,:,iPart) + 1
+          !comShape(4) = nData
+          !dstData(dstComBox(1,1,iPart):dstComBox(2,1,iPart),     &
+          !        dstComBox(1,2,iPart):dstComBox(2,2,iPart),     &
+          !        dstComBox(1,3,iPart):dstComBox(2,3,iPart),:) = &
+          !dstData(dstComBox(1,1,iPart):dstComBox(2,1,iPart),     &
+          !        dstComBox(1,2,iPart):dstComBox(2,2,iPart),     &
+          !        dstComBox(1,3,iPart):dstComBox(2,3,iPart),:) + &
+          !  reshape( trsfBuff(sizeSum(iPart-1)+1:sizeSum(iPart)), comShape )
         end do ! iPart
         trsfSize = sizeSum(nParts)
       else ! (.not.present(dstData))
@@ -2739,8 +2741,10 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
           comBox(1,:) = srcComBox(1,:,iPart) + srcBox(1,:)
           comBox(2,:) = srcComBox(2,:,iPart) + srcBox(1,:)
           ! Copy transfer buffer onto a projection buffer
-          prjBuff(:,:) = &
-            reshape( trsfBuff(trsfSize+1:trsfSize+3*maxMesh), (/3,maxMesh/) )
+          call array_copy(trsfSize+1, trsfSize+3*maxMesh, trsfBuff(:), &
+               [1, 1], [3, maxMesh], prjBuff(:,:))
+          !prjBuff(:,:) = &
+          !  reshape( trsfBuff(trsfSize+1:trsfSize+3*maxMesh), (/3,maxMesh/) )
           ! Add projection of common box to output array
           do ix = 1,3
             prjData(ix,dstComBox(1,ix,iPart):dstComBox(2,ix,iPart)) = &

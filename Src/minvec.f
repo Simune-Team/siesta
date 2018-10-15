@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 !!@LICENSE
 !
 C *******************************************************************
@@ -50,7 +57,7 @@ C *******************************************************************
       real(dp)         AUX(3,3),B(3,3),B2(1,3),BNEW(3),BNEW2,
      .                 EPS,VNEW,V0
 
-      parameter (EPS=1.D-8,NITER=100)
+      parameter (EPS=1.D-8,NITER=10000)
 
       V0=ABS(VOLCEL(B0))
       IF (V0.LT.EPS)

@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 module m_zminim
 
 use fdf,            only : fdf_boolean, fdf_integer, fdf_get, fdf_physical
@@ -711,7 +718,6 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       else
         read(i) c(ik,ispin)%mtrx
       end if
-      close(i)
       call io_close(i)
     else
       if (ik==1) then
@@ -834,7 +840,6 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       else
         write(i) c(ik,ispin)%mtrx
       end if
-      close(i)
       call io_close(i)
     end if
 
@@ -1125,28 +1130,28 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
   ! gradient g at each new step being modified to obtain the search direction d
   if (Node==0) then
     if ((ik==1) .and. (ispin==1)) then
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
       if (UseCholesky) then
-        print('(a)'), '| OMM (Cholesky factorization)                |'
+        print'(a)', '| OMM (Cholesky factorization)                |'
       else if (UsePrecon) then
-        print('(a)'), '| OMM (preconditioning)                       |'
+        print'(a)', '| OMM (preconditioning)                       |'
       else
-        print('(a)'), '| OMM                                         |'
+        print'(a)', '| OMM                                         |'
       end if
-      print('(a)'),      '+---------------------------------------------+'
+      print'(a)',      '+---------------------------------------------+'
     end if
     if (nk>1) then
-      print('(a,i6,a,i6,a)'), '| k point ', ik, ' of ', nk, '                    |'
+      print'(a,i6,a,i6,a)', '| k point ', ik, ' of ', nk, '                    |'
     end if
     if (nspin==2) then
       if (ispin==1) then
-        print('(a)'), '| up spin                                     |'
+        print'(a)', '| up spin                                     |'
       else
-        print('(a)'), '| down spin                                   |'
+        print'(a)', '| down spin                                   |'
       end if
     end if
-    if ((nk>1) .or. (nspin==2)) print('(a)'), '+---------------------------------------------+'
-    if (LongOut) print('(a)'), '|             E_OMM            E_diff         |'
+    if ((nk>1) .or. (nspin==2)) print'(a)', '+---------------------------------------------+'
+    if (LongOut) print'(a)', '|             E_OMM            E_diff         |'
   end if
   conv=.false.
   d=cmplx_0
@@ -1210,7 +1215,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       ! matrix; the only known cure, unfortunately, is to scale down the entire matrix, thus returning to
       ! a  safe region of the coeffs. space.
       if (ls_fail) then
-        if (Node==0) print('(a)'), '| WARNING: Rescaling coefficients!            |'
+        if (Node==0) print'(a)', '| WARNING: Rescaling coefficients!            |'
         E_OMM=3.0*E_OMM
         c(ik,ispin)%mtrx=cmplx(0.5_dp,0.0_dp,dp)*c(ik,ispin)%mtrx
         ls_conv=.false.
@@ -1241,7 +1246,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
         S(ik,ispin)%mtrx=S(ik,ispin)%mtrx+x_min(ik,ispin)*Sd+x_min(ik,ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
-      if ((Node==0) .and. LongOut) print('(a,2(1x,i5),2(1x,es15.7e3),1x,a)'), '|', i, j, E_OMM, E_diff, '|'
+      if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
       icg=icg+1
       if (E_diff<=cg_tol) then
         conv=.true.
@@ -1331,9 +1336,9 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (conv) exit
   end do
   if (i>n_step_max) then
-    if (Node==0) print('(a)'), '| WARNING: OMM failed to converge!            |'
+    if (Node==0) print'(a)', '| WARNING: OMM failed to converge!            |'
   end if
-  if ((Node==0) .and. LongOut) print('(a)'), '+---------------------------------------------+'
+  if ((Node==0) .and. LongOut) print'(a)', '+---------------------------------------------+'
 
   deallocate(work1)
   deallocate(hg)
@@ -1416,13 +1421,13 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
 #endif
   if (Node==0) then
     if (nspin==1) then
-      print('(a,i5,a)'),    '| minim: icg             = ', icg, '              |'
-      print('(a,f13.7,a)'), '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
+      print'(a,i5,a)',    '| minim: icg             = ', icg, '              |'
+      print'(a,f13.7,a)', '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
     else
-      print('(a,i5,a)'),    '| minim: icg           = ', icg, '                |'
-      print('(a,f13.7,a)'), '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
+      print'(a,i5,a)',    '| minim: icg           = ', icg, '                |'
+      print'(a,f13.7,a)', '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
     end if
-    print('(a)'),       '+---------------------------------------------+'
+    print'(a)',       '+---------------------------------------------+'
   end if
 
   if (FirstCall(ik,ispin)) FirstCall(ik,ispin)=.false.
@@ -1678,7 +1683,6 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
       call io_assign(i)
       open(i,file=trim(WF_COEFFS_filename),form='unformatted',status='old',action='read')
       read(i) c(ik,ispin)%mtrx
-      close(i)
       call io_close(i)
     else
       if (ik==1) then
@@ -1787,7 +1791,6 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 #endif
       open(i,file=trim(WF_COEFFS_filename),form='unformatted',status='replace',action='write')
       write(i) c(ik,ispin)%mtrx
-      close(i)
       call io_close(i)
     end if
 
@@ -1950,26 +1953,26 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   ! gradient g at each new step being modified to obtain the search direction d
   if (Node==0) then
     if ((ik==1) .and. (ispin==1)) then
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
       if (UsePrecon) then
-        print('(a)'), '| OMM (sparse algebra+preconditioning)        |'
+        print'(a)', '| OMM (sparse algebra+preconditioning)        |'
       else
-        print('(a)'), '| OMM (sparse algebra)                        |'
+        print'(a)', '| OMM (sparse algebra)                        |'
       end if
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
     end if
     if (nk>1) then
-      print('(a,i6,a,i6,a)'), '| k point ', ik, ' of ', nk, '                    |'
+      print'(a,i6,a,i6,a)', '| k point ', ik, ' of ', nk, '                    |'
     end if
     if (nspin==2) then
       if (ispin==1) then
-        print('(a)'), '| up spin                                     |'
+        print'(a)', '| up spin                                     |'
       else
-        print('(a)'), '| down spin                                   |'
+        print'(a)', '| down spin                                   |'
       end if
     end if
-    if ((nk>1) .or. (nspin==2)) print('(a)'), '+---------------------------------------------+'
-    if (LongOut) print('(a)'), '|             E_OMM            E_diff         |'
+    if ((nk>1) .or. (nspin==2)) print'(a)', '+---------------------------------------------+'
+    if (LongOut) print'(a)', '|             E_OMM            E_diff         |'
   end if
   conv=.false.
   d=cmplx_0
@@ -2008,7 +2011,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
       ! matrix; the only known cure, unfortunately, is to scale down the entire matrix, thus returning to
       ! a  safe region of the coeffs. space.
       if (ls_fail) then
-        if (Node==0) print('(a)'), '| WARNING: Rescaling coefficients!            |'
+        if (Node==0) print'(a)', '| WARNING: Rescaling coefficients!            |'
         E_OMM=3.0*E_OMM
         c(ik,ispin)%mtrx=cmplx(0.5_dp,0.0_dp,dp)*c(ik,ispin)%mtrx
         ls_conv=.false.
@@ -2039,7 +2042,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
         S(ik,ispin)%mtrx=S(ik,ispin)%mtrx+x_min(ik,ispin)*Sd+x_min(ik,ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
-      if ((Node==0) .and. LongOut) print('(a,2(1x,i5),2(1x,es15.7e3),1x,a)'), '|', i, j, E_OMM, E_diff, '|'
+      if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
       icg=icg+1
       if (E_diff<=cg_tol) then
         conv=.true.
@@ -2125,9 +2128,9 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     if (conv) exit
   end do
   if (i>n_step_max) then
-    if (Node==0) print('(a)'), '| WARNING: OMM failed to converge!            |'
+    if (Node==0) print'(a)', '| WARNING: OMM failed to converge!            |'
   end if
-  if (Node==0 .and. LongOut) print('(a)'), '+---------------------------------------------+'
+  if (Node==0 .and. LongOut) print'(a)', '+---------------------------------------------+'
 
   deallocate(work1)
   deallocate(hg)
@@ -2189,13 +2192,13 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 #endif
   if (Node==0) then
     if (nspin==1) then
-      print('(a,i5,a)'),    '| minim: icg             = ', icg, '              |'
-      print('(a,f13.7,a)'), '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
+      print'(a,i5,a)',    '| minim: icg             = ', icg, '              |'
+      print'(a,f13.7,a)', '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
     else
-      print('(a,i5,a)'),    '| minim: icg           = ', icg, '                |'
-      print('(a,f13.7,a)'), '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
+      print'(a,i5,a)',    '| minim: icg           = ', icg, '                |'
+      print'(a,f13.7,a)', '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
     end if
-    print('(a)'),       '+---------------------------------------------+'
+    print'(a)',       '+---------------------------------------------+'
   end if
 
   if (FirstCall(ik,ispin)) FirstCall(ik,ispin)=.false.

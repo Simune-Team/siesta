@@ -1,5 +1,18 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 module m_convergence
 
+! A very simple derived type to monitor convergence of 
+! a magnitude. 
+! Just the last value added is kept, but a convergence check is
+! performed first. Note that only absolute convergence is
+! monitored. 
+!
 integer, parameter, private  :: dp = selected_real_kind(14,100)
 
 type, public :: converger_t
@@ -11,7 +24,6 @@ type, public :: converger_t
 end type converger_t
 
 public :: set_tolerance, is_converged, add_value, reset
-public :: get_tolerance
 
 CONTAINS
 

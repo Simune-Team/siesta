@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       SUBROUTINE REINIT( MAXO, MAXA, MAXUO, MAXNH, MAXNA, NSPIN, IDIMEN,
      .                   CHARGE, WAVES, STS )
@@ -38,8 +45,6 @@ C **********************************************************************
 
 C Internal variables --------------------------------------------------
 
-      CHARACTER*33 PASTE
-
       CHARACTER*30 FNAME1
 
       CHARACTER 
@@ -50,11 +55,11 @@ C Internal variables --------------------------------------------------
      .  UNIT1 
 
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE
+     .  IO_ASSIGN, IO_CLOSE
 
 C Assign the name of the output file -----------------------------------
       slabel = FDF_STRING('SystemLabel','siesta')
-      FNAME1 = trim(slabel) // '.DIM'
+      FNAME1 = TRIM(slabel)// '.DIM'
 
       TYPRUN_DEFECT = '2D'
       TYPRUN = FDF_STRING('Denchar.TypeOfRun',TYPRUN_DEFECT)

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine iokp( nk, points, weight )
 c *******************************************************************
@@ -21,31 +18,27 @@ c *******************************************************************
       use files,     only : slabel, label_length
       use precision, only : dp
 
-      implicit          none
+      implicit none
 
-      character(len=label_length+3) :: paste
-      integer                       :: nk
-      real(dp)                      :: points(3,*), weight(*)
-      external          io_assign, io_close, paste
+      integer, intent(in) :: nk
+      real(dp), intent(in) :: points(3,nk), weight(nk)
+      external :: io_assign, io_close
 
 c Internal 
-      character(len=label_length+3), save :: fname
-      integer                             :: ik, iu, ix
-      logical,                       save :: frstme = .true.
-c -------------------------------------------------------------------
+      character(len=label_length+3) :: fname
+      integer :: ik, iu
 
-      if (frstme) then
-        fname = paste( slabel, '.KP' )
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.KP'
 
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      
 
-      write(iu,'(i6)') nk
-      write(iu,'(i6,3f12.6,3x,f12.6)')
-     .     (ik, (points(ix,ik),ix=1,3), weight(ik), ik=1,nk)
-
+      write(iu,'(i10)') nk
+      do ik = 1, nk
+        write(iu,'(i10,3(tr1,e13.6),tr3,e12.6)')
+     &      ik, points(:,ik), weight(ik)
+      end do
+      
       call io_close( iu )
 
       return

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 #ifndef CDF
       subroutine dummy_diagk_file()
@@ -138,7 +135,7 @@ C
 C  Internal variables .............................................
       integer
      .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
-     .  ispin, iuo, j, jo, juo, nd, neigneeded, iu
+     .  ispin, iuo, j, jo, juo, nd, neigneeded
 
       real(dp)
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
@@ -151,6 +148,9 @@ C  Internal variables .............................................
 C  ....................
 
 C Find eigenvalues and eigenvectors
+#ifdef DEBUG
+      call write_debug( '    PRE diagk_file' )
+#endif
 
       ! Setup netCDF file
       !
@@ -164,7 +164,7 @@ C Find eigenvalues and eigenvectors
           call build_dense_HS(ik,ispin)
           ! Compute all eigenvectors for now
           call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .      nuotot,iscf,ierror)
+     .      nuotot,iscf,ierror, BlockSize)
 
           if (ierror.gt.0) then
             call die('Terminating due to failed diagonalisation')
@@ -174,7 +174,7 @@ C Find eigenvalues and eigenvectors
              call build_dense_HS(ik,ispin)
 
              call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .            nuotot,iscf,ierror)
+     .            nuotot,iscf,ierror, BlockSize)
           endif
           call timer( 'c-eigval', 2 )
 !
@@ -197,12 +197,6 @@ C Find new Fermi energy and occupation weights ........................
       else
         call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
      .             temp, qtot, qo, ef, Entropy )
-      endif
-
-      if (Node .eq. 0) then
-         call io_assign(iu)
-         open(iu,file="OCCS",form="formatted",status="unknown",
-     $           action="write",position="rewind")
       endif
 
 C Find weights for local density of states ............................
@@ -242,10 +236,6 @@ C Loop over k points
               if (abs(qe).gt.occtol) neigneeded = ie
               ie = ie - 1
             enddo
-            if (Node .eq. 0) then
-             write(iu,"(i6,i3,f12.8,i8)")
-     $              ik, ispin, wk(ik), neigneeded
-            endif
             if (neigneeded > n_eigenvectors) then
                if (Node == 0) then
                   write(6,"(a)") "ERROR: More eigenvectors are needed!"
@@ -323,10 +313,11 @@ C Global operation to form new density matrix
       enddo     ! ik
 
       deallocate(psi_block)
-      if (Node .eq. 0) then
-         call io_close(iu)
-      endif
       call close_wfs_netcdf_file()
+
+#ifdef DEBUG
+      call write_debug( '    POS diagk_file' )
+#endif
 
       CONTAINS
 

@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine redcel( alat, ucell, scell, mscell )
 
@@ -46,8 +43,8 @@ C Lattice constant
 
 C Lattice vectors
 
-      if ( fdf_block('LatticeParameters',bfdf) .and.
-     .     fdf_block('LatticeVectors',bfdf) ) then
+      if ( fdf_isblock('LatticeParameters') .and.
+     .    fdf_isblock('LatticeVectors') ) then
          call die('redcel: ERROR: Lattice vectors doubly ' //
      $       'specified: by LatticeVectors and by LatticeParameters.')
       endif
@@ -100,6 +97,7 @@ C Lattice vectors
           cell(i,i) = 1.0_dp
         enddo
       endif
+      call fdf_bclose(bfdf)
 
       ! Note that cell will be zero if alat is not specified
       ! This is not very intuitive
@@ -120,6 +118,7 @@ C     Super cell
           mscell(2,i) = fdf_bvalues(pline,2)
           mscell(3,i) = fdf_bvalues(pline,3)
         enddo
+        call fdf_bclose(bfdf)
       else
         do i = 1,3
           do j = 1,3

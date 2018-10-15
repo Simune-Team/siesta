@@ -1,3 +1,11 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
+
 !=========================== begin template --- 
 !
 ! Pair derived type. Two boxed types: _T1_ _T2_
@@ -14,7 +22,9 @@ type Pair_
     character(len=36)  :: id = "null_id"
     !-------------------------------------
     character(len=256) :: name = "(null Pair_)"
+    !> First component: [[_T1_(type)]]
     type(_T1_)         :: first
+    !> Second component: [[_T2_(type)]]
     type(_T2_)         :: second
 end type Pair_
 
@@ -93,11 +103,12 @@ type(PAIR_NAME), intent(in) :: this
 
 if (.not. associated(this%data)) then
    print *, "<Pair not initialized>"
+   return
 endif
-print "(a)", "<" // trim(this%data%name)
+print "(a)", "<" // trim(this%data%name) // ">"
 call print_type(this%data%first)
 call print_type(this%data%second)
-print "(a,i0,a)", "refcount: ", this%data%refcount, ">"
+print "(a,i0,a)", "<refcount: ", this%data%refcount, ">"
 end subroutine print__
 
 !---------------------------------------------
@@ -131,7 +142,6 @@ type(_T1_), pointer            :: p
 if (.not. associated(this%data)) then
    call die("Attempt to get pointer to first item of null pair")
 endif
-p => null()
 p => this%data%first
 
 end subroutine firstp__
@@ -144,9 +154,14 @@ type(_T2_), pointer            :: p
 if (.not. associated(this%data)) then
    call die("Attempt to get pointer to second item of null pair")
 endif
-p => null()
 p => this%data%second
 
 end subroutine secondp__
 
 !=========================== end of template
+
+#undef PAIR_NAME
+#undef _T1_
+#undef _T2_
+
+

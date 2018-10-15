@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine outcell(cell) 
 
@@ -70,7 +67,7 @@ c Cell volume
 
       if (cml_p) then
         call cmlAddCrystal(xf=mainXML, 
-     .       title='Lattice Parameters', lenfmt='r6', angfmt='r6', 
+     .       title='Lattice Parameters', fmt='r6',
      .       alpha=celang(1), beta=celang(2), gamma=celang(3),
      .       a=cellm(1)/Ang, b=cellm(2)/Ang, c=cellm(3)/Ang )
       endif

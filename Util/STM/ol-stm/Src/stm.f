@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       SUBROUTINE STM( NA, NO, NUO, MAXNA, NSPIN, 
      .                ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
@@ -111,22 +118,10 @@ C **********************************************************************
       LOGICAL FIRST
 
       CHARACTER
-     .   SNAME*40, FNAME*60, PASTE*60
+     .   SNAME*40, FNAME*60, stm_label*60
 
       EXTERNAL
-     .  NEIGHB, IO_ASSIGN, IO_CLOSE, PASTE
-
-C      CHARACTER
-C     .  SNAME*40, FNAMEWFRE*60, FNAMEWFIM*60, 
-C     .  FNAMEWFURE*60, FNAMEWFUIM*60, FNAMEWFDRE*60, FNAMEWFDIM*60, 
-C     .  FNAMEWFMO*60, FNAMEWFPH*60,
-C     .  FNAMEWFUMO*60, FNAMEWFUPH*60, FNAMEWFDMO*60, FNAMEWFDPH*60,
-C     .  PASTE*60, CHAR1*10, CHAR2*10, ITOCHAR*10, 
-C     .  EXT*20, EXT2*25
-C
-C      EXTERNAL
-C     .  IO_ASSIGN, IO_CLOSE, PASTE, PLANE,
-C     .  NEIGHB, WROUT, ITOCHAR
+     .  NEIGHB, IO_ASSIGN, IO_CLOSE
 
 C **********************************************************************
 C INTEGER IA               : Atom whose neighbours are needed.
@@ -349,7 +344,7 @@ C Localize non-zero orbitals at each point in real space ---------------
 
 C Loop over Non-zero orbitals ------------------------------------------ 
             DO 110 IAT1 = 1, NNA
-              IF( R2IJ(IAT1) .GT. RMAX2 ) GOTO 110
+              IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
 
               IAVEC1   = JNA(IAT1)
               IS1      = ISA(IAVEC1)
@@ -432,7 +427,7 @@ C Localize non-zero orbitals at each point in real space ---------------
 
 C Loop over Non-zero orbitals ------------------------------------------ 
             DO 410 IAT1 = 1, NNA
-              IF( R2IJ(IAT1) .GT. RMAX2 ) GOTO 110
+              IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
 
               IAVEC1   = JNA(IAT1)
               IS1      = ISA(IAVEC1)
@@ -503,7 +498,13 @@ C Check if lattice vectors in xy plane are orthogonal
 
       call io_assign(unitre1)
       SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME = PASTE(SNAME,'.STM.cube')
+      stm_label = FDF_STRING('stm-label','')
+      if (stm_label == '') then
+         FNAME = trim(SNAME) // '.STM.cube'
+      else
+         FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.cube'
+      endif
+      
 !     IF (DABS(DOT) .GT. 1.0D-2) THEN
 !       WRITE(6,*)
 !       WRITE(6,*) 'stm: WARNING: The cell is not orthorombic, so the'
@@ -561,9 +562,15 @@ C
 
       call io_assign(unitre1)
       SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME = PASTE(SNAME,'.STM.siesta')
+      stm_label = FDF_STRING('stm-label','')
+      if (stm_label == '') then
+         FNAME = trim(SNAME) // '.STM.siesta'
+      else
+         FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.siesta'
+      endif
+
       WRITE(6,*)
-      WRITE(6,*) 'stm: writing SIESTA format file', FNAME
+      WRITE(6,*) 'stm: writing SIESTA format file ', FNAME
       WRITE(6,*)
       open(unitre1,file=FNAME,form='unformatted',
      .         status='unknown')
@@ -577,7 +584,6 @@ C restore ucell
 
       DO IZ=0,NPZ-1
         DO IY=0,NPY-1
-C         WRITE(unitre1) (RHO(IND+IX),IX=1,NPX)
           WRITE(unitre1) (REAL(RHO(IX,IY,IZ)),IX=0,NPX-1)
         ENDDO
       ENDDO

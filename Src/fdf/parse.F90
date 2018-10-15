@@ -212,7 +212,7 @@ MODULE parse
   integer(ip), parameter, private :: MAX_NTOKENS = 50
 
 ! Length of string encoding plines
-  integer, parameter, public :: SERIALIZED_LENGTH =  MAX_LENGTH + 4 + 10*MAX_NTOKENS
+  integer(ip), parameter, public :: SERIALIZED_LENGTH =  MAX_LENGTH + 4 + 10*MAX_NTOKENS
 
 !   Parsed line info (ntokens, token info and identification)
 !   Note that the token characters are stored in a single "line",
@@ -521,7 +521,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: integers', 'Wrong starting position', &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__, cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -542,7 +542,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: integers', 'Not enough integers in line', &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -572,7 +572,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: reals', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -593,7 +593,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: reals', 'Not enough reals in line',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -601,7 +601,7 @@ MODULE parse
     END FUNCTION reals
 
 !
-!   Return a given real token, specifying it by its sequence
+!   Return a given list token, specifying it by its sequence
 !   number. It is also possible to make the sequence start after
 !   a given token number in the line.
 !
@@ -648,7 +648,6 @@ MODULE parse
 
            ! Parse token list
            llist = tokens(pline,i)
-           NULLIFY(lpline)
            ! The list does have the markers attached (remove them)
            li = len_trim(llist)-1
            llist = trim(llist(2:li))
@@ -660,7 +659,7 @@ MODULE parse
            ! Does the user request length?
            count = ni <= 0
            li = 0 ! counter for the number of items in the list
-           ti = 1 ! the token iterator
+           ti = 1 ! the current token iterator
            is_del = .false.
            do while ( ti < lpline%ntokens ) 
 
@@ -686,6 +685,7 @@ MODULE parse
                  ! grab the seperator
                  sep = names(lpline,1,after=ti)
                  if ( leqi(sep,'to') .or. &
+                      leqi(sep,':') .or. &
                       leqi(sep,'--') .or. &
                       leqi(sep,'---') ) then
 
@@ -708,7 +708,11 @@ MODULE parse
                     end if
                     
                     ! Correct sign of stepper
-                    if ( uR < lR ) sR = min(-sR,sR)
+                    if ( lR <= uR ) sR = abs(sR)
+                    if ( uR <  lR ) sR = -abs(sR)
+                    if ( sR == 0 ) call die('PARSE module: lists', &
+                         'Stepping a list cannot be stepped by 0', &
+                         THIS_FILE, __LINE__ )
                     do iR = lR , uR, sR
                        call add_exit(count,li,ni,iR)
                     end do
@@ -723,6 +727,7 @@ MODULE parse
               elseif (leqi(lpline%id(ti),'i')) then
 
                  call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+
               end if
 
               ti = ti + 1
@@ -731,14 +736,18 @@ MODULE parse
                  is_del = .false.
               end if
 
-              ! We do a last check to get all entries with
-              if ( ti == lpline%ntokens ) then
-                 if (leqi(lpline%id(ti),'i')) then
-                    call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
-                 end if
-              end if
            end do
 
+           ! Read last element (or the only element if one is given)
+           if ( ti == lpline%ntokens ) then
+             if (leqi(lpline%id(ti),'i')) then
+                 call add_exit(count,li,ni,integers(lpline,1,after=ti-1))
+              end if
+           end if
+   
+           ! Clean-up parsed list-line
+           call destroy(lpline)
+           
            if ( count ) ni = li
 
         endif
@@ -746,9 +755,9 @@ MODULE parse
       enddo
 
       if (.not. found) then
-        call die('PARSE module: lists', 'Not enough lists in line',     &
-                 THIS_FILE, __LINE__)
-      endif
+         call die('PARSE module: lists', 'Not enough lists in line', &
+                  THIS_FILE, __LINE__)
+      end if
 
       RETURN
 !------------------------------------------------------------- END
@@ -757,15 +766,14 @@ MODULE parse
       
       subroutine add_exit(is_counting,idx,ni,val)
         logical, intent(in) :: is_counting
-        integer, intent(inout) :: idx
-        integer, intent(in) :: ni, val
+        integer(ip), intent(inout) :: idx
+        integer(ip), intent(in) :: ni, val
         idx = idx + 1
-        if ( .not. is_counting ) then
-           if ( idx > ni ) then
-              found = .false.
-           else
-              list(idx) = val
-           end if
+        if ( is_counting ) return
+        if ( idx > ni ) then
+          found = .false.
+        else
+          list(idx) = val
         end if
       end subroutine add_exit
 
@@ -794,7 +802,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: values', 'Wrong starting position',   &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -816,7 +824,7 @@ MODULE parse
 
       if (.not. found) then
         call die('PARSE module: values', 'Not enough values in line',   &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -846,7 +854,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: names', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         starting_pos = after
       else
@@ -866,8 +874,8 @@ MODULE parse
       enddo
 
       if (.not. found) then
-        call die('PARSE module: names', 'Not enough names in line',     &
-                 THIS_FILE, __LINE__)
+         call die('PARSE module: names', 'Not enough names in line', &
+                  THIS_FILE, __LINE__,cline=characters(pline,1,-1))
       endif
 
       RETURN
@@ -965,7 +973,7 @@ MODULE parse
       if (PRESENT(after)) then
         if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
           call die('PARSE module: tokens', 'Wrong starting position',   &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         starting_pos = after
       else
         starting_pos = 0
@@ -973,7 +981,7 @@ MODULE parse
 
       if (starting_pos+ind .gt. pline%ntokens)                          &
         call die('PARSE module: tokens', 'Wrong starting position',     &
-                 THIS_FILE, __LINE__)
+                 THIS_FILE, __LINE__,cline=characters(pline,1,-1))
 
       loc = starting_pos+ind
       tokens = pline%line(pline%first(loc):pline%last(loc))
@@ -1088,7 +1096,7 @@ MODULE parse
     SUBROUTINE parses(ntokens, line, first, last)
       implicit none
 !------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH)    :: line
+      character(len=*)             :: line
       
 !------------------------------------------------ Output Variables
       integer(ip)                  :: ntokens
@@ -1097,7 +1105,7 @@ MODULE parse
 !------------------------------------------------- Local Variables
       logical                      :: intoken, instring, completed
       logical                      :: inlist
-      integer(ip)                  :: i, c, stringdel
+      integer(ip)                  :: i, c, stringdel, length
 
 !     Character statement functions
       logical :: is_digit, is_upper, is_lower, is_alpha,                &
@@ -1110,11 +1118,12 @@ MODULE parse
       is_alpha(i) = is_upper(i) .or. is_lower(i)
       is_alnum(i) = is_digit(i) .or. is_alpha(i)
 
-!     Extra characters allowed in tokens:  $ % * + & - . / @ ^ _ ~
+!     Extra characters allowed in tokens:  $ % * + & - . / @ ^ _ | ~
       is_extra(i) = ((i .ge. 36) .and. (i .le. 38))                     &
                      .or. (i .eq. 42) .or. (i .eq. 43) .or. (i .eq. 45) &
                      .or. (i .eq. 46) .or. (i .eq. 47) .or. (i .eq. 64) &
-                     .or. (i .eq. 94) .or. (i .eq. 95) .or. (i .eq. 126)
+                     .or. (i .eq. 94) .or. (i .eq. 95) .or. (i .eq. 124)&
+                     .or. (i .eq. 126)
 
       is_tokch(i) = is_alnum(i) .or. is_extra(i)
 
@@ -1124,8 +1133,11 @@ MODULE parse
 !     String delimiters: "  '  `
       is_delstr(i)  = (i .eq. 34) .or. (i .eq. 39) .or. (i .eq. 96)
 
-!     List delimiters: { }
-      is_dellist(i)  = (i .eq. 123) .or. (i .eq. 125)
+!     List delimiters: [ ]
+      is_dellist(i)  = (i .eq. 91) .or. (i .eq. 93)
+
+!     Dictionary delimiters: { }
+!      is_deldict(i)  = (i .eq. 123) .or. (i .eq. 125)
 
 !     Special characters which are tokens by themselves: <
       is_special(i) = (i .eq. 60)
@@ -1138,9 +1150,12 @@ MODULE parse
       inlist   = .FALSE.
       stringdel = 0
 
+      ! Trim space at the end (not from the left)
+      length = len_trim(line)
+      
       i = 1
       completed = .FALSE.
-      do while((i .le. len(line)) .and. (.not. completed))
+      do while((i <= length) .and. (.not. completed))
         c = ichar(line(i:i))
 
 !       Possible comment...
@@ -1219,9 +1234,21 @@ MODULE parse
         endif
 
         i = i + 1
-      enddo
 
-      if (parse_debug) then
+        ! Check whether the parsing is correctly handled
+        if ( i > MAX_LENGTH ) then
+           ! Because we will limit search to the len_trim length,
+           ! then this should only be found when the line has "content" too long.
+           ! Note that this will *never* be executed if a comment is too
+           ! long because it is checked as the first requirement and then
+           ! completes parsing the line.
+           call die('PARSE module: parses', 'Too long line (132 char): ' // &
+                trim(line), THIS_FILE, __LINE__)
+        end if
+        
+     enddo
+
+     if (parse_debug) then
         write(parse_log,*) 'PARSER:', ntokens, 'token(s)'
         do i= 1, ntokens
           write(parse_log,*) '   Token:', '|',line(first(i):last(i)),'|'
@@ -1237,7 +1264,7 @@ MODULE parse
     SUBROUTINE morphol(ntokens, line, first, last, token_id)
       implicit none
 !------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH) :: line
+      character(len=*)          :: line
       integer(ip)               :: ntokens
       integer(ip)               :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
@@ -1253,10 +1280,14 @@ MODULE parse
       do i= 1, ntokens
         token = line(first(i):last(i))
         j = last(i) - first(i) + 1
-        if ( ichar(token(1:1)) .eq. 123 .and. &
-             ichar(token(j:j)) .eq. 125 ) then
-           ! if the token starts with { and ends with }, it will be a list
+        if ( ichar(token(1:1)) .eq. 91 .and. &
+             ichar(token(j:j)) .eq. 93 ) then
+           ! if the token starts with [ and ends with ], it will be a list
            token_id(i) = 'a'
+!        else if ( ichar(token(1:1)) .eq. 123 .and. &
+!             ichar(token(j:j)) .eq. 125 ) then
+           ! if the token starts with { and ends with }, it will be a dictionary
+!           token_id(i) = 'd'
         elseif (is_value(token)) then
 
 !         This read also serves to double check the token for
@@ -1535,7 +1566,7 @@ MODULE parse
       if (PRESENT(after)) then
         if (after .lt. 0) then
           call die('PARSE module: match', 'Wrong starting position',    &
-                   THIS_FILE, __LINE__)
+                   THIS_FILE, __LINE__,cline=characters(pline,1,-1))
         endif
         shift = after
       else
@@ -1759,9 +1790,9 @@ MODULE parse
     subroutine serialize_pline(pline,string,length)
     type(parsed_line)   :: pline
     character(len=*), intent(out) :: string
-    integer, intent(out) :: length
+    integer(ip), intent(out) :: length
 
-    integer :: pos, i
+    integer(ip) :: pos, i
     character(len=10) buffer
 
     length = SERIALIZED_LENGTH
@@ -1794,7 +1825,7 @@ MODULE parse
     if (len(string) < SERIALIZED_LENGTH)  then
        call die('PARSE module: recreate_pline', &
             "String too short", &
-            THIS_FILE, __LINE__)
+            THIS_FILE, __LINE__,cline=characters(pline,1,-1))
     endif
 
     pline%line = string(1:MAX_LENGTH)

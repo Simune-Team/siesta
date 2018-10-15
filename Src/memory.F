@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine memory( Task, Type, NElements, CallingRoutine )
 C 
@@ -45,7 +42,7 @@ C
 
 C Local variables
       integer   :: Sign
-      integer*8 :: prevMem
+      integer(i8b) :: prevMem
       integer         :: allocSize
       character(len=1):: allocType
 CAG
@@ -160,8 +157,8 @@ C Passed arguments
       integer            :: Unit, Level
 C Local arguments
       integer            :: n
-      integer*8          :: MaxMemory
-      integer*8, pointer :: maxmemlist(:)
+      integer(i8b)          :: MaxMemory
+      integer(i8b), pointer :: maxmemlist(:)
 #ifdef MPI
       integer            :: MPIerror
 #endif

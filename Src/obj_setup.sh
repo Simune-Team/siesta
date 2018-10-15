@@ -21,7 +21,7 @@ destdir=$(pwd)
 # Replicate the hierarchy of makefiles
 #
 (cd $srcdir;
-  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile); do
+  for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile) ; do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
     cp $relpath/*akefile ${destdir}/$relpath
@@ -59,10 +59,11 @@ mkdir spglib
               -path *.arch-ids  -prune -o -print \
               | tar -cf - --no-recursion -T- )   | ( cd ${destdir} ; tar xf -)
 #
-# Make a symbolic link for the reference output directory
-#
-(cd ${destdir}/Tests ; ln -sf ${testdir}/Reference ./Reference)
-#
+# (deactivated for now)
 echo " *** Compilation setup done. "
-echo " *** Remember to copy an arch.make file or run configure as:"
-echo "    ${user_specified_dir}/configure [configure_options]"
+echo " *** Remember to copy an arch.make file into the directory."
+echo " *** These files are template arch.make files:"
+echo " ***    gfortran.make (for gfortran compiler)"
+echo " ***    intel.make (for intel compiler)"
+echo " ***    DOCUMENTED-TEMPLATE.make (requires customization)"
+

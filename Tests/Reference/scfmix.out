@@ -1,0 +1,4077 @@
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from ../scfmix.fdf
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: Linear Fe3 cluster.
+reinit: -----------------------------------------------------------------------
+reinit: System Label: scfmix
+reinit: -----------------------------------------------------------------------
+Siesta Version: siesta-4.1--731
+Architecture  : x86_64-linux-n-62-18-14
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
+PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK
+Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
+PARALLEL version
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 8 nodes in parallel
+>> Start of run:   2-JUL-2017  11:58:19
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+Species number:   1 Atomic number:   26 Label: fe_nc
+
+Ground state valence configuration:   4s02  3d06
+Reading pseudopotential information in formatted form from fe_nc.psf
+
+Valence configuration for pseudopotential generation:
+4s( 1.00) rc: 2.00
+4p( 0.00) rc: 2.00
+3d( 7.00) rc: 2.00
+4f( 0.00) rc: 2.00
+For fe_nc, standard SIESTA heuristics set lmxkb to 3
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+fe_nc                Z=  26    Mass=  55.850        Charge= 0.17977+309
+Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=4
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=4
+L=2  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for fe_nc                 (Z =  26)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    8.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  2.8345
+V l=1 = -2*Zval/r beyond r=  2.8345
+V l=2 = -2*Zval/r beyond r=  2.8345
+V l=3 = -2*Zval/r beyond r=  2.8345
+All V_l potentials equal beyond r=  1.9726
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  2.8345
+Using large-core scheme for Vlocal
+
+atom: Estimated core radius    2.83451
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    3.13263
+atom: Maximum radius for r*vlocal+2*Zval:    2.87017
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  2.047986   el= -0.319855   Ekb=  3.923406   kbcos=  0.252820
+   l= 1   rc=  2.047986   el= -0.070931   Ekb=  3.313875   kbcos=  0.157841
+   l= 2   rc=  2.022544   el= -0.307264   Ekb=-12.478630   kbcos= -0.654791
+   l= 3   rc=  2.047986   el=  0.003534   Ekb= -1.656634   kbcos= -0.005966
+
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 4s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.799774
+                 energy =   -0.302238
+                kinetic =    0.298810
+    potential(screened) =   -0.601048
+       potential(ionic) =   -5.818758
+
+   izeta = 2
+                 rmatch =    6.468141
+              splitnorm =    0.150000
+                 energy =   -0.257217
+                kinetic =    0.445909
+    potential(screened) =   -0.703126
+       potential(ionic) =   -6.273620
+
+SPLIT: Orbitals with angular momentum L= 2
+
+SPLIT: Basis orbitals for state 3d
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.022404
+                 energy =   -0.287031
+                kinetic =    8.952870
+    potential(screened) =   -9.239901
+       potential(ionic) =  -18.247427
+
+   izeta = 2
+                 rmatch =    2.291856
+              splitnorm =    0.150000
+                 energy =    0.070417
+                kinetic =   12.282791
+    potential(screened) =  -12.212374
+       potential(ionic) =  -21.929746
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 4s
+
+   izeta = 1
+                     rc =    6.799774
+                 energy =   -0.003154
+                kinetic =    0.566601
+    potential(screened) =   -0.569755
+       potential(ionic) =   -5.393577
+atom: Total number of Sankey-type orbitals: 15
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 4s( 2.00)                                                            
+ 4p( 0.00)                                                            
+ 3d( 6.00)                                                            
+Vna: chval, zval:    8.00000   8.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.799774
+comcore: Pseudo-core radius Rcore=  3.874354
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   26 fe_nc                   # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+fe_nc                 2                    # Species label, number of l-shells
+ n=4   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   6.800      6.468   
+   1.000      1.000   
+ n=3   2   2                         # n, l, Nzeta 
+   4.022      2.292   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+Dumping basis to NetCDF file fe_nc.ion.nc
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                            (in Bohr units)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   3.64400  1        1
+siesta:      0.00000   0.00000   0.00000  1        2
+siesta:      0.00000   0.00000  -3.64400  1        3
+
+siesta: System type = bulk      
+
+initatomlists: Number of atoms, orbitals, and projectors:      3    45    48
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Spin configuration                          = non-collinear
+redata: Number of spin components                   = 4
+redata: Time-Reversal Symmetry                      = F
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Mesh Cutoff                                 =   150.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =      200
+redata: SCF mix quantity                            = Hamiltonian
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: Require Harris convergence for SCF          =   F
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.0001
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   T
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Divide and Conquer                          =   T
+redata: Electronic Temperature                      =  1160.4438 K
+redata: Fix the spin of the system                  =   F
+redata: Dynamics option                             = Single-point calculation
+mix.SCF: Debug messages                          = T
+mix.SCF: Linear mixing                           = linear-before
+mix.SCF:    Mixing weight                        =     0.010000
+mix.SCF:    Carried history steps                = 2
+mix.SCF:    Number of mixing iterations          = 2
+mix.SCF:    Following mixer                      = pulay
+mix.SCF: Pulay mixing                            = pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.010000
+mix.SCF:    Mixing weight                        =     0.010000
+mix.SCF:    SVD condition                        = 0.1000E-07
+mix.SCF:    Restart steps                        = 2
+mix.SCF:    Restart save steps                   = 1
+mix.SCF:    Number of mixing iterations          = 10
+mix.SCF:    Following mixer                      = kick
+mix.SCF:    Following mixer upon convergence     = linear-after
+mix.SCF: Broyden mixing                          = broyden
+mix.SCF:    History steps                        = 2
+mix.SCF:    Jacobian weight                      =     0.010000
+mix.SCF:    Weight prime                         =     0.010000
+mix.SCF:    Restart steps                        = 2
+mix.SCF:    Restart save steps                   = 1
+mix.SCF:    Number of mixing iterations          = 10
+mix.SCF:    Following mixer                      = kick
+mix.SCF:    Following mixer upon convergence     = linear-after
+mix.SCF: Linear mixing                           = linear-after
+mix.SCF:    Mixing weight                        =     0.025000
+mix.SCF: Linear mixing                           = kick
+mix.SCF:    Mixing weight                        =     0.100000
+mix.SCF:    Number of mixing iterations          = 1
+mix.SCF:    Following mixer                      = broyden
+mix.SCF: Spin-component mixing                   all
+redata: Save all siesta data in one NC              =   F
+redata: ***********************************************************************
+
+%block SCF.Mixers
+  linear-before
+  pulay
+  broyden
+  linear-after
+  kick
+%endblock SCF.Mixers
+
+%block SCF.Mixer.linear-before
+  # Mixing method
+  method linear
+
+  # Mixing options
+  weight 0.0100
+  history 2
+
+  # Continuation options
+  iterations 2
+  next pulay
+%endblock SCF.Mixer.linear-before
+
+%block SCF.Mixer.pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.0100
+  weight.linear 0.0100
+  history 2
+  restart 2
+  restart.save 1
+
+  # Continuation options
+  iterations 10
+  next kick
+  next.conv linear-after
+%endblock SCF.Mixer.pulay
+
+%block SCF.Mixer.broyden
+  # Mixing method
+  method broyden
+
+  # Mixing options
+  weight 0.0100
+  weight.linear 0.0100
+  history 2
+  restart 2
+  restart.save 1
+
+  # Continuation options
+  iterations 10
+  next kick
+  next.conv linear-after
+%endblock SCF.Mixer.broyden
+
+%block SCF.Mixer.linear-after
+  # Mixing method
+  method linear
+
+  # Mixing options
+  weight 0.0250
+%endblock SCF.Mixer.linear-after
+
+%block SCF.Mixer.kick
+  # Mixing method
+  method linear
+
+  # Mixing options
+  weight 0.1000
+
+  # Continuation options
+  iterations 1
+  next broyden
+%endblock SCF.Mixer.kick
+
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
+Total number of electrons:    24.000000
+Total ionic charge:    24.000000
+
+* ProcessorY, Blocksize:    2   6
+
+
+* Orbital distribution balance (max,min):     6     3
+
+
+Time-reversal symmetry not used.
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =     3.175 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        6.350124    0.000000    0.000000
+        0.000000    6.350124    0.000000
+        0.000000    0.000000   10.583540
+
+outcell: Cell vector modules (Ang)   :    6.350124    6.350124   10.583540
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    426.7715
+ Folding of H and S is implicitly performed
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=45 nrows=6 sparsity=.1333 nnzs=270, refcount: 7>
+  <dData1D:(new from dSpData1D) n=270, refcount: 1>
+refcount: 1>
+new_DM -- step:     1
+Initializing Density Matrix...
+
+Attempting to read DM from file... Failed...
+DM filled with atomic data (user-defined):
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 0
+    nrows_g=45 nrows=6 sparsity=.1333 nnzs=270, refcount: 8>
+  <dData2D:DM n=270 m=4, refcount: 1>
+refcount: 1>
+
+initDM: Initial spin polarization (x,y,z) =    1.500000    0.000000    0.000000
+
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       3      45
+New grid distribution:   1
+           1       1:   24    1:   12    1:   10
+           2       1:   24    1:   12   11:   20
+           3       1:   24    1:   12   21:   30
+           4       1:   24    1:   12   31:   40
+           5       1:   24   13:   24    1:   10
+           6       1:   24   13:   24   11:   20
+           7       1:   24   13:   24   21:   30
+           8       1:   24   13:   24   31:   40
+
+InitMesh: MESH =    48 x    48 x    80 =      184320
+InitMesh: (bp) =    24 x    24 x    40 =       23040
+InitMesh: Mesh cutoff (required, used) =   150.000   157.914 Ry
+ExtMesh (bp) on 0 =    80 x    68 x    66 =      359040
+New grid distribution:   2
+           1      12:   24    1:   11    1:   15
+           2       1:   11    1:   11    1:   15
+           3      12:   24    1:   11   16:   40
+           4       1:   11    1:   11   16:   40
+           5      12:   24   12:   24    1:   15
+           6       1:   11   12:   24    1:   15
+           7      12:   24   12:   24   16:   40
+           8       1:   11   12:   24   16:   40
+New grid distribution:   3
+           1       1:   12   13:   24   20:   40
+           2      13:   24    1:   12    1:   19
+           3      13:   24    1:   12   20:   40
+           4      13:   24   13:   24    1:   19
+           5       1:   12    1:   12   20:   40
+           6       1:   12    1:   12    1:   19
+           7      13:   24   13:   24   20:   40
+           8       1:   12   13:   24    1:   19
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    69 x    67 x    71 =      328233
+PhiOnMesh: Number of (b)points on node 0 =                 2145
+PhiOnMesh: nlist on node 0 =                25197
+
+stepf: Fermi-Dirac step function
+mix (1): linear
+mix (1): next%n_hist = 1 / 2
+mix (1): alpha = 0.1000E-01
+mix (2): linear
+mix (2): next%n_hist = 1 / 2
+mix (2): alpha = 0.1000E-01
+mix (3): linear
+mix (3): next%n_hist = 1 / 2
+mix (3): alpha = 0.1000E-01
+mix (4): linear
+mix (4): next%n_hist = 1 / 2
+mix (4): alpha = 0.1000E-01
+mix (5): linear
+mix (5): next%n_hist = 1 / 2
+mix (5): alpha = 0.1000E-01
+mix (6): linear
+mix (6): next%n_hist = 1 / 2
+mix (6): alpha = 0.1000E-01
+mix (7): linear
+mix (7): next%n_hist = 1 / 2
+mix (7): alpha = 0.1000E-01
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =       297.782506
+siesta: Eions   =      2141.484345
+siesta: Ena     =        95.468898
+siesta: Ekin    =      2896.614611
+siesta: Enl     =     -1847.421962
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =      -120.392726
+siesta: DUscf   =        64.390001
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1226.809717
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2188.268162
+siesta: Etot    =     -2279.635240
+siesta: FreeEng =     -2280.189278
+
+        iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
+   scf:    1    -2188.268162    -2279.635240    -2280.189278  0.982602 -7.995772 45.035171
+mix (0): linear
+mix (0): next%n_hist = 1 / 2
+mix (0): alpha = 0.1000E-01
+timer: Routine,Calls,Time,% = IterSCF        1       0.134  11.83
+mix (7): linear
+mix (7): next%n_hist = 1 / 2
+mix (7): alpha = 0.1000E-01
+mix (1): linear
+mix (1): next%n_hist = 1 / 2
+mix (1): alpha = 0.1000E-01
+mix (2): linear
+mix (2): next%n_hist = 1 / 2
+mix (2): alpha = 0.1000E-01
+mix (3): linear
+mix (3): next%n_hist = 1 / 2
+mix (3): alpha = 0.1000E-01
+mix (4): linear
+mix (4): next%n_hist = 1 / 2
+mix (4): alpha = 0.1000E-01
+mix (5): linear
+mix (5): next%n_hist = 1 / 2
+mix (5): alpha = 0.1000E-01
+mix (6): linear
+mix (6): next%n_hist = 1 / 2
+mix (6): alpha = 0.1000E-01
+   scf:    2     -690.293405    -1841.705903    -1841.940668  2.051381  3.658838161.693518
+mix (0): linear
+mix (0): next%n_hist = 1 / 2
+mix (0): alpha = 0.1000E-01
+mix (0): switching mixer --> pulay
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+   scf:    3    -1854.130646    -1847.935577    -1848.146028  0.049148  3.428656159.533649
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (6): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (7): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (1): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (2): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (3): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (4): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (5): G =   0.010000, sum(alpha) = 0.6268E+02, alpha =  0.6268E+02
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix (3): saved hist = 1
+   scf:    4       41.040607    -1717.230161    -1717.230176  2.355796-14.448858173.391795
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix: Pulay -- resetting history
+mix (0): saved hist = 1
+mix (4): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix (4): saved hist = 1
+mix (6): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix (6): saved hist = 1
+mix (7): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix (7): saved hist = 1
+mix (1): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix (1): saved hist = 1
+mix (2): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix (2): saved hist = 1
+mix (5): G =   0.010000, sum(alpha) = -.5225E+00, alpha =  -.5225E+00
+mix (5): saved hist = 1
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+   scf:    5    -2454.390491    -2126.825472    -2126.902555  2.357731 -5.182047 78.163367
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = 0.8551E+00, alpha =  0.8551E+00
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix (1): saved hist = 1
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix (2): saved hist = 1
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix (3): saved hist = 1
+   scf:    6     -545.714680    -1865.412130    -1865.903724  1.323242  2.615077154.727017
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix: Pulay -- resetting history
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix (4): saved hist = 1
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix (6): saved hist = 1
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix (7): saved hist = 1
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = -.6574E+00, alpha =  -.6574E+00
+mix (5): saved hist = 1
+mix (0): saved hist = 1
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+   scf:    7    -2336.904330    -2311.966286    -2312.115374  0.940342 -1.444470 10.482379
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = 0.4215E-01, alpha =  0.4215E-01
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix (6): saved hist = 1
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix (7): saved hist = 1
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix (1): saved hist = 1
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix (2): saved hist = 1
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix (3): saved hist = 1
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix (5): saved hist = 1
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix (4): saved hist = 1
+   scf:    8    -2263.001377    -2295.019463    -2295.041149  0.241873 -2.046208 16.367061
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = -.9375E+00, alpha =  -.9375E+00
+mix: Pulay -- resetting history
+mix (0): saved hist = 1
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+   scf:    9    -2316.592394    -2313.256365    -2313.390801  0.241151 -1.526162  9.894707
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = -.2156E-01, alpha =  -.2156E-01
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix (5): saved hist = 1
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix (4): saved hist = 1
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix (6): saved hist = 1
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix (7): saved hist = 1
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix (1): saved hist = 1
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix (2): saved hist = 1
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix (3): saved hist = 1
+   scf:   10    -2315.572362    -2314.434510    -2314.562766  0.013428 -1.583985  9.136816
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = 0.9023E+01, alpha =  0.9023E+01
+mix: Pulay -- resetting history
+mix (0): saved hist = 1
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+   scf:   11    -2325.860296    -2321.201885    -2321.310019  0.103272 -2.213501  9.300659
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = 0.4012E+00, alpha =  0.4012E+00
+mix (2): Pulay
+mix (2): n_hist = 2 / 2
+mix (2): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix (2): saved hist = 1
+mix (3): Pulay
+mix (3): n_hist = 2 / 2
+mix (3): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix (3): saved hist = 1
+mix (5): Pulay
+mix (5): n_hist = 2 / 2
+mix (5): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix (5): saved hist = 1
+mix (4): Pulay
+mix (4): n_hist = 2 / 2
+mix (4): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix (4): saved hist = 1
+mix (6): Pulay
+mix (6): n_hist = 2 / 2
+mix (6): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix (6): saved hist = 1
+mix (7): Pulay
+mix (7): n_hist = 2 / 2
+mix (7): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix (7): saved hist = 1
+mix (1): Pulay
+mix (1): n_hist = 2 / 2
+mix (1): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix (1): saved hist = 1
+   scf:   12    -2325.109769    -2323.232746    -2323.340241  0.041822 -2.520063  7.220923
+mix (0): Pulay
+mix (0): n_hist = 2 / 2
+mix (0): G =   0.010000, sum(alpha) = 0.2854E+01, alpha =  0.2854E+01
+mix: Pulay -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+   scf:   13    -2328.259545    -2326.385717    -2326.500926  0.104651 -3.413467  1.462428
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (7): Broyden
+mix (7): Broyden (initial), alpha = 0.1000E-01
+mix (1): Broyden
+mix (1): Broyden (initial), alpha = 0.1000E-01
+mix (2): Broyden
+mix (2): Broyden (initial), alpha = 0.1000E-01
+mix (3): Broyden
+mix (3): Broyden (initial), alpha = 0.1000E-01
+mix (5): Broyden
+mix (5): Broyden (initial), alpha = 0.1000E-01
+mix (4): Broyden
+mix (4): Broyden (initial), alpha = 0.1000E-01
+mix (6): Broyden
+mix (6): Broyden (initial), alpha = 0.1000E-01
+   scf:   14    -2326.128177    -2326.426390    -2326.556397  0.041879 -3.414920  2.980498
+mix (0): Broyden
+mix (0): Broyden (initial), alpha = 0.1000E-01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1998E+02
+mix (6): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1998E+02
+mix (7): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1998E+02
+mix (1): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1998E+02
+mix (2): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1998E+02
+mix (3): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1998E+02
+mix (5): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1998E+02
+mix (4): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix (4): saved hist = 1
+   scf:   15    -2326.718646    -2326.595429    -2326.721567  0.013459 -3.419279  1.822280
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1998E+02
+mix (0): G =   0.010000, sum(coeff) = 0.1080E+01, coeff =  0.1080E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.4351E+02
+mix (4): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.4351E+02
+mix (6): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.4351E+02
+mix (7): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.4351E+02
+mix (1): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.4351E+02
+mix (2): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.4351E+02
+mix (3): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.4351E+02
+mix (5): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+   scf:   16    -2326.727895    -2326.687680    -2326.809696  0.014475 -3.424998  0.884930
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.4351E+02
+mix (0): G =   0.010000, sum(coeff) = 0.3264E-01, coeff =  0.3264E-01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+   scf:   17    -2326.718338    -2326.703080    -2326.825225  0.001260 -3.426035  0.868087
+mix (3): weights =  0.4429E+02
+mix (3): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix (3): saved hist = 1
+mix (5): weights =  0.4429E+02
+mix (5): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix (5): saved hist = 1
+mix (4): weights =  0.4429E+02
+mix (4): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix (4): saved hist = 1
+mix (6): weights =  0.4429E+02
+mix (6): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix (6): saved hist = 1
+mix (7): weights =  0.4429E+02
+mix (7): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix (7): saved hist = 1
+mix (1): weights =  0.4429E+02
+mix (1): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix (1): saved hist = 1
+mix (2): weights =  0.4429E+02
+mix (2): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix (2): saved hist = 1
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.4429E+02
+mix (0): G =   0.010000, sum(coeff) = 0.1247E+02, coeff =  0.1247E+02
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.6011E+02
+mix (2): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.6011E+02
+mix (3): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.6011E+02
+mix (5): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.6011E+02
+mix (4): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.6011E+02
+mix (6): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.6011E+02
+mix (7): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.6011E+02
+mix (1): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+   scf:   18    -2327.015346    -2326.868739    -2326.993413  0.017057 -3.439057  0.600476
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.6011E+02
+mix (0): G =   0.010000, sum(coeff) = 0.9176E+00, coeff =  0.9176E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.7874E+02
+mix (1): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.7874E+02
+mix (2): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.7874E+02
+mix (3): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.7874E+02
+mix (5): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.7874E+02
+mix (4): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.7874E+02
+mix (6): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.7874E+02
+mix (7): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix (7): saved hist = 1
+   scf:   19    -2327.053558    -2326.969009    -2327.096897  0.017032 -3.451141  0.394998
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.7874E+02
+mix (0): G =   0.010000, sum(coeff) = 0.7892E+00, coeff =  0.7892E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.8459E+02
+mix (7): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.8459E+02
+mix (1): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.8459E+02
+mix (2): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.8459E+02
+mix (3): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.8459E+02
+mix (5): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.8459E+02
+mix (4): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.8459E+02
+mix (6): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+   scf:   20    -2327.038617    -2327.009152    -2327.140121  0.014431 -3.461277  0.344715
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.8459E+02
+mix (0): G =   0.010000, sum(coeff) = 0.3160E-01, coeff =  0.3160E-01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.8767E+02
+mix (6): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.8767E+02
+mix (7): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.8767E+02
+mix (1): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.8767E+02
+mix (2): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.8767E+02
+mix (3): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.8767E+02
+mix (5): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.8767E+02
+mix (4): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix (4): saved hist = 1
+   scf:   21    -2327.011564    -2327.010419    -2327.141828  0.000952 -3.462425  0.320236
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.8767E+02
+mix (0): G =   0.010000, sum(coeff) = 0.4763E+00, coeff =  0.4763E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.9035E+02
+mix (4): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.9035E+02
+mix (6): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.9035E+02
+mix (7): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.9035E+02
+mix (1): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.9035E+02
+mix (2): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.9035E+02
+mix (3): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.9035E+02
+mix (5): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+   scf:   22    -2327.012282    -2327.011383    -2327.143189  0.000919 -3.463901  0.299895
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.9035E+02
+mix (0): G =   0.010000, sum(coeff) = -.5578E-01, coeff =  -.5578E-01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.9104E+02
+mix (5): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.9104E+02
+mix (4): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.9104E+02
+mix (6): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.9104E+02
+mix (7): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.9104E+02
+mix (1): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.9104E+02
+mix (2): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.9104E+02
+mix (3): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix (3): saved hist = 1
+   scf:   23    -2327.012205    -2327.011795    -2327.143738  0.000448 -3.464759  0.294814
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.9104E+02
+mix (0): G =   0.010000, sum(coeff) = 0.6939E+01, coeff =  0.6939E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+   scf:   24    -2327.018119    -2327.014956    -2327.147906  0.003589 -3.471670  0.263563
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.9332E+02
+mix (2): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.9332E+02
+mix (3): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.9332E+02
+mix (5): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.9332E+02
+mix (4): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.9332E+02
+mix (6): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.9332E+02
+mix (7): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.9332E+02
+mix (1): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+   scf:   25    -2327.023011    -2327.019107    -2327.152838  0.004658 -3.480966  0.278358
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.9332E+02
+mix (0): G =   0.010000, sum(coeff) = 0.1282E+01, coeff =  0.1282E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1028E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1028E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1028E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1028E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1028E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1028E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1028E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix (7): saved hist = 1
+   scf:   26    -2327.034151    -2327.026455    -2327.163074  0.010958 -3.502028  0.215537
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1028E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2968E+01, coeff =  0.2968E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.3409E+01
+mix (7): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.3409E+01
+mix (1): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.3409E+01
+mix (2): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.3409E+01
+mix (3): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.3409E+01
+mix (5): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.3409E+01
+mix (4): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.3409E+01
+mix (6): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+   scf:   27    -2319.623165    -2324.541305    -2324.724632  0.105014 -3.563413  8.371722
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.3409E+01
+mix (0): G =   0.010000, sum(coeff) = -.9966E+00, coeff =  -.9966E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1062E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1062E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1062E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1062E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1062E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1062E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1062E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix (4): saved hist = 1
+   scf:   28    -2327.101582    -2327.026656    -2327.163645  0.104260 -3.502777  0.195249
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1062E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1819E-02, coeff =  0.1819E-02
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1064E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1064E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1064E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1064E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1064E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1064E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1064E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+   scf:   29    -2327.026972    -2327.026814    -2327.163894  0.000245 -3.503277  0.193835
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1064E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1385E+03, coeff =  0.1385E+03
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+   scf:   30    -2327.051978    -2327.035700    -2327.186205  0.034507 -3.571213  0.208635
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1040E+03
+mix (0): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): weights =  0.1040E+03
+mix (5): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix (5): saved hist = 1
+mix (4): weights =  0.1040E+03
+mix (4): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix (4): saved hist = 1
+mix (6): weights =  0.1040E+03
+mix (6): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix (6): saved hist = 1
+mix (7): weights =  0.1040E+03
+mix (7): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix (7): saved hist = 1
+mix (1): weights =  0.1040E+03
+mix (1): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix (1): saved hist = 1
+mix (2): weights =  0.1040E+03
+mix (2): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix (2): saved hist = 1
+mix (3): weights =  0.1040E+03
+mix (3): G =   0.010000, sum(coeff) = -.4089E+00, coeff =  -.4089E+00
+mix (3): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1189E+03
+mix (2): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+   scf:   31    -2327.035969    -2327.035747    -2327.180615  0.014123 -3.543780  0.126510
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1189E+03
+mix (0): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1189E+03
+mix (5): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1189E+03
+mix (4): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1189E+03
+mix (6): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1189E+03
+mix (7): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1189E+03
+mix (1): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1189E+03
+mix (3): G =   0.010000, sum(coeff) = -.7973E-01, coeff =  -.7973E-01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1193E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1193E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix (2): saved hist = 1
+   scf:   32    -2327.036382    -2327.036058    -2327.181435  0.001220 -3.546050  0.124514
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1193E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1193E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1193E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1193E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1193E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix (7): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1193E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1013E+02, coeff =  0.1013E+02
+mix (3): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+   scf:   33    -2327.040255    -2327.037546    -2327.188094  0.012416 -3.568685  0.102192
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (6): weights =  0.1238E+03
+mix (6): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (7): weights =  0.1238E+03
+mix (7): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (1): weights =  0.1238E+03
+mix (1): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (2): weights =  0.1238E+03
+mix (2): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1238E+03
+mix (0): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (5): weights =  0.1238E+03
+mix (5): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (4): weights =  0.1238E+03
+mix (4): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (3): weights =  0.1238E+03
+mix (3): G =   0.010000, sum(coeff) = -.1451E+00, coeff =  -.1451E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1233E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1233E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1233E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1233E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1233E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix (2): saved hist = 1
+   scf:   34    -2327.037829    -2327.037692    -2327.187488  0.001805 -3.565229  0.104687
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1233E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1233E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix (5): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1233E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1197E+01, coeff =  0.1197E+01
+mix (3): saved hist = 1
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+   scf:   35    -2327.037738    -2327.037718    -2327.186729  0.002139 -3.560914  0.107420
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+   scf:   36    -2327.037830    -2327.037772    -2327.187815  0.001633 -3.559184  0.104509
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1234E+03
+mix (0): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1234E+03
+mix (5): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1234E+03
+mix (4): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1234E+03
+mix (6): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1234E+03
+mix (7): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1234E+03
+mix (1): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1234E+03
+mix (2): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1234E+03
+mix (3): G =   0.010000, sum(coeff) = 0.9718E+00, coeff =  0.9718E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1235E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix (2): saved hist = 1
+   scf:   37    -2327.037865    -2327.037826    -2327.188160  0.001996 -3.553195  0.103728
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1235E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1235E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1235E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1235E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1235E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1235E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix (1): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1235E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2146E+01, coeff =  0.2146E+01
+mix (3): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (7): weights =  0.1238E+03
+mix (7): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+mix (1): weights =  0.1238E+03
+mix (1): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+   scf:   38    -2327.036516    -2327.037185    -2327.188911  0.003409 -3.536471  0.102386
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1238E+03
+mix (0): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+mix (2): weights =  0.1238E+03
+mix (2): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+mix (5): weights =  0.1238E+03
+mix (5): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+mix (4): weights =  0.1238E+03
+mix (4): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+mix (6): weights =  0.1238E+03
+mix (6): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+mix (3): weights =  0.1238E+03
+mix (3): G =   0.010000, sum(coeff) = -.7934E+00, coeff =  -.7934E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (4): weights =  0.1237E+03
+mix (4): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix (4): saved hist = 1
+mix (6): weights =  0.1237E+03
+mix (6): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix (6): saved hist = 1
+mix (7): weights =  0.1237E+03
+mix (7): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix (7): saved hist = 1
+   scf:   39    -2327.038272    -2327.037739    -2327.188441  0.002752 -3.549633  0.103075
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1237E+03
+mix (0): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (1): weights =  0.1237E+03
+mix (1): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix (1): saved hist = 1
+mix (2): weights =  0.1237E+03
+mix (2): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix (2): saved hist = 1
+mix (5): weights =  0.1237E+03
+mix (5): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix (5): saved hist = 1
+mix (3): weights =  0.1237E+03
+mix (3): G =   0.010000, sum(coeff) = 0.5114E-01, coeff =  0.5114E-01
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (2): weights =  0.1237E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+mix (5): weights =  0.1237E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+mix (4): weights =  0.1237E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+mix (6): weights =  0.1237E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+   scf:   40    -2327.037811    -2327.037775    -2327.188507  0.000188 -3.550194  0.102724
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1237E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+mix (7): weights =  0.1237E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+mix (1): weights =  0.1237E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+mix (3): weights =  0.1237E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1939E+02, coeff =  0.1939E+02
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1253E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1253E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1253E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1253E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1253E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix (6): saved hist = 1
+   scf:   41    -2327.038975    -2327.038357    -2327.189740  0.003669 -3.560826  0.095400
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1253E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1253E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix (7): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1253E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1437E+00, coeff =  0.1437E+00
+mix (3): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (6): weights =  0.1256E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+mix (7): weights =  0.1256E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+mix (1): weights =  0.1256E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+mix (2): weights =  0.1256E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+mix (5): weights =  0.1256E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+mix (4): weights =  0.1256E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+   scf:   42    -2327.038509    -2327.038432    -2327.189978  0.000538 -3.562088  0.093920
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1256E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+mix (3): weights =  0.1256E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2999E+01, coeff =  0.2999E+01
+   scf:   43    -2327.038772    -2327.038591    -2327.190722  0.001610 -3.565539  0.089212
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1266E+03
+mix (0): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1266E+03
+mix (6): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1266E+03
+mix (7): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1266E+03
+mix (1): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1266E+03
+mix (2): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1266E+03
+mix (5): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1266E+03
+mix (4): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix (4): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1266E+03
+mix (3): G =   0.010000, sum(coeff) = -.2126E-01, coeff =  -.2126E-01
+mix (3): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1267E+03
+mix (4): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+   scf:   44    -2327.038556    -2327.038574    -2327.190783  0.000095 -3.565140  0.089045
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1267E+03
+mix (0): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1267E+03
+mix (6): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1267E+03
+mix (7): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1267E+03
+mix (1): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1267E+03
+mix (2): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1267E+03
+mix (5): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1267E+03
+mix (3): G =   0.010000, sum(coeff) = 0.3278E+01, coeff =  0.3278E+01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1269E+03
+mix (5): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1269E+03
+mix (4): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix (4): saved hist = 1
+   scf:   45    -2327.038437    -2327.038504    -2327.191054  0.000416 -3.563517  0.088195
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1269E+03
+mix (0): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1269E+03
+mix (6): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1269E+03
+mix (7): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1269E+03
+mix (1): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1269E+03
+mix (2): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1269E+03
+mix (3): G =   0.010000, sum(coeff) = 0.4966E+01, coeff =  0.4966E+01
+mix (3): saved hist = 1
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+   scf:   46    -2327.037741    -2327.038080    -2327.192392  0.002108 -3.555210  0.083529
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1287E+03
+mix (1): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1287E+03
+mix (2): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1287E+03
+mix (5): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1287E+03
+mix (4): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+   scf:   47    -2327.037966    -2327.038026    -2327.192993  0.000995 -3.552677  0.079894
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1287E+03
+mix (0): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1287E+03
+mix (6): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1287E+03
+mix (7): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1287E+03
+mix (3): G =   0.010000, sum(coeff) = 0.5455E+00, coeff =  0.5455E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1297E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1297E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1297E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1297E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1297E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix (4): saved hist = 1
+   scf:   48    -2327.037169    -2327.037568    -2327.194011  0.001731 -3.546527  0.075409
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1297E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1297E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix (6): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1297E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2370E+01, coeff =  0.2370E+01
+mix (3): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (4): weights =  0.1569E+02
+mix (4): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+mix (6): weights =  0.1569E+02
+mix (6): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+mix (7): weights =  0.1569E+02
+mix (7): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+mix (1): weights =  0.1569E+02
+mix (1): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+mix (2): weights =  0.1569E+02
+mix (2): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+mix (5): weights =  0.1569E+02
+mix (5): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+   scf:   49    -2326.505239    -2326.854643    -2327.028511  0.030297 -3.518892  2.220525
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1569E+02
+mix (0): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+mix (3): weights =  0.1569E+02
+mix (3): G =   0.010000, sum(coeff) = -.1002E+01, coeff =  -.1002E+01
+   scf:   50    -2327.054459    -2327.037538    -2327.194053  0.030194 -3.546371  0.075314
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1297E+03
+mix (0): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1297E+03
+mix (4): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1297E+03
+mix (6): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1297E+03
+mix (7): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1297E+03
+mix (1): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1297E+03
+mix (2): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1297E+03
+mix (5): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix (5): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1297E+03
+mix (3): G =   0.010000, sum(coeff) = 0.4240E-02, coeff =  0.4240E-02
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1298E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+   scf:   51    -2327.037516    -2327.037527    -2327.194082  0.000050 -3.546265  0.075151
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1298E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1298E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1298E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1298E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1298E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1298E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1298E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1024E+03, coeff =  0.1024E+03
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (1): weights =  0.1337E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix (1): saved hist = 1
+mix (2): weights =  0.1337E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix (2): saved hist = 1
+   scf:   52    -2327.034885    -2327.035928    -2327.196718  0.005042 -3.535271  0.057947
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1337E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): weights =  0.1337E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix (5): saved hist = 1
+mix (4): weights =  0.1337E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix (4): saved hist = 1
+mix (6): weights =  0.1337E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix (6): saved hist = 1
+mix (7): weights =  0.1337E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix (7): saved hist = 1
+mix (3): weights =  0.1337E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1204E+00, coeff =  0.1204E+00
+mix (3): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1343E+03
+mix (7): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1343E+03
+mix (1): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1343E+03
+mix (2): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+   scf:   53    -2327.035411    -2327.035665    -2327.197010  0.000650 -3.533771  0.055547
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1343E+03
+mix (0): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1343E+03
+mix (5): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1343E+03
+mix (4): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1343E+03
+mix (6): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1343E+03
+mix (3): G =   0.010000, sum(coeff) = 0.9802E+01, coeff =  0.9802E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1396E+03
+mix (6): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1396E+03
+mix (7): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1396E+03
+mix (1): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1396E+03
+mix (2): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix (2): saved hist = 1
+   scf:   54    -2327.029819    -2327.032311    -2327.199168  0.006158 -3.518936  0.033544
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1396E+03
+mix (0): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1396E+03
+mix (5): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1396E+03
+mix (4): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix (4): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1396E+03
+mix (3): G =   0.010000, sum(coeff) = -.6431E+00, coeff =  -.6431E+00
+mix (3): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1364E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1364E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1364E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1364E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1364E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+   scf:   55    -2327.037292    -2327.034635    -2327.197952  0.003857 -3.528321  0.046642
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1364E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1364E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1364E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2350E+00, coeff =  0.2350E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1356E+03
+mix (5): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1356E+03
+mix (4): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1356E+03
+mix (6): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1356E+03
+mix (7): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1356E+03
+mix (1): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1356E+03
+mix (2): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix (2): saved hist = 1
+   scf:   56    -2327.035519    -2327.035068    -2327.197611  0.000877 -3.530358  0.050055
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1356E+03
+mix (0): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1356E+03
+mix (3): G =   0.010000, sum(coeff) = -.2072E+01, coeff =  -.2072E+01
+mix (3): saved hist = 1
+   scf:   57    -2327.033268    -2327.034129    -2327.198307  0.001854 -3.525985  0.042725
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1379E+03
+mix (2): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+   scf:   58    -2327.033821    -2327.033977    -2327.198467  0.000470 -3.524467  0.040609
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1379E+03
+mix (0): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1379E+03
+mix (5): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1379E+03
+mix (4): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1379E+03
+mix (6): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1379E+03
+mix (7): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1379E+03
+mix (1): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1379E+03
+mix (3): G =   0.010000, sum(coeff) = 0.4276E+00, coeff =  0.4276E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1389E+03
+mix (1): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1389E+03
+mix (2): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix (2): saved hist = 1
+   scf:   59    -2327.032842    -2327.033398    -2327.198798  0.001013 -3.521802  0.036607
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1389E+03
+mix (0): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1389E+03
+mix (5): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1389E+03
+mix (4): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1389E+03
+mix (6): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1389E+03
+mix (7): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix (7): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1389E+03
+mix (3): G =   0.010000, sum(coeff) = 0.3768E+01, coeff =  0.3768E+01
+mix (3): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1788E+02
+mix (7): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1788E+02
+mix (1): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1788E+02
+mix (2): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+   scf:   60    -2326.583343    -2326.876689    -2327.059701  0.028245 -3.496211  1.997472
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1788E+02
+mix (0): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1788E+02
+mix (5): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1788E+02
+mix (4): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1788E+02
+mix (6): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1788E+02
+mix (3): G =   0.010000, sum(coeff) = -.1001E+01, coeff =  -.1001E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1389E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1389E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1389E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1389E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix (2): saved hist = 1
+   scf:   61    -2327.053701    -2327.033370    -2327.198810  0.028193 -3.521689  0.036582
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1389E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1389E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1389E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix (4): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1389E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2347E-02, coeff =  0.2347E-02
+mix (3): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1389E+03
+mix (4): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1389E+03
+mix (6): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1389E+03
+mix (7): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1389E+03
+mix (1): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1389E+03
+mix (2): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+   scf:   62    -2327.033351    -2327.033360    -2327.198816  0.000019 -3.521612  0.036523
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1389E+03
+mix (0): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1389E+03
+mix (5): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1389E+03
+mix (3): G =   0.010000, sum(coeff) = 0.8453E+02, coeff =  0.8453E+02
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1401E+03
+mix (5): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1401E+03
+mix (4): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1401E+03
+mix (6): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1401E+03
+mix (7): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1401E+03
+mix (1): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1401E+03
+mix (2): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix (2): saved hist = 1
+   scf:   63    -2327.031673    -2327.032482    -2327.199308  0.001627 -3.514973  0.031543
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1401E+03
+mix (0): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1401E+03
+mix (3): G =   0.010000, sum(coeff) = 0.8305E+00, coeff =  0.8305E+00
+mix (3): saved hist = 1
+   scf:   64    -2327.030863    -2327.031648    -2327.199647  0.001359 -3.509418  0.027268
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1412E+03
+mix (0): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1412E+03
+mix (5): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1412E+03
+mix (4): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1412E+03
+mix (6): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1412E+03
+mix (7): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1412E+03
+mix (1): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1412E+03
+mix (2): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1412E+03
+mix (3): G =   0.010000, sum(coeff) = -.1543E+00, coeff =  -.1543E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1411E+03
+mix (2): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix (2): saved hist = 1
+   scf:   65    -2327.031875    -2327.031761    -2327.199606  0.000180 -3.510227  0.027821
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1411E+03
+mix (0): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1411E+03
+mix (5): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1411E+03
+mix (4): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1411E+03
+mix (6): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1411E+03
+mix (7): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1411E+03
+mix (1): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix (1): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1411E+03
+mix (3): G =   0.010000, sum(coeff) = 0.7513E+00, coeff =  0.7513E+00
+mix (3): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1410E+03
+mix (1): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1410E+03
+mix (2): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+   scf:   66    -2327.031886    -2327.031823    -2327.199581  0.000107 -3.510782  0.028133
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1410E+03
+mix (0): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1410E+03
+mix (5): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1410E+03
+mix (4): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1410E+03
+mix (6): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1410E+03
+mix (7): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1410E+03
+mix (3): G =   0.010000, sum(coeff) = -.5988E+00, coeff =  -.5988E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1411E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1411E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1411E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix (2): saved hist = 1
+   scf:   67    -2327.031707    -2327.031765    -2327.199602  0.000092 -3.510400  0.027839
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1411E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1411E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1411E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1411E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix (6): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1411E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1623E+01, coeff =  0.1623E+01
+mix (3): saved hist = 1
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+   scf:   68    -2327.031536    -2327.031650    -2327.199643  0.000177 -3.509735  0.027251
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1415E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1415E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1415E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1415E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1415E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+   scf:   69    -2327.031249    -2327.031448    -2327.199705  0.000275 -3.509287  0.026160
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1415E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1415E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1415E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1039E+02, coeff =  0.1039E+02
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1456E+03
+mix (5): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1456E+03
+mix (4): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1456E+03
+mix (6): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1456E+03
+mix (7): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1456E+03
+mix (1): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1456E+03
+mix (2): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix (2): saved hist = 1
+   scf:   70    -2327.024426    -2327.027668    -2327.200348  0.004590 -3.497739  0.010574
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1456E+03
+mix (0): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1456E+03
+mix (3): G =   0.010000, sum(coeff) = 0.3260E+00, coeff =  0.3260E+00
+mix (3): saved hist = 1
+   scf:   71    -2327.024691    -2327.026150    -2327.200390  0.001538 -3.493779  0.015671
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1442E+03
+mix (0): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1442E+03
+mix (5): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1442E+03
+mix (4): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1442E+03
+mix (6): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1442E+03
+mix (7): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1442E+03
+mix (1): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1442E+03
+mix (2): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1442E+03
+mix (3): G =   0.010000, sum(coeff) = -.1591E+01, coeff =  -.1591E+01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1452E+03
+mix (2): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix (2): saved hist = 1
+   scf:   72    -2327.031013    -2327.028506    -2327.200280  0.002447 -3.500074  0.012023
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1452E+03
+mix (0): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1452E+03
+mix (5): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1452E+03
+mix (4): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1452E+03
+mix (6): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1452E+03
+mix (7): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1452E+03
+mix (1): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix (1): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1452E+03
+mix (3): G =   0.010000, sum(coeff) = 0.3742E-01, coeff =  0.3742E-01
+mix (3): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+   scf:   73    -2327.028655    -2327.028581    -2327.200272  0.000082 -3.500301  0.012322
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (7): weights =  0.1451E+03
+mix (7): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (1): weights =  0.1451E+03
+mix (1): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (2): weights =  0.1451E+03
+mix (2): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (0): weights =  0.1451E+03
+mix (0): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (5): weights =  0.1451E+03
+mix (5): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (4): weights =  0.1451E+03
+mix (4): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (6): weights =  0.1451E+03
+mix (6): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (3): weights =  0.1451E+03
+mix (3): G =   0.010000, sum(coeff) = 0.3783E+01, coeff =  0.3783E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1448E+03
+mix (6): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1448E+03
+mix (7): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1448E+03
+mix (1): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1448E+03
+mix (2): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix (2): saved hist = 1
+   scf:   74    -2327.029114    -2327.028846    -2327.200242  0.000296 -3.501147  0.013409
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1448E+03
+mix (0): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1448E+03
+mix (5): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1448E+03
+mix (4): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix (4): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1448E+03
+mix (3): G =   0.010000, sum(coeff) = -.8987E+00, coeff =  -.8987E+00
+mix (3): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1451E+03
+mix (4): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1451E+03
+mix (6): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1451E+03
+mix (7): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1451E+03
+mix (1): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1451E+03
+mix (2): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+   scf:   75    -2327.028353    -2327.028599    -2327.200270  0.000278 -3.500378  0.012371
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1451E+03
+mix (0): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1451E+03
+mix (5): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1451E+03
+mix (3): G =   0.010000, sum(coeff) = 0.9826E+00, coeff =  0.9826E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1454E+03
+mix (5): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1454E+03
+mix (4): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1454E+03
+mix (6): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1454E+03
+mix (7): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1454E+03
+mix (1): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1454E+03
+mix (2): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix (2): saved hist = 1
+   scf:   76    -2327.028096    -2327.028347    -2327.200296  0.000282 -3.499616  0.011281
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1454E+03
+mix (0): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1454E+03
+mix (3): G =   0.010000, sum(coeff) = 0.3407E+01, coeff =  0.3407E+01
+mix (3): saved hist = 1
+   scf:   77    -2327.026602    -2327.027462    -2327.200361  0.000961 -3.497032  0.007481
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1464E+03
+mix (0): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1464E+03
+mix (5): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1464E+03
+mix (4): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1464E+03
+mix (6): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1464E+03
+mix (7): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1464E+03
+mix (1): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1464E+03
+mix (2): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1464E+03
+mix (3): G =   0.010000, sum(coeff) = 0.4522E+00, coeff =  0.4522E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1466E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix (2): saved hist = 1
+   scf:   78    -2327.026647    -2327.027052    -2327.200379  0.000435 -3.495875  0.006535
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1466E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1466E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1466E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1466E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1466E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1466E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix (1): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1466E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1093E+01, coeff =  0.1093E+01
+mix (3): saved hist = 1
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+   scf:   79    -2327.026148    -2327.026597    -2327.200391  0.000475 -3.494629  0.005909
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (6): weights =  0.1466E+03
+mix (6): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+mix (7): weights =  0.1466E+03
+mix (7): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+mix (1): weights =  0.1466E+03
+mix (1): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+   scf:   80    -2327.026632    -2327.026615    -2327.200393  0.000063 -3.494800  0.006642
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1466E+03
+mix (0): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+mix (2): weights =  0.1466E+03
+mix (2): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+mix (5): weights =  0.1466E+03
+mix (5): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+mix (4): weights =  0.1466E+03
+mix (4): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+mix (3): weights =  0.1466E+03
+mix (3): G =   0.010000, sum(coeff) = -.2290E+00, coeff =  -.2290E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1468E+03
+mix (4): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1468E+03
+mix (6): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1468E+03
+mix (7): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1468E+03
+mix (1): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix (1): saved hist = 1
+   scf:   81    -2327.026809    -2327.026712    -2327.200391  0.000110 -3.495060  0.006007
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1468E+03
+mix (0): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1468E+03
+mix (2): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1468E+03
+mix (5): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix (5): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1468E+03
+mix (3): G =   0.010000, sum(coeff) = -.4465E-01, coeff =  -.4465E-01
+mix (3): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1461E+03
+mix (5): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1461E+03
+mix (4): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1461E+03
+mix (6): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1461E+03
+mix (7): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1461E+03
+mix (1): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+   scf:   82    -2327.026793    -2327.026753    -2327.200388  0.000085 -3.495097  0.008562
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1461E+03
+mix (0): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1461E+03
+mix (2): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1461E+03
+mix (3): G =   0.010000, sum(coeff) = -.1018E+01, coeff =  -.1018E+01
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1468E+03
+mix (2): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1468E+03
+mix (5): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1468E+03
+mix (4): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1468E+03
+mix (6): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1468E+03
+mix (7): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1468E+03
+mix (1): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix (1): saved hist = 1
+   scf:   83    -2327.026661    -2327.026708    -2327.200391  0.000090 -3.495074  0.005776
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1468E+03
+mix (0): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1468E+03
+mix (3): G =   0.010000, sum(coeff) = -.3999E-01, coeff =  -.3999E-01
+mix (3): saved hist = 1
+   scf:   84    -2327.026707    -2327.026708    -2327.200391  0.000003 -3.495090  0.005712
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1469E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1469E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1469E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1469E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1469E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1469E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1469E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1469E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1784E+02, coeff =  0.1784E+02
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1472E+03
+mix (1): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix (1): saved hist = 1
+   scf:   85    -2327.026683    -2327.026695    -2327.200393  0.000065 -3.495379  0.004563
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1472E+03
+mix (0): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1472E+03
+mix (2): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1472E+03
+mix (5): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1472E+03
+mix (4): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1472E+03
+mix (6): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1472E+03
+mix (7): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix (7): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1472E+03
+mix (3): G =   0.010000, sum(coeff) = 0.3162E+01, coeff =  0.3162E+01
+mix (3): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1474E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1474E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+   scf:   86    -2327.026616    -2327.026655    -2327.200398  0.000207 -3.496303  0.003727
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1474E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1474E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1474E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1474E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1474E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1474E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2178E+00, coeff =  0.2178E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1474E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1474E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1474E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix (1): saved hist = 1
+   scf:   87    -2327.026639    -2327.026647    -2327.200398  0.000045 -3.496513  0.003791
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1474E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1474E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1474E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1474E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix (4): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1474E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1512E+01, coeff =  0.1512E+01
+mix (3): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1474E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1474E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1474E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1474E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+   scf:   88    -2327.026617    -2327.026632    -2327.200399  0.000067 -3.496837  0.003691
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1474E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1474E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1474E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1474E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1242E+00, coeff =  0.1242E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1474E+03
+mix (5): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1474E+03
+mix (4): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1474E+03
+mix (6): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix (6): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1474E+03
+mix (7): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1474E+03
+mix (1): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix (1): saved hist = 1
+   scf:   89    -2327.026624    -2327.026628    -2327.200399  0.000007 -3.496883  0.003558
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1474E+03
+mix (0): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (0): switching mixer --> kick
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1474E+03
+mix (2): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1474E+03
+mix (3): G =   0.010000, sum(coeff) = 0.2778E+01, coeff =  0.2778E+01
+mix (3): saved hist = 1
+mix (2): linear
+mix (2): alpha = 0.1000E+00
+mix (5): linear
+mix (5): alpha = 0.1000E+00
+mix (4): linear
+mix (4): alpha = 0.1000E+00
+mix (6): linear
+mix (6): alpha = 0.1000E+00
+mix (7): linear
+mix (7): alpha = 0.1000E+00
+mix (1): linear
+mix (1): alpha = 0.1000E+00
+   scf:   90    -2327.026599    -2327.026613    -2327.200399  0.000021 -3.497014  0.003209
+mix (0): linear
+mix (0): alpha = 0.1000E+00
+mix (0): switching mixer --> broyden
+mix (3): linear
+mix (3): alpha = 0.1000E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+   scf:   91    -2327.026560    -2327.026586    -2327.200400  0.000060 -3.497051  0.002982
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1476E+03
+mix (0): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (1): weights =  0.1476E+03
+mix (1): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (2): weights =  0.1476E+03
+mix (2): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (5): weights =  0.1476E+03
+mix (5): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (4): weights =  0.1476E+03
+mix (4): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (6): weights =  0.1476E+03
+mix (6): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (7): weights =  0.1476E+03
+mix (7): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (3): weights =  0.1476E+03
+mix (3): G =   0.010000, sum(coeff) = 0.5745E+00, coeff =  0.5745E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (6): weights =  0.1478E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix (6): saved hist = 1
+   scf:   92    -2327.026539    -2327.026563    -2327.200401  0.000042 -3.497147  0.002286
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1478E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (7): weights =  0.1478E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix (7): saved hist = 1
+mix (1): weights =  0.1478E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix (1): saved hist = 1
+mix (2): weights =  0.1478E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix (2): saved hist = 1
+mix (5): weights =  0.1478E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix (5): saved hist = 1
+mix (4): weights =  0.1478E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix (4): saved hist = 1
+mix (3): weights =  0.1478E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1147E+01, coeff =  0.1147E+01
+mix (3): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1426E+03
+mix (4): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1426E+03
+mix (6): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+   scf:   93    -2327.026684    -2327.026632    -2327.200384  0.000238 -3.497023  0.021840
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1426E+03
+mix (0): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1426E+03
+mix (7): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1426E+03
+mix (1): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1426E+03
+mix (2): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1426E+03
+mix (5): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1426E+03
+mix (3): G =   0.010000, sum(coeff) = -.9532E+00, coeff =  -.9532E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1480E+03
+mix (5): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1480E+03
+mix (4): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1480E+03
+mix (6): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix (6): saved hist = 1
+   scf:   94    -2327.026479    -2327.026564    -2327.200401  0.000232 -3.497140  0.001507
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1480E+03
+mix (0): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1480E+03
+mix (7): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1480E+03
+mix (1): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1480E+03
+mix (2): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix (2): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1480E+03
+mix (3): G =   0.010000, sum(coeff) = -.1093E-01, coeff =  -.1093E-01
+mix (3): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1480E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1480E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1480E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1480E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+   scf:   95    -2327.026560    -2327.026562    -2327.200401  0.000004 -3.497137  0.001468
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1480E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1480E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1480E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1480E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1714E+01, coeff =  0.1714E+01
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1480E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1480E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1480E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1480E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1480E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix (6): saved hist = 1
+   scf:   96    -2327.026550    -2327.026556    -2327.200401  0.000012 -3.497132  0.001480
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1480E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1480E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix (7): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1480E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1088E+01, coeff =  0.1088E+01
+mix (3): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1480E+03
+mix (7): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1480E+03
+mix (1): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1480E+03
+mix (2): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1480E+03
+mix (5): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1480E+03
+mix (4): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1480E+03
+mix (6): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+   scf:   97    -2327.026540    -2327.026548    -2327.200401  0.000016 -3.497124  0.001458
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1480E+03
+mix (0): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1480E+03
+mix (3): G =   0.010000, sum(coeff) = 0.9189E+00, coeff =  0.9189E+00
+   scf:   98    -2327.026531    -2327.026539    -2327.200401  0.000017 -3.497115  0.001342
+mix (0): Broyden
+mix (0): n_hist = 2 / 2
+mix (0): weights =  0.1480E+03
+mix (0): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix: Broyden -- resetting history
+mix (0): saved hist = 1
+mix (7): Broyden
+mix (7): n_hist = 2 / 2
+mix (7): weights =  0.1480E+03
+mix (7): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix (7): saved hist = 1
+mix (1): Broyden
+mix (1): n_hist = 2 / 2
+mix (1): weights =  0.1480E+03
+mix (1): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix (1): saved hist = 1
+mix (2): Broyden
+mix (2): n_hist = 2 / 2
+mix (2): weights =  0.1480E+03
+mix (2): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix (2): saved hist = 1
+mix (5): Broyden
+mix (5): n_hist = 2 / 2
+mix (5): weights =  0.1480E+03
+mix (5): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix (5): saved hist = 1
+mix (4): Broyden
+mix (4): n_hist = 2 / 2
+mix (4): weights =  0.1480E+03
+mix (4): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix (4): saved hist = 1
+mix (6): Broyden
+mix (6): n_hist = 2 / 2
+mix (6): weights =  0.1480E+03
+mix (6): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix (6): saved hist = 1
+mix (3): Broyden
+mix (3): n_hist = 2 / 2
+mix (3): weights =  0.1480E+03
+mix (3): G =   0.010000, sum(coeff) = 0.1924E+01, coeff =  0.1924E+01
+mix (3): saved hist = 1
+mix (6): linear
+mix (6): alpha = 0.2500E-01
+   scf:   99    -2327.026505    -2327.026522    -2327.200402  0.000034 -3.497096  0.000982
+
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|         :     0.0000338776
+max |H_out - H_in|      (eV) :     0.0009820035
+SCF cycle converged after 99 iterations
+
+:!: SCF cycle continuation mixer: linear-after
+mix (0): linear
+mix (0): alpha = 0.2500E-01
+mix (7): linear
+mix (7): alpha = 0.2500E-01
+mix (1): linear
+mix (1): alpha = 0.2500E-01
+mix (2): linear
+mix (2): alpha = 0.2500E-01
+mix (5): linear
+mix (5): alpha = 0.2500E-01
+mix (4): linear
+mix (4): alpha = 0.2500E-01
+mix (3): linear
+mix (3): alpha = 0.2500E-01
+   scf:  100    -2327.026517    -2327.026520    -2327.200402  0.000004 -3.497089  0.000817
+
+SCF Convergence by DM+H criterion
+max |DM_out - DM_in|         :     0.0000043120
+max |H_out - H_in|      (eV) :     0.0008173970
+SCF cycle converged after 100 iterations
+mix (4): resetting history of all mixers
+mix (6): resetting history of all mixers
+mix (3): resetting history of all mixers
+mix (7): resetting history of all mixers
+mix (1): resetting history of all mixers
+mix (2): resetting history of all mixers
+mix (5): resetting history of all mixers
+mix (0): resetting history of all mixers
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       3      45
+
+siesta: E_KS(eV) =            -2327.0265
+
+siesta: E_KS - E_eggbox =     -2327.0265
+siesta: Total spin polarization (x,y,z) =     1.778175    0.000000   -0.000000
+siesta: S , {S} =     1.778175    1.778175    0.000000   -0.000000
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot   -0.000000   -0.000000   -0.000000
+----------------------------------------
+   Max    0.073300
+   Res    0.034554    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.073300    constrained
+
+Stress-tensor-Voigt (kbar):        6.67        6.67       -1.31       -0.00        0.00        0.00
+(Free)E + p*V (eV/cell)    -2328.2688
+Target enthalpy (eV/cell)    -2327.2004
+
+mulliken: Atomic and Orbital Populations:
+
+Species: fe_nc               
+
+Atom      Orb        Charge      Spin       Svec
+----------------------------------------------------------------
+    1  1 4s         1.34055   0.02224     -0.014   0.000  -0.017
+    1  2 4s         0.10723   0.06308      0.004   0.000   0.063
+    1  3 3dxy       1.22789   0.65170      0.058   0.000   0.649
+    1  4 3dyz       1.24678   0.48483     -0.001   0.000   0.485
+    1  5 3dz2       1.27218   0.47668      0.011   0.000   0.477
+    1  6 3dxz       1.24678   0.48483     -0.001   0.000   0.485
+    1  7 3dx2-y2    1.22650   0.65315      0.058   0.000   0.651
+    1  8 3dxy       0.04754   0.06833      0.009   0.000   0.068
+    1  9 3dyz       0.03199   0.06030      0.004   0.000   0.060
+    1 10 3dz2       0.07189   0.04632      0.003   0.000   0.046
+    1 11 3dxz       0.03199   0.06030      0.004   0.000   0.060
+    1 12 3dx2-y2    0.04751   0.06830      0.009   0.000   0.068
+    1 13 4Ppy       0.02837   0.00570      0.001   0.000  -0.006
+    1 14 4Ppz       0.00541   0.00459      0.004   0.000   0.001
+    1 15 4Ppx       0.02837   0.00570      0.001   0.000  -0.006
+    1     Total     7.96096   3.08728      0.152   0.000   3.084
+
+    2  1 4s         0.86615   0.01532     -0.015   0.000   0.000
+    2  2 4s         0.19132   0.03192      0.032   0.000  -0.000
+    2  3 3dxy       1.43266   0.46856      0.469   0.000   0.000
+    2  4 3dyz       1.29834   0.11903      0.119   0.000   0.000
+    2  5 3dz2       1.17940   0.13261      0.133   0.000   0.000
+    2  6 3dxz       1.29834   0.11903      0.119   0.000   0.000
+    2  7 3dx2-y2    1.43233   0.46896      0.469   0.000   0.000
+    2  8 3dxy       0.00169   0.03716      0.037   0.000  -0.000
+    2  9 3dyz      -0.01654   0.01889      0.019   0.000  -0.000
+    2 10 3dz2       0.07317   0.00944      0.009   0.000  -0.000
+    2 11 3dxz      -0.01654   0.01889      0.019   0.000  -0.000
+    2 12 3dx2-y2    0.00163   0.03712      0.037   0.000  -0.000
+    2 13 4Ppy       0.11940   0.01146      0.011   0.000  -0.000
+    2 14 4Ppz       0.09734   0.00405      0.004   0.000  -0.000
+    2 15 4Ppx       0.11940   0.01146      0.011   0.000  -0.000
+    2     Total     8.07808   1.47328      1.473   0.000   0.000
+
+    3  1 4s         1.34055   0.02224     -0.014   0.000   0.017
+    3  2 4s         0.10723   0.06308      0.004   0.000  -0.063
+    3  3 3dxy       1.22789   0.65170      0.058   0.000  -0.649
+    3  4 3dyz       1.24678   0.48483     -0.001   0.000  -0.485
+    3  5 3dz2       1.27218   0.47668      0.011   0.000  -0.477
+    3  6 3dxz       1.24678   0.48483     -0.001   0.000  -0.485
+    3  7 3dx2-y2    1.22650   0.65315      0.058   0.000  -0.651
+    3  8 3dxy       0.04754   0.06833      0.009   0.000  -0.068
+    3  9 3dyz       0.03199   0.06030      0.004   0.000  -0.060
+    3 10 3dz2       0.07189   0.04632      0.003   0.000  -0.046
+    3 11 3dxz       0.03199   0.06030      0.004   0.000  -0.060
+    3 12 3dx2-y2    0.04751   0.06830      0.009   0.000  -0.068
+    3 13 4Ppy       0.02837   0.00570      0.001   0.000   0.006
+    3 14 4Ppz       0.00541   0.00459      0.004   0.000  -0.001
+    3 15 4Ppx       0.02837   0.00570      0.001   0.000   0.006
+    3     Total     7.96096   3.08728      0.152   0.000  -3.084
+
+----------------------------------------------------------------
+Total              24.00000   1.77817      1.778   0.000  -0.000
+
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =      -138.226000
+siesta: Eions   =      2141.484345
+siesta: Ena     =        95.468898
+siesta: Ekin    =      2356.516365
+siesta: Enl     =     -1464.239152
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =       -28.363076
+siesta: DUscf   =         2.906371
+siesta: DUext   =         0.000000
+siesta: Exc     =     -1147.831580
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2327.026517
+siesta: Etot    =     -2327.026520
+siesta: FreeEng =     -2327.200402
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =    -138.226000
+siesta:       Kinetic =    2356.516365
+siesta:       Hartree =    1407.488447
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -1147.831580
+siesta:  Ion-electron =   -4749.501564
+siesta:       Ion-ion =    -193.698188
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -2327.026520
+siesta:         Fermi =      -3.497089
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1   -0.000000   -0.000000   -0.073300
+siesta:      2    0.000000    0.000000   -0.000000
+siesta:      3    0.000000   -0.000000    0.073300
+siesta: ----------------------------------------
+siesta:    Tot   -0.000000   -0.000000   -0.000000
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:     0.004163   -0.000000    0.000000
+siesta:    -0.000000    0.004163   -0.000000
+siesta:     0.000000    0.000000   -0.000815
+
+siesta: Cell volume =        426.771459 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:          -0.00002727         -0.00002486  Ry/Bohr**3
+siesta:          -0.00250340         -0.00228260  eV/Ang**3
+siesta:          -4.01093104         -3.65716852  kBar
+(Free)E+ p_basis*V_orbitals  =       -2324.930473
+(Free)Eharris+ p_basis*V_orbitals  =       -2324.930471
+siesta: Total spin polarization (x,y,z) =     1.778175    0.000000   -0.000000
+siesta: S , {S} =     1.778175    1.778175    0.000000   -0.000000
+>> End of run:   2-JUL-2017  11:58:28
+Job completed

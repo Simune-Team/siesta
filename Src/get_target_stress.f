@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       subroutine get_target_stress(tp,tstres)
       use precision, only: dp
       use parallel, only: ionode
@@ -35,6 +42,8 @@ C Look for target stress and read it if found, otherwise generate it --------
             sxy = fdf_bvalues(pline,4)
             sxz = fdf_bvalues(pline,5)
             syz = fdf_bvalues(pline,6)
+            call fdf_bclose(bfdf)
+            
             tstres(1,1) = - sxx * tp
             tstres(2,2) = - syy * tp
             tstres(3,3) = - szz * tp

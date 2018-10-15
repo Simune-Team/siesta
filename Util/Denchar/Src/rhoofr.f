@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       SUBROUTINE RHOOFR( NA, NO, NUO, MAXND, MAXNA, NSPIN, 
      .                   ISA, IPHORB, INDXUO, LASTO, 
@@ -111,7 +118,7 @@ C **********************************************************************
 
       INTEGER
      .  NPO, IA, ISEL, NNA, UNIT1, UNIT2, UNIT3, UNIT4
- 
+     
       INTEGER
      .  I, J, IN, IAT1, IAT2, JO, IO, IUO, IAVEC, IAVEC1, IAVEC2, 
      .  IS1, IS2, IPHI1, IPHI2, IND, IX, IY, IZ, NX, NY, NZ, IZA(NA)
@@ -127,11 +134,11 @@ C **********************************************************************
       LOGICAL FIRST
 
       CHARACTER
-     .  SNAME*30, FNAMESCF*38, FNAMEDEL*38, FNAMEUP*38, FNAMEDOWN*38,
-     .  PASTE*38
-
+     .  SNAME*30, FNAMESCF*38, FNAMEDEL*38, FNAMEUP*38, FNAMEDOWN*38
+      integer :: u_mag3d, u_sum3d
+      character(len=50) :: fname_mag3d, fname_sum3d
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE
+     .  IO_ASSIGN, IO_CLOSE, 
      .  NEIGHB, WROUT
 
 C **********************************************************************
@@ -244,8 +251,8 @@ C Open files to store charge density -----------------------------------
 
       IF (NSPIN .EQ. 1) THEN
         IF (IDIMEN .EQ. 2) THEN
-          FNAMESCF = PASTE(SNAME,'.CON.SCF')
-          FNAMEDEL = PASTE(SNAME,'.CON.DEL')
+          FNAMESCF = TRIM(SNAME)//'.CON.SCF'
+          FNAMEDEL = TRIM(SNAME)//'.CON.DEL'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -255,8 +262,8 @@ C Open files to store charge density -----------------------------------
      .         FORM = 'FORMATTED')
           REWIND(UNIT2)
         ELSEIF (IDIMEN .EQ. 3) THEN
-          FNAMESCF = PASTE(SNAME,'.RHO.cube')
-          FNAMEDEL = PASTE(SNAME,'.DRHO.cube')
+          FNAMESCF = TRIM(SNAME)//'.RHO.cube'
+          FNAMEDEL = TRIM(SNAME)//'.DRHO.cube'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -268,10 +275,10 @@ C Open files to store charge density -----------------------------------
         ENDIF
       ELSEIF (NSPIN .EQ. 2) THEN
         IF (IDIMEN .EQ. 2) THEN
-          FNAMESCF = PASTE(SNAME,'.CON.MAG' )
-          FNAMEDEL = PASTE(SNAME,'.CON.DEL' )
-          FNAMEUP  = PASTE(SNAME,'.CON.UP'  )
-          FNAMEDOWN= PASTE(SNAME,'.CON.DOWN')
+          FNAMESCF = TRIM(SNAME)//'.CON.MAG'
+          FNAMEDEL = TRIM(SNAME)//'.CON.DEL'
+          FNAMEUP  = TRIM(SNAME)//'.CON.UP'
+          FNAMEDOWN= TRIM(SNAME)//'.CON.DOWN'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -289,9 +296,11 @@ C Open files to store charge density -----------------------------------
      .         FORM = 'FORMATTED')
           REWIND(UNIT4)
         ELSE IF (IDIMEN .EQ. 3) THEN
-          FNAMEUP = PASTE(SNAME,'.RHO.UP.cube' )
-          FNAMEDOWN = PASTE(SNAME,'.RHO.DOWN.cube' )
-          FNAMEDEL = PASTE(SNAME,'.DRHO.cube' )
+          FNAMEUP = TRIM(SNAME)//'.RHO.UP.cube'
+          FNAMEDOWN = TRIM(SNAME)//'.RHO.DOWN.cube'
+          FNAMEDEL = TRIM(SNAME)//'.DRHO.cube'
+          FNAME_MAG3D = TRIM(SNAME)//'.RHO.UPminusDOWN.cube'
+          FNAME_SUM3D = TRIM(SNAME)//'.RHO.cube'
           CALL IO_ASSIGN(UNIT1)
           OPEN(UNIT = UNIT1, FILE = FNAMEUP, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -304,6 +313,14 @@ C Open files to store charge density -----------------------------------
           OPEN(UNIT = UNIT3, FILE = FNAMEDEL, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNIT3)
+          CALL IO_ASSIGN(u_mag3d)
+          OPEN(UNIT = u_mag3d, FILE = FNAME_MAG3D, STATUS = 'UNKNOWN',
+     .         FORM = 'FORMATTED')
+          REWIND(u_mag3d)
+          CALL IO_ASSIGN(u_sum3d)
+          OPEN(UNIT = u_sum3d, FILE = FNAME_SUM3D, STATUS = 'UNKNOWN',
+     .         FORM = 'FORMATTED')
+          REWIND(u_sum3d)
         ENDIF
       ELSE
         WRITE(6,*)'BAD NUMBER NSPIN IN RHOOFR.F'
@@ -395,6 +412,28 @@ C   so that only they will be printed
           WRITE(UNIT3,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
           DO IA = 1,NAINCELL
             WRITE(UNIT3,'(i5,4f12.6)') IZA(IA),0.0,
+     .                                 (XAINCELL(IX,IA),IX=1,3)
+          ENDDO
+
+          WRITE(U_MAG3D,*) trim(fname_mag3d)
+          WRITE(U_MAG3D,*) trim(fname_mag3d)
+          WRITE(U_MAG3D,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
+          WRITE(U_MAG3D,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
+          WRITE(U_MAG3D,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
+          WRITE(U_MAG3D,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
+          DO IA = 1,NAINCELL
+            WRITE(U_MAG3D,'(i5,4f12.6)') IZA(IA),0.0,
+     .                                 (XAINCELL(IX,IA),IX=1,3)
+          ENDDO
+
+          WRITE(U_SUM3D,*) trim(fname_sum3d)
+          WRITE(U_SUM3D,*) trim(fname_sum3d)
+          WRITE(U_SUM3D,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
+          WRITE(U_SUM3D,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
+          WRITE(U_SUM3D,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
+          WRITE(U_SUM3D,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
+          DO IA = 1,NAINCELL
+            WRITE(U_SUM3D,'(i5,4f12.6)') IZA(IA),0.0,
      .                                 (XAINCELL(IX,IA),IX=1,3)
           ENDDO
         ENDIF
@@ -580,15 +619,27 @@ C End y and z loops
      .          (DRHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY),NZ=1,NPZ)
             ENDDO
           ENDDO
+         
         ELSE IF (NSPIN .EQ. 2) THEN
           DO NX=1,NPX
             DO NY=1,NPY
               WRITE(UNIT1,'(6e13.5)')
      .          (RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
               WRITE(UNIT2,'(6e13.5)')
-     .          (RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+     .             (RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
               WRITE(UNIT3,'(6e13.5)')
      .          (DRHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY),NZ=1,NPZ)
+
+              ! Write Up-Down
+              write(u_mag3d,'(6e13.5)')
+     $        (RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1) -
+     .          RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+
+              ! Write Up+Down
+              write(u_sum3d,'(6e13.5)')
+     $        (RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1) +
+     .          RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+
             ENDDO
           ENDDO
         ENDIF
@@ -601,10 +652,12 @@ C End y and z loops
         WRITE(6,'(A,A)') '   ',FNAMESCF
         WRITE(6,'(A,A)') '   ',FNAMEDEL
       ELSE IF (NSPIN .EQ. 2) THEN
-        WRITE(6,'(A,A)') '   ',FNAMESCF
+        if (idimen .ne. 3) WRITE(6,'(A,A)') '   ',FNAMESCF
         WRITE(6,'(A,A)') '   ',FNAMEDEL
         WRITE(6,'(A,A)') '   ',FNAMEUP
         WRITE(6,'(A,A)') '   ',FNAMEDOWN
+        IF (IDIMEN .EQ. 3) WRITE(6,'(A,A)') '   ',FNAME_MAG3D
+        IF (IDIMEN .EQ. 3) WRITE(6,'(A,A)') '   ',FNAME_SUM3D
       ENDIF
 
 
@@ -616,6 +669,8 @@ C End y and z loops
       ENDIF
       !==TS== 
       IF (IDIMEN .EQ. 2 .AND. NSPIN .EQ. 2) CALL IO_CLOSE(UNIT4)
+      IF (IDIMEN .EQ. 3 .AND. NSPIN .EQ. 2) CALL IO_CLOSE(u_mag3d)
+      IF (IDIMEN .EQ. 3 .AND. NSPIN .EQ. 2) CALL IO_CLOSE(u_sum3d)
      
           
       RETURN    

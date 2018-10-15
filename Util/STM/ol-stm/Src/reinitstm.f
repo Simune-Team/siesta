@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
 
       SUBROUTINE REINITSTM( MAXO, MAXA, MAXUO, MAXNH, MAXNA, NSPIN)
 
@@ -30,8 +37,6 @@ C **********************************************************************
 
 C Internal variables --------------------------------------------------
 
-      CHARACTER*33 PASTE
-
       CHARACTER*30
      .  SNAME, FNAME1
 
@@ -39,15 +44,12 @@ C Internal variables --------------------------------------------------
       INTEGER
      .  UNIT1 
 
-      LOGICAL
-     .  LEQI
-
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE, LEQI
+     .  IO_ASSIGN, IO_CLOSE
 
 C Assign the name of the output file -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME1 = PASTE(sname,'.DIM')
+      FNAME1 = TRIM(sname)//'.DIM'
 
       CALL IO_ASSIGN(UNIT1)
         OPEN ( UNIT = UNIT1, FILE = FNAME1, FORM = 'UNFORMATTED',

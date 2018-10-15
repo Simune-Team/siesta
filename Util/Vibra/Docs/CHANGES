@@ -50,7 +50,7 @@ be able to reproduce the provided results.
 
 Files:
 In Vibes:
-  vibrator.f : bug corrected
+  vibra.f : bug corrected
   fcbuild.f  : increased number of digits in coordinate output
 In Examples:
   Si.inp           : new file; Si pseudo input

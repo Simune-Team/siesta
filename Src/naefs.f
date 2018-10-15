@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module m_naefs
       public :: naefs
@@ -43,9 +40,10 @@ C
 C *********************************************************************
 
       use precision 
-      use atmfuncs,  only: izofis
+      use atmfuncs,  only: izofis, vna_gindex
       use neighbour, only: jna=>jan, xij, mneighb,
      &                     reset_neighbour_arrays
+      use m_new_matel,   only : new_matel
 
       implicit none
 
@@ -60,7 +58,7 @@ C *********************************************************************
       logical, intent(in)  :: forces_and_stress
 
 C Internal variables ......................................................
-      integer  ia, is, ix, ja, jn, js, jx, jua, nnia
+      integer  ia, is, ix, ja, jn, js, jx, jua, nnia, ig, jg
 
       real(dp)  fij(3), pi, vij, volcel, volume 
       
@@ -84,7 +82,9 @@ C Find neighbour atoms
           is = isa(ia)
           js = isa(ja)
           if (izofis(is).gt.0 .and. izofis(js).gt.0) then
-            call MATEL( 'T', is, js, 0, 0, xij(1:3,jn), vij, fij )
+            ig = vna_gindex(is)
+            jg = vna_gindex(js)
+            call new_MATEL( 'T', ig, jg, xij(1:3,jn), vij, fij )
             Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
                do ix = 1,3
@@ -102,7 +102,7 @@ C Find neighbour atoms
       enddo
 
 C     Free local memory
-!      call MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
+!      call new_MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
       call reset_neighbour_arrays( )
       call timer( 'naefs', 2 )
       end subroutine naefs

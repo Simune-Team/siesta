@@ -1,16 +1,22 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module metaforce
 
       use precision, only : dp
 
       implicit none
 
-      integer,           save :: maxGauss = 100
       integer,           save :: nGauss = 0
-      logical,           save :: lMetaForce
-      integer,  pointer, save :: nGaussPtr(:,:)
-      real(dp), pointer, save :: GaussK(:)
-      real(dp), pointer, save :: GaussR0(:)
-      real(dp), pointer, save :: GaussZeta(:)
+      logical,           save :: lMetaForce = .false.
+      integer,  pointer, save :: nGaussPtr(:,:) => null()
+      real(dp), pointer, save :: GaussK(:) => null()
+      real(dp), pointer, save :: GaussR0(:) => null()
+      real(dp), pointer, save :: GaussZeta(:) => null()
 
       CONTAINS
 
@@ -34,34 +40,42 @@ C
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
-C Find if there are any Gaussians specified
-      lMetaForce = fdf_defined('MetaForce')
-      if (lMetaForce) then
+C     Find if there are any Gaussians specified
+      nGauss = fdf_block_linecount('MetaForce', 'iirrr')
+      lMetaForce = nGauss > 0
+      if ( lMetaForce ) then
 
 C Allocate arrays for Gaussian data
-        call re_alloc( nGaussPtr, 1, 2, 1, maxGauss, 'nGaussPtr',
+        call re_alloc( nGaussPtr, 1, 2, 1, nGauss, 'nGaussPtr',
      &                 'initmeta' )
-        call re_alloc( GaussK, 1, maxGauss, 'GaussK', 'initmeta' )
-        call re_alloc( GaussR0, 1, maxGauss, 'GaussR0', 'initmeta' )
-        call re_alloc( GaussZeta, 1, maxGauss, 'GaussZeta', 'initmeta' )
+        call re_alloc( GaussK, 1, nGauss, 'GaussK', 'initmeta' )
+        call re_alloc( GaussR0, 1, nGauss, 'GaussR0', 'initmeta' )
+        call re_alloc( GaussZeta, 1, nGauss, 'GaussZeta', 'initmeta' )
 
 C Read Gaussians from block
-        lMetaForce = fdf_block('MetaForce',bfdf)
+        lMetaForce = fdf_block('MetaForce', bfdf)
 
-        do k= 1, maxGauss
+        do while ( fdf_bline(bfdf, pline) )
 C Read and parse data line
-          if (.not. fdf_bline(bfdf,pline))
-     .      call die('initmeta: ERROR in MetaForce block')
           ni = fdf_bnintegers(pline)
           nr = fdf_bnreals(pline)
 
 C Check that correct info is given
           if ((ni .ge. 2) .and. (nr .ge. 3)) then
             nGauss = nGauss + 1
+            ! Atom 1
             nGaussPtr(1,nGauss) = abs(fdf_bintegers(pline,1))
+            ! Atom 2
             nGaussPtr(2,nGauss) = abs(fdf_bintegers(pline,2))
+            ! Gaussian pre-factor for the force
+            ! Unit: Ry
             GaussK(nGauss) = fdf_breals(pline,1)
+            ! Distance in r - r_0, where r is the distance between
+            ! atom i and j
+            ! Unit: Ang
             GaussR0(nGauss) = fdf_breals(pline,2)/0.529177_dp
+            ! Gaussian prefactor
+            ! Unit: 1/Bohr**2
             GaussZeta(nGauss) = fdf_breals(pline,3)
           endif
         enddo

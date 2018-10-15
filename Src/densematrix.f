@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module densematrix
 C
@@ -16,9 +13,10 @@ C
 
       implicit none
 
-      real(dp), pointer :: Haux(:)
-      real(dp), pointer :: Saux(:)
-      real(dp), pointer :: psi(:)
+      ! Ensure they are initialially nullified
+      real(dp), pointer :: Haux(:) => null()
+      real(dp), pointer :: Saux(:) => null()
+      real(dp), pointer :: psi(:) => null()
 
       CONTAINS
 
@@ -29,6 +27,7 @@ C
       call de_alloc( Haux, 'Haux', 'densematrix' )
       call de_alloc( Saux, 'Saux', 'densematrix' )
       call de_alloc( psi,  'psi',  'densematrix' )
+      nullify(Haux, Saux, psi)
 
       end subroutine resetDenseMatrix
 

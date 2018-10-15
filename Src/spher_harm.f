@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       module spher_harm
       use precision
@@ -15,9 +12,18 @@
 
       implicit none
 
-      real(dp), pointer, private :: Y(:)
-      real(dp), pointer, private :: DYDR(:,:)
+      real(dp), pointer, private :: Y(:) => null()
+      real(dp), pointer, private :: DYDR(:,:) => null()
       INTEGER,           private :: MAX_LM=-1
+
+      public :: rlylm, ylmexp, ylmylm, lofilm
+      public :: reset_spher_harm
+      public :: gauleg !! for phirphi...
+      interface ylmexp
+        module procedure ylmexp_1, ylmexp_2
+      end interface
+
+      private
 
       CONTAINS
 
@@ -253,7 +259,6 @@ C *********************************************************************
       if (LM.gt.MAX_LM) then
 
         MAX_LM = LM
-        nullify( Y, DYDR )
         call re_alloc( Y, 0, MAX_LM, 'Y', 'spher_harm' )
         call re_alloc( DYDR, 1, 3, 0, MAX_LM, 'DYDR', 'spher_harm' )
       endif
@@ -291,8 +296,11 @@ C Written by J.M.Soler. April 1996.
       call die('LOFILM: ILM too large')
       END function lofilm
 
-
-      SUBROUTINE YLMEXP( LMAX, RLYLM_F, FUNC, IS, IO, IR1, NR, RMAX,
+!
+!     There are now two implementations of ylmexp, with
+!     one and two indexes for "func"
+!
+      SUBROUTINE YLMEXP_2( LMAX, RLYLM_F, FUNC, IS, IO, IR1, NR, RMAX,
      .                   NY, ILM, FLM )
 C Makes a radial times spherical-harmonic expansion of a function.
 
@@ -461,7 +469,180 @@ C Stop time counter -------------------------------------------------
 *     CALL TIMER( 'YLMEXP', 2 )
 C -------------------------------------------------------------------
 
-      end subroutine ylmexp
+      end subroutine ylmexp_2
+!
+!     Version with a single global index to call func
+!
+      SUBROUTINE YLMEXP_1( LMAX, RLYLM_F, FUNC, IG, IR1, NR, RMAX,
+     .                   NY, ILM, FLM )
+C Makes a radial times spherical-harmonic expansion of a function.
+
+      integer, intent(in)          :: lmax
+      interface
+         subroutine rlylm_f(lmax,rvec,yy,grady)
+         use precision, only: dp
+         integer, intent(in)   :: lmax
+         real(dp), intent(in)  :: rvec(3)
+         real(dp), intent(out) :: yy(0:)
+         real(dp), intent(out) :: grady(1:,0:)
+         end subroutine rlylm_f
+
+         subroutine func(ig,rvec,yy,grady)
+         use precision, only: dp
+         integer, intent(in)   :: ig
+         real(dp), intent(in)  :: rvec(3)
+         real(dp), intent(out) :: yy, grady(3)
+         end subroutine func
+       end interface
+
+       integer, intent(in)        :: ig
+       integer, intent(in)        :: ir1, nr
+       real(dp), intent(in)       :: rmax
+
+       integer, intent(out)       :: ny
+       integer, intent(out)       :: ilm(:)
+       real(dp), dimension(ir1:,:), intent(out)  :: flm
+
+C Written by J.M.Soler. September 1995.
+C ************************* INPUT ***********************************
+C INTEGER  LMAX                     : Max. ang. momentum quantum number
+C EXTERNAL RLYLM_F(Lmax,Rvec,yy,GradY) : Returns spherical harmonics,
+C                                     times r**l
+C EXTERNAL FUNC(IS,IO,Rvec,F,GradF) : Function to be expanded.
+C INTEGER  IG                       : Global Index to call FUNC.
+C INTEGER  IR1                      : First radial index.
+C INTEGER  NR                       : Last radial index.
+C REAL*8   RMAX                     : Maximum radius: R(IR)=RMAX*IR/NR
+C ************************* OUTPUT **********************************
+C INTEGER  NY            : Number of spherical harmonics required.
+C INTEGER  ILM(NY)       : Spherical harmonics indexes: ILM=L*L+L+M+1.
+C REAL*8   FLM(IR1:NR,NY): Radial expansion for each spherical harmonic:
+C   F(Rvec) = Sum_iy( FLM(Rmod,iy) * YY(Rdir,ILM(iy)) ),
+C   with   Rmod = RMAX*IR/NR
+C ************************* UNITS ***********************************
+C RMAX must be in the same units of the argument Rvec in FUNC.
+C FLM is in the same units of the argument F in FUNC.
+C ************************* BEHAVIOUR *******************************
+C If function FUNC contains angular components with L higher than LMAX,
+C   they will corrupt those computed with lower L.
+C *******************************************************************
+
+
+C Tolerance for FLM -------------------------------------------------
+      REAL(DP) FTOL
+      PARAMETER ( FTOL = 1.e-12_dp )
+C -------------------------------------------------------------------
+
+C Dimension parameters for internal variables -----------------------
+      INTEGER MAXL, MAXLM, MAXSP
+      PARAMETER ( MAXL  = 8 )
+      PARAMETER ( MAXLM = (MAXL+1) * (MAXL+1) )
+      PARAMETER ( MAXSP = (MAXL+1) * (2*MAXL+1) )
+C -------------------------------------------------------------------
+
+C Declare internal variables ----------------------------------------
+      INTEGER
+     .  IM, IR, ISP, IZ, JLM, JR, JY, NLM, NSP
+      REAL(DP)
+     .  DFDX(3), DYDX(3,MAXLM), 
+     .  F(MAXSP), FY, PHI, PI, R, RX(3), THETA, 
+     .  W(MAXL+1), WSP,
+     .  X(3,MAXSP), YY(MAXLM), YSP(MAXSP,MAXLM),
+     .  Z(MAXL+1)
+      EXTERNAL CHKDIM
+*     EXTERNAL TIMER
+C -------------------------------------------------------------------
+
+C Start time counter ------------------------------------------------
+*     CALL TIMER( 'YLMEXP', 1 )
+C -------------------------------------------------------------------
+
+C Check maximum angular momentum ------------------------------------
+      CALL CHKDIM( 'YLMEXP', 'MAXL', MAXL, LMAX, 1 )
+C -------------------------------------------------------------------
+
+C Find special points and weights for gaussian quadrature -----------
+      CALL GAULEG( -1._dp, 1._dp, Z, W, LMAX+1 )
+C -------------------------------------------------------------------
+
+C Find weighted spherical harmonics at special points ---------------
+      PI = 4._dp * ATAN(1._dp)
+      NLM = (LMAX+1)**2
+      NSP = 0
+      DO 30 IZ = 1,LMAX+1
+        THETA = ACOS( Z(IZ) )
+        DO 20 IM = 0,2*LMAX
+          NSP = NSP + 1
+          PHI = IM * 2._dp * PI / (2*LMAX+1)
+          X(1,NSP) = SIN(THETA) * COS(PHI)
+          X(2,NSP) = SIN(THETA) * SIN(PHI)
+          X(3,NSP) = COS(THETA)
+          CALL RLYLM_F( LMAX, X(1,NSP), YY, DYDX )
+          WSP = W(IZ) * (2._dp*PI) / (2*LMAX+1)
+          DO 10 JLM = 1,NLM
+            YSP(NSP,JLM) = WSP * YY(JLM)
+   10     CONTINUE
+   20   CONTINUE
+   30 CONTINUE
+C -------------------------------------------------------------------
+      ILM = 0
+
+C Expand FUNC in spherical harmonics at each radius -----------------
+      NY = 0
+
+C     Loop on radial points
+      DO 80 IR = IR1,NR
+        R = IR * RMAX / NR
+
+C       Find function at points on a sphere of radius R
+        DO 40 ISP = 1,NSP
+          RX(1) = R * X(1,ISP)
+          RX(2) = R * X(2,ISP)
+          RX(3) = R * X(3,ISP)
+          CALL FUNC( IG, RX, F(ISP), DFDX )
+   40   CONTINUE
+
+C       Expand F(R) in spherical harmonics
+        DO 70 JLM = 1,NLM
+!          FY = DDOT(NSP,F,1,YSP(1,JLM),1)
+          FY = dot_product(F(1:nsp),YSP(1:nsp,JLM))
+          IF ( ABS(FY) .GT. FTOL ) THEN
+C           Find JY corresponding to JLM
+            DO 50 JY = 1,NY
+              IF ( ILM(JY) .EQ. JLM ) THEN
+                FLM(IR,JY) = FY
+                GOTO 70
+              ENDIF
+   50       CONTINUE
+
+C           New spherical harmonic required.
+            NY = NY + 1
+            ILM(NY) = JLM
+            DO 60 JR = IR1,NR
+              FLM(JR,NY) = 0._dp
+   60       CONTINUE
+            FLM(IR,NY) = FY
+          ENDIF
+   70   CONTINUE
+
+   80 CONTINUE
+C -------------------------------------------------------------------
+
+C Special case for zero function ------------------------------------
+      IF (NY .EQ. 0) THEN
+        NY = 1
+        ILM(1) = 1
+        DO 90 IR = IR1,NR
+          FLM(IR,1) = 0._dp
+   90   CONTINUE
+      ENDIF
+C -------------------------------------------------------------------
+
+C Stop time counter -------------------------------------------------
+*     CALL TIMER( 'YLMEXP', 2 )
+C -------------------------------------------------------------------
+
+      end subroutine ylmexp_1
 
       subroutine gauleg(X1,X2,X,W,N)
 !

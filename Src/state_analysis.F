@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       MODULE m_state_analysis
       use write_subs
 
@@ -6,27 +13,33 @@
 
       CONTAINS
 
-      subroutine state_analysis( istep  )
+      subroutine state_analysis( istep )
       use siesta_cml
       use m_born_charge, only : born_charge
       use parallel,      only : IOnode
       use m_wallclock,   only : wallclock
-      use zmatrix,       only : lUseZmatrix, iofaZmat, write_Zmatrix,
-     &                          CartesianForce_to_ZmatForce,
-     &                          write_canonical_ucell_and_Zmatrix
-      use m_iostruct,    only : write_struct
-      use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto,
-     &                          superx
-      use m_spin,        only : nspin
+      use zmatrix,       only : lUseZmatrix, iofaZmat,
+     &                          CartesianForce_to_ZmatForce
+      use atomlist,      only : iaorb, iphorb, amass, no_u, lasto
+      use atomlist,      only : indxuo
+      use m_spin,        only : spin
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
+
       USE siesta_options
+      use units, only: amu, eV
       use m_stress
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
+      use m_energies, only: Ebs, Ef
       use m_ntm
       use m_forces
+      use m_energies, only: update_FreeE, update_FreeEHarris
       use m_intramol_pressure, only: remove_intramol_pressure
+
+#ifdef SIESTA__FLOOK
+      use flook_siesta, only : slua_call, LUA_FORCES
+#endif
 
       implicit none
 
@@ -34,53 +47,64 @@
       integer  :: ia, jx, ix
       real(dp) :: volume
       logical  :: eggbox_block=.true. ! Read eggbox info from data file?
-
-      external :: eggbox, mulliken
+      real(dp) :: qspin
+      
+      external :: eggbox, mulliken, moments
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
-      call timer( 'STanaly', 1 )
+      call timer( 'state_analysis', 1 )
 #ifdef DEBUG
       call write_debug( '  PRE state_analysis' )
 #endif
-!     Save structural information in crystallographic format,
-!     and canonical Zmatrix (if applicable) before moving the atoms
+
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='SCF Finalization')   
       endif
 
+!     Write final Kohn-Sham and Free Energy
+      
+      FreeE       = Etot - Temp * Entropy
+      FreeEHarris = Eharrs - Temp * Entropy
+
+      if (cml_p) call cmlStartPropertyList(mainXML,
+     &                        title='Energies and spin')
       if (IOnode) then
-        call write_struct( ucell, na_u, isa, iza, xa )
-        if (lUseZmatrix .and. (idyn.eq.0)) then
-          call write_canonical_ucell_and_Zmatrix()
+        if ( .not. harrisfun)
+     &      write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
+        if (cml_p) then
+           call cmlAddProperty(xf=mainXML, value=Etot/eV,
+     &       dictref='siesta:E_KS', units='siestaUnits:eV', 
+     .       fmt='r6')
+           call cmlAddProperty(xf=mainXML, value=FreeE/eV,
+     &       dictref='siesta:FreeE', units='siestaUnits:eV', 
+     .       fmt='r6')
+           call cmlAddProperty(xf=mainXML, value=Ebs/eV,
+     &       dictref='siesta:Ebs', units='siestaUnits:eV', 
+     .       fmt='r6')
+           call cmlAddProperty(xf=mainXML, value=Ef/eV,
+     &       dictref='siesta:E_Fermi', units='siestaUnits:eV', 
+     .       fmt='r6')
         endif
       endif
 
-!     Write final Kohn-Sham Energy 
-      if (cml_p) call cmlStartPropertyList(mainXML,
-     &                                   title='Final KS Energy')
-      if (IOnode) then
-        if ( .not. harrisfun) 
-     &    write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
-        if (cml_p) call cmlAddProperty(xf=mainXML, value=Etot/eV,
-     &       dictref='siesta:E_KS', units='siestaUnits:eV', 
-     .       fmt='r6')
-      endif
-
-!     Substract egg box effect form energy
+!     Substract egg box effect from energy
       if (eggbox_block) then
         call eggbox( 'energy', ucell, na_u, isa, ntm, xa, fa, Etot,
      &               eggbox_block )
+        FreeE  = Etot - Temp * Entropy
         if (IOnode)
      &    write(6,"(/a,f14.4)") 'siesta: E_KS - E_eggbox = ',Etot/eV
         if (cml_p) call cmlAddProperty(xf=mainXML, value=Etot/eV,
      &         dictref='siesta:E_KS_egg', units='siestaUnits:eV', 
      .         fmt='r6')
       endif
-      if (cml_p) call cmlEndPropertyList( mainXML )
 
-      FreeE       = Etot - Temp * Entropy
-      FreeEHarris = Eharrs - Temp * Entropy
+      call update_FreeE( Temp )
+      call update_FreeEHarris( Temp )
+      call print_spin(qspin)
+      
+      if (cml_p) call cmlEndPropertyList( mainXML )
 
 !     Substract egg box effect from the forces 
       if (eggbox_block) then
@@ -97,11 +121,23 @@
 !        Consider intramolecular pressure-removal as another
 !        kind of constraint
          call fixed( ucell, mstress, na_u, isa, amass, xa, fa,
-     &               cstress, cfa, ntcon )
+     &               cstress, cfa, ntcon , 
+     &               magnitude_usage = idyn==0 )
       else
          call fixed( ucell, stress, na_u, isa, amass, xa, fa,
-     &               cstress, cfa, ntcon )
+     &               cstress, cfa, ntcon ,
+     &               magnitude_usage = idyn==0 )
       endif
+
+#ifdef SIESTA__FLOOK
+      ! We call it right after using the
+      ! geometry constraints.
+      ! In that way we can use both methods on top
+      ! of each other!
+      ! The easy, already implemented methods in fixed,
+      ! and custom ones in Lua :)
+      call slua_call(LUA, LUA_FORCES)
+#endif
 
 !     Calculate and output Zmatrix forces
       if (lUseZmatrix .and. (idyn.eq.0)) then
@@ -125,14 +161,20 @@
 
 !     Force output 
       if (IOnode) then
-        call siesta_write_forces()
+        call siesta_write_forces(istep)
         call siesta_write_stress_pressure()
         call wallclock('--- end of geometry step')
       endif
 
-!     Mulliken population analysis 
-      call mulliken( mullipop, nspin, na_u, no_u, maxnh,
-     &               numh, listhptr, listh, S, Dscf, isa, 
+!     Population and moment analysis 
+      if ( spin%SO .and. orbmoms) then
+         call moments( 1, na_u, no_u, maxnh, numh, listhptr,
+     .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
+     .           indxuo )
+      endif
+      ! Call this unconditionally
+      call mulliken( mullipop, na_u, no_u, maxnh,
+     &               numh, listhptr, listh, S, Dscf, isa,
      &               lasto, iaorb, iphorb )
 !
 !     Call the born effective charge routine only in those steps (even) 
@@ -145,10 +187,8 @@
       if (cml_p) then
          call cmlEndModule(mainXML)         
       endif 
-      call timer( 'STanaly', 2 )
-#ifdef DEBUG
-      call write_debug( '  POS state_analysis' )
-#endif
+      call timer( 'state_analysis', 2 )
+
 !--------------------------------------------------------------------------- END
       END subroutine state_analysis
 

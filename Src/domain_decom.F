@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 
 C This file contains module domain_decom.
@@ -356,7 +353,7 @@ C ==================================================================
 
 !       Use metis library to create a Domain decomposition
         metis_options(1) = 0
-#ifdef ON_DOMAIN_DECOMP
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
         if (nparts .gt. 8 ) then
           call METIS_PartGraphKway( no, jja, iia, dummy, dummy, 0,
      &                              1, nparts, metis_options,
@@ -535,7 +532,7 @@ C ==================================================================
 !       Number interior nodes
         noloc = ginde(2,dom)
         if (noloc.gt.0) then
-#ifdef ON_DOMAIN_DECOMP
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
           call METIS_NodeND( noloc, xadj, adj, 1, metisOpt, perR, invR )
 #endif
 

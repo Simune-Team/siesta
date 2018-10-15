@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       program fractional
 !
 !     Program to multiply the Pseudopotential strength by a given
@@ -7,7 +14,6 @@
       use pseudopotential, only: pseudopotential_t,
      $                           pseudo_read, pseudo_write_formatted
       use periodic_table,  only: cnfig, qvlofz
-      use sys,             only: die
       use f2kcli
 
       implicit none
@@ -353,7 +359,7 @@ c
       else
          write(6,9000) name
  9000    format(//'element ',a2,' unknown')
-         call die()
+         call die("Unknown element")
       end if
 
       nucl_z = charge

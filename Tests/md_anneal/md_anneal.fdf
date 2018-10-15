@@ -1,10 +1,10 @@
 # -----------------------------------------------------------------------------
 # Primitive c-Si supercell, using STRUCT file
-# Annealing, HarrisFunctional
+# Annealing
 # Alberto Garcia, August-December 2005, January 2006
 # -----------------------------------------------------------------------------
 
-SystemName          Primitive silicon, Annealing, Harris, Struct File
+SystemName          Primitive silicon, Annealing, Struct File
 SystemLabel         md_anneal
 
 NumberOfAtoms       2
@@ -27,7 +27,6 @@ MeshCutoff          100.0 Ry
 
 SolutionMethod       diagon    
 ElectronicTemperature  100 K
-HarrisFunctional T
 WriteMDHistory T
 
 MD.TypeOfRun         anneal

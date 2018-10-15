@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
 
       module m_rhofft
@@ -52,6 +49,10 @@ C     Local variables
       integer               :: ispin, ng
       real(dp)              :: VOLUME, b(3,3)
 
+#ifdef DEBUG
+      call write_debug( '    PRE rhofft' )
+#endif
+
 C     Start time counter
       call timer( 'rhofft', 1 )
 
@@ -64,19 +65,25 @@ C     Find reciprocal lattice vectors
       NG = mesh(1) * mesh(2) * mesh(3)
 
       if (direction == FORWARD) then
+!$OMP parallel workshare default(shared)
          rhog(1,:,:) = RHO(:,:)
          rhog(2,:,:) = 0.0_grid_p
+!$OMP end parallel workshare
 
          do ispin = 1, nspin
             call fft( rhog(1,1,ispin), Mesh, -1 )
          enddo
          ! Units: electrons per unit cell
+!$OMP parallel workshare default(shared)
          rhog(:,:,:) = rhog(:,:,:) * volume / dble(ng)
+!$OMP end parallel workshare
       else if (direction == BACKWARD) then
          do ispin = 1, nspin
             call fft( rhog(1,1,ispin), Mesh, +1 )
          enddo
+!$OMP parallel workshare default(shared)
          rho(:,:) = rhog(1,:,:) * ng / volume
+!$OMP end parallel workshare
          !  print *, "sum(rho)*dvol", sum(rho)*volume/dble(ng)
       else
          call die("wrong fft direction")
@@ -84,6 +91,10 @@ C     Find reciprocal lattice vectors
 
 C     Stop time counter
       call timer( 'rhofft', 2 )
+
+#ifdef DEBUG
+      call write_debug( '    POS rhofft' )
+#endif
 
       end subroutine rhofft
 

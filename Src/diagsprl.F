@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine diagsprl( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr, 
@@ -141,7 +138,11 @@ C  Internal variables .............................................
      .  rho12R, rho12I, rho21R, rho21I,
      .  ene11R, ene11I, ene22R, ene22I,
      .  ene12R, ene12I, ene21R, ene21I
-C  ....................
+C     ....................
+
+#ifdef DEBUG
+      call write_debug( '    PRE diagsprl' )
+#endif
 
 C Find eigenvalues at every k point ...............................
       do ik = 1,nk
@@ -219,14 +220,19 @@ C Hermiticity
 C Find eigenvalues
 C Possible memory optimization: equivalence Haux and psi
         call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .             0,iscf,ierror)
+     .             0,iscf,ierror,2*BlockSize)
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
       enddo
 
 C Check if we are done ................................................
-      if (.not.getD) return
+      if (.not.getD) then
+#ifdef DEBUG
+         call write_debug( '    POS diagsprl' )
+#endif
+         return
+      end if
 
 C Find new Fermi energy and occupation weights ........................
       call fermid( 2, 4, nk, wk, maxo, nuotot, eo, 
@@ -322,7 +328,7 @@ C Hermiticity
         enddo
 
         call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .             neigneeded,iscf,ierror)
+     .             neigneeded,iscf,ierror,2*BlockSize)
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -389,7 +395,7 @@ C Repeat diagonalisation with increased memory to handle clustering
           enddo
 
           call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .               neigneeded,iscf,ierror)
+     .               neigneeded,iscf,ierror,2*BlockSize)
         endif
 
 C Store the products of eigenvectors in matrices Dk and Ek
@@ -525,5 +531,9 @@ C Add contribution to density matrices of unit-cell orbitals
         enddo
 
       enddo
+
+#ifdef DEBUG
+      call write_debug( '    POS diagsprl' )
+#endif
 
       end

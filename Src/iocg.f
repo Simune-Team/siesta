@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine iocg( task, naux, cgaux, cgcntr, relaxd, found )
 
@@ -30,32 +27,25 @@ c**************************************************************************
 
       implicit          none
 
-      character(len=label_length+3) :: paste
       character         task*(*)
       logical           found, relaxd
       integer           naux
       real(dp)          cgaux(naux), cgcntr(0:20)
 
-      external          chkdim, io_assign, io_close, paste
+      external          chkdim, io_assign, io_close
 
 
 c Internal variables and arrays ------------------------------------------
 
       character(len=label_length+3) :: fname
-      logical   exist1, frstme
+      logical   exist1
       integer   nauxr, i, unit1
-
-      save      frstme, fname
-      data      frstme /.true./
 
 c ------------------------------------------------------------------------
 
 c find file name ---------------------------------------------------------
 
-      if (frstme) then
-        fname = paste(slabel,'.CG')
-        frstme = .false.
-      endif
+      fname = trim(slabel) // '.CG'
 
 c read it if it is there -------------------------------------------------
 

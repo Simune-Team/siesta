@@ -1,3 +1,10 @@
+! ---
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt .
+! See Docs/Contributors.txt for a list of contributors.
+! ---
       module mesh
 !
 ! Stores quantities that are connected with the mesh
@@ -28,6 +35,8 @@
 ! real*8  xdop(3,mop)   : Vector to mesh points within rmax
 ! real*8  xdsp(3,nsp)   : Vector to mesh sub-points
 ! integer meshLim(2,3)  : Upper an lower limits of the mesh in every process
+! integer iatfold(3,na) : Supercell vector that keeps track of the 
+!                         of the folding of the atomic coordinates in the mesh 
 C ----------------------------------------------------------------------
       integer,  pointer, save :: idop(:)
       integer,  pointer, save :: ipa(:) => null()
@@ -50,4 +59,5 @@ C ----------------------------------------------------------------------
       real(dp),          save :: cmesh(3,3)
       real(dp),          save :: rcmesh(3,3)
       integer,  pointer, save :: indexp(:) => null()
+      integer,  pointer, save :: iatfold(:,:) => null()
       end module mesh

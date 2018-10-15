@@ -1,12 +1,9 @@
 ! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996- .
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
+! Copyright (C) 1996-2016	The SIESTA group
+!  This file is distributed under the terms of the
+!  GNU General Public License: see COPYING in the top directory
+!  or http://www.gnu.org/copyleft/gpl.txt.
+! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine vmb(nat,ttemp,mass,xa,isa,va)
 C *************************************************************************
@@ -120,6 +117,8 @@ C call to constrains routine)
       ! as stress and fa in the call to fixed. Quick 
       ! workaround is to make the use of a temporary
       ! variable thus:
+      ! The "forces" are already mass-scaled,
+      ! so regardless of the dynamics the call is correct.
       call fixed( cell, stress, nat, isa, mass, xa, fa,
      .                  tmpstress, tmpfa, ntcon )
       stress = tmpstress
@@ -152,13 +151,13 @@ C Correct velocity to exact temperature .....................
 
 
 
-      real*8 function velo(iseed,temp,mass)
+      function velo(iseed,temp,mass) 
 C *************************************************************************
 C This function assigns velocities to atoms according to the 
 C Maxwell-Boltzman distribution.
 C It generates random numbers drawn from the normal distribution,
 C using as input random numbers distributed uniformly from 0 to 1,  
-C which are provided by routine ran3.
+C which are provided by routine randomg.
 C
 C Temperatures in Kelvin
 C Mass in atomic mass units
@@ -173,21 +172,25 @@ C ************************* OUTPUT ****************************************
 C real*8  velo             : Velocity component 
 C *************************************************************************
 
+      use precision
+
       implicit none
 
       integer 
      . iseed
 
-      real*8
+      real(dp)
      . mass,temp
+
+      real(dp) :: velo
 
 C Internal variables .................
 
-      real*8
-     .  arg1, arg2, gauss, med, pi, ran3, var
+      real(dp)
+     .  arg1, arg2, gauss, med, pi, randomg, var
       
       external
-     .  ran3
+     .  randomg
 
 C ...........
 
@@ -198,9 +201,9 @@ C  For other distributions med may be different from cero.
 C  conversion factor to bohr/fs
       var = var * 0.00172309d0
  
-      arg1 = sqrt((-2.) * log(ran3(iseed)))
+      arg1 = sqrt((-2.) * log(randomg(iseed)))
 
-      arg2 = 2.0d0 * pi * ran3(iseed)
+      arg2 = 2.0d0 * pi * randomg(iseed)
       gauss = arg1 * cos(arg2)
 
       velo = med + var * gauss
