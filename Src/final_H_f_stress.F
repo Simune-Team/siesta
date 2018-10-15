@@ -307,7 +307,7 @@
             call delete(dic_save)
           end if
         else if ( idyn /=0 .or. nmove /= 0 ) then
-          call cdf_save_md(trim(slabel)//'.nc')
+          !call cdf_save_md(trim(slabel)//'.nc')
         else
           dic_save = ('fa'.kv.1)//('stress'.kv.1)
           if ( savehs .or. TS_HS_save ) dic_save = dic_save //('H'.kv.1)
