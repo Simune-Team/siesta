@@ -13,6 +13,17 @@ Release notes for siesta 4.1-b4 beta version
     MaxSCFIterations has been increased to 1000 (from 50)
     SCFMustConverge is now default true (from false)
 
+--- Added developer documentation found in Docs/developer
+    Both ford (prefered) and Doxygen may be used
+
+--- Generally increased precision in many output files
+
+--- Lots of fixes and updates for the Lua/flook interaction
+
+--- Auxiliary supercell handling when reading DM matrices
+    Siesta can now read and convert nearly *any* DM matrix and make it
+    match the used sparse pattern.
+
 --- Fixed minor inconsistencies when handling Bessel basis
 
 --- Updated all diagonalization routines
@@ -20,6 +31,9 @@ Release notes for siesta 4.1-b4 beta version
     - Less memory usage
 
 --- Fixed bug on reading *.ion* files (lp:1751723)
+
+--- PDOS files now also contain the fermi-level such that tools may easily
+    align the energy to 0.
 
 --- Added more digits to dDmax which may be relevant when performing
     SOC/Non-Co calculations.
@@ -57,9 +71,20 @@ Release notes for siesta 4.1-b4 beta version
 
 --- TranSiesta / TBtrans changes:
 
+-- Disk-space reduction when mixing non-periodic electrodes and periodic electrodes
+
+-- Now tiling is also enabled for Bloch expansions, this is actually faster
+   than repetitions, so users should prefer tiling the electrodes
+
+-- TranSiesta is now intrinsic to the Siesta executable. An
+   electrode should now be calculated using siesta --electrode
+   The TranSiesta executable still exists but is nothing but siesta --electrode
+
 -- Many bug-fixes related to pivoting tables, this should only
    change the effective BTD matrices, and has no relevance to the
    accuracy of the calculations
+
+-- Huge performance increase in TBtrans for very large systems
 
 -- Huge speed-ups in the generation of the BTD matrix blocks.
 
@@ -79,6 +104,8 @@ Release notes for siesta 4.1-b4 beta version
    are correctly interpreted.
 
 -- Fixed tbtrans AVCEIG output.
+
+-- Change TBtrans DOS output such that there is no normalization
 
 -- Enabled tbtrans 1-orbital calculations in the BTD matrices.
 
@@ -109,7 +136,7 @@ Release notes for siesta 4.1-b4 beta version
 
 -- Made Fermi charge correction more aggressive to faster converge.
 
--- TBtrans can now calculate COOP and COHP analysis curves, they are calculated
+-- TBtrans can now calculate DM, COOP and COHP curves, they are calculated
    in the supercell picture and can thus be analyses cross-boundary as well.
    They are calculated both from the Green function and the spectral function.
    The coming >0.9.3 release of sisl will enable this analysis.
