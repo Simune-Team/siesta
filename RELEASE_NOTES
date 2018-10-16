@@ -84,11 +84,9 @@ Release notes for siesta 4.1-b4 beta version
    change the effective BTD matrices, and has no relevance to the
    accuracy of the calculations
 
--- Huge performance increase in TBtrans for very large systems
+-- Huge performance increase in TBtrans in many different parts of the code
 
--- Huge speed-ups in the generation of the BTD matrix blocks.
-
--- Speed up on the calculation of DOS and orbital currents in TBtrans
+-- Bug-fix for out-of-core calculations for spin-polarized TBT.Spin 2 calculations
 
 -- Fixed the default 2-terminal Poisson ramp. The ramp is now
    defaulted to be positioned in the central region.
@@ -131,9 +129,6 @@ Release notes for siesta 4.1-b4 beta version
    is (more or less) equivalent to:   
      tbtrans RUN.fdf > TBT.out
 
--- Speed up in tbtrans calculations by passing the back-pivoting table to reduce
-   SFIND calls in tbtrans.
-
 -- Made Fermi charge correction more aggressive to faster converge.
 
 -- TBtrans can now calculate DM, COOP and COHP curves, they are calculated
@@ -144,8 +139,6 @@ Release notes for siesta 4.1-b4 beta version
 -- Fixed TBtrans DOS (Green) calculations when performing k-point calculations. There
    can be small differences when comparing Green function DOS between this version
    and prior versions. The bug is only present when TRS is applied.
-
--- Greatly speeded up DOS calculations (thanks to Bernhard Kretz).
 
 #BETA#BETA#BETA#BETA#BETA#BETA#
 B                             B

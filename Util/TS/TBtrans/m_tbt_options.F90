@@ -370,17 +370,6 @@ contains
        ! set the placement in orbitals
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
-       ! we need to correct the GF file name in case of
-       ! single spin
-       select case ( spin_idx ) 
-       case ( 1 )
-          ! We are using spin up
-          Elecs(i)%GFfile = trim(Elecs(i)%GFfile)//'_UP'
-       case ( 2 ) 
-          ! We are using spin down
-          Elecs(i)%GFfile = trim(Elecs(i)%GFfile)//'_DW'
-       end select
-
        if ( (rtmp > 0._dp .and. Elecs(i)%Eta < 0._dp) .or. &
             (rtmp < 0._dp .and. Elecs(i)%Eta > 0._dp) ) then
           call die('All Eta must be either positive or negative &
