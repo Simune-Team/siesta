@@ -153,12 +153,11 @@
 \section*{Contributors to \siesta}
 \addcontentsline{toc}{section}{Contributors to \texorpdfstring{\siesta}{Siesta}}
 
-\siesta\ is Copyright \copyright\  1996-2017 by The Siesta Group:
+\siesta\ is Copyright \copyright\ 1996-2018 by The Siesta Group:
 \vspace{0.5cm}
 
 \hbox{ \hskip 0.1cm
 \begin{tabular}{ll}
-
   
 { Emilio Artacho} &
    \textit{CIC-Nanogune and University of Cambridge} \\ \\
@@ -217,6 +216,7 @@ Xavier Blase,
 Jorge I. Cerd\'a,
 Ram\'on Cuadrado,
 Michele Ceriotti,
+Fabiano Corsetti,
 Raul de la Cruz,
 Gabriel Fabricius,
 Marivi Fernandez-Serra,
@@ -9217,12 +9217,12 @@ always include all arrays.
 
 \begin{fdflogicalF}{UseTreeTimer}
 
-Enable an experimental timer which is based on wall time on the master
-node and is aware of the tree-structure of the timed sections. At the
-end of the program, a report is generated in the output file, and a
-\file{time.json} file in JSON format is also written. \index{JSON
-  timing report@\textbf{JSON timing report}} This file can be used by
-third-party scripts to process timing data.
+  Enable an experimental timer which is based on wall time on the
+  master node and is aware of the tree-structure of the timed
+  sections. At the end of the program, a report is generated in the
+  output file, and a \file{time.json} file in JSON format is also
+  written. \index{JSON timing report} This file can be used by
+  third-party scripts to process timing data.
 
   \note, if used with the PEXSI solver (see Sec.~\ref{SolverPEXSI})
   this defaults to \fdftrue.
@@ -9328,6 +9328,9 @@ if needed.
   This file will be created with a large set of \emph{groups} which
   make separating the quantities easily. Also it will inherently
   denote the units for the stored quantities.
+
+  \note this option is not available for MD/relaxations, only for
+  force constant runs.
   
 \end{fdflogicalF}
 

@@ -66,7 +66,7 @@ C *********************************************************************
 
       use precision,    only : dp
       use atomlist,     only : qtot
-      use densematrix,  only : Haux, Saux, psi
+      use densematrix,  only : Haux, Saux, psi, resetDenseMatrix
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
       use alloc
@@ -660,7 +660,8 @@ C     Deallocate internal arrays
       call de_alloc( kopt,      'kopt',      'optical' )
       call de_alloc( wgthopt,   'wgthopt',   'optical' )
       call de_alloc( aux,       'aux',       'optical' )
-
+      call resetDenseMatrix()
+      
       call timer( 'optical', 2 )
 
 #ifdef DEBUG

@@ -64,7 +64,7 @@ C **********************************************************************
      $                         xml_AddAttribute,
      .                         xml_EndElement, xml_Close
       use xml,          only : str, xml_dump_attribute
-      use densematrix,  only : Haux, Saux, psi
+      use densematrix,  only : Haux, Saux, psi, resetDenseMatrix
       use alloc,        only : re_alloc, de_alloc
       use units,        only : eV
       use files,        only : slabel, label_length
@@ -382,7 +382,8 @@ C Free local workspace array
 C Free local arrays ----------------------------------------------------
       call de_alloc( dpr, 'dpr', 'pdos' )
       call de_alloc( dtot, 'dtot', 'pdos' )
-
+      call resetDenseMatrix()
+      
       ! Restore the paralleloverk options
       ParallelOverK = orig_ParallelOverK
       Serial = orig_Serial

@@ -1620,47 +1620,6 @@ subroutine read_options( na, ns, nspin )
   write_H_at_end_of_cycle  = fdf_get( 'Write.H.End.Of.Cycle', writeH )
 
   writeDM_cdf           = fdf_get('Write.DM.NetCDF', .false. )
-#ifdef NCDF_4
-  write_cdf             = fdf_get('CDF.Save', .false. )
-  ! No compression is by far the fastest
-  cdf_comp_lvl          = fdf_get('CDF.Compress', 0 )
-  if ( Nodes > 1 ) then
-     cdf_w_parallel     = fdf_get('CDF.MPI', .false. )
-  else
-     cdf_w_parallel     = .false.
-  end if
-#ifndef NCDF_PARALLEL
-  ! If not compiled with NCDF_PARALLEL, we do not
-  ! allow parallel writes.....!!!!
-  cdf_w_parallel = .false.
-#endif
-  if ( cdf_w_parallel ) then
-     ! Doing parallel writes does not allow
-     ! compression (the offsets cannot be calculated)
-     cdf_comp_lvl = 0
-  end if
-  cdf_r_parallel = fdf_get('CDF.Read.Parallel', cdf_w_parallel )
-
-  if ( IONode ) then
-     ! Write out
-     write(*,1) 'redata: Save all siesta data in one NC',write_cdf
-     if ( write_cdf ) then
-        if ( grid_p == dp ) then
-           ctmp = fdf_get('CDF.Grid.Precision','double')
-           if ( leqi(ctmp,'single') .or. leqi(ctmp,'float') ) then
-              write(*,2) 'redata: Grids in NC reduced to single precision'
-           end if
-        end if
-        write(*,4) 'redata: NC compression level',cdf_comp_lvl
-        if ( cdf_r_parallel ) then
-           write(*,2) 'redata: Reads NC in parallel'
-        end if
-        if ( cdf_w_parallel ) then
-           write(*,2) 'redata: Writes NC in parallel (possibly not working)'
-        end if
-     end if
-  end if
-#endif
   writedm_cdf_history   = fdf_get('WriteDM.History.NetCDF', .false. )
   writedmhs_cdf         = fdf_get('WriteDMHS.NetCDF', .false. )
   writedmhs_cdf_history = fdf_get('WriteDMHS.History.NetCDF', .false.)
@@ -1780,6 +1739,72 @@ subroutine read_options( na, ns, nspin )
   nobup      = fdf_get( 'Siesta2Wannier90.NumberOfBandsUp',   0)
   nobdown    = fdf_get( 'Siesta2Wannier90.NumberOfBandsDown', 0)
   nob        = fdf_get( 'Siesta2Wannier90.NumberOfBands',     0)
+
+#ifdef NCDF_4
+  write_cdf = fdf_get('CDF.Save', .false.)
+  ! No compression is by far the fastest
+  cdf_comp_lvl = fdf_get('CDF.Compress', 0)
+  if ( Nodes > 1 ) then
+    cdf_w_parallel = fdf_get('CDF.MPI', .false.)
+  else
+    cdf_w_parallel = .false.
+  end if
+
+  ! Only allow writing the CDF file for FC and non-MD calculations
+  ! The MD file should be something different that only contains
+  ! these things.
+  if ( write_cdf ) then
+    if ( idyn == 0 .and. nmove == 0 ) then
+      ! non-MD calculation
+    else if ( idyn == 6 ) then
+      ! FC calculation, the FC calculation is fine
+      ! Here we disable saving any real-space grid data
+      save_initial_charge_density = .false.
+      saverho = .false.
+      savedrho = .false.
+      saverhoxc = .false.
+      savevh = .false.
+      savevna = .false.
+      savevt = .false.
+      savepsch = .false.
+      savebader = .false.
+      savetoch = .false.
+    else
+      write_cdf = .false.
+    end if
+  end if
+# ifndef NCDF_PARALLEL
+  ! If not compiled with NCDF_PARALLEL, we do not
+  ! allow parallel writes.....!!!!
+  cdf_w_parallel = .false.
+# endif
+  if ( cdf_w_parallel ) then
+     ! Doing parallel writes does not allow
+     ! compression (the offsets cannot be calculated)
+     cdf_comp_lvl = 0
+  end if
+  cdf_r_parallel = fdf_get('CDF.Read.Parallel', cdf_w_parallel )
+
+  if ( IONode ) then
+     ! Write out
+     write(*,1) 'redata: Save all siesta data in one NC',write_cdf
+     if ( write_cdf ) then
+        if ( grid_p == dp ) then
+           ctmp = fdf_get('CDF.Grid.Precision','double')
+           if ( leqi(ctmp,'single') .or. leqi(ctmp,'float') ) then
+              write(*,2) 'redata: Grids in NC reduced to single precision'
+           end if
+        end if
+        write(*,4) 'redata: NC compression level',cdf_comp_lvl
+        if ( cdf_r_parallel ) then
+           write(*,2) 'redata: Reads NC in parallel'
+        end if
+        if ( cdf_w_parallel ) then
+           write(*,2) 'redata: Writes NC in parallel (possibly not working)'
+        end if
+     end if
+  end if
+#endif
 
   if (ionode) then
      write(6,'(2a)') 'redata: ', repeat('*', 71)

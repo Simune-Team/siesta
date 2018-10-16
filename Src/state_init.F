@@ -161,7 +161,6 @@
 #ifdef MPI
       integer :: MPIerror
 #endif
-      logical :: is_MD, is_FC
 #endif
       
       character(len=256)            :: oname
@@ -685,12 +684,7 @@
 !     Initialize the NC file
       if ( write_cdf ) then
         if ( inicoor == istep ) then
-          is_MD = .true.
-          if ( idyn == 0 .and. nmove == 0 ) is_MD = .false.
-          is_FC = (idyn == 6)
-          if ( is_FC ) is_MD = .false.
-          call cdf_init_file(trim(slabel)//'.nc',
-     &        is_MD=is_MD, is_FC=is_FC)
+          call cdf_init_file(trim(slabel)//'.nc', is_FC=(idyn==6))
 #ifdef MPI
           call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
@@ -701,16 +695,15 @@
           call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
-          if ( .not. is_MD ) then
-            d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
-            d_sav = d_sav//('sp'.kv.1)//('S'.kv.1)//('xij'.kv.1)
-            d_sav = d_sav//('isc_off'.kv.1)//('nsc'.kv.1)
-            if ( initialized(gradS_2D) ) then
-              d_sav = d_sav//('gradS'.kv.1)
-            end if
-            call cdf_save_state(trim(slabel)//'.nc',d_sav)
-            call delete(d_sav)
+          d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
+          d_sav = d_sav//('sp'.kv.1)//('S'.kv.1)//('xij'.kv.1)
+          d_sav = d_sav//('isc_off'.kv.1)//('nsc'.kv.1)
+          if ( initialized(gradS_2D) ) then
+            d_sav = d_sav//('gradS'.kv.1)
           end if
+          call cdf_save_state(trim(slabel)//'.nc',d_sav)
+          call delete(d_sav)
+
         end if
       end if
 #endif

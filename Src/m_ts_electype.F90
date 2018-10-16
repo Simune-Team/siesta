@@ -1143,23 +1143,25 @@ contains
           ldie = .true.
         end if
 
-        ! If the system is not a Gamma calculation, then the file must
-        ! not be either (the Bloch expansion will only increase the number of
-        ! k-points, hence the above)
-        do j = 1 , 3
-          k = this%Bloch(j)
-          ! The displacements are not allowed non-equivalent.
-          er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
-          if ( j == this%t_dir ) cycle
-          do i = 1 , 3
-            if ( i == this%t_dir ) cycle
-            if ( j == i ) then
-              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
-            else 
-              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
-            end if
+        if ( .not. this%is_gamma ) then
+          ! If the system is not a Gamma calculation, then the file must
+          ! not be either (the Bloch expansion will only increase the number of
+          ! k-points, hence the above)
+          do j = 1 , 3
+            k = this%Bloch(j)
+            ! The displacements are not allowed non-equivalent.
+            er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
+            if ( j == this%t_dir ) cycle
+            do i = 1 , 3
+              if ( i == this%t_dir ) cycle
+              if ( j == i ) then
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
+              else 
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
+              end if
+            end do
           end do
-        end do
+        end if
 
         if ( er .and. IONode ) then
 

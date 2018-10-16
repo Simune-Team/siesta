@@ -576,7 +576,8 @@ C Deallocate local memory
       call de_alloc( psi1,    'psi1',    'KSV_pol' )
       call de_alloc( psiprev, 'psiprev', 'KSV_pol' )
       call de_alloc( aux,     'aux',     'KSV_pol' )
-
+      call resetDenseMatrix()
+      
       if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin
           if (nspin.gt.1) then
