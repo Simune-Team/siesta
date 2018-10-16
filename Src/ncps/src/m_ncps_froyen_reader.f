@@ -81,16 +81,30 @@
 
  8000   format(1x,i2)
  8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
+ 8008   format(1x,a2,1x,a2,1x,a3,1x,a4,1x,i8)
  8010   format(1x,6a10,/,1x,a70)
  8015   format(1x,2i3,i5,4g20.12)
  8030   format(4(g20.12))
  8040   format(1x,a)
 
-        read(io_ps,8005) p%name, p%icorr, p%irel, p%nicore
+        ! Attempt to read extra xc information
+        ! This can be present even with the usual atom xc codes
+        read(io_ps,8008,iostat=ios) p%name, p%icorr,
+     $          p%irel, p%nicore, p%libxc_packed_code
+        if (ios /= 0) then
+           ! Fall back to normal line
+           backspace(io_ps)
+           read(io_ps,8005) p%name, p%icorr, p%irel, p%nicore
+           p%libxc_packed_code = 0
+        endif
+        if ((p%icorr == "xc") .and. (p%libxc_packed_code == 0)) then
+           call die("No libxc codes with 'xc' pseudo-code")
+        endif
         read(io_ps,8010) (p%method(i),i=1,6), p%text
         read(io_ps,8015,iostat=ios)
      $       p%npotd, p%npotu, p%nr, p%b, p%a, p%zval,
      $       gen_zval_inline
+        ! TEST_ME: if ios<0, are we guaranteed that the other info has been read?
         if (ios < 0) gen_zval_inline = 0.0_dp
         call read_ps_conf(p%irel,p%npotd-1,p%text,p%gen_zval)
 !

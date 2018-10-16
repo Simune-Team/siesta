@@ -27,12 +27,18 @@ CONTAINS
 
  8000   format(1x,i2)
  8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
+ 8008   format(1x,a2,1x,a2,1x,a3,1x,a4,1x,i8.8)
  8010   format(1x,6a10,/,1x,a70)
  8015   format(1x,2i3,i5,4g20.12)
  8030   format(4(g20.12))
  8040   format(1x,a)
 
-    write(io_ps,8005) p%name, p%icorr, p%irel, p%nicore
+    if (p%libxc_packed_code /= 0) then
+       write(io_ps,8008) p%name, p%icorr, p%irel, p%nicore, &
+            p%libxc_packed_code
+    else
+       write(io_ps,8005) p%name, p%icorr, p%irel, p%nicore
+    endif
     write(io_ps,8010) (p%method(i),i=1,6), p%text
     if (present(print_gen_zval)) then
        if (print_gen_zval) then

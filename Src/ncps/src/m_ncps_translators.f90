@@ -98,16 +98,19 @@ CONTAINS
                                            n_libxc_functionals=n_xcfuncs)
         
 !       Partial support for libxc functionals
-!       (no single-functional cases, no 'cocktails')
+!       (no 'cocktails')
 !
+        do i = 1, n_xcfuncs
+           call ps_LibxcFunctional_Get(ps,i,code=libxc_ids(i))
+        enddo
+        ! pack these unconditionally
+        call xcid_pack(n_xcfuncs,libxc_ids,p%libxc_packed_code)
+
+        ! Try to convert to the legacy two-char code used by ATOM
         if (n_xcfuncs == 2) then
-           do i = 1, n_xcfuncs
-              call ps_LibxcFunctional_Get(ps,i,code=libxc_ids(i))
-!              libxc_ids(i) = ps_LibxcId(ps,i)
-           enddo
            call get_xc_id_from_libxc(libxc_ids,xc_id,status)
         else
-           write(6,"(a,2i4)") "Cannot handle libxc cases with nfunc/=2..."
+           ! treat this below with the 'xc' code
            status = -1
         endif
 
@@ -122,7 +125,9 @@ CONTAINS
            if (status == 0) then
               write(6,"(a)") "Atom-xc-code from annotation: " // p%icorr
            else
-              call die("Cannot get atom-xc code")
+              ! Fall back to using the "xc" pseudo-code
+              ! The packed libxc ids have been computed above
+              p%icorr = "xc"
            endif
         endif
 !
@@ -403,9 +408,6 @@ CONTAINS
            call assert((id == npotd),"Wrong check on number of down pots")
            call assert((iu == npotu),"Wrong check on number of up pots")
 
-           print *, "l down: ", p%ldown(1:npotd)
-           print *, "l up: ", p%lup(1:npotu)
-
            lmax = maxval(p%ldown(1:npotd))
 
            p%vdown(:,:) = 0.0_dp
@@ -525,4 +527,23 @@ CONTAINS
         if (.not. cond) call die(message)
       end subroutine assert
 
-    end module m_ncps_translators
+!> Packs libxc codes into a single integer
+!> of the form XXXXCCCC      
+subroutine xcid_pack(nfuncs,id,code)
+  integer, intent(in)  :: nfuncs
+  integer, intent(in)  :: id(nfuncs)
+  integer, intent(out) :: code
+
+  if (nfuncs == 2) then
+     ! Separate X and C functionals
+     code = 10000 * id(1) + id(2)
+  else if (nfuncs == 1) then
+     ! Just a single XC functional
+     code = id(1)
+  else
+     code = 0
+  endif
+
+end subroutine xcid_pack
+
+end module m_ncps_translators

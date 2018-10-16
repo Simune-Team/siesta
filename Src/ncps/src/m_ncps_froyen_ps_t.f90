@@ -19,6 +19,7 @@ module m_ncps_froyen_ps_t
         logical                 :: relativistic
         character(len=10)       :: correlation
         character(len=2)        :: icorr
+        integer                 :: libxc_packed_code
         character(len=3)        :: irel
         character(len=4)        :: nicore
         real(dp)                :: a
@@ -48,6 +49,7 @@ module m_ncps_froyen_ps_t
       p%relativistic = .false.
       p%correlation = ' '
       p%icorr = ' '
+      p%libxc_packed_code = 0
       p%irel = ' '
       p%nicore = ' '
       p%a = 0._dp
