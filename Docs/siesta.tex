@@ -109,7 +109,7 @@
 \input{tex/init.tex}
 
 % Set the date
-\date{July 5, 2017}
+\date{October 16, 2018}
 
 \begin{document}
 
@@ -153,12 +153,11 @@
 \section*{Contributors to \siesta}
 \addcontentsline{toc}{section}{Contributors to \texorpdfstring{\siesta}{Siesta}}
 
-\siesta\ is Copyright \copyright\  1996-2017 by The Siesta Group:
+\siesta\ is Copyright \copyright\ 1996-2018 by The Siesta Group:
 \vspace{0.5cm}
 
 \hbox{ \hskip 0.1cm
 \begin{tabular}{ll}
-
   
 { Emilio Artacho} &
    \textit{CIC-Nanogune and University of Cambridge} \\ \\
@@ -216,6 +215,7 @@ Luis C. Balbas,
 Xavier Blase,
 Ramon Cuadrado,
 Michele Ceriotti,
+Fabiano Corsetti,
 Raul de la Cruz,
 Gabriel Fabricius,
 Marivi Fernandez-Serra,
@@ -8947,12 +8947,12 @@ always include all arrays.
 
 \begin{fdflogicalF}{UseTreeTimer}
 
-Enable an experimental timer which is based on wall time on the master
-node and is aware of the tree-structure of the timed sections. At the
-end of the program, a report is generated in the output file, and a
-{\tt time.json} file in JSON format is also written. \index{JSON
-  timing report@{\bf JSON timing report}} This file can be used by
-third-party scripts to process timing data.
+  Enable an experimental timer which is based on wall time on the
+  master node and is aware of the tree-structure of the timed
+  sections. At the end of the program, a report is generated in the
+  output file, and a \file{time.json} file in JSON format is also
+  written. \index{JSON timing report} This file can be used by
+  third-party scripts to process timing data.
 
   \note, if used with the PEXSI solver (see Sec.~\ref{SolverPEXSI})
   this defaults to \fdftrue.
