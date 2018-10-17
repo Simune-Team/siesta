@@ -357,7 +357,8 @@ C
       use precision,    only : dp
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs
-      use densematrix,  only : Haux, Saux, psi, resetDenseMatrix
+      use densematrix,  only : allocDenseMatrix, resetDenseMatrix
+      use densematrix,  only : Haux, Saux, psi
       use alloc,        only : re_alloc, de_alloc
       use files,        only : slabel, label_length
       use atomlist,     only : iaorb, iphorb
@@ -435,8 +436,7 @@ C     Allocate local arrays - only aux is relevant here
          nhs = 2 * no_u*no_l
       endif
       naux  = 2*no_u*5
-      call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
-      call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
+      call allocDenseMatrix(nhs, nhs, nhs)
       call re_alloc( aux, 1, naux, 'aux', 'bands' )
 
       if (getPSI .AND. (Node.eq.0)) then

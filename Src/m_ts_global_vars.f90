@@ -47,6 +47,8 @@ contains
 
        ! Be sure to not have *too* much memory allocated
        ! before entering transiesta
+       ! NOTE, this should not be needed, but just in case
+       ! future developments "forgets" about these arrays.
        call resetDenseMatrix()
        
        call ts_print_transiesta()

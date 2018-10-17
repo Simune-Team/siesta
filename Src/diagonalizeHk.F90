@@ -84,6 +84,7 @@ subroutine diagonalizeHk( ispin )
 ! ------------------------------------------------------------------------------
 ! Used module variables
   use precision,          only: dp           ! Real douple precision type 
+  use densematrix,        only: allocDenseMatrix, resetDenseMatrix
   use densematrix,        only: Haux         ! Hamiltonian matrix in dense form
   use densematrix,        only: Saux         ! Overlap matrix in dense form
   use densematrix,        only: psi          ! Coefficients of the wave function
@@ -201,10 +202,7 @@ subroutine diagonalizeHk( ispin )
 ! These matrices are defined in the module dense matrix
   nhs  = 2 * no_u * no_l
   npsi = 2 * no_u * no_l
-
-  call re_alloc( Haux,     1, nhs,   name='Haux',    routine='densematrix' )
-  call re_alloc( Saux,     1, nhs,   name='Saux',    routine='densematrix' )
-  call re_alloc( psi,      1, npsi,  name='psi',     routine='densematrix' )
+  call allocDenseMatrix(nhs, nhs, npsi)
 
 ! Allocate memory related with the eigenvalues of the Hamiltonian (epsilon)
 ! and with a local variable where the coefficients of the eigenvector at the
@@ -298,9 +296,7 @@ kpoints:                                                             &
 
   enddo kpoints
 
-  call de_alloc( Haux,    name='Haux',    routine='densematrix' )
-  call de_alloc( Saux,    name='Saux',    routine='densematrix' )
-  call de_alloc( psi,     name='psi',     routine='densematrix' )
+  call resetDenseMatrix()
   call de_alloc( epsilon, name='epsilon', routine='diagonalizeHk' )
 
   call timer('diagonalizeHk',2)
