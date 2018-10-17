@@ -432,6 +432,7 @@ C
       use precision
       use parallel,    only : Node, Nodes
       use fdf
+      use densematrix, only : allocDenseMatrix, resetDenseMatrix
       use densematrix, only : Haux, Saux, psi
       use alloc
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
@@ -520,9 +521,7 @@ C Allocate local arrays - only aux is relevant here
       else
          nhs = 2 * nuotot * nuo
       endif
-      call re_alloc(Haux,1,nhs,name='Haux',routine='densematrix')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='densematrix')
-      call re_alloc(psi,1,nhs,name='psi',routine='densematrix')
+      call allocDenseMatrix(nhs, nhs, nhs) 
 
       allocate(ek(nuotot,maxspn,nk))
       call memory('A','D',maxspn*nk*nuotot,'writewave')
@@ -640,6 +639,7 @@ C Handle parallel over K points option which is not allowed for here
       endif
 
 
+      call resetDenseMatrix()
 C Free local arrays 
       call memory('D','D',size(aux),'writewave')
       deallocate(aux)

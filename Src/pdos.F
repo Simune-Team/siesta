@@ -64,7 +64,8 @@ C **********************************************************************
      $                         xml_AddAttribute,
      .                         xml_EndElement, xml_Close
       use xml,          only : str, xml_dump_attribute
-      use densematrix,  only : Haux, Saux, psi, resetDenseMatrix
+      use densematrix,  only : allocDenseMatrix, resetDenseMatrix
+      use densematrix,  only : Haux, Saux, psi
       use alloc,        only : re_alloc, de_alloc
       use units,        only : eV
       use files,        only : slabel, label_length
@@ -165,10 +166,9 @@ C Check internal dimensions --------------------------------------------
        endif
 
 
-C Allocate local arrays ------------------------------------------------
-      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
-      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
-      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
+C Allocate local arrays -------------------------------------------
+C -----
+      call allocDenseMatrix(nhs, nhs, npsi)
       nullify( dtot, dpr )
       call re_alloc( dtot, 1, nhist, 1, spin%EDM, 'dtot', 'pdos' )
       call re_alloc( dpr, 1, nhist, 1, no_u, 1, spin%EDM,

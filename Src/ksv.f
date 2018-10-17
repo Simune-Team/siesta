@@ -75,7 +75,8 @@ C
       use parallel,      only : IOnode
       use sys,           only : die
       use atmfuncs,      only : zvalfis
-      use densematrix
+      use densematrix,   only : allocDenseMatrix, resetDenseMatrix
+      use densematrix,   only : Haux, Saux, psi
       use alloc,         only : re_alloc, de_alloc
       USE m_ksvinit,     only : repol
 
@@ -203,9 +204,7 @@ C Check parameter maxkpol
 C Allocate local memory
       nhs = 2*nuotot*nuo
       npsi = 2*nuotot*nuo
-      call re_alloc( Haux, 1, nhs,  'Haux', 'densematrix' )
-      call re_alloc( Saux, 1, nhs,  'Saux', 'densematrix' )
-      call re_alloc( psi,  1, npsi, 'psi',  'densematrix' )
+      call allocDenseMatrix(nhs, nhs, npsi)
 
       nullify( muo, ek, psi1, psiprev, aux )
       call re_alloc( muo,     1, nuotot, 'muo',     'KSV_pol' )
