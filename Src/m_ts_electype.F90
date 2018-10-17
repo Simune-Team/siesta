@@ -1129,7 +1129,7 @@ contains
         
       end do
 
-      if ( this%kcell_check ) then
+      if ( this%kcell_check .and. this%t_dir <= 3 ) then
 
         ! Check that there is actually k-points in the transport direction
         j = this%t_dir

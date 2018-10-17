@@ -67,7 +67,7 @@ contains
        IsVolt, N_Elec, Elecs, &
        ucell, nsc, na_u,xa,lasto, dit,sparse_pattern, Gamma, &
        isc_off)
-
+    
     use class_OrbitalDistribution
 
     use alloc
@@ -86,7 +86,6 @@ contains
     use m_region
     use m_sparsity_handling
 
-!    use m_monitor
 ! **********************
 ! * INPUT variables    *
 ! **********************
@@ -121,7 +120,6 @@ contains
     ! all cross-connections across the electrode transport direction.
     type(Sparsity) :: tmp_sp
     ! Temporary arrays for knowing the electrode size
-    logical :: bool
     integer :: no_u_TS, i
 
     ! Number of orbitals in TranSiesta
@@ -129,76 +127,68 @@ contains
 
     ! Do a crude check of the sizes
     if ( no_u_TS <= sum(TotUsedOrbs(Elecs)) ) then
-       call die("The contact region size is &
-            &smaller than the electrode size. Please correct.")
+      call die("The contact region size is &
+          &smaller than the electrode size. Please correct.")
     end if
 
     ! Create the ts-offsets
     if ( Gamma ) then
-       ! Initialize the sc_off array
-       call re_alloc(sc_off,1,3,1,1)
-       sc_off(:,:) = 0._dp
+      ! Initialize the sc_off array
+      call re_alloc(sc_off,1,3,1,1)
+      sc_off(:,:) = 0._dp
     else
-       i = product(nsc)
-       call re_alloc(sc_off,1,3,1,i)
-       sc_off(:,:) = matmul(ucell,isc_off)
+      i = product(nsc)
+      call re_alloc(sc_off,1,3,1,i)
+      sc_off(:,:) = matmul(ucell,isc_off)
     end if
-
+    
     ! Removes all buffer atoms, cross-terms between electrodes
     ! and electrode cross-boundaries.
     call ts_Sp_calculation(dit,sparse_pattern,N_Elec,Elecs, &
-         ucell, nsc, isc_off, tmp_sp)
+        ucell, nsc, isc_off, tmp_sp)
 
     if ( IONode .and. Gamma ) then
-       write(*,'(a,a)')'transiesta: ',&
-            'We cannot assure cross-boundary connections in Gamma calculations.'
-       write(*,'(a,a)')'transiesta: ',&
-            'Ensure that the electrode says: Principal cell is perfect'
-    end if
-
-    if ( IsVolt ) then 
-
-       ! Create the update region (a direct subset of the local sparsity pattern)
-       ! Hence it is still a local sparsity pattern.
-       call ts_Sparsity_Update(dit,tmp_sp, N_Elec, Elecs, &
-            ltsup_sp_sc)
-       
-       if ( IONode ) then
-          write(*,'(/,a)') 'transiesta: created local update sparsity pattern:'
-          call print_type(ltsup_sp_sc)
-       end if
-
-#ifdef TRANSIESTA_DEBUG
-       if(IONode)write(*,*)'Created TS-local UP (300)'
-       call sp_to_file(300+Node,ltsup_sp_sc)
-#endif
-
-       ! Create the pointer from the local transiesta update sparsity 
-       ! to the local siesta sparsity
-       call ts_Sparsity_Subset_pointer(dit,sparse_pattern,ltsup_sp_sc, &
-            ltsup_sc_pnt)
-
+      write(*,'(a,a)')'transiesta: ',&
+          'We cannot assure cross-boundary connections in Gamma calculations.'
+      write(*,'(a,a)')'transiesta: ',&
+          'Ensure that the electrode says: Principal cell is perfect'
     end if
 
     ! Create the global transiesta H(k), S(k) sparsity pattern
-    call ts_Sparsity_Global(dit,tmp_sp, N_Elec, Elecs, &
-         ts_sp_uc)
-
-    ! The update sparsity pattern can be simplied to the H,S sparsity
-    ! pattern, if all electrodes have certain options to be the same.
-    bool = all(Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 1)
-    bool = bool .or. &
-         ( all(.not. Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 2) )
-
-    if ( IONode .and. .not. bool ) then
-       write(*,'(/,a)') 'transiesta: created H and S sparsity pattern:'
-       call print_type(ts_sp_uc)
+    call ts_Sparsity_Global(dit, tmp_sp, N_Elec, Elecs, ts_sp_uc)
+    
+    if ( IONode ) then
+      write(*,'(/,a)') 'transiesta: created H and S sparsity pattern:'
+      call print_type(ts_sp_uc)
     end if
-
+    
 #ifdef TRANSIESTA_DEBUG
-    if(IONode)write(*,*)'Created TS-Global HS (100)'
+    if ( IONode ) write(*,*) 'Created TS-Global HS (100)'
     call sp_to_file(100+Node,ts_sp_uc)
 #endif
+
+    if ( IsVolt ) then 
+
+      ! Create the update region (a direct subset of the local sparsity pattern)
+      ! Hence it is still a local sparsity pattern.
+      call ts_Sparsity_Update(dit, tmp_sp, N_Elec, Elecs, ltsup_sp_sc)
+
+      if ( IONode ) then
+        write(*,'(/,a)') 'transiesta: created local update sparsity pattern:'
+        call print_type(ltsup_sp_sc)
+      end if
+      
+#ifdef TRANSIESTA_DEBUG
+      if ( IONode ) write(*,*)'Created TS-local UP (300)'
+      call sp_to_file(300+Node,ltsup_sp_sc)
+#endif
+
+      ! Create the pointer from the local transiesta update sparsity 
+      ! to the local siesta sparsity
+      call ts_Sparsity_Subset_pointer(dit,sparse_pattern,ltsup_sp_sc, &
+          ltsup_sc_pnt)
+
+    end if
 
     ! In order to ensure that the electrodes are in the
     ! tri-diagonal sparsity pattern, we can easily create
@@ -207,52 +197,54 @@ contains
     ! This is probably the crudest way of doing it.
 #ifdef MPI
     call newDistribution(nrows_g(ts_sp_uc),MPI_Comm_Self,fdit, &
-         name='TranSiesta UC distribution')
+        name='TranSiesta UC distribution')
 #else    
     call newDistribution(nrows_g(ts_sp_uc),-1,fdit, &
-         name='TranSiesta UC distribution')
+        name='TranSiesta UC distribution')
 #endif
 
-    if ( bool ) then
-       ! The sparsity patterns are the same, i.e. the
-       ! update and Hamiltonian sparse matrices are the same.
-       ! We can re-use the sparsity pattern.
-
-       tsup_sp_uc = ts_sp_uc
-       if ( IONode ) then
-          write(*,'(/a)') 'transiesta: update sparsity pattern same as H and S.'
-       end if
+    ! The update sparsity pattern can be simplied to the H,S sparsity
+    ! pattern, if all electrodes have certain options to be the same.
+    if ( ( all(Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 1) ) .or. &
+        ( all(.not. Elecs(:)%Bulk) .and. all(Elecs(:)%DM_update == 2) ) ) then
+      ! The sparsity patterns are the same, i.e. the
+      ! update and Hamiltonian sparse matrices are the same.
+      ! We can re-use the sparsity pattern.
+      
+      tsup_sp_uc = ts_sp_uc
+      if ( IONode ) then
+        write(*,'(/a)') 'transiesta: update sparsity pattern same as H and S.'
+      end if
 
     else
 
-       ! In this case we cannot be sure that the update sparsity pattern
-       ! is a direct sub-set of the Hamiltonian.
-       ! Hence, we need to create the correct one.
-       ! In this case is is simply a global sparsity of the 
-       !   'ltsup_sp_sc', in case there is an applied bias
-       if ( IsVolt ) then
+      ! In this case we cannot be sure that the update sparsity pattern
+      ! is a direct sub-set of the Hamiltonian.
+      ! Hence, we need to create the correct one.
+      ! In this case is is simply a global sparsity of the 
+      !   'ltsup_sp_sc', in case there is an applied bias
+      if ( IsVolt ) then
 
-          ! Convert to unit-cell sparsity pattern
-          call crtSparsity_SC(ltsup_sp_sc, tmp_sp, UC=.TRUE.)
-          
-       else
+        ! Convert to unit-cell sparsity pattern
+        call crtSparsity_SC(ltsup_sp_sc, tmp_sp, UC=.TRUE.)
 
-          ! Create update region (in local sparsity pattern)
-          call ts_Sparsity_Update(dit,tmp_sp, N_Elec, Elecs, &
-               tsup_sp_uc)
-          ! Convert to unit-cell sparsity pattern
-          call crtSparsity_SC(tsup_sp_uc, tmp_sp, UC=.TRUE.)
+      else
 
-       end if
+        ! Create update region (in local sparsity pattern)
+        call ts_Sparsity_Update(dit, tmp_sp, N_Elec, Elecs, tsup_sp_uc)
+        ! Convert to unit-cell sparsity pattern
+        call crtSparsity_SC(tsup_sp_uc, tmp_sp, UC=.TRUE.)
 
-       ! Convert to the global one
-       call Sp_to_Spglobal(dit,tmp_sp,tsup_sp_uc)
-       
-       if ( IONode ) then
-          write(*,'(/,a)') 'transiesta: created update sparsity pattern:'
-          call print_type(tsup_sp_uc)
-       end if
-       
+      end if
+
+      ! Convert to the global one
+      call Sp_to_Spglobal(dit, tmp_sp, tsup_sp_uc)
+
+      if ( IONode ) then
+        write(*,'(/,a)') 'transiesta: created update sparsity pattern:'
+        call print_type(tsup_sp_uc)
+      end if
+
     end if
 
 #ifdef TRANSIESTA_DEBUG
@@ -455,7 +447,7 @@ contains
 
     ! Create the (local) SIESTA-UC sparsity...
 #ifdef MPI
-    call crtSparsity_SC(s_sp,sp_global, UC=.TRUE.)
+    call crtSparsity_SC(s_sp, sp_global, UC=.TRUE.)
     uc_n_nzs = nnzs(sp_global)
 
     ! point to the local (SIESTA-UC) sparsity pattern arrays
@@ -465,7 +457,7 @@ contains
     call delete(sp_global)
 
 #else
-    call crtSparsity_SC(s_sp,sp_uc, UC=.TRUE.)
+    call crtSparsity_SC(s_sp, sp_uc, UC=.TRUE.)
     uc_n_nzs = nnzs(sp_uc)
 #endif
 
