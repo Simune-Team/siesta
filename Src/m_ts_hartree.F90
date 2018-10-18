@@ -135,7 +135,7 @@ contains
     real(dp), intent(in) :: xa(3,na_u)
 
     integer :: iE
-    real(dp) :: area, tmp, f1, f2
+    real(dp) :: area, tmp, f1, f2, r3(3)
     real(dp), external :: volcel
 
     ! if the electrode has already been
@@ -192,32 +192,51 @@ contains
     area = -1._dp
     do iE = 1 , N_Elec
 
-      ! Scale according to the Bloch expansions
-      tmp = Elecs(iE)%na_used / real(Elecs(iE)%na_u, dp) * product(Elecs(iE)%Bloch)
-      tmp = VOLCEL(Elecs(iE)%cell) * tmp
-       
-       if ( TS_HA == TS_HA_ELEC ) then
-         ! calculate cell area of plane by non-semi-inf vectors
-         select case ( Elecs(iE)%t_dir )
-         case ( 4 ) ! B-C
-           tmp = max(tmp / VNORM(Elecs(iE)%cell(:,2)), &
-               tmp / VNORM(Elecs(iE)%cell(:,3)))
-         case ( 5 ) ! A-C
-           tmp = max(tmp / VNORM(Elecs(iE)%cell(:,1)), &
-               tmp / VNORM(Elecs(iE)%cell(:,3)))
-         case ( 6 ) ! A-B
-           tmp = max(tmp / VNORM(Elecs(iE)%cell(:,1)), &
-               tmp / VNORM(Elecs(iE)%cell(:,2)))
-         case default
-           tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
-         end select
-       else if ( TS_HA == TS_HA_ELEC_BOX ) then
-          ! do nothing, volume check
-       end if
-       if ( tmp > area ) then
-          area = tmp
-          El => Elecs(iE)
-       end if
+      if ( TS_HA == TS_HA_ELEC ) then
+        
+        ! calculate area of plane by non-semi-inf vectors
+        select case ( Elecs(iE)%t_dir )
+        case ( 1 )
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
+          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+        case ( 2 )
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
+          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+        case ( 3 )
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
+          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+        case ( 4 ) ! B-C
+          ! Here there are two planes possible, the plane for the non-semi-infinite
+          ! direction and B, C, respectively.
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
+        case ( 5 ) ! A-C
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,1), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
+        case ( 6 ) ! A-B
+          call cross(Elecs(iE)%cell(:,3), Elecs(iE)%cell(:,1), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,3), Elecs(iE)%cell(:,2), r3)
+          tmp = max(tmp, VNORM(r3))
+        end select
+        
+      else
+        
+        ! We check with volume of electrode
+        tmp = Elecs(iE)%na_used / real(Elecs(iE)%na_u, dp) * product(Elecs(iE)%Bloch)
+        tmp = VOLCEL(Elecs(iE)%cell) * tmp
+        
+      end if
+
+      ! Select based on area
+      if ( tmp > area ) then
+        area = tmp
+        El => Elecs(iE)
+      end if
     end do
 
   end subroutine ts_hartree_elec
