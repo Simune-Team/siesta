@@ -700,8 +700,9 @@ contains
     end do
 
     if ( na_u <= sum(TotUsedAtoms(Elecs)) ) then
-       write(*,'(a)') 'Please stop this madness. What where you thinking?'
-       call die('Electrodes occupy the entire device!!!')
+      write(*,'(a)') 'Please stop this madness. What where you thinking?'
+      write(*,*) na_u, sum(TotUsedAtoms(Elecs))
+      call die('Electrodes occupy the entire device!!!')
     end if
     
     ! Initialize the electrode regions
