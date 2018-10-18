@@ -835,15 +835,16 @@ contains
     ! Removal of keys
     rem_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
     if ( rem_DOS_Elecs ) then
-       if ( any(Elecs(:)%out_of_core) ) &
-            call delete(save_DATA,'DOS-Elecs')
-       if ( 'Sigma-only' .in. save_DATA ) &
-            call delete(save_DATA,'DOS-Elecs')
+      ! Currently the TBTGF files does not contain the DOS
+      if ( all(Elecs(:)%out_of_core) ) &
+          call delete(save_DATA,'DOS-Elecs')
+      if ( 'Sigma-only' .in. save_DATA ) &
+          call delete(save_DATA,'DOS-Elecs')
     end if
     
     rem_T_Gf = 'T-Gf' .in. save_DATA
     if ( N_Elec > 3 ) then
-       call delete(save_DATA,'T-Gf')
+      call delete(save_DATA,'T-Gf')
     end if
 
     if ( .not. IONode ) return

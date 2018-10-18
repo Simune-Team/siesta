@@ -783,7 +783,7 @@ contains
 
        call delete(dic)
 
-       if ( 'DOS-Elecs' .in. save_DATA ) then
+       if ( ('DOS-Elecs' .in. save_DATA) .and. .not. Elecs(iEl)%out_of_core ) then
 
           call ncdf_def_dim(grp,'no_u',Elecs(iEl)%no_u)
           call ncdf_def_dim(grp,'na_u',Elecs(iEl)%na_u)
@@ -1413,6 +1413,8 @@ contains
 #endif
 
        do iEl = 1 , N_Elec
+          ! Skip electrodes which uses the out-of-core ability
+          if ( Elecs(iEl)%out_of_core ) cycle
           
           call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
@@ -1720,7 +1722,7 @@ contains
       ! Always open the group...
       call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-      if ( 'DOS-Elecs' .in. save_DATA ) then
+      if ( ('DOS-Elecs' .in. save_DATA) .and. .not. Elecs(iEl)%out_of_core ) then
 
         ! Get bulk-transmission
         call ncdf_get_var(grp,'T',r2)
@@ -2385,6 +2387,8 @@ contains
     if ( 'DOS-Elecs' .in. save_DATA ) then
 
        do iEl = 1 , N_Elec
+          ! Skip electrodes which uses GF files (they don't contain the information)
+          if ( Elecs(iEl)%out_of_core ) cycle
 
           call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
 
@@ -2652,6 +2656,8 @@ contains
     if ( 'DOS-Elecs' .in. save_DATA ) then
 
        do iEl = 1 , N_Elec
+          ! Skip electrodes which uses GF files (they don't contain the information)
+          if ( Elecs(iEl)%out_of_core ) cycle
 
           N = Elecs(iEl)%no_u
           call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,iEl),fact=eV)
