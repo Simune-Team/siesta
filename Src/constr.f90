@@ -45,12 +45,6 @@
 
 
 
-    ! call init routine with main syms_t object from m_syms
-    call init_syms( syms_t, cell, na, isa, xa )
-
-    call print_syms(syms_t)
-! UP TO HERE!!!
-
 ! Write here your problem-specific code.
 
 ! find equivalent atoms - this can be encapsulated later
@@ -146,8 +140,5 @@ print '(a,3E30.20)', 'change in fa due to symmetrization = ', fa(:,jatom)-fa_sym
     deallocate (fa_sym)
 ! end encapsulation
     
-
-    ! clean up
-    call delete_syms(syms_t)
 
   end subroutine constr

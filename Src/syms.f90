@@ -13,6 +13,9 @@
 
 module m_syms
 
+  !use spglib_f08 ! this is also included in spglib and 
+  !  could be a nice way to avoid recoding the interfaces for everything.
+  !  however, it does imply making spglib with exactly the same fortran compiler as siesta
   implicit none
 
   type, public :: syms_type
@@ -316,5 +319,16 @@ print *, 'for full lattice space group is ', syms_this%space_group, syms_this%sy
 
   end function wrap2zero_one
    
+  subroutine mk_irred_k_grid(nkgrid, shiftk, nkpt, kpt_list)
+    implicit none
+    integer, intent(in) :: nkgrid(3)
+    double precision, intent(in) :: shiftk(3)
+    integer, intent(out) :: nkpt
+    double precision, allocatable, intent(out) :: kpt_list(:,:)
+
+
+    
+
+  end subroutine mk_irred_k_grid
 
 end module m_syms

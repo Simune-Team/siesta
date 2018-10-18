@@ -269,6 +269,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 #
 #--------------------------------------------------------------
 # spglib whatnot
+# should get version number from file found in spglib subdirectory. obj_ script already accepts anything it finds in there.
 SPG_VER=1.5.2
 
 #spglib_extract=spglib/spglib-$(SPG_VER)
@@ -285,12 +286,13 @@ $(spglib_binary):
 	( cd ./spglib ; \
 	  tar -xzvf spglib-$(SPG_VER).tar.gz ; \
 	  cd spglib-$(SPG_VER) ; \
-	  ./configure FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" ; \
+	  ./configure FC="$(FC_SERIAL)" CC="$(CC_SERIAL)" FCFLAGS="$(FFLAGS)" ; \
 	  $(MAKE) )
 
 SPG_LIBS="./$(spglib_binary)"
 
 syms.o: $(spglib_binary)
+spglib_f08.o: $(spglib_binary)
 
 # end spglib stuff
 #--------------------------------------------------------------
@@ -1329,8 +1331,8 @@ siesta_init.o: m_forces.o m_iostruct.o m_mpi_utils.o m_new_dm.o m_rmaxh.o
 siesta_init.o: m_spin.o m_steps.o m_supercell.o m_timer.o m_wallclock.o
 siesta_init.o: metaforce.o molecularmechanics.o object_debug.o parallel.o
 siesta_init.o: parallelsubs.o projected_DOS.o siesta_cmlsubs.o siesta_dicts.o
-siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
-siesta_init.o: sys.o timer.o timestamp.o ts_init.o units.o writewave.o
+siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o spglib_f08.o struct_init.o
+siesta_init.o: syms.o sys.o timer.o timestamp.o ts_init.o units.o writewave.o
 siesta_init.o: zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
