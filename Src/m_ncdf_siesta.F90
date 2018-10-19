@@ -30,7 +30,6 @@ module m_ncdf_siesta
 
   public :: cdf_save_settings
   public :: cdf_save_basis
-  public :: cdf_save_md
   public :: cdf_save_fc
   public :: cdf_save_state
   public :: cdf_save_grid
@@ -41,7 +40,7 @@ contains
 
 #ifdef NCDF_4
 
-  subroutine cdf_init_file(fname, is_md, is_fc)
+  subroutine cdf_init_file(fname, is_fc)
     use class_Sparsity
     use files, only : slabel
     use atomlist, only: no_u, no_s, lasto, Qtot
@@ -61,7 +60,6 @@ contains
     use m_ts_options, only : TS_HS_Save
 
     character(len=*), intent(in) :: fname
-    logical, intent(in), optional :: is_md
     logical, intent(in), optional :: is_fc
 
     ! Local variables
@@ -69,13 +67,11 @@ contains
     type(dict) :: dic, d
     integer :: n_nzs, tmp, i, chks(3), iEl
     integer, allocatable :: ibuf(:)
-    logical :: lis_md, lis_fc
+    logical :: lis_fc
 #ifdef MPI
     integer :: MPIerror
 #endif
 
-    lis_md = .false.
-    if ( present(is_md) ) lis_md = is_md
     lis_fc = .false.
     if ( present(is_fc) ) lis_fc = is_fc
 
@@ -117,105 +113,99 @@ contains
       call ncdf_put_var(ncdf,'Qspin',total_spin)
     end if
     
-    if ( .not. lis_MD ) then
-    
-      ! Create all necessary containers...
-      dic = dic//('info'.kv.'Number of supercells in each unit-cell direction') 
-      call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
-          compress_lvl=0, atts=dic)
-      
-      dic = dic//('info'.kv.'Fermi level')//('unit'.kv.'Ry')
-      if ( fixspin ) then
-        call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'spin'/), &
-            compress_lvl=0, atts=dic)
-      else
-        call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'one'/), &
-            compress_lvl=0, atts=dic)
-      end if
+    ! Create all necessary containers...
+    dic = dic//('info'.kv.'Number of supercells in each unit-cell direction') 
+    call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
+        compress_lvl=0, atts=dic)
 
-      dic = dic//('info'.kv.'Atomic coordinates')//('unit'.kv.'Bohr')
-      call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
+    dic = dic//('info'.kv.'Fermi level')//('unit'.kv.'Ry')
+    if ( fixspin ) then
+      call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'spin'/), &
           compress_lvl=0, atts=dic)
-
-      dic = dic//('info'.kv.'Unit cell')
-      call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
-          compress_lvl=0, atts=dic)
-
-      dic = dic//('info'.kv.'Atomic forces')//('unit'.kv.'Ry/Bohr')
-      call ncdf_def_var(ncdf,'fa',NF90_DOUBLE,(/'xyz ','na_u'/), &
-          compress_lvl=0, atts=dic)
-
-      dic = dic//('info'.kv.'Cell stress')//('unit'.kv.'Ry/Bohr**3')
-      call ncdf_def_var(ncdf,'stress',NF90_DOUBLE,(/'xyz','xyz'/), &
+    else
+      call ncdf_def_var(ncdf,'Ef',NF90_DOUBLE,(/'one'/), &
           compress_lvl=0, atts=dic)
     end if
+
+    dic = dic//('info'.kv.'Atomic coordinates')//('unit'.kv.'Bohr')
+    call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
+        compress_lvl=0, atts=dic)
+
+    dic = dic//('info'.kv.'Unit cell')
+    call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
+        compress_lvl=0, atts=dic)
+
+    dic = dic//('info'.kv.'Atomic forces')//('unit'.kv.'Ry/Bohr')
+    call ncdf_def_var(ncdf,'fa',NF90_DOUBLE,(/'xyz ','na_u'/), &
+        compress_lvl=0, atts=dic)
+
+    dic = dic//('info'.kv.'Cell stress')//('unit'.kv.'Ry/Bohr**3')
+    call ncdf_def_var(ncdf,'stress',NF90_DOUBLE,(/'xyz','xyz'/), &
+        compress_lvl=0, atts=dic)
 
     call delete(dic)
 
-    if ( .not. lis_MD ) then
-      
-      ! Create matrix group
-      call ncdf_def_grp(ncdf,'SPARSE',grp)
-      
-      call ncdf_def_dim(grp,'nnzs',n_nzs)
-      
-      ! EDM is required to have its own spin (because of spin-orbit coupling
-      ! where the spin == 4, and not 8)
-      call ncdf_def_dim(grp,'spin_EDM',spin%EDM)
-      
+    ! Create matrix group
+    call ncdf_def_grp(ncdf,'SPARSE',grp)
 
-      dic = dic//('info'.kv.'Index of supercell coordinates')
-      call ncdf_def_var(grp,'isc_off',NF90_INT,(/'xyz','n_s'/), &
-          compress_lvl=0, atts=dic)
-      
-      dic = dic//('info'.kv.'Number of non-zero elements per row')
-      call ncdf_def_var(grp,'n_col',NF90_INT,(/'no_u'/), &
-          compress_lvl=0, atts=dic)
-      
-      chks = (/n_nzs,1,1/)
-      
-      dic = dic//('info'.kv.'Supercell column indices in the sparse format')
-      call ncdf_def_var(grp,'list_col',NF90_INT,(/'nnzs'/), &
+    call ncdf_def_dim(grp,'nnzs',n_nzs)
+
+    ! EDM is required to have its own spin (because of spin-orbit coupling
+    ! where the spin == 4, and not 8)
+    call ncdf_def_dim(grp,'spin_EDM',spin%EDM)
+
+
+    dic = dic//('info'.kv.'Index of supercell coordinates')
+    call ncdf_def_var(grp,'isc_off',NF90_INT,(/'xyz','n_s'/), &
+        compress_lvl=0, atts=dic)
+
+    dic = dic//('info'.kv.'Number of non-zero elements per row')
+    call ncdf_def_var(grp,'n_col',NF90_INT,(/'no_u'/), &
+        compress_lvl=0, atts=dic)
+
+    chks = (/n_nzs,1,1/)
+
+    dic = dic//('info'.kv.'Supercell column indices in the sparse format')
+    call ncdf_def_var(grp,'list_col',NF90_INT,(/'nnzs'/), &
+        compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+
+    ! Create the overlap matrix (we know it will not change)
+    dic = dic//('info'.kv.'Overlap matrix')
+    call ncdf_def_var(grp,'S',NF90_DOUBLE,(/'nnzs'/), &
+        compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+
+    dic = dic//('info'.kv.'Overlap matrix gradient')//('unit'.kv.'1/Bohr')
+    call ncdf_def_var(grp,'S_gradient',NF90_DOUBLE,(/'nnzs', 'xyz '/), &
+        compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    call delete(dic)
+
+    dic = dic//('info'.kv.'Density matrix')
+    call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs','spin'/), &
+        compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+
+    dic = dic//('info'.kv.'Energy density matrix')
+    dic = dic//('unit'.kv.'Ry')
+    call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs    ','spin_EDM'/), &
+        compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+
+    if ( savehs .or. TS_HS_save ) then
+      ! Unit is already present in dictionary
+      dic = dic//('info'.kv.'Hamiltonian')
+      call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
           compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-      
-      ! Create the overlap matrix (we know it will not change)
-      dic = dic//('info'.kv.'Overlap matrix')
-      call ncdf_def_var(grp,'S',NF90_DOUBLE,(/'nnzs'/), &
-          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-
-      dic = dic//('info'.kv.'Overlap matrix gradient')//('unit'.kv.'1/Bohr')
-      call ncdf_def_var(grp,'S_gradient',NF90_DOUBLE,(/'nnzs', 'xyz '/), &
-          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-      call delete(dic)
-
-      dic = dic//('info'.kv.'Density matrix')
-      call ncdf_def_var(grp,'DM',NF90_DOUBLE,(/'nnzs','spin'/), &
-          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-
-      dic = dic//('info'.kv.'Energy density matrix')
-      dic = dic//('unit'.kv.'Ry')
-      call ncdf_def_var(grp,'EDM',NF90_DOUBLE,(/'nnzs    ','spin_EDM'/), &
-          compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-
-      if ( savehs .or. TS_HS_save ) then
-        ! Unit is already present in dictionary
-        dic = dic//('info'.kv.'Hamiltonian')
-        call ncdf_def_var(grp,'H',NF90_DOUBLE,(/'nnzs','spin'/), &
-            compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
-      end if
-
-      ! Even though I think we could do without, I add the
-      ! xij array to the file
-      ! Note that xij can be re-created using
-      !    nsc, isc_off and xa
-      !    if ( .not. Gamma ) then
-      !       dic = dic//('info'.kv. &
-      !            'Distance between orbital i and j')
-      !       dic = dic//('unit'.kv.'Bohr')
-      !       call ncdf_def_var(grp,'xij',NF90_DOUBLE,(/'xyz ','nnzs'/), &
-      !            compress_lvl=cdf_comp_lvl,atts=dic)
-      !    end if
     end if
+    
+    ! Even though I think we could do without, I add the
+    ! xij array to the file
+    ! Note that xij can be re-created using
+    !    nsc, isc_off and xa
+    !    if ( .not. Gamma ) then
+    !       dic = dic//('info'.kv. &
+    !            'Distance between orbital i and j')
+    !       dic = dic//('unit'.kv.'Bohr')
+    !       call ncdf_def_var(grp,'xij',NF90_DOUBLE,(/'xyz ','nnzs'/), &
+    !            compress_lvl=cdf_comp_lvl,atts=dic)
+    !    end if
 
     ! Delete the dictionary
     call delete(dic)
@@ -271,56 +261,6 @@ contains
 
     call delete(dic)
 
-    ! Create MD group
-    if ( lis_MD ) then
-
-       call ncdf_def_grp(ncdf,'MD',grp)
-
-       ! Create arrays for containers
-       call ncdf_def_dim(grp,'MD',NF90_UNLIMITED)
-
-       dic = ('info'.kv.'Ionic temperature')//('unit'.kv.'K')
-       call ncdf_def_var(grp,'T',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       !dic = dic//('info'.kv.'Kohn-Sham energy')//('unit'.kv.'Ry')
-       !call ncdf_def_var(grp,'E_KS',NF90_DOUBLE,(/'MD'/), &
-       !     compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       dic = dic//('info'.kv.'Total energy')
-       call ncdf_def_var(grp,'E_tot',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       dic = dic//('info'.kv.'Kinetic energy')
-       call ncdf_def_var(grp,'E_kin',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       dic = dic//('info'.kv.'XC energy')
-       call ncdf_def_var(grp,'E_xc',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       dic = dic//('info'.kv.'Fermi level')
-       call ncdf_def_var(grp,'Ef',NF90_DOUBLE,(/'MD'/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       dic = dic//('info'.kv.'Atomic coordinates')//('unit'.kv.'Bohr')
-       call ncdf_def_var(grp,'xa',NF90_DOUBLE,(/'xyz ','na_u','MD  '/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-       
-       dic = dic//('info'.kv.'Cell stress')//('unit'.kv.'Ry/Bohr**3')
-       call ncdf_def_var(grp,'stress',NF90_DOUBLE,(/'xyz','xyz','MD '/), &
-           compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       dic = dic//('info'.kv.'Atomic forces')//('unit'.kv.'Ry/Bohr')
-       call ncdf_def_var(grp,'fa',NF90_DOUBLE,(/'xyz ','na_u','MD  '/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-       dic = dic//('info'.kv.'Atomic velocities')//('unit'.kv.'Bohr/fs')
-       call ncdf_def_var(grp,'va',NF90_DOUBLE,(/'xyz ','na_u','MD  '/), &
-            compress_lvl=0, atts=dic) ! do not compress unlimited D
-
-    end if
-
     ! Create FC group
     if ( lis_FC ) then
       
@@ -358,7 +298,6 @@ contains
       
     end if
 
-    
     call delete(dic)
 
     if ( isolve == SOLVE_TRANSI ) then
@@ -969,46 +908,6 @@ contains
     call timer('CDF-basis',2)
 
   end subroutine cdf_save_basis
-
-  subroutine cdf_save_md(fname)
-    use siesta_geom, only: na_u, xa, va
-    use m_stress, only: stress
-    use m_forces, only: fa
-    use m_energies, only: Etot, Ekinion, Exc
-    use m_kinetic, only : Tempion
-    use m_energies, only: Ef
-
-    character(len=*), intent(in) :: fname
-
-    type(hNCDF) :: ncdf
-    integer :: MD
-
-    ! open the file...
-    call ncdf_open(ncdf,fname,mode=ior(NF90_WRITE,NF90_NETCDF4),group='MD')
-
-    ! Inquire the current size of the MD-variable
-    MD = 0
-    call ncdf_inq_dim(ncdf,'MD',len=MD)
-    MD = MD + 1 ! increment
-
-    if ( Node == 0 ) then
-       ! Save current state
-       call ncdf_put_var(ncdf,'T',Tempion,start=(/MD/))
-       !call ncdf_put_var(ncdf,'E_KS',EKS,start=(/MD/))
-       call ncdf_put_var(ncdf,'E_tot',Etot,start=(/MD/))
-       call ncdf_put_var(ncdf,'E_kin',Ekinion,start=(/MD/))
-       call ncdf_put_var(ncdf,'E_xc',Exc,start=(/MD/))
-       call ncdf_put_var(ncdf,'Ef',Ef,start=(/MD/))
-       
-       call ncdf_put_var(ncdf,'xa',xa,count=(/3,na_u/),start=(/1,1,MD/))
-       call ncdf_put_var(ncdf,'fa',fa,count=(/3,na_u/),start=(/1,1,MD/))
-       call ncdf_put_var(ncdf,'stress',stress,count=(/3,3/),start=(/1,1,MD/))
-       call ncdf_put_var(ncdf,'va',va,count=(/3,na_u/),start=(/1,1,MD/))
-    end if
-
-    call ncdf_close(ncdf)
-
-  end subroutine cdf_save_md
 
   subroutine cdf_save_fc(fname,istep)
     use siesta_geom, only: na_u

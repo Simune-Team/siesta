@@ -1,7 +1,7 @@
 !--------------------------------------------------------------
 !
 !! Basic functionality for reference-counted data structures
-!! For some background, see [here](|url|/page/buds.html)
+!! For some background, see [here](|page|/page/datastructures/1-buds.html))
 !
 !   This file has to be included after the global declarations
 !   for extra functionality, just where a "contains" statement

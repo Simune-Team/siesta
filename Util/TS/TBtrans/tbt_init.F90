@@ -266,9 +266,15 @@ subroutine tbt_init()
      ! initialize the electrode for Green's function calculation
      call init_Electrode_HS(Elecs(iEl))
 
-     call do_Green(Elecs(iEl), &
-          TSHS%cell,nkpnt,kpoint,kweight, &
-          Elecs_xa_Eps, .false. )
+     if ( Elecs(iEl)%is_gamma ) then
+       call do_Green(Elecs(iEl), &
+           TSHS%cell, 1, (/(/0._dp, 0._dp, 0._dp/)/), (/1._dp/), &
+           Elecs_xa_Eps, .false. )
+     else
+       call do_Green(Elecs(iEl), &
+           TSHS%cell,nkpnt,kpoint,kweight, &
+           Elecs_xa_Eps, .false. )
+     end if
      
      ! clean-up
      call delete(Elecs(iEl))

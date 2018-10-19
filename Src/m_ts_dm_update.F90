@@ -631,7 +631,7 @@ contains
        ! This loop is across the local rows...
 ! We will never have a data race here (it is on local sparsity pattern)
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,lind,ljo,ind)
+!$OMP&private(lio,io,lind,jo,ljo,ind)
        do lio = 1 , lnr
 
           ! obtain the global index of the local orbital.
@@ -639,6 +639,9 @@ contains
 
           ! Quickly go past the empty regions... (we have nothing to update)
           if ( lup_ncol(io) /= 0 ) then
+
+          ! Retrieve pointer index
+          jo = lup_ptr(io)
 
           ! Do a loop in the local sparsity pattern...
           ! The local sparsity pattern is more "spread", hence
@@ -653,13 +656,11 @@ contains
              ! Hence, we can exploit this, and find equivalent
              ! super-cell orbitals.
              ! Ok, this is Gamma (but to be consistent)
-             ind = lup_ptr(io)
-             ind = ind + SFIND(lup_col(ind+1:ind+lup_ncol(io)),ljo)
-             if ( ind <= lup_ptr(io) ) cycle
-             
-             ! We only have one k-point, yet in case of non-Gamma siesta
-             DM(lind)  = DM(lind) + dD(ind,1)
-             if ( hasEDM ) EDM(lind) = EDM(lind) + dE(ind,1)
+             ind = jo + SFIND(lup_col(jo+1:jo+lup_ncol(io)),ljo)
+             if ( ind > jo ) then
+               DM(lind) = DM(lind) + dD(ind,1)
+               if ( hasEDM ) EDM(lind) = EDM(lind) + dE(ind,1)
+             end if
              
           end do
           

@@ -314,7 +314,7 @@ contains
     call itt_attach(Sp,cur=ispin)
     
     do while ( .not. itt_step(Sp) )
-       
+
        call init_DM(sp_dist,sparse_pattern, &
             n_nzs, DM(:,ispin), EDM(:,ispin), &
             tsup_sp_uc, Calc_Forces)

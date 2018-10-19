@@ -370,17 +370,6 @@ contains
        ! set the placement in orbitals
        Elecs(i)%idx_o = lasto(Elecs(i)%idx_a-1)+1
 
-       ! we need to correct the GF file name in case of
-       ! single spin
-       select case ( spin_idx ) 
-       case ( 1 )
-          ! We are using spin up
-          Elecs(i)%GFfile = trim(Elecs(i)%GFfile)//'_UP'
-       case ( 2 ) 
-          ! We are using spin down
-          Elecs(i)%GFfile = trim(Elecs(i)%GFfile)//'_DW'
-       end select
-
        if ( (rtmp > 0._dp .and. Elecs(i)%Eta < 0._dp) .or. &
             (rtmp < 0._dp .and. Elecs(i)%Eta > 0._dp) ) then
           call die('All Eta must be either positive or negative &
@@ -846,15 +835,16 @@ contains
     ! Removal of keys
     rem_DOS_Elecs = 'DOS-Elecs' .in. save_DATA
     if ( rem_DOS_Elecs ) then
-       if ( any(Elecs(:)%out_of_core) ) &
-            call delete(save_DATA,'DOS-Elecs')
-       if ( 'Sigma-only' .in. save_DATA ) &
-            call delete(save_DATA,'DOS-Elecs')
+      ! Currently the TBTGF files does not contain the DOS
+      if ( all(Elecs(:)%out_of_core) ) &
+          call delete(save_DATA,'DOS-Elecs')
+      if ( 'Sigma-only' .in. save_DATA ) &
+          call delete(save_DATA,'DOS-Elecs')
     end if
     
     rem_T_Gf = 'T-Gf' .in. save_DATA
     if ( N_Elec > 3 ) then
-       call delete(save_DATA,'T-Gf')
+      call delete(save_DATA,'T-Gf')
     end if
 
     if ( .not. IONode ) return

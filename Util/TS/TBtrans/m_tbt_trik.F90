@@ -383,6 +383,7 @@ contains
          io = no * (4 + 8)
          ! One more array is requred when we need to invert the matrix
          if ( Elecs(iEl)%no_u /= Elecs(iEl)%no_used ) io = io + no
+         ! There is a check above for out-of-core
          if ( calc_DOS_Elecs ) io = io + no
          
        end if
@@ -611,10 +612,12 @@ contains
     io = r_oDev%n
     jEl = 0
     if ( calc_DOS_Elecs ) then
-       ! Allocate density of states for the electrodes
-       do iEl = 1 , N_Elec
-          jEl = max(jEl,Elecs(iEl)%no_u)
-       end do
+      ! Allocate density of states for the electrodes
+      do iEl = 1 , N_Elec
+        if ( .not. Elecs(iEl)%out_of_core ) then
+          jEl = max(jEl, Elecs(iEl)%no_u)
+        end if
+      end do
     end if
     ! this allows us to re-use the data arrays for
     ! the DOS storages between electrode DOS and device DOS
@@ -766,6 +769,13 @@ contains
          save_DATA)
 #endif
 
+    if ( ispin == 2 ) then
+      ! skip to the 2nd spin component
+      do iEl = 1, N_Elec
+        call reread_Gamma_Green(Elecs(iEl), uGF(iEl), N_E, ispin)
+      end do
+    end if
+
     ! The current progress is 0%
     last_progress = 0.
 
@@ -904,6 +914,8 @@ contains
           ! *******************
           ! We have reduced the electrode sizes to only one spin-channel
           ! Hence, it will ALWAYS be the first index
+          ! Note that the spin-index will not be used when reading from GF-files
+          ! So there is no ambiguity.
           if ( n_k == 0 ) then
              if ( calc_DOS_Elecs ) then
                 call read_next_GS(1, ikpt, bkpt, &
@@ -1530,6 +1542,10 @@ contains
 
        ! Stop timer
        call timer_stop('E-loop')
+
+       do iEl = 1, N_Elec
+         call reread_Gamma_Green(Elecs(iEl), uGF(iEl), N_E, ispin)
+       end do
 
     end do ! k-point
 

@@ -323,7 +323,7 @@ contains
        end if
 #endif
 
-       call tbt_trik(ispin,N_Elec, Elecs, TSHS, nq, uGF)
+       call tbt_trik(ispin, N_Elec, Elecs, TSHS, nq, uGF)
 
        ! the spin-index is zero for all,
        ! and one of the allowed spin indices if
@@ -510,24 +510,23 @@ contains
                open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
             end if
             
-            call read_Green(uGF(iEl),Elecs(iEl), nkpnt, NEn )
+            call read_Green(uGF(iEl), Elecs(iEl), nkpnt, NEn)
 
-!            if ( IONode .and. spin_idx > 1 ) then
-!               ! In case the user has requested to only use
-!               ! one of the spin-channels we step forward to that one
-!               do is = 1 , spin_idx - 1
-!                  ! Skip all H and S arrays
-!                  do i = 1 , nkpnt
-!                     read(uGF(iEl)) ! H
-!                     read(uGF(iEl)) ! S
-!                  end do
-!                  ! Skip all header lines AND GS lines
-!                  do i = 1 , nkpnt * NEn
-!                     read(uGF(iEl)) ! Header line
-!                     read(uGF(iEl)) ! GS
-!                  end do
-!               end do
-!            end if
+            ! There can only be two spin-components
+            if ( IONode .and. spin_idx > 1 .and. .not. Elecs(iEl)%is_gamma ) then
+              ! In case the user has requested to only use
+              ! one of the spin-channels we step forward to that one
+              ! Skip all H and S arrays
+              do i = 1 , nkpnt
+                read(uGF(iEl)) ! H
+                read(uGF(iEl)) ! S
+              end do
+              ! Skip all header lines AND GS lines
+              do i = 1 , nkpnt * NEn
+                read(uGF(iEl)) ! Header line
+                read(uGF(iEl)) ! GS
+              end do
+            end if
 
          else
             

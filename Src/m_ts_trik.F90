@@ -87,6 +87,8 @@ contains
     use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
     use m_ts_contour_neq, only : nEq_E, has_cE_nEq
     use m_ts_contour_neq, only : N_nEq_ID, c2weight_neq
+    use m_ts_contour_eq, only : N_Eq_E
+    use m_ts_contour_neq, only : N_nEq_E
 
     use m_iterator
     use m_mat_invert
@@ -149,6 +151,7 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
+    integer :: NE
     real(dp)    :: kw, kpt(3), bkpt(3)
     complex(dp) :: W, ZW
     type(tRgn)  :: pvt
@@ -298,8 +301,10 @@ contains
     do iel = 1 , n_mu
        print '(a20,tr1,i3)','k  '//trim(mus(iEl)%name),iel
     end do
-#endif 
+#endif
 
+    ! Total number of energy points
+    NE = N_Eq_E() + N_nEq_E()
     
     ! start the itterators
     call itt_init  (SpKp,end1=nspin,end2=ts_kpoint_scf%N)
@@ -309,11 +314,14 @@ contains
     do while ( .not. itt_step(SpKp) )
        
        if ( itt_stepped(SpKp,1) ) then
-          call init_DM(sp_dist,sparse_pattern, &
-               n_nzs, DM(:,ispin), EDM(:,ispin), &
-               tsup_sp_uc, Calc_Forces)
+         call init_DM(sp_dist,sparse_pattern, &
+             n_nzs, DM(:,ispin), EDM(:,ispin), &
+             tsup_sp_uc, Calc_Forces)
+         do iEl = 1, N_Elec
+           call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+         end do
        end if
-
+        
        ! Include spin factor and 1/(2\pi)
        kpt(:) = ts_kpoint_scf%k(:,ikpt)
        ! create the k-point in reciprocal space
@@ -420,6 +428,9 @@ contains
           
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
+          do iEl = 1, N_Elec
+            call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+          end do
 
           cycle
 
@@ -614,7 +625,9 @@ contains
        call timer('TS_weight',2)
 #endif
 
-       ! We don't need to do anything here..
+       do iEl = 1, N_Elec
+         call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+       end do
 
     end do ! spin, k-point
 
@@ -820,6 +833,12 @@ contains
     
     call init_val(spDM)
     do while ( .not. itt_step(SpKp) )
+      
+      if ( itt_stepped(SpKp,1) ) then
+        do iEl = 1, N_Elec
+          call reread_Gamma_Green(Elecs(iEl), uGF(iEl), 1, ispin)
+        end do
+      end if
 
        kpt(:) = ts_kpoint_scf%k(:,ikpt)
        call kpoint_convert(ucell,kpt,bkpt,1)
@@ -858,7 +877,10 @@ contains
             nzwork, zwork, .false., forward = .false. )
        do iEl = 1 , N_Elec
           call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
-               non_Eq = .false. )
+              non_Eq = .false. )
+          ! Since there is only one energy-point, we can simply reread it
+          ! here.
+          call reread_Gamma_Green(Elecs(iEl), uGF(iEl), 1, ispin)
        end do
        
        call prepare_invGF(cE, zwork_tri, r_pvt, pvt, &
