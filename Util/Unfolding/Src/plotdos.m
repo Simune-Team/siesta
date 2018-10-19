@@ -1,7 +1,7 @@
 % plotdos.m
 
 clear
-wdir = '../Examples/Si/Amorphous/Si216/';
+wdir = '../Examples/Si/Bulk/Si8/';
 fname = [wdir,'unfoldedBandLine1.out'];
 
 % Read DOS
@@ -49,6 +49,6 @@ else
     xlabel('qpath')
     ylabel('energy')
     zlabel('dos')
-    axis([0,qpath(end),emin,10,0,0])
+    axis([0,qpath(end),emin,10,-2,0])
 end
 colorbar

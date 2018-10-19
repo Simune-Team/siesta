@@ -59,12 +59,12 @@ program unfold
                       na, ne, ng, nk, nktot, nkx(3), nlines, nlm, nNodes, no, &
                       nq, nqline, nrq, nspin, ntmp, nw, proj(3,3), t, z
   real(dp)         :: alat, c0, dkcell(3,3), de, dek, diqx(3), dq, dqline(3), &
-                      dqx(3), dr, drq, dscell(3,3), emax, emin, &
+                      dqx(3), dr, drq, dscell(3,3), ekg, emax, emin, &
                       gcut, gq(3,8), gnew(3), gnorm, grad, gylm(3,maxl*maxl), &
                       k0(3), kcell(3,3), kmax, kq(3), pi, &
                       q0(3), qmod, qcell(3,3), qg(3), qline(3), qmax, qx(3), &
                       r, rc, rcell(3,3), refoldCell(3,3), refoldBcell(3,3), rmax, rq, &
-                      scell(3,3), vol, wkq(8), wq, xmax, ylm(maxl*maxl)
+                      scell(3,3), vol, weq(0:1), wkq(8), wq, xmax, ylm(maxl*maxl)
   complex(dp)      :: ck, ii, phi, psik, ukg(8)
   logical          :: ccq(8), found, gamma
   character(len=50):: eunit, fname, formatstr,  iostr, isstr, numstr, slabel
@@ -76,13 +76,14 @@ program unfold
   real(dp):: dg, drmin, dx, g0(3), gmod, gvec(3), normphiq, normphir, x(3), wr, xmod
 
   ! Allocatable arrays and pointers
-  integer,          allocatable:: cnfigfio(:), iaorb(:), ie(:,:,:,:), &
-                                  indk(:,:,:), iphorb(:)
+  integer,          allocatable:: cnfigfio(:), iaorb(:), indk(:,:,:), iphorb(:)
+!  integer,          allocatable:: ie(:,:,:,:)
   real(sp),         allocatable:: psi(:,:,:,:,:)
   real(dp),         allocatable:: dos(:,:,:), dossum(:,:), ek(:,:,:), &
-                                  k(:,:), &
-                                  phir(:,:,:), phiq(:,:,:), tmp(:,:,:), &
-                                  tmp1(:), tmp2(:), we(:,:,:,:)
+                                  k(:,:), phir(:,:,:), phiq(:,:,:), &
+                                  tmp(:,:,:), tmp1(:), tmp2(:)
+!  real(dp),         allocatable:: we(:,:,:,:)
+  
   real(dp),         pointer    :: g(:,:)=>null(), q(:,:)=>null()
   logical,          allocatable:: cc(:,:,:)
   type(parsed_line),   pointer :: pline
@@ -461,6 +462,8 @@ program unfold
     enddo
     enddo
   else
+    refoldCell = 0
+    refoldBcell = 0
     ng = 1
     call re_alloc(g,1,3,1,ng)
     g(:,1) = 0
@@ -472,25 +475,26 @@ program unfold
 !  print*,'unfold: nlines,lastq=',nlines,lastq(0:nlines)
 
   ! Find index and weight of band energies
-  allocate( ie(0:1,nw,nk,nspin), we(0:1,nw,nk,nspin) )
-  de = (emax-emin)/ne
-  do ispin = 1,nspin
-    do ik = 1,nk
-      do iw = 1,nw
-        ie(0,iw,ik,ispin) = floor((ek(iw,ik,ispin)-emin)/de)
-        ie(1,iw,ik,ispin) = ie(0,iw,ik,ispin)+1
-        dek = emin + ie(1,iw,ik,ispin)*de - ek(iw,ik,ispin)
-        we(0,iw,ik,ispin) = dek/de
-        we(1,iw,ik,ispin) = 1-we(0,iw,ik,ispin)
-      enddo
-    enddo
-  enddo
+!  allocate( ie(0:1,nw,nk,nspin), we(0:1,nw,nk,nspin) )
+!  de = (emax-emin)/ne
+!  do ispin = 1,nspin
+!    do ik = 1,nk
+!      do iw = 1,nw
+!        ie(0,iw,ik,ispin) = floor((ek(iw,ik,ispin)-emin)/de)
+!        ie(1,iw,ik,ispin) = ie(0,iw,ik,ispin)+1
+!        dek = emin + ie(1,iw,ik,ispin)*de - ek(iw,ik,ispin)
+!        we(0,iw,ik,ispin) = dek/de
+!        we(1,iw,ik,ispin) = 1-we(0,iw,ik,ispin)
+!      enddo
+!    enddo
+!  enddo
 
   ! Loop on unfolded band lines
   if (myNode==0) print*,'unfold: main loop'
   ii = cmplx(0,1)
   nlm = (lmax+1)**2
   c0 = (2*pi)**1.5_dp / vol
+  de = (emax-emin)/ne
   do iline = 1,nlines
     iq1 = lastq(iline-1)+1
     iq2 = lastq(iline)
@@ -525,6 +529,14 @@ program unfold
           call rlylm( lmax, qg/qmod, ylm, gylm )
           do ispin = 1,nspin
             do iw = 1,nw
+
+              ekg = sum( wkq(:) * ek(iw,ikq(:),ispin) )
+              je(0) = floor((ekg-emin)/de)
+              je(1) = je(0)+1
+              dek = emin + je(1)*de - ekg
+              weq(0) = dek/de
+              weq(1) = 1-weq(0)
+
               ukg = 0
               do io = 1,no
                 ia = iaorb(io)
@@ -552,10 +564,12 @@ program unfold
                 enddo ! j
               enddo ! io
               do j = 1,8
-                je(:) = ie(:,iw,ikq(j),ispin)
+!                je(:) = ie(:,iw,ikq(j),ispin)
                 if (je(0)>=0 .and. je(1)<=ne) then
+!                  dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
+!                                + vol*we(:,iw,ikq(j),ispin)*wkq(j)*abs(ukg(j))**2
                   dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
-                                + vol*we(:,iw,ikq(j),ispin)*wkq(j)*abs(ukg(j))**2
+                                + vol*weq(:)*wkq(j)*abs(ukg(j))**2
                 endif
               enddo ! j
             enddo ! iw
