@@ -270,7 +270,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 #--------------------------------------------------------------
 # spglib whatnot
 # should get version number from file found in spglib subdirectory. obj_ script already accepts anything it finds in there.
-SPG_VER=1.5.2
+SPG_VER=master-410566f
 
 #spglib_extract=spglib/spglib-$(SPG_VER)
 #$(spglib_extract): 

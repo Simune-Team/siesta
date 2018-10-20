@@ -415,10 +415,9 @@ C     Initialise MPI and set processor number
 !     Initialize atom lists
       call initatomlists( )    ! Sets iza
 
-      ! call init routine with main syms_t object from m_syms
-      call init_syms( syms_t, ucell, na_u, isa, xa )
-
-      call print_syms(syms_t)
+      ! call init routine with main syms_global object from m_syms
+      call init_syms( syms_global, ucell, na_u, isa, xa )
+      if (IONode) call print_syms(syms_global)
 
 !     early exit if only checking the structure
       struct_only = fdf_get( 'Output-Structure-Only', .false. )

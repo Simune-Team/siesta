@@ -109,7 +109,7 @@
 #endif
 
       ! clean up
-      call delete_syms(syms_t)
+      call delete_syms(syms_global)
 
  
 !     Output memory use up to the end of the program

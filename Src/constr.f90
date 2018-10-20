@@ -48,16 +48,16 @@
 ! Write here your problem-specific code.
 
 ! find equivalent atoms - this can be encapsulated later
-    allocate (equiv_atom(na, syms_t%nsymop))
-    allocate (invequiv_atom(na, syms_t%nsymop))
+    allocate (equiv_atom(na, syms_global%n_operations))
+    allocate (invequiv_atom(na, syms_global%n_operations))
     allocate (xreda(3, na))
     equiv_atom = 0
     invequiv_atom = 0
     call cart2red(cell, na, xa, xreda)
     do iatom = 1, na
-      do isym = 1, syms_t%nsymop
+      do isym = 1, syms_global%n_operations
         foundsymatom = .false.
-        xredb = matmul (syms_t%symops(:,:,isym), xreda(:,iatom)) + syms_t%trans(:,isym)
+        xredb = matmul (syms_global%rotations(:,:,isym), xreda(:,iatom)) + syms_global%translations(:,isym)
         do jatom = 1, na
           if (isa(jatom) /= isa(iatom)) cycle
 ! the tolerance here should correspond to symprec in syms.f90
@@ -86,17 +86,18 @@
 
       ! average all positions of atoms equiv to iatom
       avgpos = 0.0d0
-      do isym = 1, syms_t%nsymop
-        avgpos = avgpos + wrapvec_zero_one(matmul (syms_t%symops(:,:,isym),& 
-                 xreda(:,invequiv_atom(iatom,isym))) + syms_t%trans(:,isym))
+      do isym = 1, syms_global%n_operations
+        avgpos = avgpos + wrapvec_zero_one(matmul (syms_global%rotations(:,:,isym),& 
+                 xreda(:,invequiv_atom(iatom,isym))) + syms_global%translations(:,isym))
       end do
-      avgpos = avgpos / syms_t%nsymop
+      avgpos = avgpos / syms_global%n_operations
 
       ! copy symmetrized position to all equiv positions and flag them as done
-      do isym = 1, syms_t%nsymop
+      do isym = 1, syms_global%n_operations
         jatom = equiv_atom(iatom,isym)
         if (pos_sym_flag(jatom) /= 0) cycle
-        xreda_sym(:,jatom) = wrapvec_zero_one(matmul (syms_t%symops(:,:,isym), avgpos) + syms_t%trans(:,isym))
+        xreda_sym(:,jatom) = wrapvec_zero_one(matmul (syms_global%rotations(:,:,isym), avgpos) &
+          & + syms_global%translations(:,isym))
 !DEBUG
 print '(a,3E30.20)', 'change in xreda due to symmetrization = ', xreda(:,jatom)-xreda_sym(:,jatom)
 !END DEBUG
@@ -120,16 +121,16 @@ print '(a,3E30.20)', 'change in xreda due to symmetrization = ', xreda(:,jatom)-
 
       ! average all forces on atoms equiv to iatom
       avgforce = 0.0d0
-      do isym = 1, syms_t%nsymop
-        avgforce = avgforce + matmul (syms_t%symops_cart(:,:,isym),& 
+      do isym = 1, syms_global%n_operations
+        avgforce = avgforce + matmul (syms_global%symops_cart(:,:,isym),& 
                  fa(:,invequiv_atom(iatom,isym)))
       end do
-      avgforce = avgforce / syms_t%nsymop
+      avgforce = avgforce / syms_global%n_operations
       ! copy symmetrized force to all equiv positions and flag them as done
-      do isym = 1, syms_t%nsymop
+      do isym = 1, syms_global%n_operations
         jatom = equiv_atom(iatom,isym)
         if (force_sym_flag(jatom) /= 0) cycle
-        fa_sym(:,jatom) = matmul (syms_t%symops_cart(:,:,isym), avgforce)
+        fa_sym(:,jatom) = matmul (syms_global%symops_cart(:,:,isym), avgforce)
 !DEBUG
 print '(a,3E30.20)', 'change in fa due to symmetrization = ', fa(:,jatom)-fa_sym(:,jatom)
 !END DEBUG
