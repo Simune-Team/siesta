@@ -72,7 +72,7 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use ldau_specs,        only: switch_ldau, ldau_init
       use fdf,               only: fdf_get
-      use sys,               only: message, die
+      use sys,               only: message, die, bye
       use m_sparse, only : xij_offset
 
       use m_ts_kpoints, only: setup_ts_kpoint_grid
@@ -82,7 +82,6 @@
       use m_ts_options, only : N_Elec, Elecs, IsVolt
       use m_ts_electype
       use m_ts_global_vars, only: TSrun, TSmode, onlyS
-      use sys, only : bye
       use m_ts_io, only : fname_TSHS, ts_write_tshs
       use m_ts_sparse, only : ts_sparse_init
       use m_ts_tri_init, only : ts_tri_init, ts_tri_analyze
@@ -499,7 +498,7 @@
      &        BTD_method )
 
          ! Print-out timers
-         call timer('TS-rgn2tri',3)
+         call timer('TS-analyze',3)
 
          ! Bye also waits for all processors
          call bye('transiesta analyzation performed')
