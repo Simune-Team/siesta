@@ -39,6 +39,16 @@
 % Define a new command to pretty-print the date
 \makeatletter
 \newcommand\printdate{\@date}
+
+% Ensure the information is written in the PDF
+\newcommand\setpdfmetadata{%
+    \hypersetup{pdfinfo={%
+            Title={\@title},%
+            Author={\@author},%
+        }%
+    }%
+}
+
 \makeatother
 
 %%% Local Variables:

@@ -13,8 +13,19 @@
 % Include settings appropriate for tbtrans
 \input{tex/init.tex}
 
+% Title
+\title{TBtrans manual 4.1-b4}
+
 % Set the date
 \date{October 16, 2018}
+
+% Specify Authors
+\author{%
+    Nick R. Papior%
+}
+
+% Ensure the information is written in the PDF (see tex/setup.tex)
+\setpdfmetadata
 
 \begin{document}
 
@@ -62,7 +73,16 @@ original \tbtrans\ code was implemented by Mads Brandbyge, Jose
 L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
 \tbtrans\ is implemented by the following contributors:
 
-Nick R. Papior.
+\vspace{0.5cm}
+
+\hbox{ \hskip 0.1cm
+\begin{tabular}{ll}
+
+  Nick R\"ubner Papior &
+  \textit{Technical University of Denmark} \\ \\
+
+\end{tabular}
+}
 
 
 \tableofcontents
@@ -857,9 +877,6 @@ Population may also be calculated. These are only available if
   The COOP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
@@ -923,13 +940,20 @@ Population may also be calculated. These are only available if
   calculated. 
 
   This generates \sysfile{TEIG\_<1>\_<2>} and
-  \sysfile{AVTEIG\_<1>\_<2>}, however, only for the non-equivalent
-  electrode combinations (\tbtrans\ intrinsically assumes
-  time-reversal symmetry).
-
+  \sysfile{AVTEIG\_<1>\_<2>}, possibly \sysfile{CEIG\_<1>} and
+  \sysfile{AVCEIG\_<1>}. The former is for two different electrodes
+  $i\neq j$, while the latter is for electrode $i=j$.
+  
   \note if you specify a number of eigenvalues above the available
   number of eigenvalues, \tbtrans\ will automatically truncate it to a
   reasonable number.
+
+  \note The transmission eigenvalues for $N>2$ systems is not fully
+  understood and the transmission eigenvalues calculated in \tbtrans\ is
+  done by diagonalizing this sub-matrix:
+  \begin{equation}
+    \mathbf G \boldsymbol \Gamma_i \mathbf G^\dagger \boldsymbol \Gamma_j.
+  \end{equation}
 
 \end{fdfentry}
 
@@ -998,8 +1022,8 @@ Population may also be calculated. These are only available if
   \end{equation}
   where we have left out the pre-factor ($e/\hbar$)
   intentionally. \sisl\ may be used to analyze the orbital currents
-  and enables easy transformation of orbital currents to
-  bond currents and activity currents.
+  and enables easy transformation of orbital currents to bond currents
+  and activity currents\cite{Papior2017}.
 
   \note this requires \tbtrans\ to be compiled with NetCDF-4 support,
   see Sec.~\ref{sec:arch-make}.
@@ -1270,7 +1294,7 @@ Brillouin zone.
 
     \end{fdfoptions}
 
-    \option[\fdfvalue{siesta-method}]%
+    \option[\fdfvalue*{siesta-method}]%
 
     One may also use the typical \fdf*{kgrid\_Monkhorst\_Pack} method
     of input as done in \siesta. This is a $3\times3$ block such as:
