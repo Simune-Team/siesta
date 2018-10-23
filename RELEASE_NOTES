@@ -47,13 +47,13 @@ Release notes for siesta 4.1-b4 beta version
     SCFMustConverge is now default true (from false)
 
 --- Added developer documentation found in Docs/developer
-    Both ford (prefered) and Doxygen may be used
+    Both ford (preferred) and Doxygen may be used
 
 --- Generally increased precision in many output files
 
 --- Lots of fixes and updates for the Lua/flook interaction
 
---- Auxiliary supercell handling when reading DM matrices
+--- Auxiliary supercell handling when reading DM matrices:
     Siesta can now read and convert nearly *any* DM matrix and make it
     match the used sparse pattern.
 
@@ -69,9 +69,9 @@ Release notes for siesta 4.1-b4 beta version
     align the energy to 0.
 
 --- Added more digits to dDmax which may be relevant when performing
-    SOC/Non-Co calculations.
+    Spin-Orbit/Non-Collinear calculations.
 
---- Fixed bug related to writing out non-colinear spin eigenvalues,
+--- Fixed bug related to writing out non-collinear spin eigenvalues,
     and also for spin-orbit. (lp:1708634)
 
 --- Fixed parallel PDOS calculations of non-colinear and spin-orbit.
@@ -85,7 +85,7 @@ Release notes for siesta 4.1-b4 beta version
 
 --- Fix for reading a ghost basis (lp:1736455, lp:1738425)
 
---- Fix when fdf-input lines are too long, instead of discarding the
+--- Fix when fdf-input lines are too long. Instead of discarding the
     remaining line, fdf now "dies" to inform users of possible erroneous
     input. (lp:1728281)
 
@@ -104,16 +104,16 @@ Release notes for siesta 4.1-b4 beta version
 
 --- TranSiesta / TBtrans changes:
 
--- Disk-space reduction when mixing non-periodic electrodes and periodic electrodes
+-- Disk-space reduction when mixing non-periodic and periodic electrodes
 
--- Now tiling is also enabled for Bloch expansions, this is actually faster
+-- Now tiling is also enabled for Bloch expansions. This is actually faster
    than repetitions, so users should prefer tiling the electrodes
 
 -- TranSiesta is now intrinsic to the Siesta executable. An
-   electrode should now be calculated using siesta --electrode
-   The TranSiesta executable still exists but is nothing but siesta --electrode
+   electrode should now be calculated using 'siesta --electrode'
+   The TranSiesta executable still exists but is nothing but 'siesta --electrode'
 
--- Many bug-fixes related to pivoting tables, this should only
+-- Many bug-fixes related to pivoting tables; this should only
    change the effective BTD matrices, and has no relevance to the
    accuracy of the calculations
 
@@ -150,7 +150,7 @@ Release notes for siesta 4.1-b4 beta version
 -- Bugfix when the left electrode was set to -|V|/2 (the default |V|/2 is
    unaffected).
 
--- Added much more output to the TBT*.nc files, electrode information is now
+-- Added much more output to the TBT*.nc files; electrode information is now
    complete, and also the BTD matrices are written.
 
 -- Enabled tbtrans -fdf TBT.Analyze which runs all pivoting schemes, this
@@ -162,16 +162,16 @@ Release notes for siesta 4.1-b4 beta version
    is (more or less) equivalent to:   
      tbtrans RUN.fdf > TBT.out
 
--- Made Fermi charge correction more aggressive to faster converge.
+-- Made Fermi charge correction more aggressive for faster convergence.
 
--- TBtrans can now calculate DM, COOP and COHP curves, they are calculated
-   in the supercell picture and can thus be analyses cross-boundary as well.
+-- TBtrans can now calculate DM, COOP and COHP curves. They are calculated
+   in the supercell picture and can thus be analyzed cross-boundary as well.
    They are calculated both from the Green function and the spectral function.
    The coming >0.9.3 release of sisl will enable this analysis.
 
 -- Fixed TBtrans DOS (Green) calculations when performing k-point calculations. There
    can be small differences when comparing Green function DOS between this version
-   and prior versions. The bug is only present when TRS is applied.
+   and prior versions. The bug is only present when time-reversal-symmetry is applied.
 
 #BETA#BETA#BETA#BETA#BETA#BETA#
 B                             B
