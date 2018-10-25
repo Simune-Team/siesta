@@ -17,11 +17,13 @@
 #ifdef NCDF_4
       use siesta_options, only: write_cdf
 #endif
+      use siesta_options, only: fixspin
       use siesta_options, only: g2cut, savehs, temp, nmove
       use siesta_options, only: recompute_H_after_scf
       use sparse_matrices, only: numh, listh, listhptr
       use sparse_matrices, only: H, S, Dscf, Escf, maxnh, xijo
       use sparse_matrices, only: H_ldau_2D
+      use class_dSpData1D, only: val
       use class_dSpData2D, only: val
 
       use siesta_geom
@@ -85,8 +87,9 @@
       integer               :: istr    ! Calculate stress? 0=>no, 1=>yes
       real(dp)              :: g2max
       ! To avoid overwriting the current Hamiltonian and S
-      real(dp), pointer     :: H_tmp(:,:) => null()
-      real(dp), pointer     :: H_ldau(:,:)
+      real(dp), pointer :: H_tmp(:,:) => null()
+      real(dp), pointer :: S_tmp(:) => null()
+      real(dp), pointer :: H_ldau(:,:)
 #ifdef FINAL_CHECK_HS
       real(dp) :: diff_H
 #endif
@@ -317,6 +320,17 @@
       end if
 #endif
 #endif
+
+      if ( fixspin .and. (write_tshs_history .or. TS_HS_save) ) then
+        ! For fixed spin calculations we shift the Hamiltonian according
+        ! to the first spin such that we have a "common" E_F, after writing
+        ! we shift back again.
+        H_tmp => val(H_2D)
+        S_tmp => val(S_1D)
+        call daxpy(size(S_tmp),Efs(1)-Efs(2),S_tmp(1),1,H_tmp(1,2),1)
+        Ef = Efs(1)
+      end if
+      
       if ( write_tshs_history ) then
          ! This is "pure" MD and we only write consecutive numbers
          ! Together with this you cannot also save FC
@@ -358,6 +372,11 @@
      &           Ef, Qtot, Temp, 0, 0)
          end if
       endif
+
+      if ( fixspin .and. (write_tshs_history .or. TS_HS_save) ) then
+        ! Shift back
+        call daxpy(size(S_tmp),Efs(2)-Efs(1),S_tmp(1),1,H_tmp(1,2),1)
+      end if
 
 !----------------------------------------------------------------------- END
       END subroutine final_H_f_stress
