@@ -515,12 +515,23 @@ c loop sampling on displacements making averages ----------------------------
         Exc = avExc
         Uatm = avUatm
         Uscf = avUscf
-        
-        ! Deallocate local memory
-        call de_alloc( faold, 'faold', 'grdsam' )
+
         call de_alloc( xanew, 'xanew', 'grdsam' )
         call de_alloc( allfa, 'allfa', 'grdsam' )
         call de_alloc( allstr, 'allstr', 'grdsam' )
+
+        ! Since we have displaced the atoms we need to recreate
+        ! the lists such that later analysis is matching the coordinates
+        G2max = g2cut
+        call dhscf_init(nspin, norb, iaorb, iphorb,
+     &      nuo, nuotot, nua, na,
+     &      isa, xa, indxua, cell,
+     &      mscell, G2max, ntm,
+     &      maxnd, numh, listhptr, listh, datm,
+     &      Faold, strold(:,:,1))
+
+        ! Deallocate local memory
+        call de_alloc( faold, 'faold', 'grdsam' )
 
       end if
 
