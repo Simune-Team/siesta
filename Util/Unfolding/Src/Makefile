@@ -17,6 +17,7 @@ default: unfold
 WDIR=$(shell pwd)
 VPATH=../../../Src
 OBJDIR=../../../Obj
+HSXDIR=../../HSX
 ARCH_MAKE=$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
 
@@ -32,13 +33,14 @@ libs_collected:
 	(cd $(OBJDIR) ; \
 	make libSiestaForces.a ; \
 	cp -f *.a *.mod $(WDIR) )
+	cp -f $(HSXDIR)/hsx_m.f90 $(WDIR)
 	touch libs_collected
 
-unfold.o: unfold.F90 libs_collected
-	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F) unfold.F90
+unfold.o: unfold.F90 hsx_m.f90 libs_collected
+	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F) hsx_m.f90 unfold.F90
 
 unfold: libs_collected unfold.o
-	$(FC) $(LDFLAGS) -o unfold unfold.o $(ALL_LIBS)
+	$(FC) $(LDFLAGS) -o unfold hsx_m.o unfold.o $(ALL_LIBS)
 
 clean:
 	@echo "==> Cleaning object, library, and executable files"

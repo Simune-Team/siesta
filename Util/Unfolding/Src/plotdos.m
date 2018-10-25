@@ -43,12 +43,13 @@ if nq==1
     ylabel('dos')
     grid on
 else
-%    surf(qpath',e',dos',min(dos',0.6))
-%    surf(qpath',e',cumsum(dos,2)',min(cumsum(dos,2)',2))
+%    surf(qpath',e',dos')
+%    surf(qpath',e',cumsum(dos,2)')
     surf(qpath',e',max(log10(dos),-2)')
     xlabel('qpath')
     ylabel('energy')
     zlabel('dos')
-    axis([0,qpath(end),emin,10,-2,0])
+%    axis([0,qpath(end),emin,emax,0,1/de])
+    axis([0,qpath(end),emin,emax,-2,0.5])
 end
 colorbar

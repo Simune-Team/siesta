@@ -22,10 +22,13 @@ program unfold
   use fdf,          only: block_fdf, fdf_bintegers, fdf_bline, fdf_block, &
                           fdf_bmatch, fdf_bnames, fdf_bnvalues, fdf_bvalues, &
                           fdf_convfac, fdf_get, fdf_init, fdf_parallel, parsed_line
+  use hsx_m,        only: hsx_t, read_hsx_file
+!  use m_diag,       only: diag_init
   use m_get_kpoints_scale, &
                     only: get_kpoints_scale
   use m_mpi_utils,  only: broadcast
 #ifdef MPI
+  use m_diag_option,only: ParallelOverK, diag_serial=>Serial
   use mpi_siesta,   only: MPI_Comm_Rank, MPI_Comm_Size, MPI_Comm_World, &
                           MPI_double_precision, MPI_Init, MPI_Finalize, &
                           MPI_Reduce, MPI_Sum
@@ -46,45 +49,43 @@ program unfold
   integer, parameter :: maxlines = 100  ! max number of unfolded band lines
   integer, parameter :: maxig = 10      ! max index of refolding G vectors
   real(dp),parameter :: g2c = 300_dp    ! default mesh cutoff (ry)
-  real(dp),parameter :: qc = 25_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
+  real(dp),parameter :: qc = 50_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
+  logical, parameter :: writeOrbitals = .false.  ! write atomic orbital files?
+  real(dp),parameter :: tolSuperCell = 1.e-6 ! tolerance for comparing cell and supercell
 
   ! Internal variables
-  integer          :: i, i1, i2, i3, i123(3), ia, iao, ierr, ig, ik, ikx(3), &
-                      ikq(8), iline, io, iostat, iq, iq1, iq2, iqNode, iqx(3), &
-                      ir, irq, isp, ispin, iispin, iu, iw, &
-                      j, je(0:1), jk, jlm, jspin(maxlines), jw, &
+  integer          :: i, i1, i2, i3, ia, iao, ib, ie, ierr, ig, ij, &
+                      iline, io, ios, iostat, iou, &
+                      iq, iq1, iq2, iqNode, iqx(3), &
+                      ir, irq, iscf, isp, ispin, iu, &
+                      j, je, jk, jlm, jo, jos, jou, &
                       kdsc(3,3), kscell(3,3), l, lastq(0:maxlines), ll, lmax, &
-                      m, maux(3,3,2), maxorb, maxw, &
-                      ml(3,3), mr(3,3), mw, myNode, &
-                      na, ne, ng, nk, nktot, nkx(3), nlines, nlm, nNodes, no, &
-                      nq, nqline, nrq, nspin, ntmp, nw, proj(3,3), t, z
-  real(dp)         :: alat, c0, dkcell(3,3), de, dek, diqx(3), dq, dqline(3), &
-                      dqx(3), dr, drq, dscell(3,3), ekg, emax, emin, &
-                      gcut, gq(3,8), gnew(3), gnorm, grad, gylm(3,maxl*maxl), &
-                      k0(3), kcell(3,3), kmax, kq(3), pi, &
-                      q0(3), qmod, qcell(3,3), qg(3), qline(3), qmax, qx(3), &
+                      m, maxorb, myNode, &
+                      na, nbands, ne, ng, nh, nlines, nlm, nNodes, &
+                      nos, nou, nq, nqline, nrq, nspin, ntmp, nw, t, z
+  real(dp)         :: alat, c0, cellRatio(3,3), ddos, de, dek, dq, dqline(3), &
+                      dqx(3), dr, drq, dscell(3,3), emax, emin, &
+                      gcut, gnew(3), gnorm, gq(3), grad, gylm(3,maxl*maxl), &
+                      kq(3), kxij, pi, &
+                      qmod, qcell(3,3), qg(3), qline(3), qmax, qx(3), &
                       r, rc, rcell(3,3), refoldCell(3,3), refoldBcell(3,3), rmax, rq, &
-                      scell(3,3), vol, weq(0:1), wkq(8), wq, xmax, ylm(maxl*maxl)
-  complex(dp)      :: ck, ii, phi, psik, ukg(8)
-  logical          :: ccq(8), found, gamma
+                      scell(3,3), vol, we, wq, xmax, ylm(maxl*maxl)
+  complex(dp)      :: ck, ii, phase, phi, psik, ukg
+  logical          :: found, gamma, notSuperCell
   character(len=50):: eunit, fname, formatstr,  iostr, isstr, numstr, slabel
   character(len=20):: labelfis, symfio
   character(len=200):: line
   type(block_fdf)  :: bfdf
+  type(hsx_t)      :: hsx
 
   integer :: nx
   real(dp):: dg, drmin, dx, g0(3), gmod, gvec(3), normphiq, normphir, x(3), wr, xmod
 
   ! Allocatable arrays and pointers
-  integer,          allocatable:: cnfigfio(:), iaorb(:), indk(:,:,:), iphorb(:)
-!  integer,          allocatable:: ie(:,:,:,:)
-  real(sp),         allocatable:: psi(:,:,:,:,:)
-  real(dp),         allocatable:: dos(:,:,:), dossum(:,:), ek(:,:,:), &
-                                  k(:,:), phir(:,:,:), phiq(:,:,:), &
-                                  tmp(:,:,:), tmp1(:), tmp2(:)
-!  real(dp),         allocatable:: we(:,:,:,:)
-  
+  real(dp),         allocatable:: dos(:,:,:), dossum(:,:), eb(:,:), &
+                                  phir(:,:,:), phiq(:,:,:), tmp1(:), tmp2(:), tmp(:,:)
   real(dp),         pointer    :: g(:,:)=>null(), q(:,:)=>null()
+  complex(dp),      allocatable:: h(:,:), psi(:,:,:), s(:,:)
   logical,          allocatable:: cc(:,:,:)
   type(parsed_line),   pointer :: pline
 
@@ -182,7 +183,7 @@ program unfold
   enddo
 
   ! Write radial dependence of atomic orbitals in real and reciprocal space
-  if (myNode==0) then
+  if (myNode==0 .and. writeOrbitals) then
     do isp = 1,nsp
       do io = 1,nofis(isp)
         write(isstr,*) isp
@@ -273,122 +274,44 @@ program unfold
     print'(a,/,(3f21.15))','unfold: reciprocal_cell (1/bohr) =',rcell
   endif
 
-  ! Find k-points in FBZ
-  if (myNode==0) print*,'unfold: generating k-points'
-  kscell = 0
-  kmax = 0
-  call kgridinit( ucell, kscell, k0, kmax, nk )  ! read kscell from fdf file
-  if (myNode==0) print*,'unfold: from kgridinit nk=',nk
-
-  ! Find cell vectors of k grid (see kgrid.F)
-  call idiag( 3, kscell, kdsc, ml, mr, maux )    ! kdsc = diagonal supercell
-  proj = 0
-  forall(j=1:3) proj(j,j)=sign(1,kdsc(j,j))
-  kdsc = matmul(kdsc,proj)
-  mr = matmul(mr,proj)
-  dscell = matmul(ucell,real(kscell,dp))         ! reciprocal k-grid vectors
-  dscell = matmul(dscell,mr)                     ! same but 'diagonal'
-  call reclat(dscell,dkcell,1)                   ! dkcell = k-grid unit vectors
-  call reclat(ucell,kcell,1)                     ! kcell = reciprocal lattice vecs
-  k0 = matmul(dkcell,k0)                         ! k-grid origin
-  nktot = nint(volcel(kcell)/volcel(dkcell))     ! total num. of k vecs in FBZ
-  if (myNode==0) print'(a,i6,/,(3f12.6))','unfold: nktot, dkcell =',nktot,dkcell
-!  if (myNode==0) print'(a,/,(i6,3f12.6,3x,3f9.3))','unfolding: k, indk =', &
-!    (ik,k(:,ik),matmul((k(:,ik)-k0),dscell)/(2*pi),ik=1,nk)
-
-  ! Read band energies and wavefunctions at k points of the FBZ
+  ! Read HSX file with H, S, and xij matrices
   slabel = fdf_get('SystemLabel','unknown')
-  fname = trim(slabel)//'.fullBZ.WFSX'
+  fname = trim(slabel)//'.HSX'
   if (myNode==0) then
-    print*,'unfold: reading wavefunctions'
-    iu = 11
-    open(iu, file=fname, form='unformatted', status='old' )
-    read(iu) nk, gamma    ! number of k-points in FBZ, gamma-point only?
-    read(iu) nspin        ! number of spin components
-    read(iu) no           ! number of atomic orbitals in unit cell
+    call read_hsx_file(hsx,fname)
+    if (hsx%nspecies/=nsp) call die('unfold ERROR: hsx%nspecies/=nsp')
+    if (hsx%na_u/=na) call die('unfold ERROR: hsx%na_u/=na')
   endif
-  call broadcast(nk)
-  call broadcast(gamma)
-  call broadcast(nspin)
-  call broadcast(no)
-  maxw = no             ! max number of bands
-  if (gamma) then
-    allocate(psi(1,no,maxw,nk,nspin),tmp(1,no,maxw))
-  else
-    allocate(psi(2,no,maxw,nk,nspin),tmp(2,no,maxw))
+  call broadcast(hsx%nspecies)
+  call broadcast(hsx%na_u)
+  call broadcast(hsx%no_u)
+  call broadcast(hsx%no_s)
+  call broadcast(hsx%nspin)
+  call broadcast(hsx%nh)
+  nou = hsx%no_u
+  nos = hsx%no_s
+  nh  = hsx%nh
+  nspin = hsx%nspin
+  if (myNode/=0) then
+    allocate(hsx%iaorb(nou))
+    allocate(hsx%iphorb(nou))
+    allocate(hsx%numh(nou))
+    allocate(hsx%listhptr(nou))
+    allocate(hsx%listh(nh))
+    allocate(hsx%indxuo(nos))
+    allocate(hsx%hamilt(nh,nspin))
+    allocate(hsx%Sover(nh))
+    allocate(hsx%xij(3,nh))
   endif
-  allocate( k(3,nk), ek(maxw,nk,nspin) )
-  allocate( iaorb(no), iphorb(no), cnfigfio(no) )
-  if (myNode==0) then
-    read(iu) (iaorb(io),labelfis,iphorb(io),cnfigfio(io),symfio,io=1,no)
-    do ik = 1,nk
-      do ispin = 1,nspin
-        read(iu) jk, k(:,ik)  ! k-point coordinates
-        if (jk/=ik) &
-          call die('unfold ERROR: unexpected k-point index')
-        read(iu) iispin                
-        if (iispin/=ispin) &
-          call die('unfold ERROR: unexpected spin index')
-        read(iu) nw           ! number of wavefunctions (bands)
-        if (ik==1 .and. ispin==1) then
-          mw = nw
-        else if (nw/=mw) then
-            call die('unfold ERROR: number of bands not constant')
-        endif
-        do iw = 1,nw
-          read(iu) jw
-          if (jw/=iw) &
-            call die('unfold ERROR: unexpected band index')
-          read(iu) ek(iw,ik,ispin)                  ! band energy
-          read(iu) (psi(:,io,iw,ik,ispin),io=1,no)  ! wavefunction coeffs.
-!          print'(a,2i4,15e12.3)','unfold: iw,ik,psi=',iw,ik,psi(1,:,iw,ik,1)
-!          print'(a,2i4,e15.6)','unfold: iw,ik,norm(psi)=',iw,ik,sum(psi(:,:,iw,ik,1)**2)
-        enddo
-      enddo
-    enddo
-    close (iu)
-  endif ! (myNode==0)
-  call broadcast(nw)
-  call broadcast(iaorb)
-  call broadcast(iphorb)
-  call broadcast(cnfigfio)
-  call broadcast(k)
-  call broadcast(ek)
-  do ik = 1,nk
-    do ispin = 1,nspin
-      tmp = psi(:,:,:,ik,ispin)
-      call broadcast(tmp)
-      psi(:,:,:,ik,ispin) = tmp
-    enddo
-  enddo
-  deallocate(tmp)
-
-  ! Find index of all vectors in FBZ
-  if (myNode==0) print*,'unfold: indexing k vectors, nk=',nk
-  forall(j=1:3) nkx(j)=kdsc(j,j)
-  allocate( indk(nkx(1),nkx(2),nkx(3)), cc(nkx(1),nkx(2),nkx(3)) )
-  indk = 0
-  do ik = 1,nk
-    ikx = nint(matmul(k(:,ik)-k0,dscell)/(2*pi))
-    ikx = modulo(ikx,nkx)+1
-    indk(ikx(1),ikx(2),ikx(3)) = ik
-    cc(ikx(1),ikx(2),ikx(3)) = .false.
-    ikx = nint(matmul(-k(:,ik)-k0,dscell)/(2*pi))
-    ikx = modulo(ikx,nkx)+1
-    if (indk(ikx(1),ikx(2),ikx(3))==0) then
-      indk(ikx(1),ikx(2),ikx(3)) = ik
-      cc(ikx(1),ikx(2),ikx(3)) = .true.
-    endif
-  enddo
-  if (any(indk==0)) &
-    call die('unfold ERROR: some k-points in FBZ not found')
-
-!  if (myNode==0) print'(a,/,(3i4,i6,6f12.6))','unfold: ikx,indk,k,kfrac =', &
-!    (((i1,i2,i3,indk(i1,i2,i3),k(:,indk(i1,i2,i3)), &
-!    matmul(k(:,indk(i1,i2,i3)),ucell)/(2*pi),i1=1,nkx(1)),i2=1,nkx(2)),i3=1,nkx(3))
-!  if (myNode==0) print'(a,/,(2i6,e15.6))','unfold: ik,iw,ek =', &
-!    ((ik,iw,ek(iw,ik,1),iw=1,nw),ik=1,nk)
-  if (myNode==0) print*,'unfold: ekmin =', minval(ek),' eV'
+  call broadcast(hsx%iaorb)
+  call broadcast(hsx%iphorb)
+  call broadcast(hsx%numh)
+  call broadcast(hsx%listhptr)
+  call broadcast(hsx%listh)
+  call broadcast(hsx%indxuo)
+  call broadcast(hsx%hamilt)
+  call broadcast(hsx%Sover)
+  call broadcast(hsx%xij)
 
   ! Read fdf block UnfoldedBandLines
   if (myNode==0) print*,'unfold: reading UnfoldedBandLines block'
@@ -434,6 +357,9 @@ program unfold
     endif
   enddo
 
+!  print'(a,/,(i6,3f12.6))','unfold: iq,q=',(iq,q(:,iq),iq=1,nq)
+!  print*,'unfold: nlines,lastq=',nlines,lastq(0:nlines)
+
 ! Read fdf block RefoldingLatticeVectors
   if (myNode==0) print*,'unfold: reading RefoldingLatticeVectors block'
   gcut = 0.5*sqrt( fdf_get('MeshCutoff',g2c,'ry') )
@@ -471,108 +397,89 @@ program unfold
   if (myNode==0) print'(a,/,(3f12.6))','unfold: refoldCell=',refoldCell
   if (myNode==0) print*,'unfold: alat,gcut,ng=',alat,gcut,ng
 
-!  print'(a,/,(i6,3f12.6))','unfold: iq,q=',(iq,q(:,iq),iq=1,nq)
-!  print*,'unfold: nlines,lastq=',nlines,lastq(0:nlines)
-
-  ! Find index and weight of band energies
-!  allocate( ie(0:1,nw,nk,nspin), we(0:1,nw,nk,nspin) )
-!  de = (emax-emin)/ne
-!  do ispin = 1,nspin
-!    do ik = 1,nk
-!      do iw = 1,nw
-!        ie(0,iw,ik,ispin) = floor((ek(iw,ik,ispin)-emin)/de)
-!        ie(1,iw,ik,ispin) = ie(0,iw,ik,ispin)+1
-!        dek = emin + ie(1,iw,ik,ispin)*de - ek(iw,ik,ispin)
-!        we(0,iw,ik,ispin) = dek/de
-!        we(1,iw,ik,ispin) = 1-we(0,iw,ik,ispin)
-!      enddo
-!    enddo
-!  enddo
-
-  ! Loop on unfolded band lines
-  if (myNode==0) print*,'unfold: main loop'
-  ii = cmplx(0,1)
+! Find if simulation cell is a supercell of refoldCell
+  cellRatio = matmul(refoldBcell,ucell)/(2*pi)
+  notSuperCell = .not.all(abs(cellRatio-nint(cellRatio))<tolSuperCell)
+  if (myNode==0) print'(a,l,a,/,(3f12.6))', &
+    'unfold: notSuperCell= ',notSuperCell,'   cellRatio=',cellRatio
+  
+  ! Set some constants
+  ii = cmplx(0,1,dp)
   nlm = (lmax+1)**2
   c0 = (2*pi)**1.5_dp / vol
   de = (emax-emin)/ne
+  ParallelOverK = .true.
+  diag_serial = .true.
+  nbands = nou
+  iscf = 1
+  allocate( eb(nou,nspin), h(nou,nou), psi(nou,nou,nspin), s(nou,nou) )
+
+  ! Main loops on unfolded band lines and q vectors along them
+  if (myNode==0) print*,'unfold: main loop'
   do iline = 1,nlines
     iq1 = lastq(iline-1)+1
     iq2 = lastq(iline)
     allocate( dos(iq1:iq2,0:ne,nspin) )
     dos = 0
     do iq = iq1,iq2
-!      print*,'unfold: q=',q(:,iq)
       iqNode = mod((iq-1),nNodes)
       if (myNode==iqNode) then
+!        print*,'unfold: q=',q(:,iq)
         do ig = 1,ng
-          qg = q(:,iq)+g(:,ig) ! note: this is a refolding g, not a superlattice one
-          qx = matmul(qg-k0,dscell)/(2*pi)  ! qg in mesh coords: qg=k0+matmul(dkcell,qx)
-          iqx = floor(qx-1.e-12)            ! k-mesh point in mesh coords
-          diqx = iqx+1-qx
-          j = 0
-          do i3 = 0,1
-          do i2 = 0,1
-          do i1 = 0,1
-            j = j+1
-            i123 = (/i1,i2,i3/)
-            ikx = modulo(iqx+i123,nkx)+1
-            ikq(j) = indk(ikx(1),ikx(2),ikx(3))
-            wkq(j) = product(i123-(2*i123-1)*diqx(:))
-            ccq(j) = cc(ikx(1),ikx(2),ikx(3))
-            kq = k(:,ikq(j))
-            if (ccq(j)) kq = -kq
-            gq(:,j) = qg-kq
-          enddo
-          enddo
-          enddo
-          qmod = sqrt(sum(qg**2))+1.e-15
-          call rlylm( lmax, qg/qmod, ylm, gylm )
+          qg = q(:,iq)+g(:,ig) ! note: this is a refolding g, not a superlattice G
+          if (ig==1 .or. notSuperCell) then
+            qx = matmul(qg,ucell)/(2*pi)   ! qg in mesh coords: qg=matmul(rcell,qx)
+            kq = matmul(rcell,qx-nint(qx)) ! q+g translated to FBZ of SC, i.e. kq=k+g-G
+          endif
+          gq = qg-kq                       ! supercell G vector 
           do ispin = 1,nspin
-            do iw = 1,nw
 
-              ekg = sum( wkq(:) * ek(iw,ikq(:),ispin) )
-              je(0) = floor((ekg-emin)/de)
-              je(1) = je(0)+1
-              dek = emin + je(1)*de - ekg
-              weq(0) = dek/de
-              weq(1) = 1-weq(0)
+            if (ig==1 .or. notSuperCell) then
+              h = 0
+              s = 0
+              do iou = 1,nou
+                do j = 1,hsx%numh(iou)
+                  ij = hsx%listhptr(iou) + j
+                  jos = hsx%listh(ij)
+                  jou = hsx%indxuo(jos)
+                  kxij = sum(kq*hsx%xij(:,ij))
+                  phase = exp(ii*kxij)
+                  s(iou,jou) = s(iou,jou) + hsx%Sover(ij)*phase
+                  h(iou,jou) = h(iou,jou) + hsx%hamilt(ij,ispin)*phase
+                enddo
+              enddo
+              call cdiag(h,s,nou,nou,nou,eb(:,ispin),psi(:,:,ispin), &
+                         nbands,iscf,ierr,-1)
+              if (ierr/=0) print*,'unfold: ERROR in cdiag'
+              eb(:,ispin) = eb(:,ispin)*fdf_convfac('ry','ev') ! from Ry to eV
+            endif
 
+            qmod = sqrt(sum(qg**2))+1.e-15
+            call rlylm( lmax, qg/qmod, ylm, gylm )
+            do ib = 1,nbands
+              je = floor((eb(ib,ispin)-emin)/de)
+              dek = emin + (je+1)*de - eb(ib,ispin)
+              we = dek/de
               ukg = 0
-              do io = 1,no
-                ia = iaorb(io)
+              do io = 1,nou
+                ia = hsx%iaorb(io)
                 isp = isa(ia)
-                iao = iphorb(io)
+                iao = hsx%iphorb(io)
                 l = lofio(isp,iao)
                 m = mofio(isp,iao)
                 jlm = l*(l+1) + m+1                 !! ilm(l,m)
-                qmod = sqrt(sum(qg**2))
                 irq = floor(qmod/dq)
                 drq = (irq+1)*dq-qmod
                 wq = drq/dq
                 phi = phiq(irq,isp,iao)*wq + phiq(irq+1,isp,iao)*(1-wq)
                 phi = (-ii)**l * ylm(jlm) * phi
-                do j = 1,8
-                  if (gamma) then
-                    ck = psi(1,io,iw,ikq(j),ispin)
-                  else
-                    ck = cmplx(psi(1,io,iw,ikq(j),ispin), &
-                               psi(2,io,iw,ikq(j),ispin))
-                  endif
-                  if (ccq(j)) ck = conjg(ck)
-                  psik = c0*ck*phi*exp(-ii*sum(gq(:,j)*xa(:,ia)))
-                  ukg(j) = ukg(j) + psik
-                enddo ! j
+                psik = c0*psi(io,ib,ispin)*phi*exp(-ii*sum(gq*xa(:,ia)))
+                ukg = ukg + psik
               enddo ! io
-              do j = 1,8
-!                je(:) = ie(:,iw,ikq(j),ispin)
-                if (je(0)>=0 .and. je(1)<=ne) then
-!                  dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
-!                                + vol*we(:,iw,ikq(j),ispin)*wkq(j)*abs(ukg(j))**2
-                  dos(iq,je(:),ispin) = dos(iq,je(:),ispin) &
-                                + vol*weq(:)*wkq(j)*abs(ukg(j))**2
-                endif
-              enddo ! j
-            enddo ! iw
+              ddos = vol*abs(ukg)**2
+              if (je>=0) dos(iq,je,ispin) = dos(iq,je,ispin) + ddos*we
+              if (je<ne) dos(iq,je+1,ispin) = dos(iq,je+1,ispin) + ddos*(1-we)
+            enddo ! ib
           enddo ! ispin
         enddo ! ig
       endif ! (myNode==iqNode)
