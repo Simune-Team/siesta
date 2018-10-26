@@ -76,3 +76,5 @@ BandLinesScale  pi/a
 #  0.500  0.500  0.000
 #%endblock RefoldingLatticeVectors
 
+AllocReportLevel      2
+AllocReportThreshold  0
