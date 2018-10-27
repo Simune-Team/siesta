@@ -82,8 +82,8 @@ atom_options.o: local_sys.o
 atom_options.o: local_sys.o
 chemical.o: local_sys.o parallel.o precision.o
 chemical.o: local_sys.o parallel.o precision.o
-io.o: local_sys.o
-io.o: local_sys.o
+io.o: m_io.o
+io.o: m_io.o
 memory.o: memory_log.o parallel.o
 memory.o: memory_log.o parallel.o
 memory_log.o: m_io.o parallel.o precision.o

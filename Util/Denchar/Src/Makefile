@@ -193,8 +193,8 @@ domain_decom.o: alloc.o local_sys.o parallel.o precision.o printmatrix.o
 domain_decom.o: schecomm.o sparse_matrices.o
 domain_decom.o: alloc.o local_sys.o parallel.o precision.o printmatrix.o
 domain_decom.o: schecomm.o sparse_matrices.o
-io.o: local_sys.o
-io.o: local_sys.o
+io.o: m_io.o
+io.o: m_io.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 listsc.o: alloc.o

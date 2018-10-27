@@ -140,52 +140,53 @@ contains
     call my_setup('nEq',N_nEq,nEq_c,nEq_io)
     if ( N_nEq < 1 ) then
 
-       if ( N_Elec /= 2 .or. N_mu /= 2 ) then
-          call die('When using other than 2 electrodes and &
-               &chemical potentials you are forced to setup &
-               &the contour input yourself.')
-       end if
-
-       ! Get the lowest chemical potential
-       if ( mus(1)%mu < mus(2)%mu ) then
-          j = 1
-          k = 2
-       else
-          j = 2
-          k = 1
-       end if
-
-       ! We create the default version
-       N_nEq = 1
-       nullify(nEq_io,nEq_c)
-       allocate(nEq_io(N_nEq),nEq_c(N_nEq))
-
-       ! Create the integrals
-       nEq_io(1)%part = 'line'
-       nEq_io(1)%name = 'line'
-       write(nEq_io(1)%ca,'(a,g12.5,a)') &
-            '- ',cutoff_kT * mus(j)%kT / kT ,' kT - |V|/2'
-       ! mus(j)%mu is negative
-       nEq_io(1)%a  = - cutoff_kT * mus(j)%kT + mus(j)%mu
-       write(nEq_io(1)%cb,'(a,g12.5,a)') &
-            '|V|/2 + ',cutoff_kT * mus(k)%kT / kT,' kT'
-       nEq_io(1)%b  = mus(k)%mu + cutoff_kT * mus(k)%kT
-       nEq_io(1)%cd = '0.01 eV'
-       nEq_io(1)%d = 0.01_dp * eV
-       nEq_io(1)%method = 'mid-rule'
-
-       do i = 1 , N_nEq
-          nEq_c(i)%c_io => nEq_io(i)
+      ! Find the minimum integration energy and the maximum
+      j = 1
+      k = 1
+      min_E = mus(j)%mu - mus(j)%kT * cutoff_kT
+      max_E = mus(k)%mu + mus(k)%kT * cutoff_kT
+      do i = 1, N_mu
+        if ( mus(i)%mu - mus(i)%kT * cutoff_kT < min_E ) then
+          min_E = mus(i)%mu - mus(i)%kT * cutoff_kT
+          j = i
+        end if
+        if ( max_E < mus(i)%mu + mus(i)%kT * cutoff_kT ) then
+          max_E = mus(i)%mu + mus(i)%kT * cutoff_kT
+          k = i
+        end if
+      end do
       
-          ! Fix the contours checking for their consistency
-          call ts_fix_contour(nEq_io(i))
+      ! We create the default version
+      N_nEq = 1
+      nullify(nEq_io,nEq_c)
+      allocate(nEq_io(N_nEq),nEq_c(N_nEq))
+      
+      ! Create the integrals
+      nEq_io(1)%part = 'line'
+      nEq_io(1)%name = 'line'
+      write(nEq_io(1)%ca,'(a,g12.5,a)') &
+          '- ',cutoff_kT * mus(j)%kT / kT ,' kT - |V|/2'
+      ! mus(j)%mu is negative
+      nEq_io(1)%a  = - cutoff_kT * mus(j)%kT + mus(j)%mu
+      write(nEq_io(1)%cb,'(a,g12.5,a)') &
+          '|V|/2 + ',cutoff_kT * mus(k)%kT / kT,' kT'
+      nEq_io(1)%b  = mus(k)%mu + cutoff_kT * mus(k)%kT
+      nEq_io(1)%cd = '0.01 eV'
+      nEq_io(1)%d = 0.01_dp * eV
+      nEq_io(1)%method = 'mid-rule'
 
-          ! setup the contour
-          allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
+      do i = 1 , N_nEq
+        nEq_c(i)%c_io => nEq_io(i)
 
-          call setup_nEq_contour(nEq_c(i), nEq_Eta)
+        ! Fix the contours checking for their consistency
+        call ts_fix_contour(nEq_io(i))
 
-       end do
+        ! setup the contour
+        allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
+
+        call setup_nEq_contour(nEq_c(i), nEq_Eta)
+
+      end do
 
     end if
 
@@ -914,7 +915,7 @@ contains
     write(unit,'(a,/,9a)') '# Approximated Fermi function: ', &
          '#   nF(E ', trim(cm1),' eV, ',trim(kT1),' K) &
          &- nF(E ',trim(cm2),' eV, ',trim(kT2),' K)'
-    write(unit,'(a,a12,2(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','w'
+    write(unit,'(a,a19,2(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','w'
     
     do i = 1 , N_nEq_E()
 
@@ -925,7 +926,7 @@ contains
        call c2weight_nEq(c,nEq_ID%ID,1._dp,W,imu,ZW)
        if ( imu < 1 ) cycle
 
-       write(unit,'(3(e13.6,tr1))') nEq_c(c%idx(2))%c(c%idx(3)) / eV, &
+       write(unit,'(3(e20.13,tr1))') nEq_c(c%idx(2))%c(c%idx(3)) / eV, &
             real(W,dp) / eV
        
     end do

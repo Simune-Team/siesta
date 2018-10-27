@@ -26,8 +26,11 @@
     character(len=36)  :: id = "null_id"
     !----------------------
     character(len=256)   :: name = "null "//STR_TYPE_NAME
+    !> See [[Sparsity(type)]]
     type(Sparsity)            :: sp
+    !> See [[VAR_TYPE(type)]]
     type(VAR_TYPE)            :: a
+    !> See [[OrbitalDistribution(type)]]
     type(OrbitalDistribution) :: dist
   end type TYPE_NAME_
 

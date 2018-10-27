@@ -100,8 +100,8 @@ create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
 geom_helper.o: intrinsic_missing.o
 geom_helper.o: intrinsic_missing.o
-io.o: local_sys.o
-io.o: local_sys.o
+io.o: m_io.o
+io.o: m_io.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_io_s.o: class_Sparsity.o parallel.o precision.o
 m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o

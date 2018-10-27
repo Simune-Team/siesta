@@ -222,10 +222,6 @@ contains
         write(*,'(a,3(f12.5,tr1))') &
             'Total charge                  [Q]  :', &
             sum(Q(:,1)),sum(Q(:,2)),sum(Q)
-        if ( has_buffer ) then
-          write(*,'(a,2(f12.5,tr1))') &
-            'Buffer                        [B]  :',Q(1,1), Q(1,2)
-        end if
         write(*,'(a,2(f12.5,tr1))') &
             'Device                        [D]  :',Q(2,1), Q(2,2)
         do i = 1 , N_Elec
@@ -238,13 +234,13 @@ contains
         end do
         write(*,'(a,2(f12.5,tr1),/)') &
             'Other                         [O]  :',Q(0,1), Q(0,2)
+        if ( has_buffer ) then
+          write(*,'(a,2(f12.5,tr1))') &
+            'Buffer                        [B]  :',Q(1,1), Q(1,2)
+        end if
       else
         write(*,'(a,f12.5)') &
             'Total charge                  [Q]  :', sum(Q(:,1))
-        if ( has_buffer ) then
-          write(*,'(a,f12.5)') &
-            'Buffer                        [B]  :',Q(1,1)
-        end if
         write(*,'(a,f12.5)') &
             'Device                        [D]  :',Q(2,1)
         do i = 1 , N_Elec
@@ -253,6 +249,10 @@ contains
           write(*,'(a,t22,a,i0,a,f12.5)') &
               trim(name(Elecs(i))),'/ device [C',i,'] :',Q(4+(i-1)*2,1)
         end do
+        if ( has_buffer ) then
+          write(*,'(a,f12.5)') &
+            'Buffer                        [B]  :',Q(1,1)
+        end if
         write(*,'(a,f12.5,/)') &
             'Other                         [O]  :',Q(0,1)
       end if
@@ -260,29 +260,30 @@ contains
     else if ( lmethod == TS_INFO_SCF ) then
 
       ! We write out the information from the SCF cycle...
-      if ( has_buffer ) then
-        write(*,'(a,2(1x,a9))',advance='no') 'ts-q:','B','D'
-      else
-        write(*,'(a,1x,a9)',advance='no') 'ts-q:','D'
-      end if
-
+      write(*,'(a,1x,a9)',advance='no') 'ts-q:','D'
       do i = 1 , N_Elec
-        write(*,'(1x,a8,i0,1x,a8,i0)',advance='no') 'E',i,'C',i
+        if ( i > 9 ) then
+          write(*,'(1x,a7,i2,1x,a7,i2)',advance='no') 'E',i,'C',i
+        else
+          write(*,'(1x,a8,i1,1x,a8,i1)',advance='no') 'E',i,'C',i
+        end if
       end do
+      if ( has_buffer ) then
+        write(*,'(1x,a9)',advance='no') 'B'
+      end if
       if ( nspin > 1 ) then
         write(*,'(2(1x,a9))') 'dQ','dQtot'
       else
         write(*,'(1x,a9)') 'dQ'
       end if
       do ispin = 1 , nspin
-        if ( has_buffer ) then
-          write(*,'(a,2(1x,f9.3))',advance='no') 'ts-q:', Q(1,ispin), Q(2,ispin)
-        else
-          write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
-        end if
+        write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
         do i = 1 , N_Elec
           write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
         end do
+        if ( has_buffer ) then
+          write(*,'(1x,f9.3)',advance='no') Q(1,ispin)
+        end if
         if ( ispin > 1 .and. ispin == nspin ) then
           write(*,'(2(1x,es9.3e1))') sum(Q(:,ispin)) - sQtot,sum(Q) - Qtot
         else

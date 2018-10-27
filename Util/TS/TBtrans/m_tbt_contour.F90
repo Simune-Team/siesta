@@ -541,7 +541,7 @@ contains
     write(*,opt_n) '             >> TBtrans contour << '
 #ifdef TBT_PHONON
     write(*,opt_g_u) 'Device Green function imaginary Eta', &
-         sqrt(tbt_Eta)/eV,'eV'
+         tbt_Eta/eV**2,'eV**2'
 #else
     write(*,opt_g_u) 'Device Green function imaginary Eta',tbt_Eta/eV,'eV'
 #endif
@@ -583,7 +583,7 @@ contains
     call io_assign( iu )
     open( iu, file=trim(fname), status='unknown' )
     write(iu,'(a)') '# Contour path for the transport part'
-    write(iu,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Weight'
+    write(iu,'(a,a19,3(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','Weight'
 
     cidx%idx(1) = CONTOUR_TBT
 
@@ -613,7 +613,7 @@ contains
     end if
 
     do i = 1 , size(c%c)
-       write(iu,'(3(e13.6,tr1))') c%c(i) / eV,real(c%w(i,1),dp) / eV
+       write(iu,'(3(e20.13,tr1))') c%c(i) / eV,real(c%w(i,1),dp) / eV
     end do
 
   end subroutine io_contour_c

@@ -666,6 +666,9 @@ contains
           end if
        end do
 
+       if ( Node == 0 ) then
+         deallocate(buf)
+       end if
 #else
        call ncdf_put_var(ncdf,trim(vname),a)
 #endif
@@ -1014,6 +1017,10 @@ contains
        end do
 
     end if
+
+       if ( Node == 0 ) then
+         deallocate(buf)
+       end if
 #else
        call ncdf_put_var(ncdf,trim(vname),a)
 #endif

@@ -22,7 +22,9 @@ type Pair_
     character(len=36)  :: id = "null_id"
     !-------------------------------------
     character(len=256) :: name = "(null Pair_)"
+    !> First component: [[_T1_(type)]]
     type(_T1_)         :: first
+    !> Second component: [[_T2_(type)]]
     type(_T2_)         :: second
 end type Pair_
 

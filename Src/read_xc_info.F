@@ -83,6 +83,7 @@ C     LOCAL variables
               XCweightC(n) = 1.0_dp
             endif
           enddo
+          call fdf_bclose(bfdf)
         else
           nXCfunc = 1 
           XCfunc(1) = fdf_string('xc.functional','LDA')

@@ -206,6 +206,8 @@ contains
         
       end do
 
+      call fdf_bclose(bfdf)
+
       call setup_mp()
 
     else if ( fdf_islist(name_fdf) ) then

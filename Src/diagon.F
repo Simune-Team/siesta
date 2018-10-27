@@ -99,6 +99,7 @@ C
       use precision
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
+      use densematrix,  only : allocDenseMatrix, resetDenseMatrix
       use densematrix,  only : Haux, Saux, psi
       use sys,          only : die
 
@@ -185,10 +186,7 @@ C     Check internal dimensions ..........................................
          call die('diagon: ERROR: incorrect value of nspin')
       endif
 
-      call re_alloc( psi,  1, npsi, 'psi', 'densematrix' )
-      call re_alloc( Haux, 1, nhs, 'Haux', 'densematrix' )
-      call re_alloc( Saux, 1, nhs, 'Saux', 'densematrix' )
-
+      call allocDenseMatrix(nhs, nhs, npsi)
 
 C Allocate local arrays
       nullify(aux)
@@ -306,6 +304,7 @@ C Call apropriate routine
 
 C Free local arrays
       call de_alloc( aux, name='aux', routine='diagon' )
+      call resetDenseMatrix()
 
 C Stop time counter
       call timer( 'diagon', 2 )

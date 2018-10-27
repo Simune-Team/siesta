@@ -334,6 +334,7 @@ C     Create extended mesh arrays for the first data distribution
         else
            call die('initmesh: ERROR in MeshSizes block')
         endif
+        call fdf_bclose(bfdf)
         RealCutoff = huge(1.0_dp)
         call chkgmx( k0, rcell, ntm, RealCutoff )
         if (RealCutoff < G2max) then

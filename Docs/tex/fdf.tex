@@ -61,7 +61,14 @@
 % How to show abstract option
 \NewDocumentCommand\nonvalue{ m }{\textlangle#1\textrangle}
 
-\NewDocumentCommand\fdfvalue{ m }{\nonvalue{\fdf{#1}}}
+% Provide links to fdf-values with < > around (for options)
+\NewDocumentCommand\fdfvalue{ s m }{%
+    \IfBooleanTF{#1}{%
+        \nonvalue{\fdf*{#2}}%
+    }{%
+        \nonvalue{\fdf{#2}}%
+    }%
+}
 
 
 % Counter for hyper link

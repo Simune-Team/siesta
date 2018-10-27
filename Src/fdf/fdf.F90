@@ -22,6 +22,7 @@
 !       do while(fdf_bline(bfdf, pline))
 !         (process line 'integers|reals|values|names ...')
 !       enddo
+!       call fdf_bclose(bfdf)
 !     endif
 !
 ! The subroutine 'fdf_block' returns in 'bfdf' a structure used
@@ -30,6 +31,9 @@
 ! Routine fdf_bline returns in 'pline' the next non-blank parsed
 ! line, non-comment line from the block, unless there are no more
 ! lines, in which case it returns .FALSE. and 'pline' is undefined.
+!
+! Routine fdf_bclose runs the remaining lines in the block and ensures
+! the log may be used as input in subsequent entries.
 !
 ! Routine 'backspace' moves the internal pointer of 'block_fdf'
 ! structure to the previous line returned.
@@ -138,14 +142,14 @@ MODULE fdf
   public :: fdf_get
   public :: fdf_integer, fdf_single, fdf_double
   public :: fdf_string, fdf_boolean
-  public :: fdf_physical, fdf_isphysical, fdf_convfac
+  public :: fdf_physical, fdf_convfac
   public :: fdf_islist, fdf_list
 
 ! Returns the string associated with a mark line
   public :: fdf_getline
 
 ! Test if label is defined
-  public :: fdf_defined
+  public :: fdf_defined, fdf_isphysical, fdf_isblock
 
 ! Allow to overwrite things in the FDF
   public :: fdf_overwrite, fdf_removelabel, fdf_addline
@@ -154,7 +158,8 @@ MODULE fdf
   public :: fdf_deprecated, fdf_obsolete
 
 ! %block reading (processing each line)
-  public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
+  public :: fdf_block, fdf_block_linecount
+  public :: fdf_bline, fdf_bbackspace, fdf_brewind, fdf_bclose
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
   public :: fdf_bboolean, fdf_bphysical
@@ -288,26 +293,26 @@ MODULE fdf
 ! Structure for searching inside fdf blocks
   type, public :: block_fdf
     character(len=MAX_LENGTH) :: label
-    type(line_dlist), pointer :: mark
+    type(line_dlist), pointer :: mark => null()
   end type block_fdf
 
 ! Dynamic list for parsed_line structures
   type, public :: line_dlist
     character(len=MAX_LENGTH)  :: str
-    type(parsed_line), pointer :: pline
-    type(line_dlist), pointer  :: next
-    type(line_dlist), pointer  :: prev
+    type(parsed_line), pointer :: pline => null()
+    type(line_dlist), pointer  :: next => null()
+    type(line_dlist), pointer  :: prev => null()
   end type line_dlist
 
 ! FDF data structure (first and last lines)
   type, private :: fdf_file
     integer(ip)               :: nlines
-    type(line_dlist), pointer :: first
-    type(line_dlist), pointer :: last
+    type(line_dlist), pointer :: first => null()
+    type(line_dlist), pointer :: last => null()
   end type fdf_file
 
 ! Input FDF file
-  type(fdf_file), pointer, private :: file_in
+  type(fdf_file), pointer, private :: file_in => null()
 
 
 
@@ -412,7 +417,7 @@ MODULE fdf
 
       integer:: count, ierr, iostat, iu, iuIn
       logical:: named, opened
-      character(len=300) line
+      character(len=MAX_LENGTH*2) line
       character(len=maxFileNameLength) fileName
 
 !------------------------------------------------------------------------- BEGIN
@@ -1537,7 +1542,7 @@ MODULE fdf
       type(parsed_line), pointer :: pline
 
 !--------------------------------------------------------------- Local Variables
-      integer                    :: i, ierr
+      integer(ip)                :: i, ierr
       type(line_dlist), pointer  :: mark
 
 !------------------------------------------------------------------------- BEGIN
@@ -2013,8 +2018,9 @@ MODULE fdf
             end if
             call lists(mark%pline,1,ni,list)
          end if
-         
-         if (fdf_output) write(fdf_out,'(a,5x,i10)') label, lni
+
+         ! find a way to write out the list anyway
+         !if (fdf_output) write(fdf_out,'(a,5x,i10)') label, lni
       else
          write(msg,*) 'no list value for ', label
          call die('FDF module: fdf_list', msg, THIS_FILE, __LINE__, fdf_err)
@@ -2659,6 +2665,68 @@ MODULE fdf
     END FUNCTION fdf_locate
 
 !
+!   Returns true or false whether or not the label 'label' is
+!   a block.
+!   I.e. it returns true if the line has the form bl, if not found, or not bl
+!   it returns false.
+!
+    FUNCTION fdf_isblock(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_isblock
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer :: mark
+      character(80) :: strlabel
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_isblock', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      fdf_isblock = .false.
+      
+      mark => file_in%first
+      do while ( associated(mark) )
+
+!!$        if ( match(mark%pline, 'l') ) then
+!!$          strlabel = labels(mark%pline)
+!!$
+!!$          if ( labeleq(strlabel, label, fdf_log) ) then
+!!$            ! fdf has first-encounter acceptance.
+!!$            ! I.e. for an input
+!!$            !   Label_Name 1
+!!$            !   %block Label_Name
+!!$            !     1
+!!$            !   %endblock Label_Name
+!!$            ! the former will be accepted first.
+!!$            exit
+!!$          end if
+
+        if ( match(mark%pline, 'bl') ) then
+          strlabel = blocks(mark%pline)
+          
+          if ( labeleq(strlabel, label, fdf_log) ) then
+            fdf_isblock = .true.
+            exit
+          end if
+        end if
+
+        mark => mark%next
+      end do
+      
+      if (fdf_output) write(fdf_out,'(a,5x,l10)') "#:block? " // label, fdf_isblock
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_isblock
+    
+!
 !   Searches for block label in the fdf hierarchy. If it appears returns
 !   .TRUE. and leaves block mark pointer positioned at the first line.
 !   Otherwise, it returns .FALSE. and block mark points to NULL.
@@ -2811,7 +2879,7 @@ MODULE fdf
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           bfdf%mark => bfdf%mark%prev
 
-          if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+          if (fdf_output) write(fdf_out,'(1x,a)') "#:(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
         endif
 
@@ -2822,14 +2890,14 @@ MODULE fdf
 
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           fdf_bbackspace = .FALSE.
-          if (fdf_output) write(fdf_out,'(1x,a)') "(Cannot backspace) " // "|" //  &
+          if (fdf_output) write(fdf_out,'(1x,a)') "#:(Cannot backspace) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
         endif
 
       else
 
         bfdf%mark => bfdf%mark%prev
-        if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+        if (fdf_output) write(fdf_out,'(1x,a)') "#:(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
       endif
 
@@ -2874,6 +2942,108 @@ MODULE fdf
     END SUBROUTINE fdf_brewind
 
 !
+!   Closes the opened block by looping the remaining lines of the working line.
+!   This is only needed to complete the fdf-*.log files output for direct
+!   usage later. It does nothing internally.
+!
+    SUBROUTINE fdf_bclose(bfdf)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      type(block_fdf) :: bfdf
+
+!--------------------------------------------------------------- Local Variables
+      type(parsed_line), pointer :: pline
+      integer(ip) :: i
+      character(80) :: msg
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_bclose', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      ! Quick return (no need for errors)
+      if ( .not. associated(bfdf%mark) ) return
+
+      ! This should hopefully discourage compilers to optimize the loop away...
+      i = 0
+      do while ( fdf_bline(bfdf, pline) )
+        i = i + fdf_bnvalues(pline)
+      end do
+      write(msg,'(a,i10)') 'Block ', i
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_bclose
+
+    
+!
+!   Count number of lines with an optional specification.
+!   I.e. this will read through the block and return the number of lines in the
+!   block which matches the morphology (morph)
+!   This may be used to easily digest number of non-empty lines in the block.
+!   Note that a match on the morphology only compares the number of ID's in
+!   morph. I.e. a line with 'vvvil' will match 'vvvi'.
+!
+    FUNCTION fdf_block_linecount(label, morph)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=*) :: label
+      character(len=*), optional :: morph
+!-------------------------------------------------------------- Output Variables
+      integer(ip) :: fdf_block_linecount
+      
+!--------------------------------------------------------------- Local Variables
+      type(block_fdf) :: bfdf
+      type(parsed_line), pointer :: pline
+      logical :: orig_fdf_output
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_block_linecount', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      ! Store the fdf_output variable (suppress writing to log)
+      orig_fdf_output = fdf_output
+      fdf_output = .false.
+
+      ! Find the block and search for morhp
+      fdf_block_linecount = 0
+      if ( fdf_block(label, bfdf) ) then
+
+        do while ( fdf_bline(bfdf, pline) )
+          if ( present(morph) ) then
+            if ( fdf_bmatch(pline, morph) ) then
+              fdf_block_linecount = fdf_block_linecount + 1
+            end if
+          else
+            fdf_block_linecount = fdf_block_linecount + 1
+          end if
+        end do
+
+      end if
+
+      ! Restore output
+      fdf_output = orig_fdf_output
+
+      if ( fdf_output ) then
+        if ( present(morph) ) then
+          write(fdf_out,'(3a,3x,i0)') "#:block-line-count? ", &
+              trim(label), ' ('//trim(morph)//')', fdf_block_linecount
+        else
+          write(fdf_out,'(2a,3x,i0)') "#:block-line-count? ", &
+              trim(label), fdf_block_linecount
+        end if
+      end if
+      
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_block_linecount
+
+!
 !   Check if label is defined
 !     
     logical FUNCTION fdf_defined(label)
@@ -2883,18 +3053,16 @@ MODULE fdf
 
 !--------------------------------------------------------------- Local Variables
       type(line_dlist), pointer :: mark
-      type(block_fdf)           :: bfdf
-
 
 !--------------------------------------------------------------------- BEGIN
       ! First, check whether a single label exists:
       fdf_defined = fdf_locate(label, mark)
       if (.not. fdf_defined) then
          ! Check whether there is a block with that label
-         fdf_defined = fdf_block(label,bfdf)
+         fdf_defined = fdf_isblock(label)
       endif
-      if (fdf_defined) then
-         if (fdf_output) write(fdf_out,'(a)') label
+      if ( fdf_output ) then
+        write(fdf_out,'(a,5x,l10)') '#:defined? ' // label, fdf_defined
       endif
 
       RETURN
@@ -3008,13 +3176,13 @@ MODULE fdf
       
 !------------------------------------------------------------------------- BEGIN
       if ( fdf_defined(label) ) then
-         if (fdf_output) write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+         if (fdf_output) write(fdf_out,'(a)') "#**Warning: FDF symbol '"//trim(label)// &
               "' is deprecated."
          if ( fdf_defined(newlabel) ) then
-            if (fdf_output) write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+            if (fdf_output) write(fdf_out,'(a)') "#           FDF symbol '"//trim(newlabel)// &
                  "' will be used instead."
          else
-            if (fdf_output) write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+            if (fdf_output) write(fdf_out,'(a)') "#           FDF symbol '"//trim(newlabel)// &
                  "' replaces '"//trim(label)//"'."
          end if
       end if
@@ -3032,7 +3200,7 @@ MODULE fdf
       
 !------------------------------------------------------------------------- BEGIN
       if ( fdf_defined(label) ) then
-         if (fdf_output) write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+         if (fdf_output) write(fdf_out,'(a)') "#**Warning: FDF symbol '"//trim(label)// &
               "' is obsolete."
       end if
 
@@ -3045,7 +3213,7 @@ MODULE fdf
 
     character(len=SERIALIZED_LENGTH)  bufline
     type(line_dlist), pointer :: mark
-    integer :: i, length, init, final
+    integer(ip) :: i, length, init, final
 
     mark => file_in%first
     do i= 1, file_in%nlines
@@ -3063,7 +3231,7 @@ MODULE fdf
 
     character(len=SERIALIZED_LENGTH)  bufline
     type(parsed_line), pointer    :: pline
-    integer :: i, init, final
+    integer(ip) :: i, init, final
 
     do i= 1, nlines
        init  = (i-1)*SERIALIZED_LENGTH+1

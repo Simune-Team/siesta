@@ -229,7 +229,7 @@ C Check for block and read
           endif
 
         enddo
-
+        call fdf_bclose(bfdf)
       endif
 
       end subroutine repol

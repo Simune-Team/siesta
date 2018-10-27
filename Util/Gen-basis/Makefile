@@ -55,11 +55,11 @@ SYSOBJ=$(SYS).o
 # Note that machine-specific files are now in top Src directory.
 #
 DEPS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
-          parsing.o basis_io.o chemical.o atm_types.o\
+          parsing.o basis_io.o chemical.o atm_types.o \
           atmparams.o radial.o interpolation.o \
 	  bessph.o radfft.o  sorting.o m_filter.o m_spin.o \
           basis_specs.o ldau_specs.o atom.o periodic_table.o\
-          pxf.o dot.o  atom_options.o arw.o  m_spin_orbit_potentials.o \
+          pxf.o dot.o  atom_options.o arw.o m_spin_orbit_potentials.o \
           xml.o m_walltime.o read_xc_info.o  $(SYSOBJ) \
           xc.o bsc_xcmod.o  m_fft_gpfa.o m_cite.o reclat.o units.o \
           semicore_info_froyen.o hamann.o files.o
@@ -171,16 +171,16 @@ chemical.o: local_sys.o parallel.o precision.o
 chemical.o: local_sys.o parallel.o precision.o
 chkdim.o: local_sys.o
 chkdim.o: local_sys.o
-io.o: local_sys.o
-io.o: local_sys.o
+io.o: m_io.o
+io.o: m_io.o
 ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
 ldau_specs.o: basis_specs.o basis_types.o interpolation.o local_sys.o m_cite.o
 ldau_specs.o: parallel.o precision.o radial.o units.o
 ldau_specs.o: alloc.o atm_types.o atmparams.o atom.o atom_options.o
 ldau_specs.o: basis_specs.o basis_types.o interpolation.o local_sys.o m_cite.o
 ldau_specs.o: parallel.o precision.o radial.o units.o
-m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
-m_filter.o: bessph.o local_sys.o precision.o radfft.o sorting.o
+m_filter.o: bessph.o local_sys.o precision.o radfft.o
+m_filter.o: bessph.o local_sys.o precision.o radfft.o
 m_getopts.o: f2kcli.o
 m_getopts.o: f2kcli.o
 m_spin.o: alloc.o files.o local_sys.o m_cite.o parallel.o precision.o units.o
@@ -202,9 +202,9 @@ xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
 xml.o: precision.o
 xml.o: precision.o
 gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o
-gen-basis.o: basis_types.o chemical.o local_sys.o m_spin.o
+gen-basis.o: basis_types.o chemical.o ldau_specs.o local_sys.o m_spin.o
 gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o
-gen-basis.o: basis_types.o chemical.o local_sys.o m_spin.o
+gen-basis.o: basis_types.o chemical.o ldau_specs.o local_sys.o m_spin.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 aux_proj.o: atom.o

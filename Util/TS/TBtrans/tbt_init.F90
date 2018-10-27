@@ -241,6 +241,8 @@ subroutine tbt_init()
   call read_tbt_after_Elec(TSHS%nspin, TSHS%cell, TSHS%na_u, TSHS%lasto, &
        TSHS%xa, TSHS%no_u, kscell, kdispl)
 
+  call read_proj_options( save_DATA )
+
   ! Print options
   call print_tbt_options( TSHS%nspin )
 
@@ -264,9 +266,15 @@ subroutine tbt_init()
      ! initialize the electrode for Green's function calculation
      call init_Electrode_HS(Elecs(iEl))
 
-     call do_Green(Elecs(iEl), &
-          TSHS%cell,nkpnt,kpoint,kweight, &
-          Elecs_xa_Eps, .false. )
+     if ( Elecs(iEl)%is_gamma ) then
+       call do_Green(Elecs(iEl), &
+           TSHS%cell, 1, (/(/0._dp, 0._dp, 0._dp/)/), (/1._dp/), &
+           Elecs_xa_Eps, .false. )
+     else
+       call do_Green(Elecs(iEl), &
+           TSHS%cell,nkpnt,kpoint,kweight, &
+           Elecs_xa_Eps, .false. )
+     end if
      
      ! clean-up
      call delete(Elecs(iEl))

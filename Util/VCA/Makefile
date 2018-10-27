@@ -118,8 +118,8 @@ dep:
 # DO NOT DELETE THIS LINE - used by make depend
 atom_options.o: local_sys.o
 atom_options.o: local_sys.o
-io.o: local_sys.o
-io.o: local_sys.o
+io.o: m_io.o
+io.o: m_io.o
 periodic_table.o: local_sys.o precision.o
 periodic_table.o: local_sys.o precision.o
 fractional.o: f2kcli.o periodic_table.o precision.o

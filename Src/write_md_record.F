@@ -18,10 +18,6 @@
         use units, only: Ang, kbar
 #ifdef CDF
         use md_out,     only: md_netcdf
-#ifdef NCDF_4
-        use files, only: slabel
-        use m_ncdf_siesta, only : cdf_save_md
-#endif
 #endif
 
         implicit none
@@ -55,13 +51,6 @@
      .         volume_of_some_cell/Ang**3, Psol/kbar)
 #endif
         endif
-#ifdef CDF
-#ifdef NCDF_4
-        if (writmd .and. fincoor > 1 ) then
-           !call cdf_save_md(trim(slabel)//'.nc')
-        end if
-#endif
-#endif
 
         ! Accumulate coor in Xmol file for animation 
         if (writpx.and.IOnode) call pixmol(iza, xa, na_u )

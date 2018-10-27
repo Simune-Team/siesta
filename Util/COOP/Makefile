@@ -78,8 +78,8 @@ clean:
 	rm -f *.o *.mod mprop dm_creator fat
 
 # DO NOT DELETE THIS LINE - used by make depend
-io.o: local_sys.o
-io.o: local_sys.o
+io.o: m_io.o
+io.o: m_io.o
 iodm_netcdf.o: alloc.o local_sys.o parallel.o precision.o
 iodm_netcdf.o: alloc.o local_sys.o parallel.o precision.o
 m_getopts.o: f2kcli.o

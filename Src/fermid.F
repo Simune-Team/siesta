@@ -361,6 +361,8 @@ C calculated here if ne < maxe
 
 
       real(dp) function stepf(X)
+      use m_errorf, only: derf
+      
       real(dp), intent(in) :: x
 
       integer  :: i, j

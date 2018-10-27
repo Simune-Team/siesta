@@ -66,6 +66,7 @@ C *********************************************************************
 
       use precision,    only : dp
       use atomlist,     only : qtot
+      use densematrix,  only : allocDenseMatrix, resetDenseMatrix
       use densematrix,  only : Haux, Saux, psi
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
@@ -404,10 +405,8 @@ C     Allocate Haux/Saux/psi arrays to required size
         maxhs = 2*nuotot*nuo
         maxpsi = 2*nuotot*nuo
       endif
-    
-      call re_alloc( Haux, 1, maxhs,  'Haux', 'densematrix')
-      call re_alloc( Saux, 1, maxhs,  'Saux', 'densematrix')
-      call re_alloc( psi,  1, maxpsi, 'psi',  'densematrix')
+
+      call allocDenseMatrix(maxhs, maxhs, maxpsi)
 
       ! Allocate auxiliary array for calculating phirphi
       call re_alloc( aux,  1, maxnh, 1, 3, 'aux', 'optical')
@@ -660,7 +659,8 @@ C     Deallocate internal arrays
       call de_alloc( kopt,      'kopt',      'optical' )
       call de_alloc( wgthopt,   'wgthopt',   'optical' )
       call de_alloc( aux,       'aux',       'optical' )
-
+      call resetDenseMatrix()
+      
       call timer( 'optical', 2 )
 
 #ifdef DEBUG

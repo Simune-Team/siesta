@@ -68,7 +68,6 @@
       integer MPIerror
 #endif
 !------------------------------------------------------------------------- BEGIN
-
       if (SIESTA_worker) then
 
 #ifdef SIESTA__FLOOK
@@ -155,6 +154,7 @@
       call fdf_shutdown()
 
 #ifdef MPI
+      call MPI_Barrier(MPI_Comm_World, MPIerror)
       MPIerror = MPI_SUCCESS
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )
 #endif

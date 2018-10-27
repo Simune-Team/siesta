@@ -129,8 +129,7 @@ C
          enddo
          write(6,"(/)")
          if (.not. there_are_so_potentials) then
-            write(6,"(a)") "*** WARNING: No spin-orbit components " //
-     $                     "for any species... "
+            call die("No spin-orbit components for any species!")
          endif
       endif
 

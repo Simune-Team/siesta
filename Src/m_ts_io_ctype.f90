@@ -98,26 +98,11 @@ contains
     character(len=*), intent(in) :: suffix
     integer :: n
 
-    ! prepare to read in the data...
-    type(block_fdf) :: bfdf
-    type(parsed_line), pointer :: pline => null()
-    
-    logical :: found
-
-    n = 0
     if ( len_trim(suffix) == 0 ) then
-       found = fdf_block(trim(prefix)//'.Contours',bfdf)
+      n = fdf_block_linecount(trim(prefix)//'.Contours', 'n')
     else
-       found = fdf_block(trim(prefix)//'.Contours.'//trim(suffix),bfdf)
+      n = fdf_block_linecount(trim(prefix)//'.Contours'//trim(suffix), 'n')
     end if
-    if ( .not. found ) return
-
-    ! first count the number of electrodes
-    n = 0
-    do while ( fdf_bline(bfdf,pline) )
-       if ( fdf_bnnames(pline) == 0 ) cycle
-       n = n + 1 
-    end do
 
   end function fdf_nc_iotype
 
@@ -143,15 +128,16 @@ contains
     end if
     if ( .not. found ) return
 
-    ! first count the number of electrodes
+    ! Find the name of the contour
     n = 0
     do while ( fdf_bline(bfdf,pline) )
-       if ( fdf_bnnames(pline) == 0 ) cycle
-       n = n + 1 
-       if ( n == i ) then
-          name = fdf_bnames(pline,1)
-          return
-       end if
+      if ( fdf_bnnames(pline) == 0 ) cycle
+      n = n + 1 
+      if ( n == i ) then
+        name = fdf_bnames(pline,1)
+        call fdf_bclose(bfdf)
+        return
+      end if
     end do
 
   end function fdf_name_c_iotype
@@ -226,7 +212,6 @@ contains
     type(block_fdf), optional :: bfdf
     logical :: exist
 
-    type(block_fdf) :: bfdf_tmp
     character(len=c_N) :: g
 
     ! if the block does not exist, return
@@ -242,7 +227,7 @@ contains
           bfdf%label = trim(g)
        end if
     else
-       exist = fdf_block(trim(g),bfdf_tmp)
+       exist = fdf_isblock(trim(g))
     end if
 
   end function ts_exists_contour_block

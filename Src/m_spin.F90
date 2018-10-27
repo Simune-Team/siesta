@@ -371,7 +371,7 @@ contains
   subroutine init_spiral( ucell )
     use fdf, only : fdf_get, leqi
     use fdf, only: block_fdf, parsed_line
-    use fdf, only: fdf_block, fdf_bline
+    use fdf, only: fdf_block, fdf_bline, fdf_bclose
     use fdf, only: fdf_bnames, fdf_bvalues
     use units, only: Pi
 
@@ -414,6 +414,9 @@ contains
        call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
             ' ''Cubic'' or ''ReciprocalLatticeVectors''')
     end if
+
+    call fdf_bclose(bfdf)
+
   end subroutine init_spiral
 
   function fname_spin(nspin,ispin,slabel,suffix,basename) result(fname)

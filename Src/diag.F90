@@ -631,9 +631,10 @@ contains
     end if
 
     ! Perform work-size query
-    lwork = 1
-    lrwork = 1
-    liwork = 1
+    ! ScaLAPACK typically uses a bit more of the work-size elements
+    lwork = 10
+    lrwork = 10
+    liwork = 10
     call re_alloc(work, 1, lwork, name='work')
     call re_alloc(rwork, 1, lrwork, name='rwork')
     call re_alloc(iwork, 1, liwork, name='iwork')
@@ -968,7 +969,7 @@ contains
     if ( neig > 0 ) then
        call timer('cdiag4',1)
        if ( Serial ) then
-          call ztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp),S,n,Z,n)
+          call ztrsm('L',uplo,trans,'N',n,neig,cmplx(1._dp,0._dp,dp),S,n,Z,n)
 #ifdef MPI
        else
 # ifdef SIESTA__ELPA
@@ -1606,8 +1607,9 @@ contains
     end if
 
     ! Perform work-size query
-    lwork = 1
-    liwork = 1
+    ! ScaLAPACK typically uses a bit more of the work-size elements
+    lwork = 10
+    liwork = 10
     call re_alloc(work, 1, lwork, name='work')
     call re_alloc(iwork, 1, liwork, name='iwork')
 

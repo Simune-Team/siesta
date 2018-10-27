@@ -558,16 +558,17 @@ contains
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
         atts = dic)
     mem = mem + calc_mem(NF90_INT, TSHS%na_u)
-    dic = dic//('info'.kv.'Unit cell')
-    dic = dic//('unit'.kv.'Bohr')
+    
+    dic = dic//('info'.kv.'Unit cell')//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
-         atts = dic)
+        atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, 3)
+    
     dic = dic//('info'.kv.'Atomic coordinates')
-    dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
          atts = dic , chunks = (/3, TSHS%na_u/) )
-    call delete(dic)
     mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
+    call delete(dic)
 
     dic = ('info'.kv.'Supercell offsets')
     call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
@@ -577,6 +578,7 @@ contains
     dic = dic // ('info'.kv.'Number of supercells in each direction')
     call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
          atts = dic)
+    mem = mem + calc_mem(NF90_INT, 3)
 
     dic = dic // ('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
@@ -773,12 +775,15 @@ contains
        call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
        dic = dic//('info'.kv.'Imaginary part for self-energies')
+#ifdef TBT_PHONON
+       dic = dic//('unit'.kv.'Ry**2')
+#endif
        call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
        call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
 
        call delete(dic)
 
-       if ( 'DOS-Elecs' .in. save_DATA ) then
+       if ( ('DOS-Elecs' .in. save_DATA) .and. .not. Elecs(iEl)%out_of_core ) then
 
           call ncdf_def_dim(grp,'no_u',Elecs(iEl)%no_u)
           call ncdf_def_dim(grp,'na_u',Elecs(iEl)%na_u)
@@ -1173,8 +1178,7 @@ contains
   end subroutine cdf_save_E
 
   subroutine state_cdf_save(ncdf, ikpt, nE, N_Elec, Elecs, DOS, T, &
-       N_eigen, Teig, &
-       save_DATA)
+       N_eigen, Teig, save_DATA)
     
     use parallel, only : Node, Nodes
 
@@ -1409,6 +1413,8 @@ contains
 #endif
 
        do iEl = 1 , N_Elec
+          ! Skip electrodes which uses the out-of-core ability
+          if ( Elecs(iEl)%out_of_core ) cycle
           
           call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
@@ -1619,7 +1625,7 @@ contains
     real(dp), intent(in) :: rW(N_E)
     type(dict), intent(in) :: save_DATA
 
-    character(len=250) :: ascii_file, tmp
+    character(len=256) :: ascii_file, tmp
     type(hNCDF) :: ncdf, grp
     logical :: exist
     integer :: iEl, jEl, i, N_eigen
@@ -1681,15 +1687,8 @@ contains
     ! Create pivot table
     call crt_pivot(NE,rE,pvt)
 
-    call ncdf_inq_var(ncdf,'kpt',exist=exist)
-    if ( exist ) then
-      call ncdf_get_var(ncdf,'kpt',rkpt)
-      call ncdf_get_var(ncdf,'wkpt',rwkpt)
-    else
-      ! It MUST be a Gamma calculation
-      rkpt = 0._dp
-      rwkpt = 1._dp
-    end if
+    call ncdf_get_var(ncdf,'kpt',rkpt)
+    call ncdf_get_var(ncdf,'wkpt',rwkpt)
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
@@ -1723,7 +1722,7 @@ contains
       ! Always open the group...
       call ncdf_open_grp(ncdf,trim(Elecs(iEl)%name),grp)
 
-      if ( 'DOS-Elecs' .in. save_DATA ) then
+      if ( ('DOS-Elecs' .in. save_DATA) .and. .not. Elecs(iEl)%out_of_core ) then
 
         ! Get bulk-transmission
         call ncdf_get_var(grp,'T',r2)
@@ -1995,7 +1994,7 @@ contains
           do io = 1, no
             DOS = DOS + r3(io,ie,ik)
           end do
-          r2(ie,ik) = DOS * eV / no
+          r2(ie,ik) = DOS * eV
         end do
       end do
 !$OMP end parallel do
@@ -2021,9 +2020,6 @@ contains
 
       write(iu,'(a)') trim(header)
       write(iu,'(a)') '# Date: '//trim(tmp)
-      if ( N > 0 ) then
-        write(iu,'(a,tr1,i0)')"# Normalization:", N
-      end if
 #ifdef TBT_PHONON
       write(iu,'(a,a9,tr1,a16)')"#","Omega [eV]", value
 #else
@@ -2034,15 +2030,13 @@ contains
       do ik = 1 , nkpt 
 !$OMP master
         if ( nkpt > 1 ) then
-          write(iu,'(/,a6,3(f10.6,'', ''),a,e13.6)') &
-              '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
+          write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') '# kb= ',kpt(:,ik) ,'w= ',wkpt(ik)
         end if
         do i = 1 , NE
-          ! We sum the orbital contributions
 #ifdef TBT_PHONON
-          write(iu,'(f10.6,tr1,e16.8)') E(ipiv(i)),DAT(ipiv(i),ik)
+          write(iu,'(f10.6,tr1,e16.8)') E(ipiv(i)), DAT(ipiv(i),ik)
 #else
-          write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)),DAT(ipiv(i),ik)
+          write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)), DAT(ipiv(i),ik)
 #endif
         end do
 !$OMP end master ! no implicit barrier
@@ -2097,12 +2091,11 @@ contains
       do ik = 1 , nkpt 
 !$OMP master
         if ( nkpt > 1 ) then
-          write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-              '# kb  = ',kpt(:,ik) ,'w= ',wkpt(ik)
+          write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') &
+              '# kb= ',kpt(:,ik) ,'w= ',wkpt(ik)
         end if
         do i = 1 , NE
-          ! We sum the orbital contributions
-          write(iu,fmt) E(ipiv(i)),EIG(:,ipiv(i),ik)
+          write(iu,fmt) E(ipiv(i)), EIG(:,ipiv(i),ik)
         end do
 !$OMP end master
         if ( nkpt > 1 ) then
@@ -2214,7 +2207,7 @@ contains
   ! data.
   ! NOTE that ASCII data will only be created in case
   ! of Netcdf not being compiled in
-  subroutine init_save(iounits,ispin,nspin,N_Elec,Elecs, &
+  subroutine init_save(iounits,ispin,nspin,no_d, N_Elec, Elecs, &
        N_eigen, save_DATA)
     
     use parallel, only : Node
@@ -2225,6 +2218,7 @@ contains
 
     integer, intent(inout) :: iounits(:)
     integer, intent(in)    :: ispin, nspin
+    integer, intent(in)    :: no_d
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: N_eigen
@@ -2249,7 +2243,7 @@ contains
 
        call io_assign(iu)
        open( iu, file=trim(ascii_file), form='formatted', status='unknown' ) 
-       write(iu,'(a)') '# DOS calculated from the Greens function, k-resolved'
+       write(iu,'(a)') '# DOS calculated from the Green function, k-resolved'
        write(iu,'(a)') '# Date: '//trim(tmp)
        write(iu,'(a,a9,tr1,a16)')'#','E [eV]', 'DOS [1/eV]'
        
@@ -2393,6 +2387,8 @@ contains
     if ( 'DOS-Elecs' .in. save_DATA ) then
 
        do iEl = 1 , N_Elec
+          ! Skip electrodes which uses GF files (they don't contain the information)
+          if ( Elecs(iEl)%out_of_core ) cycle
 
           call name_save(ispin,nspin,ascii_file,end='BDOS',El1=Elecs(iEl))
 
@@ -2455,8 +2451,7 @@ contains
     subroutine wrt_k(iu,bkpt,wkpt)
       integer, intent(in) :: iu
       real(dp) :: bkpt(3), wkpt
-      write(iu,'(/,a6,3(f10.6,'', ''),a,f10.6)') &
-           '# kb = ',bkpt(:) ,'w = ',wkpt
+      write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') '# kb= ',bkpt(:) ,'w= ',wkpt
     end subroutine wrt_k
     
   end subroutine step_kpt_save
@@ -2492,7 +2487,7 @@ contains
   ! data.
   ! NOTE that ASCII data will only be created in case
   ! of Netcdf not being compiled in
-  subroutine state_save(iounits,nE,N_Elec,Elecs,DOS, T, &
+  subroutine state_save(iounits,no_d, nE,N_Elec,Elecs, DOS, T, &
        N_eigen, Teig, &
        save_DATA )
     
@@ -2504,6 +2499,7 @@ contains
     use m_ts_electype
 
     integer, intent(in)    :: iounits(:)
+    integer, intent(in)    :: no_d
     type(tNodeE), intent(in) :: nE
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
@@ -2541,7 +2537,7 @@ contains
 
     if ( 'DOS-Gf' .in. save_DATA ) then
 
-       call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,1),fact=eV)
+       call local_save_DAT(iounits(cu),nE,ipvt,no_d,DOS(1:no_d,1),fact=eV)
 
        cu = cu + 1
 
@@ -2559,7 +2555,7 @@ contains
        
        if ( 'DOS-A' .in. save_DATA ) then
 
-          call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,1+iEl),fact=eV)
+          call local_save_DAT(iounits(cu),nE,ipvt,no_d,DOS(1:no_d,1+iEl),fact=eV)
           
           cu = cu + 1
           
@@ -2660,6 +2656,8 @@ contains
     if ( 'DOS-Elecs' .in. save_DATA ) then
 
        do iEl = 1 , N_Elec
+          ! Skip electrodes which uses GF files (they don't contain the information)
+          if ( Elecs(iEl)%out_of_core ) cycle
 
           N = Elecs(iEl)%no_u
           call local_save_DAT(iounits(cu),nE,ipvt,N,DOS(1:N,iEl),fact=eV)
@@ -2705,13 +2703,12 @@ contains
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
 
-    if ( N == 1 ) then
-       rnd = 1._dp
+    if ( present(fact) ) then
+      rnd = fact
     else
-       rnd = 1._dp / N
+      rnd = 1._dp
     end if
-    if ( present(fact) ) rnd = rnd * fact
-
+    
     if ( Node == 0 ) then
        do iN = 0 , Nodes - 1
           i = ipvt(iN+1) ! sorting E
@@ -2719,12 +2716,12 @@ contains
           if ( nE%iE(i) <= 0 ) cycle ! if the energy point is fake, discard
 #endif
           if ( i == 0 ) then ! local node
-             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(DATA(:)) * rnd
+             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV, sum(DATA(1:N)) * rnd
           else
 #ifdef MPI
-             call MPI_Recv(rbuff1d(1),N,MPI_double_precision,i,i, &
+             call MPI_Recv(rbuff1d(1),1,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
-             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV,sum(rbuff1d(1:N)) * rnd
+             write(iu,'(f10.5,tr1,e16.8)') nE%E(i) / eV, rbuff1d(1)
 #else
              call die('Error')
 #endif
@@ -2732,8 +2729,9 @@ contains
        end do
     else if ( nE%iE(Node) > 0 ) then
 #ifdef MPI
-       call MPI_Send(DATA(1),N,MPI_double_precision,0,Node, &
-            Mpi_comm_world,MPIerror)
+      rnd = sum(DATA(1:N)) * rnd
+      call MPI_Send(rnd,1,MPI_double_precision,0,Node, &
+          Mpi_comm_world,MPIerror)
 #endif
     end if
 
@@ -2770,12 +2768,12 @@ contains
           if ( nE%iE(i) <= 0 ) cycle ! if the energy point is fake, discard
 #endif
           if ( i == 0 ) then ! local node
-             write(iu,fmt) nE%E(i) / eV,EIG(:)
+             write(iu,fmt) nE%E(i) / eV, EIG(:)
           else
 #ifdef MPI
              call MPI_Recv(rbuff1d(1),N,MPI_double_precision,i,i, &
                   Mpi_comm_world,status,MPIerror)
-             write(iu,fmt) nE%E(i) / eV,rbuff1d(1:N)
+             write(iu,fmt) nE%E(i) / eV, rbuff1d(1:N)
 #else
              call die('Error')
 #endif

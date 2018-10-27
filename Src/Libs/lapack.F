@@ -5619,8 +5619,7 @@
       PARAMETER          ( ONE = 1.0D+0 )
       LOGICAL            LQUERY
       INTEGER            I, IINFO, J, LDWRKX, LDWRKY, LWKOPT, MINMN, NB,
-     $                   NBMIN, NX
-      DOUBLE PRECISION   WS
+     $                   NBMIN, NX, WS
       EXTERNAL           DGEBD2, DGEMM, DLABRD, XERBLA
       INTRINSIC          DBLE, MAX, MIN
       INTEGER            ILAENV
@@ -12584,7 +12583,7 @@
             CALL DSCAL( N-1, RSAFMN, X, INCX )
             BETA = BETA*RSAFMN
             ALPHA = ALPHA*RSAFMN
-            IF( ABS( BETA ).LT.SAFMIN )
+            IF( (ABS( BETA ).LT.SAFMIN) .AND. (KNT .LT. 20) )
      $         GO TO 10
             XNORM = DNRM2( N-1, X, INCX )
             BETA = -SIGN( DLAPY2( ALPHA, XNORM ), ALPHA )
@@ -13884,7 +13883,7 @@
       DOUBLE PRECISION            DLAMCH
       EXTERNAL           DLAMCH, LSAME
       EXTERNAL           DCOPY, DLARNV, DLARRA, DLARRB, DLARRC, DLARRD,
-     $                   DLASQ2
+     $                   DLASQ2, DLARRK
       INTRINSIC          ABS, MAX, MIN
       INFO = 0
       IF( N.LE.0 ) THEN
@@ -19552,7 +19551,7 @@
       DOUBLE PRECISION   BIGNUM, CDEN, CDEN1, CNUM, CNUM1, MUL, SMLNUM
       DOUBLE PRECISION   DLAMCH
       EXTERNAL           DLAMCH
-      EXTERNAL           DSCAL
+      EXTERNAL           DSCAL, DLABAD
       INTRINSIC          ABS
       IF( N.LE.0 )
      $   RETURN
@@ -19582,22 +19581,22 @@
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dsb2st_kernels.f
-      SUBROUTINE  DSB2ST_KERNELS( UPLO, WANTZ, TTYPE, 
+      SUBROUTINE  DSB2ST_KERNELS( UPLO, WANTZ, TTYPE,
      $                            ST, ED, SWEEP, N, NB, IB,
      $                            A, LDA, V, TAU, LDVT, WORK)
       IMPLICIT NONE
       CHARACTER          UPLO
       LOGICAL            WANTZ
       INTEGER            TTYPE, ST, ED, SWEEP, N, NB, IB, LDA, LDVT
-      DOUBLE PRECISION   A( LDA, * ), V( * ), 
+      DOUBLE PRECISION   A( LDA, * ), V( * ),
      $                   TAU( * ), WORK( * )
       DOUBLE PRECISION   ZERO, ONE
       PARAMETER          ( ZERO = 0.0D+0,
      $                   ONE = 1.0D+0 )
       LOGICAL            UPPER
       INTEGER            I, J1, J2, LM, LN, VPOS, TAUPOS,
-     $                   DPOS, OFDPOS, AJETER 
-      DOUBLE PRECISION   CTMP 
+     $                   DPOS, OFDPOS, AJETER
+      DOUBLE PRECISION   CTMP
       EXTERNAL           DLARFG, DLARFX, DLARFY
       INTRINSIC          MOD
       LOGICAL            LSAME
@@ -19624,10 +19623,10 @@
               V( VPOS ) = ONE
               DO 10 I = 1, LM-1
                   V( VPOS+I )         = ( A( OFDPOS-I, ST+I ) )
-                  A( OFDPOS-I, ST+I ) = ZERO  
+                  A( OFDPOS-I, ST+I ) = ZERO
    10         CONTINUE
               CTMP = ( A( OFDPOS, ST ) )
-              CALL DLARFG( LM, CTMP, V( VPOS+1 ), 1, 
+              CALL DLARFG( LM, CTMP, V( VPOS+1 ), 1,
      $                                       TAU( TAUPOS ) )
               A( OFDPOS, ST ) = CTMP
               LM = ED - ST + 1
@@ -19659,7 +19658,7 @@
                   ENDIF
                   V( VPOS ) = ONE
                   DO 30 I = 1, LM-1
-                      V( VPOS+I )          = 
+                      V( VPOS+I )          =
      $                                    ( A( DPOS-NB-I, J1+I ) )
                       A( DPOS-NB-I, J1+I ) = ZERO
    30             CONTINUE
@@ -19684,9 +19683,9 @@
               V( VPOS ) = ONE
               DO 20 I = 1, LM-1
                   V( VPOS+I )         = A( OFDPOS+I, ST-1 )
-                  A( OFDPOS+I, ST-1 ) = ZERO  
+                  A( OFDPOS+I, ST-1 ) = ZERO
    20         CONTINUE
-              CALL DLARFG( LM, A( OFDPOS, ST-1 ), V( VPOS+1 ), 1, 
+              CALL DLARFG( LM, A( OFDPOS, ST-1 ), V( VPOS+1 ), 1,
      $                                       TAU( TAUPOS ) )
               LM = ED - ST + 1
               CALL DLARFY( UPLO, LM, V( VPOS ), 1,
@@ -19705,7 +19704,7 @@
               LN = ED-ST+1
               LM = J2-J1+1
               IF( LM.GT.0) THEN
-                  CALL DLARFX( 'Right', LM, LN, V( VPOS ), 
+                  CALL DLARFX( 'Right', LM, LN, V( VPOS ),
      $                         TAU( TAUPOS ), A( DPOS+NB, ST ),
      $                         LDA-1, WORK)
                   IF( WANTZ ) THEN
@@ -19720,17 +19719,16 @@
                       V( VPOS+I )        = A( DPOS+NB+I, ST )
                       A( DPOS+NB+I, ST ) = ZERO
    40             CONTINUE
-                  CALL DLARFG( LM, A( DPOS+NB, ST ), V( VPOS+1 ), 1, 
+                  CALL DLARFG( LM, A( DPOS+NB, ST ), V( VPOS+1 ), 1,
      $                                        TAU( TAUPOS ) )
-                  CALL DLARFX( 'Left', LM, LN-1, V( VPOS ), 
+                  CALL DLARFX( 'Left', LM, LN-1, V( VPOS ),
      $                         ( TAU( TAUPOS ) ),
      $                         A( DPOS+NB-1, ST+1 ), LDA-1, WORK)
-             
               ENDIF
           ENDIF
       ENDIF
       RETURN
-      END      
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dspev.f
       SUBROUTINE DSPEV( JOBZ, UPLO, N, AP, W, Z, LDZ, WORK, INFO )
       CHARACTER          JOBZ, UPLO
@@ -21941,9 +21939,9 @@
       DOUBLE PRECISION   ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN, SIGMA,
      $                   SMLNUM
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, DLANSY
-      EXTERNAL           LSAME, ILAENV, DLAMCH, DLANSY
+      EXTERNAL           LSAME, DLAMCH, DLANSY, ILAENV2STAGE
       EXTERNAL           DLASCL, DORGTR, DSCAL, DSTEQR, DSTERF,
      $                   XERBLA, DSYTRD_2STAGE
       INTRINSIC          MAX, SQRT
@@ -21961,10 +21959,10 @@
          INFO = -5
       END IF
       IF( INFO.EQ.0 ) THEN
-         KD    = ILAENV( 17, 'DSYTRD_2STAGE', JOBZ, N, -1, -1, -1 )
-         IB    = ILAENV( 18, 'DSYTRD_2STAGE', JOBZ, N, KD, -1, -1 )
-         LHTRD = ILAENV( 19, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
-         LWTRD = ILAENV( 20, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
+         KD    = ILAENV2STAGE( 1, 'DSYTRD_2STAGE', JOBZ, N, -1, -1, -1 )
+         IB    = ILAENV2STAGE( 2, 'DSYTRD_2STAGE', JOBZ, N, KD, -1, -1 )
+         LHTRD = ILAENV2STAGE( 3, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
+         LWTRD = ILAENV2STAGE( 4, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
          LWMIN = 2*N + LHTRD + LWTRD
          WORK( 1 )  = LWMIN
          IF( LWORK.LT.LWMIN .AND. .NOT.LQUERY )
@@ -22162,9 +22160,9 @@
       DOUBLE PRECISION   ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN, SIGMA,
      $                   SMLNUM
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, DLANSY
-      EXTERNAL           LSAME, DLAMCH, DLANSY, ILAENV
+      EXTERNAL           LSAME, DLAMCH, DLANSY, ILAENV2STAGE
       EXTERNAL           DLACPY, DLASCL, DORMTR, DSCAL, DSTEDC, DSTERF,
      $                   DSYTRD_2STAGE, XERBLA
       INTRINSIC          MAX, SQRT
@@ -22186,10 +22184,14 @@
             LIWMIN = 1
             LWMIN = 1
          ELSE
-            KD    = ILAENV( 17, 'DSYTRD_2STAGE', JOBZ, N, -1, -1, -1 )
-            IB    = ILAENV( 18, 'DSYTRD_2STAGE', JOBZ, N, KD, -1, -1 )
-            LHTRD = ILAENV( 19, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
-            LWTRD = ILAENV( 20, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
+            KD    = ILAENV2STAGE( 1, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, -1, -1, -1 )
+            IB    = ILAENV2STAGE( 2, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, KD, -1, -1 )
+            LHTRD = ILAENV2STAGE( 3, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
+            LWTRD = ILAENV2STAGE( 4, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
             IF( WANTZ ) THEN
                LIWMIN = 3 + 5*N
                LWMIN = 1 + 6*N + 2*N**2
@@ -22521,9 +22523,9 @@
       DOUBLE PRECISION   ABSTLL, ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN,
      $                   SIGMA, SMLNUM, TMP1, VLL, VUU
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV, ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, DLANSY
-      EXTERNAL           LSAME, ILAENV, DLAMCH, DLANSY
+      EXTERNAL           LSAME, DLAMCH, DLANSY, ILAENV, ILAENV2STAGE
       EXTERNAL           DCOPY, DORMTR, DSCAL, DSTEBZ, DSTEMR, DSTEIN,
      $                   DSTERF, DSWAP, DSYTRD_2STAGE, XERBLA
       INTRINSIC          MAX, MIN, SQRT
@@ -22534,10 +22536,10 @@
       VALEIG = LSAME( RANGE, 'V' )
       INDEIG = LSAME( RANGE, 'I' )
       LQUERY = ( ( LWORK.EQ.-1 ) .OR. ( LIWORK.EQ.-1 ) )
-      KD     = ILAENV( 17, 'DSYTRD_2STAGE', JOBZ, N, -1, -1, -1 )
-      IB     = ILAENV( 18, 'DSYTRD_2STAGE', JOBZ, N, KD, -1, -1 )
-      LHTRD  = ILAENV( 19, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
-      LWTRD  = ILAENV( 20, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
+      KD     = ILAENV2STAGE( 1, 'DSYTRD_2STAGE', JOBZ, N, -1, -1, -1 )
+      IB     = ILAENV2STAGE( 2, 'DSYTRD_2STAGE', JOBZ, N, KD, -1, -1 )
+      LHTRD  = ILAENV2STAGE( 3, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
+      LWTRD  = ILAENV2STAGE( 4, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
       LWMIN  = MAX( 26*N, 5*N + LHTRD + LWTRD )
       LIWMIN = MAX( 1, 10*N )
       INFO = 0
@@ -22992,9 +22994,9 @@
       DOUBLE PRECISION   ABSTLL, ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN,
      $                   SIGMA, SMLNUM, TMP1, VLL, VUU
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, DLANSY
-      EXTERNAL           LSAME, ILAENV, DLAMCH, DLANSY
+      EXTERNAL           LSAME, DLAMCH, DLANSY, ILAENV2STAGE
       EXTERNAL           DCOPY, DLACPY, DORGTR, DORMTR, DSCAL, DSTEBZ,
      $                   DSTEIN, DSTEQR, DSTERF, DSWAP, XERBLA,
      $                   DSYTRD_2STAGE
@@ -23038,10 +23040,14 @@
             LWMIN = 1
             WORK( 1 ) = LWMIN
          ELSE
-            KD    = ILAENV( 17, 'DSYTRD_2STAGE', JOBZ, N, -1, -1, -1 )
-            IB    = ILAENV( 18, 'DSYTRD_2STAGE', JOBZ, N, KD, -1, -1 )
-            LHTRD = ILAENV( 19, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
-            LWTRD = ILAENV( 20, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
+            KD    = ILAENV2STAGE( 1, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, -1, -1, -1 )
+            IB    = ILAENV2STAGE( 2, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, KD, -1, -1 )
+            LHTRD = ILAENV2STAGE( 3, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
+            LWTRD = ILAENV2STAGE( 4, 'DSYTRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
             LWMIN = MAX( 8*N, 3*N + LHTRD + LWTRD )
             WORK( 1 )  = LWMIN
          END IF
@@ -23519,115 +23525,6 @@
       WORK( 1 ) = LWKOPT
       RETURN
       END
-! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dsygvx.f
-      SUBROUTINE DSYGVX( ITYPE, JOBZ, RANGE, UPLO, N, A, LDA, B, LDB,
-     $                   VL, VU, IL, IU, ABSTOL, M, W, Z, LDZ, WORK,
-     $                   LWORK, IWORK, IFAIL, INFO )
-      CHARACTER          JOBZ, RANGE, UPLO
-      INTEGER            IL, INFO, ITYPE, IU, LDA, LDB, LDZ, LWORK, M, N
-      DOUBLE PRECISION   ABSTOL, VL, VU
-      INTEGER            IFAIL( * ), IWORK( * )
-      DOUBLE PRECISION   A( LDA, * ), B( LDB, * ), W( * ), WORK( * ),
-     $                   Z( LDZ, * )
-      DOUBLE PRECISION   ONE
-      PARAMETER          ( ONE = 1.0D+0 )
-      LOGICAL            ALLEIG, INDEIG, LQUERY, UPPER, VALEIG, WANTZ
-      CHARACTER          TRANS
-      INTEGER            LWKMIN, LWKOPT, NB
-      LOGICAL            LSAME
-      INTEGER            ILAENV
-      EXTERNAL           LSAME, ILAENV
-      EXTERNAL           DPOTRF, DSYEVX, DSYGST, DTRMM, DTRSM, XERBLA
-      INTRINSIC          MAX, MIN
-      UPPER = LSAME( UPLO, 'U' )
-      WANTZ = LSAME( JOBZ, 'V' )
-      ALLEIG = LSAME( RANGE, 'A' )
-      VALEIG = LSAME( RANGE, 'V' )
-      INDEIG = LSAME( RANGE, 'I' )
-      LQUERY = ( LWORK.EQ.-1 )
-      INFO = 0
-      IF( ITYPE.LT.1 .OR. ITYPE.GT.3 ) THEN
-         INFO = -1
-      ELSE IF( .NOT.( WANTZ .OR. LSAME( JOBZ, 'N' ) ) ) THEN
-         INFO = -2
-      ELSE IF( .NOT.( ALLEIG .OR. VALEIG .OR. INDEIG ) ) THEN
-         INFO = -3
-      ELSE IF( .NOT.( UPPER .OR. LSAME( UPLO, 'L' ) ) ) THEN
-         INFO = -4
-      ELSE IF( N.LT.0 ) THEN
-         INFO = -5
-      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
-         INFO = -7
-      ELSE IF( LDB.LT.MAX( 1, N ) ) THEN
-         INFO = -9
-      ELSE
-         IF( VALEIG ) THEN
-            IF( N.GT.0 .AND. VU.LE.VL )
-     $         INFO = -11
-         ELSE IF( INDEIG ) THEN
-            IF( IL.LT.1 .OR. IL.GT.MAX( 1, N ) ) THEN
-               INFO = -12
-            ELSE IF( IU.LT.MIN( N, IL ) .OR. IU.GT.N ) THEN
-               INFO = -13
-            END IF
-         END IF
-      END IF
-      IF (INFO.EQ.0) THEN
-         IF (LDZ.LT.1 .OR. (WANTZ .AND. LDZ.LT.N)) THEN
-            INFO = -18
-         END IF
-      END IF
-      IF( INFO.EQ.0 ) THEN
-         LWKMIN = MAX( 1, 8*N )
-         NB = ILAENV( 1, 'DSYTRD', UPLO, N, -1, -1, -1 )
-         LWKOPT = MAX( LWKMIN, ( NB + 3 )*N )
-         WORK( 1 ) = LWKOPT
-         IF( LWORK.LT.LWKMIN .AND. .NOT.LQUERY ) THEN
-            INFO = -20
-         END IF
-      END IF
-      IF( INFO.NE.0 ) THEN
-         CALL XERBLA( 'DSYGVX', -INFO )
-         RETURN
-      ELSE IF( LQUERY ) THEN
-         RETURN
-      END IF
-      M = 0
-      IF( N.EQ.0 ) THEN
-         RETURN
-      END IF
-      CALL DPOTRF( UPLO, N, B, LDB, INFO )
-      IF( INFO.NE.0 ) THEN
-         INFO = N + INFO
-         RETURN
-      END IF
-      CALL DSYGST( ITYPE, UPLO, N, A, LDA, B, LDB, INFO )
-      CALL DSYEVX( JOBZ, RANGE, UPLO, N, A, LDA, VL, VU, IL, IU, ABSTOL,
-     $             M, W, Z, LDZ, WORK, LWORK, IWORK, IFAIL, INFO )
-      IF( WANTZ ) THEN
-         IF( INFO.GT.0 )
-     $      M = INFO - 1
-         IF( ITYPE.EQ.1 .OR. ITYPE.EQ.2 ) THEN
-            IF( UPPER ) THEN
-               TRANS = 'N'
-            ELSE
-               TRANS = 'T'
-            END IF
-            CALL DTRSM( 'Left', UPLO, TRANS, 'Non-unit', N, M, ONE, B,
-     $                  LDB, Z, LDZ )
-         ELSE IF( ITYPE.EQ.3 ) THEN
-            IF( UPPER ) THEN
-               TRANS = 'T'
-            ELSE
-               TRANS = 'N'
-            END IF
-            CALL DTRMM( 'Left', UPLO, TRANS, 'Non-unit', N, M, ONE, B,
-     $                  LDB, Z, LDZ )
-         END IF
-      END IF
-      WORK( 1 ) = LWKOPT
-      RETURN
-      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dsytd2.f
       SUBROUTINE DSYTD2( UPLO, N, A, LDA, D, E, TAU, INFO )
       CHARACTER          UPLO
@@ -24011,16 +23908,16 @@
       INTEGER            KD, IB, LWMIN, LHMIN, LWRK, LDAB, WPOS, ABPOS
       EXTERNAL           XERBLA, DSYTRD_SY2SB, DSYTRD_SB2ST
       LOGICAL            LSAME
-      INTEGER            ILAENV
-      EXTERNAL           LSAME, ILAENV
+      INTEGER            ILAENV2STAGE
+      EXTERNAL           LSAME, ILAENV2STAGE
       INFO   = 0
       WANTQ  = LSAME( VECT, 'V' )
       UPPER  = LSAME( UPLO, 'U' )
       LQUERY = ( LWORK.EQ.-1 ) .OR. ( LHOUS2.EQ.-1 )
-      KD     = ILAENV( 17, 'DSYTRD_2STAGE', VECT, N, -1, -1, -1 )
-      IB     = ILAENV( 18, 'DSYTRD_2STAGE', VECT, N, KD, -1, -1 )
-      LHMIN  = ILAENV( 19, 'DSYTRD_2STAGE', VECT, N, KD, IB, -1 )
-      LWMIN  = ILAENV( 20, 'DSYTRD_2STAGE', VECT, N, KD, IB, -1 )
+      KD     = ILAENV2STAGE( 1, 'DSYTRD_2STAGE', VECT, N, -1, -1, -1 )
+      IB     = ILAENV2STAGE( 2, 'DSYTRD_2STAGE', VECT, N, KD, -1, -1 )
+      LHMIN  = ILAENV2STAGE( 3, 'DSYTRD_2STAGE', VECT, N, KD, IB, -1 )
+      LWMIN  = ILAENV2STAGE( 4, 'DSYTRD_2STAGE', VECT, N, KD, IB, -1 )
       IF( .NOT.LSAME( VECT, 'N' ) ) THEN
          INFO = -1
       ELSE IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
@@ -24093,20 +23990,20 @@
      $                   ABDPOS, ABOFDPOS, DPOS, OFDPOS, AWPOS, 
      $                   INDA, INDW, APOS, SIZEA, LDA, INDV, INDTAU,
      $                   SIDEV, SIZETAU, LDV, LHMIN, LWMIN
-      EXTERNAL           DSB2ST_KERNELS, DLACPY, DLASET
+      EXTERNAL           DSB2ST_KERNELS, DLACPY, DLASET, XERBLA
       INTRINSIC          MIN, MAX, CEILING, REAL
       LOGICAL            LSAME
-      INTEGER            ILAENV 
-      EXTERNAL           LSAME, ILAENV
+      INTEGER            ILAENV2STAGE 
+      EXTERNAL           LSAME, ILAENV2STAGE
       DEBUG   = 0
       INFO    = 0
       AFTERS1 = LSAME( STAGE1, 'Y' )
       WANTQ   = LSAME( VECT, 'V' )
       UPPER   = LSAME( UPLO, 'U' )
       LQUERY  = ( LWORK.EQ.-1 ) .OR. ( LHOUS.EQ.-1 )
-      IB     = ILAENV( 18, 'DSYTRD_SB2ST', VECT, N, KD, -1, -1 )
-      LHMIN  = ILAENV( 19, 'DSYTRD_SB2ST', VECT, N, KD, IB, -1 )
-      LWMIN  = ILAENV( 20, 'DSYTRD_SB2ST', VECT, N, KD, IB, -1 )
+      IB     = ILAENV2STAGE( 2, 'DSYTRD_SB2ST', VECT, N, KD, -1, -1 )
+      LHMIN  = ILAENV2STAGE( 3, 'DSYTRD_SB2ST', VECT, N, KD, IB, -1 )
+      LWMIN  = ILAENV2STAGE( 4, 'DSYTRD_SB2ST', VECT, N, KD, IB, -1 )
       IF( .NOT.AFTERS1 .AND. .NOT.LSAME( STAGE1, 'N' ) ) THEN
          INFO = -1
       ELSE IF( .NOT.LSAME( VECT, 'N' ) ) THEN
@@ -24306,16 +24203,16 @@
      $                   LDT, LDW, LDS2, LDS1, 
      $                   LS2, LS1, LW, LT,
      $                   TPOS, WPOS, S2POS, S1POS
-      EXTERNAL           XERBLA, DSYR2K, DSYMM, DGEMM,
+      EXTERNAL           XERBLA, DSYR2K, DSYMM, DGEMM, DCOPY,
      $                   DLARFT, DGELQF, DGEQRF, DLASET
       INTRINSIC          MIN, MAX
       LOGICAL            LSAME
-      INTEGER            ILAENV 
-      EXTERNAL           LSAME, ILAENV
+      INTEGER            ILAENV2STAGE 
+      EXTERNAL           LSAME, ILAENV2STAGE
       INFO   = 0
       UPPER  = LSAME( UPLO, 'U' )
       LQUERY = ( LWORK.EQ.-1 )
-      LWMIN  = ILAENV( 20, 'DSYTRD_SY2SB', '', N, KD, -1, -1 )
+      LWMIN  = ILAENV2STAGE( 4, 'DSYTRD_SY2SB', '', N, KD, -1, -1 )
       
       IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
          INFO = -1
@@ -25292,14 +25189,13 @@
       CHARACTER*( * )    NAME, OPTS
       INTEGER            ISPEC, N1, N2, N3, N4
       INTEGER            I, IC, IZ, NB, NBMIN, NX
-      LOGICAL            CNAME, SNAME
-      CHARACTER          C1*1, C2*2, C4*2, C3*3, SUBNAM*6
+      LOGICAL            CNAME, SNAME, TWOSTAGE
+      CHARACTER          C1*1, C2*2, C4*2, C3*3, SUBNAM*16
       INTRINSIC          CHAR, ICHAR, INT, MIN, REAL
       INTEGER            IEEECK, IPARMQ, IPARAM2STAGE
       EXTERNAL           IEEECK, IPARMQ, IPARAM2STAGE
       GO TO ( 10, 10, 10, 80, 90, 100, 110, 120,
-     $        130, 140, 150, 160, 160, 160, 160, 160,
-     $        170, 170, 170, 170, 170 )ISPEC
+     $        130, 140, 150, 160, 160, 160, 160, 160)ISPEC
       ILAENV = -1
       RETURN
    10 CONTINUE
@@ -25347,6 +25243,8 @@
       C2 = SUBNAM( 2: 3 )
       C3 = SUBNAM( 4: 6 )
       C4 = C3( 2: 3 )
+      TWOSTAGE = LEN( SUBNAM ).GE.11
+     $           .AND. SUBNAM( 11: 11 ).EQ.'2'
       GO TO ( 50, 60, 70 )ISPEC
    50 CONTINUE
       NB = 1
@@ -25438,9 +25336,17 @@
       ELSE IF( C2.EQ.'SY' ) THEN
          IF( C3.EQ.'TRF' ) THEN
             IF( SNAME ) THEN
-               NB = 64
+               IF( TWOSTAGE ) THEN
+                  NB = 192
+               ELSE
+                  NB = 64
+               END IF
             ELSE
-               NB = 64
+               IF( TWOSTAGE ) THEN
+                  NB = 192
+               ELSE
+                  NB = 64
+               END IF
             END IF
          ELSE IF( SNAME .AND. C3.EQ.'TRD' ) THEN
             NB = 32
@@ -25449,7 +25355,11 @@
          END IF
       ELSE IF( CNAME .AND. C2.EQ.'HE' ) THEN
          IF( C3.EQ.'TRF' ) THEN
-            NB = 64
+            IF( TWOSTAGE ) THEN
+               NB = 192
+            ELSE
+               NB = 64
+            END IF
          ELSE IF( C3.EQ.'TRD' ) THEN
             NB = 32
          ELSE IF( C3.EQ.'GST' ) THEN
@@ -25720,8 +25630,21 @@
   160 CONTINUE
       ILAENV = IPARMQ( ISPEC, NAME, OPTS, N1, N2, N3, N4 )
       RETURN
-  170 CONTINUE
-      ILAENV = IPARAM2STAGE( ISPEC, NAME, OPTS, N1, N2, N3, N4 )
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/ilaenv2stage.f
+      INTEGER FUNCTION ILAENV2STAGE( ISPEC, NAME, OPTS, N1, N2, N3, N4 )
+      CHARACTER*( * )    NAME, OPTS
+      INTEGER            ISPEC, N1, N2, N3, N4
+      INTEGER            IISPEC
+      INTEGER            IPARAM2STAGE
+      EXTERNAL           IPARAM2STAGE
+      GO TO ( 10, 10, 10, 10, 10 )ISPEC
+      ILAENV2STAGE = -1
+      RETURN
+   10 CONTINUE
+      IISPEC = 16 + ISPEC
+      ILAENV2STAGE = IPARAM2STAGE( IISPEC, NAME, OPTS,
+     $                             N1, N2, N3, N4 )
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/ilaprec.f
@@ -30577,22 +30500,22 @@
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zhb2st_kernels.f
-      SUBROUTINE  ZHB2ST_KERNELS( UPLO, WANTZ, TTYPE, 
+      SUBROUTINE  ZHB2ST_KERNELS( UPLO, WANTZ, TTYPE,
      $                            ST, ED, SWEEP, N, NB, IB,
      $                            A, LDA, V, TAU, LDVT, WORK)
       IMPLICIT NONE
       CHARACTER          UPLO
       LOGICAL            WANTZ
       INTEGER            TTYPE, ST, ED, SWEEP, N, NB, IB, LDA, LDVT
-      COMPLEX*16         A( LDA, * ), V( * ), 
+      COMPLEX*16         A( LDA, * ), V( * ),
      $                   TAU( * ), WORK( * )
       COMPLEX*16         ZERO, ONE
       PARAMETER          ( ZERO = ( 0.0D+0, 0.0D+0 ),
      $                   ONE = ( 1.0D+0, 0.0D+0 ) )
       LOGICAL            UPPER
       INTEGER            I, J1, J2, LM, LN, VPOS, TAUPOS,
-     $                   DPOS, OFDPOS, AJETER 
-      COMPLEX*16         CTMP 
+     $                   DPOS, OFDPOS, AJETER
+      COMPLEX*16         CTMP
       EXTERNAL           ZLARFG, ZLARFX, ZLARFY
       INTRINSIC          DCONJG, MOD
       LOGICAL            LSAME
@@ -30619,10 +30542,10 @@
               V( VPOS ) = ONE
               DO 10 I = 1, LM-1
                   V( VPOS+I )         = DCONJG( A( OFDPOS-I, ST+I ) )
-                  A( OFDPOS-I, ST+I ) = ZERO  
+                  A( OFDPOS-I, ST+I ) = ZERO
    10         CONTINUE
               CTMP = DCONJG( A( OFDPOS, ST ) )
-              CALL ZLARFG( LM, CTMP, V( VPOS+1 ), 1, 
+              CALL ZLARFG( LM, CTMP, V( VPOS+1 ), 1,
      $                                       TAU( TAUPOS ) )
               A( OFDPOS, ST ) = CTMP
               LM = ED - ST + 1
@@ -30654,7 +30577,7 @@
                   ENDIF
                   V( VPOS ) = ONE
                   DO 30 I = 1, LM-1
-                      V( VPOS+I )          = 
+                      V( VPOS+I )          =
      $                                    DCONJG( A( DPOS-NB-I, J1+I ) )
                       A( DPOS-NB-I, J1+I ) = ZERO
    30             CONTINUE
@@ -30679,9 +30602,9 @@
               V( VPOS ) = ONE
               DO 20 I = 1, LM-1
                   V( VPOS+I )         = A( OFDPOS+I, ST-1 )
-                  A( OFDPOS+I, ST-1 ) = ZERO  
+                  A( OFDPOS+I, ST-1 ) = ZERO
    20         CONTINUE
-              CALL ZLARFG( LM, A( OFDPOS, ST-1 ), V( VPOS+1 ), 1, 
+              CALL ZLARFG( LM, A( OFDPOS, ST-1 ), V( VPOS+1 ), 1,
      $                                       TAU( TAUPOS ) )
               LM = ED - ST + 1
               CALL ZLARFY( UPLO, LM, V( VPOS ), 1,
@@ -30700,7 +30623,7 @@
               LN = ED-ST+1
               LM = J2-J1+1
               IF( LM.GT.0) THEN
-                  CALL ZLARFX( 'Right', LM, LN, V( VPOS ), 
+                  CALL ZLARFX( 'Right', LM, LN, V( VPOS ),
      $                         TAU( TAUPOS ), A( DPOS+NB, ST ),
      $                         LDA-1, WORK)
                   IF( WANTZ ) THEN
@@ -30715,17 +30638,16 @@
                       V( VPOS+I )        = A( DPOS+NB+I, ST )
                       A( DPOS+NB+I, ST ) = ZERO
    40             CONTINUE
-                  CALL ZLARFG( LM, A( DPOS+NB, ST ), V( VPOS+1 ), 1, 
+                  CALL ZLARFG( LM, A( DPOS+NB, ST ), V( VPOS+1 ), 1,
      $                                        TAU( TAUPOS ) )
-                  CALL ZLARFX( 'Left', LM, LN-1, V( VPOS ), 
+                  CALL ZLARFX( 'Left', LM, LN-1, V( VPOS ),
      $                         DCONJG( TAU( TAUPOS ) ),
      $                         A( DPOS+NB-1, ST+1 ), LDA-1, WORK)
-             
               ENDIF
           ENDIF
       ENDIF
       RETURN
-      END      
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zheev.f
       SUBROUTINE ZHEEV( JOBZ, UPLO, N, A, LDA, W, WORK, LWORK, RWORK,
      $                  INFO )
@@ -30846,9 +30768,9 @@
       DOUBLE PRECISION   ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN, SIGMA,
      $                   SMLNUM
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, ZLANHE
-      EXTERNAL           LSAME, ILAENV, DLAMCH, ZLANHE
+      EXTERNAL           LSAME, DLAMCH, ZLANHE, ILAENV2STAGE
       EXTERNAL           DSCAL, DSTERF, XERBLA, ZLASCL, ZSTEQR,
      $                   ZUNGTR, ZHETRD_2STAGE
       INTRINSIC          DBLE, MAX, SQRT
@@ -30866,10 +30788,10 @@
          INFO = -5
       END IF
       IF( INFO.EQ.0 ) THEN
-         KD    = ILAENV( 17, 'ZHETRD_2STAGE', JOBZ, N, -1, -1, -1 )
-         IB    = ILAENV( 18, 'ZHETRD_2STAGE', JOBZ, N, KD, -1, -1 )
-         LHTRD = ILAENV( 19, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
-         LWTRD = ILAENV( 20, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
+         KD    = ILAENV2STAGE( 1, 'ZHETRD_2STAGE', JOBZ, N, -1, -1, -1 )
+         IB    = ILAENV2STAGE( 2, 'ZHETRD_2STAGE', JOBZ, N, KD, -1, -1 )
+         LHTRD = ILAENV2STAGE( 3, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
+         LWTRD = ILAENV2STAGE( 4, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
          LWMIN = N + LHTRD + LWTRD
          WORK( 1 )  = LWMIN
          IF( LWORK.LT.LWMIN .AND. .NOT.LQUERY )
@@ -31093,9 +31015,9 @@
       DOUBLE PRECISION   ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN, SIGMA,
      $                   SMLNUM
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, ZLANHE
-      EXTERNAL           LSAME, ILAENV, DLAMCH, ZLANHE
+      EXTERNAL           LSAME, DLAMCH, ZLANHE, ILAENV2STAGE
       EXTERNAL           DSCAL, DSTERF, XERBLA, ZLACPY, ZLASCL,
      $                   ZSTEDC, ZUNMTR, ZHETRD_2STAGE
       INTRINSIC          DBLE, MAX, SQRT 
@@ -31118,10 +31040,14 @@
             LRWMIN = 1
             LIWMIN = 1
          ELSE
-            KD    = ILAENV( 17, 'ZHETRD_2STAGE', JOBZ, N, -1, -1, -1 )
-            IB    = ILAENV( 18, 'ZHETRD_2STAGE', JOBZ, N, KD, -1, -1 )
-            LHTRD = ILAENV( 19, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
-            LWTRD = ILAENV( 20, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
+            KD    = ILAENV2STAGE( 1, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, -1, -1, -1 )
+            IB    = ILAENV2STAGE( 2, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, KD, -1, -1 )
+            LHTRD = ILAENV2STAGE( 3, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
+            LWTRD = ILAENV2STAGE( 4, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
             IF( WANTZ ) THEN
                LWMIN = 2*N + N*N
                LRWMIN = 1 + 5*N + 2*N**2
@@ -31492,9 +31418,9 @@
       DOUBLE PRECISION   ABSTLL, ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN,
      $                   SIGMA, SMLNUM, TMP1, VLL, VUU
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV, ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, ZLANSY
-      EXTERNAL           LSAME, ILAENV, DLAMCH, ZLANSY
+      EXTERNAL           LSAME, DLAMCH, ZLANSY, ILAENV, ILAENV2STAGE
       EXTERNAL           DCOPY, DSCAL, DSTEBZ, DSTERF, XERBLA, ZDSCAL,
      $                   ZHETRD_2STAGE, ZSTEMR, ZSTEIN, ZSWAP, ZUNMTR
       INTRINSIC          DBLE, MAX, MIN, SQRT
@@ -31506,10 +31432,10 @@
       INDEIG = LSAME( RANGE, 'I' )
       LQUERY = ( ( LWORK.EQ.-1 ) .OR. ( LRWORK.EQ.-1 ) .OR.
      $         ( LIWORK.EQ.-1 ) )
-      KD     = ILAENV( 17, 'DSYTRD_2STAGE', JOBZ, N, -1, -1, -1 )
-      IB     = ILAENV( 18, 'DSYTRD_2STAGE', JOBZ, N, KD, -1, -1 )
-      LHTRD  = ILAENV( 19, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
-      LWTRD  = ILAENV( 20, 'DSYTRD_2STAGE', JOBZ, N, KD, IB, -1 )
+      KD     = ILAENV2STAGE( 1, 'ZHETRD_2STAGE', JOBZ, N, -1, -1, -1 )
+      IB     = ILAENV2STAGE( 2, 'ZHETRD_2STAGE', JOBZ, N, KD, -1, -1 )
+      LHTRD  = ILAENV2STAGE( 3, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
+      LWTRD  = ILAENV2STAGE( 4, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
       LWMIN  = N + LHTRD + LWTRD
       LRWMIN = MAX( 1, 24*N )
       LIWMIN = MAX( 1, 10*N )
@@ -31990,9 +31916,9 @@
       DOUBLE PRECISION   ABSTLL, ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN,
      $                   SIGMA, SMLNUM, TMP1, VLL, VUU
       LOGICAL            LSAME
-      INTEGER            ILAENV
+      INTEGER            ILAENV2STAGE
       DOUBLE PRECISION   DLAMCH, ZLANHE
-      EXTERNAL           LSAME, ILAENV, DLAMCH, ZLANHE
+      EXTERNAL           LSAME, DLAMCH, ZLANHE, ILAENV2STAGE
       EXTERNAL           DCOPY, DSCAL, DSTEBZ, DSTERF, XERBLA, ZDSCAL,
      $                   ZLACPY, ZSTEIN, ZSTEQR, ZSWAP, ZUNGTR, ZUNMTR,
      $                   ZHETRD_2STAGE
@@ -32036,10 +31962,14 @@
             LWMIN = 1
             WORK( 1 ) = LWMIN
          ELSE
-            KD    = ILAENV( 17, 'ZHETRD_2STAGE', JOBZ, N, -1, -1, -1 )
-            IB    = ILAENV( 18, 'ZHETRD_2STAGE', JOBZ, N, KD, -1, -1 )
-            LHTRD = ILAENV( 19, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
-            LWTRD = ILAENV( 20, 'ZHETRD_2STAGE', JOBZ, N, KD, IB, -1 )
+            KD    = ILAENV2STAGE( 1, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, -1, -1, -1 )
+            IB    = ILAENV2STAGE( 2, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, KD, -1, -1 )
+            LHTRD = ILAENV2STAGE( 3, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
+            LWTRD = ILAENV2STAGE( 4, 'ZHETRD_2STAGE', JOBZ,
+     $                            N, KD, IB, -1 )
             LWMIN = N + LHTRD + LWTRD
             WORK( 1 )  = LWMIN
          END IF
@@ -32457,198 +32387,6 @@
             END IF
          END IF
       END IF
-      RETURN
-      END
-! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zhegv.f
-      SUBROUTINE ZHEGV( ITYPE, JOBZ, UPLO, N, A, LDA, B, LDB, W, WORK,
-     $                  LWORK, RWORK, INFO )
-      CHARACTER          JOBZ, UPLO
-      INTEGER            INFO, ITYPE, LDA, LDB, LWORK, N
-      DOUBLE PRECISION   RWORK( * ), W( * )
-      COMPLEX*16         A( LDA, * ), B( LDB, * ), WORK( * )
-      COMPLEX*16         ONE
-      PARAMETER          ( ONE = ( 1.0D+0, 0.0D+0 ) )
-      LOGICAL            LQUERY, UPPER, WANTZ
-      CHARACTER          TRANS
-      INTEGER            LWKOPT, NB, NEIG
-      LOGICAL            LSAME
-      INTEGER            ILAENV
-      EXTERNAL           LSAME, ILAENV
-      EXTERNAL           XERBLA, ZHEEV, ZHEGST, ZPOTRF, ZTRMM, ZTRSM
-      INTRINSIC          MAX
-      WANTZ = LSAME( JOBZ, 'V' )
-      UPPER = LSAME( UPLO, 'U' )
-      LQUERY = ( LWORK.EQ.-1 )
-      INFO = 0
-      IF( ITYPE.LT.1 .OR. ITYPE.GT.3 ) THEN
-         INFO = -1
-      ELSE IF( .NOT.( WANTZ .OR. LSAME( JOBZ, 'N' ) ) ) THEN
-         INFO = -2
-      ELSE IF( .NOT.( UPPER .OR. LSAME( UPLO, 'L' ) ) ) THEN
-         INFO = -3
-      ELSE IF( N.LT.0 ) THEN
-         INFO = -4
-      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
-         INFO = -6
-      ELSE IF( LDB.LT.MAX( 1, N ) ) THEN
-         INFO = -8
-      END IF
-      IF( INFO.EQ.0 ) THEN
-         NB = ILAENV( 1, 'ZHETRD', UPLO, N, -1, -1, -1 )
-         LWKOPT = MAX( 1, ( NB + 1 )*N )
-         WORK( 1 ) = LWKOPT
-         IF( LWORK.LT.MAX( 1, 2*N - 1 ) .AND. .NOT.LQUERY ) THEN
-            INFO = -11
-         END IF
-      END IF
-      IF( INFO.NE.0 ) THEN
-         CALL XERBLA( 'ZHEGV ', -INFO )
-         RETURN
-      ELSE IF( LQUERY ) THEN
-         RETURN
-      END IF
-      IF( N.EQ.0 )
-     $   RETURN
-      CALL ZPOTRF( UPLO, N, B, LDB, INFO )
-      IF( INFO.NE.0 ) THEN
-         INFO = N + INFO
-         RETURN
-      END IF
-      CALL ZHEGST( ITYPE, UPLO, N, A, LDA, B, LDB, INFO )
-      CALL ZHEEV( JOBZ, UPLO, N, A, LDA, W, WORK, LWORK, RWORK, INFO )
-      IF( WANTZ ) THEN
-         NEIG = N
-         IF( INFO.GT.0 )
-     $      NEIG = INFO - 1
-         IF( ITYPE.EQ.1 .OR. ITYPE.EQ.2 ) THEN
-            IF( UPPER ) THEN
-               TRANS = 'N'
-            ELSE
-               TRANS = 'C'
-            END IF
-            CALL ZTRSM( 'Left', UPLO, TRANS, 'Non-unit', N, NEIG, ONE,
-     $                  B, LDB, A, LDA )
-         ELSE IF( ITYPE.EQ.3 ) THEN
-            IF( UPPER ) THEN
-               TRANS = 'C'
-            ELSE
-               TRANS = 'N'
-            END IF
-            CALL ZTRMM( 'Left', UPLO, TRANS, 'Non-unit', N, NEIG, ONE,
-     $                  B, LDB, A, LDA )
-         END IF
-      END IF
-      WORK( 1 ) = LWKOPT
-      RETURN
-      END
-! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zhegvx.f
-      SUBROUTINE ZHEGVX( ITYPE, JOBZ, RANGE, UPLO, N, A, LDA, B, LDB,
-     $                   VL, VU, IL, IU, ABSTOL, M, W, Z, LDZ, WORK,
-     $                   LWORK, RWORK, IWORK, IFAIL, INFO )
-      CHARACTER          JOBZ, RANGE, UPLO
-      INTEGER            IL, INFO, ITYPE, IU, LDA, LDB, LDZ, LWORK, M, N
-      DOUBLE PRECISION   ABSTOL, VL, VU
-      INTEGER            IFAIL( * ), IWORK( * )
-      DOUBLE PRECISION   RWORK( * ), W( * )
-      COMPLEX*16         A( LDA, * ), B( LDB, * ), WORK( * ),
-     $                   Z( LDZ, * )
-      COMPLEX*16         CONE
-      PARAMETER          ( CONE = ( 1.0D+0, 0.0D+0 ) )
-      LOGICAL            ALLEIG, INDEIG, LQUERY, UPPER, VALEIG, WANTZ
-      CHARACTER          TRANS
-      INTEGER            LWKOPT, NB
-      LOGICAL            LSAME
-      INTEGER            ILAENV
-      EXTERNAL           LSAME, ILAENV
-      EXTERNAL           XERBLA, ZHEEVX, ZHEGST, ZPOTRF, ZTRMM, ZTRSM
-      INTRINSIC          MAX, MIN
-      WANTZ = LSAME( JOBZ, 'V' )
-      UPPER = LSAME( UPLO, 'U' )
-      ALLEIG = LSAME( RANGE, 'A' )
-      VALEIG = LSAME( RANGE, 'V' )
-      INDEIG = LSAME( RANGE, 'I' )
-      LQUERY = ( LWORK.EQ.-1 )
-      INFO = 0
-      IF( ITYPE.LT.1 .OR. ITYPE.GT.3 ) THEN
-         INFO = -1
-      ELSE IF( .NOT.( WANTZ .OR. LSAME( JOBZ, 'N' ) ) ) THEN
-         INFO = -2
-      ELSE IF( .NOT.( ALLEIG .OR. VALEIG .OR. INDEIG ) ) THEN
-         INFO = -3
-      ELSE IF( .NOT.( UPPER .OR. LSAME( UPLO, 'L' ) ) ) THEN
-         INFO = -4
-      ELSE IF( N.LT.0 ) THEN
-         INFO = -5
-      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
-         INFO = -7
-      ELSE IF( LDB.LT.MAX( 1, N ) ) THEN
-         INFO = -9
-      ELSE
-         IF( VALEIG ) THEN
-            IF( N.GT.0 .AND. VU.LE.VL )
-     $         INFO = -11
-         ELSE IF( INDEIG ) THEN
-            IF( IL.LT.1 .OR. IL.GT.MAX( 1, N ) ) THEN
-               INFO = -12
-            ELSE IF( IU.LT.MIN( N, IL ) .OR. IU.GT.N ) THEN
-               INFO = -13
-            END IF
-         END IF
-      END IF
-      IF (INFO.EQ.0) THEN
-         IF (LDZ.LT.1 .OR. (WANTZ .AND. LDZ.LT.N)) THEN
-            INFO = -18
-         END IF
-      END IF
-      IF( INFO.EQ.0 ) THEN
-         NB = ILAENV( 1, 'ZHETRD', UPLO, N, -1, -1, -1 )
-         LWKOPT = MAX( 1, ( NB + 1 )*N )
-         WORK( 1 ) = LWKOPT
-         IF( LWORK.LT.MAX( 1, 2*N ) .AND. .NOT.LQUERY ) THEN
-            INFO = -20
-         END IF
-      END IF
-      IF( INFO.NE.0 ) THEN
-         CALL XERBLA( 'ZHEGVX', -INFO )
-         RETURN
-      ELSE IF( LQUERY ) THEN
-         RETURN
-      END IF
-      M = 0
-      IF( N.EQ.0 ) THEN
-         RETURN
-      END IF
-      CALL ZPOTRF( UPLO, N, B, LDB, INFO )
-      IF( INFO.NE.0 ) THEN
-         INFO = N + INFO
-         RETURN
-      END IF
-      CALL ZHEGST( ITYPE, UPLO, N, A, LDA, B, LDB, INFO )
-      CALL ZHEEVX( JOBZ, RANGE, UPLO, N, A, LDA, VL, VU, IL, IU, ABSTOL,
-     $             M, W, Z, LDZ, WORK, LWORK, RWORK, IWORK, IFAIL,
-     $             INFO )
-      IF( WANTZ ) THEN
-         IF( INFO.GT.0 )
-     $      M = INFO - 1
-         IF( ITYPE.EQ.1 .OR. ITYPE.EQ.2 ) THEN
-            IF( UPPER ) THEN
-               TRANS = 'N'
-            ELSE
-               TRANS = 'C'
-            END IF
-            CALL ZTRSM( 'Left', UPLO, TRANS, 'Non-unit', N, M, CONE, B,
-     $                  LDB, Z, LDZ )
-         ELSE IF( ITYPE.EQ.3 ) THEN
-            IF( UPPER ) THEN
-               TRANS = 'C'
-            ELSE
-               TRANS = 'N'
-            END IF
-            CALL ZTRMM( 'Left', UPLO, TRANS, 'Non-unit', N, M, CONE, B,
-     $                  LDB, Z, LDZ )
-         END IF
-      END IF
-      WORK( 1 ) = LWKOPT
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/zhetd2.f
@@ -33079,16 +32817,16 @@
       INTEGER            KD, IB, LWMIN, LHMIN, LWRK, LDAB, WPOS, ABPOS
       EXTERNAL           XERBLA, ZHETRD_HE2HB, ZHETRD_HB2ST
       LOGICAL            LSAME
-      INTEGER            ILAENV
-      EXTERNAL           LSAME, ILAENV
+      INTEGER            ILAENV2STAGE
+      EXTERNAL           LSAME, ILAENV2STAGE
       INFO   = 0
       WANTQ  = LSAME( VECT, 'V' )
       UPPER  = LSAME( UPLO, 'U' )
       LQUERY = ( LWORK.EQ.-1 ) .OR. ( LHOUS2.EQ.-1 )
-      KD     = ILAENV( 17, 'ZHETRD_2STAGE', VECT, N, -1, -1, -1 )
-      IB     = ILAENV( 18, 'ZHETRD_2STAGE', VECT, N, KD, -1, -1 )
-      LHMIN  = ILAENV( 19, 'ZHETRD_2STAGE', VECT, N, KD, IB, -1 )
-      LWMIN  = ILAENV( 20, 'ZHETRD_2STAGE', VECT, N, KD, IB, -1 )
+      KD     = ILAENV2STAGE( 1, 'ZHETRD_2STAGE', VECT, N, -1, -1, -1 )
+      IB     = ILAENV2STAGE( 2, 'ZHETRD_2STAGE', VECT, N, KD, -1, -1 )
+      LHMIN  = ILAENV2STAGE( 3, 'ZHETRD_2STAGE', VECT, N, KD, IB, -1 )
+      LWMIN  = ILAENV2STAGE( 4, 'ZHETRD_2STAGE', VECT, N, KD, IB, -1 )
       IF( .NOT.LSAME( VECT, 'N' ) ) THEN
          INFO = -1
       ELSE IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
@@ -33163,20 +32901,20 @@
      $                   SIZEV, SIZETAU, LDV, LHMIN, LWMIN
       DOUBLE PRECISION   ABSTMP
       COMPLEX*16         TMP
-      EXTERNAL           ZHB2ST_KERNELS, ZLACPY, ZLASET
+      EXTERNAL           ZHB2ST_KERNELS, ZLACPY, ZLASET, XERBLA
       INTRINSIC          MIN, MAX, CEILING, DBLE, REAL
       LOGICAL            LSAME
-      INTEGER            ILAENV 
-      EXTERNAL           LSAME, ILAENV
+      INTEGER            ILAENV2STAGE 
+      EXTERNAL           LSAME, ILAENV2STAGE
       DEBUG   = 0
       INFO    = 0
       AFTERS1 = LSAME( STAGE1, 'Y' )
       WANTQ   = LSAME( VECT, 'V' )
       UPPER   = LSAME( UPLO, 'U' )
       LQUERY  = ( LWORK.EQ.-1 ) .OR. ( LHOUS.EQ.-1 )
-      IB     = ILAENV( 18, 'ZHETRD_HB2ST', VECT, N, KD, -1, -1 )
-      LHMIN  = ILAENV( 19, 'ZHETRD_HB2ST', VECT, N, KD, IB, -1 )
-      LWMIN  = ILAENV( 20, 'ZHETRD_HB2ST', VECT, N, KD, IB, -1 )
+      IB     = ILAENV2STAGE( 2, 'ZHETRD_HB2ST', VECT, N, KD, -1, -1 )
+      LHMIN  = ILAENV2STAGE( 3, 'ZHETRD_HB2ST', VECT, N, KD, IB, -1 )
+      LWMIN  = ILAENV2STAGE( 4, 'ZHETRD_HB2ST', VECT, N, KD, IB, -1 )
       IF( .NOT.AFTERS1 .AND. .NOT.LSAME( STAGE1, 'N' ) ) THEN
          INFO = -1
       ELSE IF( .NOT.LSAME( VECT, 'N' ) ) THEN
@@ -33396,16 +33134,16 @@
      $                   LDT, LDW, LDS2, LDS1, 
      $                   LS2, LS1, LW, LT,
      $                   TPOS, WPOS, S2POS, S1POS
-      EXTERNAL           XERBLA, ZHER2K, ZHEMM, ZGEMM,
+      EXTERNAL           XERBLA, ZHER2K, ZHEMM, ZGEMM, ZCOPY,
      $                   ZLARFT, ZGELQF, ZGEQRF, ZLASET
       INTRINSIC          MIN, MAX
       LOGICAL            LSAME
-      INTEGER            ILAENV 
-      EXTERNAL           LSAME, ILAENV
+      INTEGER            ILAENV2STAGE 
+      EXTERNAL           LSAME, ILAENV2STAGE
       INFO   = 0
       UPPER  = LSAME( UPLO, 'U' )
       LQUERY = ( LWORK.EQ.-1 )
-      LWMIN  = ILAENV( 20, 'ZHETRD_HE2HB', '', N, KD, -1, -1 )
+      LWMIN  = ILAENV2STAGE( 4, 'ZHETRD_HE2HB', '', N, KD, -1, -1 )
       
       IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
          INFO = -1
@@ -40245,6 +39983,9 @@
       INTRINSIC          ABS, DBLE, DIMAG
       DOUBLE PRECISION   CABS1
       CABS1( CDUM ) = ABS( DBLE( CDUM ) ) + ABS( DIMAG( CDUM ) )
+      IF( N.NE.2 .AND. N.NE.3 ) THEN
+         RETURN
+      END IF
       IF( N.EQ.2 ) THEN
          S = CABS1( H( 1, 1 )-S2 ) + CABS1( H( 2, 1 ) )
          IF( S.EQ.RZERO ) THEN
@@ -41765,7 +41506,7 @@
             BETA = BETA*RSAFMN
             ALPHI = ALPHI*RSAFMN
             ALPHR = ALPHR*RSAFMN
-            IF( ABS( BETA ).LT.SAFMIN )
+            IF( (ABS( BETA ).LT.SAFMIN) .AND. (KNT .LT. 20) )
      $         GO TO 10
             XNORM = DZNRM2( N-1, X, INCX )
             ALPHA = DCMPLX( ALPHR, ALPHI )
@@ -43568,7 +43309,7 @@
       COMPLEX*16         ZDOTC, ZDOTU, ZLADIV
       EXTERNAL           LSAME, IDAMAX, IZAMAX, DLAMCH, DZASUM, ZDOTC,
      $                   ZDOTU, ZLADIV
-      EXTERNAL           DSCAL, XERBLA, ZAXPY, ZDSCAL, ZTRSV
+      EXTERNAL           DSCAL, XERBLA, ZAXPY, ZDSCAL, ZTRSV, DLABAD
       INTRINSIC          ABS, DBLE, DCMPLX, DCONJG, DIMAG, MAX, MIN
       DOUBLE PRECISION   CABS1, CABS2
       CABS1( ZDUM ) = ABS( DBLE( ZDUM ) ) + ABS( DIMAG( ZDUM ) )
@@ -45448,7 +45189,7 @@
       DOUBLE PRECISION   DLAMCH, DZASUM
       EXTERNAL           LSAME, ILAENV, IZAMAX, DLAMCH, DZASUM
       EXTERNAL           XERBLA, ZCOPY, ZDSCAL, ZGEMV, ZLATRS,
-     $                   ZGEMM, DLABAD, ZLASET
+     $                   ZGEMM, DLABAD, ZLASET, ZLACPY
       INTRINSIC          ABS, DBLE, DCMPLX, CONJG, AIMAG, MAX
       DOUBLE PRECISION   CABS1
       CABS1( CDUM ) = ABS( DBLE( CDUM ) ) + ABS( AIMAG( CDUM ) )

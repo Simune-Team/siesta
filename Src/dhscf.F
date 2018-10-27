@@ -90,6 +90,8 @@
 
       use iogrid_netcdf, only: set_box_limits
 #ifdef NCDF_4
+      use files,         only  : slabel
+      use m_ncdf_siesta, only : cdf_init_grid
       use m_ncdf_io, only : cdf_init_mesh
 #endif
 #ifdef BSC_CELLXC
@@ -106,6 +108,9 @@
       use m_rhog,                 only: rhog, rhog_in
       use m_rhog,                 only: order_rhog
       use siesta_options,         only: mix_charge
+#ifdef NCDF_4
+      use siesta_options,         only: write_cdf
+#endif
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -249,6 +254,9 @@ C ----------------------------------------------------------------------
 #ifdef NCDF_4
       ! Initialize the box for each node...
       call cdf_init_mesh( ntm, nsm )
+      if ( write_cdf ) then
+        call cdf_init_grid( trim(slabel)//'.nc', ntm)
+      end if
 #endif
 
 C     Stop time counter for mesh initialization
@@ -467,13 +475,32 @@ C ----------------------------------------------------------------------
 
          ! This is either dipole or user, or both
          field(:) = user_specified_field(:)
+         ortho = 0._dp
          do iE = 1 , N_Elec
-            field2 = Elecs(iE)%cell(:,Elecs(iE)%t_dir)
-            ortho = ddot(3,field2,1,field,1)
-            if ( abs(ortho) > 1.e-9_dp ) then
-               call die('User defined E-field must be
+           select case ( Elecs(iE)%t_dir )
+           case ( 4 )           ! B-C
+             field2 = Elecs(iE)%cell(:,2)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,3)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 5 )           ! A-C
+             field2 = Elecs(iE)%cell(:,1)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,3)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 6 )           ! A-B
+             field2 = Elecs(iE)%cell(:,1)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,2)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case default
+             field2 = Elecs(iE)%cell(:,Elecs(iE)%t_dir)
+             ortho = ddot(3,field2,1,field,1)
+           end select
+           if ( abs(ortho) > 1.e-9_dp ) then
+             call die('User defined E-field must be
      &perpendicular to semi-infinite directions')
-            end if
+           end if
          end do
         end if ! acting_efield
          
@@ -1240,23 +1267,51 @@ C Find dipole
 
        if ( TSmode ) then
          if ( N_elec > 1 ) then
-          ! Orthogonalize dipole to electrode transport directions
-          do ia = 1 , N_Elec
-            x0 = Elecs(ia)%cell(:,Elecs(ia)%t_dir)
-            const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-            dipol(1:3) = dipol(1:3) - const * x0
-          end do
-        else if ( (shape == 'molecule') .or. (shape == 'chain') ) then
-          ! Only allow dipole correction for chains and molecules
-          ! along the semi-infinite direciton.
-          ! Note this is *only* for 1-electrode setups
-          ! Note that since the above removes the periodic directions
-          ! this should not do anything for 'chain' with the same semi-infinite
-          ! direction
-          x0 = Elecs(1)%cell(:,Elecs(1)%t_dir)
-          const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-          dipol(1:3) = const * x0
-        end if
+           ! Orthogonalize dipole to electrode transport directions
+           do ia = 1 , N_Elec
+             select case ( Elecs(ia)%t_dir )
+             case ( 4 )         ! B-C
+               x0 = Elecs(ia)%cell(:,2)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+               x0 = Elecs(ia)%cell(:,3)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             case ( 5 )         ! A-C
+               x0 = Elecs(ia)%cell(:,1)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+               x0 = Elecs(ia)%cell(:,3)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             case ( 6 )         ! A-B
+               x0 = Elecs(ia)%cell(:,1)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+               x0 = Elecs(ia)%cell(:,2)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             case default
+               x0 = Elecs(ia)%cell(:,Elecs(ia)%t_dir)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             end select
+           end do
+         else if ( (shape == 'molecule') .or. (shape == 'chain') ) then
+           ! Only allow dipole correction for chains and molecules
+           ! along the semi-infinite direciton.
+           ! Note this is *only* for 1-electrode setups
+           ! Note that since the above removes the periodic directions
+           ! this should not do anything for 'chain' with the same semi-infinite
+           ! direction
+           if ( Elecs(1)%t_dir > 3 ) then
+             call die('A real-space self-energy requires some &
+     &kind of periodicity')
+           end if
+           x0 = Elecs(1)%cell(:,Elecs(1)%t_dir)
+           const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+           dipol(1:3) = const * x0
+         end if
        end if
           
       endif

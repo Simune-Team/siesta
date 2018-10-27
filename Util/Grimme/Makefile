@@ -75,8 +75,8 @@ atom_options.o: local_sys.o
 atom_options.o: local_sys.o
 chemical.o: local_sys.o parallel.o precision.o
 chemical.o: local_sys.o parallel.o precision.o
-io.o: local_sys.o
-io.o: local_sys.o
+io.o: m_io.o
+io.o: m_io.o
 periodic_table.o: local_sys.o precision.o
 periodic_table.o: local_sys.o precision.o
 grimme.o: chemical.o f2kcli.o periodic_table.o precision.o

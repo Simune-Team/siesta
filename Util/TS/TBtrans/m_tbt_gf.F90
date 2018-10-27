@@ -10,14 +10,16 @@
 ! Nick Papior Andersen, 2014, nickpapior@gmail.com
 module m_tbt_GF
 
-  use m_ts_gf, only : read_Green, check_Green, read_next_GS
   use precision, only : dp
+  use m_ts_gf, only : read_Green, check_Green, read_next_GS
+  use m_ts_gf, only : reread_Gamma_Green
 
   implicit none
 
   public :: do_Green
   public :: read_Green
   public :: check_Green
+  public :: reread_Gamma_Green
   public :: read_next_GS
 
   private
@@ -111,31 +113,31 @@ contains
     ! We return if we should not calculate it
     if ( .not. cReUseGF ) then
 
-       call create_Green(El, &
-            ucell,nkpnt,kpoint,kweight, &
-            NEn,ce)
+      call create_Green(El, &
+          ucell,nkpnt,kpoint,kweight, &
+          NEn,ce)
 
     else
+      
+      ! Check that the Green's functions are correct!
+      ! This is needed as create_Green returns if user requests not to
+      ! overwrite an already existing file.
+      ! This check will read in the number of orbitals and atoms in the
+      ! electrode surface Green's function.
+      ! Check the GF file
+      if ( IONode ) then
+        call io_assign(uGF)
+        open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
 
-       ! Check that the Green's functions are correct!
-       ! This is needed as create_Green returns if user requests not to
-       ! overwrite an already existing file.
-       ! This check will read in the number of orbitals and atoms in the
-       ! electrode surface Green's function.
-       ! Check the GF file
-       if ( IONode ) then
-          call io_assign(uGF)
-          open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
-          
-          call check_Green(uGF,El, &
-               ucell,nkpnt,kpoint,kweight, &
-               NEn, ce, &
-               xa_Eps, errorGF)
-          
-          write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
-          
-          call io_close(uGF)
-       endif
+        call check_Green(uGF,El, &
+            ucell,nkpnt,kpoint,kweight, &
+            NEn, ce, &
+            xa_Eps, errorGF)
+
+        write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
+
+        call io_close(uGF)
+      endif
 
     end if
 

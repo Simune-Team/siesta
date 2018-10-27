@@ -426,7 +426,7 @@
       nprojsldau(:) = 0
 
 !     Read the LDAU.proj block
-      if (.not. fdf_block('LDAU.proj',bfdf)) RETURN
+      if (.not. fdf_block('LDAU.proj', bfdf)) RETURN
 
       ! Add citation
       if ( IONode ) then

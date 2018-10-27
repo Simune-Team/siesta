@@ -72,7 +72,7 @@ module class_zData2D
 #define NEW_TYPE newzData2D
 #define VAR_TYPE complex
 #define PREC dp
-#define VAR_INIT dcmplx(0._dp,0._dp)
+#define VAR_INIT cmplx(0._dp,0._dp,dp)
 #include "class_Data2D.T90"
 !========================
 end module class_zData2D

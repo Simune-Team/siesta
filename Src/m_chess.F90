@@ -1,12 +1,12 @@
 module m_chess
 
-use precision,      only : dp
+  use precision,      only : dp
 #ifdef MPI
-use mpi_siesta,     only : mpi_integer, mpi_double_precision, mpi_status_size
-use parallelsubs,   only : GetNodeOrbs, GlobalToLocalOrb, WhichNodeOrb
-use parallelsubs,   only : set_BlockSizeDefault
+  use mpi_siesta,     only : mpi_integer, mpi_double_precision, mpi_status_size
+  use parallelsubs,   only : GetNodeOrbs, GlobalToLocalOrb, WhichNodeOrb
+  use parallelsubs,   only : set_BlockSizeDefault
 #endif
-use parallel, only: Node, Nodes, BlockSize, IOnode
+  use parallel, only: Node, Nodes, BlockSize, IOnode
 
 #ifdef SIESTA__CHESS
   ! The following modules used to be in sparsematrix_base...
@@ -27,14 +27,14 @@ use parallel, only: Node, Nodes, BlockSize, IOnode
 
   private
 
+#ifdef SIESTA__CHESS
+
   !Public routines
   public :: CheSS_wrapper
   public :: CheSS_init
   public :: CheSS_finalize
   public :: get_CheSS_parameter
   public :: set_CheSS_parameter
-
-#ifdef SIESTA__CHESS
 
   ! Global variables, private to this module
   integer :: nvctr, nvctr_kernel, nvctr_mult

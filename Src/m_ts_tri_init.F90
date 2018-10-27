@@ -315,6 +315,8 @@ contains
     ! Capture the min memory pivoting scheme
     character(len=64) :: min_mem_method
     real(dp) :: min_mem
+
+    call timer('TS-analyze', 1)
     
     no_u_TS = nrows_g(sparse_pattern) - no_Buf
 
@@ -591,6 +593,11 @@ contains
        call tri(r_El)
     end if
 
+#ifndef TS_PVT_NO_GGPS
+    ! Above pre-processor:
+    ! Rather undocumented feature, however the GGPS is ridicously
+    ! slow, so it could be useful to disable it.
+
     fmethod = trim(corb)//'+GGPS'
     if ( IONode ) write(*,fmt) trim(corb),'GGPS'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full)
@@ -630,8 +637,10 @@ contains
        call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
        call tri(r_El)
     end if
+#endif
 
 #ifdef SIESTA__METIS
+#ifdef TS_PVT_METIS
     fmethod = trim(corb)//'+NodeND+priority'
     if ( IONode ) write(*,fmt) trim(corb),'NodeND+priority'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_METIS_NODEND, sub = full, priority = priority%r)
@@ -693,6 +702,7 @@ contains
     end if
 
 #endif
+#endif
     
     end do orb_atom_switch
 
@@ -716,7 +726,9 @@ contains
        write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
        write(*,*) ! new-line
     end if
-    
+
+    call timer('TS-analyze', 2)
+
   contains
 
     ! Print out all relevant information for this
