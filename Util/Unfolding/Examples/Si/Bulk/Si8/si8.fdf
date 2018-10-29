@@ -60,6 +60,8 @@ BandLinesScale  pi/a
    1   3.0  3.0  3.0
  100   0.0  0.0  0.0
  120   6.0  0.0  0.0
+   1   0.0  0.0  0.0
+ 100   4.0  4.0  0.0
 %endblock UnfoldedBandLines
 
 #%block UnfoldedBandLines

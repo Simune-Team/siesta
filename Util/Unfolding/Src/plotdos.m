@@ -2,7 +2,8 @@
 
 clear
 wdir = '../Examples/Si/Bulk/Si8/';
-fname = [wdir,'unfoldedBandLine1.out'];
+syslabel = 'si8';
+fname = [wdir,syslabel,'.unfoldedBands'];
 
 % Read DOS
 file = fopen(fname);
@@ -15,6 +16,7 @@ q = zeros(3,nq);
 dos = zeros(nq,ne);
 for iq = 1:nq
     q(:,iq) = fscanf(file,'%f %f %f',3);
+    iline(iq) = fscanf(file,'%i',1);
     dos(iq,:) = fscanf(file,'%f',ne);
 end
 fclose(file)

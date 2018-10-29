@@ -8,10 +8,10 @@
 
 program unfold
 
-! Reads the .fdf, .ion, .psf and .WFSX files of a SIESTA calculation and generates
-! unfolded bands.
-! Ref: "Band unfolding made simple", S.Garcia-Mayo and J.M.Soler, Draft to be published
-! S.Garcia-Mayo and J.M.Soler, Aug.2018
+! Reads the .fdf, .ion, .psf and .HSX files of a SIESTA calculation and generates
+! unfolded and refolded bands. See Util/Unfolding/README for details.
+! Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Nov.2018
+! S.G.Mayo and J.M.Soler, Oct.2018
 
   use alloc,        only: alloc_report, de_alloc, re_alloc
   use atmfuncs,     only: lofio, mofio, nofis, rcut, rphiatm, zetafio
@@ -26,6 +26,7 @@ program unfold
 !  use m_diag,       only: diag_init
   use m_get_kpoints_scale, &
                     only: get_kpoints_scale
+  use m_io,         only: io_assign, io_close
   use m_mpi_utils,  only: broadcast
 #ifdef MPI
   use m_diag_option,only: ParallelOverK, diag_serial=>Serial
@@ -48,8 +49,7 @@ program unfold
   character(len=*),parameter:: myName = 'unfold '
   integer, parameter :: nr = 4096       ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
-  integer, parameter :: maxlines = 100  ! max number of unfolded band lines
-  integer, parameter :: maxig = 10      ! max index of refolding G vectors
+  integer, parameter :: maxpaths = 100  ! max number of unfolded band paths
   real(dp),parameter :: g2c = 300_dp    ! default mesh cutoff (ry)
   real(dp),parameter :: qc = 50_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
   logical, parameter :: writeOrbitals = .false.  ! write atomic orbital files?
@@ -58,12 +58,12 @@ program unfold
 
   ! Internal variables
   integer          :: i, i1, i2, i3, ia, iao, ib, ie, ierr, ig, ij, &
-                      iline, io, ios, iostat, iou, iq, iq1, iq2, iqNode, iqx(3), &
+                      io, ios, iostat, iou, ipath, iq, iq1, iq2, iqNode, iqx(3), &
                       ir, irq, iscf, isp, ispin, iu, j, je, jk, jlm, jo, jos, jou, &
-                      kdsc(3,3), kscell(3,3), l, lastq(0:maxlines), level, ll, lmax, &
-                      m, maxorb, myNode, na, nbands, ne, ng, nh, nlines, nlm, nNodes, &
-                      nos, nou, nq, nqline, nrq, nspin, ntmp, nw, t, z
-  real(dp)         :: alat, c0, cellRatio(3,3), ddos, de, dek, dq, dqline(3), &
+                      kdsc(3,3), kscell(3,3), l, lastq(0:maxpaths), level, ll, lmax, &
+                      m, maxig(3), maxorb, myNode, na, nbands, ne, ng, nh, nlm, &
+                      nNodes, nos, nou, npaths, nq, nqline, nrq, nspin, ntmp, nw, t, z
+  real(dp)         :: alat, c0, cellRatio(3,3), ddos, de, dek, dq, dqpath(3), &
                       dqx(3), dr, drq, dscell(3,3), emax, emin, &
                       gcut, gnew(3), gnorm, gq(3), grad, gylm(3,maxl*maxl), &
                       kq(3), kxij, pi, &
@@ -71,7 +71,7 @@ program unfold
                       r, rc, rcell(3,3), refoldCell(3,3), refoldBcell(3,3), rmax, rq, &
                       scell(3,3), threshold, vol, we, wq, xmax, ylm(maxl*maxl)
   complex(dp)      :: ck, ii, phase, phi, psik, ukg
-  logical          :: found, gamma, notSuperCell
+  logical          :: found, gamma, notSuperCell, refolding
   character(len=50):: eunit, fname, formatstr,  iostr, isstr, numstr, slabel
   character(len=20):: labelfis, symfio
   character(len=200):: line
@@ -82,8 +82,10 @@ program unfold
   real(dp):: dg, drmin, dx, g0(3), gmod, gvec(3), normphiq, normphir, x(3), wr, xmod
 
   ! Allocatable arrays and pointers
-  real(dp),         pointer:: dos(:,:,:)=>null(), dossum(:,:)=>null(), eb(:,:)=>null(), &
+  integer,          pointer:: iline(:)=>null()
+  real(dp),         pointer:: eb(:,:)=>null(), &
                               phir(:,:,:)=>null(), phiq(:,:,:)=>null(), &
+                              rdos(:,:,:)=>null(), udos(:,:,:)=>null(), &
                               tmp1(:)=>null(), tmp2(:)=>null()
   real(dp),         pointer:: g(:,:)=>null(), q(:,:)=>null()
   complex(dp),      pointer:: h(:,:)=>null(), psi(:,:,:)=>null(), s(:,:)=>null()
@@ -191,12 +193,14 @@ program unfold
         write(isstr,*) isp
         write(iostr,*) io
         fname = 'species'//trim(adjustl(isstr))//'orbital'//trim(adjustl(iostr))//'.r'
-        open(21,file=fname,status='unknown',form='formatted',action='write')
-        write(21,'(2f12.6)') (ir*dr,phir(ir,isp,io),ir=0,nr)
-        close(21)
+        call io_assign(iu)
+        open(iu,file=fname,status='unknown',form='formatted',action='write')
+        write(iu,'(2f12.6)') (ir*dr,phir(ir,isp,io),ir=0,nr)
+        call io_close(iu)
         fname = 'species'//trim(adjustl(isstr))//'orbital'//trim(adjustl(iostr))//'.q'
-        open(21,file=fname,status='unknown',form='formatted',action='write')
-        close(21)
+        open(iu,file=fname,status='unknown',form='formatted',action='write')
+        write(iu,'(2f12.6)') (iq*dq,phiq(iq,isp,io),iq=0,nq)
+        call io_close(iu)
       enddo
     enddo
   endif
@@ -327,45 +331,50 @@ program unfold
     call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
   ne    = fdf_bintegers(pline,1)
   eunit = fdf_bnames(pline,1)          ! energy unit
-  emin  = fdf_bvalues(pline,1,after=1)*fdf_convfac(eunit,'eV')
-  emax  = fdf_bvalues(pline,2,after=1)*fdf_convfac(eunit,'eV')
-  nlines = 0
+  emin  = fdf_bvalues(pline,1,after=1)
+  emax  = fdf_bvalues(pline,2,after=1)
+  npaths = 0
   nq = 0
   lastq(0) = 0
-  do while( fdf_bline(bfdf,pline) )
+  do while( fdf_bline(bfdf,pline) ) ! bline and pline refer to text lines, not q lines
     if (fdf_bmatch(pline,'ivvv').or.fdf_bmatch(pline,'ivvvs')) then
-      nqline = fdf_bintegers(pline,1)
+      nqline = fdf_bintegers(pline,1)  ! number of q points in line
 !      if (myNode==0) print*,'unfold: nqline=',nqline
       qline = qcell(:,1)*fdf_bvalues(pline,1,after=1) &
             + qcell(:,2)*fdf_bvalues(pline,2,after=1) &
             + qcell(:,3)*fdf_bvalues(pline,3,after=1)
       if (nqline==1) then
-        nlines = nlines+1
-        if (nlines>maxlines) &
-          call die('unfold ERROR: parameter maxlines too small')
+        npaths = npaths+1
+        if (npaths>maxpaths) &
+          call die('unfold ERROR: parameter maxpaths too small')
         nq = nq+1
         call re_alloc( q, 1,3, 1,nq, myName//'q' )
+        call re_alloc( iline,  1,nq, myName//'iline' )
         q(:,nq) = qline
+        iline(nq) = 1
       else
         call re_alloc( q, 1,3, 1,nq+nqline, myName//'q' )
+        call re_alloc( iline,  1,nq+nqline, myName//'iline' )
         do iq = 1,nqline
           q(:,nq+iq) = q(:,nq) + (qline-q(:,nq))*iq/nqline
+          iline(nq+iq) = iline(nq)
         enddo
         nq = nq+nqline
       endif 
-      lastq(nlines) = nq
+      lastq(npaths) = nq
     else
       call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
     endif
   enddo
 
-!  print'(a,/,(i6,3f12.6))','unfold: iq,q=',(iq,q(:,iq),iq=1,nq)
-!  print*,'unfold: nlines,lastq=',nlines,lastq(0:nlines)
+!  if (myNode==0) print'(a,/,(i6,3f12.6))','unfold: iq,q=',(iq,q(:,iq),iq=1,nq)
+!  if (myNode==0) print*,'unfold: npaths,lastq=',npaths,lastq(0:npaths)
 
   ! Read fdf block RefoldingLatticeVectors
   if (myNode==0) print*,'unfold: reading RefoldingLatticeVectors block'
   gcut = 0.5*sqrt( fdf_get('MeshCutoff',g2c,'ry') )
-  if (fdf_block('RefoldingLatticeVectors',bfdf)) then
+  refolding = fdf_block('RefoldingLatticeVectors',bfdf)
+  if (refolding) then
     if (myNode==0) print*,'unfold: block RefoldingLatticeVectors found'
     do j = 1,3
       if (.not.(fdf_bline(bfdf,pline).and.fdf_bmatch(pline,'vvv'))) &
@@ -375,10 +384,11 @@ program unfold
       enddo
     enddo
     call reclat(refoldCell,refoldBcell,1)
+    maxig = ceiling(gcut*sqrt(sum(refoldCell**2,dim=1))/(2*pi))
     ng = 0
-    do i3 = -maxig,maxig
-    do i2 = -maxig,maxig
-    do i1 = -maxig,maxig
+    do i3 = -maxig(3),maxig(3)
+    do i2 = -maxig(2),maxig(2)
+    do i1 = -maxig(1),maxig(1)
       gnew = refoldBcell(:,1)*i1 + refoldBcell(:,2)*i2 + refoldBcell(:,3)*i3
       gnorm = sqrt(sum(gnew**2))
       if (gnorm<gcut) then
@@ -399,7 +409,7 @@ program unfold
   if (myNode==0) print'(a,/,(3f12.6))','unfold: refoldCell=',refoldCell
   if (myNode==0) print*,'unfold: alat,gcut,ng=',alat,gcut,ng
 
-  ! Find if simulation cell is a supercell of refoldCell
+  ! Find if simulation cell is a supercell of refold cell
   cellRatio = matmul(refoldBcell,ucell)/(2*pi)
   notSuperCell = .not.all(abs(cellRatio-nint(cellRatio))<tolSuperCell)
   if (myNode==0) print'(a,l,a,/,(3f12.6))', &
@@ -419,21 +429,25 @@ program unfold
   call re_alloc( psi, 1,nou, 1,nou, 1,nspin, myName//'psi' ) 
   call re_alloc( eb,  1,nou,        1,nspin, myName//'eb'  )
 
-  ! Main loops on unfolded band lines and q vectors along them
+  ! Main loops on unfolded band paths and q vectors along them
   call timer_stop(myName//'init')
   call timer_start(myName//'main loop')
   if (myNode==0) print*,'unfold: main loop'
-  do iline = 1,nlines
-    iq1 = lastq(iline-1)+1
-    iq2 = lastq(iline)
-    call re_alloc( dos, iq1,iq2, 0,ne, 1,nspin, myName//'dos', &
+  do ipath = 1,npaths
+    iq1 = lastq(ipath-1)+1
+    iq2 = lastq(ipath)
+    call re_alloc( udos, iq1,iq2, 0,ne, 1,nspin, myName//'dos', &
                    copy=.false., shrink=.true. )
-    dos = 0
+    if (refolding) &
+      call re_alloc( rdos, iq1,iq2, 0,ne, 1,nspin, myName//'dos', &
+                     copy=.false., shrink=.true. )
+    udos = 0
     do iq = iq1,iq2
       iqNode = mod((iq-1),nNodes)
       if (myNode==iqNode) then
 !        print*,'unfold: q=',q(:,iq)
         do ig = 1,ng
+          gnorm = sqrt(sum(g(:,ig)**2))
           qg = q(:,iq)+g(:,ig) ! note: this is a refolding g, not a superlattice G
           if (ig==1 .or. notSuperCell) then
             qx = matmul(qg,ucell)/(2*pi)   ! qg in mesh coords: qg=matmul(rcell,qx)
@@ -460,7 +474,7 @@ program unfold
               call cdiag(h,s,nou,nou,nou,eb(:,ispin),psi(:,:,ispin), &
                          nbands,iscf,ierr,-1)
               if (ierr/=0) print*,'unfold: ERROR in cdiag'
-              eb(:,ispin) = eb(:,ispin)*fdf_convfac('ry','ev') ! from Ry to eV
+              eb(:,ispin) = eb(:,ispin)*fdf_convfac('ry',eunit) ! from Ry to eunit
               call timer_stop(myName//'diag')
             endif
 
@@ -488,8 +502,14 @@ program unfold
                 ukg = ukg + psik
               enddo ! io
               ddos = vol*abs(ukg)**2
-              if (je>=0) dos(iq,je,ispin) = dos(iq,je,ispin) + ddos*we
-              if (je<ne) dos(iq,je+1,ispin) = dos(iq,je+1,ispin) + ddos*(1-we)
+              if (gnorm<1.e-12_dp) then
+                if (je>=0) udos(iq,je,ispin) = udos(iq,je,ispin) + ddos*we
+                if (je<ne) udos(iq,je+1,ispin) = udos(iq,je+1,ispin) + ddos*(1-we)
+              endif
+              if (refolding) then
+                if (je>=0) rdos(iq,je,ispin) = rdos(iq,je,ispin) + ddos*we
+                if (je<ne) rdos(iq,je+1,ispin) = rdos(iq,je+1,ispin) + ddos*(1-we)
+              endif
             enddo ! ib
             call timer_stop(myName//'g sum')
           enddo ! ispin
@@ -500,38 +520,68 @@ program unfold
     ntmp = (iq2-iq1+1)*(ne+1)*nspin
     call re_alloc( tmp1, 1,ntmp, myName//'tmp1', copy=.false., shrink=.true. )
     call re_alloc( tmp2, 1,ntmp, myName//'tmp2', copy=.false., shrink=.true. )
-    tmp1 = reshape(dos,(/ntmp/))
+    tmp1 = reshape(udos,(/ntmp/))
     tmp2 = 0
     call MPI_reduce(tmp1,tmp2,ntmp,MPI_double_precision,MPI_sum,0, &
                     MPI_COMM_WORLD,ierr)
-    dos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
+    udos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
+    if (refolding) then
+      tmp1 = reshape(rdos,(/ntmp/))
+      tmp2 = 0
+      call MPI_reduce(tmp1,tmp2,ntmp,MPI_double_precision,MPI_sum,0, &
+                      MPI_COMM_WORLD,ierr)
+      rdos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
+    endif
 #endif
 
     if (myNode==0) then
       do ispin = 1,nspin
-        iu = 12
-        write(numstr,*) iline
-        fname = 'unfoldedBandLine'//adjustl(numstr)
+        call io_assign(iu)
+        fname = trim(slabel)//'.unfoldedBands'
         if (nspin==2 .and. ispin==1) then
-          fname = trim(fname)//'spinUp.out'
+          fname = trim(fname)//'.spinUp'
         elseif (nspin==2 .and. ispin==2) then
-          fname = trim(fname)//'spinDown.out'
-        else
-          fname = trim(fname)//'.out'
+          fname = trim(fname)//'.spinDn'
+        endif
+        if (npaths>1) then
+          write(numstr,*) ipath
+          fname = trim(fname)//'.path'//adjustl(numstr)
         endif
         open(iu,file=fname,status='unknown',form='formatted',action='write')
-        write(iu,*) lastq(iline)-lastq(iline-1),ne+1,emin,emax
+        write(iu,*) lastq(ipath)-lastq(ipath-1),ne+1,emin,emax
         do iq = iq1,iq2
-          write(iu,*) q(:,iq)
+          write(iu,*) q(:,iq), iline(iq)
           do j = 0,ne
-            write(iu,'(f12.6)') dos(iq,j,ispin)
-!            write(iu,'(3i4,f12.6)') iq,j,ispin,dos(iq,j,ispin)
+            write(iu,'(f12.6)') udos(iq,j,ispin)
+!            write(iu,'(3i4,f12.6)') iq,j,ispin,udos(iq,j,ispin)
           enddo
         enddo ! iq
-        close(iu)
-      enddo
+        call io_close(iu)
+        if (refolding) then
+          fname = trim(slabel)//'.refoldedBands'
+          if (nspin==2 .and. ispin==1) then
+            fname = trim(fname)//'.spinUp'
+          elseif (nspin==2 .and. ispin==2) then
+            fname = trim(fname)//'.spinDn'
+          endif
+          if (npaths>1) then
+            write(numstr,*) ipath
+            fname = trim(fname)//'.path'//adjustl(numstr)
+          endif
+          open(iu,file=fname,status='unknown',form='formatted',action='write')
+          write(iu,*) lastq(ipath)-lastq(ipath-1),ne+1,emin,emax
+          do iq = iq1,iq2
+            write(iu,*) q(:,iq), iline(iq)
+            do j = 0,ne
+              write(iu,'(f12.6)') rdos(iq,j,ispin)
+!              write(iu,'(3i4,f12.6)') iq,j,ispin,rdos(iq,j,ispin)
+            enddo
+          enddo ! iq
+          call io_close(iu)
+        endif ! (refolding)
+      enddo ! ispin
     endif ! (myNode==0)
-  enddo ! iline
+  enddo ! ipath
   call timer_stop(myName//'main loop')
 
   ! Write allocation report
