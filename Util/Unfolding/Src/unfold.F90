@@ -357,7 +357,7 @@ program unfold
         call re_alloc( iline,  1,nq+nqline, myName//'iline' )
         do iq = 1,nqline
           q(:,nq+iq) = q(:,nq) + (qline-q(:,nq))*iq/nqline
-          iline(nq+iq) = iline(nq)
+          iline(nq+iq) = iline(nq)+1
         enddo
         nq = nq+nqline
       endif 

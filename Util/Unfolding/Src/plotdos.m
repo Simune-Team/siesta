@@ -1,4 +1,6 @@
 % plotdos.m
+% Plot qDOS writen by unfold
+% SGM & JMS, Oct.2018
 
 clear
 wdir = '../Examples/Si/Bulk/Si8/';
@@ -19,13 +21,9 @@ for iq = 1:nq
     iline(iq) = fscanf(file,'%i',1);
     dos(iq,:) = fscanf(file,'%f',ne);
 end
-fclose(file)
+fclose(file);
 
-% dos=load([wdir,'unfoldedBandLine1.out']);
-% q = dos(:,1:3)';
-% dos = dos(:,4:end);
-% [nq,ne] = size(dos);
-
+% Plot qDOS
 if nq==1
     qpath = 0;
 else
@@ -45,13 +43,30 @@ if nq==1
     ylabel('dos')
     grid on
 else
-%    surf(qpath',e',dos')
-%    surf(qpath',e',cumsum(dos,2)')
-    surf(qpath',e',max(log10(dos),-2)')
+%    s = surf(qpath',e',dos')
+%    s = surf(qpath',e',cumsum(dos,2)')
+    s = surf(qpath',e',max(log10(dos),-2)');
+    s.EdgeColor = 'none';
     xlabel('qpath')
     ylabel('energy')
     zlabel('dos')
 %    axis([0,qpath(end),emin,emax,0,1/de])
-    axis([0,qpath(end),emin,emax,-2,0.5])
+%    axis([0,qpath(end),emin,emax,-2,0.5])
 end
+
+% Set viewpoint and colormap
+view(2);
+colormap default
+% cmap = colormap(bone);    % white on black
+% cmap = cmap(end:-1:1,:);  % black on white
+% colormap(cmap);
 colorbar
+
+% Plot line edges
+lineEnd = find(iline(1:nq-1)<iline(2:nq));
+hold on
+for jl = 1:numel(lineEnd)
+    il = lineEnd(jl);
+    plot(qpath(il)*[1,1],[emin,emax])
+end
+hold off
