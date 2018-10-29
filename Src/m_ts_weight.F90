@@ -589,7 +589,7 @@ contains
             end do
 
             ! Calculate error from estimated density
-            e_f  = e_f  - DM(ind,1)
+            e_f = e_f - DM(ind,1)
             Ee_f = Ee_f - EDM(ind,1)
             do mu_i = 2 , N_mu
               tmp = DM(ind,mu_i) - DM(ind,1)
@@ -636,7 +636,7 @@ contains
             end do
 
             ! Calculate error from estimated density
-            e_f  = e_f  - DM(ind,1)
+            e_f = e_f - DM(ind,1)
             do mu_i = 2 , N_mu
               tmp = DM(ind,mu_i) - DM(ind,1)
               if ( abs(tmp) > abs(e_f) ) e_f = tmp

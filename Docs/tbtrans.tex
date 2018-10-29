@@ -13,8 +13,19 @@
 % Include settings appropriate for tbtrans
 \input{tex/init.tex}
 
+% Title
+\title{TBtrans manual 4.1-b4}
+
 % Set the date
 \date{October 16, 2018}
+
+% Specify Authors
+\author{%
+    Nick R. Papior%
+}
+
+% Ensure the information is written in the PDF (see tex/setup.tex)
+\setpdfmetadata
 
 \begin{document}
 
@@ -62,7 +73,16 @@ original \tbtrans\ code was implemented by Mads Brandbyge, Jose
 L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
 \tbtrans\ is implemented by the following contributors:
 
-Nick R. Papior.
+\vspace{0.5cm}
+
+\hbox{ \hskip 0.1cm
+\begin{tabular}{ll}
+
+  Nick R\"ubner Papior &
+  \textit{Technical University of Denmark} \\ \\
+
+\end{tabular}
+}
 
 
 \tableofcontents
@@ -857,9 +877,6 @@ Population may also be calculated. These are only available if
   The COOP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
@@ -923,13 +940,20 @@ Population may also be calculated. These are only available if
   calculated. 
 
   This generates \sysfile{TEIG\_<1>\_<2>} and
-  \sysfile{AVTEIG\_<1>\_<2>}, however, only for the non-equivalent
-  electrode combinations (\tbtrans\ intrinsically assumes
-  time-reversal symmetry).
-
+  \sysfile{AVTEIG\_<1>\_<2>}, possibly \sysfile{CEIG\_<1>} and
+  \sysfile{AVCEIG\_<1>}. The former is for two different electrodes
+  $i\neq j$, while the latter is for electrode $i=j$.
+  
   \note if you specify a number of eigenvalues above the available
   number of eigenvalues, \tbtrans\ will automatically truncate it to a
   reasonable number.
+
+  \note The transmission eigenvalues for $N>2$ systems is not fully
+  understood and the transmission eigenvalues calculated in \tbtrans\ is
+  done by diagonalizing this sub-matrix:
+  \begin{equation}
+    \mathbf G \boldsymbol \Gamma_i \mathbf G^\dagger \boldsymbol \Gamma_j.
+  \end{equation}
 
 \end{fdfentry}
 
@@ -998,8 +1022,8 @@ Population may also be calculated. These are only available if
   \end{equation}
   where we have left out the pre-factor ($e/\hbar$)
   intentionally. \sisl\ may be used to analyze the orbital currents
-  and enables easy transformation of orbital currents to
-  bond currents and activity currents.
+  and enables easy transformation of orbital currents to bond currents
+  and activity currents\cite{Papior2017}.
 
   \note this requires \tbtrans\ to be compiled with NetCDF-4 support,
   see Sec.~\ref{sec:arch-make}.
@@ -1270,7 +1294,7 @@ Brillouin zone.
 
     \end{fdfoptions}
 
-    \option[\fdfvalue{siesta-method}]%
+    \option[\fdfvalue*{siesta-method}]%
 
     One may also use the typical \fdf*{kgrid\_Monkhorst\_Pack} method
     of input as done in \siesta. This is a $3\times3$ block such as:
@@ -1835,6 +1859,53 @@ algorithms to determine an optimal partitioning scheme. The following
 flag controls the partitioning for the device region.
 
 
+\begin{fdflogicalF}{TBT!Analyze}
+
+  As the pivoting algorithm \emph{highly} influences the performance
+  and throughput of the transport calculation it is crucial to select
+  the best performing algorithm available. This option tells \tbtrans\
+  to analyze the pivoting table for nearly all the implemented
+  algorithms and print-out information about them.
+
+  \note we advice users to \emph{always} run an analyzation step prior
+  to actual calculation and select the \emph{best} BTD format. This
+  analyzing step is very fast and can be performed on small
+  work-station computers, even on systems of $\gg10,000$ orbitals.
+
+  To run the analyzing step you may do:
+  \begin{shellexample}
+    tbtrans -fdf TBT.Analyze RUN.fdf > analyze.out
+  \end{shellexample}
+  note that there is little gain on using MPI and it should complete
+  within a few minutes, no matter the number of orbitals.
+
+  Choosing the best one may be difficult. Generally one should choose
+  the pivoting scheme that uses the least amount of memory. However,
+  one should also choose the method with the largest block-size being
+  as small as possible. As an example:
+  \begin{shellexample}
+TBT.BTD.Pivot.Device atom+GPS
+...
+    BTD partitions (7): 
+     [ 2984, 2776, 192, 192, 1639, 4050, 105 ]
+    BTD matrix block size [max] / [average]: 4050 /   1705.429
+    BTD matrix elements in % of full matrix:   47.88707 %
+
+TBT.BTD.Pivot.Device atom+GGPS
+...
+    BTD partitions (6): 
+     [ 2880, 2916, 174, 174, 2884, 2910 ]
+    BTD matrix block size [max] / [average]: 2916 /   1989.667
+    BTD matrix elements in % of full matrix:   48.62867 %
+
+  \end{shellexample}
+  Although the GPS method uses the least amount of memory, the GGPS
+  will likely perform better as the largest block in GPS is $4050$
+  vs. $2916$ for the GGPS method. 
+
+\end{fdflogicalF}
+
+
 \begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{largest
       overlapping electrode}>
 
@@ -1931,53 +2002,6 @@ flag controls the partitioning for the device region.
   implications of using one over the other.
   
 \end{fdfentry}
-
-\begin{fdflogicalF}{TBT!Analyze}
-
-  As the pivoting algorithm \emph{highly} influences the performance
-  and throughput of the transport calculation it is crucial to select
-  the best performing algorithm available. This option tells \tbtrans\
-  to analyze the pivoting table for nearly all the implemented
-  algorithms and print-out information about them.
-
-  \note we advice users to \emph{always} run an analyzation step prior
-  to actual calculation and select the \emph{best} BTD format. This
-  analyzing step is very fast and may be performed on small
-  work-station computers, even on systems of $\gg10,000$ orbitals.
-
-  To run the analyzing step you may do:
-  \begin{shellexample}
-    tbtrans -fdf TBT.Analyze RUN.fdf > analyze.out
-  \end{shellexample}
-  note that there is little gain on using MPI and it should complete
-  within a few minutes, no matter the number of orbitals.
-
-  Choosing the best one may be difficult. Generally one should choose
-  the pivoting scheme that uses the least amount of memory. However,
-  one should also choose the method with the largest block-size being
-  as small as possible. As an example:
-  \begin{shellexample}
-TBT.BTD.Pivot.Device atom+GPS
-...
-    BTD partitions (7): 
-     [ 2984, 2776, 192, 192, 1639, 4050, 105 ]
-    BTD matrix block size [max] / [average]: 4050 /   1705.429
-    BTD matrix elements in % of full matrix:   47.88707 %
-
-TBT.BTD.Pivot.Device atom+GGPS
-...
-    BTD partitions (6): 
-     [ 2880, 2916, 174, 174, 2884, 2910 ]
-    BTD matrix block size [max] / [average]: 2916 /   1989.667
-    BTD matrix elements in % of full matrix:   48.62867 %
-
-  \end{shellexample}
-  Although the GPS method uses the least amount of memory, the GGPS
-  will likely perform better as the largest block in GPS is $4050$
-  vs. $2916$ for the GGPS method. 
-
-\end{fdflogicalF}
-
 
 \begin{fdflogicalF}{TBT.BTD!Pivot.Graphviz}
 

@@ -19,6 +19,7 @@ contains
     ! Eventually it can be a cleaner routine
     
     use precision,            only:  dp
+    use class_dSpData2D,      only:  val
     use sparse_matrices,      only:  maxnh
 #ifdef TIMING_IO
     use sparse_matrices,      only:  numh
@@ -32,7 +33,7 @@ contains
     use siesta_geom,          only:  nsc
     use siesta_options,       only:  writedm, writedm_cdf
     use siesta_options,       only:  writedm_cdf_history
-    use siesta_options,       only:  idyn, nmove
+    use siesta_options,       only:  idyn, nmove, fixspin
     use m_steps,              only:  istp
     use sparse_matrices,      only:  Dscf, DM_2D
     use fdf,                  only:  fdf_get
@@ -48,13 +49,15 @@ contains
     use m_ts_iodm,            only:  write_ts_dm
     use m_ts_global_vars,     only:  TSrun
     use m_ts_options,         only:  TS_DE_save
-    use m_energies,           only:  Ef
+    use m_energies,           only:  Ef, Efs
 
     implicit none
     
     logical, intent(in) :: SCFconverged
     logical, intent(in), optional  :: when
     character(len=*), intent(in), optional   :: file
+
+    real(dp), pointer :: EDM(:, :), DM(:,:)
     
     logical :: do_write
     
@@ -147,7 +150,19 @@ contains
     end if
 
     if ( do_write ) then
+      if ( fixspin ) then
+        ! For fixed spin calculations we shift the energy-density according
+        ! to the first spin
+        DM => val(DM_2D)
+        EDM => val(EDM_2D)
+        call daxpy(size(DM,1),Efs(1)-Efs(2),DM(1,2),1,EDM(1,2),1)
+        Ef = Efs(1)
+      end if
       call write_ts_dm(trim(slabel)//'.TSDE', nsc, DM_2D, EDM_2D, Ef)
+      if ( fixspin ) then
+        ! Shift back
+        call daxpy(size(DM,1),Efs(2)-Efs(1),DM(1,2),1,EDM(1,2),1)
+      end if
     end if
     
   end subroutine save_density_matrix
