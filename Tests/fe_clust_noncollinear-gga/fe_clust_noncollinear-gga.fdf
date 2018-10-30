@@ -49,6 +49,7 @@ ElectronicTemperature   0.1 eV
 DM.MixingWeight         0.01
 DM.NumberPulay          4
 MaxSCFiterations      200
+SCF.MustConverge false
 
 MD.TypeOfRun      CG
 MD.NumCGsteps     0
