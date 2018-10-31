@@ -22,12 +22,15 @@ AtomicCoordinatesFormat	ScaledCartesian
     0.125   0.125   0.125   1  Si
 %endblock AtomicCoordinatesAndAtomicSpecies
 
+XC.functional  GGA
+XC.authors     PBE
+
 PAO.BasisSize  DZP
 
 %block kgrid.MonkhorstPack
-  18   0   0   0.5
-   0  18   0   0.5
-   0   0  18   0.5
+   4   0   0   0.5
+   0   4   0   0.5
+   0   0   4   0.5
 %endblock kgrid.MonkhorstPack
 
 TimeReversalSymmetryForKpoints  false
@@ -50,11 +53,19 @@ BandLinesScale  pi/a
 # 100  -20.0 30.0 eV
 #%endblock UnfoldedBandLines
 
+#%block UnfoldedBandLines
+# 320  -20.0 60.0 eV
+#   1   3.0  3.0  3.0
+#  50   0.0  0.0  0.0
+#  75   6.0  0.0  0.0
+#%endblock UnfoldedBandLines
+
 %block UnfoldedBandLines
- 320  -20.0 60.0 eV
-   1   3.0  3.0  3.0
-  50   0.0  0.0  0.0
-  75   6.0  0.0  0.0
+ 250  -20.0 30.0 eV
+   1  -2.0 -2.0 -2.0
+ 175   0.0  0.0  0.0
+ 100   2.0  0.0  0.0
+ 140   2.0  2.0  2.0
 %endblock UnfoldedBandLines
 
 #%block UnfoldedBandLines

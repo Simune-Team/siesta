@@ -1,0 +1,113 @@
+Directory Util/Unfolding contains a band-unfolding utility,
+written by Sara G. Mayo and Jose M. Soler, Oct.2018
+
+Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Nov.2018
+
+Compile with
+$ cd Obj
+$ make                      (see siesta manual for siesta compilation)
+$ cd ../Util/Unfolding/Src
+$ make
+
+Sample serial run (for serial compilation according to Obj/arch.make):
+$ cd ../Examples/Si/Bulk/Si8
+$ ../../../../../../Obj/siesta < si8.fdf > si8.out
+$ ../../../../Src/unfold < si8.fdf > si8.unfold.out
+
+Sample parallel run:
+$ cd ../Examples/Si/Bulk/Si8
+$ mpirun -np 16 ../../../../../../Obj/siesta < si8.fdf > si8.out
+$ mpirun -np 4 ../../../../Src/unfold < si8.fdf > si8.unfold.out
+
+The unfolding/refolding specifications are given by two extra fdf blocks
+in the same datafile used by siesta. For example:
+------------
+LatticeConstant	5.430 Ang  # used also by siesta
+BandLinesScale  pi/a       # used also in BandLines block
+
+%block LatticeVectors      # simulation cell used by siesta
+   1.000  0.000  0.000     # this is an 8-atom Si supercell
+   0.000  1.000  0.000
+   0.000  0.000  1.000
+%endblock LatticeVectors
+
+%block UnfoldedBandLines
+  320  -20.0  60 eV        # numEnergies, Emin, Emax, Eunit
+   1   3.0  3.0  3.0       # mustBeOne, first_qVector (in units of BandLinesScale)
+ 100   0.0  0.0  0.0       # numQ_in_line, endLine_qVector
+ 120   6.0  0.0  0.0       # add as many lines as required
+%endblock UnfoldedBandLines
+
+%block RefoldingLatticeVectors
+  0.000  0.500  0.500      # primitive Si unit cell, in units of LatticeConstant
+  0.500  0.000  0.500
+  0.500  0.500  0.000
+%endblock RefoldingLatticeVectors
+-----------
+
+The UnfoldedBandLines block has the same format as BandLines, except for the first
+line, which specifies the energy mesh for the density of states in q space (qDOS).
+Also, it allows several q paths to be specified consecutively, each beginning with a 
+single point. This allows a q-line not begin at the end of previous one, e.g.
+%block UnfoldedBandLines
+  320  -20.0  60 eV        # numEnergyIntervals, Emin, Emax, Eunit
+   1   3.0  3.0  3.0       # mustBeOne, first_qVector (in units of BandLinesScale)
+ 100   0.0  0.0  0.0       # line_numq, endLine_qVector
+ 120   6.0  0.0  0.0       # add as many path lines as required
+   1   0.0  0.0  0.0       # new path (begins with a single point)
+ 100   4.0  4.0  0.0
+%endblock UnfoldedBandLines
+
+The unfolded and refolded bands calculated by unfold are written in files
+SYSLABEL.unfoldedBands and SYSLABEL.refoldedBands (where SYSLABEL=si8 in 
+previous example). The first one contains the fully-unfolded bands and 
+the second one contains the refolded bands. Both have the same format:
+----------
+nq, ne, Emin, Emax        (in energy units given in UnfoldedBandLines)
+  qVector(ixyz=1:3,iq=1)  (in Bohr^-1)
+qDOS(ie=1,iq=1)
+qDOS(2,1)
+...
+qDOS(ne,1)
+  qVector(1:3,2)
+qDOS(1,2)
+...
+qDOS(ne,2)
+  ...
+  qVector(1:3,nq)
+qDOS(1,2)
+...
+qDOS(ne,nq)
+----------
+where nq=1+100+120=221 is the total number of q vectors in q-path and 
+ne=numEnergyIntervals+1=321 is the number of energies, in previous example.
+
+If several q paths are given in UnfoldedBandLines, the bands of each one
+are written in different output files, with suffixes .path1, .path2, etc.
+Also, for spin polarized systems, the two spin bands are written in two
+separate files with suffixes .spinUp and .spinDn
+
+If RefoldingLatticeVectors is not present in the fdf datafile, only the
+fully-unfolded bands are calculated and written. If UnfoldedBandLines
+is not present, RefoldingLatticeVectors has no effect: nothing is calculated
+nor written by unfold.
+
+The UnfoldedBandLines and RefoldingLatticeVectors blocks are compatible with, and
+independent of, the BandLines block. The latter is read and processed by siesta,
+while the first two are read and processed by unfold.
+
+The simulation cell will usually be a supercell of the unit cell, but this is not
+required by unfold. I.e. bands can be unfolded and then refolded to any Brillouin
+zone, not necessarily commensurate with the simulation cell used by siesta.
+Notice, however, that this requires a new diagonalization for each q+G vector,
+what may be very expensive in terms of CPU time.
+
+The refolded G vectors are those with |G|<0.5*sqrt(MeshCutoff). Therefore,
+MeshCutoff largely determines the accuracy (and CPU time) for refolding.
+
+The CPU time used by unfold is proportional to the number of q vectors, but it
+does not increase with the energy resolution of the qDOS mesh (the size of the
+output files is proportional to the number of energies, though). Since the
+parallelization over q vectors is almost perfect, execution wall-clock time
+is inversely proportional to the number of MPI nodes, provided they are less
+than the number of q points in UnfoldedBandLines.

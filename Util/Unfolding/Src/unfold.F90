@@ -368,7 +368,7 @@ program unfold
   enddo
 
 !  if (myNode==0) print'(a,/,(i6,3f12.6))','unfold: iq,q=',(iq,q(:,iq),iq=1,nq)
-!  if (myNode==0) print*,'unfold: npaths,lastq=',npaths,lastq(0:npaths)
+!  if (myNode==0) print*,'unfold: npaths,lastq,nq=',npaths,lastq(0:npaths),nq
 
   ! Read fdf block RefoldingLatticeVectors
   if (myNode==0) print*,'unfold: reading RefoldingLatticeVectors block'
@@ -436,10 +436,10 @@ program unfold
   do ipath = 1,npaths
     iq1 = lastq(ipath-1)+1
     iq2 = lastq(ipath)
-    call re_alloc( udos, iq1,iq2, 0,ne, 1,nspin, myName//'dos', &
+    call re_alloc( udos, iq1,iq2, 0,ne, 1,nspin, myName//'udos', &
                    copy=.false., shrink=.true. )
     if (refolding) &
-      call re_alloc( rdos, iq1,iq2, 0,ne, 1,nspin, myName//'dos', &
+      call re_alloc( rdos, iq1,iq2, 0,ne, 1,nspin, myName//'rdos', &
                      copy=.false., shrink=.true. )
     udos = 0
     do iq = iq1,iq2
@@ -503,12 +503,16 @@ program unfold
               enddo ! io
               ddos = vol*abs(ukg)**2
               if (gnorm<1.e-12_dp) then
-                if (je>=0) udos(iq,je,ispin) = udos(iq,je,ispin) + ddos*we
-                if (je<ne) udos(iq,je+1,ispin) = udos(iq,je+1,ispin) + ddos*(1-we)
+                if (je>=0 .and. je<=ne) &
+                  udos(iq,je,ispin) = udos(iq,je,ispin) + ddos*we
+                if (je>=-1 .and. je<ne) &
+                  udos(iq,je+1,ispin) = udos(iq,je+1,ispin) + ddos*(1-we)
               endif
               if (refolding) then
-                if (je>=0) rdos(iq,je,ispin) = rdos(iq,je,ispin) + ddos*we
-                if (je<ne) rdos(iq,je+1,ispin) = rdos(iq,je+1,ispin) + ddos*(1-we)
+                if (je>=0 .and. je<=ne) &
+                  rdos(iq,je,ispin) = rdos(iq,je,ispin) + ddos*we
+                if (je>=-1 .and. je<ne) &
+                  rdos(iq,je+1,ispin) = rdos(iq,je+1,ispin) + ddos*(1-we)
               endif
             enddo ! ib
             call timer_stop(myName//'g sum')
