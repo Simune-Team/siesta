@@ -48,8 +48,6 @@ MeshCutoff        150. Ry
 
 ElectronicTemperature   0.1 eV
 
-MaxSCFiterations      200
-
 MD.TypeOfRun      CG
 MD.NumCGsteps     0
 

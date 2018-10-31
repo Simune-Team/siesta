@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Run TS tests
-MPI=${MPI:-mpirun -np 4}
+MPI=${MPI:-mpirun -np 2}
 
 # To run in serial mode, replace the 'mpirun' line
 # by the appropriate incantation.

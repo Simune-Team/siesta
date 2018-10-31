@@ -71,7 +71,6 @@ tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
 #  si64-pexsi
 #  sih-pexsi
 #  sih-pexsi-spin
-#  TranSiesta-TBTrans
 
 
 # These tests are extremely time consuming and
@@ -97,6 +96,11 @@ tests: $(tests)
 tests-soc: $(tests_soc)
 tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
+
+.NOTPARALLEL: tests-ts
+.PHONY: tests-ts
+tests-ts:
+	(cd TranSiesta-TBTrans ; MPI="$(MPI)" bash ./run_tests.sh)
 
 # Ensure that tests may be called individually
 # (and that they are run, PHONY is required)

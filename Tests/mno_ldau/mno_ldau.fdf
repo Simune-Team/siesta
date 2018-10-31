@@ -51,7 +51,6 @@ XC.functional           GGA         # Exchange-correlation functional type
 XC.authors              PBE         # Particular parametrization of xc func
 SpinPolarized           .true.      # Spin unpolarized calculation
 MeshCutoff              150 Ry      # Equivalent planewave cutoff for the grid
-MaxSCFIterations        100         # Maximum number of SCF iterations per step
 DM.MixingWeight         0.200       # New DM amount for next SCF cycle
 DM.Tolerance            1.d-4       # Tolerance in maximum difference
                                     # between input and output DM
