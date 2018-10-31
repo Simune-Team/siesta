@@ -64,6 +64,9 @@ tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
 	sinw sinw_2 si-optical si_pdos_gamma si_pdos_kgrid \
 	var_cell wannier zmatrix
 
+# Tests that won't work with more than a few processors
+tests_mpi_max2 = h2_bessel h_chain h_chain2
+
 
 # Tests that have been disabled, currently
 #  h2o_4 (ON, does not work in parallel)
@@ -96,6 +99,7 @@ tests: $(tests)
 tests-soc: $(tests_soc)
 tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
+tests-proc-limit: $(tests_mpi_max2)
 
 .NOTPARALLEL: tests-ts
 .PHONY: tests-ts
