@@ -65,8 +65,9 @@ tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
 	var_cell wannier zmatrix
 
 # Tests that won't work with more than a few processors
-tests_mpi_max2 = h2_bessel h_chain h_chain2
-
+tests_mpi_max2 = h2_bessel h_chain h_chain2 \
+	born born_spin \
+	force_2 md_anneal n_chain
 
 # Tests that have been disabled, currently
 #  h2o_4 (ON, does not work in parallel)

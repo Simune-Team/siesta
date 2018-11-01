@@ -29,9 +29,12 @@ contains
     use alloc, only : re_alloc
     integer, intent(in) :: nHaux, nSaux, npsi
 
-    call re_alloc(Haux, 1, nHaux, 'Haux', 'densematrix')
-    call re_alloc(Saux, 1, nSaux, 'Saux', 'densematrix')
-    call re_alloc(psi, 1, npsi, 'psi', 'densematrix')
+    call re_alloc(Haux, 1, nHaux, 'Haux', 'densematrix', &
+        copy=.false., shrink=.false.)
+    call re_alloc(Saux, 1, nSaux, 'Saux', 'densematrix', &
+        copy=.false., shrink=.false.)
+    call re_alloc(psi, 1, npsi, 'psi', 'densematrix', &
+        copy=.false., shrink=.false.)
 
   end subroutine allocDenseMatrix
 

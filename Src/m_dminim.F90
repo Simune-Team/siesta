@@ -7,7 +7,6 @@
 ! ---
 module m_dminim
 
-use densematrix,    only : psi
 use fdf,            only : fdf_boolean, fdf_integer, fdf_get, fdf_physical
 use files,          only : slabel
 use parallel,       only : ProcessorY, BlockSize, Node, Nodes
@@ -82,7 +81,9 @@ contains
 ! routine, for Gamma point-only calculations)    !
 !================================================!
 subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,numh,listhptr,listh,d_sparse,eta,qs,h_sparse,&
-                  s_sparse,t_sparse)
+    s_sparse,t_sparse)
+  
+  use densematrix, only : psi, allocDenseMatrix, resetDenseMatrix
   implicit none
 
   !**** INPUT ***********************************!
@@ -282,6 +283,11 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   end if
 
+  ! Ensure we have the correct allocated dense matrices
+  ! TODO use Haux and Saux as the work-arrays, instead of *_dense1D arrays
+  j = h_dim * h_dim_loc_1D * nspin
+  call allocDenseMatrix(1, 1, j)
+
   do ispin=1,nspin
 
     if (.not. calcE) then
@@ -372,6 +378,9 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
   if (.not. UseSparse) deallocate(d_dense1D)
 
   last_call(1:2)=(/iscf,istp/)
+
+  ! Clean-up dense matrices
+  call resetDenseMatrix()
 
   call timer('dmin',2)
 
