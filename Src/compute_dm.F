@@ -176,7 +176,8 @@ c$$$     &           S, 'S.matrix')
      &              H, S, qtot, fixspin, qtots, temp, e1, e2,
      $              xijo, indxuo, gamma_SCF, nkpnt, kpoint, kweight,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
-     &              occtol, iscf, neigwanted)
+     &              occtol, iscf, neigwanted,
+     &              keep_eigenvectors=CallDiagon)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then

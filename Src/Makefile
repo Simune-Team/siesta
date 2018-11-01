@@ -724,13 +724,13 @@ fermid.o: errorf.o parallel.o precision.o sys.o
 fft.o: alloc.o fft1d.o m_timer.o mesh.o parallel.o parallelsubs.o precision.o
 fft.o: sys.o
 fft1d.o: parallel.o precision.o sys.o
-final_H_f_stress.o: alloc.o atomlist.o class_SpData2D.o compute_max_diff.o
-final_H_f_stress.o: dnaefs.o files.o grdsam.o kinefsm.o ldau.o ldau_specs.o
-final_H_f_stress.o: m_dipol.o m_energies.o m_forces.o m_hsx.o m_mpi_utils.o
-final_H_f_stress.o: m_ncdf_siesta.o m_ntm.o m_spin.o m_stress.o m_ts_io.o
-final_H_f_stress.o: m_ts_kpoints.o m_ts_options.o metaforce.o
-final_H_f_stress.o: molecularmechanics.o naefs.o nlefsm.o overfsm.o parallel.o
-final_H_f_stress.o: siesta_geom.o siesta_options.o sparse_matrices.o
+final_H_f_stress.o: alloc.o atomlist.o class_SpData1D.o class_SpData2D.o
+final_H_f_stress.o: compute_max_diff.o dnaefs.o files.o grdsam.o kinefsm.o
+final_H_f_stress.o: ldau.o ldau_specs.o m_dipol.o m_energies.o m_forces.o
+final_H_f_stress.o: m_hsx.o m_mpi_utils.o m_ncdf_siesta.o m_ntm.o m_spin.o
+final_H_f_stress.o: m_stress.o m_ts_io.o m_ts_kpoints.o m_ts_options.o
+final_H_f_stress.o: metaforce.o molecularmechanics.o naefs.o nlefsm.o overfsm.o
+final_H_f_stress.o: parallel.o siesta_geom.o siesta_options.o sparse_matrices.o
 final_H_f_stress.o: spinorbit.o sys.o units.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fire_optim.o: alloc.o m_fire.o m_mpi_utils.o parallel.o precision.o
@@ -1197,9 +1197,9 @@ rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 rhoofd.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
 rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
-save_density_matrix.o: atomlist.o files.o iodm_netcdf.o m_energies.o m_iodm.o
-save_density_matrix.o: m_matio.o m_ncdf_siesta.o m_spin.o m_steps.o
-save_density_matrix.o: m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
+save_density_matrix.o: atomlist.o class_SpData2D.o files.o iodm_netcdf.o
+save_density_matrix.o: m_energies.o m_iodm.o m_matio.o m_ncdf_siesta.o m_spin.o
+save_density_matrix.o: m_steps.o m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
 save_density_matrix.o: precision.o siesta_geom.o siesta_options.o
 save_density_matrix.o: sparse_matrices.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o

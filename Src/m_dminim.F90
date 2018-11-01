@@ -83,7 +83,7 @@ contains
 subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,numh,listhptr,listh,d_sparse,eta,qs,h_sparse,&
     s_sparse,t_sparse)
   
-  use densematrix, only : psi, allocDenseMatrix, resetDenseMatrix
+  use densematrix, only : psi, resetDenseMatrix_psi
   implicit none
 
   !**** INPUT ***********************************!
@@ -283,11 +283,6 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   end if
 
-  ! Ensure we have the correct allocated dense matrices
-  ! TODO use Haux and Saux as the work-arrays, instead of *_dense1D arrays
-  j = h_dim * h_dim_loc_1D * nspin
-  call allocDenseMatrix(1, 1, j)
-
   do ispin=1,nspin
 
     if (.not. calcE) then
@@ -379,8 +374,8 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
 
   last_call(1:2)=(/iscf,istp/)
 
-  ! Clean-up dense matrices
-  call resetDenseMatrix()
+  ! Clean-up psi dense matrix holding seed eigenvectors
+  call resetDenseMatrix_psi()
 
   call timer('dmin',2)
 
