@@ -22,7 +22,6 @@ module densematrix
 
   public :: allocDenseMatrix
   public :: resetDenseMatrix
-  public :: resetDenseMatrix_psi
 
 contains
 
@@ -32,10 +31,9 @@ contains
 
     !> If the arrays are already allocated with the same
     !> bounds nothing will be done
-    
-    call re_alloc(Haux, 1, nHaux, 'Haux', 'densematrix')
-    call re_alloc(Saux, 1, nSaux, 'Saux', 'densematrix')
-    call re_alloc(psi, 1, npsi, 'psi', 'densematrix')
+    call re_alloc(Haux, 1, nHaux, 'Haux', 'densematrix', copy=.false., shrink=.false.)
+    call re_alloc(Saux, 1, nSaux, 'Saux', 'densematrix', copy=.false., shrink=.false.)
+    call re_alloc(psi, 1, npsi, 'psi', 'densematrix', copy=.false., shrink=.false.)
 
   end subroutine allocDenseMatrix
 
@@ -43,44 +41,38 @@ contains
   !> Note that it is safe to call the routine even if
   !> (some) arrays are not associated. Nothing will be
   !> done in that case.
-  
-  subroutine resetDenseMatrix(keep_psi)
+  subroutine resetDenseMatrix(dealloc_Haux, dealloc_Saux, dealloc_psi)
     use alloc, only : de_alloc
 
     !> This flag is used in connection with the OMM
     !> module: it needs diagon-computed eigenvectors
     !> as seeds for the first few iterations.
     !> [[diagon]] will not deallocate psi in that case
-    
-    logical, intent(in), optional :: keep_psi
+    logical, intent(in), optional :: dealloc_Haux, dealloc_Saux, dealloc_psi
 
-    logical :: keep_psi_allocated
+    logical :: ldealloc
 
-    keep_psi_allocated = .false.
-    if (present(keep_psi)) then
-       keep_psi_allocated = keep_psi
-    endif
-       
-    call de_alloc(Haux, 'Haux', 'densematrix')
-    call de_alloc(Saux, 'Saux', 'densematrix')
-    nullify(Haux, Saux)
-    
-    if (keep_psi_allocated) then
-       ! do nothing more
-       ! psi will remain allocated
-    else
-       call de_alloc(psi, 'psi', 'densematrix')
-       nullify(psi)
-    endif
+    ldealloc = .true.
+    if ( present(dealloc_Haux) ) ldealloc = dealloc_Haux
+    if ( ldealloc ) then
+      call de_alloc(Haux, 'Haux', 'densematrix')
+      nullify(Haux)
+    end if
+
+    ldealloc = .true.
+    if ( present(dealloc_Saux) ) ldealloc = dealloc_Saux
+    if ( ldealloc ) then
+      call de_alloc(Saux, 'Saux', 'densematrix')
+      nullify(Saux)
+    end if
+
+    ldealloc = .true.
+    if ( present(dealloc_psi) ) ldealloc = dealloc_psi
+    if ( ldealloc ) then
+      call de_alloc(psi, 'psi', 'densematrix')
+      nullify(psi)
+    end if
     
   end subroutine resetDenseMatrix
-
-  subroutine resetDenseMatrix_psi()
-    use alloc, only : de_alloc
-    
-    call de_alloc(psi, 'psi', 'densematrix')
-    nullify(psi)
-    
-  end subroutine resetDenseMatrix_psi
 
 end module densematrix

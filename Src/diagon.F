@@ -18,7 +18,7 @@
      .                  qs, temp, e1, e2, xij, indxuo, gamma, nk, 
      .                  kpoint, wk, eo, qo, Dnew, Enew, ef, efs, 
      .                  Entropy, nuotot, occtol, iscf, neigwanted,
-     .                  keep_eigenvectors)
+     .                  dealloc_psi)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -72,14 +72,14 @@ C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
 C integer iscf                : SCF cycle number
 C integer neigwanted          : Number of eigenvalues wanted
-C     logical, optional:
-C     keep_eigenvectors       : Do not deallocate psi (keep for OMM)
+C logical, dealloc_psi        : [OPTIONAL] whether or not to deallocate
+C                               the densematrices used [[densematrix]]
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,nspin,nk)  : Eigenvalues 
 C real*8 qo(maxo,nspin,nk)  : Occupations of eigenstates
 C real*8 Dnew(maxnd,spin%DM)  : Output Density Matrix
 C real*8 Enew(maxnd,spin%EDM)  : Output Energy-Density Matrix
-C real*8 ef                      : Fermi energy
+C real*8 ef                    : Fermi energy
 C real*8 efs(nspin)         : Fermi energy for each spin
 C                                   (for fixed spin calculations)
 C real*8 Entropy                 : Electronic entropy
@@ -140,7 +140,7 @@ C
       logical
      .  fixspin, getD, getPSI
 
-      logical, intent(in), optional :: keep_eigenvectors
+      logical, intent(in), optional :: dealloc_psi
       
       external
      .  diag2g, diag2k, diagsprl
@@ -153,7 +153,6 @@ C
 #endif
       integer            :: io, iuo, naux, nhs, npsi, nuo
       real(dp),  pointer :: aux(:)
-      logical            :: keep_psi
 C  ....................
 
 C Get Node number and calculate local orbital range
@@ -310,12 +309,8 @@ C Call apropriate routine
 
 C Free local arrays
       call de_alloc( aux, name='aux', routine='diagon' )
-      
-      keep_psi = .false.
-      if (present(keep_eigenvectors)) then
-         keep_psi = keep_eigenvectors
-      endif
-      call resetDenseMatrix(keep_psi)
+
+      call resetDenseMatrix(dealloc_psi=dealloc_psi)
 
 C Stop time counter
       call timer( 'diagon', 2 )
