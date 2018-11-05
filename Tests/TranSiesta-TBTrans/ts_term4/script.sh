@@ -87,7 +87,6 @@ if [ $RETVAL -ne 0 ]; then
     exit
 fi
 cp tbt_$SCAT.out $SCAT.TBT.AVTRANS* $SCAT.TBT.AVADOS_el-1 ../..
-cp 
 cd ..
 
 # If it gets here it's because it finished without error
