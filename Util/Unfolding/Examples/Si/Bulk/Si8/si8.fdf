@@ -42,7 +42,7 @@ PAO.BasisSize  DZP
    9   9   0   0.5
 %endblock kgrid.MonkhorstPack
 
-#COOP.Write			.true.
+COOP.Write			.true.
 #WriteBands			.false.
 #TimeReversalSymmetryForKpoints	.false.
 

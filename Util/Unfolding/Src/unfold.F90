@@ -50,7 +50,7 @@ program unfold
   integer, parameter :: nr = 4096       ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
   integer, parameter :: maxpaths = 100  ! max number of unfolded band paths
-  real(dp),parameter :: g2c = 300_dp    ! default mesh cutoff (ry)
+  real(dp),parameter :: g2c = 50_dp     ! default refolding G cutoff (ry)
   real(dp),parameter :: qc = 50_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
   logical, parameter :: writeOrbitals = .false.  ! write atomic orbital files?
   real(dp),parameter :: tolSuperCell = 1.e-6 ! tolerance for comparing cell and supercell
@@ -63,7 +63,7 @@ program unfold
                       kdsc(3,3), kscell(3,3), l, lastq(0:maxpaths), level, ll, lmax, &
                       m, maxig(3), maxorb, myNode, na, nbands, ne, ng, nh, nlm, &
                       nNodes, nos, nou, npaths, nq, nqline, nrq, nspin, ntmp, nw, t, z
-  real(dp)         :: alat, c0, cellRatio(3,3), ddos, de, dek, dq, dqpath(3), &
+  real(dp)         :: alat, c0, cdos, cellRatio(3,3), ddos, de, dek, dq, dqpath(3), &
                       dqx(3), dr, drq, dscell(3,3), emax, emin, &
                       gcut, gnew(3), gnorm, gq(3), grad, gylm(3,maxl*maxl), &
                       kq(3), kxij, pi, &
@@ -206,7 +206,7 @@ program unfold
   endif
 
   ! Find norm of atomic orbitals in real space, as a check
-!  gcut = 0.5*sqrt( fdf_get('MeshCutoff',g2c,'ry') )
+!  gcut = sqrt( fdf_get('RefoldingGcutoff',g2c,'ry') )
 !  xmax = rmax+1
 !  dx = pi/gcut
 !  nx = ceiling(xmax/dx)
@@ -286,7 +286,8 @@ program unfold
   if (myNode==0) then
     call read_hsx_file(hsx,fname)
     if (hsx%nspecies/=nsp) call die('unfold ERROR: hsx%nspecies/=nsp')
-    if (hsx%na_u/=na) call die('unfold ERROR: hsx%na_u/=na')
+    if (hsx%na_u/=na)      call die('unfold ERROR: hsx%na_u/=na')
+    if (hsx%nspin/=nspin)  call die('unfold ERROR: hsx%nspin/=nspin')
   endif
   call broadcast(hsx%nspecies)
   call broadcast(hsx%na_u)
@@ -372,7 +373,7 @@ program unfold
 
   ! Read fdf block RefoldingLatticeVectors
   if (myNode==0) print*,'unfold: reading RefoldingLatticeVectors block'
-  gcut = 0.5*sqrt( fdf_get('MeshCutoff',g2c,'ry') )
+  gcut = sqrt( fdf_get('RefoldingGcutoff',g2c,'ry') )
   refolding = fdf_block('RefoldingLatticeVectors',bfdf)
   if (refolding) then
     if (myNode==0) print*,'unfold: block RefoldingLatticeVectors found'
@@ -420,6 +421,7 @@ program unfold
   nlm = (lmax+1)**2
   c0 = (2*pi)**1.5_dp / vol
   de = (emax-emin)/ne
+  cdos = 1/(2*pi)**3/de
   ParallelOverK = .true.
   diag_serial = .true.
   nbands = nou
@@ -501,7 +503,7 @@ program unfold
                 psik = c0*psi(io,ib,ispin)*phi*exp(-ii*sum(gq*xa(:,ia)))
                 ukg = ukg + psik
               enddo ! io
-              ddos = vol*abs(ukg)**2
+              ddos = cdos*vol*abs(ukg)**2
               if (gnorm<1.e-12_dp) then
                 if (je>=0 .and. je<=ne) &
                   udos(iq,je,ispin) = udos(iq,je,ispin) + ddos*we
@@ -556,8 +558,8 @@ program unfold
         do iq = iq1,iq2
           write(iu,*) q(:,iq), iline(iq)
           do j = 0,ne
-            write(iu,'(f12.6)') udos(iq,j,ispin)
-!            write(iu,'(3i4,f12.6)') iq,j,ispin,udos(iq,j,ispin)
+            write(iu,'(e15.6)') udos(iq,j,ispin)
+!            write(iu,'(3i4,e15.6)') iq,j,ispin,udos(iq,j,ispin)
           enddo
         enddo ! iq
         call io_close(iu)
@@ -577,8 +579,8 @@ program unfold
           do iq = iq1,iq2
             write(iu,*) q(:,iq), iline(iq)
             do j = 0,ne
-              write(iu,'(f12.6)') rdos(iq,j,ispin)
-!              write(iu,'(3i4,f12.6)') iq,j,ispin,rdos(iq,j,ispin)
+              write(iu,'(e15.6)') rdos(iq,j,ispin)
+!              write(iu,'(3i4,e15.6)') iq,j,ispin,rdos(iq,j,ispin)
             enddo
           enddo ! iq
           call io_close(iu)

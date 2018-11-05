@@ -22,14 +22,16 @@ $ mpirun -np 4 ../../../../Src/unfold < si8.fdf > si8.unfold.out
 The unfolding/refolding specifications are given by two extra fdf blocks
 in the same datafile used by siesta. For example:
 ------------
-LatticeConstant	5.430 Ang  # used also by siesta
-BandLinesScale  pi/a       # used also in BandLines block
+LatticeConstant	5.430 Ang  # used by siesta and unfold
+BandLinesScale  pi/a       # used in BandLines and UnfoldedBandLines blocks
 
-%block LatticeVectors      # simulation cell used by siesta
+%block LatticeVectors      # simulation cell used by siesta and unfold
    1.000  0.000  0.000     # this is an 8-atom Si supercell
    0.000  1.000  0.000
    0.000  0.000  1.000
 %endblock LatticeVectors
+
+COOP.Write   true          # make siesta write the .HSX file used by unfold
 
 %block UnfoldedBandLines
   320  -20.0  60 eV        # numEnergies, Emin, Emax, Eunit
@@ -37,6 +39,8 @@ BandLinesScale  pi/a       # used also in BandLines block
  100   0.0  0.0  0.0       # numQ_in_line, endLine_qVector
  120   6.0  0.0  0.0       # add as many lines as required
 %endblock UnfoldedBandLines
+
+RefoldingGcutoff   25 Ry   # Cutoff for (the square of) refolding G vectors
 
 %block RefoldingLatticeVectors
   0.000  0.500  0.500      # primitive Si unit cell, in units of LatticeConstant
@@ -63,8 +67,8 @@ SYSLABEL.unfoldedBands and SYSLABEL.refoldedBands (where SYSLABEL=si8 in
 previous example). The first one contains the fully-unfolded bands and 
 the second one contains the refolded bands. Both have the same format:
 ----------
-nq, ne, Emin, Emax        (in energy units given in UnfoldedBandLines)
-  qVector(ixyz=1:3,iq=1)  (in Bohr^-1)
+nq, ne, Emin, Emax               (in energy units given in UnfoldedBandLines)
+  qVector(ixyz=1:3,iq=1), iLine  (q in Bohr^-1, line to which it belongs)
 qDOS(ie=1,iq=1)
 qDOS(2,1)
 ...
@@ -102,8 +106,9 @@ zone, not necessarily commensurate with the simulation cell used by siesta.
 Notice, however, that this requires a new diagonalization for each q+G vector,
 what may be very expensive in terms of CPU time.
 
-The refolded G vectors are those with |G|<0.5*sqrt(MeshCutoff). Therefore,
-MeshCutoff largely determines the accuracy (and CPU time) for refolding.
+The refolded G vectors are those with G^2<RefoldingGcutoff. Therefore,
+RefoldingGcutoff largely determines the accuracy (and CPU time) for refolding.
+Its default value is 50 ry.
 
 The CPU time used by unfold is proportional to the number of q vectors, but it
 does not increase with the energy resolution of the qDOS mesh (the size of the
@@ -111,3 +116,15 @@ output files is proportional to the number of energies, though). Since the
 parallelization over q vectors is almost perfect, execution wall-clock time
 is inversely proportional to the number of MPI nodes, provided they are less
 than the number of q points in UnfoldedBandLines.
+
+Final note: in a supercell calculation, to not break artificially the translational crystal symmetry, we should use an integration mesh commensurate with the unit cell.
+This can be ensured with the following procedure:
+1) Perform a unit-cell siesta calculation with the desired input MeshCutoff.
+2) In the output file, look for the MeshCutoff actually used (grep 'Mesh cutoff 
+   (required, used)' output_file)
+3) Perform the supercell calculation with an input MeshCutoff slightly lower 
+   (say by 0.001 Ry). This will make siesta choose the same actual MeshCutoff and
+   the same, commensurate, integration mesh as in the unit cell calculation.
+4) In a slab calculation, construct the simulation cell by removing atoms from
+   a bulk supercell, so that the simulation-cell lattice vectors make an exact
+   supercell of the crystal unit cell.
