@@ -32,6 +32,8 @@ Release notes for siesta 4.1-b4 beta version
 
 --- Fixed bug on reading *.ion* files (lp:1751723)
 
+--- Updated internal integration table sizes (slightly increased precision)
+
 --- PDOS files now also contain the fermi-level such that tools may easily
     align the energy to 0.
 
