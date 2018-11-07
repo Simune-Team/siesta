@@ -30,6 +30,10 @@ AtomicCoordinatesFormat	ScaledCartesian
 
 PAO.BasisSize  DZP
 
+%block MeshSizes
+  40  40  40
+%endblock MeshSizes
+
 #%block kgrid.MonkhorstPack
 #  18   0   0   0.5
 #   0  18   0   0.5
@@ -37,9 +41,9 @@ PAO.BasisSize  DZP
 #%endblock kgrid.MonkhorstPack
 
 %block kgrid.MonkhorstPack
-   0   9   9   0.5
-   9   0   9   0.5
-   9   9   0   0.5
+   0   4   4   0.5
+   4   0   4   0.5
+   4   4   0   0.5
 %endblock kgrid.MonkhorstPack
 
 COOP.Write			.true.

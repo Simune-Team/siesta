@@ -117,14 +117,16 @@ parallelization over q vectors is almost perfect, execution wall-clock time
 is inversely proportional to the number of MPI nodes, provided they are less
 than the number of q points in UnfoldedBandLines.
 
-Final note: in a supercell calculation, to not break artificially the translational crystal symmetry, we should use an integration mesh commensurate with the unit cell.
-This can be ensured with the following procedure:
-1) Perform a unit-cell siesta calculation with the desired input MeshCutoff.
-2) In the output file, look for the MeshCutoff actually used (grep 'Mesh cutoff 
-   (required, used)' output_file)
-3) Perform the supercell calculation with an input MeshCutoff slightly lower 
-   (say by 0.001 Ry). This will make siesta choose the same actual MeshCutoff and
-   the same, commensurate, integration mesh as in the unit cell calculation.
-4) In a slab calculation, construct the simulation cell by removing atoms from
-   a bulk supercell, so that the simulation-cell lattice vectors make an exact
-   supercell of the crystal unit cell.
+Final note: in a supercell calculation, to not break artificially the translational
+crystal symmetry, one should use an integration mesh commensurate with the unit cell.
+This can be ensured by setting explicitly the MeshSizes block. For example, for an
+FCC unit cell with lattice vectors a=a0/2*{(0,1,1),(1,0,1),(1,1,0)}, and a 
+4-unit-cell supercell calculation, with A=a0/2*{(2,0,0),(0,2,0),(0,0,2)},
+it suffices that all MeshSizes are even. For a n-layer (111) slab with
+A=a0/2*{(0,1,1),(1,0,1),(n,n,0)}, the mesh size of third vector should be a
+multiple of n. In general, a necessary and sufficient condition is that matrix
+inv(Amesh)*a is integer. Here, a is the matrix of unit cell vectors, Amesh is the 
+matrix of supercell mesh vectors (both in columns), and inv(Amesh) is its inverse.
+The ith  mesh vector is Amesh(:,i)=A(:,i)/MeshSize(i). Notice that all MeshSizes 
+must also be multiples of the MeshSubDivisions parameter (equal to 2 by default).
+

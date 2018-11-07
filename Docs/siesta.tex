@@ -5657,6 +5657,28 @@ note also that a filtering of the orbitals and the relevant parts of
 the pseudopotential and the pseudocore charge might be enough to solve
 the issue (see Sec.~\ref{sec:filtering}).
 
+\begin{fdfentry}{MeshSizes}[block]
+  \index{grid}%
+  \index{mesh}
+
+  Defines the number of mesh divisions of each lattice vector. Thus
+  \begin{fdfexample}
+     %block MeshSizes
+        30  30  80
+     %endblock MeshSizes
+  \end{fdfexample}
+  determines that the first, second, and third lattice vectors will
+  be divided in 30, 30, and 80 mesh intervals, respectively.
+  The number of mesh divisions should all be multiples of MeshSubDivisions 
+  below, or a stopping error will occur. 
+  If \fdf{MeshSizes} is not present, the mesh divisions are calculated
+  to meet the \fdf{MeshCutoff} below.
+  If \fdf{MeshSizes} is present and it gives a mesh cutoff lower than the
+  input or default \fdf{MeshCutoff}, a warning is issued, but the calculation
+  continues with the given \fdf{MeshSizes}.
+
+\end{fdfentry}
+
 \begin{fdfentry}{MeshCutoff}[energy]<$300\,\mathrm{Ry}$>
   \index{grid}%
   \index{mesh}
