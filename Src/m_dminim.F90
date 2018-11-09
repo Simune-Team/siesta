@@ -7,7 +7,6 @@
 ! ---
 module m_dminim
 
-use densematrix,    only : psi
 use fdf,            only : fdf_boolean, fdf_integer, fdf_get, fdf_physical
 use files,          only : slabel
 use parallel,       only : ProcessorY, BlockSize, Node, Nodes
@@ -82,7 +81,9 @@ contains
 ! routine, for Gamma point-only calculations)    !
 !================================================!
 subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,numh,listhptr,listh,d_sparse,eta,qs,h_sparse,&
-                  s_sparse,t_sparse)
+    s_sparse,t_sparse)
+  
+  use densematrix, only : psi, allocDenseMatrix, resetDenseMatrix
   implicit none
 
   !**** INPUT ***********************************!
@@ -281,6 +282,19 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
     end if
 
   end if
+  
+  ! The psi-array *must* be allocated even if it is not accessed when
+  ! PreviousCallDiagon is .false. or else compilers might flag as an
+  ! error the unallocated 'psi' dummy argument in some of the routines
+  ! below.
+  !
+  ! This call will keep the full 'psi' when needed (i.e., when
+  ! PreviousCallDiagon is .true. and 'psi' holds the eigenvectors
+  ! from a previous call to diagon that did not deallocate 'psi')
+  ! and allocate a minimal version when 'psi' has been deallocated
+  ! In order to achieve the former, the "shrink=.false." option in
+  ! allocDenseMatrix is essential.
+  call allocDenseMatrix(1, 1, 1)
 
   do ispin=1,nspin
 
@@ -372,6 +386,9 @@ subroutine dminim(CalcE,PreviousCallDiagon,iscf,istp,nbasis,nspin,h_dim,nhmax,nu
   if (.not. UseSparse) deallocate(d_dense1D)
 
   last_call(1:2)=(/iscf,istp/)
+
+  ! Clean-up dense matrices holding seed eigenvectors
+  call resetDenseMatrix()
 
   call timer('dmin',2)
 

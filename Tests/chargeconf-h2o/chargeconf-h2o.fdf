@@ -39,7 +39,6 @@ XC.Authors           PBE
 MeshCutoff           200.0 Ry       # Mesh cutoff. real space mesh
 
 # SCF options
-MaxSCFIterations      50            # Maximum number of SCF iter
 DM.MixingWeight       0.3           # New DM amount for next SCF cycle
 DM.Tolerance          1.d-5         # Tolerance in maximum difference
 DM.NumberPulay         3

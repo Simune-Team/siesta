@@ -51,7 +51,6 @@ PAO.BasisType   split
 
 MeshCutoff        200.000000 Ry
 MinSCFIterations  3
-MaxSCFIterations  300
 
 SCF.Mixer.Weight 0.1
 SCF.Mixer.History 20

@@ -24,9 +24,6 @@ AtomicCoordinatesFormat  NotScaledCartesianBohr
   0.000   0.000   0.000  1
   0.000   0.000  -3.644  1
 %endblock AtomicCoordinatesAndAtomicSpecies
-%block AtomicCoordinatesOrigin
-  0.000   0.000   0.000
-%endblock AtomicCoordinatesOrigin
 
 PAO.BasisType    split
 PAO.SplitNorm    0.15
@@ -48,7 +45,7 @@ MeshCutoff        150. Ry
 ElectronicTemperature   0.1 eV
 DM.MixingWeight         0.01
 DM.NumberPulay          4
-MaxSCFiterations      200
+SCF.MustConverge false
 
 MD.TypeOfRun      CG
 MD.NumCGsteps     0

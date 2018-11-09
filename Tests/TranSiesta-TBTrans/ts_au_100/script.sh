@@ -1,4 +1,4 @@
-#!/bin/sh
+ #!/bin/sh
 #
 # The script is passed the (probably relative) path to the transiesta
 # executable
@@ -43,10 +43,9 @@ mkdir Elec
 cd Elec
 ln ../../Au.psf .
 ln ../../${ELEC}.fdf .
-${TS} < ${ELEC}.fdf > ${ELEC}.out
+${TS} --electrode ${ELEC}.fdf > ${ELEC}.out
 RETVAL=$?
-if [ $RETVAL -ne 0 ]
-then
+if [ $RETVAL -ne 0 ]; then
    echo "The electrode calculation did not go well ..."
    exit
 fi
@@ -68,10 +67,9 @@ do
   ln ../../${SCAT}.fdf .
   # Copy the electrode's .TSHS
   ln ../Elec/${ELEC}.TSHS .
-  $TS < ${SCAT}.fdf > ${SCAT}.out
+  $TS ${SCAT}.fdf > ${SCAT}.out
   RETVAL=$?
-  if [ $RETVAL -ne 0 ]
-      then
+  if [ $RETVAL -ne 0 ]; then
       echo "** The scattering region calculation for $SCAT did not go well ..."
       exit
   fi
@@ -92,10 +90,9 @@ do
  ln ../Elec/${ELEC}.TSHS .
  ln ../Scat_$SCAT/${SCAT}.TSHS .
  ln ../../${SCAT}.fdf .
- $TBT < ${SCAT}.fdf  > tbt_${SCAT}.out
+ $TBT ${SCAT}.fdf > tbt_${SCAT}.out
  RETVAL=$?
- if [ $RETVAL -ne 0 ]
- then
+ if [ $RETVAL -ne 0 ]; then
    echo "The scattering region calculation did not go well ..."
    exit
  fi

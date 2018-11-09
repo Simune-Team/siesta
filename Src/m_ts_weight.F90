@@ -862,7 +862,7 @@ contains
           &,a,g11.5)') trim(a), &
           'ij(',eM_i,eM_j, '), M = ',DM, &
           ', ew = ',ew, ', em = ',eM, &
-          '. avg_m = ',m_err
+          '. avg_em = ',m_err
     end if
 
   end subroutine print_error_estimate

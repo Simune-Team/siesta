@@ -1,3 +1,17 @@
+Siesta Version  : siesta-4.1-1033
+Architecture    : x86_64-linux-n-62-18-18
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PARALLEL version
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 8 nodes in parallel
+>> Start of run:   5-NOV-2018  14:20:29
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -10,20 +24,6 @@ reinit: System Name:
 reinit: -----------------------------------------------------------------------
 reinit: System Label: elec
 reinit: -----------------------------------------------------------------------
-Siesta Version: siesta-4.1--731
-Architecture  : x86_64-linux-n-62-18-14
-Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
-PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK  -DTRANSIESTA
-Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
-PARALLEL version
-TRANSIESTA support
-NetCDF support
-NetCDF-4 support
-NetCDF-4 MPI-IO support
-METIS ordering support
-
-* Running on 8 nodes in parallel
->> Start of run:   2-JUL-2017  22:53:41
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:    6 Label: C
@@ -202,10 +202,12 @@ redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Matel table size (NRTAB)                    =     1024
 redata: Mesh Cutoff                                 =   250.0000 Ry
 redata: Net charge of the system                    =     0.0000 |e|
 redata: Min. number of SCF Iter                     =        3
 redata: Max. number of SCF Iter                     =      200
+redata: SCF convergence failure will abort job
 redata: SCF mix quantity                            = Hamiltonian
 redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
@@ -218,7 +220,7 @@ redata: DM Mixing Weight for Kicks                  =     0.5000
 redata: Require Harris convergence for SCF          =   F
 redata: Harris energy tolerance for SCF             =     0.000100 eV
 redata: Require DM convergence for SCF              =   T
-redata: DM tolerance for SCF                        =     0.0001
+redata: DM tolerance for SCF                        =     0.000100
 redata: Require EDM convergence for SCF             =   F
 redata: EDM tolerance for SCF                       =     0.001000 eV
 redata: Require H convergence for SCF               =   T
@@ -229,7 +231,6 @@ redata: Using Saved Data (generic)                  =   F
 redata: Use continuation files for DM               =   T
 redata: Neglect nonoverlap interactions             =   F
 redata: Method of Calculation                       = Diagonalization
-redata: Divide and Conquer                          =   T
 redata: Electronic Temperature                      =   299.9978 K
 redata: Fix the spin of the system                  =   F
 redata: Dynamics option                             = Single-point calculation
@@ -277,21 +278,23 @@ siesta: k-grid:   60   0   0      0.000
 siesta: k-grid:    0 101   0      0.000
 siesta: k-grid:    0   0   1      0.000
 
+diag: Algorithm                                     = D&C
+diag: Parallel over k                               =   T
+diag: Use parallel 2D distribution                  =   T
+diag: Parallel block-size                           = 7
+diag: Parallel distribution                         =     2 x     4
+diag: Used triangular part                          = Lower
+diag: Absolute tolerance                            =  0.100E-15
+diag: Orthogonalization factor                      =  0.100E-05
+diag: Memory factor                                 =  1.0000
+
 superc: Internal auxiliary supercell:     3 x     5 x     1  =      15
 superc: Number of atoms, orbitals, and projectors:     90    810    810
 
-k-point displ. along   1 input, could be:     0.00    0.50
- Kpoints in:         3060 . Kpoints trimmed:         3031
-
-transiesta: k-grid: Number of Green function k-points =  3031
-transiesta: k-grid: Supercell and displacements
-transiesta: k-grid:   60   0   0      0.000
-transiesta: k-grid:    0 101   0      0.000
-transiesta: k-grid:    0   0   1      0.000
 
 ts: **************************************************************
 ts: Save H and S matrices                           =    T
-ts: Save DM and EDM matrices                        =    F
+ts: Save DM and EDM matrices                        =    T
 ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
@@ -330,7 +333,6 @@ DM filled with atomic data:
     nrows_g=54 nrows=7 sparsity=.7994 nnzs=2331, refcount: 8>
   <dData2D:DM n=2331 m=1, refcount: 1>
 refcount: 1>
-
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      13     117
 New grid distribution:   1
            1       1:   32    1:    6    1:   18
@@ -372,67 +374,67 @@ PhiOnMesh: nlist on node 0 =                59744
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -357.837384
+siesta: Ebs     =      -357.826504
 siesta: Eions   =      1495.709906
-siesta: Ena     =       295.077424
-siesta: Ekin    =       615.041184
-siesta: Enl     =       -80.302674
+siesta: Ena     =       295.079782
+siesta: Ekin    =       615.051195
+siesta: Enl     =       -80.304718
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        12.902511
-siesta: DUscf   =         0.888127
+siesta: DEna    =        12.895616
+siesta: DUscf   =         0.888279
 siesta: DUext   =         0.000000
-siesta: Exc     =      -274.344617
+siesta: Enegf   =         0.000000
+siesta: Exc     =      -274.346512
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -924.075440
-siesta: Etot    =      -926.447950
-siesta: FreeEng =      -926.447984
+siesta: Eharris =      -924.074558
+siesta: Etot    =      -926.446265
+siesta: FreeEng =      -926.446298
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1     -924.075440     -926.447950     -926.447984  1.482029 -4.992147  0.899397
-timer: Routine,Calls,Time,% = IterSCF        1       2.607  61.05
-   scf:    2     -926.449808     -926.448875     -926.448909  0.000547 -5.073474  0.803711
-   scf:    3     -926.455677     -926.452430     -926.452464  0.004631 -5.762593  0.008322
-   scf:    4     -926.452470     -926.452452     -926.452487  0.000202 -5.773470  0.003166
-   scf:    5     -926.452452     -926.452452     -926.452487  0.000063 -5.770043  0.004662
-   scf:    6     -926.452453     -926.452452     -926.452487  0.000039 -5.773705  0.001846
-mix: Pulay -- inversion failed, > SVD
-   scf:    7     -926.452452     -926.452452     -926.452487  0.000011 -5.772674  0.000064
+   scf:    1     -924.074558     -926.446265     -926.446298  1.482043 -4.992128  0.898884
+timer: Routine,Calls,Time,% = IterSCF        1       2.594  68.57
+   scf:    2     -926.448120     -926.447190     -926.447224  0.000546 -5.073415  0.803258
+   scf:    3     -926.453981     -926.450738     -926.450773  0.004626 -5.762240  0.008316
+   scf:    4     -926.450778     -926.450761     -926.450795  0.000202 -5.773104  0.003159
+   scf:    5     -926.450760     -926.450761     -926.450795  0.000062 -5.769714  0.004591
+   scf:    6     -926.450761     -926.450761     -926.450796  0.000039 -5.773410  0.001954
+   scf:    7     -926.450761     -926.450761     -926.450796  0.000011 -5.772457  0.000182
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|         :     0.0000112789
-max |H_out - H_in|      (eV) :     0.0000640235
+max |DM_out - DM_in|         :     0.0000112160
+max |H_out - H_in|      (eV) :     0.0001815284
 SCF cycle converged after 7 iterations
 
 Using DM_out to compute the final energy and forces
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      13     117
 
-siesta: E_KS(eV) =             -926.4525
+siesta: E_KS(eV) =             -926.4508
 
-siesta: E_KS - E_eggbox =      -926.4525
+siesta: E_KS - E_eggbox =      -926.4508
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.002402   -0.002082   -0.000000
-     2   -0.002714    0.005866    0.000000
-     3   -0.006304   -0.002396    0.000000
-     4   -0.010712   -0.011827    0.000000
-     5    0.007004    0.009095    0.000000
-     6    0.008318    0.006500    0.000000
+     1   -0.002392   -0.002077   -0.000000
+     2   -0.002722    0.005863   -0.000000
+     3   -0.006303   -0.002388   -0.000000
+     4   -0.010704   -0.011820    0.000000
+     5    0.006994    0.009082   -0.000000
+     6    0.008317    0.006500    0.000000
 ----------------------------------------
-   Tot   -0.006810    0.005156    0.000000
+   Tot   -0.006810    0.005159   -0.000000
 ----------------------------------------
-   Max    0.011827
-   Res    0.005750    sqrt( Sum f_i^2 / 3N )
+   Max    0.011820
+   Res    0.005746    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.011827    constrained
+   Max    0.011820    constrained
 
-Stress-tensor-Voigt (kbar):       26.92       26.66        0.01        0.25       -0.00        0.00
-(Free)E + p*V (eV/cell)     -929.0743
-Target enthalpy (eV/cell)     -926.4525
+Stress-tensor-Voigt (kbar):       26.20       25.94        0.01        0.25        0.00       -0.00
+(Free)E + p*V (eV/cell)     -929.0023
+Target enthalpy (eV/cell)     -926.4508
 
 mulliken: Atomic and Orbital Populations:
 
@@ -456,56 +458,58 @@ Atom  Qatom  Qorb
 mulliken: Qtot =       24.000
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -356.779433
+siesta: Ebs     =      -356.769644
 siesta: Eions   =      1495.709906
-siesta: Ena     =       295.077424
-siesta: Ekin    =       615.928052
-siesta: Enl     =       -80.600533
+siesta: Ena     =       295.079782
+siesta: Ekin    =       615.936968
+siesta: Enl     =       -80.602256
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        12.430928
-siesta: DUscf   =         0.868424
+siesta: DEna    =        12.424657
+siesta: DUscf   =         0.868586
 siesta: DUext   =         0.000000
-siesta: Exc     =      -274.446842
+siesta: Enegf   =         0.000000
+siesta: Exc     =      -274.448592
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -926.452452
-siesta: Etot    =      -926.452452
-siesta: FreeEng =      -926.452487
+siesta: Eharris =      -926.450761
+siesta: Etot    =      -926.450761
+siesta: FreeEng =      -926.450796
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -356.779433
-siesta:       Kinetic =     615.928052
-siesta:       Hartree =    2982.217080
+siesta:  Band Struct. =    -356.769644
+siesta:       Kinetic =     615.936968
+siesta:       Hartree =    2982.228093
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -274.446842
-siesta:  Ion-electron =   -6578.408605
-siesta:       Ion-ion =    2328.257863
+siesta:       Enegf   =       0.000000
+siesta:   Exch.-corr. =    -274.448592
+siesta:  Ion-electron =   -6578.427450
+siesta:       Ion-ion =    2328.260220
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -926.452452
-siesta:         Fermi =      -5.772674
+siesta:         Total =    -926.450761
+siesta:         Fermi =      -5.772457
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:     0.016799    0.000159   -0.000000
-siesta:     0.000159    0.016638   -0.000000
-siesta:     0.000000   -0.000000    0.000008
+siesta:     0.016351    0.000159   -0.000000
+siesta:     0.000159    0.016190    0.000000
+siesta:    -0.000000    0.000000    0.000008
 
 siesta: Cell volume =        235.167164 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:          -0.00012142         -0.00012230  Ry/Bohr**3
-siesta:          -0.01114865         -0.01122890  eV/Ang**3
-siesta:         -17.86230003        -17.99088336  kBar
-(Free)E+ p_basis*V_orbitals  =        -925.035929
-(Free)Eharris+ p_basis*V_orbitals  =        -925.035929
+siesta:          -0.00011817         -0.00011904  Ry/Bohr**3
+siesta:          -0.01084987         -0.01093005  eV/Ang**3
+siesta:         -17.38359511        -17.51206640  kBar
+(Free)E+ p_basis*V_orbitals  =        -925.034238
+(Free)Eharris+ p_basis*V_orbitals  =        -925.034238
 
-siesta: Electric dipole (a.u.)  =    0.000000    0.000000    0.000000
-siesta: Electric dipole (Debye) =    0.000000    0.000000    0.000000
->> End of run:   2-JUL-2017  22:54:01
+siesta: Electric dipole (a.u.)  =   -0.000000   -0.000000   -0.000000
+siesta: Electric dipole (Debye) =   -0.000000   -0.000000   -0.000000
+>> End of run:   5-NOV-2018  14:20:48
 Job completed
