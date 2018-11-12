@@ -36,6 +36,12 @@ module m_syms
 
   ! this type now contains complementary derived information, with the main stuff stored in spglib's own datastructure above
   type, public :: syms_type
+    ! saves stuff from which it was built as well
+    real(c_double) :: celltransp(3,3)
+    real(c_double), allocatable :: xreda (:,:)
+    integer, allocatable :: types (:)
+    integer :: natom
+
     integer :: spacegroup_number
     integer :: hall_number
     integer :: bravais_number
@@ -61,6 +67,8 @@ module m_syms
   ! if you want to play with several, declare 1 per subroutine,
   ! and use it as the intent(out) argument to the init_syms subroutine
   type(syms_type), public :: syms_global
+
+  double precision, private :: symprec= 1.e-6 ! this is hard coded for the moment - could be input var for init_syms
 
   public :: init_syms, delete_syms, print_syms
   public :: wrapvec_zero_one, wrap2zero_one
@@ -384,41 +392,40 @@ contains
     integer :: ii, info
     double precision :: symprec
     double precision :: cellinv(3,3)
-    double precision :: celltransp(3,3)
     double precision :: dsymop(3,3)
     double precision :: dsymopinv(3,3)
     double precision :: zerovec(3) = (/0.0d0, 0.0d0,0.0d0/)
 
-    double precision, allocatable :: xreda(:,:)
     integer, allocatable :: symops_tmp(:,:,:)
     double precision, allocatable :: trans_tmp(:,:)
 
-    symprec= 1.e-6 ! this is hard coded for the moment - could be input var for init_syms
 
-    allocate (xreda(3,na))
-    call cart2red(cell, na, xa, xreda)
+    syms_this%natom = na
+
+    allocate (syms_this%types(na))
+    syms_this%types = isa
+
+    allocate (syms_this%xreda(3,na))
+    call cart2red(cell, na, xa, syms_this%xreda)
     ! not necessary to wrap positions into unit cell: no effect on spgrp recognition by spglib
 
     ! refines positions with highest symmetry found within symprec
     ! REMOVED 13/6/2014!!! - this returns the conventional cell!!!
-    !call spg_refine_cell(cell, xreda, isa, na, symprec)
+    !call spg_refine_cell(cell, syms_this%xreda, isa, na, symprec)
     !print *, 'xred refined'
-    !print '(3E20.10)', xreda
+    !print '(3E20.10)', syms_this%xreda
     !print *, 'cell refined'
     !print '(3E20.10)', cell
 
-    celltransp = transpose(cell)
+    syms_this%celltransp = transpose(cell)
 
-    syms_this%bravais_number = spg_get_international(syms_this%bravais_symbol, celltransp(1,1), &
+    syms_this%bravais_number = spg_get_international(syms_this%bravais_symbol, syms_this%celltransp(1,1), &
            & zerovec(1), isa(1), 1, symprec)
-! for information
 
-    syms_this%spacegroup_number = spg_get_international(syms_this%international_symbol, celltransp(1,1), &
-           & xreda(1,1), isa(1), na, symprec)
+    syms_this%spacegroup_number = spg_get_international(syms_this%international_symbol, syms_this%celltransp(1,1), &
+           & syms_this%xreda(1,1), isa(1), na, symprec)
 
-
-
-    max_size = spg_get_multiplicity(celltransp(1,1), xreda(1,1), isa(1), na, symprec)
+    max_size = spg_get_multiplicity(syms_this%celltransp(1,1), syms_this%xreda(1,1), isa(1), na, symprec)
 
     ! spglib returns row-major not column-major matrices!!! --DAS
     ! should we transpose these after reading in???
@@ -426,7 +433,7 @@ contains
     allocate(syms_this%translations(1:3, 1:max_size))
 
     syms_this%n_operations =  spg_get_symmetry(syms_this%rotations(1, 1, 1), syms_this%translations(1, 1), &
-      max_size, celltransp(1, 1), xreda(1, 1), isa(1), na, symprec)
+       &  max_size, syms_this%celltransp(1, 1), syms_this%xreda(1, 1), isa(1), na, symprec)
 
     ! complete object with Hall number - how do I extract the symbol???
     syms_this%hall_number = spg_get_hall_number_from_symmetry(syms_this%rotations(1, 1, 1),&
@@ -452,7 +459,6 @@ contains
 !         print *, matmul(cell, matmul(dble(syms_this%symops(:, :, ii)), cellinv))
 !         stop 'error : cartesian symop element is not -1 0 +1'
 !      end if
-
     end do
 
 ! get symops in reciprocal space = real space op^-1 ^T
@@ -485,8 +491,8 @@ contains
     implicit         none
     type(syms_type), intent(inout) :: syms_this
 
-    if(allocated(syms_this%symops_cart))          deallocate (syms_this%symops_cart)
-    if(allocated(syms_this%trans_cart))           deallocate (syms_this%trans_cart)
+    if(allocated(syms_this%symops_cart))      deallocate (syms_this%symops_cart)
+    if(allocated(syms_this%trans_cart))       deallocate (syms_this%trans_cart)
 
     if(allocated(syms_this%rotations))        deallocate (syms_this%rotations)
     if(allocated(syms_this%translations))     deallocate (syms_this%translations)
@@ -606,15 +612,25 @@ contains
 
   end function wrap2zero_one
    
-  subroutine mk_irred_k_grid(nkgrid, shiftk, nkpt, kpt_list)
+  subroutine mk_irred_k_grid(syms_this, nkgrid, shiftk, nkpt, kpt_list, irrk_map)
     implicit none
+    type(syms_type), intent(in) :: syms_this
     integer, intent(in) :: nkgrid(3)
     double precision, intent(in) :: shiftk(3)
     integer, intent(out) :: nkpt
     double precision, allocatable, intent(out) :: kpt_list(:,:)
+    integer, allocatable, intent(out) :: irrk_map(:)
+
+    integer :: nkmax
 
 
-    
+    nkmax = product(nkgrid)
+    allocate(kpt_list(3,nkmax))
+    allocate(irrk_list(nkmax))
+
+    nkpt = spg_get_ir_reciprocal_mesh(kpt_list, map, nkgrid, &
+      & shiftk, is_time_reversal, syms_this%celltransp, &
+      & syms_this%xreda, syms_this%types, syms_this%natom, symprec)
 
   end subroutine mk_irred_k_grid
 
