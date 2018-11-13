@@ -20,8 +20,9 @@ program unfold
   use basis_io,     only: read_basis_ascii
   use cellsubs,     only: reclat, volcel
   use fdf,          only: block_fdf, fdf_bintegers, fdf_bline, fdf_block, &
-                          fdf_bmatch, fdf_bnames, fdf_bnvalues, fdf_bvalues, &
-                          fdf_convfac, fdf_get, fdf_init, fdf_parallel, parsed_line
+                          fdf_bmatch, fdf_bnames, fdf_bnnames, fdf_bnvalues, &
+                          fdf_bvalues, fdf_convfac, fdf_get, fdf_init, &
+                          fdf_parallel, parsed_line
   use hsx_m,        only: hsx_t, read_hsx_file
 !  use m_diag,       only: diag_init
   use m_get_kpoints_scale, &
@@ -59,9 +60,9 @@ program unfold
   ! Internal variables
   integer          :: i, i1, i2, i3, ia, iao, ib, ie, ierr, ig, ij, &
                       io, ios, iostat, iou, ipath, iq, iq1, iq2, iqNode, iqx(3), &
-                      ir, irq, iscf, isp, ispin, iu, j, je, jk, jlm, jo, jos, jou, &
+                      ir, irq, iscf, isp, ispin, itag, iu, j, je, jk, jlm, jo, jos, jou, &
                       kdsc(3,3), kscell(3,3), l, lastq(0:maxpaths), level, ll, lmax, &
-                      m, maxig(3), maxorb, myNode, na, nbands, ne, ng, nh, nlm, &
+                      m, maxig(3), maxorb, myNode, na, nbands, ne, ng, nh, nlm, nn, &
                       nNodes, nos, nou, npaths, nq, nqline, nrq, nspin, ntmp, nw, t, z
   real(dp)         :: alat, c0, cdos, cellRatio(3,3), ddos, de, dek, dq, dqpath(3), &
                       dqx(3), dr, drq, dscell(3,3), emax, emin, &
@@ -75,6 +76,7 @@ program unfold
   character(len=50):: eunit, fname, formatstr,  iostr, isstr, numstr, slabel
   character(len=20):: labelfis, symfio
   character(len=200):: line
+  character(len=10):: label(2500) ,string ! 2500 would be max q point
   type(block_fdf)  :: bfdf
   type(hsx_t)      :: hsx
 
@@ -92,6 +94,7 @@ program unfold
   logical,          pointer:: cc(:,:,:)=>null()
   type(parsed_line),pointer:: pline=>null()
 
+!  character, save :: label(1000)*8
 !--------------------
 
 ! Initialize MPI
@@ -287,7 +290,7 @@ program unfold
     call read_hsx_file(hsx,fname)
     if (hsx%nspecies/=nsp) call die('unfold ERROR: hsx%nspecies/=nsp')
     if (hsx%na_u/=na)      call die('unfold ERROR: hsx%na_u/=na')
-    if (hsx%nspin/=nspin)  call die('unfold ERROR: hsx%nspin/=nspin')
+!    if (hsx%nspin/=nspin)  call die('unfold ERROR: hsx%nspin/=nspin')
   endif
   call broadcast(hsx%nspecies)
   call broadcast(hsx%na_u)
@@ -337,13 +340,27 @@ program unfold
   npaths = 0
   nq = 0
   lastq(0) = 0
+  label = ' '
+  
+  ! itag = 0 !for symmetry point tags in plot
+
   do while( fdf_bline(bfdf,pline) ) ! bline and pline refer to text lines, not q lines
+
+    nn = fdf_bnnames(pline)
+!    itag = itag + 1
+
     if (fdf_bmatch(pline,'ivvv').or.fdf_bmatch(pline,'ivvvs')) then
       nqline = fdf_bintegers(pline,1)  ! number of q points in line
-!      if (myNode==0) print*,'unfold: nqline=',nqline
       qline = qcell(:,1)*fdf_bvalues(pline,1,after=1) &
             + qcell(:,2)*fdf_bvalues(pline,2,after=1) &
             + qcell(:,3)*fdf_bvalues(pline,3,after=1)
+
+!      if(nn .gt. 0) then
+!         label(itag) = fdf_bnames(pline,1)
+!      else
+!         label(itag) = ' '
+!      endif
+
       if (nqline==1) then
         npaths = npaths+1
         if (npaths>maxpaths) &
@@ -353,6 +370,7 @@ program unfold
         call re_alloc( iline,  1,nq, myName//'iline' )
         q(:,nq) = qline
         iline(nq) = 1
+        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)  !
       else
         call re_alloc( q, 1,3, 1,nq+nqline, myName//'q' )
         call re_alloc( iline,  1,nq+nqline, myName//'iline' )
@@ -361,7 +379,9 @@ program unfold
           iline(nq+iq) = iline(nq)+1
         enddo
         nq = nq+nqline
+        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)  !
       endif 
+
       lastq(npaths) = nq
     else
       call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
@@ -422,6 +442,7 @@ program unfold
   c0 = (2*pi)**1.5_dp / vol
   de = (emax-emin)/ne
   cdos = 1/(2*pi)**3/de
+print*,cdos
   ParallelOverK = .true.
   diag_serial = .true.
   nbands = nou
@@ -556,13 +577,19 @@ program unfold
         open(iu,file=fname,status='unknown',form='formatted',action='write')
         write(iu,*) lastq(ipath)-lastq(ipath-1),ne+1,emin,emax
         do iq = iq1,iq2
-          write(iu,*) q(:,iq), iline(iq)
+          if (label(iq) .eq. ' ') then
+            string = "' '"
+          else
+            string = "'"//trim(label(iq))//"'"
+          endif
+          write(iu,'(3(f14.8),i5,a12)') q(:,iq), iline(iq), string 
           do j = 0,ne
             write(iu,'(e15.6)') udos(iq,j,ispin)
 !            write(iu,'(3i4,e15.6)') iq,j,ispin,udos(iq,j,ispin)
           enddo
         enddo ! iq
         call io_close(iu)
+
         if (refolding) then
           fname = trim(slabel)//'.refoldedBands'
           if (nspin==2 .and. ispin==1) then
@@ -577,7 +604,12 @@ program unfold
           open(iu,file=fname,status='unknown',form='formatted',action='write')
           write(iu,*) lastq(ipath)-lastq(ipath-1),ne+1,emin,emax
           do iq = iq1,iq2
-            write(iu,*) q(:,iq), iline(iq)
+            if (label(iq) .eq. ' ') then
+              string = "' '"
+            else
+              string = "'"//trim(label(iq))//"'"
+            endif
+            write(iu,'(3(f14.8),i5,a12)') q(:,iq), iline(iq), string
             do j = 0,ne
               write(iu,'(e15.6)') rdos(iq,j,ispin)
 !              write(iu,'(3i4,e15.6)') iq,j,ispin,rdos(iq,j,ispin)
@@ -595,6 +627,8 @@ program unfold
 
   ! Write timer report
   call timer_report( printNow=.true. )
+
+if(myNode==0) print*,'Job completed.'
 
 #ifdef MPI
   call MPI_finalize(ierr)
