@@ -6,7 +6,6 @@ NumberOfSpecies     2
 SCF.Mix DM
 DM.NumberPulay 6
 DM.MixingWeight 0.02
-MaxSCFIterations 3000
 
 MeshCutoff  50 Ry
 

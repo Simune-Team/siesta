@@ -20,7 +20,7 @@ TranSiesta calculates the density matrix using the following procedure:
    are fixed. This is because the open boundary couples to a constant
    potential, the electrodes.
    This boundary is chosen as the electrode that has the largest cross
-   section along the semi-infinite direction, see [[m_ts_hartree:ts_hratree_fix]].
+   section along the semi-infinite direction, see [[m_ts_hartree:ts_hartree_fix]].
 4. Start the Green function method. In the
    TranSiesta SCF the electrode self-energies are taken from the TSGF*
    files and used to calculate the device Green function, see [[m_transiesta:transiesta]].

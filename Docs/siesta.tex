@@ -108,8 +108,31 @@
 % Include settings appropriate for siesta
 \input{tex/init.tex}
 
+% Title
+\title{SIESTA manual 4.1-b4}
+
 % Set the date
 \date{\today}
+
+% Local command for the software version for printing
+\providecommand\softwareversion{4.1-b4}
+
+% Specify Authors
+\author{%
+    Emilio Artacho, %
+    Jose Maria Cela, %
+    Julian D. Gale, %
+    Alberto Garcia, %
+    Javier Junquera, %
+    Richard M. Martin, %
+    Pablo Ordejon, %
+    Daniel Sanchez-Portal, %
+    Jose M. Soler, %
+    Nick R. Papior%
+}
+
+% Ensure the information is written in the PDF (see tex/setup.tex)
+\setpdfmetadata
 
 \begin{document}
 
@@ -130,7 +153,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{S I E S T A \, \, \input{../version.info}}}
+{\Huge \textbf{S I E S T A \, \, \softwareversion}}
 
 \vspace{1cm}
 \hrulefill
@@ -141,6 +164,52 @@
 \vspace{1.5cm}
 {\Large \url{http://www.uam.es/siesta}}
 
+\vspace{2.5cm}
+\siesta\ Steering Committee:
+\vspace{1.0cm}
+
+\begin{tabular}{ll}
+  
+  Emilio Artacho &
+  \textit{CIC-Nanogune and University of Cambridge} \\
+  
+  Jos\'e Mar\'{\i}a Cela &
+  \textit{Barcelona Supercomputing Center} \\
+  
+  Julian D. Gale &
+  \textit{Curtin University of Technology, Perth} \\
+  
+  Alberto Garc\'{\i}a &
+  \textit{Institut de Ci\`encia de Materials, CSIC, Barcelona} \\
+
+  Javier Junquera &
+  \textit{Universidad de Cantabria, Santander} \\
+
+  Richard M. Martin &
+  \textit{University of Illinois at Urbana-Champaign} \\
+
+  Pablo Ordej\'on &
+  \textit{Centre de Investigaci\'o en Nanoci\`encia} \\
+  &
+  \textit{  i Nanotecnologia, (CSIC-ICN), Barcelona} \\
+  
+  Nick R\"ubner Papior &
+  \textit{Technical University of Denmark} \\
+  
+  Daniel S\'anchez-Portal &
+  \textit{Unidad de F\'{\i}sica de Materiales,} \\
+  &
+  \textit{Centro Mixto CSIC-UPV/EHU, San Sebasti\'an} \\
+  
+  Jos\'e M. Soler &
+  \textit{Universidad Aut\'onoma de Madrid} \\
+   
+\end{tabular}
+ 
+\vspace{0.5cm}
+
+\siesta\ is Copyright \copyright\ 1996-2018 by The Siesta Group
+
 \end{center}
 
 \end{titlepage}
@@ -149,50 +218,8 @@
 
 \newpage
 
-
 \section*{Contributors to \siesta}
 \addcontentsline{toc}{section}{Contributors to \texorpdfstring{\siesta}{Siesta}}
-
-\siesta\ is Copyright \copyright\  1996-2017 by The Siesta Group:
-\vspace{0.5cm}
-
-\hbox{ \hskip 0.1cm
-\begin{tabular}{ll}
-
-  
-{ Emilio Artacho} &
-   \textit{CIC-Nanogune and University of Cambridge} \\ \\
-
-{ Jos\'e Mar\'{\i}a Cela} &
-   \textit{Barcelona Supercomputing Center} \\ \\
-
-{ Julian D. Gale} &
-   \textit{Curtin University of Technology, Perth} \\ \\
-
-{ Alberto Garc\'{\i}a} &
-   \textit{Institut de Ci\`encia de Materials, CSIC, Barcelona} \\ \\
-
-{ Javier Junquera} &
-   \textit{Universidad de Cantabria, Santander} \\ \\
-
-{ Richard M. Martin} &
-   \textit{University of Illinois at Urbana-Champaign} \\ \\
-
-{ Pablo Ordej\'on} &
-   \textit{Centre de Investigaci\'o en Nanoci\`encia} \\
-                                 &
-   \textit{  i Nanotecnologia, (CSIC-ICN), Barcelona} \\ \\
-
-{ Daniel S\'anchez-Portal} &
-   \textit{Unidad de F\'{\i}sica de Materiales,} \\
-                                 &
-   \textit{Centro Mixto CSIC-UPV/EHU, San Sebasti\'an} \\ \\
-
-{ Jos\'e M. Soler} &
-   \textit{Universidad Aut\'onoma de Madrid} \\ \\
-
-\end{tabular}
-}
 
 The SIESTA project was initiated by Pablo Ordejon (then at the Univ. de
 Oviedo), and Jose M. Soler and Emilio Artacho (Univ. Autonoma de Madrid,
@@ -200,13 +227,16 @@ UAM).  The development team was then joined by Alberto Garcia (then at
 Univ. del Pais Vasco, Bilbao), Daniel Sanchez-Portal (UAM), and
 Javier Junquera (Univ. de Oviedo and later UAM), and sometime later by
 Julian Gale (then at Imperial College, London). In 2007 Jose M. Cela
-(Barcelona Supercomputing Center, BSC) became a core developer.
+(Barcelona Supercomputing Center, BSC) became a core developer and
+member of the Steering Committee.
 
-The current \tsiesta\ module within SIESTA is developed by 
-Nick R. Papior (then at Technical University of Denmark) and Mads Brandbyge. 
 The original \tsiesta\ module was developed by
 Pablo Ordejon and Jose L. Mozos (then at ICMAB-CSIC), and Mads Brandbyge,
 Kurt Stokbro, and Jeremy Taylor (Technical Univ. of Denmark).
+
+The current \tsiesta\ module within SIESTA is developed by 
+Nick R. Papior and Mads Brandbyge. Nick R. Papior became a core
+developer and member of the Steering Committee in 2015.
 
 Other contributors (we apologize for any omissions):
 
@@ -217,6 +247,7 @@ Xavier Blase,
 Jorge I. Cerd\'a,
 Ram\'on Cuadrado,
 Michele Ceriotti,
+Fabiano Corsetti,
 Raul de la Cruz,
 Gabriel Fabricius,
 Marivi Fernandez-Serra,
@@ -224,9 +255,9 @@ Jaime Ferrer,
 Chu-Chun Fu,
 Sandra Garcia,
 Victor M. Garcia-Suarez,
-Georg Huhs,
 Rogeli Grima,
 Rainer Hoft,
+Georg Huhs,
 Jorge Kohanoff,
 Richard Korytar,
 In-Ho Lee,
@@ -240,7 +271,6 @@ Volodymyr Maslyuk,
 Juana Moreno,
 Frederico Dutilh Novaes, 
 Micael Oliveira,
-Nick R\"ubner Papior,
 Magnus Paulsson,
 Oscar Paz,
 Andrei Postnikov,
@@ -257,8 +287,8 @@ available to P. Ordejon.  Although we no longer use the routines in
 that code, it was essential in the initial development of SIESTA,
 which still uses many of the algorithms developed by them.
 
+\newpage
 \tableofcontents
-
 \newpage
 
 \section{INTRODUCTION}
@@ -315,27 +345,27 @@ It may be compiled for serial or parallel execution (under MPI).
 
 It routinely provides:
 \begin{itemize}
-\item Total and partial energies.
-\item Atomic forces.
-\item Stress tensor.
-\item Electric dipole moment.
-\item Atomic, orbital and bond populations (Mulliken).
-\item Electron density.
+  \item Total and partial energies.
+  \item Atomic forces.
+  \item Stress tensor.
+  \item Electric dipole moment.
+  \item Atomic, orbital and bond populations (Mulliken).
+  \item Electron density.
 \end{itemize}
 
 And also (though not all options are compatible):
 \begin{itemize}
-\item Geometry relaxation, fixed or variable cell.
-\item Constant-temperature molecular dynamics (Nose thermostat).
-\item Variable cell dynamics (Parrinello-Rahman).
-\item Spin polarized calculations (colinear or not).
-\item k-sampling of the Brillouin zone.
-\item Local and orbital-projected density of states.
-\item COOP and COHP curves for chemical bonding analysis.
-\item Dielectric polarization.
-\item Vibrations (phonons).
-\item Band structure.
-\item Ballistic electron transport under non-equilibrium (through \tsiesta)
+  \item Geometry relaxation, fixed or variable cell.
+  \item Constant-temperature molecular dynamics (Nose thermostat).
+  \item Variable cell dynamics (Parrinello-Rahman).
+  \item Spin polarized calculations (colinear or not).
+  \item k-sampling of the Brillouin zone.
+  \item Local and orbital-projected density of states.
+  \item COOP and COHP curves for chemical bonding analysis.
+  \item Dielectric polarization.
+  \item Vibrations (phonons).
+  \item Band structure.
+  \item Ballistic electron transport under non-equilibrium (through \tsiesta)
 \end{itemize}
 
 
@@ -2532,8 +2562,7 @@ above.
   potentials. \fdf{FilterTol} is ignored if \fdf{FilterCutoff} is
   present in the input file.  If neither \fdf{FilterCutoff} nor
   \fdf{FilterTol} are present, no filtering is performed.  See
-  \citeauthor{SOLER20091134}\cite{SOLER20091134}, for details of the
-  filtering procedure.
+  \citet{SOLER20091134}, for details of the filtering procedure.
 
   \textbf{Warning:} If the value of \fdf{FilterCutoff} is made too
   small (or \fdf{FilterTol} too large) some of the filtered basis
@@ -4189,7 +4218,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
     \option[Pulay] %
     \index{SCF!mixing!Pulay}
     Using the Pulay mixing method corresponds using the
-    \cite{Kresse1996} variant. It relies on the previous $N$ steps and
+    \citet{Kresse1996} variant. It relies on the previous $N$ steps and
     uses those for estimating an optimal input
     $\DM^{n+1}_{\mathrm{in}}$ for the following iteration. The
     equation can be written as
@@ -4257,14 +4286,14 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
       The original\footnote{As such the ``original'' version is a
           variant it-self. But this is more stable in the far majority
           of cases.} Pulay mixing scheme, as implemented in
-      \cite{Kresse1996}.
+      \citet{Kresse1996}.
       
       \option[GR] %
-      The ``guaranteed-reduction'' variant of Pulay,
-      \cite{Bowler2000}. This variant has a special convergence
+      The ``guaranteed-reduction'' variant of
+      Pulay\cite{Bowler2000}. This variant has a special convergence
       path. It interchanges between linear and Pulay mixing thus using
-      the exact gradient at each $\DM^n_{\mathrm{in}}$.
-      For relatively simple systems this may be advantageous to
+      the exact gradient at each $\DM^n_{\mathrm{in}}$.  For
+      relatively simple systems this may be advantageous to
       use. However, for complex systems it may be worse until it
       reaches a convergence basin.
 
@@ -4326,7 +4355,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
   periodically restart the history. This may greatly improve the
   convergence path as local constraints in the minimization process
   are periodically removed. This method has similarity to the method
-  proposed in \cite{Banerjee2016} and is a special case of the
+  proposed in \citet{Banerjee2016} and is a special case of the
   \fdf{SCF.Mixer!Kick} method.
 
   Please see \fdf{SCF.Mixer!Restart.Save} which is advised to be set
@@ -6902,7 +6931,7 @@ is still restricted to $\Gamma$-point calculations.
 The following is a brief description of the input-file parameters
 relevant to the workings of the PEXSI solver. For more background,
 including a discussion of the conditions under which this solver is
-competitive, the user is referred to the paper \cite{Lin2014}, and
+competitive, the user is referred to the paper \citet{Lin2014}, and
 references therein.
 
 The technology involved in the PEXSI solver can also be used
@@ -8581,14 +8610,16 @@ or interpolation of bands), can be downloaded from
 \begin{fdfentry}{Geometry!Hartree}[block]%
   \index{SCF!Potential}%
   \index{Gate}%
-
   
-  Allow introduction of regions with changed Hartree
+  Allows introduction of regions with changed Hartree
   potential. Introducing a potential can act as a repulsion
   (positive value) or attraction (negative value) region.
 
   The regions are defined as geometrical objects and there are no
   limits to the number of defined geometries.
+
+  Details regarding this implementation may be found in
+  \citet{Papior2016a}.
 
   Currently 4 different kinds of geometries are allowed:
   \begin{fdfoptions}
@@ -8736,7 +8767,10 @@ or interpolation of bands), can be downloaded from
   To see how the input should be formatted, see
   \fdf{Geometry!Hartree} and remove the unit-specification. Note that
   the input value is number of electrons (similar to \fdf{NetCharge}).
-  
+
+  Details regarding this implementation may be found in
+  \citet{Papior2016a}.
+
 \end{fdfentry}
 
 
@@ -9217,12 +9251,12 @@ always include all arrays.
 
 \begin{fdflogicalF}{UseTreeTimer}
 
-Enable an experimental timer which is based on wall time on the master
-node and is aware of the tree-structure of the timed sections. At the
-end of the program, a report is generated in the output file, and a
-\file{time.json} file in JSON format is also written. \index{JSON
-  timing report@\textbf{JSON timing report}} This file can be used by
-third-party scripts to process timing data.
+  Enable an experimental timer which is based on wall time on the
+  master node and is aware of the tree-structure of the timed
+  sections. At the end of the program, a report is generated in the
+  output file, and a \file{time.json} file in JSON format is also
+  written. \index{JSON timing report} This file can be used by
+  third-party scripts to process timing data.
 
   \note, if used with the PEXSI solver (see Sec.~\ref{SolverPEXSI})
   this defaults to \fdftrue.
@@ -9328,6 +9362,9 @@ if needed.
   This file will be created with a large set of \emph{groups} which
   make separating the quantities easily. Also it will inherently
   denote the units for the stored quantities.
+
+  \note this option is not available for MD/relaxations, only for
+  force constant runs.
   
 \end{fdflogicalF}
 
@@ -11104,7 +11141,7 @@ The \tsiesta\ method is a procedure to solve the electronic
 structure of an open system formed by a finite structure sandwiched
 between semi-infinite metallic leads. A finite bias can be applied
 between both leads, to drive a finite current. The method is described
-in detail in \cite{Brandbyge2002,Papior2017}. In practical terms,
+in detail in \citet{Brandbyge2002,Papior2017}. In practical terms,
 calculations using \tsiesta\ involve the solution of the
 electronic density from the DFT Hamiltonian using Greens functions
 techniques, instead of the usual diagonalization procedure. Therefore,
@@ -11114,15 +11151,15 @@ charge density for the open system. These routines are packed in a set
 of modules, and we will refer to it as the '\tsiesta\ module'
 in what follows.
 
-\tsiesta\ was originally developed by Mads Brandbyge,
-Jos\'e-Luis Mozos, Pablo Ordej\'on, Jeremy Taylor and Kurt Stokbro
-(see references). It consisted, mainly, in setting up an interface
-between \siesta\ and the (tight-binding) transport codes developed
-by M. Brandbyge and K. Stokbro. Initially everything was written in
-Fortran-77. As \siesta\ started to be translated to Fortran-90, so
-were the \tsiesta\ parts of the code. This was accomplished by
-Jos\'e-Luis Mozos, who also worked on the parallelization of
-\tsiesta. 
+\tsiesta\ was originally developed by Mads Brandbyge, Jos\'e-Luis
+Mozos, Pablo Ordej\'on, Jeremy Taylor and Kurt
+Stokbro\cite{Brandbyge2002}. It consisted, mainly, in setting up an
+interface between \siesta\ and the (tight-binding) transport codes
+developed by M. Brandbyge and K. Stokbro. Initially everything was
+written in Fortran-77. As \siesta\ started to be translated to
+Fortran-90, so were the \tsiesta\ parts of the code. This was
+accomplished by Jos\'e-Luis Mozos, who also worked on the
+parallelization of \tsiesta.
 %
 Subsequently Frederico D. Novaes extended \tsiesta\ to allow $k$-point
 sampling for transverse directions. Additional extensions was
@@ -11133,7 +11170,7 @@ R. Papior and encompass highly advanced inversion algorithms as well
 as allowing $N$ electrode setups among many new features. Furthermore,
 the utility \tbtrans\ has also been fully re-coded (by Nick R. Papior)
 to be a generic tight-binding code capable of analyzing physics from
-the Greens function perspective in $N\ge1$ setups.
+the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
 
 
 \begin{itemize}
@@ -11260,12 +11297,94 @@ or define these options in the electrode fdf files:
 \fdf{TS!HS.Save} and \fdf{TS!DE.Save} to \fdf*{true} (the above
 \code{--electrode} is a shorthand for setting the two options).
 
-\paragraph{Principal layer interactions} %
+\subsubsection{Matching coordinates}
+
+Here are some rules required to successfully construct the appropriate
+coordinates of the scattering region. Contrary to versions prior to
+4.1, the order of atoms is largely irrelevant. One may define all
+electrodes, then subsequently the device, or vice versa. Similarly,
+buffer atoms are not restricted to be the first/last atoms.
+
+However, atoms in any given electrode \emph{must} be consecutive in
+the device file. I.e. if an electrode input option is given by:
+\begin{fdfexample}
+  %block TS.Elec.<>
+    HS ../elec-<>/siesta.TSHS
+    bloch 1 3 1
+    used-atoms 4
+    electrode-position 10
+    ...
+  %endblock
+\end{fdfexample}
+then the atoms from $10$ to $10+4*3-1$ must coincide with the atoms of
+the calculation performed in the \program{../elec-<>/}
+subdirectory. The above options will be discussed in the coming
+section.
+
+When using the Bloch expansion (highly recommended if your system
+allows it) it is advised to follow the \emph{tiling} method. However
+both of the below sequences are allowed.
+
+\paragraph{Tile} \fdfindex{TS!Elec.<>!Bloch}%
+Here the atoms are copied and displaced by the full
+electrode. Generally this expansion should be preferred over the
+\emph{repeat} expansion due to faster execution.
+\begin{fdfexample}
+  iaD = 10 ! as per the above input option
+  do iC = 0 , nC - 1
+  do iB = 0 , nB - 1
+  do iA = 0 , nA - 1
+    do iaE = 1 , na_u
+      xyz_device(:, iaD) = xyz_elec(:, iaE) + &
+          cell_elec(:, 1) * iA + &
+          cell_elec(:, 2) * iB + &
+          cell_elec(:, 3) * iC
+      iaD = iaD + 1
+    end do
+  end do
+  end do
+  end do
+\end{fdfexample}
+
+\paragraph{Repeat} \fdfindex{TS!Elec.<>!Bloch}%
+Here the atoms are copied individually. Generally
+this expansion should \emph{not} be used.
+\begin{fdfexample}
+  iaD = 10 ! as per the above input option
+  do iaE = 1 , na_u
+    do iC = 0 , nC - 1
+    do iB = 0 , nB - 1
+    do iA = 0 , nA - 1
+      xyz_device(:, iaD) = xyz_elec(:, iaE) + &
+          cell_elec(:, 1) * iA + &
+          cell_elec(:, 2) * iB + &
+          cell_elec(:, 3) * iC
+      iaD = iaD + 1
+    end do
+    end do
+    end do
+  end do
+\end{fdfexample}
+
+As a help if the electrode coordinates does not coincide, \tsiesta\
+prints out the expected coordinates as though the first device atom
+coincides with the first electrode atom. Another means to create this
+is using the \sisl\cite{sisl} program and this command line:
+\begin{fdfexample}
+  sgeom -tx 1 -ty 3 -tz 1 ELEC.fdf DEVICE_ELEC.fdf # Tile
+  sgeom -rz 1 -ry 3 -rx 1 ELEC.fdf DEVICE_ELEC.fdf # Repeat
+\end{fdfexample}
+and then shift the coordinates according to the placement in the
+device region. Note how repeating has different argument order of
+tiling.
+
+
+\subsubsection{Principal layer interactions} %
 \index{transiesta!electrode!principal layer}%
 
 It is \emph{extremely} important that the electrodes only interact
 with one neighboring supercell due to the self-energy
-calculation. \tsiesta\ will print out a block as this
+calculation\cite{Sancho1985}. \tsiesta\ will print out a block as this
 \begin{verbatim}
  <> principal cell is perfect!
 \end{verbatim}
@@ -12719,85 +12838,6 @@ If one chooses a different reference energy than $0$, then the limits
 should change accordingly. Note that here \fdf*{kT} refers to
 \fdf{TS!ElectronicTemperature}.
 
-
-
-\subsection{Matching electrode coordinates: basic rules}
-
-Having discussed the possible input options of \tsiesta\ here we just
-list a set of rules to construct the appropriate coordinates of the
-scattering region. Contrary to versions prior to 4.1, the order of
-atoms is largely irrelevant. One may define all electrodes, then
-subsequently the device, or vice versa. Similarly are buffer atoms not
-restricted to be the first/last atoms.
-%
-However, each electrode atoms \emph{must} be consecutive in the input
-file. I.e. if an electrode input option is given by:
-\begin{fdfexample}
-  %block TS.Elec.<>
-    HS ../elec-<>/siesta.TSHS
-    bloch 1 3 1
-    used-atoms 4
-    electrode-position 10
-  %endblock
-\end{fdfexample}
-then the atoms from $10$ to $10+4*3-1$ must coincide with the atoms of
-the calculation performed in the \program{../elec-<>/}
-subdirectory.
-
-When using the Bloch expansion it is advised to follow the
-\emph{tiling} method. However both of the below sequences are allowed.
-
-\paragraph{Tile} \fdfindex{TS!Elec.<>!Bloch}%
-Here the atoms are copied and displaced by the full
-electrode. Generally this expansion should be preferred over the
-\emph{repeat} expansion due to faster execution.
-\begin{fdfexample}
-  iaD = 10 ! as per the above input option
-  do iC = 0 , nC - 1
-  do iB = 0 , nB - 1
-  do iA = 0 , nA - 1
-    do iaE = 1 , na_u
-      xyz_device(:, iaD) = xyz_elec(:, iaE) + &
-          cell_elec(:, 1) * iA + &
-          cell_elec(:, 2) * iB + &
-          cell_elec(:, 3) * iC
-      iaD = iaD + 1
-    end do
-  end do
-  end do
-  end do
-\end{fdfexample}
-
-\paragraph{Repeat} \fdfindex{TS!Elec.<>!Bloch}%
-Here the atoms are copied individually. Generally
-this expansion should not be used.
-\begin{fdfexample}
-  iaD = 10 ! as per the above input option
-  do iaE = 1 , na_u
-    do iC = 0 , nC - 1
-    do iB = 0 , nB - 1
-    do iA = 0 , nA - 1
-      xyz_device(:, iaD) = xyz_elec(:, iaE) + &
-          cell_elec(:, 1) * iA + &
-          cell_elec(:, 2) * iB + &
-          cell_elec(:, 3) * iC
-      iaD = iaD + 1
-    end do
-    end do
-    end do
-  end do
-\end{fdfexample}
-
-As a help, \tsiesta\ prints out the expected coordinates as though the
-first device atom coincides with the first electrode atom. Another
-means to create this is using the \sisl\cite{sisl} program and this command
-line:
-\begin{fdfexample}
-  sgeom -tx 1 -ty 3 -tz 1 ELEC.fdf DEVICE_ELEC.fdf # Tile
-  sgeom -rz 1 -ry 3 -rx 1 ELEC.fdf DEVICE_ELEC.fdf # Repeat
-\end{fdfexample}
-and then shift the coordinates according to the placement in the
-device region. Note how repeating has different order of tiling.
 
 \subsection{Output}
 

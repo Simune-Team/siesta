@@ -119,6 +119,7 @@ contains
 
   subroutine tbt_tri_init( dit , sp , cell, na_u, xa, lasto, proj )
 
+    use sys, only : bye
     use fdf, only: fdf_get
     use parallel, only : IONode
 #ifdef MPI
@@ -203,12 +204,11 @@ contains
     if ( fdf_get('TBT.Analyze', .false.) ) then
        
        call tbt_tri_analyze(dit, tmpSp2, N_Elec, Elecs, &
-            cell, na_u, xa, lasto, r_oDev, BTD_method)
+           cell, na_u, xa, lasto, r_oDev, BTD_method)
+
+       call timer('TBT-analyze', 3)
        
-#ifdef MPI
-       call MPI_Barrier(MPI_Comm_World,i)
-#endif
-       call die('Stopping TBtrans on purpose after analyzation step...')
+       call bye('Stopping TBtrans on purpose after analyzation step...')
        
     end if
 
@@ -467,6 +467,8 @@ contains
     ! Capture the min memory pivoting scheme
     character(len=64) :: min_mem_method
     real(dp) :: min_mem
+
+    call timer('TBT-analyze', 1)
 
     ! Write out all pivoting etc. analysis steps
     if ( IONode ) write(*,'(/,a)') 'tbt: BTD analysis'
@@ -758,6 +760,8 @@ contains
        write(*,*) ! new-line
     end if
     
+    call timer('TBT-analyze', 2)
+
   contains
 
     ! Print out all relevant information for this

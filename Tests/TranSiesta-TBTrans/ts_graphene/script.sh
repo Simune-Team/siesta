@@ -30,7 +30,7 @@ if [ -z "$TBT" ] ; then
     TBT="${TS_EXEC_PREFIX} ${ROOT_DIR}/Util/TS/TBtrans/tbtrans"
     if [ ! -e ${ROOT_DIR}/Util/TS/TBtrans/tbtrans ]; then
 	(cd "${ROOT_DIR}/Util/TS/TBtrans" ;
-	 make OBJDIR="$OBJDIR" )
+	 make -j OBJDIR="$OBJDIR" )
     fi
 fi
 
@@ -80,13 +80,13 @@ do
     
     ln ../$SCAT/$SCAT.TSHS .
     ln ../../$SCAT.fdf .
-    $TBT $SCAT.fdf > $SCAT-tbt.out
+    $TBT $SCAT.fdf > tbt_$SCAT.out
     RETVAL=$?
     if [ $RETVAL -ne 0 ]; then
 	echo "The transport calculation did not go well ..."
 	exit
     fi
-    cp $SCAT-tbt.out $SCAT.TBT.TRANS_Left-Right ../..
+    cp tbt_$SCAT.out $SCAT.TBT.TRANS_Left-Right ../..
     cd ..
 
 done

@@ -91,7 +91,7 @@ module m_ts_electype
      ! chemical potential of the electrode
      type(ts_mu), pointer :: mu => null()
      ! infinity direction
-     integer :: inf_dir = INF_NEGATIVE
+     integer :: inf_dir = INF_POSITIVE
      ! transport direction (determines H01)
      ! And is considered with respect to the electrode direction...
      !  t_dir is with respect to the electrode unit-cell
@@ -399,47 +399,48 @@ contains
            if ( len_trim(ln) /= 1 ) then
              call die(trim(tmp))
            end if
-
            ln = trim(ln) // fdf_bnames(pline,3)
-
          end if
 
-         ! preset
-         this%t_dir = 0           
+         ! preset for checks of arguments
+         this%t_dir = 0
+         i = 0
 
          ! now for testing
          if ( ln(1:1) == '+' ) then
+           i = 1
            this%inf_dir = INF_POSITIVE
+           ln = ln(2:)
          else if ( ln(1:1) == '-' ) then
+           i = 1
            this%inf_dir = INF_NEGATIVE
-           ! The 3 below cases are *special* in the sense that they require the user
-           ! to supply the GF files (TranSiesta/TBtrans cannot calculate the self-energies of
-           ! real-space Green functions).
-         else if ( leqi(ln,'ab') .or. leqi(ln, 'ba') ) then
+           ln = ln(2:)
+         end if
+           
+         ! The 3 below cases are *special* in the sense that they require the user
+         ! to supply the GF files (TranSiesta/TBtrans cannot calculate the self-energies of
+         ! real-space Green functions).
+         if ( leqi(ln,'ab') .or. leqi(ln, 'ba') ) then
            this%t_dir = 6 ! Voigt notation
          else if ( leqi(ln,'ac') .or. leqi(ln, 'ca') ) then
            this%t_dir = 5
          else if ( leqi(ln,'bc') .or. leqi(ln, 'cb') ) then
            this%t_dir = 4
+         else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
+           this%t_dir = 3
+         else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
+           this%t_dir = 2
+         else if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
+           this%t_dir = 1
          else
+           ! Simply a wrong argument (lattice vector)
            call die(trim(tmp))
          end if
 
-         if ( this%t_dir > 3 ) then
-           ! This flag has no influence
-           this%inf_dir = INF_NEGATIVE
-         else
-           ! figure out direction...
-           ln = ln(2:)
-           if ( leqi(ln,'a') .or. leqi(ln,'a1') ) then
-             this%t_dir = 1
-           else if ( leqi(ln,'b') .or. leqi(ln,'a2') ) then
-             this%t_dir = 2
-           else if ( leqi(ln,'c') .or. leqi(ln,'a3') ) then
-             this%t_dir = 3
-           else
-             call die(trim(tmp))
-           end if
+         ! In case only a single lattice vector has been specified, in that
+         ! case the sign of the semi-infinite direction *must* be used!
+         if ( this%t_dir <= 3 .and. i == 0 ) then
+           call die(trim(tmp))
          end if
          info(2) = .true.
           
@@ -879,14 +880,33 @@ contains
     ! Calculate planes of the electrodes
     select case ( this%t_dir )
     case ( 4 ) ! B-C
-      p = this%cell(:,2)
-      p = this%cell(:,3)
+      call cross(this%cell(:,1), this%cell(:,2), p)
+      contrib = VNORM(p)
+      call cross(this%cell(:,1), this%cell(:,3), p)
+      if ( contrib > VNORM(p) ) then
+        ! the area on A-B is biggest, hence the normal plane is along C
+        p = this%cell(:,3)
+      else
+        p = this%cell(:,2)
+      end if
     case ( 5 ) ! A-C
-      p = this%cell(:,1)
-      p = this%cell(:,3)
+      call cross(this%cell(:,2), this%cell(:,1), p)
+      contrib = VNORM(p)
+      call cross(this%cell(:,2), this%cell(:,3), p)
+      if ( contrib > VNORM(p) ) then
+        p = this%cell(:,3)
+      else
+        p = this%cell(:,1)
+      end if
     case ( 6 ) ! A-B
-      p = this%cell(:,1)
-      p = this%cell(:,2)
+      call cross(this%cell(:,3), this%cell(:,1), p)
+      contrib = VNORM(p)
+      call cross(this%cell(:,3), this%cell(:,2), p)
+      if ( contrib > VNORM(p) ) then
+        p = this%cell(:,2)
+      else
+        p = this%cell(:,1)
+      end if
     case default
       p = this%cell(:,this%t_dir)
     end select
@@ -1129,7 +1149,7 @@ contains
         
       end do
 
-      if ( this%kcell_check ) then
+      if ( this%kcell_check .and. this%t_dir <= 3 ) then
 
         ! Check that there is actually k-points in the transport direction
         j = this%t_dir
@@ -1143,23 +1163,25 @@ contains
           ldie = .true.
         end if
 
-        ! If the system is not a Gamma calculation, then the file must
-        ! not be either (the Bloch expansion will only increase the number of
-        ! k-points, hence the above)
-        do j = 1 , 3
-          k = this%Bloch(j)
-          ! The displacements are not allowed non-equivalent.
-          er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
-          if ( j == this%t_dir ) cycle
-          do i = 1 , 3
-            if ( i == this%t_dir ) cycle
-            if ( j == i ) then
-              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
-            else 
-              er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
-            end if
+        if ( .not. this%is_gamma ) then
+          ! If the system is not a Gamma calculation, then the file must
+          ! not be either (the Bloch expansion will only increase the number of
+          ! k-points, hence the above)
+          do j = 1 , 3
+            k = this%Bloch(j)
+            ! The displacements are not allowed non-equivalent.
+            er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
+            if ( j == this%t_dir ) cycle
+            do i = 1 , 3
+              if ( i == this%t_dir ) cycle
+              if ( j == i ) then
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j))*k )
+              else 
+                er = er .or. ( this_kcell(i,j) /= kcell(pvt(i),pvt(j)) )
+              end if
+            end do
           end do
-        end do
+        end if
 
         if ( er .and. IONode ) then
 
@@ -1550,7 +1572,7 @@ contains
       ! Calculate pqosition in the grid
       call dgesv(3,1,LHS,3,idx,RHS,3,i)
       if ( i /= 0 ) then
-         call die('ts_voltage: Could not solve linear system.')
+         call die('ts_electype: Could not solve linear system.')
       end if
       
       ! Convert to integer position

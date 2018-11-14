@@ -1,7 +1,27 @@
 # Default stuff...
-Mixer.Debug.MPI
-SCF.Mixer.Method Linear
-SCF.Mixer.Weight 0.01
+%block SCF.Mixers
+  linear-1
+  linear-2
+  linear-3
+%endblock
+
+%block SCF.Mixer.linear-1
+  method linear
+  weight 0.01
+  iterations 200
+  next linear-2
+%endblock
+%block SCF.Mixer.linear-2
+  method linear
+  weight 0.02
+  iterations 100
+  next linear-3
+%endblock
+%block SCF.Mixer.linear-3
+  method linear
+  weight 0.03
+%endblock
+
 
 SystemName          Linear Fe3 cluster.
 SystemLabel         mix_linear
@@ -48,7 +68,7 @@ MeshCutoff        150. Ry
 
 ElectronicTemperature   0.1 eV
 
-MaxSCFiterations      200
+MaxSCFIterations 2000
 
 MD.TypeOfRun      CG
 MD.NumCGsteps     0

@@ -147,8 +147,8 @@ contains
     TS_HS_save = fdf_get('TS.HS.Save',.false.)
     TS_DE_save = fdf_get('TS.DE.Save',.false.)
 #endif
-    onlyS      = fdf_get('TS.onlyS',.false.)
-    onlyS      = fdf_get('TS.S.Save',onlyS)
+    onlyS = fdf_get('TS.onlyS',.false.)
+    onlyS = fdf_get('TS.S.Save',onlyS)
 
     ! Immediately return from transiesta when this occurs
     ! no settings from the intrinsic transiesta routines
@@ -702,8 +702,9 @@ contains
     end do
 
     if ( na_u <= sum(TotUsedAtoms(Elecs)) ) then
-       write(*,'(a)') 'Please stop this madness. What where you thinking?'
-       call die('Electrodes occupy the entire device!!!')
+      write(*,'(a)') 'Please stop this madness. What where you thinking?'
+      write(*,*) na_u, sum(TotUsedAtoms(Elecs))
+      call die('Electrodes occupy the entire device!!!')
     end if
     
     ! Initialize the electrode regions
@@ -1130,11 +1131,17 @@ contains
     err = .false.
 
     write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
-    if ( FixSpin .and. (TS_HS_save .or. TSmode) ) then
-       write(*,'(a)') 'Fixed spin not possible with TranSiesta!'
-       write(*,'(a)') 'Disable TS.HS.Save or FixSpin'
-       write(*,'(a)') 'Electrodes with fixed spin is not possible with TranSiesta!'
-       call die('Fixing spin is not possible in TranSiesta')
+    if ( FixSpin ) then
+      if ( TSmode ) then
+        write(*,'(a)') 'Fixed spin for transiesta calculations is not implemented!'
+        call die('Fixing spin is not possible in TranSiesta')
+      end if
+      if ( TS_HS_save ) then
+        write(*,'(a)') 'Fixed spin aligns the Fermi-levels in the output TSHS to spin-UP!'
+      end if
+      if ( TS_DE_save ) then
+        write(*,'(a)') 'Fixed spin aligns the Fermi-levels in the output TSDE to spin-UP!'
+      end if
     end if
 
     if ( .not. TSmode ) then

@@ -2064,7 +2064,7 @@ contains
     type(tMixer), pointer :: mix
     integer, intent(in) :: n
     real(dp), intent(in) :: xin(n), F(n), xnext(n)
-    integer :: rsave
+    integer :: rsave, is
 
     select case ( mix%m )
     case ( MIX_LINEAR )
@@ -2101,12 +2101,12 @@ contains
           end if
           
           if ( rsave == 0 ) then
-             call reset(mix%stack(1))
-             call reset(mix%stack(2))
-             call reset(mix%stack(3))
+            do is = 1, size(mix%stack)
+              call reset(mix%stack(is))
+            end do
           else
-             call reset(mix%stack(1),-rsave)
-             call reset(mix%stack(2),-rsave+1)
+            call reset(mix%stack(1),-rsave)
+            call reset(mix%stack(2),-rsave+1)
           end if
           
        case ( MIX_BROYDEN )
@@ -2333,84 +2333,100 @@ contains
     ! First try and
     next => mix%next
     if ( associated(next) ) then
+      
+      ! Whether or not the two methods are allowed
+      ! to share history
+      copy_stack = mix%m == next%m
+      ! Only Pulay original and Broyden methods are compatible.
+      ! The Pulay-GR variant does not have the same data stored.
+      select case ( mix%m )
+      case ( MIX_PULAY )
+        select case ( next%m )
+        case ( MIX_PULAY )
+          copy_stack = mod(mix%v, 2) == mod(next%v, 2)
+        case ( MIX_BROYDEN )
+          copy_stack = mod(mix%v, 2) == 0
+        end select
+      case ( MIX_BROYDEN )
+        select case ( next%m )
+        case ( MIX_PULAY )
+          copy_stack = mod(mix%v, 2) == 0
+          ! otherwise both are broyden
+        end select
+      end select
 
-       ! Whether or not the two methods are allowed
-       ! to share history
-       copy_stack = mix%m == next%m
-       select case ( mix%m )
-       case ( MIX_PULAY , MIX_BROYDEN )
-          select case ( next%m )
-          case ( MIX_PULAY , MIX_BROYDEN )
-             copy_stack = .true.
-          end select
-       end select
-       copy_stack = copy_stack .and. allocated(mix%stack)
+      copy_stack = copy_stack .and. allocated(mix%stack)
 
-       ! If the two methods are similar
-       if ( copy_stack ) then
-          
-          ! They are similar, copy over the history stack
-          do is = 1 , size(mix%stack)
+      ! If the two methods are similar
+      if ( copy_stack ) then
 
-             ! Get maximum size of the current stack,
-             n = n_items(mix%stack(is))
+        ! They are similar, copy over the history stack
+        do is = 1 , size(mix%stack)
 
-             ! Note that this will automatically take care of
-             ! wrap-arounds and delete the unneccesry elements
-             do i = 1 , n
-                d1D => get_pointer(mix%stack(is),i)
-                call push(next%stack(is),d1D)
-             end do
+          ! Get maximum size of the current stack,
+          n = n_items(mix%stack(is))
 
-             ! nullify
-             nullify(d1D)
-             
+          ! Note that this will automatically take care of
+          ! wrap-arounds and delete the unneccesry elements
+          do i = 1 , n
+            d1D => get_pointer(mix%stack(is),i)
+            call push(next%stack(is),d1D)
           end do
-          
-       end if
-       
+
+          ! nullify
+          nullify(d1D)
+
+        end do
+
+      end if
+
     end if
 
     reset_stack = .true.
     if ( associated(next) ) then
-       if ( associated(next%next, mix) .and. &
-            next%n_itt > 0 ) then
-          ! if this is a circular mixing routine
-          ! we should not reset the history...
-          reset_stack = .false.
-       end if
+      if ( associated(next%next, mix) .and. &
+          next%n_itt > 0 ) then
+        ! if this is a circular mixing routine
+        ! we should not reset the history...
+        reset_stack = .false.
+      end if
     end if
 
     if ( reset_stack ) then
-       select case ( mix%m )
-       case ( MIX_PULAY , MIX_BROYDEN )
+      select case ( mix%m )
+      case ( MIX_PULAY , MIX_BROYDEN )
 
-          n = size(mix%stack)
-          do is = 1 , n
-             call reset(mix%stack(is))
-          end do
-          
-       end select
+        n = size(mix%stack)
+        do is = 1 , n
+          call reset(mix%stack(is))
+        end do
+
+      end select
     end if
-    
+
     if ( associated(next) ) then
-       init_itt = 0
-       ! Set-up the next mixer
-       select case ( next%m )
-       case ( MIX_PULAY , MIX_BROYDEN )
-          init_itt = n_items(next%stack(1))
-       end select
-       next%start_itt = init_itt
-       next%cur_itt = init_itt
-       if ( IONode ) then
+      init_itt = 0
+      ! Set-up the next mixer
+      select case ( next%m )
+      case ( MIX_PULAY , MIX_BROYDEN )
+        init_itt = n_items(next%stack(1))
+      end select
+      next%start_itt = init_itt
+      next%cur_itt = init_itt
+      if ( IONode ) then
+        if ( copy_stack ) then
+          write(*,'(3a)') trim(debug_msg),' switching mixer (with history) --> ', &
+              trim(next%name)
+        else
           write(*,'(3a)') trim(debug_msg),' switching mixer --> ', &
-               trim(next%name)
-       end if
-       mix => mix%next
+              trim(next%name)
+        end if
+      end if
+      mix => mix%next
     end if
 
   end subroutine mixing_step
-    
+
 
 
   ! Calculate the inverse of a matrix
