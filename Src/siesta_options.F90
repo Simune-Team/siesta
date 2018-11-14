@@ -27,6 +27,8 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
+  logical :: symmetrize_forces  ! symmetrize forces in m_fixed?
+
   logical :: mix_scf_first ! Mix first SCF step?
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM

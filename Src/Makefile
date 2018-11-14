@@ -20,6 +20,9 @@ AR ?= ar
 RANLIB ?= ranlib
 
 default: siesta
+# default to be overridden in arch.make if needed
+LIBTOOLIZE = libtoolize
+
 include arch.make
 
 # Ensure the correct implicit rules for the compilation
@@ -84,7 +87,7 @@ OBJS =  automatic_cell.o atom_options.o \
         born_charge.o cellxc_mod.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o coxmol.o cross.o compute_norm.o\
 	denmat.o denmatlomem.o detover.o dfscf.o diagon.o digcel.o \
-        fft.o dhscf.o syms.o constr.o diagk_file.o \
+        fft.o dhscf.o m_syms.o spglib_f03.o constr.o diagk_file.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diag3g.o diag3k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
 	m_efield.o egandd.o ener3.o ener3lomem.o errorf.o extrapolon.o \
@@ -270,7 +273,7 @@ FC_SERIAL?=$(FC_DEFAULT)
 #--------------------------------------------------------------
 # spglib whatnot
 # should get version number from file found in spglib subdirectory. obj_ script already accepts anything it finds in there.
-SPG_VER=master-410566f
+SPG_VER=1.11.1
 
 #spglib_extract=spglib/spglib-$(SPG_VER)
 #$(spglib_extract): 
@@ -286,13 +289,18 @@ $(spglib_binary):
 	( cd ./spglib ; \
 	  tar -xzvf spglib-$(SPG_VER).tar.gz ; \
 	  cd spglib-$(SPG_VER) ; \
+	  aclocal ;\
+	  autoheader ;\
+	  $(LIBTOOLIZE)  ;\
+	  touch INSTALL NEWS README AUTHORS ;\
+	  automake -acf ;\
+	  autoconf ;\
 	  ./configure FC="$(FC_SERIAL)" CC="$(CC_SERIAL)" FCFLAGS="$(FFLAGS)" ; \
 	  $(MAKE) )
 
 SPG_LIBS="./$(spglib_binary)"
 
-syms.o: $(spglib_binary)
-spglib_f08.o: $(spglib_binary)
+spglib_f03.o: $(spglib_binary)
 
 # end spglib stuff
 #--------------------------------------------------------------
@@ -683,7 +691,6 @@ compute_rhog.o: m_ntm.o m_spin.o m_stress.o siesta_geom.o siesta_options.o
 compute_rhog.o: sparse_matrices.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
-constr.o: syms.o
 coor.o: alloc.o parallel.o precision.o siesta_geom.o sys.o units.o zmatrix.o
 coxmol.o: files.o periodic_table.o precision.o units.o
 cranknic_evolg.o: alloc.o atomlist.o m_energies.o m_eo.o m_inversemm.o
@@ -979,6 +986,7 @@ m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
 m_supercell.o: parallel.o parallelsubs.o precision.o
 m_svd.o: precision.o
+m_syms.o: spglib_f03.o
 m_target_stress.o: parallel.o precision.o sys.o units.o
 m_test_io.o: class_SpData2D.o class_Sparsity.o m_iodm.o m_matio.o parallel.o
 m_test_io.o: precision.o
@@ -1328,11 +1336,11 @@ siesta_init.o: diag_option.o files.o flook_siesta.o ioxv.o kpoint_ldos.o
 siesta_init.o: kpoint_pdos.o kpoint_scf.o ksvinit.o local_DOS.o
 siesta_init.o: m_check_walltime.o m_cite.o m_energies.o m_eo.o m_fixed.o
 siesta_init.o: m_forces.o m_iostruct.o m_mpi_utils.o m_new_dm.o m_rmaxh.o
-siesta_init.o: m_spin.o m_steps.o m_supercell.o m_timer.o m_wallclock.o
+siesta_init.o: m_spin.o m_steps.o m_supercell.o m_syms.o m_timer.o m_wallclock.o
 siesta_init.o: metaforce.o molecularmechanics.o object_debug.o parallel.o
 siesta_init.o: parallelsubs.o projected_DOS.o siesta_cmlsubs.o siesta_dicts.o
-siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o spglib_f08.o struct_init.o
-siesta_init.o: syms.o sys.o timer.o timestamp.o ts_init.o units.o writewave.o
+siesta_init.o: siesta_geom.o siesta_options.o sparse_matrices.o struct_init.o
+siesta_init.o: sys.o timer.o timestamp.o ts_init.o units.o writewave.o
 siesta_init.o: zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
@@ -1358,7 +1366,7 @@ spher_harm.o: alloc.o precision.o sys.o
 spinorbit.o: atm_types.o atmfuncs.o atmparams.o basis_types.o m_mpi_utils.o
 spinorbit.o: parallel.o parallelsubs.o precision.o pseudopotential.o
 state_analysis.o: atomlist.o born_charge.o flook_siesta.o m_energies.o
-state_analysis.o: m_fixed.o m_forces.o m_ntm.o m_spin.o m_stress.o
+state_analysis.o: m_fixed.o m_forces.o m_ntm.o m_spin.o m_stress.o m_syms.o
 state_analysis.o: m_wallclock.o parallel.o remove_intramol_pressure.o
 state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
 state_analysis.o: units.o write_subs.o zmatrix.o

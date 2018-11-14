@@ -8,10 +8,12 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-! written by Matthieu Verstraete around 12 June 2014
-! 
+! written by Matthieu Verstraete 2014-2018
+! Bulk of the interfaces are copied from spglib_f08 in the spglib distribution, 
+! by Keith Refson. I here avoid mapping C and f90 datatypes, only int char float
+! reimplemented fortran initialization/destruction/printing routines
 
-module m_syms
+module spglib_f03
 
   use iso_c_binding, only:  c_char, c_int, c_double, c_ptr, c_f_pointer
   !use spglib_f08 ! this is also included in spglib and 
@@ -19,28 +21,15 @@ module m_syms
   !  however, it does imply making spglib with exactly the same fortran compiler as siesta
   implicit none
 
-! Copied from spglib_f08 for info
-!      integer :: spacegroup_number
-!      integer :: hall_number
-!      character(len=11) :: international_symbol
-!      character(len=17) :: hall_symbol
-!      real(c_double)  :: transformation_matrix(3,3)
-!      real(c_double)  :: origin_shift(3)
-!      integer :: n_operations
-!      integer, allocatable :: rotations(:,:,:)
-!      real(c_double), allocatable :: translations(:,:)
-!      integer :: n_atoms
-!      integer, allocatable :: wyckoffs(:)
-!      integer, allocatable :: equivalent_atoms(:) !Beware mapping refers to positions starting at 0
-! end copy
-
   ! this type now contains complementary derived information, with the main stuff stored in spglib's own datastructure above
-  type, public :: syms_type
+  type :: SpglibDataset_ext
     ! saves stuff from which it was built as well
     real(c_double) :: celltransp(3,3)
-    real(c_double), allocatable :: xreda (:,:)
+    real(c_double), allocatable :: xred (:,:)
+    real(c_double), allocatable :: spins_vect (:,:)
+    real(c_double), allocatable :: spins_coll (:)
     integer, allocatable :: types (:)
-    integer :: natom
+    integer :: num_atom
 
     integer :: spacegroup_number
     integer :: hall_number
@@ -57,24 +46,23 @@ module m_syms
     integer, allocatable :: wyckoffs(:)
     integer, allocatable :: equivalent_atoms(:) !Beware mapping refers to positions starting at 0
 
+    ! The following are extensions to Keith Refson's datastructure
     !integer, allocatable :: symops_cart(:,:,:)
     double precision, allocatable :: symops_cart(:,:,:)
     integer, allocatable :: symops_recip(:,:,:)
     double precision, allocatable :: trans_cart(:,:)
-  end type syms_type
+  end type SpglibDataset_ext
 
-  ! for the moment this single instance of the syms is exported by the module.
-  ! if you want to play with several, declare 1 per subroutine,
-  ! and use it as the intent(out) argument to the init_syms subroutine
-  type(syms_type), public :: syms_global
 
-  double precision, private :: symprec= 1.e-6 ! this is hard coded for the moment - could be input var for init_syms
+  public :: SpglibDataset_ext
+  public :: spgf_init, spgf_delete, spgf_print
+  public :: spgf_mk_irred_k_grid
 
-  public :: init_syms, delete_syms, print_syms
-  public :: wrapvec_zero_one, wrap2zero_one
-  public :: red2cart, cart2red
+  private :: matr3inv
 
-! spglib C For interfaces copied from spglib_f08
+!
+! spglib C For interfaces copied from spglib_f08, and some more added
+!
    interface 
    
    function spg_get_symmetry( rotation, translation, max_size, lattice, &
@@ -106,10 +94,11 @@ module m_syms
 
    
    function spg_get_symmetry_with_collinear_spin( rotation, translation, &
-      & max_size, lattice, position, types, spins, num_atom, symprec) bind(c)
+      & equivalent_atoms, max_size, lattice, position, types, spins, num_atom, symprec) bind(c)
       import c_int, c_double      
       integer(c_int), intent(inout) :: rotation(3,3,*)
       real(c_double), intent(inout) :: translation(3,*)
+      integer(c_int), intent(inout) :: equivalent_atoms(*)
       integer(c_int), intent(in), value :: max_size
       real(c_double), intent(in) :: lattice(3,3), position(3,*)
       integer(c_int), intent(in) :: types(*)
@@ -121,10 +110,11 @@ module m_syms
 
    
    function spgat_get_symmetry_with_collinear_spin( rotation, translation, &
-      & max_size, lattice, position, types, spins, num_atom, symprec, angle_tolerance) bind(c)
+      & equivalent_atoms, max_size, lattice, position, types, spins, num_atom, symprec, angle_tolerance) bind(c)
       import c_int, c_double      
       integer(c_int), intent(inout) :: rotation(3,3,*)
       real(c_double), intent(inout) :: translation(3,*)
+      integer(c_int), intent(inout) :: equivalent_atoms(*)
       integer(c_int), intent(in), value :: max_size
       real(c_double), intent(in) :: lattice(3,3), position(3,*)
       integer(c_int), intent(in) :: types(*)
@@ -354,11 +344,10 @@ module m_syms
    end function spg_get_hall_number_from_symmetry
 
    end interface 
-   
       
    
 !   public :: SpglibDataset, spg_get_dataset, &
-   public :: &
+   public ::  &
       & spg_get_symmetry, spgat_get_symmetry, &
       & spg_get_symmetry_with_collinear_spin, spgat_get_symmetry_with_collinear_spin, &
       & spg_get_multiplicity, spgat_get_multiplicity, spg_get_smallest_lattice, &
@@ -374,66 +363,72 @@ module m_syms
 
 contains
 
-  subroutine init_syms( syms_this, cell, na, isa, xa )
+  subroutine spgf_init (syms_this, cell, num_atom, types, xred, symprec )
 ! *****************************************************************
 ! Arguments:
 ! real*8  cell(3,3)    : input lattice vectors (Bohr)
-! integer na           : input number of atoms
-! integer isa(na)      : input species indexes
-! real*8  xa(3,na)     : input atomic cartesian coordinates (Bohr)
+! integer num_atom           : input number of atoms
+! integer types(num_atom)      : input species indexes
+! real*8  xred(3,num_atom)     : input atomic cartesian coordinates (Bohr)
 ! *****************************************************************
     implicit         none
-    type(syms_type), intent(out) :: syms_this
-    integer, intent(in)          :: na, isa(na)
-    double precision, intent(inout) :: cell(3,3), xa(3,na)
+    type(SpglibDataset_ext), intent(out) :: syms_this
+    integer, intent(in)          :: num_atom, types(num_atom)
+    double precision, intent(inout) :: cell(3,3), xred(3,num_atom)
+    double precision, intent(in) :: symprec
 
 ! local vars
     integer :: max_size
-    integer :: ii, info
-    double precision :: symprec
+    integer :: ii
     double precision :: cellinv(3,3)
     double precision :: dsymop(3,3)
     double precision :: dsymopinv(3,3)
-    double precision :: zerovec(3) = (/0.0d0, 0.0d0,0.0d0/)
-
-    integer, allocatable :: symops_tmp(:,:,:)
-    double precision, allocatable :: trans_tmp(:,:)
+    double precision :: zerovec(3) = (/0.0d0, 0.0d0, 0.0d0/)
 
 
-    syms_this%natom = na
+    syms_this%num_atom = num_atom
 
-    allocate (syms_this%types(na))
-    syms_this%types = isa
+    allocate (syms_this%types(num_atom))
+    syms_this%types = types
 
-    allocate (syms_this%xreda(3,na))
-    call cart2red(cell, na, xa, syms_this%xreda)
-    ! not necessary to wrap positions into unit cell: no effect on spgrp recognition by spglib
+    allocate (syms_this%spins_coll(num_atom))
+    syms_this%spins_coll = 1.0d0
+
+    allocate (syms_this%xred(3,num_atom))
+    syms_this%xred = xred
 
     ! refines positions with highest symmetry found within symprec
     ! REMOVED 13/6/2014!!! - this returns the conventional cell!!!
-    !call spg_refine_cell(cell, syms_this%xreda, isa, na, symprec)
+    !call spg_refine_cell(cell, syms_this%xred, types, num_atom, symprec)
     !print *, 'xred refined'
-    !print '(3E20.10)', syms_this%xreda
+    !print '(3E20.10)', syms_this%xred
     !print *, 'cell refined'
     !print '(3E20.10)', cell
 
     syms_this%celltransp = transpose(cell)
 
     syms_this%bravais_number = spg_get_international(syms_this%bravais_symbol, syms_this%celltransp(1,1), &
-           & zerovec(1), isa(1), 1, symprec)
+           & zerovec(1), types(1), 1, symprec)
 
     syms_this%spacegroup_number = spg_get_international(syms_this%international_symbol, syms_this%celltransp(1,1), &
-           & syms_this%xreda(1,1), isa(1), na, symprec)
+           & syms_this%xred(1,1), types(1), num_atom, symprec)
 
-    max_size = spg_get_multiplicity(syms_this%celltransp(1,1), syms_this%xreda(1,1), isa(1), na, symprec)
+    max_size = spg_get_multiplicity(syms_this%celltransp(1,1), syms_this%xred(1,1), types(1), num_atom, symprec)
 
     ! spglib returns row-major not column-major matrices!!! --DAS
     ! should we transpose these after reading in???
     allocate(syms_this%rotations(1:3, 1:3, 1:max_size))
     allocate(syms_this%translations(1:3, 1:max_size))
+    allocate(syms_this%equivalent_atoms(1:syms_this%num_atom))
 
-    syms_this%n_operations =  spg_get_symmetry(syms_this%rotations(1, 1, 1), syms_this%translations(1, 1), &
-       &  max_size, syms_this%celltransp(1, 1), syms_this%xreda(1, 1), isa(1), na, symprec)
+    syms_this%n_operations =  spg_get_symmetry_with_collinear_spin(syms_this%rotations(1, 1, 1), &
+       & syms_this%translations(1, 1), syms_this%equivalent_atoms(1), max_size, &
+       & syms_this%celltransp(1, 1), syms_this%xred(1, 1), types(1), syms_this%spins_coll(1), &
+       & num_atom, symprec)
+
+    do ii = 1, syms_this%num_atom
+      
+    end do
 
     ! complete object with Hall number - how do I extract the symbol???
     syms_this%hall_number = spg_get_hall_number_from_symmetry(syms_this%rotations(1, 1, 1),&
@@ -444,30 +439,31 @@ contains
 
 ! get symops in cartesian coordinates - should still be integer -1 0 1 elements but store in floats
     allocate(syms_this%symops_cart(1:3, 1:3, 1:syms_this%n_operations))
-    call INVER(cell,cellinv,3,3,info)
-    if (info .ne. 0) stop 'subroutine init_syms: error in inverse matrix of cell'
+
+    call matr3inv(syms_this%celltransp, cellinv) ! NB: returns inverse transpose, which is what we want
 
     do ii = 1, syms_this%n_operations
-      syms_this%symops_cart(:, :, ii) = nint( matmul(cell, &
-&       matmul(dble(syms_this%rotations(:, :, ii)), cellinv)) )
+      dsymop = matmul(cellinv, matmul(dble(syms_this%rotations(:, :, ii)), syms_this%celltransp))
+      syms_this%symops_cart(:, :, ii) = nint(dsymop)
 
 ! it appears these matrices can be non integer for hexagonal systems...  feels wrong to me, but still:
 !  for the moment, make them dble
-!      if (  any(abs(dble(syms_this%symops_cart(:, :, ii)) &
-!&       - matmul(cell, matmul(dble(syms_this%symops(:, :, ii)), cellinv))) > 1.e-10)  ) then
-!         print *, ii, syms_this%symops(:, :, ii)
-!         print *, matmul(cell, matmul(dble(syms_this%symops(:, :, ii)), cellinv))
-!         stop 'error : cartesian symop element is not -1 0 +1'
-!      end if
+!DEBUG
+      if (  any(abs(dble(syms_this%symops_cart(:, :, ii)) - dsymop) > 1.e-10)  ) then
+         print *, 'isym ', ii
+         print *, 'rot        ', syms_this%rotations(:, :, ii)
+         print *, 'rotcart    ', syms_this%symops_cart(:, :, ii)
+         print *, 'rotcart_dp ', dsymop
+         stop 'error : cartesian symop element is not -1 0 +1'
+      end if
     end do
+!END DEBUG
 
 ! get symops in reciprocal space = real space op^-1 ^T
     allocate(syms_this%symops_recip(1:3, 1:3, 1:syms_this%n_operations))
     do ii = 1, syms_this%n_operations
       dsymop = dble(syms_this%rotations(:, :, ii)) 
-      call INVER(dsymop,dsymopinv,3,3,info)
-      if (info .ne. 0) stop 'subroutine init_syms: error in inverse matrix of symop'
-      dsymopinv = transpose (dsymopinv)
+      call matr3inv(dsymop,dsymopinv)
       syms_this%symops_recip(:,:,ii) = int(dsymopinv)
 ! DEBUG - perhaps comment out later
       if (any(abs(dble(syms_this%symops_recip(:, :, ii)) - dsymopinv(:,:)) > 1.e-10)) then
@@ -477,19 +473,24 @@ contains
     end do
 
     allocate(syms_this%trans_cart(1:3, 1:syms_this%n_operations))
-    syms_this%trans_cart = matmul(cell, syms_this%translations)
+    syms_this%trans_cart = matmul(syms_this%celltransp, syms_this%translations)
+print *, "t ", syms_this%translations
+print *, 'cell ', cell
+print *, 'tcart', syms_this%trans_cart
 
-  end subroutine init_syms
+! TODO: add wyckoff positions ?
+
+  end subroutine spgf_init
 
 
 
-  subroutine delete_syms( syms_this )
+  subroutine spgf_delete( syms_this )
 ! *****************************************************************
 ! Arguments:
-! syms_type syms_t     : object with symops etc...
+! SpglibDataset_ext syms_t     : object with symops etc...
 ! *****************************************************************
     implicit         none
-    type(syms_type), intent(inout) :: syms_this
+    type(SpglibDataset_ext), intent(inout) :: syms_this
 
     if(allocated(syms_this%symops_cart))      deallocate (syms_this%symops_cart)
     if(allocated(syms_this%trans_cart))       deallocate (syms_this%trans_cart)
@@ -499,19 +500,18 @@ contains
     if(allocated(syms_this%wyckoffs))         deallocate (syms_this%wyckoffs)
     if(allocated(syms_this%equivalent_atoms)) deallocate (syms_this%equivalent_atoms)
 
-  end subroutine delete_syms
+  end subroutine spgf_delete
 
 
 
 
-  subroutine print_syms( syms_this )
+  subroutine spgf_print( syms_this )
 ! *****************************************************************
 ! Arguments:
-! syms_type syms_t     : object with symops etc...
+! SpglibDataset_ext syms_t     : object with symops etc...
 ! *****************************************************************
     implicit         none
-    type(syms_type), intent(in) :: syms_this
-
+    type(SpglibDataset_ext), intent(in) :: syms_this
 
 ! local
     integer :: ii
@@ -531,7 +531,9 @@ contains
     write (*,'(a,I6)') " number of symops = ", syms_this%n_operations
     write (*,'(a)') " symops in reduced coordinates = "
     do ii = 1, syms_this%n_operations
-      write (*,'(3(3I10,2x))') syms_this%rotations(:,:,ii)
+      write (*,'(3I6)') syms_this%rotations(:,1,ii)
+      write (*,'(3I6)') syms_this%rotations(:,2,ii)
+      write (*,'(3I6)') syms_this%rotations(:,3,ii)
     end do
     write (*,'(a)') " trans in reduced coordinates = "
     do ii = 1, syms_this%n_operations
@@ -539,99 +541,92 @@ contains
     end do
     write (*,'(a)') "----------------------------------------------------------------------"
     write (*,*)
-  end subroutine print_syms
+  end subroutine spgf_print
 
-
-  subroutine red2cart(cell, na, xred, xa)
-! *****************************************************************
-! Arguments:
-! cell : unit cell vectors
-! na : number of atoms
-! xa : cartesian position vectors
-! xred : reduced position vectors
-! *****************************************************************
-    implicit         none
-    double precision,intent(in) :: cell(3,3)
-    integer,intent(in) :: na
-    double precision,intent(in) :: xred(3,na)
-    double precision,intent(out) :: xa(3,na)
-
-    xa = matmul(cell, xred)
-
-  end subroutine red2cart
-
-
-  subroutine cart2red(cell, na, xa, xred)
-! *****************************************************************
-! Arguments:
-! cell : unit cell vectors
-! na : number of atoms
-! xa : cartesian position vectors
-! xred : reduced position vectors
-! *****************************************************************
-    implicit         none
-    double precision,intent(in) :: cell(3,3)
-    integer,intent(in) :: na
-    double precision,intent(in) :: xa(3,na)
-    double precision,intent(out) :: xred(3,na)
-
-    double precision :: cellinv(3,3)
-    integer :: info
-
-    call INVER(cell,cellinv,3,3,info)
-    if (info .ne. 0) stop 'subroutine cart2red: error in inverse matrix of cell'
-
-    xred = matmul(cellinv, xa)
-
-  end subroutine cart2red
-
-  function wrapvec_zero_one(num) result (red)
+  subroutine spgf_mk_irred_k_grid(syms_this, symprec, is_time_reversal, &
+&            nkgrid, shiftk, nkpt, kpt_list, irrk_map)
     implicit none
-    double precision, intent(in) :: num(3)
-    double precision :: red(3)
-
-    integer :: ii
-
-    do ii=1, 3
-      red(ii) = wrap2zero_one(num(ii))
-    end do
-
-  end function wrapvec_zero_one
-
-  function wrap2zero_one(num) result (red)
-    implicit none
-    double precision, intent(in) :: num
-    double precision :: red
-
-    if (num>0.0d0) then
-      red=mod((num+1.d-13),1.0d0)-1.d-13
-    else
-      red=-mod(-(num-1.0d0+1.d-13),1.0d0)+1.0d0-1.d-13
-    end if
-    if(abs(red)<1.d-13)red=0.0d0
-
-  end function wrap2zero_one
-   
-  subroutine mk_irred_k_grid(syms_this, nkgrid, shiftk, nkpt, kpt_list, irrk_map)
-    implicit none
-    type(syms_type), intent(in) :: syms_this
+    type(SpglibDataset_ext), intent(in) :: syms_this
+    double precision, intent(in) :: symprec
+    integer, intent(in) :: is_time_reversal
     integer, intent(in) :: nkgrid(3)
     double precision, intent(in) :: shiftk(3)
     integer, intent(out) :: nkpt
     double precision, allocatable, intent(out) :: kpt_list(:,:)
     integer, allocatable, intent(out) :: irrk_map(:)
 
-    integer :: nkmax
+    integer :: nkmax, ik, idir
+    integer, allocatable :: grid_point(:,:)
 
 
-    nkmax = product(nkgrid)
-    allocate(kpt_list(3,nkmax))
-    allocate(irrk_list(nkmax))
+!    nkmax = product(nkgrid)
+!    allocate (irrk_map(nkmax))
+!    allocate (grid_point(3, nkmax))
+!
+!    nkpt = spg_get_ir_reciprocal_mesh(grid_point, irrk_map, nkgrid, &
+!      & shiftk, is_time_reversal, syms_this%celltransp, &
+!      & syms_this%xred, syms_this%types, syms_this%num_atom, symprec)
+!
+!    allocate (kpt_list(3,nkpt))
+!    do ik = 1, nkpt
+!      do idir = 1, 3
+!        kpt_list(idir,ik) = dble(grid_point(idir,ik))/dble(nkgrid(idir))
+!      end do
+!    end do
+!    deallocate (grid_point)
 
-    nkpt = spg_get_ir_reciprocal_mesh(kpt_list, map, nkgrid, &
-      & shiftk, is_time_reversal, syms_this%celltransp, &
-      & syms_this%xreda, syms_this%types, syms_this%natom, symprec)
+  end subroutine spgf_mk_irred_k_grid
 
-  end subroutine mk_irred_k_grid
 
-end module m_syms
+!
+! COPYRIGHT
+!  Copyright (C) 1998-2018 ABINIT group (RC, XG, GMR, MG, JWZ)
+!  This file is distributed under the terms of the
+!  GNU General Public License, see ~abinit/COPYING
+!  or http://www.gnu.org/copyleft/gpl.txt .
+!
+subroutine matr3inv(aa, ait)
+
+ implicit none
+
+!Arguments ------------------------------------
+!arrays
+ double precision, intent(in) :: aa(3,3)
+ double precision, intent(out) :: ait(3,3)
+
+!Local variables-------------------------------
+!scalars
+ double precision :: dd,det,t1,t2,t3
+
+! *************************************************************************
+
+ t1 = aa(2,2) * aa(3,3) - aa(3,2) * aa(2,3)
+ t2 = aa(3,2) * aa(1,3) - aa(1,2) * aa(3,3)
+ t3 = aa(1,2) * aa(2,3) - aa(2,2) * aa(1,3)
+ det  = aa(1,1) * t1 + aa(2,1) * t2 + aa(3,1) * t3
+
+!Make sure matrix is not singular
+ if (abs(det)>1.d-16) then
+   dd=1.0d0/det
+ else
+   write(*, '(2a,2x)' ) 'Attempting to invert real(8) 3x3 array'
+   write(*, '(9es16.8)' ) aa(:,:)
+   write(*, '(a,es16.8,a)' ) '   ==> determinant=',det,' is zero.'
+   stop
+ end if
+
+ ait(1,1) = t1 * dd
+ ait(2,1) = t2 * dd
+ ait(3,1) = t3 * dd
+ ait(1,2) = (aa(3,1)*aa(2,3)-aa(2,1)*aa(3,3)) * dd
+ ait(2,2) = (aa(1,1)*aa(3,3)-aa(3,1)*aa(1,3)) * dd
+ ait(3,2) = (aa(2,1)*aa(1,3)-aa(1,1)*aa(2,3)) * dd
+ ait(1,3) = (aa(2,1)*aa(3,2)-aa(3,1)*aa(2,2)) * dd
+ ait(2,3) = (aa(3,1)*aa(1,2)-aa(1,1)*aa(3,2)) * dd
+ ait(3,3) = (aa(1,1)*aa(2,2)-aa(2,1)*aa(1,2)) * dd
+
+end subroutine matr3inv
+
+
+end module spglib_f03
+
