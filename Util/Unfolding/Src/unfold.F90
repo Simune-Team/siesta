@@ -51,6 +51,7 @@ program unfold
   integer, parameter :: nr = 4096       ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
   integer, parameter :: maxpaths = 100  ! max number of unfolded band paths
+  integer, parameter :: maxnq = 4000    ! max number of q sampling points
   real(dp),parameter :: g2c = 50_dp     ! default refolding G cutoff (ry)
   real(dp),parameter :: qc = 50_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
   logical, parameter :: writeOrbitals = .false.  ! write atomic orbital files?
@@ -76,7 +77,7 @@ program unfold
   character(len=50):: eunit, fname, formatstr,  iostr, isstr, numstr, slabel
   character(len=20):: labelfis, symfio
   character(len=200):: line
-  character(len=10):: label(2500) ,string ! 2500 would be max q point
+  character(len=10):: label(maxnq), string
   type(block_fdf)  :: bfdf
   type(hsx_t)      :: hsx
 
@@ -94,7 +95,6 @@ program unfold
   logical,          pointer:: cc(:,:,:)=>null()
   type(parsed_line),pointer:: pline=>null()
 
-!  character, save :: label(1000)*8
 !--------------------
 
 ! Initialize MPI
@@ -290,7 +290,6 @@ program unfold
     call read_hsx_file(hsx,fname)
     if (hsx%nspecies/=nsp) call die('unfold ERROR: hsx%nspecies/=nsp')
     if (hsx%na_u/=na)      call die('unfold ERROR: hsx%na_u/=na')
-!    if (hsx%nspin/=nspin)  call die('unfold ERROR: hsx%nspin/=nspin')
   endif
   call broadcast(hsx%nspecies)
   call broadcast(hsx%na_u)
@@ -342,24 +341,15 @@ program unfold
   lastq(0) = 0
   label = ' '
   
-  ! itag = 0 !for symmetry point tags in plot
-
   do while( fdf_bline(bfdf,pline) ) ! bline and pline refer to text lines, not q lines
 
     nn = fdf_bnnames(pline)
-!    itag = itag + 1
 
     if (fdf_bmatch(pline,'ivvv').or.fdf_bmatch(pline,'ivvvs')) then
       nqline = fdf_bintegers(pline,1)  ! number of q points in line
       qline = qcell(:,1)*fdf_bvalues(pline,1,after=1) &
             + qcell(:,2)*fdf_bvalues(pline,2,after=1) &
             + qcell(:,3)*fdf_bvalues(pline,3,after=1)
-
-!      if(nn .gt. 0) then
-!         label(itag) = fdf_bnames(pline,1)
-!      else
-!         label(itag) = ' '
-!      endif
 
       if (nqline==1) then
         npaths = npaths+1
@@ -370,7 +360,7 @@ program unfold
         call re_alloc( iline,  1,nq, myName//'iline' )
         q(:,nq) = qline
         iline(nq) = 1
-        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)  !
+        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)  ! label for plot
       else
         call re_alloc( q, 1,3, 1,nq+nqline, myName//'q' )
         call re_alloc( iline,  1,nq+nqline, myName//'iline' )
@@ -379,7 +369,7 @@ program unfold
           iline(nq+iq) = iline(nq)+1
         enddo
         nq = nq+nqline
-        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)  !
+        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)
       endif 
 
       lastq(npaths) = nq
@@ -387,9 +377,6 @@ program unfold
       call die('unfold ERROR: wrong format in fdf block UnfoldedBandLines')
     endif
   enddo
-
-!  if (myNode==0) print'(a,/,(i6,3f12.6))','unfold: iq,q=',(iq,q(:,iq),iq=1,nq)
-!  if (myNode==0) print*,'unfold: npaths,lastq,nq=',npaths,lastq(0:npaths),nq
 
   ! Read fdf block RefoldingLatticeVectors
   if (myNode==0) print*,'unfold: reading RefoldingLatticeVectors block'
@@ -442,7 +429,6 @@ program unfold
   c0 = (2*pi)**1.5_dp / vol
   de = (emax-emin)/ne
   cdos = 1/(2*pi)**3/de
-print*,cdos
   ParallelOverK = .true.
   diag_serial = .true.
   nbands = nou
@@ -468,7 +454,6 @@ print*,cdos
     do iq = iq1,iq2
       iqNode = mod((iq-1),nNodes)
       if (myNode==iqNode) then
-!        print*,'unfold: q=',q(:,iq)
         do ig = 1,ng
           gnorm = sqrt(sum(g(:,ig)**2))
           qg = q(:,iq)+g(:,ig) ! note: this is a refolding g, not a superlattice G
@@ -515,7 +500,7 @@ print*,cdos
                 iao = hsx%iphorb(io)
                 l = lofio(isp,iao)
                 m = mofio(isp,iao)
-                jlm = l*(l+1) + m+1                 !! ilm(l,m)
+                jlm = l*(l+1) + m+1                 ! ilm(l,m)
                 irq = floor(qmod/dq)
                 drq = (irq+1)*dq-qmod
                 wq = drq/dq
@@ -578,9 +563,9 @@ print*,cdos
         write(iu,*) lastq(ipath)-lastq(ipath-1),ne+1,emin,emax
         do iq = iq1,iq2
           if (label(iq) .eq. ' ') then
-            string = "' '"
+            string = " "
           else
-            string = "'"//trim(label(iq))//"'"
+            string = ""//trim(label(iq))//""
           endif
           write(iu,'(3(f14.8),i5,a12)') q(:,iq), iline(iq), string 
           do j = 0,ne
@@ -607,7 +592,7 @@ print*,cdos
             if (label(iq) .eq. ' ') then
               string = "' '"
             else
-              string = "'"//trim(label(iq))//"'"
+              string = ""//trim(label(iq))//""
             endif
             write(iu,'(3(f14.8),i5,a12)') q(:,iq), iline(iq), string
             do j = 0,ne
