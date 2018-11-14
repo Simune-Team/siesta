@@ -521,23 +521,21 @@ print *, 'tcart', syms_this%trans_cart
     write (*,'(a)') " Output of crystal symmetries "
     write (*,*)
     write (*,'(a,I6)') " Int Sp Group number = ", syms_this%spacegroup_number
-    write (*,'(2a)') " Int Sp Group symbol = ", trim(syms_this%international_symbol)
-    write (*,'(a,I6,2a)') ' for empty lattice space group is ', syms_this%bravais_number, "  ",&
+    write (*,'(2a)')   " Int Sp Group symbol = ", trim(syms_this%international_symbol)
+    write (*,'(a,I6,2a)') ' Bravais lattice is ', syms_this%bravais_number, "  ",&
           & trim(syms_this%bravais_symbol)
     write (*,'(a,I6)') " Hall number = ", syms_this%hall_number
     !write (*,'(2a)') " Hall symbol = ", trim(syms_this%hall_symbol)
 
     write (*,*)
     write (*,'(a,I6)') " number of symops = ", syms_this%n_operations
-    write (*,'(a)') " symops in reduced coordinates = "
+    write (*,'(a)') " symops and translations in reduced coordinates = "
     do ii = 1, syms_this%n_operations
       write (*,'(3I6)') syms_this%rotations(:,1,ii)
       write (*,'(3I6)') syms_this%rotations(:,2,ii)
       write (*,'(3I6)') syms_this%rotations(:,3,ii)
-    end do
-    write (*,'(a)') " trans in reduced coordinates = "
-    do ii = 1, syms_this%n_operations
       write (*, '(3(E20.10,2x))') syms_this%translations(:,ii)
+      write (*,*)
     end do
     write (*,'(a)') "----------------------------------------------------------------------"
     write (*,*)
