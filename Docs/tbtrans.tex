@@ -13,14 +13,18 @@
 % Include settings appropriate for tbtrans
 \input{tex/init.tex}
 
-% Title
-\title{TBtrans manual 4.1-b4}
+% Local command for the software version for printing
+% \unskip helps when space/newline chars are present in the
+% version.info file.
+\providecommand\softwareversion{\input{../version.info}\unskip}
+
+% Title (note that \input above will fail in the title, we however
+% don't care since it is only meaningful for final publications where
+% direct text is used.)
+\title{TBtrans manual \softwareversion}
 
 % Set the date
-\date{October 16, 2018}
-
-% Local command for the software version for printing
-\providecommand\softwareversion{4.1-b4}
+\date{\today}
 
 % Specify Authors
 \author{%
