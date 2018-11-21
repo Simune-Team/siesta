@@ -86,6 +86,7 @@ subroutine syms_equivpos(syms_this)
 ! atom found by application of operation isym on atom ia
   logical :: foundsymatom
   double precision :: xredb(3)
+  character (len=80) :: message
 
   ! should check that the syms_this is properly inited
 
@@ -107,8 +108,8 @@ subroutine syms_equivpos(syms_this)
         syms_inv_map_atoms (jatom, isym) = iatom
       end do
       if (.not. foundsymatom) then
-        print *, 'error: no symmetric for atom ', iatom, ' under space group sym ', isym 
-        stop
+        write (message, '(a,i6,a,i6)') 'error: no symmetric for atom ', iatom, ' under space group sym ', isym 
+        call die (message) 
       end if
     end do
   end do
@@ -266,7 +267,9 @@ subroutine syms_red2cart(cell, num_atom, xred, xcart)
 
     call INVER(cell,cellinv,3,3,info)
 ! TODO: this level of routine should not stop, but throw an error message
-    if (info .ne. 0) stop 'subroutine spgf_cart2red: error in inverse matrix of cell'
+    if (info .ne. 0) then 
+        call die ('subroutine spgf_cart2red: error in inverse matrix of cell') 
+    end if
 
     xred = matmul(cellinv, xcart)
 
