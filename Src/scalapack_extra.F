@@ -4185,7 +4185,7 @@
 *
          CALL PZLACPY( 'L', KB, KB, A, K+IA-1, K+JA-1, DESCA,
      $                 WORK( INDR ), K, 1, DESCR )
-         CALL PZTRSM( 'Right', 'L', 'N', 'N', NPK, KB, MONE, B, K+IB-1,
+         CALL PZTRSM( 'R', 'L', 'N', 'N', NPK, KB, MONE, B, K+IB-1,
      $                K+JB-1, DESCB, WORK( INDG ), POSTK, 1, DESCG )
 *
          CALL PZHEMM( 'Right', 'L', NPK, KB, ONEHALF, A, K+IA-1, K+JA-1,
@@ -4204,7 +4204,8 @@
      $                DESCR, WORK( INDG ), POSTK, 1, DESCG, ONE, A,
      $                POSTK+IA-1, K+JA-1, DESCA )
 *
-         CALL PZTRSM( 'Left', 'Lower', 'No Conj', 'Non-unit', KB, K-1,
+         !CALL PZTRSM( 'Left', 'Lower', 'No Conj', 'Non-unit', KB, K-1,
+         CALL PZTRSM( 'L', 'L', 'N', 'N', KB, K-1,
      $                ONE, B, K+IB-1, K+JB-1, DESCB, A, K+IA-1, JA,
      $                DESCA )
 *
@@ -4222,18 +4223,18 @@
    20       CONTINUE
          END IF
 *
-         CALL PZTRSM( 'Left', 'Lower', 'No Conj', 'Non-unit', KB, KB,
+         CALL PZTRSM( 'L', 'L', 'N', 'N', KB, KB,
      $                ONE, B, K+IB-1, K+JB-1, DESCB, WORK( INDAA ), 1,
      $                1, DESCAA )
 *
-         CALL PZTRSM( 'Right', 'Lower', 'Conj', 'Non-unit', KB, KB, ONE,
+         CALL PZTRSM( 'R', 'L', 'C', 'N', KB, KB, ONE,
      $                B, K+IB-1, K+JB-1, DESCB, WORK( INDAA ), 1, 1,
      $                DESCAA )
 *
          CALL PZLACPY( 'L', KB, KB, WORK( INDAA ), 1, 1, DESCAA, A,
      $                 K+IA-1, K+JA-1, DESCA )
 *
-         CALL PZTRSM( 'Right', 'Lower', 'Conj', 'Non-unit', NPK, KB,
+         CALL PZTRSM( 'R', 'L', 'C', 'N', NPK, KB,
      $                ONE, B, K+IB-1, K+JB-1, DESCB, A, POSTK+IA-1,
      $                K+JA-1, DESCA )
 *

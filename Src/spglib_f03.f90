@@ -426,10 +426,6 @@ contains
        & syms_this%celltransp(1, 1), syms_this%xred(1, 1), types(1), syms_this%spins_coll(1), &
        & num_atom, symprec)
 
-    do ii = 1, syms_this%num_atom
-      
-    end do
-
     ! complete object with Hall number - how do I extract the symbol???
     syms_this%hall_number = spg_get_hall_number_from_symmetry(syms_this%rotations(1, 1, 1),&
        & syms_this%translations(1, 1), syms_this%n_operations, symprec)
@@ -456,8 +452,8 @@ contains
          print *, 'rotcart_dp ', dsymop
          stop 'error : cartesian symop element is not -1 0 +1'
       end if
-    end do
 !END DEBUG
+    end do
 
 ! get symops in reciprocal space = real space op^-1 ^T
     allocate(syms_this%symops_recip(1:3, 1:3, 1:syms_this%n_operations))
@@ -474,9 +470,6 @@ contains
 
     allocate(syms_this%trans_cart(1:3, 1:syms_this%n_operations))
     syms_this%trans_cart = matmul(syms_this%celltransp, syms_this%translations)
-print *, "t ", syms_this%translations
-print *, 'cell ', cell
-print *, 'tcart', syms_this%trans_cart
 
 ! TODO: add wyckoff positions ?
 

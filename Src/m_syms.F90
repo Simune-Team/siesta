@@ -14,6 +14,7 @@
 
 module m_syms
 
+#ifdef SIESTA__HAS__SPGLIB
 use spglib_f03
 
 ! for the moment this single instance of the syms is exported by the module.
@@ -268,7 +269,7 @@ subroutine syms_red2cart(cell, num_atom, xred, xcart)
     call INVER(cell,cellinv,3,3,info)
 ! TODO: this level of routine should not stop, but throw an error message
     if (info .ne. 0) then 
-        call die ('subroutine spgf_cart2red: error in inverse matrix of cell') 
+        call die ('subroutine syms_cart2red: error in inverse matrix of cell') 
     end if
 
     xred = matmul(cellinv, xcart)
@@ -302,5 +303,6 @@ subroutine syms_red2cart(cell, num_atom, xred, xcart)
 
   end function syms_wrap2zero_one
    
+#endif
 
 end module m_syms

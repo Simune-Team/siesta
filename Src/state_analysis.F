@@ -112,13 +112,15 @@
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)
       endif
 
-      if (IOnode) call write_raw_efs(stress,na_u,fa,FreeE)
-
+#ifdef SIESTA__HAS__SPGLIB
 !     symmetrize forces and stresses
       if (symmetrize_forces) then
         call syms_forces(syms_global, na_u, fa)
         call syms_stresses(syms_global, stress)
       end if
+#endif
+
+      if (IOnode) call write_raw_efs(stress,na_u,fa,FreeE)
 
 !     Compute stress without internal molecular pressure
       call remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)

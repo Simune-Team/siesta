@@ -108,8 +108,10 @@
       end if
 #endif
 
+#ifdef SIESTA__HAS__SPGLIB
       ! clean up
       call syms_delete(syms_global)
+#endif
 
  
 !     Output memory use up to the end of the program

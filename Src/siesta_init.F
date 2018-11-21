@@ -414,9 +414,11 @@ C     Initialise MPI and set processor number
 !     Initialize atom lists
       call initatomlists( )    ! Sets iza
 
+#ifdef SIESTA__HAS__SPGLIB
       ! call init routine with main syms_global object from m_syms
       call syms_init( syms_global, ucell, na_u, isa, xa )
       if (IONode) call syms_print(syms_global)
+#endif
 
 !     early exit if only checking the structure
       struct_only = fdf_get( 'Output-Structure-Only', .false. )

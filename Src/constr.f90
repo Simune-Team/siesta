@@ -20,7 +20,6 @@
 ! real*8  fa(3,na)     : input/output atomic forces (Ry/Bohr)
 ! integer ntcon        : total number of positions constr. imposed
 ! *****************************************************************
-    use m_syms
     implicit         none
     integer          :: na, isa(na), ntcon
     double precision :: amass(na), cell(3,3), fa(3,na), &
