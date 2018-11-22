@@ -12320,6 +12320,7 @@ Using \program{tselecs.sh -only-c} yields this output:
      from -40. eV + V/2 to -10 kT + V/2
        points 25
         method g-legendre
+         opt right
   %endblock
   %block TS.Contour.T-Left
     part tail
@@ -12332,6 +12333,7 @@ Using \program{tselecs.sh -only-c} yields this output:
      from -40. eV -V/2 to -10 kT -V/2
        points 25
         method g-legendre
+         opt right
   %endblock
   %block TS.Contour.T-Right
     part tail
@@ -12393,14 +12395,14 @@ The default options related to the non-equilibrium bias contour are
 defined as this:
 \begin{fdfexample}
   %block TS.Contours.nEq
-    neq-1
+    neq
   %endblock TS.Contours.nEq
-  %block TS.Contour.nEq.neq-1
+  %block TS.Contour.nEq.neq
     part line
      from -|V|/2 - 5 kT to |V|/2 + 5 kT
        delta 0.01 eV
         method mid-rule
-  %endblock TS.Contour.nEq.neq-1
+  %endblock TS.Contour.nEq.neq
 \end{fdfexample}
 If one chooses a different reference energy than $0$, then the limits
 should change accordingly. Note that here \fdf*{kT} refers to
