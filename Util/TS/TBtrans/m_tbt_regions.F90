@@ -35,9 +35,6 @@ module m_tbt_regions
   ! The SC sparsity pattern in the device region
   type(Sparsity), public :: sp_dev_sc
 
-  ! the different regions that becomes the electrodes
-  type(tRgn), allocatable, target, public :: r_aEl_alone(:), r_oEl_alone(:)
-
   ! the different regions that connects to the equivalent
   ! electrodes.
   ! I.e. it is the regions that goes from the electrode
@@ -114,6 +111,9 @@ contains
     ! A temporary sparsity pattern
     type(Sparsity) :: sp_tmp
 
+    ! the different regions that becomes the electrodes
+    type(tRgn) :: r_aEl_alone(N_Elec), r_oEl_alone(N_Elec)
+
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     character(len=128) :: g, csort
@@ -140,19 +140,16 @@ contains
 #endif
 
     ! Create all the "alone" electrode regions
-    allocate(r_aEl_alone(N_Elec),r_oEl_alone(N_Elec))
     do iEl = 1 , N_Elec
 
        ! Create electrode region
        ia1 = Elecs(iEl)%idx_a
        ia2 = ia1 - 1 + TotUsedAtoms(Elecs(iEl))
        call rgn_range(r_aEl_alone(iEl), ia1, ia2)
-       r_aEl_alone(iEl)%name = '[A]-'//trim(Elecs(iEl)%name)
 
        ia1 = Elecs(iEl)%idx_o
        ia2 = ia1 - 1 + TotUsedOrbs(Elecs(iEl))
        call rgn_range(r_oEl_alone(iEl), ia1, ia2)
-       r_oEl_alone(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)
        
        ! Check that we have a legal region
        if ( rgn_overlaps(r_aEl_alone(iEl),r_aBuf) ) then
@@ -546,8 +543,8 @@ contains
        end if
 
        ! Set the names
-       r_aEl(iEl)%name   = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
-       r_oEl(iEl)%name   = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
+       r_aEl(iEl)%name = '[A]-'//trim(Elecs(iEl)%name)//' folding region'
+       r_oEl(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)//' folding region'
        r_oElpD(iEl)%name = '[O]-'//trim(Elecs(iEl)%name)//' folding El + D'
        Elecs(iEl)%o_inD%name = '[O]-'//trim(Elecs(iEl)%name)//' in D'
 
@@ -740,6 +737,12 @@ contains
        write(*,'(a)')'tbt: Done analyzing electrode and device sparsity pattern and pivot-tables'
     end if
 
+    ! Clean up un-used memory
+    do iEl = 1, N_Elec
+      call rgn_delete(r_aEl_alone(iEl))
+      call rgn_delete(r_oEl_alone(iEl))
+    end do
+    
   contains
 
     function sort_contain(str,name) result(contain)
