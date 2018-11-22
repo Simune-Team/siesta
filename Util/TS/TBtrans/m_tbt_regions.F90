@@ -178,6 +178,7 @@ contains
 
        ! read by line and set them to be buffer atoms
        do while ( fdf_bline(bfdf,pline) ) 
+
           ! empty line
           if ( fdf_bnnames(pline) == 0 ) cycle
        

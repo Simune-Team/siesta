@@ -1092,11 +1092,15 @@ currents may only be calculated in the selected device region.
     %block TBT.Atoms.Device
        atom [ 10 -- 20 ]
        atom [ 30 -- 40 ]
+       # Atoms removed from the device region
+       # Even though they are specified in other
+       # lines
+       not-atom [ 15, 35]
     % endblock
     # Or equivalently as a list   
-    TBT.Atoms.Device [10 -- 20, 30 -- 40]
+    TBT.Atoms.Device [10 -- 14, 16 -- 20, 30 -- 34, 36 -- 40]
   \end{fdfexample}
-  will limit the device region to atoms [10--20, 30--40].
+  will limit the device region to atoms [10--14, 16--20, 30--34, 36--40].
   
 \end{fdfentry}
 
