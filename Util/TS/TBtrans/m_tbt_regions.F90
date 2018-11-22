@@ -864,25 +864,25 @@ contains
 
     ! Print out all the electrodes + their projection region
     do i = 1 , N_Elec
-       write(*,*) ! new-line
-       write(*,'(3a,i0)')'tbt: # of ',trim(Elecs(i)%name), &
-            ' electrode orbitals: ',Elecs(i)%o_inD%n
-       write(*,'(3a,i0)')'tbt: # of ',trim(Elecs(i)%name), &
-            ' down-folding orbitals: ',r_oElpD(i)%n
-       call local_print(r_aEl(i), .false. )
-       call local_print(r_oEl(i), .true. )
-       if ( verbosity > 3 ) then
-          ! Create the atom equivalent regions
-          call rgn_Orb2Atom(r_oElpD(i) , na_u, lasto, r)
-          call rgn_intersection(r,r_aDev,r)
-          r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
-          call local_print(r, .false. )
-       end if
-       if ( verbosity > 7 ) then
-          call rgn_intersection(r_oElpD(i),r_oDev,r)
-          r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
-          call local_print(r, .true. )
-       end if
+      write(*,*) ! new-line
+      write(*,'(3a,i0)')'tbt: # of ',trim(Elecs(i)%name), &
+          ' downfolding orbitals: ',r_oElpD(i)%n
+      write(*,'(3a,i0)')'tbt: # of ',trim(Elecs(i)%name), &
+          ' device orbitals: ',Elecs(i)%o_inD%n
+      call local_print(r_aEl(i), .false.)
+      call local_print(r_oEl(i), .true.)
+      if ( verbosity > 3 ) then
+        ! Create the atom equivalent regions
+        call rgn_Orb2Atom(Elecs(i)%o_inD, na_u, lasto, r)
+        call rgn_sort(r)
+        r%name = '[A]-'//trim(Elecs(i)%name)//' folding in D'
+        call local_print(r, .false.)
+      end if
+      if ( verbosity > 7 ) then
+        call rgn_intersection(r_oElpD(i),r_oDev,r)
+        r%name = '[O]-'//trim(Elecs(i)%name)//' folding in D'
+        call local_print(r, .true.)
+      end if
     end do
 
     ! Clean-up
