@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -162,8 +162,8 @@
      &           dHmax/eV
          end if
 
-	 if ( is_LDAU_conv ) then
-	    ! Inform of LDA+U population convergence
+         if ( is_LDAU_conv ) then
+            ! Inform of LDA+U population convergence
             write(6,"(a)") 
      &           "LDA+U population converged by dTol_pop criteria:"
             write(6,"(a,f16.10)") 

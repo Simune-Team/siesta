@@ -68,7 +68,7 @@ contains
 
     integer, pointer :: flasto(:) => null(), fisc_off(:,:) => null()
 
-    integer :: allowed(na_u), itmp, s_na, c_na
+    integer :: allowed(na_u), itmp, itmp2, s_na, c_na
     character(len=256) :: HSfile, DMfile, ln
     logical :: d_log1, d_log2, d_log3
     type(block_fdf) :: bfdf
@@ -165,7 +165,7 @@ contains
           fxa, flasto, &
           fsp, fDM_2D, tmp_1D, fisc_off, &
           fEf, fQtot, fTemp, &
-          itmp, itmp, &
+          itmp, itmp2, &
           Bcast= .true. )
       fn_s = product(fnsc)
       ! 

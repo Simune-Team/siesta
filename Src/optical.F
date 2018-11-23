@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -166,7 +166,7 @@ C     unless otherwise requested
           nmeshk(ix)=1
         enddo 
         nk=1
-	dsp=0.0d0
+        dsp=0.0d0
        endif
 
 C     If nk.ne.0

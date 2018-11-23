@@ -1,5 +1,5 @@
 !
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -44,16 +44,16 @@
 !           This is the Legendre Gaussian quadrature                   c
 !           The Legendre quadrature is the w(x) = 1, and the rescaling c
 !           of the function by the Fermi function                      c
-!								       c
+!                                                                      c
 !  taken from: "Projects in Computational Physics" by Landau and Paez  c 
-!	       copyrighted by John Wiley and Sons, New York            c      
+!              copyrighted by John Wiley and Sons, New York            c      
 !                                                                      c
 !  written by: Oregon State University Nuclear Theory Group            c
-!	       Guangliang He & Rubin H. Landau                         c
+!              Guangliang He & Rubin H. Landau                         c
 !  supported by: US National Science Foundation, Northwest Alliance    c
 !                for Computational Science and Engineering (NACSE),    c
-!                US Department of Energy 	                       c
-!								       c
+!                US Department of Energy                               c
+!                                                                      c
 !  comment: error message occurs if subroutine called without a main   c
 !  comment: this file has to reside in the same directory as integ.c   c
 !ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
