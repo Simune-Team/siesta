@@ -206,7 +206,7 @@ c
         elseif ( field .eq. 'complex' ) then
           do 40 i=1,nnz
             read (iunit,fmt=*,end=4000) indx(i),jndx(i),rpart,ipart
-            cval(i) = cmplx(rpart,ipart)
+            cval(i) = cmplx(rpart,ipart,kind=kind(1.0))  ! Note that cval is single-prec complex
  40       continue
         elseif ( field .eq. 'pattern' ) then
           do 50 i=1,nnz
@@ -258,7 +258,7 @@ c
         elseif ( field .eq. 'complex' ) then
           do 70 i=1,nnzreq
             read (iunit,fmt=*,end=4000) rpart,ipart
-            cval(i) = cmplx(rpart,ipart)
+            cval(i) = cmplx(rpart,ipart,kind=kind(1.0))  ! Note that cval is single-prec complex
  70      continue
         else
            print *,'''pattern'' data not consistant with type ''array'''

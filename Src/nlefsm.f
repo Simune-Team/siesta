@@ -672,7 +672,7 @@ C     Initialize neighb subroutine
       nd= 0
       ndn= 0
       Enl = 0.0d0
-      E_offsiteSO(1:4)=dcmplx(0.0d0,0.0d0)
+      E_offsiteSO(1:4)=cmplx(0.0d0,0.0d0,kind=dp)
       Enl_offsiteSO = 0.0d0
 C     Loop on atoms with KB projectors      
 
@@ -772,7 +772,7 @@ C        Valid orbital
          if (ia .le. nua) then
           if (.not. matrix_elements_only) then
            !Scatter density matrix row of orbital io
-           Ds(1:2,1:2,1:no) = dcmplx(0.0d0,0.0d0) 
+           Ds(1:2,1:2,1:no) = cmplx(0.0d0,0.0d0,kind=dp) 
            do j = 1,numh(iio)
             ind = listhptr(iio)+j  ! jptr
             jo = listh(ind)       ! j
@@ -781,10 +781,10 @@ C        Valid orbital
              Di(jo) = Di(jo) + Dscf(ind,ispin)
             enddo
             ! Should we *add to* Ds, as above for Di?
-            Ds(1,1,jo) = dcmplx(Dscf(ind,1), Dscf(ind,5)) ! D(ju,iu)
-            Ds(2,2,jo) = dcmplx(Dscf(ind,2), Dscf(ind,6))  ! D(jd,id)
-            Ds(1,2,jo) = dcmplx(Dscf(ind,3), Dscf(ind,4))  ! D(ju,id)
-            Ds(2,1,jo) = dcmplx(Dscf(ind,7),-Dscf(ind,8))  ! D(jd,iu)
+            Ds(1,1,jo) = cmplx(Dscf(ind,1), Dscf(ind,5), dp) ! D(ju,iu)
+            Ds(2,2,jo) = cmplx(Dscf(ind,2), Dscf(ind,6), dp)  ! D(jd,id)
+            Ds(1,2,jo) = cmplx(Dscf(ind,3), Dscf(ind,4), dp)  ! D(ju,id)
+            Ds(2,1,jo) = cmplx(Dscf(ind,7),-Dscf(ind,8), dp)  ! D(jd,iu)
            enddo
           endif
 
@@ -796,7 +796,7 @@ C-------- Scatter filter of desired matrix elements
 
 C  Loading V_ion/V_so
           Vi(1:no) = 0.0_dp
-          V_so(1:2,1:2,1:no) = dcmplx(0.0d0,0.0d0)
+          V_so(1:2,1:2,1:no) = cmplx(0.0d0,0.0d0,kind=dp)
 
 C-------- Find matrix elements with other neighbour orbitals
           do jno = 1,nno
@@ -1029,19 +1029,19 @@ c---- load Clebsch-Gordan coefficients; cg(J,+-)
 
 c---- Ski(M)= <l,M|i> ; Si(m)= <l,m|i> = u(m,-M)*Ski(-M) + u(m,M)*Ski(M)
       fac = 1.0d0/sqrt(2.0d0)
-      u(:,:) = cmplx(0.0d0,0.0d0)
-      u(0,0)= cmplx(1.0d0,0.0d0)
+      u(:,:) = cmplx(0.0d0,0.0d0,dp)
+      u(0,0)= cmplx(1.0d0,0.0d0,dp)
       do m =  1, l
        facm = fac*(-1.0d0)**m
-       u(-m,+M) = cmplx(1.0d0,0.0d0)*fac
-       u(-m,-M) = cmplx(0.0d0,1.0d0)*fac  ! J. Cerda
-       u(+m,+M) = cmplx(1.0d0,0.0d0)*facm
-       u(+m,-M) =-cmplx(0.0d0,1.0d0)*facm ! J. Cerda
+       u(-m,+M) = cmplx(1.0d0,0.0d0,dp)*fac
+       u(-m,-M) = cmplx(0.0d0,1.0d0,dp)*fac  ! J. Cerda
+       u(+m,+M) = cmplx(1.0d0,0.0d0,dp)*facm
+       u(+m,-M) =-cmplx(0.0d0,1.0d0,dp)*facm ! J. Cerda
       enddo
 
 c---- Load V_so
-      V_so= cmplx(0.0d0,0.0d0)
-      F_so= cmplx(0.0d0,0.0d0)
+      V_so= cmplx(0.0d0,0.0d0,dp)
+      F_so= cmplx(0.0d0,0.0d0,dp)
       J = 0
       do ij = 1, 2
        aj = al + (2*ij-3)*0.5d0        ! j value
@@ -1049,9 +1049,9 @@ c---- Load V_so
         amj = -aj + imj-1              ! mj value
         J = J+1                        ! Combined (j,mj) index
 
-        SVi(1:2)= cmplx(0.0d0,0.0d0)
-        SVj(1:2)= cmplx(0.0d0,0.0d0)
-        grSVi(1:3,1:2)= cmplx(0.0d0,0.0d0)
+        SVi(1:2)= cmplx(0.0d0,0.0d0,dp)
+        SVj(1:2)= cmplx(0.0d0,0.0d0,dp)
+        grSVi(1:3,1:2)= cmplx(0.0d0,0.0d0,dp)
         do is = 1, 2  ! spin loop
 
          ! select correct m. Safe nint as amj is always a half-integer
@@ -1144,8 +1144,8 @@ cc--- debugging
       enddo
    
       !---- substract out V_ion from V_so
-      V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0)*V_ion
-      V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0)*V_ion
+      V_so(1,1) = V_so(1,1) - cmplx(1.0d0,0.0d0,dp)*V_ion
+      V_so(2,2) = V_so(2,2) - cmplx(1.0d0,0.0d0,dp)*V_ion
 
       else
          !---- Keep all the NL contribution in V_so
