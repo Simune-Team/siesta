@@ -58,13 +58,13 @@ single point. This allows a q-line not begin at the end of previous one, e.g.
   320  -20.0  60 eV          # numEnergyIntervals, Emin, Emax, Eunit
    1   1.0  1.0  1.0         # mustBeOne, first_qVector (in units of BandLinesScale)
  100   0.0  0.0  0.0  \Gamma # line_numq, endLine_qVector, opt_label
- 120   2.0  0.0  0.0  X      # add as many path lines as required
+ 120   2.0  0.0  0.0         # add as many path lines as required
    1   0.0  0.0  0.0         # new path (begins with a single point)
  100   4.0  4.0  0.0
 %endblock UnfoldedBandLines
 
 As in BandLines, an optional label can be added at the end of each q-line to specify
-the name of the first point of the line.
+the name of the last point of the line.
 
 The unfolded and refolded bands calculated by unfold are written in files
 SYSLABEL.unfoldedBands and SYSLABEL.refoldedBands (where SYSLABEL=si8 in 
