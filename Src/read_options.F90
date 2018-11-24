@@ -713,6 +713,9 @@ subroutine read_options( na, ns, nspin )
         call add_citation("10.1016/j.cpc.2016.09.022")
         write(*,3) 'redata: Method of Calculation','Transiesta'
      endif
+     if ( nspin > 2 ) then
+       call die('transiesta does not work for non-collinear or spin-orbit')
+     end if
   else
      call die( 'redata: The method of solution must be either '//&
           'Transiesta, '//&
