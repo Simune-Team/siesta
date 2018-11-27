@@ -137,7 +137,7 @@ module sparse_matrices
   !> Current MD step overlap matrix
   type(dSpData1D), public :: S_1D
   !> Gradient of the overlap matrix
-  type(dSpData2D), public, save :: gradS_2D
+  type(dSpData2D), public :: gradS_2D
 
   ! Orbital distance matrix (constant for complete SCF loop, changes per MD)
   real(dp), public, pointer :: xijo(:,:) => null()

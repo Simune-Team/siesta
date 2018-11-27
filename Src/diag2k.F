@@ -374,19 +374,19 @@ C *********************************************************************
               call LocalToGlobalOrb(iuo,Node,Nodes,iio)
               do juo = 1,nuotot
 !------- 1,1 -----------------------------------------------------------
-               cicj = dconjg(caux(1,juo)) * caux(1,iio)
+               cicj = conjg(caux(1,juo)) * caux(1,iio)
                Dk(1,juo,1,iuo) = Dk(1,juo,1,iuo) + qe * cicj
                Ek(1,juo,1,iuo) = Ek(1,juo,1,iuo) + ee * cicj
 !------- 2,2 -----------------------------------------------------------
-               cicj = dconjg(caux(2,juo)) * caux(2,iio)
+               cicj = conjg(caux(2,juo)) * caux(2,iio)
                Dk(2,juo,2,iuo) = Dk(2,juo,2,iuo) + qe * cicj
                Ek(2,juo,2,iuo) = Ek(2,juo,2,iuo) + ee * cicj
 !------- 2,1 -----------------------------------------------------------
-               cicj = dconjg(caux(2,juo)) * caux(1,iio)
+               cicj = conjg(caux(2,juo)) * caux(1,iio)
                Dk(1,juo,2,iuo) = Dk(1,juo,2,iuo) + qe * cicj
                Ek(1,juo,2,iuo) = Ek(1,juo,2,iuo) + ee * cicj
 !------- 1,2 -----------------------------------------------------------
-               cicj = dconjg(caux(1,juo)) * caux(2,iio)
+               cicj = conjg(caux(1,juo)) * caux(2,iio)
                Dk(2,juo,1,iuo) = Dk(2,juo,1,iuo) + qe * cicj
                Ek(2,juo,1,iuo) = Ek(2,juo,1,iuo) + ee * cicj
               enddo
@@ -421,8 +421,8 @@ C *********************************************************************
           D21 = Dk(2,juo,1,iuo) * kphs
       
 ! Make DM Spin-box hermitian 
-          D12 = 0.5_dp * (D12 + dconjg(D21))
-          !D21 = dconjg(D12)
+          D12 = 0.5_dp * (D12 + conjg(D21))
+          !D21 = conjg(D12)
 
           Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
           Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
@@ -435,8 +435,8 @@ C *********************************************************************
           D21 = Ek(2,juo,1,iuo) * kphs
       
 ! Make EDM Spin-box hermitian 
-          D12 = 0.5_dp * (D12 + dconjg(D21))
-          !D21 = dconjg(D12)
+          D12 = 0.5_dp * (D12 + conjg(D21))
+          !D21 = conjg(D12)
 
           Enew(ind,1) = Enew(ind,1) + dreal(D11)
           Enew(ind,2) = Enew(ind,2) + dreal(D22)

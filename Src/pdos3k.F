@@ -236,10 +236,10 @@ C Loop over all the energy range
               do jo = 1, Bnuo
                call LocalToGlobalOrb(jo,BNode,Nodes,juo)
                do io = 1, nuotot
-                 D11 = caux(1,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
-                 D22 = caux(2,io) * dconjg(caux(2,juo)) * Sloc(io,jo)
-                 D12 = caux(1,io) * dconjg(caux(2,juo)) * Sloc(io,jo)
-                 !D21 = caux(2,io) * dconjg(caux(1,juo)) * Sloc(io,jo)
+                 D11 = caux(1,io) * conjg(caux(1,juo)) * Sloc(io,jo)
+                 D22 = caux(2,io) * conjg(caux(2,juo)) * Sloc(io,jo)
+                 D12 = caux(1,io) * conjg(caux(2,juo)) * Sloc(io,jo)
+                 !D21 = caux(2,io) * conjg(caux(1,juo)) * Sloc(io,jo)
 
                  D11 = gauss*D11
                  D22 = gauss*D22
@@ -271,10 +271,10 @@ C Loop over all the energy range
             caux => psi(:,:,iband) ! c_{up,j}, c_{down,j}
             do io = 1, nuotot
               do jo = 1, nuotot
-                D11 = caux(1,io) * dconjg(caux(1,jo)) * Spr(io,jo)
-                D22 = caux(2,io) * dconjg(caux(2,jo)) * Spr(io,jo)
-                D12 = caux(1,io) * dconjg(caux(2,jo)) * Spr(io,jo)
-                !D21 = caux(2,io) * dconjg(caux(1,jo)) * Spr(io,jo)
+                D11 = caux(1,io) * conjg(caux(1,jo)) * Spr(io,jo)
+                D22 = caux(2,io) * conjg(caux(2,jo)) * Spr(io,jo)
+                D12 = caux(1,io) * conjg(caux(2,jo)) * Spr(io,jo)
+                !D21 = caux(2,io) * conjg(caux(1,jo)) * Spr(io,jo)
 
                 D11 = gauss*D11
                 D22 = gauss*D22

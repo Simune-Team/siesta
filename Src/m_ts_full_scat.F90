@@ -82,7 +82,7 @@ contains
        ! Collect the top row of complex conjugated Gf
        ind = no_u_TS * no * iB + 1
        do i = 1 , no
-          GGG(ind:ind-1+no) = dconjg(Gf(iB*no+1:(iB+1)*no,i))
+          GGG(ind:ind-1+no) = conjg(Gf(iB*no+1:(iB+1)*no,i))
           ind = ind + no
        end do
        ind = no_u_TS * no * iB + 1
@@ -121,7 +121,7 @@ contains
        ind = no_u_TS * no * NB + 1
        do i = 1 , no
           ! So this is the complex conjugated of the iB'th block
-          GGG(ind:ind-1+iB) = dconjg(Gf(NB*no+1:NB*no+iB,i))
+          GGG(ind:ind-1+iB) = conjg(Gf(NB*no+1:NB*no+iB,i))
           ind = ind + iB
        end do
        ind = no_u_TS * no * NB + 1

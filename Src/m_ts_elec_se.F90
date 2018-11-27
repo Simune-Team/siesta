@@ -350,12 +350,12 @@ contains
         do jo = 1 , no_s
           do io = 1 , jo - 1
             GammaT(jo,io) = zi * (work(p_G(io),p_G(jo),2) &
-                - dconjg(work(p_G(jo),p_G(io),2)))
+                - conjg(work(p_G(jo),p_G(io),2)))
             GammaT(io,jo) = zi * (work(p_G(jo),p_G(io),2) &
-                - dconjg(work(p_G(io),p_G(jo),2)))
+                - conjg(work(p_G(io),p_G(jo),2)))
           end do
           io = p_G(jo)
-          GammaT(jo,jo) = zi * (work(io,io,2)-dconjg(work(io,io,2)))
+          GammaT(jo,jo) = zi * (work(io,io,2)-conjg(work(io,io,2)))
         end do
 !$OMP end do nowait
       else ! no pivoting
@@ -363,11 +363,11 @@ contains
         do jo = 1 , no_s
           do io = 1 , jo - 1
             GammaT(jo,io) = zi * (work(io,jo,2) &
-                - dconjg(work(jo,io,2)))
+                - conjg(work(jo,io,2)))
             GammaT(io,jo) = zi * (work(jo,io,2) &
-                - dconjg(work(io,jo,2)))
+                - conjg(work(io,jo,2)))
           end do
-          GammaT(jo,jo) = zi * (work(jo,jo,2)-dconjg(work(jo,jo,2)))
+          GammaT(jo,jo) = zi * (work(jo,jo,2)-conjg(work(jo,jo,2)))
         end do
 !$OMP end do nowait
       end if
@@ -391,12 +391,12 @@ contains
         do jo = 1 , no_s
           do io = 1 , jo - 1
             GammaT(jo,io) = zi * (Sigma(p_G(io),p_G(jo)) &
-                - dconjg(Sigma(p_G(jo),p_G(io))))
+                - conjg(Sigma(p_G(jo),p_G(io))))
             GammaT(io,jo) = zi * (Sigma(p_G(jo),p_G(io)) &
-                - dconjg(Sigma(p_G(io),p_G(jo))))
+                - conjg(Sigma(p_G(io),p_G(jo))))
           end do
           io = p_G(jo)
-          GammaT(jo,jo) = zi * (Sigma(io,io)-dconjg(Sigma(io,io)))
+          GammaT(jo,jo) = zi * (Sigma(io,io)-conjg(Sigma(io,io)))
         end do
 !$OMP end do nowait
 
@@ -406,11 +406,11 @@ contains
         do jo = 1 , no_s
           do io = 1 , jo - 1
             GammaT(jo,io) = zi * (Sigma(io,jo) &
-                - dconjg(Sigma(jo,io)))
+                - conjg(Sigma(jo,io)))
             GammaT(io,jo) = zi * (Sigma(jo,io) &
-                - dconjg(Sigma(io,jo)))
+                - conjg(Sigma(io,jo)))
           end do
-          GammaT(jo,jo) = zi * (Sigma(jo,jo)-dconjg(Sigma(jo,jo)))
+          GammaT(jo,jo) = zi * (Sigma(jo,jo)-conjg(Sigma(jo,jo)))
         end do
 !$OMP end do nowait
 

@@ -4060,7 +4060,7 @@
      $                   PZLACPY, PZTRSM
 *     ..
 *     .. Intrinsic Functions ..
-      INTRINSIC          DBLE, DCMPLX, DCONJG, ICHAR, MAX, MIN, MOD
+      INTRINSIC          DBLE, DCMPLX, CONJG, ICHAR, MAX, MIN, MOD
 *     ..
 *     .. Executable Statements ..
       ICTXT = DESCA( CTXT_ )
@@ -4216,7 +4216,7 @@
             DO 20 I = 1, KB
                DO 10 J = 1, I
                   WORK( INDAA+J-1+( I-1 )*DESCAA( LLD_ ) )
-     $               = DCONJG( WORK( INDAA+I-1+( J-1 )*
+     $               = CONJG( WORK( INDAA+I-1+( J-1 )*
      $               DESCAA( LLD_ ) ) )
    10          CONTINUE
    20       CONTINUE

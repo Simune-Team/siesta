@@ -266,13 +266,13 @@ C of referencing has been changed in several places to reflect this.
               jo = listd(ind)
               jo = MODP(jo,nuotot) ! To allow auxiliary supercells
 !------- 1,1 -----------------------------------------------------------
-              D11  = caux(1,iio) * dconjg(caux(1,jo))
+              D11  = caux(1,iio) * conjg(caux(1,jo))
 !------- 2,2 -----------------------------------------------------------
-              D22  = caux(2,iio) * dconjg(caux(2,jo))
+              D22  = caux(2,iio) * conjg(caux(2,jo))
 !------- 1,2 -----------------------------------------------------------
-              D12  = caux(1,iio) * dconjg(caux(2,jo))
+              D12  = caux(1,iio) * conjg(caux(2,jo))
 !------- 2,1 -----------------------------------------------------------
-              D21  = caux(2,iio) * dconjg(caux(1,jo))
+              D21  = caux(2,iio) * conjg(caux(1,jo))
       
               Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
               Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe

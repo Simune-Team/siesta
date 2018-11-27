@@ -365,19 +365,19 @@ C *********************************************************************
               do juo = 1,nuotot
       
 !------- 1,1 -----------------------------------------------------------
-               cicj = caux(1,iio) * dconjg(caux(1,juo))
+               cicj = caux(1,iio) * conjg(caux(1,juo))
                Dk(1,juo,1,iuo) = Dk(1,juo,1,iuo) + qe * cicj
                Ek(1,juo,1,iuo) = Ek(1,juo,1,iuo) + ee * cicj
 !------- 2,2 -----------------------------------------------------------
-               cicj = caux(2,iio) * dconjg(caux(2,juo))
+               cicj = caux(2,iio) * conjg(caux(2,juo))
                Dk(2,juo,2,iuo) = Dk(2,juo,2,iuo) + qe * cicj
                Ek(2,juo,2,iuo) = Ek(2,juo,2,iuo) + ee * cicj
 !------- 1,2 -----------------------------------------------------------
-               cicj = caux(1,iio) * dconjg(caux(2,juo))
+               cicj = caux(1,iio) * conjg(caux(2,juo))
                Dk(1,juo,2,iuo) = Dk(1,juo,2,iuo) + qe * cicj
                Ek(1,juo,2,iuo) = Ek(1,juo,2,iuo) + ee * cicj
 !------- 2,1 -----------------------------------------------------------
-               cicj = caux(2,iio) * dconjg(caux(1,juo))
+               cicj = caux(2,iio) * conjg(caux(1,juo))
                Dk(2,juo,1,iuo) = Dk(2,juo,1,iuo) + qe * cicj
                Ek(2,juo,1,iuo) = Ek(2,juo,1,iuo) + ee * cicj
               enddo

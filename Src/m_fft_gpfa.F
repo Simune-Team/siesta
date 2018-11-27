@@ -53,8 +53,8 @@ C WRITTEN BY J.M.SOLER. MAY/95.
 ! Modified by A. Garcia, May 2015
 
       integer :: np, nmax, nmin, nrem, ip
-      ! no limits with huge, but divide by 2 to avoid 'overflow' warning
-      parameter (NP = 3, NMAX = huge(N)/2)  
+      ! no limits with huge, but subtract 2 to avoid 'overflow' warning
+      parameter (NP = 3, NMAX = huge(N)-2)  
       integer :: IPRIME(NP)
       data IPRIME / 2, 3, 5 /
 

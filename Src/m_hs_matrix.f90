@@ -1191,12 +1191,12 @@ contains
     do iuo = 1,no_tot
        do juo = 1,iuo-1
           
-          Sk(juo,iuo) = 0.5d0*( Sk(juo,iuo) + dconjg(Sk(iuo,juo)) )
-          Sk(iuo,juo) =  dconjg(Sk(juo,iuo))
+          Sk(juo,iuo) = 0.5d0*( Sk(juo,iuo) + conjg(Sk(iuo,juo)) )
+          Sk(iuo,juo) =  conjg(Sk(juo,iuo))
           
-          Hk(juo,iuo) = 0.5d0*( Hk(juo,iuo) + dconjg(Hk(iuo,juo)) ) &
+          Hk(juo,iuo) = 0.5d0*( Hk(juo,iuo) + conjg(Hk(iuo,juo)) ) &
                - Ef*Sk(juo,iuo)
-          Hk(iuo,juo) =  dconjg(Hk(juo,iuo))
+          Hk(iuo,juo) =  conjg(Hk(juo,iuo))
           
        end do
        

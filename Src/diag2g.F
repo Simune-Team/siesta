@@ -278,19 +278,19 @@ C of referencing has been changed in several places to reflect this.
 !                 | c_{j,up}^* c_{i,dn}     c_{j,dn}^* c_{i,dn) |
 !
 !------- 1,1 -----------------------------------------------------------
-              D11 = dconjg(caux(1,jo)) * caux(1,iio)
+              D11 = conjg(caux(1,jo)) * caux(1,iio)
 !------- 2,2 -----------------------------------------------------------
-              D22 = dconjg(caux(2,jo)) * caux(2,iio)
+              D22 = conjg(caux(2,jo)) * caux(2,iio)
 !------- 2,1 -----------------------------------------------------------
-              D12 = dconjg(caux(2,jo)) * caux(1,iio)
+              D12 = conjg(caux(2,jo)) * caux(1,iio)
 !------- 1,2 -----------------------------------------------------------
-              D21 = dconjg(caux(1,jo)) * caux(2,iio)
+              D21 = conjg(caux(1,jo)) * caux(2,iio)
       
 !------------ Density matrix has to be spin-box hermitian ----------------------
-              D11 = 0.5_dp * (D11 + dconjg(D11))
-              D22 = 0.5_dp * (D22 + dconjg(D22))
-              D12 = 0.5_dp * (D12 + dconjg(D21))
-              !D21 = dconjg(D12)
+              D11 = 0.5_dp * (D11 + conjg(D11))
+              D22 = 0.5_dp * (D22 + conjg(D22))
+              D12 = 0.5_dp * (D12 + conjg(D21))
+              !D21 = conjg(D12)
       
 !       Add contribution to density matrices of unit-cell orbitals
 !       ----------------------------------------------------------------

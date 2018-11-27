@@ -186,16 +186,16 @@ C Transfer data
               do jo = 1, Bnuo
                 call LocalToGlobalOrb(jo,BNode,Nodes,juo)
                 do io = 1, nuotot
-                  rpipj = dreal(caux(1,io)*dconjg(caux(1,juo)))*gauss
+                  rpipj = dreal(caux(1,io)*conjg(caux(1,juo)))*gauss
                   dpr(ihist,juo,1)=dpr(ihist,juo,1)+rpipj*Sloc(io,jo)
 
-                  rpipj = dreal(caux(2,io)*dconjg(caux(2,juo)))*gauss
+                  rpipj = dreal(caux(2,io)*conjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,2)=dpr(ihist,juo,2)+rpipj*Sloc(io,jo)
 
-                  rpipj = dreal(caux(1,io)*dconjg(caux(2,juo)))*gauss
+                  rpipj = dreal(caux(1,io)*conjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,3)=dpr(ihist,juo,3)+rpipj*Sloc(io,jo)
 
-                  ipipj = dimag(caux(1,io)*dconjg(caux(2,juo)))*gauss
+                  ipipj = dimag(caux(1,io)*conjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,4)=dpr(ihist,juo,4)-ipipj*Sloc(io,jo)
                 enddo
               enddo
@@ -219,16 +219,16 @@ C Loop over all the energy range
             caux => psi(:,:,iband) ! c_{up,j}, c_{down,j}
             do jo = 1, nuotot
               do io = 1, nuotot
-                rpipj = dreal(caux(1,io)*dconjg(caux(1,jo)))*gauss
+                rpipj = dreal(caux(1,io)*conjg(caux(1,jo)))*gauss
                 dpr(ihist,jo,1)=dpr(ihist,jo,1)+rpipj*Spr(io,jo)
 
-                rpipj = dreal(caux(2,io)*dconjg(caux(2,jo)))*gauss
+                rpipj = dreal(caux(2,io)*conjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,2)=dpr(ihist,jo,2)+rpipj*Spr(io,jo)
 
-                rpipj = dreal(caux(1,io)*dconjg(caux(2,jo)))*gauss
+                rpipj = dreal(caux(1,io)*conjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,3)=dpr(ihist,jo,3)+rpipj*Spr(io,jo)
 
-                ipipj = dimag(caux(1,io)*dconjg(caux(2,jo)))*gauss
+                ipipj = dimag(caux(1,io)*conjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,4)=dpr(ihist,jo,4)-ipipj*Spr(io,jo)
               enddo
             enddo

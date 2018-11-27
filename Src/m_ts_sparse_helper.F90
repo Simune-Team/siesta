@@ -365,12 +365,12 @@ contains
 
           ! Symmetrize (notice that we transpose here!)
           ! See prep_GF
-          zS(rind) = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
-          zS(ind)  = dconjg(zS(rind))
+          zS(rind) = 0.5_dp * ( zS(ind) + conjg(zS(rind)) )
+          zS(ind)  = conjg(zS(rind))
 
-          zH(rind) = 0.5_dp * ( zH(ind) + dconjg(zH(rind)) ) &
+          zH(rind) = 0.5_dp * ( zH(ind) + conjg(zH(rind)) ) &
                - E_Ef(jEl) * zS(rind)
-          zH(ind)  = dconjg(zH(rind))
+          zH(ind)  = conjg(zH(rind))
 
           if ( ind == rind ) then
              ! This is the diagonal matrix elements
