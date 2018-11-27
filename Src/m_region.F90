@@ -241,7 +241,7 @@ contains
     ! get current size
     n = r%n
     allocate(rr(n))
-    rr = r%r(:n)
+    rr(:) = r%r(:n)
     call rgn_list(r, n, rr, name=name)
     r%sorted = sorted
 
