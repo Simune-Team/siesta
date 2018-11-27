@@ -855,7 +855,7 @@ integer :: i
 #ifdef TS_DEV    
     if (.not. hasSaved )then
        hasSaved = .true.
-       GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+       GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
        do io = 1, no_u
           if ( l_ncol(io) == 0 ) cycle
           ioff = orb_offset(io) - 1
@@ -868,12 +868,12 @@ integer :: i
        if (ionode) then
           i = 50
           open(i,form='unformatted')
-          write(i) dcmplx(100._dp,100._dp)
+          write(i) cmplx(100._dp,100._dp,dp)
           write(i) no_u
           write(i) no_u
           write(i) GFinv(1:no_u**2)
           write(i) no_u
-          GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+          GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
           do io = 1, no_u
              if ( l_ncol(io) == 0 ) cycle
              ioff = orb_offset(io) - 1
@@ -893,7 +893,7 @@ integer :: i
 
     ! Initialize
 !$OMP workshare
-    GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+    GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region

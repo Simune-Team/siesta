@@ -876,10 +876,10 @@ c------------ Forces & SO contribution to E_NL
 
                ! These forces include both the 'ion' and 'SO' parts
                do ix = 1,3
-                fik = 2.0_dp*dreal(Ds(1,1,jo)*F_so(ix,1,1) +
+                fik = 2.0_dp*real(Ds(1,1,jo)*F_so(ix,1,1) +
      &                             Ds(2,2,jo)*F_so(ix,2,2) +
      &                             Ds(2,1,jo)*F_so(ix,1,2) +
-     &                             Ds(1,2,jo)*F_so(ix,2,1) )
+     &                             Ds(1,2,jo)*F_so(ix,2,1), kind=dp )
                 fa(ix,ia)  = fa(ix,ia)  - fik
                 fa(ix,kua) = fa(ix,kua) + fik
                 do jx = 1,3
@@ -918,7 +918,7 @@ C     Careful with this Vi()
       enddo       ! atoms with KB projectors loop
 
       if (.not. matrix_elements_only) then
-       Enl_offsiteSO = sum( dreal(E_offsiteSO(1:4)) )
+       Enl_offsiteSO = sum( real(E_offsiteSO(1:4),kind=dp) )
       endif
 
 C     Deallocate local memory
@@ -1100,7 +1100,7 @@ c       down-up= <i,-|V,J><V,J|j,+>
       enddo ! ij
 
 cc--- debugging
-      if ( cdabs(V_so(1,2)+conjg(V_so(2,1))).gt.1.0d-4 ) then
+      if ( abs(V_so(1,2)+conjg(V_so(2,1))).gt.1.0d-4 ) then
        write(6,'(a,2f12.6)') 'V_so(1,2)=',V_so(1,2)
        write(6,'(a,2f12.6)') 'V_so(2,1)=',V_so(2,1)
        call die('calc_Vj_LS: ERROR')

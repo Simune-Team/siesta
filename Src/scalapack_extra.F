@@ -3582,7 +3582,7 @@
      $                   DSCAL
 *     ..
 *     .. Intrinsic Functions ..
-      INTRINSIC          DCMPLX, ICHAR, MAX, MIN, MOD, DBLE, SQRT
+      INTRINSIC          CMPLX, ICHAR, MAX, MIN, MOD, DBLE, SQRT
 *     ..
 *     .. Executable Statements ..
 *       This is just to keep ftnchek and toolpack/1 happy
@@ -3630,7 +3630,7 @@
             LWMIN = N + ( NP0+NQ+NB )*NB
             LRWMIN = 1 + 9*N + 3*NP0*NQ0
             LIWMIN = 7*N + 8*NPCOL + 2
-            WORK( 1 ) = DCMPLX( LWMIN )
+            WORK( 1 ) = CMPLX( LWMIN )
             RWORK( 1 ) = DBLE( LRWMIN )
             IWORK( 1 ) = LIWMIN
             IF( .NOT.LSAME( JOBZ, 'V' ) ) THEN
@@ -3812,7 +3812,7 @@
          CALL DSCAL( N, ONE / SIGMA, W, 1 )
       END IF
 *
-      WORK( 1 ) = DCMPLX( LWMIN )
+      WORK( 1 ) = CMPLX( LWMIN )
       RWORK( 1 ) = DBLE( LRWMIN )
       IWORK( 1 ) = LIWMIN
 *
@@ -4060,7 +4060,7 @@
      $                   PZLACPY, PZTRSM
 *     ..
 *     .. Intrinsic Functions ..
-      INTRINSIC          DBLE, DCMPLX, CONJG, ICHAR, MAX, MIN, MOD
+      INTRINSIC          DBLE, CMPLX, CONJG, ICHAR, MAX, MIN, MOD
 *     ..
 *     .. Executable Statements ..
       ICTXT = DESCA( CTXT_ )
@@ -4100,7 +4100,7 @@
             ELSE
                LWOPT = LWMIN
             END IF
-            WORK( 1 ) = DCMPLX( DBLE( LWOPT ) )
+            WORK( 1 ) = CMPLX( DBLE( LWOPT ) )
             LQUERY = ( LWORK.EQ.-1 )
             IF( IBTYPE.LT.1 .OR. IBTYPE.GT.3 ) THEN
                INFO = -1
@@ -4244,7 +4244,7 @@
          DESCAA( CSRC_ ) = MOD( DESCAA( CSRC_ )+1, NPCOL )
    30 CONTINUE
 *
-      WORK( 1 ) = DCMPLX( DBLE( LWOPT ) )
+      WORK( 1 ) = CMPLX( DBLE( LWOPT ) )
 *
       RETURN
       END

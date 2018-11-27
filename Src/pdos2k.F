@@ -115,8 +115,8 @@ C Initialize some variables
 !     Find eigenvalues at every k point
       do ik = 1,nk
 
-        Saux = dcmplx(0.0_dp,0.0_dp)
-        Haux = dcmplx(0.0_dp,0.0_dp)
+        Saux = cmplx(0.0_dp,0.0_dp,dp)
+        Haux = cmplx(0.0_dp,0.0_dp,dp)
 
         do iuo = 1,nuo
           do j = 1,numh(iuo)
@@ -126,16 +126,16 @@ C Initialize some variables
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, -kxij))
+            kphs = exp(cmplx(0.0_dp, -kxij,dp))
 
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
             Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
             Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
             Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
+     .                        + cmplx(H(ind,3), - H(ind,4),dp) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
+     .                        + cmplx(H(ind,3), + H(ind,4),dp) * kphs
 
           enddo
         enddo
@@ -147,8 +147,8 @@ C Diagonalize for each k point. Note duplication of problem size.
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
           ! Repeat diagonalisation with increased memory to handle clustering
-          Saux = dcmplx(0.0_dp,0.0_dp)
-          Haux = dcmplx(0.0_dp,0.0_dp)
+          Saux = cmplx(0.0_dp,0.0_dp,dp)
+          Haux = cmplx(0.0_dp,0.0_dp,dp)
 
           do iuo = 1,nuo
             do j = 1,numh(iuo)
@@ -158,16 +158,16 @@ C Diagonalize for each k point. Note duplication of problem size.
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              kphs = cdexp(dcmplx(0.0_dp, -kxij))
+              kphs = exp(cmplx(0.0_dp, -kxij,dp))
 
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
               Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
               Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
               Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
+     .                          + cmplx(H(ind,3), - H(ind,4),dp) * kphs
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                          + dcmplx(H(ind,3), + H(ind,4)) * kphs
+     .                          + cmplx(H(ind,3), + H(ind,4),dp) * kphs
 
             enddo
           enddo
@@ -178,7 +178,7 @@ C Diagonalize for each k point. Note duplication of problem size.
 
 C Recalculate again the overlap matrix in k-space
 
-        Spr = dcmplx(0.0_dp,0.0_dp)
+        Spr = cmplx(0.0_dp,0.0_dp,dp)
         do iuo = 1,nuo
           do j = 1,numh(iuo)
             ind = listhptr(iuo) + j
@@ -190,7 +190,7 @@ C Recalculate again the overlap matrix in k-space
 ! Since we are doing element wise multiplications (and not dot-products)
 ! we might as well setup the transpose S(k)^T == S(-k) because this will
 ! mean that we can do a simpler multiplication further down
-            kphs = cdexp(dcmplx(0.0_dp, kxij))
+            kphs = exp(cmplx(0.0_dp, kxij,dp))
             Spr(juo,iuo) = Spr(juo,iuo) + S(ind) * kphs
           enddo
         enddo
@@ -241,10 +241,10 @@ C Loop over all the energy range
                  D22 = gauss*D22
                  D12 = gauss*D12
 
-                 dpr(ihist,juo,1) = dpr(ihist,juo,1) + dreal(D11)
-                 dpr(ihist,juo,2) = dpr(ihist,juo,2) + dreal(D22)
-                 dpr(ihist,juo,3) = dpr(ihist,juo,3) + dreal(D12)
-                 dpr(ihist,juo,4) = dpr(ihist,juo,4) - dimag(D12)
+                 dpr(ihist,juo,1) = dpr(ihist,juo,1) + real(D11)
+                 dpr(ihist,juo,2) = dpr(ihist,juo,2) + real(D22)
+                 dpr(ihist,juo,3) = dpr(ihist,juo,3) + real(D12)
+                 dpr(ihist,juo,4) = dpr(ihist,juo,4) - aimag(D12)
                enddo
               enddo
             enddo
@@ -276,10 +276,10 @@ C Loop over all the energy range
                 D22 = gauss*D22
                 D12 = gauss*D12
 
-                dpr(ihist,jo,1) = dpr(ihist,jo,1) + dreal(D11)
-                dpr(ihist,jo,2) = dpr(ihist,jo,2) + dreal(D22)
-                dpr(ihist,jo,3) = dpr(ihist,jo,3) + dreal(D12)
-                dpr(ihist,jo,4) = dpr(ihist,jo,4) - dimag(D12)
+                dpr(ihist,jo,1) = dpr(ihist,jo,1) + real(D11)
+                dpr(ihist,jo,2) = dpr(ihist,jo,2) + real(D22)
+                dpr(ihist,jo,3) = dpr(ihist,jo,3) + real(D12)
+                dpr(ihist,jo,4) = dpr(ihist,jo,4) - aimag(D12)
               enddo
             enddo
           enddo

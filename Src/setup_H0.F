@@ -140,7 +140,7 @@ C     Add on force field contribution to energy
      &             matrix_elements_only=.true.) 
       else
         H_so_off => val(H_so_off_2D)
-        H_so_off = dcmplx(0._dp, 0._dp)
+        H_so_off = cmplx(0._dp, 0._dp, dp)
         call nlefsm_SO_off(scell, na_u, na_s, isa, xa, indxua,
      &                 maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                 numh, listhptr, listh, numh, listhptr, listh,

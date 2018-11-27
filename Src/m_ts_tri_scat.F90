@@ -23,10 +23,10 @@ module m_ts_tri_scat
   public :: has_full_part
   public :: insert_Self_Energies
 
-  complex(dp), parameter :: z0 = dcmplx( 0._dp, 0._dp)
-  complex(dp), parameter :: z1 = dcmplx( 1._dp, 0._dp)
-  complex(dp), parameter :: zm1= dcmplx(-1._dp, 0._dp)
-  complex(dp), parameter :: zi = dcmplx( 0._dp, 1._dp)
+  complex(dp), parameter :: z0 = cmplx( 0._dp, 0._dp,dp)
+  complex(dp), parameter :: z1 = cmplx( 1._dp, 0._dp,dp)
+  complex(dp), parameter :: zm1= cmplx(-1._dp, 0._dp,dp)
+  complex(dp), parameter :: zi = cmplx( 0._dp, 1._dp,dp)
 
 contains
 

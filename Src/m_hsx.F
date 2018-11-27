@@ -387,7 +387,7 @@ C
       external          io_assign, io_close
 
 
-      integer    im, is, iu, ju, k, mnh, ns, ia, io
+      integer    im, is, iu, ius, ju, k, mnh, ns, ia, io
       integer    ih,hl,nuo,maxnhtot,maxhg
       integer, dimension(:), allocatable :: numhg, hg_ptr
 #ifdef MPI
@@ -410,11 +410,15 @@ C Find total numbers over all Nodes
         if (Node.eq.0) then
 C Open file
           call io_assign( iu )
-          open( iu, file="S.matrix", form='formatted', status='unknown',
+          call io_assign( ius )
+          open( iu, file="H.matrix", form='formatted', status='unknown',
+     $          position="rewind")      
+          open( ius,file="S.matrix", form='formatted', status='unknown',
      $          position="rewind")      
 
 C Write overall data
           write(iu,*) no_u, no_u, maxnhtot
+          write(ius,*) no_u, no_u, maxnhtot
 
 C Allocate local array for global numh
           allocate(numhg(no_u))
@@ -457,6 +461,7 @@ C Write row pointers
            hg_ptr(ih+1) = hg_ptr(ih) + numhg(ih)
          enddo
          write(iu,*) (hg_ptr(ih),ih=1,no_u+1)
+         write(ius,*) (hg_ptr(ih),ih=1,no_u+1)
          deallocate(hg_ptr)
 #ifdef MPI
           allocate(buffer(maxhg))
@@ -476,6 +481,7 @@ C Write listh
             hl = ih
 #endif
             write(iu,*) (listh(listhptr(hl)+im),im = 1,numh(hl))
+            write(ius,*) (listh(listhptr(hl)+im),im = 1,numh(hl))
 #ifdef MPI
           elseif (Node.eq.0) then
             call MPI_IRecv(ibuffer,numhg(ih),MPI_integer,BNode,1,
@@ -491,6 +497,7 @@ C Write listh
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
                write(iu,*) (ibuffer(im),im = 1,numhg(ih))
+               write(ius,*) (ibuffer(im),im = 1,numhg(ih))
             endif
           endif
 #endif
@@ -502,14 +509,6 @@ C Write listh
           deallocate(ibuffer)
         endif
 #endif
-        if (Node.eq.0) then
-           call io_close(iu)
-           call system("cp S.matrix H.matrix")
-           call io_assign( iu )
-           open( iu, file="H.matrix", form='formatted', status='old',
-     $          action="write", position="append")      
-        endif
-
 
 C Write Hamiltonian
         do is=1,nspin
@@ -545,12 +544,8 @@ C Write Hamiltonian
           enddo
         enddo
 
-
         if (node == 0) then
            call io_close(iu)
-           call io_assign( iu )
-           open( iu, file="S.matrix", form='formatted', status='old',
-     $          action="write", position="append")      
         endif
 
 C Write Overlap matrix
@@ -562,7 +557,7 @@ C Write Overlap matrix
 #else
             hl = ih
 #endif
-            write(iu,*) (real(S(listhptr(hl)+im),kind=sp),
+            write(ius,*) (real(S(listhptr(hl)+im),kind=sp),
      $                   im = 1,numh(hl))
 #ifdef MPI
           elseif (Node.eq.0) then
@@ -579,7 +574,7 @@ C Write Overlap matrix
           if (BNode.ne.0) then
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
-               write(iu,*) (real(buffer(im),kind=sp),im=1,numhg(ih))
+               write(ius,*) (real(buffer(im),kind=sp),im=1,numhg(ih))
             endif
           endif
 #endif
@@ -594,7 +589,7 @@ C Write Overlap matrix
 #endif
 
         if (node == 0) then
-           call io_close( iu )
+           call io_close( ius )
         endif
 
       call timer("write_HS_fmt",2)

@@ -78,7 +78,7 @@ contains
     subroutine test(z1,i,j)
       complex(dp), intent(in) :: z1
       integer, intent(in) :: i,j
-      if ( cdabs(z1-zf(index(tri,i,j))) > 1e-10_dp ) then
+      if ( abs(z1-zf(index(tri,i,j))) > 1e-10_dp ) then
          write(*,*) i,j,z1,zf(index(tri,i,j))
          call die('Not same element')
       end if

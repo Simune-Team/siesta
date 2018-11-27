@@ -1,4 +1,3 @@
-      
 ! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
@@ -173,8 +172,8 @@ C *********************************************************************
 !     Find eigenvalues at every k point
       do ik = 1,nk
       
-        Saux = dcmplx(0.0_dp,0.0_dp)
-        Haux = dcmplx(0.0_dp,0.0_dp)
+        Saux = cmplx(0.0_dp,0.0_dp,dp)
+        Haux = cmplx(0.0_dp,0.0_dp,dp)
 !
 !       Transfer S,H matrices from sparse format in supercell to
 !                                       full format in unit cell
@@ -191,16 +190,16 @@ C *********************************************************************
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
 ! JFR: sign change in phase because of orbital ordering j,i & convention for xij = d_j - d_i
-            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+            kphs = exp(cmplx(0.0_dp, -1.0_dp, dp) * kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
             Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
             Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
             Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
+     .                        + cmplx(H(ind,3), - H(ind,4), dp) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
+     .                        + cmplx(H(ind,3), + H(ind,4), dp) * kphs
           enddo
         enddo
       
@@ -251,8 +250,8 @@ C *********************************************************************
         enddo
       
 !       Find eigenvectors 
-        Saux = dcmplx(0.0_dp,0.0_dp)
-        Haux = dcmplx(0.0_dp,0.0_dp)
+        Saux = cmplx(0.0_dp,0.0_dp,dp)
+        Haux = cmplx(0.0_dp,0.0_dp,dp)
         do iuo = 1,nuo
           do j = 1,numh(iuo)
 
@@ -262,16 +261,16 @@ C *********************************************************************
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+            kphs = exp(cmplx(0.0_dp, -1.0_dp, dp) * kxij)
       
             Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
             Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
             Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
             Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
             Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                        + dcmplx(H(ind,3), - H(ind,4)) * kphs
+     .                        + cmplx(H(ind,3), - H(ind,4), dp) * kphs
             Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                        + dcmplx(H(ind,3), + H(ind,4)) * kphs
+     .                        + cmplx(H(ind,3), + H(ind,4), dp) * kphs
 
           enddo
         enddo
@@ -285,8 +284,8 @@ C *********************************************************************
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.lt.0) then
 !         Repeat diagonalisation with increased memory to handle clustering
-          Saux = dcmplx(0.0_dp,0.0_dp)
-          Haux = dcmplx(0.0_dp,0.0_dp)
+          Saux = cmplx(0.0_dp,0.0_dp,dp)
+          Haux = cmplx(0.0_dp,0.0_dp,dp)
           do iuo = 1,nuo
             do j = 1,numh(iuo)
               ind = listhptr(iuo) + j
@@ -295,16 +294,16 @@ C *********************************************************************
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              kphs = cdexp(dcmplx(0.0_dp, -1.0_dp)*kxij)
+              kphs = exp(cmplx(0.0_dp, -1.0_dp, dp) * kxij)
       
               Saux(1,juo,1,iuo) = Saux(1,juo,1,iuo) + S(ind)   * kphs
               Saux(2,juo,2,iuo) = Saux(2,juo,2,iuo) + S(ind)   * kphs
               Haux(1,juo,1,iuo) = Haux(1,juo,1,iuo) + H(ind,1) * kphs
               Haux(2,juo,2,iuo) = Haux(2,juo,2,iuo) + H(ind,2) * kphs
               Haux(1,juo,2,iuo) = Haux(1,juo,2,iuo)
-     .                          + dcmplx(H(ind,3), - H(ind,4)) * kphs
+     .                          + cmplx(H(ind,3), -H(ind,4), dp) * kphs
               Haux(2,juo,1,iuo) = Haux(2,juo,1,iuo)
-     .                          + dcmplx(H(ind,3), + H(ind,4)) * kphs
+     .                          + cmplx(H(ind,3), +H(ind,4), dp) * kphs
             enddo
           enddo
           call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,caux,psi,
@@ -346,8 +345,8 @@ C *********************************************************************
 ! For a non-collinear state, the above relation does not hold
 ! generically. Hence the full BZ must be used to compute the DM.
       
-        Dk = dcmplx(0.0_dp,0.0_dp)
-        Ek = dcmplx(0.0_dp,0.0_dp)
+        Dk = cmplx(0.0_dp,0.0_dp,dp)
+        Ek = cmplx(0.0_dp,0.0_dp,dp)
       
         BNode = 0
         iie = 0
@@ -357,7 +356,7 @@ C *********************************************************************
             iie = iie + 1
           endif
       
-          caux(:,:) = dcmplx(0.0_dp,0.0_dp)
+          caux(:,:) = cmplx(0.0_dp,0.0_dp,dp)
           if (qe.gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
@@ -413,7 +412,7 @@ C *********************************************************************
           kxij = kpoint(1,ik) * xij(1,ind) +
      &           kpoint(2,ik) * xij(2,ind) +
      &           kpoint(3,ik) * xij(3,ind)
-          kphs = cdexp(dcmplx(0.0_dp,-1.0_dp)*kxij)
+          kphs = exp(cmplx(0.0_dp,-1.0_dp,dp) * kxij)
      
           D11 = Dk(1,juo,1,iuo) * kphs
           D22 = Dk(2,juo,2,iuo) * kphs
@@ -424,10 +423,10 @@ C *********************************************************************
           D12 = 0.5_dp * (D12 + conjg(D21))
           !D21 = conjg(D12)
 
-          Dnew(ind,1) = Dnew(ind,1) + dreal(D11)
-          Dnew(ind,2) = Dnew(ind,2) + dreal(D22)
-          Dnew(ind,3) = Dnew(ind,3) + dreal(D12)
-          Dnew(ind,4) = Dnew(ind,4) - dimag(D12)
+          Dnew(ind,1) = Dnew(ind,1) + real(D11)
+          Dnew(ind,2) = Dnew(ind,2) + real(D22)
+          Dnew(ind,3) = Dnew(ind,3) + real(D12)
+          Dnew(ind,4) = Dnew(ind,4) - aimag(D12)
 
           D11 = Ek(1,juo,1,iuo) * kphs
           D22 = Ek(2,juo,2,iuo) * kphs
@@ -438,10 +437,10 @@ C *********************************************************************
           D12 = 0.5_dp * (D12 + conjg(D21))
           !D21 = conjg(D12)
 
-          Enew(ind,1) = Enew(ind,1) + dreal(D11)
-          Enew(ind,2) = Enew(ind,2) + dreal(D22)
-          Enew(ind,3) = Enew(ind,3) + dreal(D12)
-          Enew(ind,4) = Enew(ind,4) - dimag(D12)
+          Enew(ind,1) = Enew(ind,1) + real(D11)
+          Enew(ind,2) = Enew(ind,2) + real(D22)
+          Enew(ind,3) = Enew(ind,3) + real(D12)
+          Enew(ind,4) = Enew(ind,4) - aimag(D12)
 
         enddo
         enddo

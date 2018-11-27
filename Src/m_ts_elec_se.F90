@@ -94,9 +94,9 @@ contains
     
     if ( lnon_Eq ) then
 #ifdef TBT_PHONON
-      E = dcmplx(real(cE%e,dp)**2,El%Eta)
+      E = cmplx(real(cE%e,dp)**2,El%Eta,dp)
 #else
-      E = dcmplx(real(cE%e,dp),El%Eta)
+      E = cmplx(real(cE%e,dp),El%Eta,dp)
 #endif
       call UC_expansion_Sigma_GammaT(E, &
           nou,no,El,nq, &
@@ -108,9 +108,9 @@ contains
       else
         if ( cE%idx(1) /= 1 ) then ! .not. CONTOUR_EQ
 #ifdef TBT_PHONON
-          E = dcmplx(real(cE%e,dp)**2,El%Eta)
+          E = cmplx(real(cE%e,dp)**2,El%Eta,dp)
 #else
-          E = dcmplx(real(cE%e,dp),El%Eta)
+          E = cmplx(real(cE%e,dp),El%Eta,dp)
 #endif
         end if
         call UC_expansion_Sigma(E,nou,no,El,nq, &
@@ -279,7 +279,7 @@ contains
 ! ********************
 ! * LOCAL variables  *
 ! ********************
-    complex(dp), parameter :: zi = dcmplx(0._dp,1._dp)
+    complex(dp), parameter :: zi = cmplx(0._dp,1._dp,dp)
     integer :: ierr
     integer :: io,jo
     integer :: ipvt(no_s)
@@ -515,7 +515,7 @@ contains
       do i1 = 1, B(1)
 
        rPi = 2._dp * Pi * (q_exp(El,i1,i2,i3) + El%bkpt_cur)
-       qPi = cdexp(dcmplx(0._dp,rPi(1)))
+       qPi = exp(cmplx(0._dp,rPi(1),dp))
 
 !$OMP do collapse(4)
        do iau = 1 , na_u
@@ -523,7 +523,7 @@ contains
         do ia2 = 1 , B(2)
         do ia1 = 1 , B(1)
 
-          p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
+          p(3) = exp(cmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3),kind=dp))
           iow = lasto(iau-1) * nq + &
               (( (ia3-1)*B(2) + (ia2-1) ) * B(1) + (ia1-1)) * (lasto(iau) - lasto(iau-1))
 
@@ -533,9 +533,9 @@ contains
            jow = 0
            do jau = 1 , na_u
             do ja3 = 1 , B(3)
-            p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
+            p(2) = p(3)*exp(cmplx(0._dp,ja3*rPi(3),kind=dp))
             do ja2 = 1 , B(2)
-            p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
+            p(1) = p(2)*exp(cmplx(0._dp,ja2*rPi(2),kind=dp))
             do ja1 = 1 , B(1)
               ! This takes one additional phase per iteration
               p(1) = p(1) * qPi
@@ -593,23 +593,23 @@ contains
       do i1 = 1, B(1)
 
        rPi = 2._dp * Pi * (q_exp(El,i1,i2,i3) + El%bkpt_cur)
-       qPi = cdexp(dcmplx(0._dp,rPi(1)))
+       qPi = exp(cmplx(0._dp,rPi(1),dp))
 
 !$OMP do collapse(3)
        do ia3 = 1 , B(3)
        do ia2 = 1 , B(2)
        do ia1 = 1 , B(1)
 
-        p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
+        p(3) = exp(cmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3),kind=dp))
         iow = (( (ia3-1)*B(2) + (ia2-1) ) * B(1) + (ia1-1)) * no_u
         do iuo = 1, no_u
          iow = iow + 1
 
          jow = 0
          do ja3 = 1 , B(3)
-         p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
+         p(2) = p(3)*exp(cmplx(0._dp,ja3*rPi(3),kind=dp))
          do ja2 = 1 , B(2)
-         p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
+         p(1) = p(2)*exp(cmplx(0._dp,ja2*rPi(2),kind=dp))
          do ja1 = 1 , B(1)
          ! This takes one additional phase per iteration
          p(1) = p(1)*qPi
@@ -697,7 +697,7 @@ contains
       do i1 = 1, B(1)
 
        rPi(:) = 2._dp * Pi * (q_exp(El,i1,i2,i3) + El%bkpt_cur)
-       qPi = cdexp(dcmplx(0._dp,rPi(1)))
+       qPi = exp(cmplx(0._dp,rPi(1),kind=dp))
 
 !$OMP do collapse(4)
        do iau = 1 , na_u
@@ -705,7 +705,7 @@ contains
         do ia2 = 1 , B(2)
         do ia1 = 1 , B(1)
             
-          p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
+          p(3) = exp(cmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3),kind=dp))
           iow = lasto(iau-1) * nq + &
               (( (ia3-1)*B(2) + (ia2-1) ) * B(1) + (ia1-1)) * (lasto(iau) - lasto(iau-1))
           do iuo = 1 + lasto(iau-1) , lasto(iau)
@@ -714,9 +714,9 @@ contains
            jow = 0
            do jau = 1 , na_u
             do ja3 = 1 , B(3)
-            p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
+            p(2) = p(3)*exp(cmplx(0._dp,ja3*rPi(3),kind=dp))
             do ja2 = 1 , B(2)
-            p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
+            p(1) = p(2)*exp(cmplx(0._dp,ja2*rPi(2),kind=dp))
             do ja1 = 1 , B(1)
               ! This takes one additional phase per iteration
               p(1) = p(1)*qPi
@@ -765,23 +765,23 @@ contains
       do i1 = 1, B(1)
 
        rPi(:) = 2._dp * Pi * (q_exp(El,i1,i2,i3) + El%bkpt_cur)
-       qPi = cdexp(dcmplx(0._dp,rPi(1)))
+       qPi = exp(cmplx(0._dp,rPi(1),kind=dp))
 
 !$OMP do collapse(3)
        do ia3 = 1 , B(3)
        do ia2 = 1 , B(2)
        do ia1 = 1 , B(1)
             
-        p(3) = cdexp(dcmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3)))
+        p(3) = exp(cmplx(wq,-ia1*rPi(1)-ia2*rPi(2)-ia3*rPi(3),kind=dp))
         iow = (( (ia3-1)*B(2) + (ia2-1) ) * B(1) + (ia1-1)) * no_u
         do iuo = 1, no_u
          iow = iow + 1
            
          jow = 0
          do ja3 = 1 , B(3)
-         p(2) = p(3)*cdexp(dcmplx(0._dp,ja3*rPi(3)))
+         p(2) = p(3)*exp(cmplx(0._dp,ja3*rPi(3),kind=dp))
          do ja2 = 1 , B(2)
-         p(1) = p(2)*cdexp(dcmplx(0._dp,ja2*rPi(2)))
+         p(1) = p(2)*exp(cmplx(0._dp,ja2*rPi(2),kind=dp))
          do ja1 = 1 , B(1)
          p(1) = p(1)*qPi
           do juo = 1, no_u

@@ -164,12 +164,14 @@ C of referencing has been changed in several places to reflect this.
           ind = listhptr(io) + j
           jo = listh(ind)
           jo = MODP(jo,nuotot) ! To allow auxiliary supercells
-          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
-          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
-          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1),   0.0_dp)
-          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2),   0.0_dp)
-          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,3), H(ind,4))
-          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + cmplx( S(ind), 0.0_dp,dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + cmplx( S(ind), 0.0_dp,dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) + cmplx(H(ind,1), 0.0_dp,dp)
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) + cmplx(H(ind,2), 0.0_dp,dp)
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) +
+     &                                     cmplx(H(ind,3), H(ind,4),dp)
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) +
+     &                                     cmplx(H(ind,3),-H(ind,4),dp)
         enddo
       enddo
       
@@ -190,12 +192,14 @@ C of referencing has been changed in several places to reflect this.
            ind = listhptr(io) + j
            jo = listh(ind)
            jo = MODP(jo,nuotot) ! To allow auxiliary supercells
-           Saux(1,jo,1,io) = Saux(1,jo,1,io) +dcmplx( S(ind), 0.0_dp)
-           Saux(2,jo,2,io) = Saux(2,jo,2,io) +dcmplx( S(ind), 0.0_dp)
-           Haux(1,jo,1,io) = Haux(1,jo,1,io) +dcmplx(H(ind,1),   0.0_dp)
-           Haux(2,jo,2,io) = Haux(2,jo,2,io) +dcmplx(H(ind,2),   0.0_dp)
-           Haux(2,jo,1,io) = Haux(2,jo,1,io) +dcmplx(H(ind,3), H(ind,4))
-           Haux(1,jo,2,io) = Haux(1,jo,2,io) +dcmplx(H(ind,3),-H(ind,4))
+           Saux(1,jo,1,io) = Saux(1,jo,1,io) +cmplx( S(ind), 0.0_dp,dp)
+           Saux(2,jo,2,io) = Saux(2,jo,2,io) +cmplx( S(ind), 0.0_dp,dp)
+           Haux(1,jo,1,io) = Haux(1,jo,1,io) +cmplx(H(ind,1), 0.0_dp,dp)
+           Haux(2,jo,2,io) = Haux(2,jo,2,io) +cmplx(H(ind,2), 0.0_dp,dp)
+           Haux(2,jo,1,io) = Haux(2,jo,1,io) +
+     &                                      cmplx(H(ind,3), H(ind,4),dp)
+           Haux(1,jo,2,io) = Haux(1,jo,2,io) +
+     &                                      cmplx(H(ind,3),-H(ind,4),dp)
          enddo
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
@@ -251,7 +255,7 @@ C of referencing has been changed in several places to reflect this.
           iie = iie + 1
         endif
       
-        caux(:,:) = dcmplx(0.0_dp,0.0_dp)
+        caux(:,:) = cmplx(0.0_dp,0.0_dp,dp)
         if (abs(qe).gt.occtol) then
           if (Node.eq.BNode) then
             do j = 1,nuotot
@@ -301,15 +305,15 @@ C of referencing has been changed in several places to reflect this.
 !       | D11 = Dnew(1)                  D21 = Dnew(3)-i Dnew(4)       |
 !       | D12 = Dnew(3)+i Dnew(4)        D22 = Dnew(2)                 |
 !       ----------------------------------------------------------------
-              Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
-              Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
-              Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
-              Dnew(ind,4) = Dnew(ind,4) - dimag(D12) * qe
+              Dnew(ind,1) = Dnew(ind,1) + real(D11) * qe
+              Dnew(ind,2) = Dnew(ind,2) + real(D22) * qe
+              Dnew(ind,3) = Dnew(ind,3) + real(D12) * qe
+              Dnew(ind,4) = Dnew(ind,4) - aimag(D12) * qe
       
-              Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
-              Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
-              Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
-              Enew(ind,4) = Enew(ind,4) - dimag(D12) * ee
+              Enew(ind,1) = Enew(ind,1) + real(D11) * ee
+              Enew(ind,2) = Enew(ind,2) + real(D22) * ee
+              Enew(ind,3) = Enew(ind,3) + real(D12) * ee
+              Enew(ind,4) = Enew(ind,4) - aimag(D12) * ee
       
             enddo
           enddo

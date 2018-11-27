@@ -22,9 +22,9 @@ module m_ts_electrode
   private
 
   ! BLAS parameters
-  complex(dp), parameter :: z_1  = dcmplx(1._dp,0._dp)
-  complex(dp), parameter :: z_m1 = dcmplx(-1._dp,0._dp)
-  complex(dp), parameter :: z_0  = dcmplx(0._dp,0._dp)
+  complex(dp), parameter :: z_1  = cmplx(1._dp,0._dp,dp)
+  complex(dp), parameter :: z_m1 = cmplx(-1._dp,0._dp,dp)
+  complex(dp), parameter :: z_0  = cmplx(0._dp,0._dp,dp)
 
   interface set_HS_transfer
      module procedure set_HS_Transfer_1d
@@ -1672,7 +1672,7 @@ contains
     ! The algorithm outside should take care of the
     ! nullification of the k-point in the semi-infinite direction
     do i = 0 , n_s - 1
-       ph(i) = cdexp(dcmplx(0._dp, sum(kq*sc_off(:,i))) )
+       ph(i) = exp(cmplx(0._dp, sum(kq*sc_off(:,i)),kind=dp) )
     end do
 
 !$OMP parallel default(shared), private(i,j,io,jo,ind,is)

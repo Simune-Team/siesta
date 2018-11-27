@@ -35,6 +35,14 @@
 ! 
 ! If no FLUSH is available, the subroutine is a no-op.
 
+!! UPDATE: We assume F2003
+#ifndef SIESTA__NO_F2003
+      subroutine pxfflush(unit)
+        implicit none
+        integer, intent(in) :: unit
+        flush(unit)
+      end subroutine pxfflush
+#else
       subroutine pxfflush(unit)
 #ifdef __NAG__
       use f90_unix_io, only : flush
@@ -62,7 +70,8 @@
       continue
 #endif
       end subroutine pxfflush
-
+#endif
+      
 ! ABORT: terminates program execution in such a way that a backtrace
 ! is produced. (see abort() in the C Standard Library). No arguments.
 !
@@ -76,6 +85,18 @@
 ! on every platform I've tried it with. Just in case it doesn't (it need
 ! not even stop execution) a stop is given to force termination.
 
+!! UPDATE: We assume F2003
+#ifndef SIESTA_NO_F2003      
+      subroutine pxfabort()
+      interface
+        subroutine abort() bind(c)
+        end subroutine abort
+      end interface
+      call abort()
+      end subroutine pxfabort
+
+#else
+      
       subroutine pxfabort()
 #ifdef __NAG__
       use f90_unix_proc, only : abort
@@ -106,3 +127,4 @@
       stop
 
       end subroutine pxfabort
+#endif

@@ -106,12 +106,16 @@ C Initialize auxiliary variables
           ind = listhptr(io) + j
           jo = listh(ind)
           jo = indxuo(jo)
-          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
-          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
-          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
-          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
-          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
-          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + cmplx( S(ind), 0.0_dp,dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + cmplx( S(ind), 0.0_dp,dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) +
+     &                                     cmplx(H(ind,1), H(ind,5),dp)
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) +
+     &                                     cmplx(H(ind,2), H(ind,6),dp)
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) +
+     &                                     cmplx(H(ind,3),-H(ind,4),dp)
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) +
+     &                                     cmplx(H(ind,7), H(ind,8),dp)
         enddo
       enddo
 C Diagonalize at the Gamma point
@@ -128,12 +132,16 @@ C Repeat diagonalisation with increased memory to handle clustering
           ind = listhptr(io) + j
           jo = listh(ind)
           jo = indxuo(jo)
-          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
-          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
-          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
-          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
-          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
-          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + cmplx( S(ind), 0.0_dp,dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + cmplx( S(ind), 0.0_dp,dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) +
+     &                                     cmplx(H(ind,1), H(ind,5),dp)
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) +
+     &                                     cmplx(H(ind,2), H(ind,6),dp)
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) +
+     &                                     cmplx(H(ind,3),-H(ind,4),dp)
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) +
+     &                                     cmplx(H(ind,7), H(ind,8),dp)
         enddo
       enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
@@ -186,16 +194,16 @@ C Transfer data
               do jo = 1, Bnuo
                 call LocalToGlobalOrb(jo,BNode,Nodes,juo)
                 do io = 1, nuotot
-                  rpipj = dreal(caux(1,io)*conjg(caux(1,juo)))*gauss
+                  rpipj = real(caux(1,io)*conjg(caux(1,juo)))*gauss
                   dpr(ihist,juo,1)=dpr(ihist,juo,1)+rpipj*Sloc(io,jo)
 
-                  rpipj = dreal(caux(2,io)*conjg(caux(2,juo)))*gauss
+                  rpipj = real(caux(2,io)*conjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,2)=dpr(ihist,juo,2)+rpipj*Sloc(io,jo)
 
-                  rpipj = dreal(caux(1,io)*conjg(caux(2,juo)))*gauss
+                  rpipj = real(caux(1,io)*conjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,3)=dpr(ihist,juo,3)+rpipj*Sloc(io,jo)
 
-                  ipipj = dimag(caux(1,io)*conjg(caux(2,juo)))*gauss
+                  ipipj = aimag(caux(1,io)*conjg(caux(2,juo)))*gauss
                   dpr(ihist,juo,4)=dpr(ihist,juo,4)-ipipj*Sloc(io,jo)
                 enddo
               enddo
@@ -219,16 +227,16 @@ C Loop over all the energy range
             caux => psi(:,:,iband) ! c_{up,j}, c_{down,j}
             do jo = 1, nuotot
               do io = 1, nuotot
-                rpipj = dreal(caux(1,io)*conjg(caux(1,jo)))*gauss
+                rpipj = real(caux(1,io)*conjg(caux(1,jo)))*gauss
                 dpr(ihist,jo,1)=dpr(ihist,jo,1)+rpipj*Spr(io,jo)
 
-                rpipj = dreal(caux(2,io)*conjg(caux(2,jo)))*gauss
+                rpipj = real(caux(2,io)*conjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,2)=dpr(ihist,jo,2)+rpipj*Spr(io,jo)
 
-                rpipj = dreal(caux(1,io)*conjg(caux(2,jo)))*gauss
+                rpipj = real(caux(1,io)*conjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,3)=dpr(ihist,jo,3)+rpipj*Spr(io,jo)
 
-                ipipj = dimag(caux(1,io)*conjg(caux(2,jo)))*gauss
+                ipipj = aimag(caux(1,io)*conjg(caux(2,jo)))*gauss
                 dpr(ihist,jo,4)=dpr(ihist,jo,4)-ipipj*Spr(io,jo)
               enddo
             enddo
