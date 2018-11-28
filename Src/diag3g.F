@@ -282,18 +282,18 @@ C of referencing has been changed in several places to reflect this.
 !------- 2,1 -----------------------------------------------------------
               D21  = caux(2,iio) * conjg(caux(1,jo))
       
-              Dnew(ind,1) = Dnew(ind,1) + real(D11) * qe
-              Dnew(ind,2) = Dnew(ind,2) + real(D22) * qe
-              Dnew(ind,3) = Dnew(ind,3) + real(D12) * qe
+              Dnew(ind,1) = Dnew(ind,1) + real(D11,dp) * qe
+              Dnew(ind,2) = Dnew(ind,2) + real(D22,dp) * qe
+              Dnew(ind,3) = Dnew(ind,3) + real(D12,dp) * qe
               Dnew(ind,4) = Dnew(ind,4) - aimag(D12) * qe
               Dnew(ind,5) = Dnew(ind,5) + aimag(D11) * qe
               Dnew(ind,6) = Dnew(ind,6) + aimag(D22) * qe
-              Dnew(ind,7) = Dnew(ind,7) + real(D21) * qe
+              Dnew(ind,7) = Dnew(ind,7) + real(D21,dp) * qe
               Dnew(ind,8) = Dnew(ind,8) + aimag(D21) * qe
       
-              Enew(ind,1) = Enew(ind,1) + real(D11) * ee
-              Enew(ind,2) = Enew(ind,2) + real(D22) * ee
-              Enew(ind,3) = Enew(ind,3) + real(D12) * ee
+              Enew(ind,1) = Enew(ind,1) + real(D11,dp) * ee
+              Enew(ind,2) = Enew(ind,2) + real(D22,dp) * ee
+              Enew(ind,3) = Enew(ind,3) + real(D12,dp) * ee
               Enew(ind,4) = Enew(ind,4) - aimag(D12) * ee
       
             enddo

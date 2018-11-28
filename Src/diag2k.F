@@ -423,9 +423,9 @@ C *********************************************************************
           D12 = 0.5_dp * (D12 + conjg(D21))
           !D21 = conjg(D12)
 
-          Dnew(ind,1) = Dnew(ind,1) + real(D11)
-          Dnew(ind,2) = Dnew(ind,2) + real(D22)
-          Dnew(ind,3) = Dnew(ind,3) + real(D12)
+          Dnew(ind,1) = Dnew(ind,1) + real(D11,dp)
+          Dnew(ind,2) = Dnew(ind,2) + real(D22,dp)
+          Dnew(ind,3) = Dnew(ind,3) + real(D12,dp)
           Dnew(ind,4) = Dnew(ind,4) - aimag(D12)
 
           D11 = Ek(1,juo,1,iuo) * kphs
@@ -437,9 +437,9 @@ C *********************************************************************
           D12 = 0.5_dp * (D12 + conjg(D21))
           !D21 = conjg(D12)
 
-          Enew(ind,1) = Enew(ind,1) + real(D11)
-          Enew(ind,2) = Enew(ind,2) + real(D22)
-          Enew(ind,3) = Enew(ind,3) + real(D12)
+          Enew(ind,1) = Enew(ind,1) + real(D11,dp)
+          Enew(ind,2) = Enew(ind,2) + real(D22,dp)
+          Enew(ind,3) = Enew(ind,3) + real(D12,dp)
           Enew(ind,4) = Enew(ind,4) - aimag(D12)
 
         enddo

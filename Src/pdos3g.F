@@ -194,13 +194,13 @@ C Transfer data
               do jo = 1, Bnuo
                 call LocalToGlobalOrb(jo,BNode,Nodes,juo)
                 do io = 1, nuotot
-                  rpipj = real(caux(1,io)*conjg(caux(1,juo)))*gauss
+                  rpipj = real(caux(1,io)*conjg(caux(1,juo)),dp)*gauss
                   dpr(ihist,juo,1)=dpr(ihist,juo,1)+rpipj*Sloc(io,jo)
 
-                  rpipj = real(caux(2,io)*conjg(caux(2,juo)))*gauss
+                  rpipj = real(caux(2,io)*conjg(caux(2,juo)),dp)*gauss
                   dpr(ihist,juo,2)=dpr(ihist,juo,2)+rpipj*Sloc(io,jo)
 
-                  rpipj = real(caux(1,io)*conjg(caux(2,juo)))*gauss
+                  rpipj = real(caux(1,io)*conjg(caux(2,juo)),dp)*gauss
                   dpr(ihist,juo,3)=dpr(ihist,juo,3)+rpipj*Sloc(io,jo)
 
                   ipipj = aimag(caux(1,io)*conjg(caux(2,juo)))*gauss
@@ -227,13 +227,13 @@ C Loop over all the energy range
             caux => psi(:,:,iband) ! c_{up,j}, c_{down,j}
             do jo = 1, nuotot
               do io = 1, nuotot
-                rpipj = real(caux(1,io)*conjg(caux(1,jo)))*gauss
+                rpipj = real(caux(1,io)*conjg(caux(1,jo)),dp)*gauss
                 dpr(ihist,jo,1)=dpr(ihist,jo,1)+rpipj*Spr(io,jo)
 
-                rpipj = real(caux(2,io)*conjg(caux(2,jo)))*gauss
+                rpipj = real(caux(2,io)*conjg(caux(2,jo)),dp)*gauss
                 dpr(ihist,jo,2)=dpr(ihist,jo,2)+rpipj*Spr(io,jo)
 
-                rpipj = real(caux(1,io)*conjg(caux(2,jo)))*gauss
+                rpipj = real(caux(1,io)*conjg(caux(2,jo)),dp)*gauss
                 dpr(ihist,jo,3)=dpr(ihist,jo,3)+rpipj*Spr(io,jo)
 
                 ipipj = aimag(caux(1,io)*conjg(caux(2,jo)))*gauss

@@ -305,14 +305,14 @@ C of referencing has been changed in several places to reflect this.
 !       | D11 = Dnew(1)                  D21 = Dnew(3)-i Dnew(4)       |
 !       | D12 = Dnew(3)+i Dnew(4)        D22 = Dnew(2)                 |
 !       ----------------------------------------------------------------
-              Dnew(ind,1) = Dnew(ind,1) + real(D11) * qe
-              Dnew(ind,2) = Dnew(ind,2) + real(D22) * qe
-              Dnew(ind,3) = Dnew(ind,3) + real(D12) * qe
+              Dnew(ind,1) = Dnew(ind,1) + real(D11,dp) * qe
+              Dnew(ind,2) = Dnew(ind,2) + real(D22,dp) * qe
+              Dnew(ind,3) = Dnew(ind,3) + real(D12,dp) * qe
               Dnew(ind,4) = Dnew(ind,4) - aimag(D12) * qe
       
-              Enew(ind,1) = Enew(ind,1) + real(D11) * ee
-              Enew(ind,2) = Enew(ind,2) + real(D22) * ee
-              Enew(ind,3) = Enew(ind,3) + real(D12) * ee
+              Enew(ind,1) = Enew(ind,1) + real(D11,dp) * ee
+              Enew(ind,2) = Enew(ind,2) + real(D22,dp) * ee
+              Enew(ind,3) = Enew(ind,3) + real(D12,dp) * ee
               Enew(ind,4) = Enew(ind,4) - aimag(D12) * ee
       
             enddo

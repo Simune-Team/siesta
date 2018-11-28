@@ -106,7 +106,7 @@ contains
   subroutine out_write(iu,i,j,z)
     integer, intent(in) :: iu,i,j
     complex(dp), intent(in) :: z
-    write(iu,'(2(tr1,i5),2(tr1,e20.13))') i,j,real(z),aimag(z)
+    write(iu,'(2(tr1,i5),2(tr1,e20.13))') i,j,real(z,dp),aimag(z)
   end subroutine out_write
   
   subroutine sp_to_file(u,sp)

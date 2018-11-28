@@ -374,8 +374,8 @@ contains
 
           if ( ind == rind ) then
              ! This is the diagonal matrix elements
-             zS(ind) = real(zS(ind))
-             zH(ind) = real(zH(ind))
+             zS(ind) = real(zS(ind),dp)
+             zH(ind) = real(zH(ind),dp)
           end if
                       
        end do

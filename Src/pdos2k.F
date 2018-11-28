@@ -241,9 +241,9 @@ C Loop over all the energy range
                  D22 = gauss*D22
                  D12 = gauss*D12
 
-                 dpr(ihist,juo,1) = dpr(ihist,juo,1) + real(D11)
-                 dpr(ihist,juo,2) = dpr(ihist,juo,2) + real(D22)
-                 dpr(ihist,juo,3) = dpr(ihist,juo,3) + real(D12)
+                 dpr(ihist,juo,1) = dpr(ihist,juo,1) + real(D11,dp)
+                 dpr(ihist,juo,2) = dpr(ihist,juo,2) + real(D22,dp)
+                 dpr(ihist,juo,3) = dpr(ihist,juo,3) + real(D12,dp)
                  dpr(ihist,juo,4) = dpr(ihist,juo,4) - aimag(D12)
                enddo
               enddo
@@ -276,9 +276,9 @@ C Loop over all the energy range
                 D22 = gauss*D22
                 D12 = gauss*D12
 
-                dpr(ihist,jo,1) = dpr(ihist,jo,1) + real(D11)
-                dpr(ihist,jo,2) = dpr(ihist,jo,2) + real(D22)
-                dpr(ihist,jo,3) = dpr(ihist,jo,3) + real(D12)
+                dpr(ihist,jo,1) = dpr(ihist,jo,1) + real(D11,dp)
+                dpr(ihist,jo,2) = dpr(ihist,jo,2) + real(D22,dp)
+                dpr(ihist,jo,3) = dpr(ihist,jo,3) + real(D12,dp)
                 dpr(ihist,jo,4) = dpr(ihist,jo,4) - aimag(D12)
               enddo
             enddo

@@ -405,13 +405,13 @@ C *********************************************************************
           D12 = Dk(1,juo,2,iuo) * kphs
           D21 = Dk(2,juo,1,iuo) * kphs
       
-          Dnew(ind,1) = Dnew(ind,1) + real(D11)
-          Dnew(ind,2) = Dnew(ind,2) + real(D22)
-          Dnew(ind,3) = Dnew(ind,3) + real(D12)
+          Dnew(ind,1) = Dnew(ind,1) + real(D11,dp)
+          Dnew(ind,2) = Dnew(ind,2) + real(D22,dp)
+          Dnew(ind,3) = Dnew(ind,3) + real(D12,dp)
           Dnew(ind,4) = Dnew(ind,4) - aimag(D12)
           Dnew(ind,5) = Dnew(ind,5) + aimag(D11) 
           Dnew(ind,6) = Dnew(ind,6) + aimag(D22)
-          Dnew(ind,7) = Dnew(ind,7) + real(D21) 
+          Dnew(ind,7) = Dnew(ind,7) + real(D21,dp) 
           Dnew(ind,8) = Dnew(ind,8) + aimag(D21)
 
       
@@ -420,9 +420,9 @@ C *********************************************************************
           D12 = Ek(1,juo,2,iuo) * kphs
           D21 = Ek(2,juo,1,iuo) * kphs
       
-          Enew(ind,1) = Enew(ind,1) + real(D11)
-          Enew(ind,2) = Enew(ind,2) + real(D22)
-          Enew(ind,3) = Enew(ind,3) + real(D12) 
+          Enew(ind,1) = Enew(ind,1) + real(D11,dp)
+          Enew(ind,2) = Enew(ind,2) + real(D22,dp)
+          Enew(ind,3) = Enew(ind,3) + real(D12,dp) 
           Enew(ind,4) = Enew(ind,4) - aimag(D12) 
       
         enddo
