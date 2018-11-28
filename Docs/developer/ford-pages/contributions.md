@@ -63,9 +63,9 @@ The conversion is a long-term work-in-progress.
 	functions.
 
 * Always declare precisions using `real(dp)`, the older `real*8` is not an ANSI standard. The module [[precision]]
-contains the necessary complex, real and integer precisions required.
+  contains the necessary complex, real and integer precisions required.
 
-* Assigning constants to variables should always specify precision via the suffix `double = 0._dp`
+* Assigning constants to variables should specify precision via the suffix `double = 0._dp`
 
 * Defining pointers should declare them as `=> null()` upon declaration
 
@@ -80,9 +80,44 @@ contains the necessary complex, real and integer precisions required.
 * Follow indentation in steps of 2
 * Use Doxygen like documentation `!>` for starting documentation
 
+### Casting data-types to different precision/data-types
+
+Casting should *always* have a precision specifier (if the interface allows)
+
+	! Single precisison
+	c_var = cmplx(0._sp, 0._sp, sp)
+	! Taking real/imaginary parts
+	s_var1 = real(c_var, sp)
+	s_var2 = aimag(c_var)
+	
+	z_var = cmplx(0._dp, 0._dp, dp)
+	! Taking real/imaginary parts
+	d_var1 = real(z_var, dp)
+	d_var2 = aimag(z_var)
+	
+	! Casting from same type
+	s_var1 = real(d_var1, sp)
+	s_var2 = real(d_var2, sp)
+	d_var1 = real(s_var1, dp)
+	d_var2 = real(s_var2, dp)
+
+Do *not* use any of these:
+- `dcmplx`, use `cmplx(.., .., dp)`
+- `dimag`, use `aimag`
+- `dreal`, use `real(.., dp)`
+
+
 ### Logical operators
 
-* Prefer the logical operators to the *ancient* `.LT.`/`.GT.` etc operators.
+Use logical operators
+
+	== ! instead of .eq.
+	/= ! instead of .ne.
+	<  ! instead of .lt.
+	<= ! instead of .le.
+	>  ! instead of .gt.
+	>= ! instead of .ge.
+
 
 ### Controlling extensions via preprocessors
 
