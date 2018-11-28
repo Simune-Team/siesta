@@ -20,7 +20,7 @@ subroutine writemmn( ispin )
 ! Written by J. Junquera in July 2013, 
 ! based on a previous subroutine by R. Korytar
 ! 
-
+  use precision, only: dp
   use m_siesta2wannier90, only: seedname ! Seed for the name of the file 
                                          !   where the Wannier90
                                          !   code, when used as a postprocessing
@@ -181,7 +181,7 @@ subroutine writeamn( ispin )
 ! Written by J. Junquera in July 2013, 
 ! based on a previous subroutine by R. Korytar
 ! 
-
+  use precision, only: dp
   use m_siesta2wannier90, only: seedname ! Seed for the name of the file 
                                          !   where the Wannier90
                                          !   code, when used as a postprocessing

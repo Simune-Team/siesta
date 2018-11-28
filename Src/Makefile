@@ -1551,6 +1551,7 @@ on_core.o: onmod.o
 on_main.o: onmod.o
 overlap_gradient_m.o: overlap_gradient.o
 printmat.o: printmatrix.o
+system_m.o: system.o
 t_spin.o: m_spin.o
 timer_options.o: timer.o
 trialorbitalclass.o: m_trialorbitalclass.o
