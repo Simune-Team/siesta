@@ -17,15 +17,13 @@ C       |          |                     |         |
 C       |__________|_____________________|_________|___
 C       0         lav/2               L-lav/2     L
 C
-
+        use defs_basis, only: dp, pi
+        
         implicit none
 
         integer n,j
-        real*8 L,lav
-        real*8 ft(2*n),x,phi
-        real*8 pi
-
-        pi=4.0d0*datan(1.0d0)
+        real(dp) L,lav
+        real(dp) ft(2*n),x,phi
 
         ft(1)=n/L
         ft(2)=0.0

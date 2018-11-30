@@ -50,7 +50,7 @@ C **********************************************************************
       PARAMETER(NP = 12)
       PARAMETER(N = 2**NP) 
 
-      DOUBLE PRECISION HARTREE, RYDBERG
+      REAL(DP) HARTREE, RYDBERG
       PARAMETER(HARTREE = 2.D0)
       PARAMETER(RYDBERG = 13.6058D0)
 
@@ -79,31 +79,31 @@ C ********* VARIABLES **************************************************
       REAL, ALLOCATABLE :: 
      .  RHOS(:,:) 
 
-      DOUBLE PRECISION, ALLOCATABLE :: 
+      REAL(DP), ALLOCATABLE :: 
      .  RHO(:,:) 
 
-      DOUBLE PRECISION
+      REAL(DP)
      .   CELL(3,3), DCELL(3,3)
 
-      DOUBLE PRECISION
+      REAL(DP)
      .   L, SUR, DS, LENGTH, CONVFAC, QREN, QTOT,
      .   LAV1, LAV2, DELTA, VOL, VOLCEL, SURPLA
 
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE::
+      REAL(DP), DIMENSION(:), ALLOCATABLE::
      .   Z, RHOZ, D2RHOZ, DRHODZ 
       
-      DOUBLE PRECISION
+      REAL(DP)
      .   DATA(2*N), TH(2*N), V(2*N), X, GSQ, YP1, YPN,
      .   VREEC(N), VIMEC(N), RE(N), IM(N), PHI
 
-      COMPLEX*8
+      complex(dp)
      .  A, B, C
   
 C ABINIT variables
       INTEGER
      .  NGFFT13(3), NSPPOL, FFORM, RDWR, UNITFI
 
-      DOUBLE PRECISION
+      REAL(DP)
      .  RPRIMD(3,3)
 
       TYPE(HDR_TYPE) :: HDR

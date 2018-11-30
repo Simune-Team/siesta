@@ -47,7 +47,7 @@ clean:
 	rm -f macroave permute *.o  *.a *.pcl *.pc *.mod
 	rm -f *.mod
 #
-macroave.o: interpolation.o m_fft_gpfa.o
-
+macroave.o: defs_basis.o interpolation.o m_fft_gpfa.o
+thetaft.o: defs_basis.o
 
 
