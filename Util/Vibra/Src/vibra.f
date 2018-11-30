@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -594,7 +594,7 @@ c convert to cm**-1. the conversion factor is xmagic (511**2)
             omega(i)=-omega(i)
             omega(i)=-dsqrt(omega(i))
 c        write(*,*)' Caution: omega**2 .lt.0.0 .....',
-c     1	' sqrt(abs(omega2))=',omega(i)
+c     1 ' sqrt(abs(omega2))=',omega(i)
           end if
           write(*,*)' eigenvalue #',i,' omega=',omega(i)
 
@@ -614,23 +614,23 @@ c write the eigenvalues and eigenvectors to output data file.
           open(iunit3,file=fname,status='unknown',position='append')
           if (ik.eq.1) then
             rewind(iunit3)
-	    write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
-	    write(6,'(2a,/)')' to output file ', fname
+            write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
+            write(6,'(2a,/)')' to output file ', fname
           endif
           write(iunit3,'(/,a,3f12.6)') 'k            = ',
      .                                  q(1),q(2),q(3)
-	  do 20 i=1,3*natoms
-	    write(iunit3,'(a,i5)')     'Eigenvector  = ',i
-	    write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
+          do 20 i=1,3*natoms
+            write(iunit3,'(a,i5)')     'Eigenvector  = ',i
+            write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
             if (intensity) then
-	      write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
+              write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
             endif
-	    write(iunit3,'(a)')        'Eigenmode (real part)'
-	    write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
-	    write(iunit3,'(a)')        'Eigenmode (imaginary part)'
-	    write(iunit3,'(3e12.4)') (zi(j,i),j=1,3*natoms)
-20	  continue
-	  call io_close(iunit3)
+            write(iunit3,'(a)')        'Eigenmode (real part)'
+            write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
+            write(iunit3,'(a)')        'Eigenmode (imaginary part)'
+            write(iunit3,'(3e12.4)') (zi(j,i),j=1,3*natoms)
+20        continue
+          call io_close(iunit3)
         endif
 Cc =================================================================
 
