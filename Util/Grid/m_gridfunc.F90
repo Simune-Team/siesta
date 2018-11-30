@@ -126,6 +126,7 @@ call check( nf90_create(filename,NF90_CLOBBER,ncid))
        call check(iret)
 
        n(:) = gf%n(:)
+       nspin = gf%nspin
 
        iret = nf90_def_dim(ncid,'n1',n(1),n1_id)
        call check(iret)

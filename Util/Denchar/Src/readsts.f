@@ -134,7 +134,7 @@ C                          (ISCALE = 1 => Bohrs, ISCALE = 2 => Ang)
       EMAX = FDF_PHYSICAL('Denchar.STSEmax',1.0D0,'eV')
       ETA  = FDF_PHYSICAL('Denchar.STSEta',0.1D0,'eV')
 
-      DELTAE = (EMAX-EMIN)/DFLOAT(NE-1)
+      DELTAE = (EMAX-EMIN)/real((NE-1),kind=dp)
 
 C Scale points coordinates
 C   Iscale = 1 => Do nothing
