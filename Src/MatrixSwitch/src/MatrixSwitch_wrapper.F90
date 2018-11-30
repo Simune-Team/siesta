@@ -231,7 +231,7 @@ contains
     allocate(ms_keys(num_matrices))
 
     ms_num_matrices=num_matrices
-    ms_keys=keys
+    ms_keys(:)=keys
 
   end subroutine ms_wrapper_open
 

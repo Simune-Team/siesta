@@ -2830,9 +2830,9 @@ contains
                 allocate(iaux3_temp(C%iaux2(1)))
                 allocate(iaux4_temp(C%iaux2(1)))
                 allocate(dval_temp(C%iaux2(1),1))
-                iaux3_temp=C%iaux3
-                iaux4_temp=C%iaux4
-                dval_temp=C%dval
+                iaux3_temp(:)=C%iaux3
+                iaux4_temp(:)=C%iaux4
+                dval_temp(:)=C%dval
                 deallocate(C%dval)
                 C%dval_is_allocated=.false.
                 deallocate(C%iaux4)
@@ -3004,9 +3004,9 @@ contains
                 allocate(iaux3_temp(C%iaux2(1)))
                 allocate(iaux4_temp(C%iaux2(1)))
                 allocate(zval_temp(C%iaux2(1),1))
-                iaux3_temp=C%iaux3
-                iaux4_temp=C%iaux4
-                zval_temp=C%zval
+                iaux3_temp(:)=C%iaux3
+                iaux4_temp(:)=C%iaux4
+                zval_temp(:)=C%zval
                 deallocate(C%zval)
                 C%zval_is_allocated=.false.
                 deallocate(C%iaux4)

@@ -214,8 +214,7 @@ integer, optional,intent(out):: stat   ! error status:
                                        !  (-2 if n < 2)
 
 ! Internal variables and arrays
-character(len=*),parameter:: myName = 'generate_spline_master '
-real(dp):: a, b, dx, dx1, dx2, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
+real(dp):: a, b, dx, dx1, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
            p, s, u(n), v(n), xtol, ypp(n)
 integer :: flag, k
 character(len=3):: meshType
@@ -302,9 +301,9 @@ dat%dx = dx
 dat%a = a
 if (dat%mesh == 'log') dat%b = b
 dat%n = n
-dat%x = x
-dat%y = y
-dat%d2ydx2 = ypp
+dat%x(:) = x
+dat%y(:) = y
+dat%d2ydx2(:) = ypp
 if (present(d2ydx2)) d2ydx2 = ypp
 
 end subroutine generate_spline_master
@@ -349,7 +348,7 @@ real(dp),         intent(out):: xh    ! higher interval mesh point
 
 ! Internal variables
 character(len=*),parameter:: myName = 'evaluate_spline/find_interval '
-real(dp)::  a, b, dx, h, x1, xmin, xmax, xtol
+real(dp)::  a, b, dx, x1, xmin, xmax
 integer ::  k, n
 
 ! Get some parameters
