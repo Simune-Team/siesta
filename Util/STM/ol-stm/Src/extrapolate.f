@@ -212,16 +212,13 @@ C      ENDDO
 
         endif
 
-
-      RETURN
-      END
-
+        CONTAINS
 
         SUBROUTINE  reciprocal(a1,a2,a3,vol,vec1,vec2)
-        implicit none
-        real*8    vol
-        real*8    pv(3),a1(3),a2(3),a3(3)
-        real*8    vec1(3),vec2(3), PI_D
+
+        real(dp)    vol
+        real(dp)    pv(3),a1(3),a2(3),a3(3)
+        real(dp)    vec1(3),vec2(3), PI_D
 
         parameter (PI_D = 3.141592653589793238462643383279502884197d0)
 
@@ -233,15 +230,17 @@ C      ENDDO
         END SUBROUTINE reciprocal
 
         SUBROUTINE pro(v1,v2,pv)
-        implicit none
-        real*8   v1(3),v2(3)
-        real*8   pv(3)
+
+        real(dp), intent(in)  ::   v1(3),v2(3)
+        real(dp), intent(out) ::   pv(3)
 
         pv(1)=v1(2)*v2(3)-v1(3)*v2(2)
         pv(2)=v1(3)*v2(1)-v1(1)*v2(3)
         pv(3)=v1(1)*v2(2)-v1(2)*v2(1)
 
         END SUBROUTINE pro
+
+      END SUBROUTINE EXTRAPOLATE
 
 
 

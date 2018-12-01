@@ -7,6 +7,7 @@
 ! ---
 module minimizer
 use vars_module 
+use system_m, only: system
 
 implicit none
 

@@ -199,7 +199,7 @@ C Check that cell is orthorombic
 
 ! Initialize density
 
-      RHO = 0
+      RHO(:,:,:) = 0
 C Loop over k-points and wavefunctions to include in the STM image
 
       DO IK  = 1, NK
@@ -249,9 +249,9 @@ C Initialize the wave function at each point -----------------------
 
 C Phase to cancel the phase of the wave function: -i.k.r
             PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+            SIMIKR=SIN(PMIKR)
+            COMIKR=COS(PMIKR)
+            EXMIKR=CMPLX(COMIKR,SIMIKR,kind=dp)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
@@ -280,7 +280,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
 
               SI=DSIN(PHASE)
               CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
+              EXPPHI=CMPLX(CO,SI,kind=dp)
 
                 DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                 IPHI1 = IPHORB(IO)
@@ -288,7 +288,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
                 CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
                 CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
+     .          CMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN),dp)*
      .          EXPPHI * EXMIKR
 
                 ENDDO
@@ -296,7 +296,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
             ENDDO
 
             RHO(NX-1,NY-1,NZ-1)  = RHO (NX-1,NY-1,NZ-1)    
-     &              + DREAL(CWAVE*DCONJG(CWAVE))* ARMUNI
+     &              + REAL(CWAVE*CONJG(CWAVE),dp)* ARMUNI
 
                 ENDDO  
              ENDDO  
@@ -329,9 +329,9 @@ C Determine position of current point in the reference plane
 
 C Phase to cancel the phase of the wave function: -i.k.r
             PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+            SIMIKR=SIN(PMIKR)
+            COMIKR=COS(PMIKR)
+            EXMIKR=CMPLX(COMIKR,SIMIKR,kind=dp)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
@@ -360,7 +360,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
 
               SI=DSIN(PHASE)
               CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
+              EXPPHI=CMPLX(CO,SI,kind=dp)
 
               DO 120 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                 IPHI1 = IPHORB(IO)
@@ -368,7 +368,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
                 CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
                 CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
+     .          CMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN),dp)*
      .          EXPPHI * EXMIKR
 
  120          ENDDO
@@ -389,7 +389,7 @@ C Call routine to extrapolate wave function and compute STM image
           CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF,ZMIN,ZMAX,UCELL,V0,
      .                     CW,ENER,K(IK,1),CWE)
 
-          RHO = RHO + DREAL(CWE*DCONJG(CWE))
+          RHO(:,:,:) = RHO(:,:,:) + REAL(CWE*CONJG(CWE),dp)
 
 
 C SECOND REFERENCE PLANE ZREF
@@ -412,9 +412,9 @@ C Determine position of current point in the SECOND reference plane
 
 C Phase to cancel the phase of the wave function: -i.k.r
             PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+            SIMIKR=SIN(PMIKR)
+            COMIKR=COS(PMIKR)
+            EXMIKR=CMPLX(COMIKR,SIMIKR,dp)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
@@ -441,9 +441,9 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
      .                K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
      .                K(IK,3)*(XPO(3)+XIJ(3,IAT1))
 
-              SI=DSIN(PHASE)
-              CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
+              SI=SIN(PHASE)
+              CO=COS(PHASE)
+              EXPPHI=CMPLX(CO,SI,kind=dp)
 
               DO 420 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                 IPHI1 = IPHORB(IO)
@@ -451,7 +451,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
                 CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
                 CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
+     .          CMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN),dp)*
      .          EXPPHI * EXMIKR
 
  420          ENDDO
@@ -470,8 +470,7 @@ C Call routine to extrapolate wave function and compute STM image
           CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF2,ZMIN,ZMAX,UCELL,V0,
      .                     CW,ENER,K(IK,1),CWE)
 
-          RHO = RHO + DREAL(CWE*DCONJG(CWE))
-
+          RHO(:,:,:) = RHO(:,:,:) + REAL(CWE*CONJG(CWE),dp)
           endif
           endif
 

@@ -85,10 +85,10 @@ c****************************************************************************
 
        implicit none
 
+       integer, parameter :: dp = selected_real_kind(10,100)
 c Internal parameters
 c maxp   : Maximun number of points
-       integer maxp
-       parameter ( maxp   = 10000000 )
+       integer, parameter :: maxp   = 10000000 
 
 c Internal variables
        character
@@ -96,10 +96,9 @@ c Internal variables
      .   mode*25
        integer
      .   i, ip, is, j, mesh(3), np, nspin, nt, Ind, iz, iy
-       real
-     .   f(maxp,2), fvalue, rho
-       double precision
-     .   cell(3,3)
+
+       real     ::  f(maxp,2), fvalue, rho
+       real(dp) ::  cell(3,3)
 
 c Read plot data
        read(5,*) name
@@ -237,11 +236,12 @@ C *******************************************************************
 C Next line is nonstandard but may be suppressed
        IMPLICIT NONE
 
+       integer, parameter :: dp = selected_real_kind(10,100)
+       
 C Argument types and dimensions
        INTEGER 
      .   NMESH(3), NSPAN(3), NT
-       REAL*8
-     .   CELL(3,3)
+       REAL(dp) ::   CELL(3,3)
        REAL
      .   F(*), FVALUE
        CHARACTER
@@ -350,11 +350,11 @@ C *******************************************************************
 C Next line is nonstandard but may be suppressed
        IMPLICIT NONE
 
+       integer, parameter :: dp = selected_real_kind(10,100)
 C Argument types and dimensions
        INTEGER 
      .   NMESH(3), NSPAN(3), NT
-       REAL*8
-     .   CELL(3,3)
+       REAL(dp) :: CELL(3,3)
        REAL
      .   F(*), ZVALUE, Z, FV, ZM
        CHARACTER

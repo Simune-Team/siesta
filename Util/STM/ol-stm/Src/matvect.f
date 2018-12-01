@@ -11,9 +11,10 @@
 *    matrix (3,3) and a vector.
 *
       implicit none
+      integer, parameter :: dp = selected_real_kind(10,100)
       integer i,j
-      real*8 matrix(3,3)
-      real*8 vector(3),product(3)
+      real(dp) matrix(3,3)
+      real(dp) vector(3),product(3)
 
       do i = 1,3
          product(i) = 0.d0

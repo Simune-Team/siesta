@@ -60,9 +60,9 @@
 
       ! Arguments
       implicit none
+      integer, intent(in)   :: ndim           ! number of coordinates
       real(dp),intent(inout):: x(ndim+1,ndim) ! simplex values x(ipoint,icoord)
       real(dp),intent(inout):: y(ndim+1)      ! function values at x
-      integer, intent(in)   :: ndim           ! number of coordinates
       interface
         function funk(x) result(value)        ! function to be minimized
           use precision, only: dp

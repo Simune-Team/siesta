@@ -141,7 +141,7 @@ OBJS =  automatic_cell.o atom_options.o \
         final_H_f_stress.o \
         debugmpi.o qsort.o save_density_matrix.o \
         m_dscfcomm.o schecomm.o moremeshsubs.o \
-        domain_decom.o printmatrix.o mmio.o pspltm1.o lenstr.o \
+        domain_decom.o printmatrix.o mmio.o pspltm1.o \
         setup_ordern_indexes.o\
         m_iodm.o m_iodm_old.o \
 	m_filter.o \
