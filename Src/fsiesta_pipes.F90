@@ -105,6 +105,7 @@ CONTAINS
 !---------------------------------------------------
 
 subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
+  use system_m, only: system
   implicit none
   character(len=*),         intent(in) :: label
   integer,         optional,intent(in) :: nnodes

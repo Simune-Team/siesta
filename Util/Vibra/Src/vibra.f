@@ -25,6 +25,8 @@ c **********************************************************************
 
       implicit none
 
+      integer, parameter :: dp = selected_real_kind(10,100)
+
       include 'vibra.h'
 
 c Internal variables ...
@@ -54,36 +56,36 @@ c Internal variables ...
 
       character label(maxlin)*8
 
-      real*8 kpoint(3,maxk), ek(maxd,maxk)
+      real(dp) kpoint(3,maxk), ek(maxd,maxk)
 
-      real*8 
+      real(dp) 
      .  dx, alat, alp, blp, clp, alplp, betlp, gamlp, pi, xxx
 
-      real*8
+      real(dp)
      .  zpe, planck
 
-      real*8 phi0(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
+      real(dp) phi0(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
      .        phi(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
-      real*8 pp(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
+      real(dp) pp(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
      .       pn(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
-      real*8 IRinten(3*maxa), BornQ(3,3,maxa)
+      real(dp) IRinten(3*maxa), BornQ(3,3,maxa)
 
-      real*8
+      real(dp)
      .  b(3,maxa), cell(3,3), r(3), scell(3,3), xa(3,maxasc),xmass(maxa)
 
-      real*8
+      real(dp)
      .  correct, dmin, q(3), qr(maxnq), r2, rl(3), rmass
 
 c Correction terms to satisfy translational modes
-      real*8 zero(3,3,maxa), zeroo(3,3)
+      real(dp) zero(3,3,maxa), zeroo(3,3)
 
 c Work space for diagonalization.
       complex dc(maxd,maxd),phase,IRtrm,vecmw(3)
-      real*8 work(maxd),work2(2,maxd)
-      real*8 dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
+      real(dp) work(maxd),work2(2,maxd)
+      real(dp) dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
 
-c Conversion factor from dsqrt(K/M) in eV and Ang to cm**-1 is 519.6
-      real*8 xmagic
+c Conversion factor from sqrt(K/M) in eV and Ang to cm**-1 is 519.6
+      real(dp) xmagic
       parameter (xmagic=519.6d0)
 
       data pi / 3.1415926d0 /
@@ -532,13 +534,13 @@ c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
         do jx=1,3*natoms
           i = (ix-mod(ix-1,3))/3+1
           j = (jx-mod(jx-1,3))/3+1
-          dc(ix,jx) = dc(ix,jx) / dsqrt(xmass(i)*xmass(j))
+          dc(ix,jx) = dc(ix,jx) / sqrt(xmass(i)*xmass(j))
         enddo
         enddo
 
         do ix=1,3*natoms
           do jx=ix,3*natoms
-            dd(ix,jx)=imag(dc(jx,ix))
+            dd(ix,jx)=aimag(dc(jx,ix))
             dd(jx,ix)=real(dc(jx,ix))
           enddo
         enddo
@@ -589,10 +591,10 @@ c write out eigenvalues.
 c convert to cm**-1. the conversion factor is xmagic (511**2)
           omega(i)=xmagic*xmagic*omega(i)
           if(omega(i).gt.0.0d0)then
-            omega(i)=dsqrt(omega(i))
+            omega(i)=sqrt(omega(i))
           else
             omega(i)=-omega(i)
-            omega(i)=-dsqrt(omega(i))
+            omega(i)=-sqrt(omega(i))
 c        write(*,*)' Caution: omega**2 .lt.0.0 .....',
 c     1 ' sqrt(abs(omega2))=',omega(i)
           end if

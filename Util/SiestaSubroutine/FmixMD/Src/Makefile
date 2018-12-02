@@ -39,16 +39,17 @@ FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 #
 driver.o: fmixmd.o sample.o
 fmixmd.o: sample.o
+fsiesta_pipes.o: system.o
 #
-OBJS=fsiesta_pipes.o sample.o fmixmd.o driver.o pxf.o
+OBJS= system.o fsiesta_pipes.o sample.o fmixmd.o driver.o pxf.o
 driver : $(OBJS)
 	$(FC) -o driver  $(LDFLAGS) $(OBJS) 
 #
 simple: fsiesta_pipes.o simple.o  pxf.o
-	$(FC) $(LDFLAGS) -o simple simple.o fsiesta_pipes.o pxf.o
+	$(FC) $(LDFLAGS) -o simple simple.o fsiesta_pipes.o pxf.o system.o
 #
 para: fsiesta_pipes.o para.o pxf.o
-	$(FC) $(LDFLAGS) -o para para.o fsiesta_pipes.o pxf.o
+	$(FC) $(LDFLAGS) -o para para.o fsiesta_pipes.o pxf.o system.o
 #
 clean: 
 	@echo "==> Cleaning object and executable files"
