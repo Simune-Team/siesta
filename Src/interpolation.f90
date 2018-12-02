@@ -156,13 +156,13 @@ PRIVATE ! nothing is declared public beyond this point
 ! Derived type to hold spline info of a function
 type spline_t
   private
-  character(len=3):: mesh              ! mesh type ('lin'|'log'|'gen')
-  real(dp)        :: xmin              ! x(1)-xtol
-  real(dp)        :: xmax              ! x(n)+xtol
-  real(dp)        :: x1                ! x(1)
-  real(dp)        :: dx                ! linear mesh interval
-  real(dp)        :: a,b      ! log-mesh parameters x(k)=b*[exp(a*(k-1))-1]
-  integer         :: n                 ! number of points
+  character(len=3):: mesh          ! mesh type ('lin'|'log'|'gen')
+  real(dp)        :: xmin          ! x(1)-xtol
+  real(dp)        :: xmax          ! x(n)+xtol
+  real(dp)        :: x1            ! x(1)
+  real(dp)        :: dx            ! linear mesh interval
+  real(dp)        :: a,b           ! log-mesh parameters x(k)=b*[exp(a*(k-1))-1]
+  integer         :: n             ! number of points
   real(dp),allocatable:: x(:)      ! mesh points
   real(dp),allocatable:: y(:)      ! function value at mesh points
   real(dp),allocatable:: d2ydx2(:) ! 2nd derivative at mesh points
@@ -197,7 +197,7 @@ CONTAINS
 
 !-------------------------------------------------------------------------------
 
-SUBROUTINE generate_spline_master( dat, x, y, n, dydx1, dydxn, d2ydx2, stat )
+SUBROUTINE generate_spline_master( dat, x, y, n, dydx1, dydxn, d2ydx2, store, stat )
 
 ! Generate data for cubic spline interpolation of a function
 
@@ -209,6 +209,7 @@ real(dp),         intent(in) :: y(n)   ! function value at mesh points
 real(dp),optional,intent(in) :: dydx1  ! dy/dx at x(1)
 real(dp),optional,intent(in) :: dydxn  ! dy/dx at x(n)
 real(dp),optional,intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
+logical, optional, intent(in):: store  ! Store data in the spline object
 integer, optional,intent(out):: stat   ! error status:
                                        !  (-1 if nonmonotonic mesh)
                                        !  (-2 if n < 2)
@@ -288,6 +289,13 @@ do k = n-1,1,-1
   ypp(k) = v(k)*ypp(k+1) + u(k)
 enddo
 
+! Store output, if requested
+if (present(d2ydx2)) d2ydx2 = ypp
+
+if ( present(store) ) then
+  if ( .not. store ) return
+end if
+
 ! Store spline info in output variable
 allocate(dat%x(n), dat%y(n), dat%d2ydx2(n))
 
@@ -301,10 +309,9 @@ dat%dx = dx
 dat%a = a
 if (dat%mesh == 'log') dat%b = b
 dat%n = n
-dat%x(:) = x
-dat%y(:) = y
-dat%d2ydx2(:) = ypp
-if (present(d2ydx2)) d2ydx2 = ypp
+dat%x(:) = x(:)
+dat%y(:) = y(:)
+dat%d2ydx2(:) = ypp(:)
 
 end subroutine generate_spline_master
 
@@ -475,24 +482,19 @@ type(spline_t):: dat
 
 ! Generate spline dat
 if (dydx1>dydxMax .and. dydxn>dydxMax) then
-  call generate_spline_master( dat, x, y, n, stat=stat)
+  call generate_spline_master( dat, x, y, n, d2ydx2=d2ydx2, store=.false., stat=stat)
 elseif (dydxn>dydxMax) then
-  call generate_spline_master( dat, x, y, n, dydx1=dydx1, stat=stat)
+  call generate_spline_master( dat, x, y, n, dydx1=dydx1, d2ydx2=d2ydx2, store=.false., stat=stat)
 elseif (dydx1>dydxMax) then
-  call generate_spline_master( dat, x, y, n, dydxn=dydxn, stat=stat)
+  call generate_spline_master( dat, x, y, n, dydxn=dydxn, d2ydx2=d2ydx2, store=.false., stat=stat)
 else
-  call generate_spline_master( dat, x, y, n, dydx1, dydxn, stat=stat)
+  call generate_spline_master( dat, x, y, n, dydx1, dydxn, d2ydx2=d2ydx2, store=.false., stat=stat)
 endif
 
-! Copy d2y/dx2 to output array
 ! If the status is faulty the resulting d2y/dx2 will be
 ! forcefully set to 0
 ! Then the user has to do something differently
-if ( stat /= 0 ) then
-   d2ydx2 = 0._dp
-else
-   d2ydx2 = dat%d2ydx2
-end if
+if ( stat /= 0 ) d2ydx2(:) = 0._dp
 
 ! Deallocate arrays in the spline data-structure
 call clean_spline(dat)

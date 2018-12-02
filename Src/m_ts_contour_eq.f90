@@ -218,6 +218,8 @@ contains
                 Eq_io(i)%b = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%method = 'g-legendre'
+             call c_io_add_opt(Eq_io(i),'right','right')
+
           else
              Eq_io(i)%part = 'tail'
              Eq_io(i)%N = 10

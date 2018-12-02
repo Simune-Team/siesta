@@ -1765,7 +1765,7 @@ contains
       call ncdf_def_dim(grp,'nlvl',mols(im)%lvls%n)
 
       ! A list the used projections
-      dic = ('info'.kv.'Unique projections')
+      dic = ('info'.kv.'Used projections indexed with respect to E_F')
       call ncdf_def_var(grp,'lvl',NF90_INT,(/'nlvl'/),atts=dic)
       mem = mem + calc_mem(NF90_INT, mols(im)%lvls%n)
       call ncdf_put_var(grp,'lvl',mols(im)%lvls%r)

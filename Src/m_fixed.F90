@@ -867,7 +867,7 @@ contains
                 deallocate(fixs(ix)%a)
                 fixs(ix)%n = r_tmp%n
                 allocate(fixs(ix)%a(r_tmp%n))
-                fixs(ix)%a = r_tmp%r
+                fixs(ix)%a(:) = r_tmp%r(:)
              end if
              call rgn_delete(r_tmp)
 

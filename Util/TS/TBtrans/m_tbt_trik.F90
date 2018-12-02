@@ -43,7 +43,7 @@ module m_tbt_trik
 #ifdef NOT_WORKING
   use m_tbt_regions, only : r_oEl
 #endif
-  use m_tbt_regions, only : r_oDev, r_oEl_alone, r_oElpD
+  use m_tbt_regions, only : r_oDev, r_oElpD
   use m_tbt_tri_init, only : ElTri, DevTri
 
   implicit none
