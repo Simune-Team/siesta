@@ -92,7 +92,7 @@
 
       ! Calculate the residual
 !$OMP workshare
-      F = Xout - Xin
+      F(:,:) = Xout(:,:) - Xin(:,:)
 !$OMP end workshare
 
 !$OMP end parallel

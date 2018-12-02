@@ -582,7 +582,12 @@ close(io)
     if ( IsVolt ) then
        call de_alloc(GFGGF_work, routine='transiesta')
     end if
-   
+
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
+
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
