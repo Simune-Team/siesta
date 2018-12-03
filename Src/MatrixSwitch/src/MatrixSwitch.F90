@@ -2049,10 +2049,11 @@ contains
   !> @brief Matrix product trace (real version).
   !============================================================================!
   subroutine mm_dtrace(A,B,alpha,label)
-    implicit none
 #ifdef HAVE_MPI
-    include 'mpif.h'
+    use mpi
+!    include 'mpif.h'
 #endif
+    implicit none
 
     !**** INPUT ***********************************!
 
@@ -2167,10 +2168,11 @@ contains
   !> @brief Matrix product trace (complex version).
   !============================================================================!
   subroutine mm_ztrace(A,B,alpha,label)
-    implicit none
 #ifdef HAVE_MPI
-    include 'mpif.h'
+    use mpi
+!    include 'mpif.h'
 #endif
+    implicit none
 
     !**** INPUT ***********************************!
 
@@ -3286,8 +3288,9 @@ contains
   !! @param[in] icontxt  BLACS context handle, if already initialized.
   !============================================================================!
   subroutine ms_scalapack_setup(mpi_comm,nprow,order,bs_def,bs_list,icontxt)
+    use mpi
     implicit none
-    include 'mpif.h'
+!    include 'mpif.h'
 
     !**** INPUT ***********************************!
 

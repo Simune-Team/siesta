@@ -150,7 +150,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	extrae_module.o extrae_eventllist.o\
 	moreParallelSubs.o \
 	read_xc_info.o \
-	siesta_master.o system.o \
+	siesta_master.o posix_calls.o \
         bsc_xcmod.o bsc_cellxc.o xc.o \
 	vacuum_level.o \
 	write_orb_indx.o \
@@ -751,10 +751,11 @@ fire_optim.o: alloc.o m_fire.o m_mpi_utils.o parallel.o precision.o
 fire_optim.o: siesta_options.o units.o
 flook_siesta.o: m_os.o parallel.o siesta_dicts.o siesta_geom.o siesta_options.o
 forhar.o: alloc.o mesh.o moremeshsubs.o parallel.o precision.o
-fsiesta_mpi.o: precision.o siesta_analysis.o siesta_end.o siesta_forces.o
-fsiesta_mpi.o: siesta_init.o siesta_master.o siesta_move.o sys.o
-fsiesta_pipes.o: system.o
-fsiesta_sockets.o: fsockets.o system.o
+fsiesta_mpi.o: posix_calls.o precision.o siesta_analysis.o siesta_end.o
+fsiesta_mpi.o: siesta_forces.o siesta_init.o siesta_master.o siesta_move.o
+fsiesta_mpi.o: sys.o
+fsiesta_pipes.o: posix_calls.o
+fsiesta_sockets.o: fsockets.o posix_calls.o system.o
 geom_helper.o: intrinsic_missing.o
 get_kpoints_scale.o: parallel.o siesta_geom.o
 get_target_stress.o: parallel.o precision.o sys.o units.o

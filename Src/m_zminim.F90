@@ -876,7 +876,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       if (Use2D) then
         call pzgemr2d(h_dim,h_dim,s_dense1D,1,1,desc1_1D,s_dense(ik)%mtrx,1,1,desc1,ictxt)
       else
-        s_dense(ik)%mtrx=s_dense1D
+        s_dense(ik)%mtrx(:,:)=s_dense1D
       end if
 #else
       s_dense(ik)%mtrx(:,:)=s_dense1D
@@ -919,7 +919,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (Use2D) then
       call pzgemr2d(h_dim,h_dim,h_dense1D,1,1,desc1_1D,h_dense,1,1,desc1,ictxt)
     else
-      h_dense=h_dense1D
+      h_dense(:,:)=h_dense1D
     end if
   end if
 #else
@@ -940,7 +940,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     call pzlaset('U',h_dim,h_dim,cmplx_1,cmplx_half,work2,1,1,desc1)
     work3=cmplx_0
     call pzlaset('L',h_dim,h_dim,cmplx_1,cmplx_half,work3,1,1,desc1)
-    h_dense=work2*h_dense+work3*work1
+    h_dense(:,:)=work2*h_dense+work3*work1
     deallocate(work3)
     deallocate(work2)
     deallocate(work1)
@@ -962,7 +962,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (Use2D) then
       call pzgemr2d(h_dim,h_dim,t_dense1D,1,1,desc1_1D,p_dense(ik)%mtrx,1,1,desc1,ictxt)
     else
-      p_dense(ik)%mtrx=t_dense1D
+      p_dense(ik)%mtrx(:,:)=t_dense1D
     end if
 #else
     p_dense(ik)%mtrx(:,:)=t_dense1D

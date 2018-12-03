@@ -73,10 +73,6 @@ module fsiesta
 ! Make sure that you have a working "flush" subroutine in your system,
 ! otherwise the process might hang.
 
-#ifdef __NAG__
-  use f90_unix_proc, only: system
-#endif
-
   implicit none
 
 PUBLIC :: siesta_launch, siesta_units, siesta_forces, siesta_quit
@@ -105,7 +101,7 @@ CONTAINS
 !---------------------------------------------------
 
 subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
-  use system_m, only: system
+  use posix_calls, only: system
   implicit none
   character(len=*),         intent(in) :: label
   integer,         optional,intent(in) :: nnodes

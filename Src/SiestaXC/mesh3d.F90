@@ -2494,8 +2494,8 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
 ! Find the box limits of all nodes
   allocate( srcBoxes(2,3,0:totNodes-1), dstBoxes(2,3,0:totNodes-1) )
   if (taskDefined) then
-    srcBoxes = task%srcBox
-    dstBoxes = task%dstBox
+    srcBoxes(:,:,:) = task%srcBox
+    dstBoxes(:,:,:) = task%dstBox
   else  ! Gather the boxes from all nodes
     call gatherBoxes( srcBox, srcBoxes )
     call gatherBoxes( dstBox, dstBoxes )
@@ -2526,8 +2526,8 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
   allocate( trsfDir(0:nTrsf), trsfNode(0:nTrsf) )
   if (taskOptimized) then
     nTrsf = task%nTrsf
-    trsfDir = task%trsfDir
-    trsfNode = task%trsfNode
+    trsfDir(:) = task%trsfDir
+    trsfNode(:) = task%trsfNode
   else ! (.not.taskOptimized)
     call all2allTransferOrder( totNodes, myNode, nTrsf, trsfNode, trsfDir )
   end if ! (taskOptimized)

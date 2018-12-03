@@ -241,7 +241,7 @@ C Write general information only if called for the first time
      .    '  '
           WRITE(UNIT1,'(A)')
      .    '  Atomic coordinates in the in-plane reference frame'
-          WRITE(UNIT1,'(A,19(' '),A)')
+          WRITE(UNIT1,'(A,19(" "),A)')
      .    '  Atomic Index','Atomic coordinates'
           DO IA = 1, NAPLA
             WRITE(UNIT1,'(A,I14,5X,3F15.4)')

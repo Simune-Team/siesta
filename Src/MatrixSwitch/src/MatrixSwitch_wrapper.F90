@@ -618,10 +618,11 @@ contains
   !> @brief Wrapper to matrix product trace (real version).
   !============================================================================!
   subroutine mm_dtrace(A,B,alpha,label)
-    implicit none
 #ifdef HAVE_MPI
-    include 'mpif.h'
+    use mpi
+!    include 'mpif.h'
 #endif
+    implicit none
 
     !**** INPUT ***********************************!
 
@@ -644,10 +645,11 @@ contains
   !> @brief Wrapper to matrix product trace (complex version).
   !============================================================================!
   subroutine mm_ztrace(A,B,alpha,label)
-    implicit none
 #ifdef HAVE_MPI
-    include 'mpif.h'
+    use mpi
+!    include 'mpif.h'
 #endif
+    implicit none
 
     !**** INPUT ***********************************!
 

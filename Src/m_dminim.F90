@@ -794,7 +794,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
       if (Use2D) then
         call pdgemr2d(h_dim,h_dim,s_dense1D,1,1,desc1_1D,s_dense,1,1,desc1,ictxt)
       else
-        s_dense=s_dense1D
+        s_dense(:,:)=s_dense1D
       end if
 #else
       s_dense(:,:)=s_dense1D
@@ -837,7 +837,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if (Use2D) then
       call pdgemr2d(h_dim,h_dim,h_dense1D,1,1,desc1_1D,h_dense,1,1,desc1,ictxt)
     else
-      h_dense=h_dense1D
+      h_dense(:,:)=h_dense1D
     end if
   end if
 #else
@@ -858,7 +858,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     call pdlaset('U',h_dim,h_dim,1.0_dp,0.5_dp,work2,1,1,desc1)
     work3=0.0_dp
     call pdlaset('L',h_dim,h_dim,1.0_dp,0.5_dp,work3,1,1,desc1)
-    h_dense=work2*h_dense+work3*work1
+    h_dense(:,:)=work2*h_dense+work3*work1
     deallocate(work3)
     deallocate(work2)
     deallocate(work1)
@@ -880,7 +880,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if (Use2D) then
       call pdgemr2d(h_dim,h_dim,t_dense1D,1,1,desc1_1D,p_dense,1,1,desc1,ictxt)
     else
-      p_dense=t_dense1D
+      p_dense(:,:)=t_dense1D
     end if
 #else
     p_dense(:,:)=t_dense1D

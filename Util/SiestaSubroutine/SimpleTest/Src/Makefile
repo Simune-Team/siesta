@@ -44,8 +44,8 @@ include $(ARCH_MAKE)
 #
 # Routines used by pipes and sockets versions (VPATH knows where they are)
 #
-FSIESTA_PIPES= system.o fsiesta_pipes.o pxf.o 
-FSIESTA_SOCKETS= system.o fsockets.o sockets.o fsiesta_sockets.o 
+FSIESTA_PIPES= posix_calls.o fsiesta_pipes.o pxf.o 
+FSIESTA_SOCKETS= posix_calls.o fsockets.o sockets.o fsiesta_sockets.o 
 #
 # Siesta libraries used by MPI version
 #
