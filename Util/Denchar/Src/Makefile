@@ -103,7 +103,7 @@ MOD_OBJS=precision.o parallel.o debugmpi.o m_io.o alloc.o memoryinfo.o listsc.o 
          radial.o spher_harm.o basis_io.o basis_types.o parallelsubs.o \
          schecomm.o sparse_matrices.o interpolation.o\
          files.o pseudopotential.o chemical.o xml.o \
-         domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
+         domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o \
          spatial.o timer_local.o 
 
 # Additional class objects

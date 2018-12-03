@@ -35,7 +35,7 @@ subroutine solve_with_svd(ain,rhs,c,info,rcond,rank_out,sigma)
   lda = n
   m = n
   allocate(a(n,n))
-  a = ain
+  a(:,:) = ain
   allocate(b(n),s(n))
 
   lwork = 3*n+nb*(n+m)

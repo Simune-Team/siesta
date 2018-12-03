@@ -991,7 +991,7 @@ contains
     ! Calculate offsets
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
-    sc_off = matmul(El%cell,El%isc_off)
+    sc_off(:,:) = matmul(El%cell,El%isc_off)
 
     ! Print information on file-size and electrode type.
     call print_Elec_Green(El, NEn, nkpnt)
@@ -1834,7 +1834,7 @@ contains
 
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
-    sc_off = matmul(El%cell,El%isc_off)
+    sc_off(:,:) = matmul(El%cell,El%isc_off)
     
     ! whether we already have the H and S set correctly, 
     ! update accordingly, it will save a bit of time, but not much

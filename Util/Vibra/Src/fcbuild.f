@@ -26,6 +26,8 @@ c **********************************************************************
       use fdf
       implicit none
 
+      integer, parameter :: dp = kind(1.d0)
+      
       include 'vibra.h'
 
 c Internal variables ...
@@ -45,10 +47,10 @@ c Internal variables ...
      .  lx_defect, ly_defect, lz_defect,
      .  na_defect, natoms, ncells, nnat
 
-      real*8 
+      real(dp) 
      .  dx, alat, alp, blp, clp, alplp, betlp, gamlp, pi, xxx
 
-      real*8
+      real(dp)
      .  b(3,maxa), cell(3,3), r(3), scell(3,3), xa(3,maxasc), 
      .  xmass(maxa)
 

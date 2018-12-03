@@ -1270,7 +1270,7 @@ contains
        call ID2idx(c,mu%ID,idx)
 
        ! move over the weights and the contour values
-       c%c        = cmplx(ce,Eta,dp)
+       c%c(:)        = cmplx(ce,Eta,dp)
        c%w(idx,:) = cw
 
     case default
