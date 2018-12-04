@@ -18,13 +18,15 @@ fnameB = [wdir,syslabelB,'.refoldedBands']; %.path1  %   '.unfoldedBands'.
 
 % Read DOS
 fileA = fopen(fnameA);
-datA = fscanf(fileA,'%d %d %f %f',4);
+datA = fscanf(fileA,'%d %d %f %f %f',5);
 nq = datA(1);
 ne = datA(2);
 emin = datA(3);
 emax = datA(4);
+efermiA = datA(5);
 fileB = fopen(fnameB);
-datB = fscanf(fileB,'%d %d %f %f',4); % nq,ne,emin,emax are read from fileA
+datB = fscanf(fileB,'%d %d %f %f %f',5); % nq,ne,emin,emax are read from fileA
+efermiB = datB(5);
 q = zeros(3,nq);
 dosA = zeros(nq,ne);
 dosB = zeros(nq,ne);
@@ -42,6 +44,10 @@ for iq = 1:nq
 end
 fclose(fileA);
 fclose(fileB);
+
+% set zero at efermiA (non-defective)
+emin = emin - efermiA;
+emax = emax - efermiA;
 
 for iq=1:nq                % Adjust labels to MATLAB style
    if (label(iq)=='  Gamma   ')
@@ -133,6 +139,9 @@ else
       plot3(qpath(il)*[1,1],[emin,emax],[zlimit,zlimit],'Color',clr,'LineStyle',':')
   end
   plot3(qpath(end)*[1,1],[emin,emax],[zlimit,zlimit],'Color',clr,'LineStyle',':') % last sym point
+
+  plot3([qpath(1),qpath(end)],0*[1,1],[zlimit,zlimit],'Color','k') % Fermi A
+  plot3([qpath(1),qpath(end)],(efermiB-efermiA)*[1,1],[zlimit,zlimit],'Color','r') % Fermi B (defective)
 
   vtick = [qpath((lineEnd(1:1:numel(lineEnd)))),qpath(end)];
   xticks(vtick);

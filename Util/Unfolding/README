@@ -63,15 +63,15 @@ single point. This allows a q-line not begin at the end of previous one, e.g.
  100   4.0  4.0  0.0
 %endblock UnfoldedBandLines
 
-As in BandLines, an optional label can be added at the end of each q-line to specify
-the name of the last point of the line.
+As in BandLines, a label can be added at the end of each q-line to specify
+the name of the last point of that line.
 
 The unfolded and refolded bands calculated by unfold are written in files
 SYSLABEL.unfoldedBands and SYSLABEL.refoldedBands (where SYSLABEL=si8 in 
 previous example). The first one contains the fully-unfolded bands and 
 the second one contains the refolded bands. Both have the same format:
 ----------
-nq, ne, Emin, Emax                    (in energy units given in UnfoldedBandLines)
+nq, ne, Emin, Emax, Fermi                 (in energy units given in UnfoldedBandLines)
   qVector(ixyz=1:3,iq=1), iLine, label    (q in Bohr^-1, line to which it belongs)
 qDOS(ie=1,iq=1)
 qDOS(2,1)

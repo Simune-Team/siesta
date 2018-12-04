@@ -66,7 +66,7 @@ program unfold
                       m, maxig(3), maxorb, myNode, na, nbands, ne, ng, nh, nlm, nn, &
                       nNodes, nos, nou, npaths, nq, nqline, nrq, nspin, ntmp, nw, t, z
   real(dp)         :: alat, c0, cdos, cellRatio(3,3), ddos, de, dek, dq, dqpath(3), &
-                      dqx(3), dr, drq, dscell(3,3), emax, emin, &
+                      dqx(3), dr, drq, dscell(3,3), emax, emin, efermi, &
                       gcut, gnew(3), gnorm, gq(3), grad, gylm(3,maxl*maxl), &
                       kq(3), kxij, pi, &
                       qmod, qcell(3,3), qg(3), qline(3), qmax, qx(3), &
@@ -78,6 +78,7 @@ program unfold
   character(len=20):: labelfis, symfio
   character(len=200):: line
   character(len=10):: label(maxnq), string
+  character(len=14):: dumm1, dumm2
   type(block_fdf)  :: bfdf
   type(hsx_t)      :: hsx
 
@@ -546,6 +547,18 @@ program unfold
     endif
 #endif
 
+    ! Read Fermi level
+    ! from SystemLabel.out:
+ 
+    if (myNode==0) then
+      print*,'k'
+      call system('grep ''Fermi = '' *out -h > fermi')
+      open(8181,file='fermi',action='read')
+      read(8181,'(a, a, f)'),dumm1,dumm2,efermi
+      print*,'unfold: Fermi = ',efermi
+      call system('rm fermi')
+    endif
+
     if (myNode==0) then
       do ispin = 1,nspin
         call io_assign(iu)
@@ -560,14 +573,15 @@ program unfold
           fname = trim(fname)//'.path'//adjustl(numstr)
         endif
         open(iu,file=fname,status='unknown',form='formatted',action='write')
-        write(iu,*) lastq(ipath)-lastq(ipath-1),ne+1,emin,emax
+        write(iu,'(2(i6),2(f10.3),f14.8)') &
+                 lastq(ipath)-lastq(ipath-1),ne+1,emin,emax,efermi
         do iq = iq1,iq2
           if (label(iq) .eq. ' ') then
             string = " "
           else
             string = ""//trim(label(iq))//""
           endif
-          write(iu,'(3(f14.8),i5,a12)') q(:,iq), iline(iq), string 
+          write(iu,'(3(f12.8),i5,a12)') q(:,iq), iline(iq), string 
           do j = 0,ne
             write(iu,'(e15.6)') udos(iq,j,ispin)
 !            write(iu,'(3i4,e15.6)') iq,j,ispin,udos(iq,j,ispin)
@@ -587,7 +601,8 @@ program unfold
             fname = trim(fname)//'.path'//adjustl(numstr)
           endif
           open(iu,file=fname,status='unknown',form='formatted',action='write')
-          write(iu,*) lastq(ipath)-lastq(ipath-1),ne+1,emin,emax
+          write(iu,'(2(i6),2(f10.3),f14.8)') &
+                   lastq(ipath)-lastq(ipath-1),ne+1,emin,emax,efermi
           do iq = iq1,iq2
             if (label(iq) .eq. ' ') then
               string = "' '"
