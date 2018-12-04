@@ -2143,9 +2143,9 @@ contains
                   ' <i|i> = ',rS_sq(i,i)
             end do
           else
-            call zgemm('C','N',no,no,no,dcmplx(1._dp,0._dp), &
+            call zgemm('C','N',no,no,no,cmplx(1._dp,0._dp,dp), &
                 zv,no,zv,no, &
-                dcmplx(0._dp,0._dp), zS_sq, no)
+                cmplx(0._dp,0._dp,dp), zS_sq, no)
             ! Print the norm and the diagonal element
             do i = 1 , no
               zn = VNORM(zS_sq(:,i))
@@ -2172,7 +2172,7 @@ contains
             zS_sq = 0._dp
             ! Print the norm and the diagonal element
             do i = 1 , no
-              call zgerc(no,no,dcmplx(1._dp,0._dp),zv(1,i),1,zv(1,i),1, &
+              call zgerc(no,no,cmplx(1._dp,0._dp,dp),zv(1,i),1,zv(1,i),1, &
                   zS_sq(1,1),no)
             end do
             do i = 1 , no
@@ -2862,8 +2862,8 @@ contains
       do i = 1 , mols(im)%orb%n
         
         ! Initialize |><| value
-        zD(i,:) = dcmplx(0._dp,0._dp)
-        zP(i,:) = dcmplx(0._dp,0._dp)
+        zD(i,:) = cmplx(0._dp,0._dp,dp)
+        zP(i,:) = cmplx(0._dp,0._dp,dp)
         io = mols(im)%orb%r(i)
         lio = index_global_to_local(dit,io)
 
@@ -2873,7 +2873,7 @@ contains
           if ( j == 0 ) cycle
           ! this is per level in the system
           do ip = 1 , Npl
-            zD(i,ip) = zD(i,ip) + dconjg(mols(im)%p(j,poff+ip)) * M(ind)
+            zD(i,ip) = zD(i,ip) + conjg(mols(im)%p(j,poff+ip)) * M(ind)
           end do
           ! this is per projection calculating |\sum>_i<\sum| M
           j = ((i-1)*Nsl+ip-1)*no+j
@@ -3036,14 +3036,14 @@ contains
 
         ! In the code bGk is _without_ factor "i".
         ! Hence, we here add factor i
-        proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, 1._dp)
+        proj_ME(iE)%bGk = proj_ME(iE)%bGk * cmplx(0._dp, 1._dp, dp)
 
         ! ALL nodes _have_ to participate
         call ncdf_put_var(gmol,ctmp,proj_ME(iE)%bGk, &
             start = idx, count=cnt )
 
         ! and back
-        proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, -1._dp)
+        proj_ME(iE)%bGk = proj_ME(iE)%bGk * cmplx(0._dp, -1._dp, dp)
 
       end do
 
@@ -3080,10 +3080,10 @@ contains
         if ( nE%iE(Node) > 0 ) then
           ! In the code bGk is _without_ factor "i".
           ! Hence, we here add factor i
-          proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, 1._dp)
+          proj_ME(iE)%bGk = proj_ME(iE)%bGk * cmplx(0._dp, 1._dp, dp)
           call ncdf_put_var(gmol,ctmp,proj_ME(iE)%bGk, &
               start = (/1,1,nE%iE(Node),ikpt/) )
-          proj_ME(iE)%bGk = proj_ME(iE)%bGk * dcmplx(0._dp, -1._dp)
+          proj_ME(iE)%bGk = proj_ME(iE)%bGk * cmplx(0._dp, -1._dp, dp)
         end if
 #ifdef MPI
         if ( Node == 0 ) then
@@ -3091,7 +3091,7 @@ contains
             if ( nE%iE(iN) <= 0 ) cycle
             call MPI_Recv(tmp,nl*nl,Mpi_double_complex, &
                 iN, iN, Mpi_comm_world,status,MPIerror)
-            tmp = tmp * dcmplx(0._dp, 1._dp)
+            tmp = tmp * cmplx(0._dp, 1._dp, dp)
             call ncdf_put_var(gmol,ctmp,reshape(tmp,(/nl,nl/)), &
                 start = (/1,1,nE%iE(iN),ikpt/) )
           end do
@@ -3148,7 +3148,7 @@ contains
     do j = 1 , mol%proj(ip)%n
       gj = mol%proj(ip)%r(j)
 
-      p(:) = dcmplx(0._dp,0._dp)
+      p(:) = cmplx(0._dp,0._dp,dp)
       do i = 1 , mol%proj(ip)%n
         gi = mol%proj(ip)%r(i)
         ! Create summation |i> . <i|Gam|j>
@@ -3157,7 +3157,7 @@ contains
 
       ! Do last product |i> . <i|Gam|j> . <j|
       ! and take the transpose
-      tmp(:) = dconjg(mol%p(:,gj))
+      tmp(:) = conjg(mol%p(:,gj))
       if ( j == 1 ) then
         do i = 1 , mol%orb%n
           Mt(:,i) = p(i) * tmp(:)
@@ -3203,8 +3203,8 @@ contains
 
       ! Note that Mt is a transposed matrix, hence we need to 
       ! transpose back
-      call zgemv('T',orb%n,orb%n,dcmplx(1._dp,0._dp),Mt(1,1),orb%n, &
-          pl,1,dcmplx(0._dp,0._dp),tmp,1)
+      call zgemv('T',orb%n,orb%n,cmplx(1._dp,0._dp,dp),Mt(1,1),orb%n, &
+          pl,1,cmplx(0._dp,0._dp,dp),tmp,1)
 
       ! <i|
       do i = 1 , mol%lvls%n
@@ -3227,11 +3227,11 @@ contains
     
     integer :: ip, i
 
-    p(:) = dcmplx(0._dp,0._dp)
+    p(:) = cmplx(0._dp,0._dp,dp)
     do ip = 1 , proj%n
       i = proj%r(ip)
       !         add |ip>_j <ip|
-      p(:) = p(:) + mol%p(j,i) * dconjg(mol%p(:,i))
+      p(:) = p(:) + mol%p(j,i) * conjg(mol%p(:,i))
     end do
     
   end subroutine proj_state_bra

@@ -515,7 +515,7 @@ contains
        ! If it is different from 1 we do not have an equilibrium contour
        if ( c%idx(1) /= 1 ) then
           ! In this case the energy is the eta value of the electrode
-          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
+          c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta,kind=dp)
        end if
 
        ! Get k-point

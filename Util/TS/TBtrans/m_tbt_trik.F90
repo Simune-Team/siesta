@@ -870,7 +870,7 @@ contains
           omega = real(cE%e,dp)
           ! Copy data, and form: \omega**2 + i \eta
           cOmega = cE
-          cOmega%e = dcmplx(omega**2,dimag(cE%e))
+          cOmega%e = cmplx(omega**2,aimag(cE%e),dp)
 #endif
           
           ! B-cast all nodes current energy segment
@@ -1258,7 +1258,7 @@ contains
                       call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                       ! Copy the eigenvalues over
                       do io = 1 , N_eigen
-                         Teig(io,jEl,iEl) = dreal(eig(io))
+                         Teig(io,jEl,iEl) = real(eig(io),dp)
                       end do
                    else
                       call A_Gamma(zwork_tri,Elecs(jEl),T(jEl,iEl))
@@ -1472,7 +1472,7 @@ contains
                           nGFGGF, GFGGF_work)
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
-                        bTkeig(io,jEl,ipt) = dreal(eig(io))
+                        bTkeig(io,jEl,ipt) = real(eig(io),dp)
                      end do
                   else
                      call A_Gamma(zwork_tri,El_p,bTk(jEl,ipt))
@@ -1488,7 +1488,7 @@ contains
                           nGFGGF, GFGGF_work)
                      call TT_eigen(io,GFGGF_work, ntt_work, tt_work, eig)
                      do io = 1 , N_eigen
-                        bTkeig(io,jEl,ipt) = dreal(eig(io))
+                        bTkeig(io,jEl,ipt) = real(eig(io),dp)
                      end do
                   else
                      call A_Gamma(zwork_tri,Elecs(iEl),bTk(jEl,ipt))
@@ -1739,7 +1739,7 @@ contains
 
     ! Initialize
 !$OMP workshare
-    GFinv(:) = dcmplx(0._dp,0._dp)
+    GFinv(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region
@@ -1817,7 +1817,7 @@ contains
 
     ! All our work-arrays...
     complex(dp), pointer :: A(:), B(:), C(:), Y(:)
-    complex(dp), parameter :: zi = dcmplx(0._dp, 1._dp)
+    complex(dp), parameter :: zi = cmplx(0._dp, 1._dp, dp)
 
     integer :: no, off, i, ii, j, ierr
     integer :: ip, itmp
@@ -1909,8 +1909,8 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','N',p(ip),p(ip),p(ip-1),dcmplx(1._dp,0._dp), &
-            B,p(ip),C,p(ip-1),dcmplx(0._dp,0._dp),Y,p(ip))
+            'N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+            B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
        
     end do
 
@@ -1931,11 +1931,11 @@ contains
        do i = 1 , j - 1
           ii = ii + 1
           ip = ip + no
-          El%Gamma(ii) = zi * (El%Sigma(ip) - dconjg( El%Sigma(ii) ))
-          El%Gamma(ip) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ip) ))
+          El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
        end do
        ii = no*(j-1) + j
-       El%Gamma(ii) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ii) ))
+       El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -2061,11 +2061,11 @@ contains
           do i = 1 , j - 1
              ii = ii + 1
              jj = jj + ierr
-             C(ii) = zi * (Y(jj) - dconjg( Y(ii) ))
-             C(jj) = zi * (Y(ii) - dconjg( Y(jj) ))
+             C(ii) = zi * (Y(jj) - conjg( Y(ii) ))
+             C(jj) = zi * (Y(ii) - conjg( Y(jj) ))
           end do
           ii = ierr*(j-1) + j
-          C(ii) = zi * (Y(ii) - dconjg( Y(ii) ))
+          C(ii) = zi * (Y(ii) - conjg( Y(ii) ))
        end do
 !$OMP end parallel do
 
@@ -2075,15 +2075,15 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','T',ierr,ierr,ierr,dcmplx(1._dp,0._dp), &
-            A,ierr,C,ierr,dcmplx(0._dp,0._dp),B,ierr)
+            'N','T',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
+            A,ierr,C,ierr,cmplx(0._dp,0._dp,dp),B,ierr)
 #ifdef USE_GEMM3M
        call zgemm3m( &
 #else
        call zgemm( &
 #endif
-            'N','C',ierr,ierr,ierr,dcmplx(1._dp,0._dp), &
-            B,ierr,A,ierr,dcmplx(0._dp,0._dp),El%Sigma,ierr)
+            'N','C',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
+            B,ierr,A,ierr,cmplx(0._dp,0._dp,dp),El%Sigma,ierr)
 
        ! Calculate trace
        do i = 1 , ierr
@@ -2121,8 +2121,8 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','N',p(ip-1),p(ip),p(ip-1),dcmplx(1._dp,0._dp), &
-            A,p(ip-1),B,p(ip-1),dcmplx(0._dp,0._dp),C,p(ip))
+            'N','N',p(ip-1),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+            A,p(ip-1),B,p(ip-1),cmplx(0._dp,0._dp,dp),C,p(ip))
 
        call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
             sc_off, kpt)
@@ -2133,8 +2133,8 @@ contains
 #else
        call zgemm( &
 #endif
-            'N','N',p(ip),p(ip),p(ip-1),dcmplx(1._dp,0._dp), &
-            B,p(ip),C,p(ip-1),dcmplx(0._dp,0._dp),Y,p(ip))
+            'N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+            B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
 
     end do
 
@@ -2155,11 +2155,11 @@ contains
        do i = 1 , j - 1
           ii = ii + 1
           ip = ip + no
-          El%Gamma(ii) = zi * (El%Sigma(ip) - dconjg( El%Sigma(ii) ))
-          El%Gamma(ip) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ip) ))
+          El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
        end do
        ii = no*(j-1) + j
-       El%Gamma(ii) = zi * (El%Sigma(ii) - dconjg( El%Sigma(ii) ))
+       El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -2218,7 +2218,7 @@ contains
        io = r%r(off2+iu) ! get the orbital in the sparsity pattern
 
        ! Initialize to zero
-       M(:,iu) = dcmplx(0._dp,0._dp)
+       M(:,iu) = cmplx(0._dp,0._dp,dp)
 
        if ( l_ncol(io) /= 0 ) then
 

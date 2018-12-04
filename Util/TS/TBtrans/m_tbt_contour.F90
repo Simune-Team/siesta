@@ -325,8 +325,8 @@ contains
 
     end select
 
-    c%c = dcmplx(ce,Eta)
-    c%w(:,1) = dcmplx(cw,0._dp)
+    c%c = cmplx(ce,Eta,dp)
+    c%w(:,1) = cmplx(cw,0._dp,dp)
 
     deallocate(ce,cw)
     
@@ -387,8 +387,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW, iW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(ne,1) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE,dp) * conv
+        c%w(ne,1) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -401,8 +401,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(ne,1) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE,dp) * conv
+        c%w(ne,1) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -416,8 +416,8 @@ contains
         read(line, *, iostat=iostat) rE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE * conv,iE)
-        c%w(ne,1) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE * conv,iE,dp)
+        c%w(ne,1) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -461,7 +461,7 @@ contains
     integer :: i,j,iE
     c%exist = .false.
     c%fake  = .false.
-    c%e     = dcmplx(0._dp,0._dp)
+    c%e     = cmplx(0._dp,0._dp,dp)
     c%idx   = 0
     if ( id < 1 ) return
 

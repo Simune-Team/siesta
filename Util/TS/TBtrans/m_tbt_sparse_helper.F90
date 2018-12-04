@@ -143,8 +143,8 @@ contains
 !$OMP&private(il,i,io,lio,kn,ind,jo,ind_k,bk,k,ro)
 
 !$OMP workshare
-    zH(:) = dcmplx(0._dp,0._dp)
-    zS(:) = dcmplx(0._dp,0._dp)
+    zH(:) = cmplx(0._dp,0._dp,dp)
+    zS(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
 ! No data race condition as each processor takes a separate row
@@ -162,10 +162,10 @@ contains
        
 !$OMP do 
        do i = 0 , n_s - 1
-          ph(i) = cdexp(dcmplx(0._dp, &
+          ph(i) = exp(cmplx(0._dp, &
                k(1) * sc_off(1,i) + &
                k(2) * sc_off(2,i) + &
-               k(3) * sc_off(3,i)))
+               k(3) * sc_off(3,i), kind=dp))
        end do
 !$OMP end do nowait
 

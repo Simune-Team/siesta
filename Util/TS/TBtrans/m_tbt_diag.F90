@@ -367,9 +367,9 @@ contains
     end do
     
     ! Calculate v.sqrt(eig).v^\dagger = S^(1/2)
-    call zgemm('N','C',no,no,no,dcmplx(1._dp,0._dp), &
+    call zgemm('N','C',no,no,no,cmplx(1._dp,0._dp,dp), &
          S_UT,no,v,no, &
-         dcmplx(0._dp,0._dp),S_sq,no)
+         cmplx(0._dp,0._dp,dp),S_sq,no)
 
     deallocate(eig,v,work,rwork,S_UT)
 
@@ -491,9 +491,9 @@ contains
     do i = 1 , no
 
        ! Normalize eigenvectors and create orthogonal basis
-       call zgemm('N','N',no,1,no,dcmplx(1._dp,0._dp), &
+       call zgemm('N','N',no,1,no,cmplx(1._dp,0._dp,dp), &
             S_sq,no, state(1,i),no, &
-            dcmplx(0._dp,0._dp), work(1), no)
+            cmplx(0._dp,0._dp,dp), work(1), no)
 
        ! We assume that the LAPACK implementation
        ! returns a normalized state <i|S|j> = \delta_ij

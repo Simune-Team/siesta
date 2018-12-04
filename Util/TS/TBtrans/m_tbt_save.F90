@@ -136,6 +136,7 @@ contains
   subroutine init_save_options()
     use m_verbosity, only: verbosity
     use parallel, only : IONode
+    use posix_calls, only: system
 #ifdef NCDF_PARALLEL
     use parallel, only : Nodes
 #endif

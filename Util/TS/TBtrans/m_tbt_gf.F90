@@ -104,9 +104,9 @@ contains
        c = tbt_E(i)
        ! We ensure to add the complex imaginary value
 #ifdef TBT_PHONON
-       ce(i) = dcmplx(real(c%e,dp)**2,El%Eta)
+       ce(i) = cmplx(real(c%e,dp)**2,El%Eta,kind=dp)
 #else
-       ce(i) = dcmplx(real(c%e,dp),El%Eta)
+       ce(i) = cmplx(real(c%e,dp),El%Eta,kind=dp)
 #endif
     end do
        
