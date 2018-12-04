@@ -606,7 +606,7 @@
                                         0.125_dp*br10*(1.0_dp + (br10/9.0_dp)*(1.0_dp + 0.1_dp*br10)))))))))
                                     f10 = 1.0_dp - f10*ebr10
                                     etrm1 = MMpotpar(1,np)/(r2**5)
-                                    df6 = ebr10*(br10*(br10**10))/3628800.0_dp
+                                    df10 = ebr10*(br10*(br10**10))/3628800.0_dp
                                     etrm = - etrm1*f10
                                     ftrm = factor*(10.0_dp*etrm1*f10 - etrm1*df10)/r2
                                   endif
@@ -813,7 +813,7 @@
                    0.125_dp*br10*(1.0_dp + (br10/9.0_dp)*(1.0_dp + 0.1_dp*br10)))))))))
               f10 = 1.0_dp - f10*ebr10
               etrm1 = MMpotpar(1,np)/(r2**5)
-              df6 = ebr10*(br10*(br10**10))/3628800.0_dp
+              df10 = ebr10*(br10*(br10**10))/3628800.0_dp
               etrm = - etrm1*f10
               ftrm = factor*(10.0_dp*etrm1*f10 - etrm1*df10)/r2
             endif

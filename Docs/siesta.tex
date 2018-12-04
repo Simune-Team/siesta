@@ -735,17 +735,18 @@ installation scripts finishes by telling \emph{what} to add to the
   # OpenBLAS:
   LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
-  LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64 ...
-\end{shellexample}
-
-  To use the threaded (OpenMP) libraries, change the above linking
-  to
-\begin{shellexample}
-  # OpenBLAS:
-  LIBS += -L/opt/openblas/lib -lopenblasp
-  # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64
-    -lmkl_<>_thread ...
+  -lmkl_<>_lp64 ...
+\end{shellexample}
+  where \shell{<>} is the compiler used (\shell{intel} or \shell{gf}
+  for gnu).
+
+  To use the threaded (OpenMP) libraries
+\begin{shellexample}
+  # OpenBLAS, change the above to:
+  LIBS += -L/opt/openblas/lib -lopenblasp
+  # or for MKL, add a single flag:
+  LIBS += -lmkl_<>_thread
 \end{shellexample}
   where \shell{<>} is the compiler used (\shell{intel} or \shell{gnu}).
 
@@ -768,14 +769,12 @@ installation scripts finishes by telling \emph{what} to add to the
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64 ...
 \end{shellexample}
 
-  To use the threaded (OpenMP) libraries, change the above linking
-  to
+  To use the threaded (OpenMP) libraries
 \begin{shellexample}
-  # OpenBLAS (OpenBLAS will default to build in LAPACK 3.6)
+  # OpenBLAS, change the above to:
   LIBS += -L/opt/openblas/lib -lopenblasp
-  # or for MKL
-  LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64
-    -lmkl_<>_thread ...
+  # or for MKL, add a single flag:
+  LIBS += -lmkl_<>_thread ...
 \end{shellexample}
   where \shell{<>} is the compiler used (\shell{intel} or \shell{gnu}).
 
@@ -798,7 +797,6 @@ installation scripts finishes by telling \emph{what} to add to the
 \end{shellexample}
 where \shell{<>} refers to the MPI version used, (\shell{intelmpi},
 \shell{openmpi}, \shell{sgimpt}).
-
 
 \end{description}
 
