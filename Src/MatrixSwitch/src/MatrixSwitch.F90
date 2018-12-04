@@ -3272,7 +3272,7 @@ contains
   !! Sets up everything needed to use \c p?dbc matrices with ScaLAPACK. Has to
   !! be called once at the start of the code.
   !!
-  !! @param[in] mpi_comm MPI communicator to use.
+  !! @param[in] in_comm  MPI communicator to use.
   !! @param[in] nprow    Row dimension of the process grid (has to be a divisor
   !!                     of the size of the group defined by \p mpi_comm).
   !! @param[in] order    Ordering of the process grid:
@@ -3287,7 +3287,7 @@ contains
   !!                     the corresponding block size to use for it.
   !! @param[in] icontxt  BLACS context handle, if already initialized.
   !============================================================================!
-  subroutine ms_scalapack_setup(mpi_comm,nprow,order,bs_def,bs_list,icontxt)
+  subroutine ms_scalapack_setup(in_comm,nprow,order,bs_def,bs_list,icontxt)
     use mpi
     implicit none
 !    include 'mpif.h'
@@ -3296,7 +3296,7 @@ contains
 
     character(1), intent(in) :: order
 
-    integer, intent(in) :: mpi_comm
+    integer, intent(in) :: in_comm
     integer, intent(in) :: nprow
     integer, intent(in) :: bs_def
     integer, intent(in), optional :: bs_list(:)
@@ -3308,7 +3308,7 @@ contains
 
     !**********************************************!
 
-    ms_mpi_comm=mpi_comm
+    ms_mpi_comm=in_comm
     call mpi_comm_size(ms_mpi_comm,ms_mpi_size,mpi_err)
     call mpi_comm_rank(ms_mpi_comm,ms_mpi_rank,mpi_err)
     ms_lap_nprow=nprow
