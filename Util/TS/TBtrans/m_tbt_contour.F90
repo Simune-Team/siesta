@@ -325,7 +325,7 @@ contains
 
     end select
 
-    c%c = cmplx(ce,Eta,dp)
+    c%c(:) = cmplx(ce,Eta,dp)
     c%w(:,1) = cmplx(cw,0._dp,dp)
 
     deallocate(ce,cw)

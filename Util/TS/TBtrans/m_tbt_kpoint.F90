@@ -474,13 +474,13 @@ contains
              select case ( i )
              case ( 1 )
                 allocate( k3_1(size(tmp3,1),2) )
-                k3_1 = tmp3
+                k3_1(:,:) = tmp3
              case ( 2 )
                 allocate( k3_2(size(tmp3,1),2) )
-                k3_2 = tmp3
+                k3_2(:,:) = tmp3
              case ( 3 )
                 allocate( k3_3(size(tmp3,1),2) )
-                k3_3 = tmp3
+                k3_3(:,:) = tmp3
              end select
              deallocate(tmp3)
 

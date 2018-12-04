@@ -41,7 +41,7 @@ driver.o: fmixmd.o sample.o
 fmixmd.o: sample.o
 fsiesta_pipes.o: posix_calls.o
 #
-OBJS= system.o fsiesta_pipes.o sample.o fmixmd.o driver.o pxf.o posix_calls.o
+OBJS= fsiesta_pipes.o sample.o fmixmd.o driver.o pxf.o posix_calls.o
 driver : $(OBJS)
 	$(FC) -o driver  $(LDFLAGS) $(OBJS) 
 #
