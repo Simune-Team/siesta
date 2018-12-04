@@ -6,9 +6,9 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine uncell(rv,a,b,c,alpha,beta,gamma)
-      implicit real*8(a-h,o-z)
+      integer, parameter :: dp = kind(1.d0)
       include 'constants'
-      dimension rv(3,3),temp(6)
+      real(dp) rv(3,3),temp(6)
 C
 C  Convert cell vectors to parameters
 C

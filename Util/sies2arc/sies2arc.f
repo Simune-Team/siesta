@@ -6,7 +6,7 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
       program siesta2arc
-      implicit real*8(a-h,o-z)
+      integer, parameter :: dp = kind(1.d0)
       parameter (maxat=1000)
       parameter (maxsp=10)
       parameter (maxword=100)
@@ -23,15 +23,18 @@ C  to fixed format of arc files
 C
 C  Julian Gale, Imperial College, March 1999
 C
-      dimension rvl(3,3)
-      dimension x(maxat),y(maxat),z(maxat),n(maxat)
-      dimension nat(maxsp),label(maxsp)
-      dimension words(maxword),floats(maxword),nlorder(2*maxword)
+      real(dp) rvl(3,3)
+      real(dp) x(maxat),y(maxat),z(maxat)
+      integer n(maxat)
+      integer nat(maxsp)
+      character(len=5) :: label(maxsp)
+      real(dp) floats(maxword)
+      integer nlorder(2*maxword)
       character*1 blank
       character*2 asym
       character*4 wtype1,lab2
-      character*5 lab,label
-      character*30 words
+      character*5 lab
+      character(len=30) ::  words(maxword)
       character*80 line
       logical eof,fractional,first
       iout = 6

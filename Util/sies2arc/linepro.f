@@ -7,7 +7,7 @@
 !
       subroutine linepro(line_in,nword,words,nfloat,floats,norder,
      *  iline,maxword)
-      implicit real*8(a-h,o-z)
+      integer, parameter :: dp = kind(1.d0)
 C
 C  Subroutine searches a line for words and numbers
 C  Now amended to handle full 80 character string.
@@ -18,15 +18,15 @@ C
 C  Julian Gale, Imperial College, February 1995
 C
       common /warning/ nwarn
-      dimension words(maxword),floats(maxword),norder(2*maxword)
+      dimension floats(maxword),norder(2*maxword)
       character*81 line
       character*80 line_in
-      character*30 words
+      character(len=30) ::  words(maxword)
       character*40 string,blank
-      character*1 c1,c2,space,dp,hash,slash
+      character*1 c1,c2,space,dpp,hash,slash
       logical lspace,lfirst,lread,lword
       data blank/'                                        '/
-      dp='.'
+      dpp='.'
       hash='#'
       space=' '
       slash='/'
@@ -98,7 +98,7 @@ C**********************************************
           string=blank
           string=line(nstart:nend)
           c1=string(1:1)
-          if (c1.eq.dp) then
+          if (c1.eq.dpp) then
             c1=string(2:2)
           endif
           ic=ichar(c1)
@@ -168,7 +168,7 @@ C
       end
       subroutine linepronc(line_in,nword,words,nfloat,floats,
      *  norder,iline,maxword)
-      implicit real*8(a-h,o-z)
+      integer, parameter :: dp = kind(1.d0)
 C
 C  Subroutine searches a line for words and numbers
 C  Now amended to handle full 80 character string.
@@ -198,15 +198,16 @@ C  Copyright Imperial College 1997
 C
 C  Julian Gale, Imperial College, February 1995
 C
-      dimension words(maxword),floats(maxword),norder(2*maxword)
+      real(dp) floats(maxword)
+      integer  norder(2*maxword)
       character*81 line
       character*80 line_in
-      character*30 words
+      character(len=30) ::  words(maxword)
       character*40 string,blank
-      character*1 c1,c2,space,dp,hash,slash
+      character*1 c1,c2,space,dpp,hash,slash
       logical lspace,lfirst,lword,lread
       data blank/'                                        '/
-      dp='.'
+      dpp='.'
       hash='#'
       space=' '
       slash='/'
@@ -272,7 +273,7 @@ C**********************************************
           string=blank
           string=line(nstart:nend)
           c1=string(1:1)
-          if (c1.eq.dp) then
+          if (c1.eq.dpp) then
             c1=string(2:2)
           endif
           ic=ichar(c1)

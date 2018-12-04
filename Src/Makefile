@@ -755,7 +755,7 @@ fsiesta_mpi.o: posix_calls.o precision.o siesta_analysis.o siesta_end.o
 fsiesta_mpi.o: siesta_forces.o siesta_init.o siesta_master.o siesta_move.o
 fsiesta_mpi.o: sys.o
 fsiesta_pipes.o: posix_calls.o
-fsiesta_sockets.o: fsockets.o posix_calls.o system.o
+fsiesta_sockets.o: fsockets.o posix_calls.o
 geom_helper.o: intrinsic_missing.o
 get_kpoints_scale.o: parallel.o siesta_geom.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
@@ -1558,7 +1558,6 @@ on_core.o: onmod.o
 on_main.o: onmod.o
 overlap_gradient_m.o: overlap_gradient.o
 printmat.o: printmatrix.o
-system_m.o: system.o
 t_spin.o: m_spin.o
 timer_options.o: timer.o
 trialorbitalclass.o: m_trialorbitalclass.o

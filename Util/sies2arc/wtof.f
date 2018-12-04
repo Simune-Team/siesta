@@ -6,7 +6,16 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine wtof(string,rnum,nlen,ndp)
-      implicit real*8(a-h,o-z)
+      implicit none
+      integer, parameter :: dp = kind(1.d0)
+
+      character*40 string
+      integer  :: nlen, ndp
+      real(dp) :: rnum
+
+      real(dp) :: factor
+      integer  :: i, i0, ineg, ipos, nexp, nse, nfct
+      integer  :: npower, nend, ic, n
 C
 C  Convert string to floating point number
 C
@@ -18,7 +27,6 @@ C
 C  Julian Gale, Imperial College, March 1997
 C
       character*1 c
-      character*40 string
       logical lneg,lnegp
       npower=0
       i0=ichar('0')
