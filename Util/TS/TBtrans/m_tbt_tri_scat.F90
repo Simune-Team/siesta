@@ -290,7 +290,7 @@ contains
     complex(dp), pointer :: Gfd(:), Gfo(:)
     complex(dp) :: GfGfd
     integer, pointer :: ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: cncol(:), cptr(:), ccol(:), c_col(:)
+    integer, pointer :: cncol(:), cptr(:), ccol(:)
     integer :: no_u, br, io, ind, iind, bc
     type(ssearch_t) :: ss
 

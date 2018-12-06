@@ -44,5 +44,5 @@ clean:
 # DO NOT DELETE THIS LINE - used by make depend
 countJobs.o: jobList.o
 getResults.o: jobList.o
-runJobs.o: jobList.o
 jobList.o: posix_calls.o
+runJobs.o: jobList.o

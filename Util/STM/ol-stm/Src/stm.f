@@ -99,12 +99,12 @@ C **********************************************************************
      .   XIJ
 
       INTEGER
-     .  IA, ISEL, NNA, I, J, IN, IAT1, IO, IUO, IAVEC1, 
+     .  IA, ISEL, NNA, I, J, IAT1, IO, IUO, IAVEC1, 
      .  IS1, IPHI1, NX, NY, NZ, IWF, IK, ISPIN, UNITRE1,
      .  IX, IY, IZ, NSX, NSY, NAU
 
       REAL(DP)
-     .  DOT, RMAX, XPO(3), RMAX2, XVEC1(3),
+     .  RMAX, XPO(3), RMAX2, XVEC1(3),
      .  PHIMU, GRPHIMU(3),
      .  PHASE, SI, CO, ENER, PMIKR, SIMIKR, COMIKR, USAVE, VC, VU
 
@@ -503,19 +503,11 @@ C Check if lattice vectors in xy plane are orthogonal
       else
          FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.cube'
       endif
-      
-!     IF (DABS(DOT) .GT. 1.0D-2) THEN
-!       WRITE(6,*)
-!       WRITE(6,*) 'stm: WARNING: The cell is not orthorombic, so the'
-!       WRITE(6,*) '     results can not be plotted in cube format'
-!       WRITE(6,*)
-!       GOTO 200
-!     ELSE
-        WRITE(6,*)
-        WRITE(6,*) 'stm: writing cube format file ',FNAME
-        WRITE(6,*)
-        WRITE(6,*) '     ',NSCX,' x ',NSCY,' cells in cube plot'
-!     ENDIF
+
+      WRITE(6,*)
+      WRITE(6,*) 'stm: writing cube format file ',FNAME
+      WRITE(6,*)
+      WRITE(6,*) '     ',NSCX,' x ',NSCY,' cells in cube plot'
 
 C Calculate number of atoms in unit cell
       VC = VOLCEL(CELL)
@@ -551,8 +543,6 @@ C Calculate number of atoms in unit cell
       ENDDO
       ENDDO
 
-
-200   CONTINUE
 
       call io_close(unitre1)
 
