@@ -2714,7 +2714,7 @@ contains
         ! Read in from Gamma file
         allocate(rp(no,mols(im)%lvls%n))
         call ncdf_get_var(grp,'state',rp)
-        mols(im)%p = rp
+        mols(im)%p(:,:) = rp
         deallocate(rp)
       else
         call ncdf_get_var(grp,'state',mols(im)%p,start=(/1,1,ikpt/))

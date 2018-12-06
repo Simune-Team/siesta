@@ -228,8 +228,6 @@ contains
     use files, only: slabel
     use units, only: eV
 
-    use m_tbt_hs, only: spin_idx
-
     use m_ts_chem_pot, only : copy, chem_pot_add_Elec
 
     use m_ts_electype, only : fdf_nElec, fdf_Elec

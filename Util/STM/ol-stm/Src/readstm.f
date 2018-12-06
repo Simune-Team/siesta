@@ -56,7 +56,7 @@ C Internal variables ---------------------------------------------------
      .  UCD*22, UCD_DEFECT*22
 
       INTEGER
-     .  IUNIT, NPX_DEFECT, NPY_DEFECT, NPZ_DEFECT
+     .  NPX_DEFECT, NPY_DEFECT, NPZ_DEFECT
 
 C READ UNITS OF CHARGE DENSITY TO USE
 

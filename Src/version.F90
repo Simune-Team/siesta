@@ -55,8 +55,12 @@ subroutine prversion
 
 ! Use free format in file to make more room for long option strings...
 
+use posix_calls, only: getcwd
 use version_info
 implicit none
+
+character(len=2048) :: cwd
+integer :: stat
 
 write(6,'(2a)') 'Siesta Version  : ', trim(version_str)
 write(6,'(2a)') 'Architecture    : ', trim(siesta_arch)
@@ -100,6 +104,11 @@ write(6,'(a)') '******************************************************'
 write(6,'(a)') 'transiesta executable is deprecated, please use siesta'
 write(6,'(a)') '******************************************************'
 #endif
+
+call getcwd(cwd, stat)
+if ( stat == 0 ) then
+write(6,'(2a)') 'Directory       : ', trim(cwd)
+end if
 
 end subroutine prversion
 !----------------------------------------------------------
