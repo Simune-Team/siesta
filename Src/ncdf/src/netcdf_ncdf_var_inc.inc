@@ -2,12 +2,12 @@
 subroutine ROUTINE3(put_var,VAR,name)(this,name,var,start,count)
   type(hNCDF), intent(inout) :: this
   character(len=*), intent(in) :: name
-  VAR_TYPE, intent(in)DIMS :: var
+  VAR_TYPE, intent(in) :: var DIMS
   integer, intent(in), optional :: start(:)
   integer, intent(in), optional :: count(:)
   integer :: id
-#ifdef IS_COMPLEX
-  REAL_TYPE, allocatable DIMS :: r
+#ifdef COMPLEX_DTYPE
+  REAL_TYPE, allocatable :: r DIMS
 #endif
 
 #if DIM == 0
@@ -16,14 +16,14 @@ subroutine ROUTINE3(put_var,VAR,name)(this,name,var,start,count)
 
   if ( .not. ncdf_participate(this) ) return
   if ( this%define > -1 ) call ncdf_enddef(this)
-#ifdef IS_COMPLEX
+#ifdef COMPLEX_DTYPE
   ALLOC(r,var)
-  r = real(var)
+  r DIMS = real(var, COMPLEX_DTYPE)
   call ncdf_inq_var(this,'Re'/ /name,id=id)
   call ncdf_err(nf90_put_var(this%id, id, r,start=start,count=count), &
      "Saving variable (VAR) Re"/ /trim(name)/ /' in file: '/ /this)
   call ncdf_inq_var(this,'Im'/ /name,id=id)
-  r = aimag(var)
+  r DIMS = aimag(var)
   call ncdf_err(nf90_put_var(this%id, id, r,start=start,count=count), &
        'Saving variable (VAR) Im'/ /trim(name)/ /' in file: '/ /this)
   deallocate(r)
@@ -39,14 +39,14 @@ end subroutine ROUTINE3(put_var,VAR,name)
 subroutine ROUTINE3(get_var,VAR,name)(this, name, var, start, count, stride)
   type(hNCDF), intent(inout) :: this
   character(len=*), intent(in) :: name
-  VAR_TYPE, intent(out)DIMS :: var
+  VAR_TYPE, intent(out) :: var DIMS
   integer, intent(in), optional :: start(:)
   integer, intent(in), optional :: count(:)
   integer, intent(in), optional :: stride(:)
 #if DIM > 0 
   integer :: id
-#ifdef IS_COMPLEX
-  REAL_TYPE, allocatable DIMS :: r,i
+#ifdef COMPLEX_DTYPE
+  REAL_TYPE, allocatable :: r DIMS , i DIMS
 #endif
 #endif
 #if DIM == 0
@@ -56,7 +56,7 @@ subroutine ROUTINE3(get_var,VAR,name)(this, name, var, start, count, stride)
 #else
   if ( .not. ncdf_participate(this) ) return
   if ( this%define > -1 ) call ncdf_enddef(this)
-#ifdef IS_COMPLEX
+#ifdef COMPLEX_DTYPE
   ALLOC(r,var)
   ALLOC(i,var)
   call ncdf_inq_var(this,'Re'/ /name,id=id)
@@ -65,7 +65,7 @@ subroutine ROUTINE3(get_var,VAR,name)(this, name, var, start, count, stride)
   call ncdf_inq_var(this,'Im'/ /name,id=id)
   call ncdf_err(nf90_get_var(this%id, id, i,start=start,count=count,stride=stride), &
        'Retrieving variable (VAR) Im'/ /trim(name)/ /' in file: '/ /this)
-  var = cmplx(r,i)
+  var DIMS = cmplx(r,i, COMPLEX_DTYPE)
   deallocate(r,i)
 #else
   call ncdf_inq_var(this,name,id=id)
@@ -89,7 +89,7 @@ subroutine ROUTINE2(def_fill,VAR)(this, name, fill_val, fill)
   integer :: lfill
   VAR_TYPE :: lfill_val	
   integer :: tmp_lr
-#ifdef IS_COMPLEX
+#ifdef COMPLEX_DTYPE
   REAL_TYPE :: lr
   integer :: id(2)
 #else
@@ -104,8 +104,8 @@ subroutine ROUTINE2(def_fill,VAR)(this, name, fill_val, fill)
   if ( present(fill) ) lfill = fill
   lfill_val = fill_val
 
-#ifdef IS_COMPLEX
-  lr = real(lfill_val)
+#ifdef COMPLEX_DTYPE
+  lr = real(lfill_val, COMPLEX_DTYPE)
   call ncdf_err(nf90_def_var_fill(this%id, id(1), lfill, tmp_lr), &
        'Setting fill (VAR) Re'/ /trim(name)/ /' in file: '/ /this)
   lr = aimag(lfill_val)
@@ -123,7 +123,7 @@ subroutine ROUTINE2(inq_var,VAR)(this, name,fill_val,exist,id,size,atts,fill)
   character(len=*), intent(in) :: name
   VAR_TYPE, intent(out) :: fill_val ! non-optional to allow interfacing
   logical, intent(out), optional  :: exist
-#ifdef IS_COMPLEX
+#ifdef COMPLEX_DTYPE
   integer, intent(out), optional  :: id(2)
 #else
   integer, intent(out), optional  :: id
@@ -133,13 +133,13 @@ subroutine ROUTINE2(inq_var,VAR)(this, name,fill_val,exist,id,size,atts,fill)
   integer, intent(out), optional :: fill
   integer :: lid, lfill
   integer :: tmp_lr
-#ifdef IS_COMPLEX
+#ifdef COMPLEX_DTYPE
   REAL_TYPE :: lfill_valr,lfill_valc
 #else
   REAL_TYPE :: lfill_val
 #endif
   if ( .not. ncdf_participate(this) ) return
-#ifdef IS_COMPLEX
+#ifdef COMPLEX_DTYPE
   call ncdf_inq_var_def(this,'Re'/ /name,id=lid,exist=exist,size=size,atts=atts)
   if ( present(exist) ) then
      if ( .not. exist ) return
@@ -159,8 +159,8 @@ subroutine ROUTINE2(inq_var,VAR)(this, name,fill_val,exist,id,size,atts,fill)
      end if
   end if
 !  if ( present(fill_val) ) then
-     !fill_val = cmplx(lfill_valr,lfill_valc)
-     fill_val = cmplx(0.,0.)
+     !fill_val = cmplx(lfill_valr,lfill_valc, COMPLEX_DTYPE)
+     fill_val = cmplx(0,0, COMPLEX_DTYPE)
 !  end if
 #else
   call ncdf_inq_var_def(this,name,id=lid,exist=exist,size=size,atts=atts)
