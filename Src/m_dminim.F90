@@ -630,7 +630,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
           end do
           c(ispin)%mtrx=1.0d-2*c(ispin)%mtrx/sqrt(real(h_dim,dp))
         else
-          c(2)%mtrx=c(1)%mtrx
+          c(2)%mtrx(:,:)=c(1)%mtrx
         end if
       end if
     end if
@@ -700,7 +700,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
       end do
     end do
 #endif
-    H(ispin)%mtrx=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
+    H(ispin)%mtrx(:,:)=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
     allocate(work1(1:N_occ_loc(1,ispin),1:h_dim_loc(2)))
     if (UseCholesky) then
 #ifdef MPI
@@ -794,10 +794,10 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
       if (Use2D) then
         call pdgemr2d(h_dim,h_dim,s_dense1D,1,1,desc1_1D,s_dense,1,1,desc1,ictxt)
       else
-        s_dense=s_dense1D
+        s_dense(:,:)=s_dense1D
       end if
 #else
-      s_dense=s_dense1D
+      s_dense(:,:)=s_dense1D
 #endif
       if (UseCholesky) then
 #ifdef MPI
@@ -822,7 +822,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if ((new_s .and. (.not. FirstCall(ispin))) .or. &
         PreviousCallDiagon .or. &
         (ReadCoeffs .and. FirstCall(ispin))) then
-      if (.not. PreviousCallDiagon) c(ispin)%mtrx=c_orig(ispin)%mtrx
+      if (.not. PreviousCallDiagon) c(ispin)%mtrx(:,:)=c_orig(ispin)%mtrx
 #ifdef MPI
       call pdtrmm('R','U','T','N',N_occ,h_dim,1.0_dp,s_dense,1,1,desc1,c(ispin)%mtrx,1,1,desc3(1:9,ispin))
 #else
@@ -837,13 +837,13 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if (Use2D) then
       call pdgemr2d(h_dim,h_dim,h_dense1D,1,1,desc1_1D,h_dense,1,1,desc1,ictxt)
     else
-      h_dense=h_dense1D
+      h_dense(:,:)=h_dense1D
     end if
   end if
 #else
   if (UseCholesky) then
     allocate(h_dense(1:h_dim_loc(1),1:h_dim_loc(2)))
-    h_dense=h_dense1D
+    h_dense(:,:)=h_dense1D
   end if
 #endif
   if (UseCholesky) then
@@ -858,7 +858,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     call pdlaset('U',h_dim,h_dim,1.0_dp,0.5_dp,work2,1,1,desc1)
     work3=0.0_dp
     call pdlaset('L',h_dim,h_dim,1.0_dp,0.5_dp,work3,1,1,desc1)
-    h_dense=work2*h_dense+work3*work1
+    h_dense(:,:)=work2*h_dense+work3*work1
     deallocate(work3)
     deallocate(work2)
     deallocate(work1)
@@ -880,12 +880,12 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if (Use2D) then
       call pdgemr2d(h_dim,h_dim,t_dense1D,1,1,desc1_1D,p_dense,1,1,desc1,ictxt)
     else
-      p_dense=t_dense1D
+      p_dense(:,:)=t_dense1D
     end if
 #else
-    p_dense=t_dense1D
+    p_dense(:,:)=t_dense1D
 #endif
-    p_dense=s_dense+p_dense/t_precon_scale
+    p_dense(:,:)=s_dense+p_dense/t_precon_scale
 #ifdef MPI
     allocate(ipiv(1:h_dim_loc(1)+BlockSize))
     call pdgetrf(h_dim,h_dim,p_dense,1,1,desc1,ipiv,info)
@@ -958,7 +958,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     if (new_s .or. PreviousCallDiagon) then
       call calc_A(h_dim,N_occ,ispin,s_dense,c(ispin)%mtrx,S(ispin)%mtrx,sc(ispin)%mtrx)
     else
-      sc(ispin)%mtrx=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
+      sc(ispin)%mtrx(:,:)=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
     end if
   end if
   ! -calculate the gradient: g=2*(2*h*c-s*c*H-h*c*S)
@@ -1074,12 +1074,12 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
     lambda=0.0_dp
     do j=1,h_dim*N_occ-1
       if (UsePrecon) then
-        d=pg+lambda*d
+        d(:,:)=pg+lambda*d
       else
-        d=g+lambda*d
+        d(:,:)=g+lambda*d
       end if
-      g_p=g
-      if (UsePrecon) pg_p=pg
+      g_p(:,:)=g
+      if (UsePrecon) pg_p(:,:)=pg
       E_OMM_old=E_OMM
       ! if this is not the first CG step, we have to recalculate Hd, Sd, Hdd, Sdd, and the coeffs.
       if (icg>0) then
@@ -1140,7 +1140,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
               coeff(2)*x_min(ispin)**2+&
               coeff(1)*x_min(ispin)+&
               coeff(0)
-        c(ispin)%mtrx=c(ispin)%mtrx+x_min(ispin)*d
+        c(ispin)%mtrx(:,:)=c(ispin)%mtrx+x_min(ispin)*d
         ls_conv=.true.
       end if
       ! recalculate S at the minimum (or for the rescaled coeffs.)
@@ -1156,7 +1156,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
           end do
         end do
 #endif
-        S(ispin)%mtrx=S(ispin)%mtrx+x_min(ispin)*Sd+x_min(ispin)**2*Sdd
+        S(ispin)%mtrx(:,:)=S(ispin)%mtrx+x_min(ispin)*Sd+x_min(ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
       if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
@@ -1178,19 +1178,19 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
           end do
         end do
 #endif
-        H(ispin)%mtrx=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
+        H(ispin)%mtrx(:,:)=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
       end if
       ! recalculate g at the minimum (or for the rescaled coeffs.)
       if (ls_fail) then
         hc=0.5_dp*hc
         if (.not. UseCholesky) sc(ispin)%mtrx=0.5_dp*sc(ispin)%mtrx
-        g=g_p+1.5_dp*hc
+        g(:,:)=g_p+1.5_dp*hc
       else
-        hc=hc+x_min(ispin)*hg
+        hc(:,:)=hc+x_min(ispin)*hg
         if (UseCholesky) then
           call calc_grad(h_dim,N_occ,ispin,H(ispin)%mtrx,S(ispin)%mtrx,g,hc,c(ispin)%mtrx)
         else
-          sc(ispin)%mtrx=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
+          sc(ispin)%mtrx(:,:)=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
           call calc_grad(h_dim,N_occ,ispin,H(ispin)%mtrx,S(ispin)%mtrx,g,hc,sc(ispin)%mtrx)
         end if
       end if
@@ -1255,7 +1255,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,psi,nspin,ispi
   end if
   if (.not. allocated(cd(ispin)%mtrx)) allocate(cd(ispin)%mtrx(1:N_occ_loc(1,ispin),1:h_dim_loc(2)))
   if (UseCholesky) then
-    c_orig(ispin)%mtrx=c(ispin)%mtrx
+    c_orig(ispin)%mtrx(:,:)=c(ispin)%mtrx
 #ifdef MPI
     call pdtrsm('R','U','T','N',N_occ,h_dim,1.0_dp,s_dense,1,1,desc1,c_orig(ispin)%mtrx,1,1,desc3(1:9,ispin))
     if (Use2D) then
@@ -1548,7 +1548,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
           end do
           c(ispin)%mtrx=1.0d-2*c(ispin)%mtrx/sqrt(real(h_dim,dp))
         else
-          c(2)%mtrx=c(1)%mtrx
+          c(2)%mtrx(:,:)=c(1)%mtrx
         end if
       end if
     end if
@@ -1633,7 +1633,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
       end do
     end do
 #endif
-    H(ispin)%mtrx=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
+    H(ispin)%mtrx(:,:)=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
     allocate(work1(1:N_occ_loc(1,ispin),1:h_dim_loc(2)))
     call calc_densmat_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,H(ispin)%mtrx+eta*S(ispin)%mtrx,c(ispin)%mtrx,&
                              d_sparse,work1,cd(ispin)%mtrx)
@@ -1707,7 +1707,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   ! calculate the preconditioning matrix (s+t/tau)^-1
   if (UpdatePrecon .and. (ispin==1)) then
     if (.not. allocated(p_dense1D)) allocate(p_dense1D(1:h_dim_loc(1),1:h_dim_loc(2)))
-    p_dense1D=s_dense1D+t_dense1D/t_precon_scale
+    p_dense1D(:,:)=s_dense1D+t_dense1D/t_precon_scale
 #ifdef MPI
     allocate(ipiv(1:h_dim_loc(1)+BlockSize))
     call pdgetrf(h_dim,h_dim,p_dense1D,1,1,desc1,ipiv,info)
@@ -1770,7 +1770,7 @@ end if
   if (new_s .or. PreviousCallDiagon) then
     call calc_A_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,s_sparse,c(ispin)%mtrx,S(ispin)%mtrx,sc(ispin)%mtrx)
   else
-    sc(ispin)%mtrx=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
+    sc(ispin)%mtrx(:,:)=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
   end if
   ! -calculate the gradient: g=2*(2*h*c-s*c*H-h*c*S)
   !  (note that we *reuse* h*c and s*c contained in hc and sc from the previous call to calc_A)
@@ -1854,12 +1854,12 @@ end if
     lambda=0.0_dp
     do j=1,h_dim*N_occ-1
       if (UsePrecon) then
-        d=pg+lambda*d
+        d(:,:)=pg+lambda*d
       else
-        d=g+lambda*d
+        d(:,:)=g+lambda*d
       end if
-      g_p=g
-      if (UsePrecon) pg_p=pg
+      g_p(:,:)=g
+      if (UsePrecon) pg_p(:,:)=pg
       E_OMM_old=E_OMM
       ! if this is not the first CG step, we have to recalculate Hd, Sd, Hdd, Sdd, and the coeffs.
       if (icg>0) then
@@ -1895,7 +1895,7 @@ end if
               coeff(2)*x_min(ispin)**2+&
               coeff(1)*x_min(ispin)+&
               coeff(0)
-        c(ispin)%mtrx=c(ispin)%mtrx+x_min(ispin)*d
+        c(ispin)%mtrx(:,:)=c(ispin)%mtrx+x_min(ispin)*d
         ls_conv=.true.
       end if
       ! recalculate S at the minimum (or for the rescaled coeffs.)
@@ -1911,7 +1911,7 @@ end if
           end do
         end do
 #endif
-        S(ispin)%mtrx=S(ispin)%mtrx+x_min(ispin)*Sd+x_min(ispin)**2*Sdd
+        S(ispin)%mtrx(:,:)=S(ispin)%mtrx+x_min(ispin)*Sd+x_min(ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
       if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
@@ -1933,16 +1933,16 @@ end if
           end do
         end do
 #endif
-        H(ispin)%mtrx=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
+        H(ispin)%mtrx(:,:)=H(ispin)%mtrx+x_min(ispin)*Hd(ispin)%mtrx+x_min(ispin)**2*Hdd(ispin)%mtrx
       end if
       ! recalculate g at the minimum (or for the rescaled coeffs.)
       if (ls_fail) then
         hc=0.5_dp*hc
         sc(ispin)%mtrx=0.5_dp*sc(ispin)%mtrx
-        g=g_p+1.5_dp*hc
+        g(:,:)=g_p+1.5_dp*hc
       else
-        hc=hc+x_min(ispin)*hg
-        sc(ispin)%mtrx=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
+        hc(:,:)=hc+x_min(ispin)*hg
+        sc(ispin)%mtrx(:,:)=sc(ispin)%mtrx+x_min(ispin)*sg(ispin)%mtrx
         call calc_grad(h_dim,N_occ,ispin,H(ispin)%mtrx,S(ispin)%mtrx,g,hc,sc(ispin)%mtrx)
       end if
       if (UsePrecon) then

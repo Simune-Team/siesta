@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -104,9 +104,9 @@ contains
        c = tbt_E(i)
        ! We ensure to add the complex imaginary value
 #ifdef TBT_PHONON
-       ce(i) = dcmplx(real(c%e,dp)**2,El%Eta)
+       ce(i) = cmplx(real(c%e,dp)**2,El%Eta,kind=dp)
 #else
-       ce(i) = dcmplx(real(c%e,dp),El%Eta)
+       ce(i) = cmplx(real(c%e,dp),El%Eta,kind=dp)
 #endif
     end do
        

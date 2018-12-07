@@ -668,8 +668,8 @@ contains
              ! Requires that l_col is sorted
              ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
              if ( ind_H > l_ptr(io) ) then
-                D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
-                E(ind_H,i2) = E(ind_H,i2) - dimag( GF(ind) * EDMfact )
+                D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
+                E(ind_H,i2) = E(ind_H,i2) - aimag( GF(ind) * EDMfact )
              end if
              
           end do
@@ -687,7 +687,7 @@ contains
              ind_H = l_ptr(io)
              ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
              if ( ind_H > l_ptr(io) ) then
-                D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
+                D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
              end if
           end do
        end do

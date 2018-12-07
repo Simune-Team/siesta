@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -154,10 +154,10 @@
        end if
        if ( sparsity_dim == 1 ) then ! Regular way...
            call VAR_NEW_TYPE(this%data%a, &
- 	        nnzs(sp),dim1,dim2,"(new from "//STR_TYPE_NAME//")")
+                nnzs(sp),dim1,dim2,"(new from "//STR_TYPE_NAME//")")
        else if ( sparsity_dim == 2 ) then ! Regular way...
            call VAR_NEW_TYPE(this%data%a, &
- 	        dim1,nnzs(sp),dim2,"(new from "//STR_TYPE_NAME//")")
+                dim1,nnzs(sp),dim2,"(new from "//STR_TYPE_NAME//")")
        else ! it must be 3
            call VAR_NEW_TYPE(this%data%a, &
                 dim1,dim2,nnzs(sp),"(new from "//STR_TYPE_NAME//")")
@@ -292,7 +292,7 @@
         n = 0
       else
         ! we have to use a different variable
-	! name than dim (due to interface problems)
+        ! name than dim (due to interface problems)
         ldim = dim
         n = size(this%data%a%data%val,ldim)
       end if

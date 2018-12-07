@@ -215,8 +215,7 @@ integer, optional,intent(out):: stat   ! error status:
                                        !  (-2 if n < 2)
 
 ! Internal variables and arrays
-character(len=*),parameter:: myName = 'generate_spline_master '
-real(dp):: a, b, dx, dx1, dx2, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
+real(dp):: a, b, dx, dx1, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
            p, s, u(n), v(n), xtol, ypp(n)
 integer :: flag, k
 character(len=3):: meshType
@@ -356,7 +355,7 @@ real(dp),         intent(out):: xh    ! higher interval mesh point
 
 ! Internal variables
 character(len=*),parameter:: myName = 'evaluate_spline/find_interval '
-real(dp)::  a, b, dx, h, x1, xmin, xmax, xtol
+real(dp)::  a, b, dx, x1, xmin, xmax
 integer ::  k, n
 
 ! Get some parameters

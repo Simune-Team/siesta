@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -68,7 +68,7 @@
     type(TYPE_NAME_) :: a1d_data
     if ( associated(a1d_data%val) ) then
        call de_alloc( a1d_data%val, & 
-            name="val "//trim(a1d_data%name),routine=STR_TYPE_NAME)	
+            name="val "//trim(a1d_data%name),routine=STR_TYPE_NAME)     
     end if
   end subroutine delete_Data
   
@@ -135,7 +135,7 @@
     endif
 
     call re_alloc(this%data%val,1,n, &
-        name="val "//trim(this%data%name),routine=STR_TYPE_NAME)	
+        name="val "//trim(this%data%name),routine=STR_TYPE_NAME)        
 !$OMP parallel workshare default(shared)
     this%data%val(:) = val(:)
 !$OMP end parallel workshare
@@ -163,7 +163,7 @@
     VAR_TYPE(PREC)              :: v
 #else
     VAR_TYPE                    :: v
-#endif	
+#endif  
     
     v = this%data%val(idx)
 

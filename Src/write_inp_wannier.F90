@@ -20,7 +20,7 @@ subroutine writemmn( ispin )
 ! Written by J. Junquera in July 2013, 
 ! based on a previous subroutine by R. Korytar
 ! 
-
+  use precision, only: dp
   use m_siesta2wannier90, only: seedname ! Seed for the name of the file 
                                          !   where the Wannier90
                                          !   code, when used as a postprocessing
@@ -139,7 +139,7 @@ subroutine writemmn( ispin )
       do nband = 1,numincbands(ispin)
         do mband = 1,numincbands(ispin)
         write( unit=mmnunit, fmt="(f12.5,2x,f12.5)", err=1984 )     &
- &         real(  Mmnkb(mband,nband,ik,inn) ),                      &
+ &         real(  Mmnkb(mband,nband,ik,inn),dp ),                   &
  &         aimag( Mmnkb(mband,nband,ik,inn) )
         enddo  ! End loop on bands      (mband)
       enddo    ! End loop on bands      (nband)
@@ -181,7 +181,7 @@ subroutine writeamn( ispin )
 ! Written by J. Junquera in July 2013, 
 ! based on a previous subroutine by R. Korytar
 ! 
-
+  use precision, only: dp
   use m_siesta2wannier90, only: seedname ! Seed for the name of the file 
                                          !   where the Wannier90
                                          !   code, when used as a postprocessing
@@ -256,7 +256,7 @@ subroutine writeamn( ispin )
       do mband = 1, numincbands(ispin)
         write(unit=amnunit,fmt="(3i5,1x,f12.5,2x,f12.5)",err=1992)      &
  &         mband, iproj, ik,                                           &
- &         real(Amnmat(mband,iproj,ik)),aimag(Amnmat(mband,iproj,ik))
+ &         real(Amnmat(mband,iproj,ik),dp),aimag(Amnmat(mband,iproj,ik))
       enddo
     enddo
   enddo
@@ -663,7 +663,7 @@ BAND_LOOP:  do iband = 1, nincbands
          do iy = 1, unk_ny
             do ix = 1, unk_nx
                write(unkfileunit,'(2f12.5)') &
-                   real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
+                   real(buffer(iband,ix,iy,iz),dp), aimag(buffer(iband,ix,iy,iz))
             enddo 
          enddo 
       enddo  
@@ -736,7 +736,7 @@ enddo  BAND_LOOP
             do iy = 1, unk_ny
               do ix = 1, unk_nx
                 write(unkfileunit,'(2f12.5)')   &
- &                real(buffer(iband,ix,iy,iz)), aimag(buffer(iband,ix,iy,iz))
+ &               real(buffer(iband,ix,iy,iz),dp), aimag(buffer(iband,ix,iy,iz))
               enddo ! Enddo in ix
             enddo ! Enddo in iy
           enddo ! Enddo in iz

@@ -24,9 +24,9 @@ module m_mat_invert
   integer, public, parameter :: MI_WORK = 3
 
   ! Used for BLAS calls (local variables)
-  complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
-  complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
-  complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+  complex(dp), parameter :: z0  = cmplx( 0._dp, 0._dp,dp)
+  complex(dp), parameter :: z1  = cmplx( 1._dp, 0._dp,dp)
+  complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp,dp)
 
 contains
 

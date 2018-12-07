@@ -74,9 +74,6 @@
 MODULE fsiesta
 
 use f90sockets, only: create_socket, writebuffer, readbuffer
-#ifdef __NAG__
-  use f90_unix_proc, only: system
-#endif
 
   implicit none
 
@@ -115,6 +112,7 @@ CONTAINS
 !---------------------------------------------------
 
 subroutine siesta_launch( label, nnodes, mpi_comm, launcher, localhost )
+  use posix_calls, only: system
   implicit none
   character(len=*),          intent(in) :: label
   integer,         optional, intent(in) :: nnodes
@@ -294,6 +292,7 @@ end subroutine siesta_quit_process
 !---------------------------------------------------
 
 subroutine open_new_socket( label, localhost )
+  use posix_calls, only: system
   implicit none
   character(len=*),intent(in) :: label
   logical,optional,intent(in) :: localhost

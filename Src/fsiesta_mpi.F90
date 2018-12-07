@@ -239,6 +239,9 @@ CONTAINS
 !---------------------------------------------------
 
 subroutine siesta_launch( label, nNodes, mpi_comm, launcher, localhost )
+#ifdef MPI
+  use posix_calls, only: system
+#endif
   implicit none
   character(len=*),  intent(in) :: label    ! Name of the siesta process
   integer, optional, intent(in) :: nNodes   ! Number of MPI processes to be used
@@ -395,6 +398,9 @@ end subroutine siesta_units
 !---------------------------------------------------
 
 subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
+#ifdef MPI
+  use posix_calls, only: chdir
+#endif
   implicit none
   character(len=*),   intent(in) :: label
   integer,            intent(in) :: na
@@ -536,6 +542,9 @@ end subroutine siesta_get_rank2
 !---------------------------------------------------
 
 recursive subroutine siesta_get_value( label, property, vsize, value, units )
+#ifdef MPI
+  use posix_calls, only: chdir
+#endif
   character(len=*), intent(in) :: label         ! Name of siesta process
   character(len=*), intent(in) :: property      ! Name of required magnitude
   integer,          intent(in) :: vsize         ! Size of value array
@@ -589,6 +598,9 @@ end subroutine siesta_get_value
 !---------------------------------------------------
 
 subroutine siesta_quit( label )
+#ifdef MPI
+  use posix_calls, only: chdir
+#endif
   implicit none
   character(len=*), intent(in) :: label
 

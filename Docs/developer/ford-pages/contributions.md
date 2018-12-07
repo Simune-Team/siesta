@@ -1,7 +1,7 @@
 title: Contributing to Siesta
 
 The Siesta code is heavily dependent on external contributions and we
-welcome any contributions.
+welcome the help.
 
 Any size of contribution is welcome, from small bug-fixes to fully new implementations.
 
@@ -26,17 +26,24 @@ All code *must* adhere to the following rules.
 ### Fortran version
 
 The fortran code version is the [2003 standard](ftp://ftp.nag.co.uk/sc22wg5/N1601-N1650/N1601.pdf.gz).
-Exceptions that should not be used is:
-* Reallocation on assignment:
+You can check compliance of your code by using the `-std=f2003` flag in `gfortran` (other compilers might have similar diagnostic capabilities).
+
+One feature that should not be used is `reallocation on assignment`:
 
         real, allocatable :: r(:)
         r = (/2., 3./)
-		
-  When using allocatables *always* use array assignment which prohibits the check for reallocation:
+        r = (/2., 3./, 4./)
+
+This "whole array" assignments can trigger checks by the compiler for the need of re-allocation, impacting
+performance.
+
+When using allocatables *always* use array-sections on the left-hand-side of assignments.  Formally, an array section is not "allocatable", and this has the effect of avoiding the check for reallocation:
 		
         real, allocatable :: r(:)
         allocate(r(2))
         r(:) = (/2., 3./)
+
+To learn more about this, see [this post](https://stackoverflow.com/questions/42140832/automatic-array-allocation-upon-assignment-in-fortran). To check that your code will not trigger checks for reallocation, you can use the `-Wrealloc-lhs-all` flag in `gfortran`.
 
 ### Parallel environments
 
@@ -52,7 +59,7 @@ All code should be put in modules. The name of the modules should reflect the co
 * Modules *must* be named `*_m` such that the module name may be reused for routine names.
 * Derived types *must* be named `*_t` such that the type name may be reused for variable names.
 
-Note that a large portion of the current code segment is not obeying the above details.
+Note that a large portion of the current code base does not obey the above admonitions.
 The conversion is a long-term work-in-progress.
 
 
@@ -73,7 +80,7 @@ The conversion is a long-term work-in-progress.
 
 ### File format
 
-* Free form files (`.f90`)
+* Free form files (`.f90` or `.F90`)
 * Maximum line-length of 132 characters
 * Use `&` for continuation lines
 * Use `!` for comments
@@ -123,7 +130,7 @@ Use logical operators
 
 Implementation of optional dependencies are done via preprocessor statements.
 
-Preprocessor names *must* be:
+Preprocessor names *must* be of the form:
 
     SIESTA__MRRR
     SIESTA__ELPA

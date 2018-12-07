@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -1389,9 +1389,9 @@ C ----------------------------------------------------------------------
          if ( dipole_correction ) then
             field = get_field_from_dipole(dipol,cell)
             if (Node == 0) then
-	       write(6,'(a,3f12.4,a)')
+               write(6,'(a,3f12.4,a)')
      $              'Dipole moment in unit cell   =', dipol/Debye, ' D'
-	       write(6,'(a,3f12.6,a)')
+               write(6,'(a,3f12.6,a)')
      $              'Electric field for dipole correction =',
      $              field/eV*Ang, ' eV/Ang/e'
             end if

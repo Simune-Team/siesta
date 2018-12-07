@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -11,14 +11,15 @@
 *    matrix (3,3) and a vector.
 *
       implicit none
+      integer, parameter :: dp = selected_real_kind(10,100)
       integer i,j
-      real*8 matrix(3,3)
-      real*8 vector(3),product(3)
+      real(dp) matrix(3,3)
+      real(dp) vector(3),product(3)
 
       do i = 1,3
-	 product(i) = 0.d0
-	 do j = 1,3
-	    product(i) = product(i) + matrix(i,j) * vector(j)
+         product(i) = 0.d0
+         do j = 1,3
+            product(i) = product(i) + matrix(i,j) * vector(j)
          enddo
       enddo
 

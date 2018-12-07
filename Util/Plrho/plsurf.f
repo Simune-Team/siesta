@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -82,7 +82,7 @@ C i.e. a total of 6*NN neighbour points is used to find the gradients
       INTEGER NN
       PARAMETER ( NN = 1 )
 
-C 	MAXCOL must be the same in routines solid, cube and pyramid
+C       MAXCOL must be the same in routines solid, cube and pyramid
       INTEGER MAXCOL
       PARAMETER ( MAXCOL = 10 )
 
@@ -254,7 +254,7 @@ C         Find COLOR and F and its gradient at this point
      .                 NT, XT, GT, TCOL )
 
       IMPLICIT NONE
-C 	    MAXCOL must be the same in routines solid, cube and pyramid
+C           MAXCOL must be the same in routines solid, cube and pyramid
       INTEGER     MAXCOL
       PARAMETER ( MAXCOL = 10 )
       INTEGER
@@ -306,7 +306,7 @@ C       Find the tringles covering the cut plane for this pyramid
       SUBROUTINE PYRAMID( F, X, G, VAL, NC, C, NT, XT, GT, CT )
       
       IMPLICIT NONE
-C 	    MAXCOL must be the same in routines solid, cube and pyramid
+C           MAXCOL must be the same in routines solid, cube and pyramid
       INTEGER     MAXCOL
       PARAMETER ( MAXCOL = 10 )
       INTEGER  

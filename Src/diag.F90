@@ -751,7 +751,7 @@ contains
           ! conjugate of the left operator, hence we cannot use it here
           ! We could, possibly use pztranc
           ! and then use hermitian_multiply... (?)
-          call pztrmm('R','U','N','N',n,n,dcmplx(1._dp,0._dp), &
+          call pztrmm('R','U','N','N',n,n,cmplx(1._dp,0._dp,dp), &
                Sp,1,1,desc,Hp,1,1,desc)
           
           info = 0
@@ -980,14 +980,14 @@ contains
              ! Also, the ELPA routines have already calculated
              ! the inverse of Cholesky(S), hence we only need
              ! a matrix-multiplication
-             call pztrmm('L','U','N','N',n,neig,dcmplx(1._dp,0._dp), &
+             call pztrmm('L','U','N','N',n,neig,cmplx(1._dp,0._dp,dp), &
                   Sp,1,1,desc,Zp,1,1,desc)
           else
-             call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
+             call pztrsm('L',uplo,trans,'N',n,neig,cmplx(1._dp,0._dp,dp), &
                   Sp,1,1,desc,Zp,1,1,desc)
           end if
 # else
-          call pztrsm('L',uplo,trans,'N',n,neig,dcmplx(1._dp,0._dp), &
+          call pztrsm('L',uplo,trans,'N',n,neig,cmplx(1._dp,0._dp,dp), &
                Sp,1,1,desc,Zp,1,1,desc)
 # endif
           if ( Use2D ) then

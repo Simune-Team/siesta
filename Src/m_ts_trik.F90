@@ -872,7 +872,7 @@ contains
        call init_val(spuDM)
        cE%exist = .true.
        cE%fake  = .true.
-       cE%e = dcmplx(0._dp, 0._dp)
+       cE%e = cmplx(0._dp, 0._dp,dp)
        cE%idx = 1
        cE%idx(1) = 0 ! Signals a fermi-contour
        if ( Node == Nodes - 1 ) cE%fake = .false.
@@ -896,7 +896,7 @@ contains
           call invert_TriMat(zwork_tri,GF_tri,calc_parts)
        end if
 
-       W = dcmplx(kw,0._dp)
+       W = cmplx(kw,0._dp,dp)
        call add_DM( spuDM, W, spuEDM, W, &
             GF_tri, r_pvt, pvt, N_Elec, Elecs, DMidx=1)
 
@@ -1143,7 +1143,7 @@ contains
 
     ! Initialize
 !$OMP workshare
-    GFinv(:) = dcmplx(0._dp,0._dp)
+    GFinv(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region

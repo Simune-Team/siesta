@@ -1442,7 +1442,7 @@ contains
     else if (idyn .eq. 0)  then   ! Geometry relaxation
        if (fdf_get("DM.AllowExtrapolation",.false.)) then
           if (ionode) print "(a,i0)", "Requested Extrapolation for geometry relaxation. DM_history_depth: ", n
-       else	
+       else     
           n = 1
           if (ionode) print "(a)", &
                "DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation"

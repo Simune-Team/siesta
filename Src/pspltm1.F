@@ -95,9 +95,6 @@ C       integer nii
         real haf, zero, conv
         data haf /0.5/, zero/0.0/, conv/2.54/
 
-        integer LENSTR
-        external LENSTR
-
 
 C---------------------------------------------------------------- BEGIN
         siz = size
@@ -152,7 +149,7 @@ c. . .  matrix frame line witdh
 
 c. . .  font size for title (cm)
         fnstit = 0.5
-        ltit = LENSTR(title)
+        ltit = LEN_trim(title)
 
 c. . .  position of title : centered horizontally
 c                           at 1.0 cm vertically over the drawing

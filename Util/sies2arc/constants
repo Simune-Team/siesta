@@ -9,9 +9,9 @@ C***********************************************************
 C  This file contains the values of fundamental constants  *
 C  and conversion factors                                  *
 C***********************************************************
-      real*8 autoangs,autoev,kcaltoev,kjmtoev
-      real*8 radtodeg,evtoj,evtokcal,avogadro
-      real*8 boltz,pi,planck,speedl,angstoev
+      real(dp) autoangs,autoev,kcaltoev,kjmtoev
+      real(dp) radtodeg,evtoj,evtokcal,avogadro
+      real(dp) boltz,pi,planck,speedl,angstoev
 C***********************
 C  Conversion factors  *
 C***********************
