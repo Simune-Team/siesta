@@ -1022,10 +1022,10 @@ Population may also be calculated. These are only available if
   
   Orbital currents are implemented as:
   \begin{equation}
-    J_{\alpha \beta} = i [
-    \mathbf H_{\beta\alpha} \mathbf A_{\alpha\beta}
+    J_{\alpha \beta}(E) = i [
+    (\mathbf H_{\beta\alpha} - E\mathbf S_{\beta\alpha}) \mathbf A_{\alpha\beta}(E)
     - 
-    \mathbf H_{\alpha\beta} \mathbf A_{\beta\alpha}],
+    (\mathbf H_{\alpha\beta} - E\mathbf S_{\alpha\beta}) \mathbf A_{\beta\alpha}(E)],
   \end{equation}
   where we have left out the pre-factor ($e/\hbar$)
   intentionally. \sisl\ may be used to analyze the orbital currents
