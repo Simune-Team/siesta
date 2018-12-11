@@ -2,7 +2,7 @@ Directory Util/Unfolding contains a band-unfolding utility,
 written by Sara G. Mayo and Jose M. Soler, Oct.2018
 
 Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Dic.2018
-      ( arXiv:1812.03925 )
+      arXiv:1812.03925      ( https://arxiv.org/abs/1812.03925 )
 
 Compile with
 $ cd Obj

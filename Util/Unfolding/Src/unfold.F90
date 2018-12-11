@@ -11,6 +11,7 @@ program unfold
 ! Reads the .fdf, .ion, .out, .psf and .HSX files of a SIESTA calculation and 
 ! generates unfolded and refolded bands. See Util/Unfolding/README for details.
 ! Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Dic.2018
+!       arXiv:1812.03925          ( https://arxiv.org/abs/1812.03925 )
 ! S.G.Mayo and J.M.Soler, Oct.2018
 
   use alloc,        only: alloc_report, de_alloc, re_alloc
@@ -58,7 +59,7 @@ program unfold
   integer, parameter :: allocReportLevelDefault = 2 ! default allocation report level
 
   ! Internal variables
-  integer          :: i, i1, i2, i3, ia, iao, ib, ie, ierr, ig, ij, &
+  integer          :: i, i1, i2, i3, ia, iao, ib, ic, ie, ierr, ig, ij, &
                       io, ios, iostat, iou, ipath, iq, iq1, iq2, iqNode, iqx(3), &
                       ir, irq, iscf, isp, ispin, itag, iu, j, je, jk, jlm, jo, jos, jou, &
                       kdsc(3,3), kscell(3,3), l, lastq(0:maxpaths), level, ll, lmax, &
@@ -77,7 +78,7 @@ program unfold
   character(len=20):: labelfis, symfio
   character(len=200):: line
   character(len=10):: label(maxnq), string
-  character(len=14):: dumm1, dumm2
+  character(len=80):: dumm
   type(block_fdf)  :: bfdf
   type(hsx_t)      :: hsx
 
@@ -552,7 +553,9 @@ program unfold
     if (myNode==0) then
       call system('grep ''Fermi = '' *out -h > fermi')
       open(8181,file='fermi',action='read')
-      read(8181,'(a, a, f)'),dumm1,dumm2,efermi
+      read(8181,'(a)'),dumm
+      ic = index(dumm,'=')
+      read(dumm(ic+1:),*),efermi
       print*,'unfold: Fermi = ',efermi
       call system('rm fermi')
     endif
@@ -571,7 +574,7 @@ program unfold
           fname = trim(fname)//'.path'//adjustl(numstr)
         endif
         open(iu,file=fname,status='unknown',form='formatted',action='write')
-        write(iu,'(2(i6),2(f10.3),f14.8)') &
+        write(iu,'(2(i6),2(f10.3),f13.6)') &
                  lastq(ipath)-lastq(ipath-1),ne+1,emin,emax,efermi
         do iq = iq1,iq2
           if (label(iq) .eq. ' ') then
@@ -579,7 +582,7 @@ program unfold
           else
             string = ""//trim(label(iq))//""
           endif
-          write(iu,'(3(f12.8),i5,a12)') q(:,iq), iline(iq), string 
+          write(iu,'(3(f13.8),i5,a12)') q(:,iq), iline(iq), string 
           do j = 0,ne
             write(iu,'(e15.6)') udos(iq,j,ispin)
           enddo
@@ -598,7 +601,7 @@ program unfold
             fname = trim(fname)//'.path'//adjustl(numstr)
           endif
           open(iu,file=fname,status='unknown',form='formatted',action='write')
-          write(iu,'(2(i6),2(f10.3),f14.8)') &
+          write(iu,'(2(i6),2(f10.3),f13.6)') &
                    lastq(ipath)-lastq(ipath-1),ne+1,emin,emax,efermi
           do iq = iq1,iq2
             if (label(iq) .eq. ' ') then
@@ -606,7 +609,7 @@ program unfold
             else
               string = ""//trim(label(iq))//""
             endif
-            write(iu,'(3(f14.8),i5,a12)') q(:,iq), iline(iq), string
+            write(iu,'(3(f13.8),i5,a12)') q(:,iq), iline(iq), string
             do j = 0,ne
               write(iu,'(e15.6)') rdos(iq,j,ispin)
             enddo
