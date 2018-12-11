@@ -1,3 +1,17 @@
+Siesta Version  : siesta-4.1-1033
+Architecture    : x86_64-linux-n-62-18-18
+Compiler version: GNU Fortran (GCC) 7.3.0
+Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
+PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PARALLEL version
+NetCDF support
+NetCDF-4 support
+NetCDF-4 MPI-IO support
+METIS ordering support
+
+* Running on 8 nodes in parallel
+>> Start of run:   5-NOV-2018  10:50:21
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -10,19 +24,6 @@ reinit: System Name: Water molecule -- Charge mixing
 reinit: -----------------------------------------------------------------------
 reinit: System Label: h2o-rhog-mixing
 reinit: -----------------------------------------------------------------------
-Siesta Version: siesta-4.1--731
-Architecture  : x86_64-linux-n-62-18-14
-Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto -fuse-linker-plugin
-PP flags      : -I/zdata/groups/common/nicpa/2016-oct/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2016-oct/generic/gmp/6.1.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpfr/3.1.4/include -I/zdata/groups/common/nicpa/2016-oct/generic/mpc/1.0.3/include -I/zdata/groups/common/nicpa/2016-oct/generic/isl/0.16.1/include -I/zdata/groups/common/nicpa/2016-oct/generic/gcc/6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/zlib/1.2.8/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/libxml2/2.9.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hwloc/1.11.4/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openmpi/2.0.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/hdf5/1.8.17/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/pnetcdf/1.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/netcdf/4.4.1/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/parmetis/4.0.3/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/scalapack/204/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/openblas/0.2.19/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/mumps/5.0.2/gnu-6.2.0/include -I/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/fftw/3.3.5/gnu-6.2.0/include -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__FLOOK
-Libraries     : -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmumps -lmumps_common -llpord -lparmetis -lmetis -lscalapack -lopenblas  -lmetis -flto -fuse-linker-plugin  -L/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2016-oct/XeonE5-2665/flook/0.7.0/gnu-6.2.0/lib -lflookall -ldl
-PARALLEL version
-NetCDF support
-NetCDF-4 support
-NetCDF-4 MPI-IO support
-METIS ordering support
-
-* Running on 8 nodes in parallel
->> Start of run:   2-JUL-2017  11:41:03
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
 Species number:   1 Atomic number:    8 Label: O
@@ -343,10 +344,12 @@ redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        2
 redata: Charge density info will appear in .RHO file
 redata: Write Mulliken Pop.                         = NO
+redata: Matel table size (NRTAB)                    =     1024
 redata: Mesh Cutoff                                 =    50.0000 Ry
 redata: Net charge of the system                    =     0.0000 |e|
 redata: Min. number of SCF Iter                     =        0
-redata: Max. number of SCF Iter                     =       50
+redata: Max. number of SCF Iter                     =     1000
+redata: SCF convergence failure will abort job
 redata: SCF mix quantity                            = charge
 redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
@@ -359,7 +362,7 @@ redata: DM Mixing Weight for Kicks                  =     0.5000
 redata: Require Harris convergence for SCF          =   F
 redata: Harris energy tolerance for SCF             =     0.000100 eV
 redata: Require DM convergence for SCF              =   T
-redata: DM tolerance for SCF                        =     0.1000
+redata: DM tolerance for SCF                        =     0.100000
 redata: Require EDM convergence for SCF             =   F
 redata: EDM tolerance for SCF                       =     0.001000 eV
 redata: Require H convergence for SCF               =   T
@@ -370,7 +373,6 @@ redata: Using Saved Data (generic)                  =   F
 redata: Use continuation files for DM               =   F
 redata: Neglect nonoverlap interactions             =   F
 redata: Method of Calculation                       = Diagonalization
-redata: Divide and Conquer                          =   T
 redata: Electronic Temperature                      =   299.9869 K
 redata: Fix the spin of the system                  =   F
 redata: Dynamics option                             = Single-point calculation
@@ -417,6 +419,27 @@ siesta: k-grid:    1   0   0      0.000
 siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
 
+diag: Algorithm                                     = D&C
+diag: Parallel over k                               =   F
+diag: Use parallel 2D distribution                  =   T
+diag: Parallel block-size                           = 3
+diag: Parallel distribution                         =     2 x     4
+diag: Used triangular part                          = Lower
+diag: Absolute tolerance                            =  0.100E-15
+diag: Orthogonalization factor                      =  0.100E-05
+diag: Memory factor                                 =  1.0000
+
+
+ts: **************************************************************
+ts: Save H and S matrices                           =    F
+ts: Save DM and EDM matrices                        =    F
+ts: Fix Hartree potential                           =    F
+ts: Only save the overlap matrix S                  =    F
+ts: **************************************************************
+
+************************ Begin: TS CHECKS AND WARNINGS ************************
+************************ End: TS CHECKS AND WARNINGS **************************
+
 
                      ====================================
                         Single-point calculation
@@ -443,7 +466,6 @@ DM filled with atomic data:
     nrows_g=23 nrows=3 sparsity=.1304 nnzs=69, refcount: 8>
   <dData2D:DM n=69 m=1, refcount: 1>
 refcount: 1>
-
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       3      23
 New grid distribution:   1
            1       1:   16    1:    8    1:    3
@@ -498,247 +520,250 @@ Metric preconditioner cutoff (Ry):      7.395
 Max and min weights:    36.5155    1.8258
 
 stepf: Fermi-Dirac step function
- Max |\Delta rho(G)|:     0.553515
+ Max |\Delta rho(G)|:     0.553512
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99735   0.00000       0.00005   0.00000    0.0000
   0.2082     7.09623  -0.00000       0.22812  -0.00000    1.0000
-  0.3347     6.83140   1.01687       0.21684  -0.33172    1.0000
-  0.3499     7.13367   0.00000       0.03460  -0.00000    1.0000
+  0.3347     6.83140   1.01687       0.21684  -0.33173    1.0000
+  0.3499     7.13367   0.00000       0.03460   0.00000    1.0000
   0.5429     6.14953   0.73301       0.33894  -0.19687    1.0000
-  0.5581     6.36277  -0.00000       0.21595  -0.00000    1.0000
-  0.6846     6.13317   0.86508       0.20250  -0.25940    1.0000
+  0.5581     6.36277  -0.00000       0.21595   0.00000    1.0000
+  0.6846     6.13317   0.86508       0.20250  -0.25941    1.0000
   0.8329     5.13483  -0.00000       0.55351   0.00000    1.0000
-  0.8928     5.54475   0.62654       0.29949  -0.15275    1.0000
-  1.1676     4.62331   0.18382       0.49421   0.01332    1.0000
+  0.8928     5.54475   0.62654       0.29949  -0.15276    1.0000
+  1.1676     4.62331   0.18382       0.49420   0.01332    1.0000
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -122.646898
+siesta: Ebs     =      -122.646743
 siesta: Eions   =       815.854478
-siesta: Ena     =       175.154321
-siesta: Ekin    =       370.751247
-siesta: Enl     =       -67.181676
+siesta: Ena     =       175.155695
+siesta: Ekin    =       370.751214
+siesta: Enl     =       -67.181693
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =       -13.606312
-siesta: DUscf   =         1.705533
+siesta: DEna    =       -13.606153
+siesta: DUscf   =         1.705518
 siesta: DUext   =         0.000000
-siesta: Exc     =      -116.213094
+siesta: Enegf   =         0.000000
+siesta: Exc     =      -116.213035
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =         0.000000
-siesta: Etot    =      -465.244458
-siesta: FreeEng =      -465.244458
+siesta: Etot    =      -465.242933
+siesta: FreeEng =      -465.242933
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1        0.000000     -465.244458     -465.244458  1.438730 -4.254018 32.912074
-timer: Routine,Calls,Time,% = IterSCF        1       0.022   2.14
- Max |\Delta rho(G)|:     0.601170
+   scf:    1        0.000000     -465.242933     -465.242933  1.438866 -4.255291 32.912067
+timer: Routine,Calls,Time,% = IterSCF        1       0.015   0.94
+ Max |\Delta rho(G)|:     0.601176
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99740   0.00000       0.00055   0.00000    0.0000
   0.2082     7.32435  -0.00000      -0.14664   0.00000    1.0000
-  0.3347     7.04824   0.68516      -0.20261   0.33099    1.0000
-  0.3499     7.16827  -0.00000      -0.11814   0.00000    1.0000
-  0.5429     6.48847   0.53615      -0.29526   0.24828    1.0000
-  0.5581     6.57872  -0.00000      -0.23417   0.00000    1.0000
-  0.6846     6.33567   0.60568      -0.27699   0.27297    1.0000
+  0.3347     7.04824   0.68515      -0.20261   0.33100    1.0000
+  0.3499     7.16827   0.00000      -0.11814  -0.00000    1.0000
+  0.5429     6.48847   0.53614      -0.29526   0.24828    1.0000
+  0.5581     6.57872   0.00000      -0.23417  -0.00000    1.0000
+  0.6846     6.33567   0.60567      -0.27699   0.27298    1.0000
   0.8329     5.68834   0.00000      -0.43303  -0.00000    1.0000
-  0.8928     5.84424   0.47379      -0.34852   0.20413    1.0000
-  1.1676     5.11752   0.19714      -0.47048   0.07763    1.0000
-   scf:    2        0.000000     -463.922277     -463.922277  0.175611 -0.152933  6.304091
- Max |\Delta rho(G)|:     0.236366
+  0.8928     5.84424   0.47378      -0.34852   0.20414    1.0000
+  1.1676     5.11751   0.19714      -0.47048   0.07763    1.0000
+   scf:    2        0.000000     -463.920719     -463.920719  0.175605 -0.154232  6.304074
+ Max |\Delta rho(G)|:     0.236372
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99767   0.00000      -0.00023   0.00000    0.0000
-  0.2082     7.25102  -0.00000       0.05647  -0.00000    1.0000
+  0.2082     7.25103  -0.00000       0.05647   0.00000    1.0000
   0.3347     6.94694   0.85065       0.08036  -0.11812    1.0000
-  0.3499     7.10920  -0.00000       0.04817   0.00000    1.0000
-  0.5429     6.34084   0.66029       0.11612  -0.08640    1.0000
-  0.5581     6.46163  -0.00000       0.09289   0.00000    1.0000
-  0.6846     6.19718   0.74216       0.11136  -0.09729    1.0000
+  0.3499     7.10920   0.00000       0.04817  -0.00000    1.0000
+  0.5429     6.34084   0.66028       0.11612  -0.08640    1.0000
+  0.5581     6.46163   0.00000       0.09289  -0.00000    1.0000
+  0.6846     6.19718   0.74216       0.11137  -0.09730    1.0000
   0.8329     5.47183   0.00000       0.16812  -0.00000    1.0000
-  0.8928     5.66998   0.57586       0.13897  -0.07076    1.0000
-  1.1676     4.88228   0.23596       0.18473  -0.02052    1.0000
-   scf:    3        0.000000     -465.541503     -465.541503  0.175032 -3.072266  4.756217
+  0.8928     5.66998   0.57585       0.13897  -0.07076    1.0000
+  1.1676     4.88227   0.23595       0.18473  -0.02052    1.0000
+   scf:    3        0.000000     -465.539964     -465.539964  0.175039 -3.073589  4.756249
  Max |\Delta rho(G)|:     0.011249
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
-  0.0000     7.99755   0.00000       0.00003   0.00000    0.0000
-  0.2082     7.27116  -0.00000       0.00165  -0.00000    1.0000
-  0.3347     6.97559   0.80854       0.00431  -0.00525    1.0000
-  0.3499     7.12637  -0.00000       0.00181   0.00000    1.0000
+  0.0000     7.99756   0.00000       0.00003   0.00000    0.0000
+  0.2082     7.27116  -0.00000       0.00165   0.00000    1.0000
+  0.3347     6.97559   0.80853       0.00431  -0.00525    1.0000
+  0.3499     7.12637   0.00000       0.00181  -0.00000    1.0000
   0.5429     6.38224   0.62948       0.00452  -0.00321    1.0000
-  0.5581     6.49475  -0.00000       0.00289   0.00000    1.0000
+  0.5581     6.49475   0.00000       0.00289  -0.00000    1.0000
   0.6846     6.23688   0.70747       0.00496  -0.00383    1.0000
   0.8329     5.53177   0.00000       0.00427  -0.00000    1.0000
-  0.8928     5.71953   0.55063       0.00492  -0.00224    1.0000
+  0.8928     5.71953   0.55062       0.00492  -0.00224    1.0000
   1.1676     4.94814   0.22864       0.00452   0.00060    1.0000
-   scf:    4        0.000000     -465.840579     -465.840579  0.054615 -2.193686  1.373766
+   scf:    4        0.000000     -465.839056     -465.839056  0.054619 -2.194989  1.373794
  Max |\Delta rho(G)|:     0.006426
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99757   0.00000       0.00002   0.00000    0.0000
-  0.2082     7.27186  -0.00000       0.00028  -0.00000    1.0000
-  0.3347     6.97763   0.80612       0.00141  -0.00163    1.0000
-  0.3499     7.12719  -0.00000       0.00055   0.00000    1.0000
+  0.2082     7.27186  -0.00000       0.00028   0.00000    1.0000
+  0.3347     6.97763   0.80611       0.00141  -0.00163    1.0000
+  0.3499     7.12719   0.00000       0.00055  -0.00000    1.0000
   0.5429     6.38428   0.62804       0.00120  -0.00098    1.0000
-  0.5581     6.49600  -0.00000       0.00066   0.00000    1.0000
+  0.5581     6.49600   0.00000       0.00066  -0.00000    1.0000
   0.6846     6.23917   0.70574       0.00154  -0.00113    1.0000
-  0.8329     5.53353   0.00000       0.00060   0.00000    1.0000
-  0.8928     5.72171   0.54966       0.00129  -0.00064    1.0000
-  1.1676     4.94997   0.22903       0.00067   0.00021    1.0000
-   scf:    5        0.000000     -465.840669     -465.840669  0.000956 -2.167317  0.030520
+  0.8329     5.53352   0.00000       0.00060   0.00000    1.0000
+  0.8928     5.72171   0.54965       0.00129  -0.00064    1.0000
+  1.1676     4.94997   0.22902       0.00067   0.00021    1.0000
+   scf:    5        0.000000     -465.839146     -465.839146  0.000956 -2.168619  0.030522
  Max |\Delta rho(G)|:     0.003310
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99758   0.00000       0.00001   0.00000    0.0000
   0.2082     7.27207  -0.00000      -0.00007   0.00000    1.0000
-  0.3347     6.97876   0.80482       0.00010  -0.00008    1.0000
-  0.3499     7.12762  -0.00000       0.00006  -0.00000    1.0000
+  0.3347     6.97877   0.80481       0.00010  -0.00008    1.0000
+  0.3499     7.12762   0.00000       0.00006   0.00000    1.0000
   0.5429     6.38523   0.62727       0.00000  -0.00007    1.0000
-  0.5581     6.49651  -0.00000      -0.00002  -0.00000    1.0000
+  0.5581     6.49651   0.00000      -0.00002   0.00000    1.0000
   0.6846     6.24040   0.70484       0.00011  -0.00005    1.0000
   0.8329     5.53395   0.00000      -0.00020  -0.00000    1.0000
-  0.8928     5.72272   0.54916       0.00002  -0.00004    1.0000
-  1.1676     4.95045   0.22922      -0.00017  -0.00004    1.0000
-   scf:    6        0.000000     -465.840672     -465.840672  0.000667 -2.158222  0.009081
+  0.8928     5.72272   0.54915       0.00002  -0.00004    1.0000
+  1.1676     4.95044   0.22921      -0.00017  -0.00004    1.0000
+   scf:    6        0.000000     -465.839148     -465.839148  0.000667 -2.159523  0.009082
  Max |\Delta rho(G)|:     0.001519
-      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
-  0.0000     7.99758   0.00000       0.00000   0.00000    0.0000
-  0.2082     7.27204  -0.00000       0.00001   0.00000    1.0000
-  0.3347     6.97885   0.80474       0.00008  -0.00006    1.0000
-  0.3499     7.12767  -0.00000       0.00007  -0.00000    1.0000
-  0.5429     6.38526   0.62721       0.00009  -0.00005    1.0000
-  0.5581     6.49652  -0.00000       0.00008  -0.00000    1.0000
-  0.6846     6.24050   0.70479       0.00013  -0.00005    1.0000
-  0.8329     5.53386   0.00000       0.00006   0.00000    1.0000
-  0.8928     5.72277   0.54912       0.00013  -0.00004    1.0000
-  1.1676     4.95037   0.22919       0.00011  -0.00003    1.0000
-   scf:    7        0.000000     -465.840673     -465.840673  0.000501 -2.159207  0.003113
- Max |\Delta rho(G)|:     0.000727
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99759   0.00000       0.00000   0.00000    0.0000
   0.2082     7.27204  -0.00000       0.00001  -0.00000    1.0000
-  0.3347     6.97886   0.80474       0.00008  -0.00004    1.0000
-  0.3499     7.12768  -0.00000       0.00007  -0.00000    1.0000
-  0.5429     6.38527   0.62721       0.00008  -0.00004    1.0000
-  0.5581     6.49653  -0.00000       0.00008  -0.00000    1.0000
-  0.6846     6.24052   0.70479       0.00013  -0.00004    1.0000
+  0.3347     6.97885   0.80473       0.00008  -0.00006    1.0000
+  0.3499     7.12767   0.00000       0.00007   0.00000    1.0000
+  0.5429     6.38526   0.62721       0.00009  -0.00005    1.0000
+  0.5581     6.49652   0.00000       0.00008   0.00000    1.0000
+  0.6846     6.24050   0.70479       0.00013  -0.00005    1.0000
+  0.8329     5.53385   0.00000       0.00006   0.00000    1.0000
+  0.8928     5.72277   0.54911       0.00013  -0.00004    1.0000
+  1.1676     4.95037   0.22919       0.00011  -0.00003    1.0000
+   scf:    7        0.000000     -465.839150     -465.839150  0.000501 -2.160508  0.003113
+ Max |\Delta rho(G)|:     0.000727
+      G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
+  0.0000     7.99759   0.00000       0.00000   0.00000    0.0000
+  0.2082     7.27205  -0.00000       0.00001   0.00000    1.0000
+  0.3347     6.97886   0.80473       0.00008  -0.00004    1.0000
+  0.3499     7.12768   0.00000       0.00007   0.00000    1.0000
+  0.5429     6.38527   0.62720       0.00008  -0.00004    1.0000
+  0.5581     6.49653   0.00000       0.00008   0.00000    1.0000
+  0.6846     6.24052   0.70478       0.00013  -0.00004    1.0000
   0.8329     5.53386   0.00000       0.00006   0.00000    1.0000
-  0.8928     5.72279   0.54912       0.00013  -0.00003    1.0000
-  1.1676     4.95039   0.22919       0.00011  -0.00002    1.0000
-   scf:    8        0.000000     -465.840673     -465.840673  0.000221 -2.159370  0.002221
+  0.8928     5.72279   0.54911       0.00013  -0.00003    1.0000
+  1.1676     4.95039   0.22918       0.00011  -0.00002    1.0000
+   scf:    8        0.000000     -465.839150     -465.839150  0.000221 -2.160671  0.002221
  Max |\Delta rho(G)|:     0.000407
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99759   0.00000       0.00000   0.00000    0.0000
-  0.2082     7.27204  -0.00000      -0.00003   0.00000    1.0000
+  0.2082     7.27204  -0.00000      -0.00003  -0.00000    1.0000
   0.3347     6.97885   0.80478       0.00004  -0.00002    1.0000
-  0.3499     7.12769  -0.00000       0.00002  -0.00000    1.0000
-  0.5429     6.38527   0.62724       0.00000  -0.00001    1.0000
-  0.5581     6.49655  -0.00000      -0.00000  -0.00000    1.0000
-  0.6846     6.24053   0.70482       0.00005  -0.00001    1.0000
-  0.8329     5.53389   0.00000      -0.00007  -0.00000    1.0000
+  0.3499     7.12770   0.00000       0.00002   0.00000    1.0000
+  0.5429     6.38527   0.62723       0.00000  -0.00001    1.0000
+  0.5581     6.49655   0.00000      -0.00000   0.00000    1.0000
+  0.6846     6.24053   0.70481       0.00005  -0.00001    1.0000
+  0.8329     5.53388   0.00000      -0.00007   0.00000    1.0000
   0.8928     5.72281   0.54913       0.00002  -0.00001    1.0000
-  1.1676     4.95044   0.22919      -0.00005  -0.00001    1.0000
-   scf:    9        0.000000     -465.840673     -465.840673  0.000057 -2.158652  0.001250
+  1.1676     4.95043   0.22918      -0.00005  -0.00001    1.0000
+   scf:    9        0.000000     -465.839150     -465.839150  0.000057 -2.159953  0.001250
  Max |\Delta rho(G)|:     0.000219
       G2      rho_in(G) (R, C)      Diff_rho(G) (R, C)   damping
   0.0000     7.99759   0.00000       0.00000   0.00000    0.0000
-  0.2082     7.27203  -0.00000      -0.00003   0.00000    1.0000
+  0.2082     7.27203  -0.00000      -0.00003  -0.00000    1.0000
   0.3347     6.97887   0.80478      -0.00001   0.00001    1.0000
-  0.3499     7.12772  -0.00000      -0.00001   0.00000    1.0000
+  0.3499     7.12772   0.00000      -0.00001   0.00000    1.0000
   0.5429     6.38528   0.62723      -0.00003   0.00001    1.0000
-  0.5581     6.49656  -0.00000      -0.00003  -0.00000    1.0000
-  0.6846     6.24058   0.70482      -0.00002   0.00002    1.0000
-  0.8329     5.53386   0.00000      -0.00009  -0.00000    1.0000
-  0.8928     5.72284   0.54913      -0.00004   0.00001    1.0000
+  0.5581     6.49656   0.00000      -0.00003   0.00000    1.0000
+  0.6846     6.24058   0.70481      -0.00002   0.00002    1.0000
+  0.8329     5.53386   0.00000      -0.00009   0.00000    1.0000
+  0.8928     5.72284   0.54912      -0.00004   0.00001    1.0000
   1.1676     4.95043   0.22918      -0.00009  -0.00000    1.0000
-   scf:   10        0.000000     -465.840673     -465.840673  0.000033 -2.158272  0.000526
+   scf:   10        0.000000     -465.839150     -465.839150  0.000033 -2.159573  0.000525
 
 SCF Convergence by FreeE+DM+H criterion
 |FreeE_i-FreeE_(i-1)| (eV) <     0.00010000
-max |DM_i - DM_(i-1)|        :     0.0000325179
-max |H_out - H_in|      (eV) :     0.0005255327
+max |DM_i - DM_(i-1)|        :     0.0000325125
+max |H_out - H_in|      (eV) :     0.0005251997
 SCF cycle converged after 10 iterations
 
 Using DM_out to compute the final energy and forces
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       3      23
 
-siesta: E_KS(eV) =             -465.8407
+siesta: E_KS(eV) =             -465.8392
 
-siesta: E_KS - E_eggbox =      -465.8407
+siesta: E_KS - E_eggbox =      -465.8392
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000000    0.055959   -0.000000
+   Tot   -0.000000    0.055957    0.000000
 ----------------------------------------
-   Max    0.717323
-   Res    0.399208    sqrt( Sum f_i^2 / 3N )
+   Max    0.690213
+   Res    0.379467    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.717323    constrained
+   Max    0.690213    constrained
 
-Stress-tensor-Voigt (kbar):      -20.20       -3.67       22.43        0.00        0.00        0.00
-(Free)E + p*V (eV/cell)     -465.7700
-Target enthalpy (eV/cell)     -465.8407
+Stress-tensor-Voigt (kbar):      -19.92       -3.51       22.43       -0.00        0.00        0.00
+(Free)E + p*V (eV/cell)     -465.7903
+Target enthalpy (eV/cell)     -465.8392
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -104.738355
+siesta: Ebs     =      -104.738417
 siesta: Eions   =       815.854478
-siesta: Ena     =       175.154321
-siesta: Ekin    =       350.782750
-siesta: Enl     =       -61.959760
+siesta: Ena     =       175.155695
+siesta: Ekin    =       350.782718
+siesta: Enl     =       -61.959769
 siesta: Eso     =         0.000000
 siesta: Eldau   =         0.000000
-siesta: DEna    =        -1.777333
-siesta: DUscf   =         0.727276
+siesta: DEna    =        -1.777176
+siesta: DUscf   =         0.727260
 siesta: DUext   =         0.000000
-siesta: Exc     =      -112.913449
+siesta: Enegf   =         0.000000
+siesta: Exc     =      -112.913399
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =         0.000000
-siesta: Etot    =      -465.840673
-siesta: FreeEng =      -465.840673
+siesta: Etot    =      -465.839150
+siesta: FreeEng =      -465.839150
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -104.738355
-siesta:       Kinetic =     350.782750
-siesta:       Hartree =     382.616497
+siesta:  Band Struct. =    -104.738417
+siesta:       Kinetic =     350.782718
+siesta:       Hartree =     382.616271
 siesta:       Eldau   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -112.913449
-siesta:  Ion-electron =   -1072.820597
-siesta:       Ion-ion =     -13.505875
+siesta:       Enegf   =       0.000000
+siesta:   Exch.-corr. =    -112.913399
+siesta:  Ion-electron =   -1072.820239
+siesta:       Ion-ion =     -13.504501
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -465.840673
-siesta:         Fermi =      -2.158272
+siesta:         Total =    -465.839150
+siesta:         Fermi =      -2.159573
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000000   -0.500420   -0.000000
-siesta:      2    0.717323    0.278189   -0.000000
-siesta:      3   -0.717323    0.278189   -0.000000
+siesta:      1    0.000000   -0.458927    0.000000
+siesta:      2    0.690213    0.257442   -0.000000
+siesta:      3   -0.690213    0.257442   -0.000000
 siesta: ----------------------------------------
-siesta:    Tot   -0.000000    0.055959   -0.000000
+siesta:    Tot   -0.000000    0.055957    0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.012607    0.000000    0.000000
-siesta:     0.000000   -0.002292   -0.000000
+siesta:    -0.012432    0.000000    0.000000
+siesta:    -0.000000   -0.002188    0.000000
 siesta:     0.000000    0.000000    0.013998
 
 siesta: Cell volume =        235.378012 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00000327         -0.00001817  Ry/Bohr**3
-siesta:           0.00030024         -0.00166851  eV/Ang**3
-siesta:           0.48104152         -2.67328127  kBar
-(Free)E+ p_basis*V_orbitals  =        -465.255506
+siesta:           0.00000226         -0.00001817  Ry/Bohr**3
+siesta:           0.00020764         -0.00166855  eV/Ang**3
+siesta:           0.33268738         -2.67333890  kBar
+(Free)E+ p_basis*V_orbitals  =        -465.253983
 (Free)Eharris+ p_basis*V_orbitals  =           0.585167
 
-siesta: Electric dipole (a.u.)  =   -0.000000    0.558168    0.000000
-siesta: Electric dipole (Debye) =   -0.000000    1.418722    0.000000
+siesta: Electric dipole (a.u.)  =   -0.000000    0.558183   -0.000000
+siesta: Electric dipole (Debye) =   -0.000000    1.418761   -0.000000
 
-dhscf: Vacuum level (max, mean) =    0.636881   -0.068246 eV
->> End of run:   2-JUL-2017  11:41:04
+dhscf: Vacuum level (max, mean) =    0.636898   -0.068247 eV
+>> End of run:   5-NOV-2018  10:50:23
 Job completed

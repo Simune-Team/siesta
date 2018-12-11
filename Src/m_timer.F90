@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -410,8 +410,8 @@ subroutine print_report( prog )   ! Write a report of counted times
           sum(nodeComTime), sum(nodeComTime)/nNodes, totalComTime, &
           sum(nodeComTime)/nNodes / maxval(nodeComTime)
 #else
-	totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
-	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+        totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
+        write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
 #endif
         write(iu,'(a,3f12.3,f8.3)') &
           'Tot:  Sum, Avge, myNode, Avg/Max =', &
@@ -476,7 +476,7 @@ subroutine print_report( prog )   ! Write a report of counted times
          'MPI total      ', totalComCalls, &
           totalComTime, 1., totalComTime, totalComTime/totalTime
 #else
-	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+        write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
 #endif
       endif ! (myNode==writerNode)
 

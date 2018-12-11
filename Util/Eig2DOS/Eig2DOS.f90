@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -43,7 +43,7 @@ program Eig2DOS
   character(len=10)  :: opt_name 
   integer :: nargs, iostat, n_opts, nlabels
 
-  integer :: nk, nspin, nband, ne, ie, ik, ika, is, ib, nel
+  integer :: nk, nspin, nband, ie, ik, ika, is, ib, nel
   integer :: nk_kpoints, ik_read
 
   real(dp) :: e, eincr, ef, pi, x, sta, norm
@@ -222,7 +222,7 @@ program Eig2DOS
   if (.not. emax_given) emax = emax_file + 6._dp*smear
 
   if (npts_energy .lt. 2) npts_energy = 2
-  eincr = (emax - emin) / dfloat(npts_energy - 1)
+  eincr = (emax - emin) / real((npts_energy - 1),kind=dp)
 
   nel = 0
   DOS(:,:) = 0.0_dp
@@ -282,7 +282,7 @@ program Eig2DOS
   if ( nspin == 1 ) then
      nel = nel * 2
   end if
-  sta = nel / dfloat(nk)
+  sta = nel / real(nk,kind=dp)
 
 ! output, prepared for gnuplot ----------------------------------------
 

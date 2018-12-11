@@ -71,20 +71,20 @@ module class_gSpData1D
 #endif
 end module class_gSpData1D
 
-module class_cSpData1D
-  use class_cData1D
-!========================
-#define TYPE_NAME  cSpData1D
-#define STR_TYPE_NAME "cSpData1D"
-#define TYPE_NAME_ cSpData1D_
-#define NEW_TYPE newcSpData1D
-#define VAR_TYPE cData1D
-#define VAR_NEW_TYPE newcData1D
-#define VAR_TYPE_TYPE complex
-#define PREC sp
-#include "class_SpData1D.T90"
-!========================
-end module class_cSpData1D
+!!$module class_cSpData1D
+!!$  use class_cData1D
+!!$!========================
+!!$#define TYPE_NAME  cSpData1D
+!!$#define STR_TYPE_NAME "cSpData1D"
+!!$#define TYPE_NAME_ cSpData1D_
+!!$#define NEW_TYPE newcSpData1D
+!!$#define VAR_TYPE cData1D
+!!$#define VAR_NEW_TYPE newcData1D
+!!$#define VAR_TYPE_TYPE complex
+!!$#define PREC sp
+!!$#include "class_SpData1D.T90"
+!!$!========================
+!!$end module class_cSpData1D
 
 module class_zSpData1D
   use class_zData1D

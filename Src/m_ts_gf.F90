@@ -122,7 +122,7 @@ contains
     do i = 1 , N_nEq_E()
       c = nEq_E(i)
       ! We utilize the eta value for the electrode
-      ce(iE+i) = dcmplx(real(c%e,dp),El%Eta)
+      ce(iE+i) = cmplx(real(c%e,dp),El%Eta,dp)
     end do
 
     ! We return if we should not calculate it
@@ -240,7 +240,7 @@ contains
     errorGF = .false.
 
     ! We use the "first" pole of the 
-    ce(1) = dcmplx(0._dp, El%Eta)
+    ce(1) = cmplx(0._dp, El%Eta,dp)
 
     ! We return if we should not calculate it
     if ( cReUseGF ) then
@@ -433,7 +433,7 @@ contains
        ! The test of the energy-point is performed on
        ! the calculating node...
        if ( Node == iNode ) then
-          if ( cdabs(cE%e-ZE_cur) > 10._dp * EPS ) then
+          if ( abs(cE%e-ZE_cur) > 10._dp * EPS ) then
              write(*,*) 'GF-file: '//trim(El%GFfile)
              write(*,'(2(a,2(tr1,g20.13)))') 'Energies, TS / Gf:', &
                   cE%e / eV, ' /', ZE_cur / eV
@@ -611,9 +611,9 @@ contains
        if ( c%idx(1) /= 1 ) then
           ! In this case the energy is the eta value of the electrode
 #ifdef TBT_PHONON
-          c%e = dcmplx(real(cE%e,dp)**2,Elecs(i)%Eta)
+          c%e = cmplx(real(cE%e,dp)**2,Elecs(i)%Eta,dp)
 #else
-          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
+          c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta,dp)
 #endif
        end if
        if ( Elecs(i)%out_of_core ) then
@@ -1117,7 +1117,7 @@ contains
     eXa = .false.
     showed_warn = .false.
     do iEn = 1 , min(c_NEn, NEn)
-      if ( cdabs(ce(iEn)-c_ce(iEn)) > EPS ) then
+      if ( abs(ce(iEn)-c_ce(iEn)) > EPS ) then
         if ( showed_warn ) then
           ! do nothing
         else
@@ -1125,7 +1125,7 @@ contains
           showed_warn = .true.
         end if
 
-        if ( cdabs(ce(iEn)-c_ce(iEn)) > 10.d0*EPS ) then
+        if ( abs(ce(iEn)-c_ce(iEn)) > 10.d0*EPS ) then
           if ( eXa ) then
             ! do nothing
           else

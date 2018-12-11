@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -171,13 +171,13 @@ C  Back substitution
 C
       do k = 1,m
         xf(3,k) = xf(3,k)/a(3,3)
-      	do ie = 1,2
-      	  i = 3 - ie
-      	  ix = i + 1
-      	  do j = ix,3
+        do ie = 1,2
+          i = 3 - ie
+          ix = i + 1
+          do j = ix,3
             xf(i,k) = xf(i,k) - xf(j,k)*a(i,j)
           enddo
-      	  xf(i,k) = xf(i,k)/a(i,i)
+          xf(i,k) = xf(i,k)/a(i,i)
         enddo
       enddo
 C

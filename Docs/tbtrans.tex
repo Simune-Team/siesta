@@ -13,11 +13,18 @@
 % Include settings appropriate for tbtrans
 \input{tex/init.tex}
 
-% Title
-\title{TBtrans manual 4.1-b4}
+% Local command for the software version for printing
+% \unskip helps when space/newline chars are present in the
+% version.info file.
+\providecommand\softwareversion{\input{../version.info}\unskip}
+
+% Title (note that \input above will fail in the title, we however
+% don't care since it is only meaningful for final publications where
+% direct text is used.)
+\title{TBtrans manual \softwareversion}
 
 % Set the date
-\date{October 16, 2018}
+\date{\today}
 
 % Specify Authors
 \author{%
@@ -46,7 +53,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{T B t r a n s \, \, 4.1-b4}}
+{\Huge \textbf{T B t r a n s \, \, \softwareversion}}
 
 \vspace{1cm}
 \hrulefill
@@ -1015,10 +1022,10 @@ Population may also be calculated. These are only available if
   
   Orbital currents are implemented as:
   \begin{equation}
-    J_{\alpha \beta} = i [
-    \mathbf H_{\beta\alpha} \mathbf A_{\alpha\beta}
+    J_{\alpha \beta}(E) = i [
+    (\mathbf H_{\beta\alpha} - E\mathbf S_{\beta\alpha}) \mathbf A_{\alpha\beta}(E)
     - 
-    \mathbf H_{\alpha\beta} \mathbf A_{\beta\alpha}],
+    (\mathbf H_{\alpha\beta} - E\mathbf S_{\alpha\beta}) \mathbf A_{\beta\alpha}(E)],
   \end{equation}
   where we have left out the pre-factor ($e/\hbar$)
   intentionally. \sisl\ may be used to analyze the orbital currents
@@ -1085,11 +1092,15 @@ currents may only be calculated in the selected device region.
     %block TBT.Atoms.Device
        atom [ 10 -- 20 ]
        atom [ 30 -- 40 ]
+       # Atoms removed from the device region
+       # Even though they are specified in other
+       # lines
+       not-atom [ 15, 35]
     % endblock
     # Or equivalently as a list   
-    TBT.Atoms.Device [10 -- 20, 30 -- 40]
+    TBT.Atoms.Device [10 -- 14, 16 -- 20, 30 -- 34, 36 -- 40]
   \end{fdfexample}
-  will limit the device region to atoms [10--20, 30--40].
+  will limit the device region to atoms [10--14, 16--20, 30--34, 36--40].
   
 \end{fdfentry}
 

@@ -1,323 +1,28 @@
-TBtrans Version: trunk-507---ts-scf-680
-Architecture  : x86_64-linux-gcc
-Compiler flags: mpif90 -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling  -fipa-sra -fipa-cp -Warray-temporaries -fcheck=array-temps -fno-second-underscore -I/opt/zlib/1.2.8/gnu-6.1.0/include -I/opt/hdf5/1.8.16/gnu-6.1.0/include -I/opt/pnetcdf/1.7.0/gnu-6.1.0/include -I/opt/netcdf/4.4.0/gnu-6.1.0/include -I/opt/openmpi/1.10.2/gnu-6.1.0/include -I/opt/mumps/5.0.1/gnu-6.1.0/include
-PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG -DTBTRANS
-Libraries     : -lzmumps -lmumps_common -lpord -lparmetis -lmetis -L/opt/scalapack/204/gnu-6.1.0/lib -Wl,-rpath=/opt/scalapack/204/gnu-6.1.0/lib -lscalapack  -L/opt/openblas/0.2.17/gnu-6.1.0/lib -Wl,-rpath=/opt/openblas/0.2.17/gnu-6.1.0/lib -lopenblas -L/home/nicpa/phd/esl/flook -lflookall -ldl -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz
+TBtrans Version: siesta-4.1-1028
+Architecture  : x86_64-linux-n-62-18-18
+Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
+PP flags      : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR -DTBTRANS
+Libraries     : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 2 nodes in parallel
->> Start of run:   1-JUN-2016  18:50:52
+* Running on 8 nodes in parallel
+>> Start of run:   5-NOV-2018  11:49:19
 
                            ************************ 
                            *  WELCOME TO TBtrans  * 
                            ************************ 
 
-reinit: Reading from standard input
-************************** Dump of input data file ****************************
-SolutionMethod        Transiesta
-SystemName  Au 100 with gold chain
-SystemLabel au_100
-==================================================
-==================================================
-# SPECIES AND BASIS
-# Number of species
-NumberOfSpecies 1
-%block ChemicalSpeciesLabel
-  1  79 Au
-%endblock ChemicalSpeciesLabel
-PAO.BasisSize    SZP
-PAO.EnergyShift  0.005 Ry
-XC.functional   GGA
-XC.authors      PBE
-==================================================
-==================================================
-# K-points
-%block kgrid_Monkhorst_Pack
- 2    0    0    0.0
- 0    2    0    0.0
- 0    0    2    0.0
-%endblock kgrid_Monkhorst_Pack
-==================================================
-==================================================
-# Structure
-NumberOfAtoms 112
-LatticeConstant 1.0 Ang
-%block LatticeVectors
-     8.651160000      0.000000000      0.000000000
-     0.000000000      8.651160000      0.000000000
-     0.000000000      0.000000000     32.625600000
-%endblock LatticeVectors
-AtomicCoordinatesFormat  Ang
-%block AtomicCoordinatesAndAtomicSpecies
-     0.000000000      0.000000000      0.000000000 1 # 1. layer
-     2.883720000      0.000000000      0.000000000 1
-     5.767440000      0.000000000      0.000000000 1
-     0.000000000      2.883720000      0.000000000 1
-     2.883720000      2.883720000      0.000000000 1
-     5.767440000      2.883720000      0.000000000 1
-     0.000000000      5.767440000      0.000000000 1
-     2.883720000      5.767440000      0.000000000 1
-     5.767440000      5.767440000      0.000000000 1
-     1.441860000      1.441860000      2.039100000 1 # 2. layer
-     4.325580000      1.441860000      2.039100000 1
-     7.209300000      1.441860000      2.039100000 1
-     1.441860000      4.325580000      2.039100000 1
-     4.325580000      4.325580000      2.039100000 1
-     7.209300000      4.325580000      2.039100000 1
-     1.441860000      7.209300000      2.039100000 1
-     4.325580000      7.209300000      2.039100000 1
-     7.209300000      7.209300000      2.039100000 1
-     0.000000000      0.000000000      4.078200000 1 # 3. layer
-     2.883720000      0.000000000      4.078200000 1
-     5.767440000      0.000000000      4.078200000 1
-     0.000000000      2.883720000      4.078200000 1
-     2.883720000      2.883720000      4.078200000 1
-     5.767440000      2.883720000      4.078200000 1
-     0.000000000      5.767440000      4.078200000 1
-     2.883720000      5.767440000      4.078200000 1
-     5.767440000      5.767440000      4.078200000 1
-     1.441860000      1.441860000      6.117300000 1 # 4. layer
-     4.325580000      1.441860000      6.117300000 1
-     7.209300000      1.441860000      6.117300000 1
-     1.441860000      4.325580000      6.117300000 1
-     4.325580000      4.325580000      6.117300000 1
-     7.209300000      4.325580000      6.117300000 1
-     1.441860000      7.209300000      6.117300000 1
-     4.325580000      7.209300000      6.117300000 1
-     7.209300000      7.209300000      6.117300000 1
-     0.000000000      0.000000000      8.156400000 1 # 5. layer
-     2.883720000      0.000000000      8.156400000 1
-     5.767440000      0.000000000      8.156400000 1
-     0.000000000      2.883720000      8.156400000 1
-     2.883720000      2.883720000      8.156400000 1
-     5.767440000      2.883720000      8.156400000 1
-     0.000000000      5.767440000      8.156400000 1
-     2.883720000      5.767440000      8.156400000 1
-     5.767440000      5.767440000      8.156400000 1
-     1.441860000      1.441860000     10.195500000 1 # 6. layer
-     4.325580000      1.441860000     10.195500000 1
-     7.209300000      1.441860000     10.195500000 1
-     1.441860000      4.325580000     10.195500000 1
-     4.325580000      4.325580000     10.195500000 1
-     7.209300000      4.325580000     10.195500000 1
-     1.441860000      7.209300000     10.195500000 1
-     4.325580000      7.209300000     10.195500000 1
-     7.209300000      7.209300000     10.195500000 1
-     0.000000000      0.000000000     12.234600000 1 # 7. layer
-     1.441860000      1.441860000     14.273700000 1 # 8. layer
-     0.000000000      0.000000000     16.312800000 1 # 9. layer
-     1.441860000      1.441860000     18.351900000 1 # 10. layer
-     0.000000000      0.000000000     20.391000000 1 # 11. layer
-     2.883720000      0.000000000     20.391000000 1
-     5.767440000      0.000000000     20.391000000 1
-     0.000000000      2.883720000     20.391000000 1
-     2.883720000      2.883720000     20.391000000 1
-     5.767440000      2.883720000     20.391000000 1
-     0.000000000      5.767440000     20.391000000 1
-     2.883720000      5.767440000     20.391000000 1
-     5.767440000      5.767440000     20.391000000 1
-     1.441860000      1.441860000     22.430100000 1 # 12. layer
-     4.325580000      1.441860000     22.430100000 1
-     7.209300000      1.441860000     22.430100000 1
-     1.441860000      4.325580000     22.430100000 1
-     4.325580000      4.325580000     22.430100000 1
-     7.209300000      4.325580000     22.430100000 1
-     1.441860000      7.209300000     22.430100000 1
-     4.325580000      7.209300000     22.430100000 1
-     7.209300000      7.209300000     22.430100000 1
-     0.000000000      0.000000000     24.469200000 1 # 13. layer
-     2.883720000      0.000000000     24.469200000 1
-     5.767440000      0.000000000     24.469200000 1
-     0.000000000      2.883720000     24.469200000 1
-     2.883720000      2.883720000     24.469200000 1
-     5.767440000      2.883720000     24.469200000 1
-     0.000000000      5.767440000     24.469200000 1
-     2.883720000      5.767440000     24.469200000 1
-     5.767440000      5.767440000     24.469200000 1
-     1.441860000      1.441860000     26.508300000 1 # 14. layer
-     4.325580000      1.441860000     26.508300000 1
-     7.209300000      1.441860000     26.508300000 1
-     1.441860000      4.325580000     26.508300000 1
-     4.325580000      4.325580000     26.508300000 1
-     7.209300000      4.325580000     26.508300000 1
-     1.441860000      7.209300000     26.508300000 1
-     4.325580000      7.209300000     26.508300000 1
-     7.209300000      7.209300000     26.508300000 1
-     0.000000000      0.000000000     28.547400000 1 # 15. layer
-     2.883720000      0.000000000     28.547400000 1
-     5.767440000      0.000000000     28.547400000 1
-     0.000000000      2.883720000     28.547400000 1
-     2.883720000      2.883720000     28.547400000 1
-     5.767440000      2.883720000     28.547400000 1
-     0.000000000      5.767440000     28.547400000 1
-     2.883720000      5.767440000     28.547400000 1
-     5.767440000      5.767440000     28.547400000 1
-     1.441860000      1.441860000     30.586500000 1 # 16. layer
-     4.325580000      1.441860000     30.586500000 1
-     7.209300000      1.441860000     30.586500000 1
-     1.441860000      4.325580000     30.586500000 1
-     4.325580000      4.325580000     30.586500000 1
-     7.209300000      4.325580000     30.586500000 1
-     1.441860000      7.209300000     30.586500000 1
-     4.325580000      7.209300000     30.586500000 1
-     7.209300000      7.209300000     30.586500000 1
-%endblock AtomicCoordinatesAndAtomicSpecies
-==================================================
-==================================================
-# SCF variables
-DM.MixSCF1   T
-MaxSCFIterations      300           # Maximum number of SCF iter
-DM.MixingWeight       0.05          # New DM amount for next SCF cycle
-DM.Tolerance          1.d-4         # Tolerance in maximum difference
-DM.UseSaveDM          true          # to use continuation files
-DM.NumberPulay        5
-TS.MixH               yes
-==================================================
-==================================================
-# MD variables
-MD.FinalTimeStep 1
-MD.TypeOfRun CG
-MD.NumCGsteps     000
-MD.UseSaveXV      .true.
-==================================================
-==================================================
-# Output variables
-WriteMullikenPop                1
-WriteBands                      .false.
-SaveRho                         .false.
-SaveDeltaRho                    .false.
-SaveHS                          .false.
-SaveElectrostaticPotential      True
-SaveTotalPotential              no
-WriteCoorXmol                   .true.
-WriteMDXmol                     .true.
-WriteMDhistory                  .false.
-WriteEigenvalues                yes
-==================================================
-==================================================
-# Transmission
-TS.TBT.NPoints      101
-TS.TBT.Emin        -0.5 eV
-TS.TBT.Emax         0.5 eV
-TS.TBT.NEigen              9
-# Bias voltage
-TS.Voltage 0.0 eV
-# Transiesta: electrode definition:
-# LEFT ELECTRODE
-TS.HSFileLeft ./elec_au_100.TSHS
-TS.ReplicateA1Left    1
-TS.ReplicateA2Left    1
-TS.NumUsedAtomsLeft   36
-TS.BufferAtomsLeft    0
-# RIGHT ELECTRODE
-TS.HSFileRight ./elec_au_100.TSHS
-TS.ReplicateA1Right   1
-TS.ReplicateA2Right   1
-TS.NumUsedAtomsRight  36
-TS.BufferAtomsRight   0
-# SPECIES AND ATOMS
-# DYNAMICS
-TS.UseBulkInElectrodes  T
-TS.Voltage      0.000000000     Ry
-%block TS.ChemPots
-  Left
-  Right
-%endblock TS.ChemPots
-%block TS.ChemPot.Left
-  mu V/2
-  contour.eq
-    begin
-      c-Left
-      t-Left
-    end
-%endblock TS.ChemPot.Left
-%block TS.ChemPot.Right
-  mu -V/2
-  contour.eq
-    begin
-      c-Right
-      t-Right
-    end
-%endblock TS.ChemPot.Right
-TS.Elecs.Bulk true
-TS.Elecs.DM.Update none
-TS.Elecs.GF.ReUse false
-%block TS.Elecs
-  Left
-  Right
-%endblock TS.Elecs
-%block TS.Elec.Left
-  TSHS ./elec_au_100.TSHS
-  chem-pot Left
-  semi-inf-dir -a3
-  elec-pos begin 1
-  used-atoms 36
-%endblock TS.Elec.Left
-%block TS.Elec.Right
-  TSHS ./elec_au_100.TSHS
-  chem-pot Right
-  semi-inf-dir +a3
-  elec-pos end -1
-  used-atoms 36
-%endblock TS.Elec.Right
-TS.Contours.Eq.Pole.N 6
-%block TS.Contour.c-Left
-  part circle
-   from   -3.00000 Ry + V/2 to -10. kT + V/2
-    points 30
-     method g-legendre
-%endblock TS.Contour.c-Left
-%block TS.Contour.t-Left
-  part tail
-   from prev to inf
-    points 10
-     method g-fermi
-%endblock TS.Contour.t-Left
-%block TS.Contour.c-Right
-  part circle
-   from   -3.00000 Ry - V/2 to -10. kT - V/2
-    points 30
-     method g-legendre
-%endblock TS.Contour.c-Right
-%block TS.Contour.t-Right
-  part tail
-   from prev to inf
-    points 10
-     method g-fermi
-%endblock TS.Contour.t-Right
-TS.Contours.nEq.Eta    0.0000010000 Ry
-%block TS.Contours.Bias.Window
-  neq
-%endblock TS.Contours.Bias.Window
-%block TS.Contour.Bias.Window.neq
-  part line
-   from -|V|/2 to |V|/2
-    delta 0.01 eV
-     method simpson-mix
-%endblock TS.Contour.Bias.Window.neq
-%block TS.Contours.Bias.Tail
-  neq-tail
-%endblock TS.Contours.Bias.tail
-%block TS.Contour.Bias.Tail.neq-tail
-  part tail
-   from 0. kT to 12. kT
-    delta 0.01 eV
-     method simpson-mix
-%endblock TS.Contour.Bias.Tail.neq-tail
-************************** End of input data file *****************************
+reinit: Reading from au_100.fdf
 
 reinit: -----------------------------------------------------------------------
 reinit: System Name: Au 100 with gold chain
 reinit: -----------------------------------------------------------------------
 reinit: System Label: au_100
 reinit: -----------------------------------------------------------------------
-redata: Non-Collinear-spin run                   =   F
-redata: SpinPolarized (Up/Down) run              =   F
-redata: Number of spin components                =   1
 
 k-point displ. along   1 input, could be:     0.00    0.50
 k-point displ. along   2 input, could be:     0.00    0.50
@@ -329,6 +34,7 @@ tbt:            2   0   0      0.000
 tbt:            0   2   0      0.000
 tbt:            0   0   1      0.000
 
+
 tbt: **************************************************************
 tbt: Electronic temperature (reference)             =  299.9869 K
 tbt: No applied bias
@@ -338,45 +44,57 @@ tbt: Saving DOS from bulk electrodes                =    F
 tbt: Saving DOS from Green function                 =    F
 tbt: Saving DOS from spectral functions             =    F
 tbt: Saving bond currents (orb-orb)                 =    F
+tbt: Saving DM from Green function                  =    F
+tbt: Saving DM from spectral functions              =    F
+tbt: Saving COOP from Green function                =    F
+tbt: Saving COOP from spectral functions            =    F
+tbt: Saving COHP from Green function                =    F
+tbt: Saving COHP from spectral functions            =    F
 tbt: Calc. # transmission eigenvalues               =  0
 tbt: Calc. T between all electrodes                 =    F
 tbt: Calc. total T out of electrodes                =    F
-tbt: Single spin Hamiltonian
+tbt: Non-polarized Hamiltonian
 tbt: BTD creation algorithm                         =    speed
 tbt: BTD spectral function algorithm                =    propagation
 tbt: Divide and conquer diagonalization             =    F
 tbt: Assume LAPACK <i|S|j> = delta_ij               =    F
-tbt: Saving down-folded self-energies               =    F
-tbt: No delta-Hamiltonian
+tbt: Saving downfolded self-energies                =    F
+tbt: No delta Hamiltonian
+tbt: No delta self-energy
 tbt: Data files stored in current folder
 tbt: No compression of TBT.nc files
+tbt: Default NetCDF precision                       =    single
 tbt: Use parallel MPI-IO for NetCDF file            =    F
 tbt:           >> Electrodes << 
 tbt: >> Left
 tbt:   Electrode cell pivoting: E1, E2, E3          = A1, A2, A3
-tbt:   In-core GF
+tbt:   In-core self-energy calculation
 tbt:   Electrode TSHS file                          = ./elec_au_100.TSHS
 tbt:   # atoms used in electrode                    =   36
-tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 1 x 1 x 1
+tbt:   Electrode Bloch unity [E1 x E2 x E3]         = 1 x 1 x 1
 tbt:   Position in geometry                         = 1 -- 36
 tbt:   Semi-infinite direction for electrode        = negative wrt. E3
 tbt:   Chemical shift                               =    0.000000 eV
 tbt:   Electronic temperature                       =  299.986869 K
-tbt:   Bulk values in electrode                     =    T
+tbt:   Gamma-only electrode                         =    F
+tbt:   Bulk H, S in electrode region                =    T
 tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
+tbt:   Electrode self-energy accuracy               =  0.1000E-13  eV
 tbt:   Electrode inter-layer distance (semi-inf)    =    2.0391  Ang
 tbt: >> Right
 tbt:   Electrode cell pivoting: E1, E2, E3          = A1, A2, A3
-tbt:   In-core GF
+tbt:   In-core self-energy calculation
 tbt:   Electrode TSHS file                          = ./elec_au_100.TSHS
 tbt:   # atoms used in electrode                    =   36
-tbt:   Electrode Bloch expansion [E1 x E2 x E3]     = 1 x 1 x 1
+tbt:   Electrode Bloch unity [E1 x E2 x E3]         = 1 x 1 x 1
 tbt:   Position in geometry                         = 77 -- 112
 tbt:   Semi-infinite direction for electrode        = positive wrt. E3
 tbt:   Chemical shift                               =    0.000000 eV
 tbt:   Electronic temperature                       =  299.986869 K
-tbt:   Bulk values in electrode                     =    T
+tbt:   Gamma-only electrode                         =    F
+tbt:   Bulk H, S in electrode region                =    T
 tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
+tbt:   Electrode self-energy accuracy               =  0.1000E-13  eV
 tbt:   Electrode inter-layer distance (semi-inf)    =    2.0391  Ang
 ts:              >> TBtrans contour << 
 ts: Device Green function imaginary Eta             =  0.000     eV
@@ -401,7 +119,6 @@ tbt: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 tbt: <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 ************************ Begin: TBT CHECKS AND WARNINGS ************************
- ** Use TBT.Atoms.Device for faster execution
  ** Speed up the execution by utilizing parallel I/O
   > TBT.CDF.MPI true
 ************************ End: TBT CHECKS AND WARNINGS **************************
@@ -414,89 +131,114 @@ Electrode information:
 
   <sparsity:./elec_au_100.TSHS
     nrows_g=324 nrows=324 sparsity=4.3584 nnzs=457524, refcount: 3>
- Left principal cell is perfect!
   <sparsity:(TM [--,--, 0] of: ./elec_au_100.TSHS)
     nrows_g=324 nrows=324 sparsity=2.6214 nnzs=275184, refcount: 3>
   <sparsity:(TM [--,--,-1] of: ./elec_au_100.TSHS)
     nrows_g=324 nrows=324 sparsity=.8685 nnzs=91170, refcount: 3>
+ Left principal cell is perfect!
 
   <sparsity:./elec_au_100.TSHS
     nrows_g=324 nrows=324 sparsity=4.3584 nnzs=457524, refcount: 3>
- Right principal cell is perfect!
   <sparsity:(TM [--,--, 0] of: ./elec_au_100.TSHS)
     nrows_g=324 nrows=324 sparsity=2.6214 nnzs=275184, refcount: 3>
   <sparsity:(TM [--,--, 1] of: ./elec_au_100.TSHS)
     nrows_g=324 nrows=324 sparsity=.8685 nnzs=91170, refcount: 3>
+ Right principal cell is perfect!
 
 
-tbtrans: Analyzing electrode sparsity pattern to create optimal tri-diagonal blocks...
-tbtrans: Analyzing device sparsity pattern to create optimal tri-diagonal blocks...
-tbtrans: BTD pivoting scheme in device: atom+Left
-tbtrans: Done analyzing sparsity pattern...
+tbt: Analyzing electrode sparsity pattern and electrode pivot-tables
+tbt: BTD pivoting scheme for electrode (Left): atom+Left
 
-tbtrans: Reducing sparsity pattern...
+tbt: Analyzing device sparsity pattern and pivot-table
+tbt: BTD pivoting scheme in device: atom+Left
+tbt: Done analyzing electrode and device sparsity pattern and pivot-tables
 
-tbtrans: # of device region orbitals: 360
+tbt: Reducing matrix (H, S) sparsity patterns by: 182340
+
+tbt: # of device region orbitals: 360
 Region (40): [A]-device
   [ 37 -- 76 ]
 
-tbtrans: # of Left scattering orbitals: 180
-tbtrans: # of Left down-folding orbitals: 504
+tbt: # of Left electrode orbitals: 180
+tbt: # of Left down-folding orbitals: 504
 Region (36): [A]-Left folding region
   [ 1 -- 36 ]
 Region (20): [A]-Left folding in D
   [ 37 -- 56 ]
 
-tbtrans: # of Right scattering orbitals: 180
-tbtrans: # of Right down-folding orbitals: 504
+tbt: # of Right electrode orbitals: 180
+tbt: # of Right down-folding orbitals: 504
 Region (36): [A]-Right folding region
   [ 77 -- 112 ]
 Region (20): [A]-Right folding in D
   [ 57 -- 76 ]
 
-tbtrans: Creating electrode tri-diagonal matrix blocks
-tbtrans: Creating device tri-diagonal matrix blocks
-Region (2): [TRI] device region
-  [ 180, 180 ]
-tbtrans: Matrix elements in BTD: 129600
+tbt: Creating electrode tri-diagonal matrix blocks
+tbt: Creating device tri-diagonal matrix blocks
+Region (3): [TRI] device region
+  [ 157, 158, 45 ]
+tbt: Matrix elements in BTD: 115470
 
-tbtrans: Electrodes tri-diagonal matrices
+tbt: Electrodes tri-diagonal matrices
 Region (2): [TRI] Left
   [ 324, 180 ]
 Region (2): [TRI] Right
   [ 324, 180 ]
 
-tbtrans: Electrode memory:   14.384 MB
-tbtrans: Sparse Hamiltonian and overlap memory:   14.666 MB
-tbtrans: Sum of electrode and sparse memory:   29.050 MB
+tbt: Electrode memory:   17.179 MB
+tbt: Sparse H, S and auxiliary matrices memory:   27.451 MB
+tbt: Sum of electrode and sparse memory:   44.630 MB
 
-tbtrans: Initializing data file: au_100.TBT.nc
-tbtrans: LHS Green function size / memory: 1259712 /    19.22 MB
-tbtrans: RHS Green function size / memory: 209952 /     3.20 MB
-tbt: Initial ETA in             5295.772 s
-tbt: Calculated   5.000 %, ETA in             5695.972 s
-tbt: Calculated  10.000 %, ETA in             5435.820 s
-tbt: Calculated  15.000 %, ETA in             5128.855 s
-tbt: Calculated  20.000 %, ETA in             4826.944 s
-tbt: Calculated  25.000 %, ETA in             4521.000 s
-tbt: Calculated  30.000 %, ETA in             4219.395 s
-tbt: Calculated  35.000 %, ETA in             3924.604 s
-tbt: Calculated  40.000 %, ETA in             3647.412 s
-tbt: Calculated  45.000 %, ETA in             3360.754 s
-tbt: Calculated  50.000 %, ETA in             3053.116 s
-tbt: Calculated  55.000 %, ETA in             2739.161 s
-tbt: Calculated  60.000 %, ETA in             2428.997 s
-tbt: Calculated  65.000 %, ETA in             2120.026 s
-tbt: Calculated  70.000 %, ETA in             1813.505 s
-tbt: Calculated  75.000 %, ETA in             1508.507 s
-tbt: Calculated  80.000 %, ETA in             1201.358 s
-tbt: Calculated  85.000 %, ETA in              897.308 s
-tbt: Calculated  90.000 %, ETA in              597.521 s
-tbt: Calculated  95.000 %, ETA in              298.541 s
-tbt: Completed in             5967.064 s
+tbt: Initializing data file: au_100.TBT.nc
+tbt: Estimated file size of au_100.TBT.nc:  19.051 KB
+
+tbt: LHS Green function padding / memory: 1144242 /   19.222 MB
+tbt: RHS Green function padding / memory: 94482 /    3.204 MB
+tbt: Initial ETA in             1599.717 s
+tbt: Calculated   5.000 %, ETA in             1518.610 s
+tbt: Calculated  10.000 %, ETA in             1438.440 s
+tbt: Calculated  15.000 %, ETA in             1358.433 s
+tbt: Calculated  20.000 %, ETA in             1278.542 s
+tbt: Calculated  25.000 %, ETA in             1198.774 s
+tbt: Calculated  30.000 %, ETA in             1116.825 s
+tbt: Calculated  35.000 %, ETA in             1037.237 s
+tbt: Calculated  40.000 %, ETA in              957.631 s
+tbt: Calculated  45.000 %, ETA in              878.098 s
+tbt: Calculated  50.000 %, ETA in              798.493 s
+tbt: Calculated  55.000 %, ETA in              717.982 s
+tbt: Calculated  60.000 %, ETA in              640.863 s
+tbt: Calculated  65.000 %, ETA in              560.561 s
+tbt: Calculated  70.000 %, ETA in              480.343 s
+tbt: Calculated  75.000 %, ETA in              400.196 s
+tbt: Calculated  80.000 %, ETA in              319.013 s
+tbt: Calculated  85.000 %, ETA in              238.501 s
+tbt: Calculated  90.000 %, ETA in              158.967 s
+tbt: Calculated  95.000 %, ETA in               79.491 s
+tbt: Completed in             1589.976 s
 
 Currents (ensure entire Fermi function window):
 Left -> Right, V [V] / I [A]:  0.00000     V /  0.00000     A
 Left -> Right, V [V] / P [W]:  0.00000     V /  0.00000     W
 
->> End of run:   1-JUN-2016  20:30:21
+
+             Section          Calls    Walltime       %
+ global_section                   1    1593.355  100.00
+  tbtrans                         1    1593.355  100.00
+   init-region+sp                 1       0.195    0.01
+   pivot-elec                     1       0.017    0.00
+    pivot                         1       0.011    0.00
+   pivot-device                   1       0.011    0.00
+    pivot                         1       0.011    0.00
+   tri-init                       1       0.179    0.01
+    tri-init-elec                 1       0.025    0.00
+     TS-rgn2tri                   1       0.001    0.00
+    TS-rgn2tri                    1       0.001    0.00
+   TBT                            1    1590.709   99.83
+    read-GS                     200    1551.008   97.34
+    SE-dwn                      200      17.707    1.11
+     ts_expand                  400       0.145    0.01
+    Gf-prep                     200       8.099    0.51
+     V_TM_Pinv                  200       7.125    0.45
+    analysis                    200      13.024    0.82
+    cdf2ascii                     1       0.028    0.00
+>> End of run:   5-NOV-2018  12:15:53

@@ -95,7 +95,7 @@ subroutine read_options( na, ns, nspin )
   ! real*8 beta              : Inverse temperature to compute chem.pot.
   ! integer pmax             : Order of Chebi expansion for chem.pot.
   ! integer idyn             : Atomic dynamics option:
-  !                             0 = CG geometry optimization
+  !                             0 = Geometry optimization
   !                             1 = Standard MD run (Verlet)
   !                             2 = Nose thermostat MD
   !                             3 = Parrinello-Rahman MD
@@ -108,9 +108,9 @@ subroutine read_options( na, ns, nspin )
   !                            10 = Lua controlled dynamics
   ! integer istart           : Initial time step for MD
   ! integer ifinal           : Final time step for MD
-  ! integer nmove            : Number of CG steps in CG optimization
-  ! real*8 ftol              : Maximum force for CG structure optimization
-  ! real*8 strtol            : Maximum stress for CG structure optimization
+  ! integer nmove            : Number of steps in *any* MD/optimization
+  ! real*8 ftol              : Maximum force for structural optimization
+  ! real*8 strtol            : Maximum stress for structural optimization
   ! integer ianneal          : Annealing option for idyn = 5
   !                             1 = Temperature 
   !                             2 = Pressure
@@ -121,7 +121,7 @@ subroutine read_options( na, ns, nspin )
   !                             calculation
   ! integer ia1              : First atom to displace for force constants
   ! integer ia2              : Last atom to displace for force constants
-  ! real*8 dxmax             : Maximum atomic displacement in one CG move
+  ! real*8 dxmax             : Maximum atomic displacement in one atomic move
   ! real*8 tt                : Target temperature (Kelvin)
   ! real*8 tp                : Target Pressure (Ry/Bohr**3)
   ! real*8 mn                : Mass of Nose variable (Ry/fs**2)
@@ -151,13 +151,13 @@ subroutine read_options( na, ns, nspin )
   ! logical dumpcharge       : True: Dump information to plot charge contours
   !                            by the external DENCHAR application program.
   !     (This is now obsolete: info will appear in .RHO file)
-  ! logical varcel           : variable shape for CG optimization or dynamics
+  ! logical varcel           : variable shape for optimization or dynamics
   ! logical harrisfun        : swith that indicates if harris functional will
   !                            be used or not
   ! real*8  occtol           : Occupancy threshold for DM build
   ! integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
   ! logical require_energy_convergence  : Impose E. conv. criterion?
-  ! logical broyden_optim    : Broyden for forces instead of CG
+  ! logical broyden_optim    : Use Broyden method for optimization
   ! logical want_domain_decomposition:  Use domain decomposition for orbitals in O(N)
   ! logical want_spatial_decomposition:  Use spatial decomposition for orbitals in O(N)
 
@@ -318,7 +318,7 @@ subroutine read_options( na, ns, nspin )
   !     Minimum/Maximum number of SCF iterations
   min_nscf = fdf_get('MinSCFIterations',0)
   nscf     = fdf_get('MaxSCFIterations',1000)
-  SCFMustConverge = fdf_get('SCFMustConverge', .true.)
+  SCFMustConverge = fdf_get('SCF.MustConverge', .true.)
   if (ionode) then
      write(6,4) 'redata: Min. number of SCF Iter',min_nscf
      write(6,4) 'redata: Max. number of SCF Iter',nscf
@@ -725,6 +725,9 @@ subroutine read_options( na, ns, nspin )
         call add_citation("10.1016/j.cpc.2016.09.022")
         write(*,3) 'redata: Method of Calculation','Transiesta'
      endif
+     if ( nspin > 2 ) then
+       call die('transiesta does not work for non-collinear or spin-orbit')
+     end if
   else
      call die( 'redata: The method of solution must be either '//&
 #ifdef SIESTA__CHESS
@@ -1111,11 +1114,11 @@ subroutine read_options( na, ns, nspin )
      call die('Invalid Option selected - value of MD.TypeOfRun not recognised')
   endif
 
-  ! Maximum number of steps in CG/Broyden coordinate optimization
+  ! Maximum number of steps in MD/coordinate optimization
   nmove = fdf_get('MD.NumCGsteps',0)
   nmove = fdf_get('MD.Steps',nmove)
 
-  ! Maximum atomic displacement in one CG step
+  ! Maximum atomic displacement in one step
   dxmax = fdf_get('MD.MaxCGDispl',0.2_dp,'Bohr')
   dxmax = fdf_get('MD.MaxDispl',dxmax,'Bohr')
 
@@ -1144,7 +1147,7 @@ subroutine read_options( na, ns, nspin )
               write(6,1) 'redata: Use continuation files for CG', usesavecg
               write(6,6) 'redata: Max atomic displ per move', dxmax/Ang, ' Ang'
            endif
-           write(6,4) 'redata: Maximum number of CG moves', nmove
+           write(6,4) 'redata: Maximum number of optimization moves', nmove
            write(6,6) 'redata: Force tolerance', ftol/eV*Ang, ' eV/Ang'
            if (varcel) then
               write(6,6) 'redata: Stress tolerance', &

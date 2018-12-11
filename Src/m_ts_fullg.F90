@@ -582,7 +582,12 @@ close(io)
     if ( IsVolt ) then
        call de_alloc(GFGGF_work, routine='transiesta')
     end if
-   
+
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
+
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
@@ -660,8 +665,8 @@ close(io)
                 ju = l_col(ind) - orb_offset(l_col(ind)) &
                      - offset(N_Elec,Elecs,l_col(ind))
                 
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact  )
-                E(ind,i2) = E(ind,i2) - dimag( GF(iu,ju) * EDMfact )
+                D(ind,i1) = D(ind,i1) - aimag( GF(iu,ju) * DMfact  )
+                E(ind,i2) = E(ind,i2) - aimag( GF(iu,ju) * EDMfact )
                 
              end do
 
@@ -702,7 +707,7 @@ close(io)
                 ju = l_col(ind) - orb_offset(l_col(ind)) &
                      - offset(N_Elec,Elecs,l_col(ind))
                 
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact )
+                D(ind,i1) = D(ind,i1) - aimag( GF(iu,ju) * DMfact )
                 
              end do
              end if
@@ -795,7 +800,7 @@ integer :: i
 #ifdef TS_DEV    
     if (.not. hasSaved )then
        hasSaved = .true.
-       GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+       GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
        do io = 1, no_u
           if ( l_ncol(io) == 0 ) cycle
           ioff = orb_offset(io) - 1
@@ -808,12 +813,12 @@ integer :: i
        if (ionode) then
           i = 50
           open(i,form='unformatted')
-          write(i) dcmplx(100._dp,100._dp)
+          write(i) cmplx(100._dp,100._dp,dp)
           write(i) no_u
           write(i) no_u
           write(i) GFinv(1:no_u**2) / eV
           write(i) no_u
-          GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+          GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
           do io = 1, no_u
              if ( l_ncol(io) == 0 ) cycle
              ioff = orb_offset(io) - 1
@@ -833,7 +838,7 @@ integer :: i
 
     ! Initialize
 !$OMP workshare
-    GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+    GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region

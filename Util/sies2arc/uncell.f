@@ -1,14 +1,14 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
       subroutine uncell(rv,a,b,c,alpha,beta,gamma)
-      implicit real*8(a-h,o-z)
+      integer, parameter :: dp = kind(1.d0)
       include 'constants'
-      dimension rv(3,3),temp(6)
+      real(dp) rv(3,3),temp(6)
 C
 C  Convert cell vectors to parameters
 C

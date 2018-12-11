@@ -178,13 +178,13 @@ Args:
       strcpy(serv_addr.sun_path, "/tmp/ipi_");
       strcpy(serv_addr.sun_path+9, host);
       // binds the socket to the descriptor
-	  bind(srvsockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-	  if (srvsockfd < 0) 
+          bind(srvsockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+          if (srvsockfd < 0) 
       { perror("Error creating UNIX socket: path unavailable, or already existing"); exit(-1); }
       
       // listens on the server socket
-	  listen(srvsockfd,5);
-	  
+          listen(srvsockfd,5);
+          
       // accepts an incoming connection
       struct sockaddr_un their_addr; socklen_t their_size=sizeof(their_addr);
       sockfd = accept(srvsockfd, (struct sockaddr *) &their_addr, &their_size);

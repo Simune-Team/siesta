@@ -61,9 +61,9 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    complex(dp), parameter :: z0 = dcmplx(0._dp, 0._dp)
-    complex(dp), parameter :: z1 = dcmplx(1._dp, 0._dp)
-    complex(dp), parameter :: zi = dcmplx(0._dp, 1._dp)
+    complex(dp), parameter :: z0 = cmplx(0._dp, 0._dp,dp)
+    complex(dp), parameter :: z1 = cmplx(1._dp, 0._dp,dp)
+    complex(dp), parameter :: zi = cmplx(0._dp, 1._dp,dp)
 
     integer :: i, NB, ind, iB
 
@@ -82,7 +82,7 @@ contains
        ! Collect the top row of complex conjugated Gf
        ind = no_u_TS * no * iB + 1
        do i = 1 , no
-          GGG(ind:ind-1+no) = dconjg(Gf(iB*no+1:(iB+1)*no,i))
+          GGG(ind:ind-1+no) = conjg(Gf(iB*no+1:(iB+1)*no,i))
           ind = ind + no
        end do
        ind = no_u_TS * no * iB + 1
@@ -121,7 +121,7 @@ contains
        ind = no_u_TS * no * NB + 1
        do i = 1 , no
           ! So this is the complex conjugated of the iB'th block
-          GGG(ind:ind-1+iB) = dconjg(Gf(NB*no+1:NB*no+iB,i))
+          GGG(ind:ind-1+iB) = conjg(Gf(NB*no+1:NB*no+iB,i))
           ind = ind + iB
        end do
        ind = no_u_TS * no * NB + 1
@@ -173,7 +173,7 @@ subroutine my_symmetrize(N,M)
     do j = 1 , N
        do i = 1 , j
 !          if(ionode)print *,M(j,i),M(i,j)
-          M(j,i) = dimag(M(i,j))
+          M(j,i) = aimag(M(i,j))
           M(i,j) = M(j,i)
 
        end do
@@ -287,14 +287,14 @@ subroutine my_symmetrize(N,M)
          call die('GFB: Wrong size of Green function')
 
     ! Create the RHS for inversion...
-    GF(:) = dcmplx(0._dp,0._dp)
+    GF(:) = cmplx(0._dp,0._dp,dp)
 
     o = 0
     do iEl = 1 , N_Elec
        i = Elecs(iEl)%idx_o
        off_row = i - orb_offset(i) - 1
        do i = 1 , TotUsedOrbs(Elecs(iEl))
-          GF(o*no_u_TS+off_row+i) = dcmplx(1._dp,0._dp)
+          GF(o*no_u_TS+off_row+i) = cmplx(1._dp,0._dp,dp)
           o = o + 1
        end do
     end do
@@ -371,7 +371,7 @@ subroutine my_symmetrize(N,M)
          call die('GFP: Wrong size of Green function')
 
     ! initialize
-    GF(:) = dcmplx(0._dp,0._dp)
+    GF(:) = cmplx(0._dp,0._dp,dp)
 
     i = 0
     do j = 0 , no - 1
@@ -380,7 +380,7 @@ subroutine my_symmetrize(N,M)
           i = i + 1
           if ( .not. any(OrbInElec(Elecs,i) .and. Elecs(:)%DM_update == 0) ) then
              
-             GF(j*no_u_TS+i-orb_offset(i)) = dcmplx(1._dp,0._dp)
+             GF(j*no_u_TS+i-orb_offset(i)) = cmplx(1._dp,0._dp,dp)
              found = .true.
           end if
        end do

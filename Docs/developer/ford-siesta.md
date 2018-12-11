@@ -1,6 +1,5 @@
-project: SIESTA
-version: {!../../version.info!} 
-author: SIESTA Group
+preprocess: true
+preprocessor: gfortran -E -P
 src_dir: ../../Src
          ../../Util/Bands
          ../../Util/COOP
@@ -37,8 +36,6 @@ summary: ![SIESTA](logo) <br/>
          A first-principles materials simulation code 
          using Density Functional Theory.
          {: style="text-align: center" }
-preprocess: true
-preprocessor: gfortran -E -P
 docmark_alt: *
 predocmark: >
 fpp_extensions: F90
@@ -47,6 +44,12 @@ license: gfdl
 extra_filetypes: sh #
                  inc ! 
 md_extensions: markdown.extensions.toc
+--
+-- heading matter: do not move above, as FORD seems to get confused...
+--
+project: SIESTA
+version: {!../../version.info!} 
+author: SIESTA Group
 
 @note
 This is an early stage work-in-progress build of developers documentation for SIESTA.

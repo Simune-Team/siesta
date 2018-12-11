@@ -1,41 +1,47 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
 
-C Written by Daniel Sanchez-Portal
+C     Written by Daniel Sanchez-Portal
 
-       INTEGER*4 NE, NEMX, NSPIN, LASTI,NEXT
+      program optical_input
+      implicit none
+      integer, parameter :: dp = selected_real_kind(10,100)
+      
+       INTEGER NE, NEMX, NSPIN, LASTI,NEXT
        PARAMETER (NEMX=10000)
-       REAL*8 E(2),E2(NEMX,2),ESTEP
-       REAL*8 OMEGA(NEMX), OMG, eV
-       REAL*8 EMAX, EMIN, FSUM(2), THRESHOLD, THRES
-       REAL*8 C,P,SUM,A,B, EPSMIN, SUM2 , EMAXP, DRUDE(2)
-       PARAMETER (THRESHOLD=0.80)
+       REAL(DP) E(2),E2(NEMX,2),ESTEP
+       REAL(DP) OMEGA(NEMX), OMG, eV
+       REAL(DP) EMAX, EMIN, FSUM(2), THRESHOLD, THRES
+       REAL(DP) C,P,SUM,A,B, EPSMIN, SUM2 , EMAXP, DRUDE(2)
+       PARAMETER (THRESHOLD=0.80_dp)
        PARAMETER (eV= 13.6058d0)     
-       PARAMETER (EPSMIN=0.01)
+       PARAMETER (EPSMIN=0.01_dp)
        PARAMETER (EMAXP=200.0d0)
-       CHARACTER*3 CHAR
+       CHARACTER(len=3) STR
        LOGICAL EXTEND, NONZERO
+
+       integer :: i, isp
 C
 C
 C
        READ(5,*) 
-       READ(5,'(a,2f10.4)') CHAR, EMIN,EMAX
-       write(6,*)  CHAR, EMIN,EMAX
+       READ(5,'(a,2f10.4)') STR, EMIN,EMAX
+       write(6,*)  STR, EMIN,EMAX
        READ(5,*)
-       READ(5,'(a,i3)') CHAR, NSPIN
-       write(6,*)  CHAR, NSPIN
+       READ(5,'(a,i3)') STR, NSPIN
+       write(6,*)  STR, NSPIN
        DO ISP=1,NSPIN
           READ(5,*) 
-          READ(5,'(a,f10.4)') CHAR, FSUM(ISP)
-          write(6,*)  CHAR,FSUM(ISP)
+          READ(5,'(a,f10.4)') STR, FSUM(ISP)
+          write(6,*)  STR,FSUM(ISP)
           READ(5,*)
-          READ(5,'(a,f10.4)') CHAR, DRUDE(ISP)
-          write(6,*)  CHAR, DRUDE(ISP)
+          READ(5,'(a,f10.4)') STR, DRUDE(ISP)
+          write(6,*)  STR, DRUDE(ISP)
        ENDDO 
        DO 10 I=1,NEMX+1
          READ(5,*,END=15) OMG,(E(ISP),ISP=1,NSPIN)
@@ -99,7 +105,7 @@ C
           C=E2(LASTI,ISP)*(EMAX/eV)**P
           
           B=SUM*0.01d0/FSUM(ISP)
-          EMAX=DLOG(C/((P-2)*B) )/(P-2)
+          EMAX=LOG(C/((P-2)*B) )/(P-2)
           EMAX=MIN(EMAX*eV,EMAXP)
         ENDIF
 

@@ -329,8 +329,8 @@ contains
 ! Setup H,S for this k-point:
 !
     do i = 1,no_tot*no_tot
-       Hk(i) = dcmplx(0.d0,0.d0)
-       Sk(i) = dcmplx(0.d0,0.d0)
+       Hk(i) = cmplx(0.d0,0.d0,dp)
+       Sk(i) = cmplx(0.d0,0.d0,dp)
     end do
 
     xo(:) = 0.0_dp
@@ -386,7 +386,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,kxij))
+             cphase = exp(cmplx(0d0,kxij,dp))
              i = iuo+(juo-1)*no_tot
              Hk(i) = Hk(i)+H(ind)*cphase
              Sk(i) = Sk(i)+S(ind)*cphase
@@ -597,8 +597,8 @@ contains
 !
     do juo = 1,no_tot
        do iuo = 1,no_tot
-          Hk(iuo,juo) = dcmplx(0.d0,0.d0)
-          Sk(iuo,juo) = dcmplx(0.d0,0.d0)
+          Hk(iuo,juo) = cmplx(0.d0,0.d0,dp)
+          Sk(iuo,juo) = cmplx(0.d0,0.d0,dp)
        end do
     end do
 
@@ -655,7 +655,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,kxij))
+             cphase = exp(cmplx(0d0,kxij,dp))
              Hk(iuo,juo) = Hk(iuo,juo)+H(ind)*cphase
              Sk(iuo,juo) = Sk(iuo,juo)+S(ind)*cphase
           end do
@@ -790,8 +790,8 @@ contains
 ! Setup H,S for this transfer k-point:
 !
     do i = 1,no_tot*no_tot
-       HkT(i) = dcmplx(0.d0,0.d0)
-       SkT(i) = dcmplx(0.d0,0.d0)
+       HkT(i) = cmplx(0.d0,0.d0,dp)
+       SkT(i) = cmplx(0.d0,0.d0,dp)
     end do
 
     xo(:) = 0.0_dp
@@ -849,7 +849,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,kxij))
+             cphase = exp(cmplx(0d0,kxij,dp))
              i = iuo+(juo-1)*no_tot
              HkT(i) = HkT(i)+H(ind)*cphase
              SkT(i) = SkT(i)+S(ind)*cphase
@@ -975,8 +975,8 @@ contains
     ! Setup H,S for this k-point:
     do juo = 1,no_tot
        do iuo = 1,no_tot
-          HkT(iuo,juo) = dcmplx(0.d0,0.d0)
-          SkT(iuo,juo) = dcmplx(0.d0,0.d0)
+          HkT(iuo,juo) = cmplx(0.d0,0.d0,dp)
+          SkT(iuo,juo) = cmplx(0.d0,0.d0,dp)
        end do
     end do
 
@@ -1035,7 +1035,7 @@ contains
                   k(1) * (xij(1,ind) - xo(1)) + &
                   k(2) * (xij(2,ind) - xo(2)) + &
                   k(3) * (xij(3,ind) - xo(3))
-             cphase = exp(dcmplx(0d0,kxij))
+             cphase = exp(cmplx(0d0,kxij,dp))
              HkT(iuo,juo) = HkT(iuo,juo)+H(ind)*cphase
              SkT(iuo,juo) = SkT(iuo,juo)+S(ind)*cphase
           end do
@@ -1153,10 +1153,10 @@ contains
 
     do j = no_tot - no_R + 1 , no_tot
        do i = 1 , no_L
-          Hk(i,j) = dcmplx(0.d0,0.d0)
-          Sk(i,j) = dcmplx(0.d0,0.d0)
-          Hk(j,i) = dcmplx(0.d0,0.d0)
-          Sk(j,i) = dcmplx(0.d0,0.d0)
+          Hk(i,j) = cmplx(0.d0,0.d0,dp)
+          Sk(i,j) = cmplx(0.d0,0.d0,dp)
+          Hk(j,i) = cmplx(0.d0,0.d0,dp)
+          Sk(j,i) = cmplx(0.d0,0.d0,dp)
        end do
     end do
 
@@ -1191,18 +1191,18 @@ contains
     do iuo = 1,no_tot
        do juo = 1,iuo-1
           
-          Sk(juo,iuo) = 0.5d0*( Sk(juo,iuo) + dconjg(Sk(iuo,juo)) )
-          Sk(iuo,juo) =  dconjg(Sk(juo,iuo))
+          Sk(juo,iuo) = 0.5d0*( Sk(juo,iuo) + conjg(Sk(iuo,juo)) )
+          Sk(iuo,juo) =  conjg(Sk(juo,iuo))
           
-          Hk(juo,iuo) = 0.5d0*( Hk(juo,iuo) + dconjg(Hk(iuo,juo)) ) &
+          Hk(juo,iuo) = 0.5d0*( Hk(juo,iuo) + conjg(Hk(iuo,juo)) ) &
                - Ef*Sk(juo,iuo)
-          Hk(iuo,juo) =  dconjg(Hk(juo,iuo))
+          Hk(iuo,juo) =  conjg(Hk(juo,iuo))
           
        end do
        
-       Sk(iuo,iuo)=Sk(iuo,iuo) - dcmplx(0d0,dimag(Sk(iuo,iuo)) )
+       Sk(iuo,iuo)=Sk(iuo,iuo) - cmplx(0d0,aimag(Sk(iuo,iuo)), dp)
        
-       Hk(iuo,iuo)=Hk(iuo,iuo) - dcmplx(0d0,dimag(Hk(iuo,iuo)) ) &
+       Hk(iuo,iuo)=Hk(iuo,iuo) - cmplx(0d0,aimag(Hk(iuo,iuo)), dp) &
             - Ef*Sk(iuo,iuo) 
     end do
 

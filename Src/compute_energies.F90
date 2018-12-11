@@ -171,26 +171,26 @@ CONTAINS
       if ( spin%SO ) then
 
         Ebs_SO = 0.0_dp  
-        Ebs_Daux = dcmplx(0.0_dp, 0.0_dp)
-        Ebs_Haux = dcmplx(0.0_dp, 0.0_dp)
+        Ebs_Daux = cmplx(0.0_dp, 0.0_dp,dp)
+        Ebs_Haux = cmplx(0.0_dp, 0.0_dp,dp)
 
         do io = 1, maxnh
 
-          Ebs_Haux(1,1) = dcmplx(H(io,1),H(io,5))  
-          Ebs_Haux(2,2) = dcmplx(H(io,2),H(io,6))  
-          Ebs_Haux(1,2) = dcmplx(H(io,3),-H(io,4)) 
-          Ebs_Haux(2,1) = dcmplx(H(io,7),H(io,8)) 
+          Ebs_Haux(1,1) = cmplx(H(io,1),H(io,5),dp)  
+          Ebs_Haux(2,2) = cmplx(H(io,2),H(io,6),dp)  
+          Ebs_Haux(1,2) = cmplx(H(io,3),-H(io,4),dp) 
+          Ebs_Haux(2,1) = cmplx(H(io,7),H(io,8),dp) 
 
-          Ebs_Daux(1,1) = dcmplx(Dscf(io,1),Dscf(io,5)) 
-          Ebs_Daux(2,2) = dcmplx(Dscf(io,2),Dscf(io,6)) 
-          Ebs_Daux(1,2) = dcmplx(Dscf(io,3),-Dscf(io,4))
-          Ebs_Daux(2,1) = dcmplx(Dscf(io,7),Dscf(io,8)) 
+          Ebs_Daux(1,1) = cmplx(Dscf(io,1),Dscf(io,5),dp) 
+          Ebs_Daux(2,2) = cmplx(Dscf(io,2),Dscf(io,6),dp) 
+          Ebs_Daux(1,2) = cmplx(Dscf(io,3),-Dscf(io,4),dp)
+          Ebs_Daux(2,1) = cmplx(Dscf(io,7),Dscf(io,8),dp) 
 
 
-          Ebs_SO(1) = Ebs_SO(1) + real( Ebs_Haux(1,1)*dconjg(Ebs_Daux(1,1)) )
-          Ebs_SO(2) = Ebs_SO(2) + real( Ebs_Haux(2,2)*dconjg(Ebs_Daux(2,2)) )
-          Ebs_SO(3) = Ebs_SO(3) + real( Ebs_Haux(1,2)*dconjg(Ebs_Daux(1,2)) )
-          Ebs_SO(4) = Ebs_SO(4) + real( Ebs_Haux(2,1)*dconjg(Ebs_Daux(2,1)) )
+          Ebs_SO(1) = Ebs_SO(1) + real( Ebs_Haux(1,1)*conjg(Ebs_Daux(1,1)),dp )
+          Ebs_SO(2) = Ebs_SO(2) + real( Ebs_Haux(2,2)*conjg(Ebs_Daux(2,2)),dp )
+          Ebs_SO(3) = Ebs_SO(3) + real( Ebs_Haux(1,2)*conjg(Ebs_Daux(1,2)),dp )
+          Ebs_SO(4) = Ebs_SO(4) + real( Ebs_Haux(2,1)*conjg(Ebs_Daux(2,1)),dp )
 
         enddo
 
@@ -231,39 +231,39 @@ CONTAINS
       if ( spin%SO ) then
 
         DEharr_SO = 0.0_dp 
-        DEharr_Daux     = dcmplx(0.0_dp, 0.0_dp)
-        DEharr_Daux_old = dcmplx(0.0_dp, 0.0_dp)
-        DEharr_Haux     = dcmplx(0.0_dp, 0.0_dp)
+        DEharr_Daux     = cmplx(0.0_dp, 0.0_dp,dp)
+        DEharr_Daux_old = cmplx(0.0_dp, 0.0_dp,dp)
+        DEharr_Haux     = cmplx(0.0_dp, 0.0_dp,dp)
 
         do io = 1, maxnh
 
-          DEharr_Haux(1,1) = dcmplx( H(io,1),H(io,5) )
-          DEharr_Haux(2,2) = dcmplx( H(io,2),H(io,6) )
-          DEharr_Haux(1,2) = dcmplx( H(io,3),-H(io,4) )
-          DEharr_Haux(2,1) = dcmplx( H(io,7),H(io,8) )
+          DEharr_Haux(1,1) = cmplx( H(io,1),H(io,5),dp )
+          DEharr_Haux(2,2) = cmplx( H(io,2),H(io,6),dp )
+          DEharr_Haux(1,2) = cmplx( H(io,3),-H(io,4),dp )
+          DEharr_Haux(2,1) = cmplx( H(io,7),H(io,8),dp )
 
-          DEharr_Daux(1,1) = dcmplx( Dscf(io,1),Dscf(io,5) )
-          DEharr_Daux(2,2) = dcmplx( Dscf(io,2),Dscf(io,6) )
-          DEharr_Daux(1,2) = dcmplx( Dscf(io,3),-Dscf(io,4) )
-          DEharr_Daux(2,1) = dcmplx( Dscf(io,7),Dscf(io,8) )
+          DEharr_Daux(1,1) = cmplx( Dscf(io,1),Dscf(io,5),dp )
+          DEharr_Daux(2,2) = cmplx( Dscf(io,2),Dscf(io,6),dp )
+          DEharr_Daux(1,2) = cmplx( Dscf(io,3),-Dscf(io,4),dp )
+          DEharr_Daux(2,1) = cmplx( Dscf(io,7),Dscf(io,8),dp )
 
-          DEharr_Daux_old(1,1) = dcmplx( Dold(io,1),Dold(io,5) )
-          DEharr_Daux_old(2,2) = dcmplx( Dold(io,2),Dold(io,6) ) 
-          DEharr_Daux_old(1,2) = dcmplx( Dold(io,3),-Dold(io,4) ) 
-          DEharr_Daux_old(2,1) = dcmplx( Dold(io,7),Dold(io,8) )
+          DEharr_Daux_old(1,1) = cmplx( Dold(io,1),Dold(io,5),dp )
+          DEharr_Daux_old(2,2) = cmplx( Dold(io,2),Dold(io,6),dp ) 
+          DEharr_Daux_old(1,2) = cmplx( Dold(io,3),-Dold(io,4),dp ) 
+          DEharr_Daux_old(2,1) = cmplx( Dold(io,7),Dold(io,8),dp )
 
 
           DEharr_SO(1) = DEharr_SO(1) &
-             + real( DEharr_Haux(1,1)*dconjg(DEharr_Daux(1,1)-DEharr_Daux_old(1,1)) ) 
+             + real( DEharr_Haux(1,1)*conjg(DEharr_Daux(1,1)-DEharr_Daux_old(1,1)),dp) 
 
           DEharr_SO(2) = DEharr_SO(2) &
-             + real( DEharr_Haux(2,2)*dconjg(DEharr_Daux(2,2)-DEharr_Daux_old(2,2)) )
+             + real( DEharr_Haux(2,2)*conjg(DEharr_Daux(2,2)-DEharr_Daux_old(2,2)),dp)
 
           DEharr_SO(3) = DEharr_SO(3) &
-             + real( DEharr_Haux(1,2)*dconjg(DEharr_Daux(1,2)-DEharr_Daux_old(1,2)) )
+             + real( DEharr_Haux(1,2)*conjg(DEharr_Daux(1,2)-DEharr_Daux_old(1,2)),dp)
 
           DEharr_SO(4) = DEharr_SO(4) &
-             + real( DEharr_Haux(2,1)*dconjg(DEharr_Daux(2,1)-DEharr_Daux_old(2,1)) )
+             + real( DEharr_Haux(2,1)*conjg(DEharr_Daux(2,1)-DEharr_Daux_old(2,1)),dp)
 
          enddo
 

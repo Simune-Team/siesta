@@ -14,9 +14,6 @@ PEXSI.mu-max-iter     10
 DM.NormalizationTolerance 1.0d-1  # (true_no_electrons/no_electrons) - 1.0 
 
 PEXSI.ordering 1   # Note this ... apparently needed for small npPerPole
-#------
-MaxSCFIterations      10           # Maximum number of SCF iter
-#--------------
 
 Electronic.temperature 300.0 K
 

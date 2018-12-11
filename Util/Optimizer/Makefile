@@ -28,9 +28,9 @@ FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 #
 SIMPLEX_OBJS=io.o parse.o minimizer.o vars_module.o simplex.o \
-     sys.o precision.o amoeba.o
+     sys.o precision.o amoeba.o system.o
 SWARM_OBJS=io.o parse.o minimizer.o vars_module.o swarm.o \
-     sys.o precision.o 
+     sys.o precision.o system.o
 #
 dep: 
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90
@@ -47,8 +47,9 @@ clean:
 
 # DO NOT DELETE THIS LINE - used by make depend
 amoeba.o: precision.o vars_module.o
-minimizer.o: vars_module.o
+minimizer.o: system.o vars_module.o
 simplex.o: amoeba.o minimizer.o precision.o vars_module.o
 swarm.o: minimizer.o precision.o vars_module.o
 vars_module.o: parse.o precision.o sys.o
 m_amoeba.o: amoeba.o
+system_m.o: system.o

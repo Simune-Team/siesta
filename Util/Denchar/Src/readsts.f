@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -134,7 +134,7 @@ C                          (ISCALE = 1 => Bohrs, ISCALE = 2 => Ang)
       EMAX = FDF_PHYSICAL('Denchar.STSEmax',1.0D0,'eV')
       ETA  = FDF_PHYSICAL('Denchar.STSEta',0.1D0,'eV')
 
-      DELTAE = (EMAX-EMIN)/DFLOAT(NE-1)
+      DELTAE = (EMAX-EMIN)/real((NE-1),kind=dp)
 
 C Scale points coordinates
 C   Iscale = 1 => Do nothing

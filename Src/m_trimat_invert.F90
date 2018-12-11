@@ -59,9 +59,9 @@ module m_trimat_invert
   private :: dp
 
   ! Used for BLAS calls (local variables)
-  complex(dp), private, parameter :: z0  = dcmplx( 0._dp, 0._dp)
-  complex(dp), private, parameter :: z1  = dcmplx( 1._dp, 0._dp)
-  complex(dp), private, parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+  complex(dp), private, parameter :: z0  = cmplx( 0._dp, 0._dp, dp)
+  complex(dp), private, parameter :: z1  = cmplx( 1._dp, 0._dp, dp)
+  complex(dp), private, parameter :: zm1 = cmplx(-1._dp, 0._dp, dp)
 
   public :: invert_TriMat
   public :: init_TriMat_inversion

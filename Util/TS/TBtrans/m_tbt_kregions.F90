@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -515,7 +515,7 @@ contains
        ! If it is different from 1 we do not have an equilibrium contour
        if ( c%idx(1) /= 1 ) then
           ! In this case the energy is the eta value of the electrode
-          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
+          c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta,kind=dp)
        end if
 
        ! Get k-point

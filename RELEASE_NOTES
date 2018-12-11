@@ -42,7 +42,7 @@ A                             A
 Release notes for siesta 4.1-b4 beta version
 
 --- Default changes:
-    MeshCutff has been increased to 300 Ry (from 100)
+    MeshCutoff has been increased to 300 Ry (from 100)
     MaxSCFIterations has been increased to 1000 (from 50)
     SCFMustConverge is now default true (from false)
 
@@ -64,6 +64,8 @@ Release notes for siesta 4.1-b4 beta version
     - Less memory usage
 
 --- Fixed bug on reading *.ion* files (lp:1751723)
+
+--- Updated internal integration table sizes (slightly increased precision)
 
 --- PDOS files now also contain the fermi-level such that tools may easily
     align the energy to 0.
