@@ -553,9 +553,9 @@ program unfold
     if (myNode==0) then
       call system('grep ''Fermi = '' *out -h > fermi')
       open(8181,file='fermi',action='read')
-      read(8181,'(a)'),dumm
+      read(8181,'(a)') dumm
       ic = index(dumm,'=')
-      read(dumm(ic+1:),*),efermi
+      read(dumm(ic+1:),*) efermi
       print*,'unfold: Fermi = ',efermi
       call system('rm fermi')
     endif
