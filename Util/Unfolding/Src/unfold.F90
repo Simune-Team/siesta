@@ -8,9 +8,9 @@
 
 program unfold
 
-! Reads the .fdf, .ion, .psf and .HSX files of a SIESTA calculation and generates
-! unfolded and refolded bands. See Util/Unfolding/README for details.
-! Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Nov.2018
+! Reads the .fdf, .ion, .out, .psf and .HSX files of a SIESTA calculation and 
+! generates unfolded and refolded bands. See Util/Unfolding/README for details.
+! Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Dic.2018
 ! S.G.Mayo and J.M.Soler, Oct.2018
 
   use alloc,        only: alloc_report, de_alloc, re_alloc
@@ -24,7 +24,6 @@ program unfold
                           fdf_bvalues, fdf_convfac, fdf_get, fdf_init, &
                           fdf_parallel, parsed_line
   use hsx_m,        only: hsx_t, read_hsx_file
-!  use m_diag,       only: diag_init
   use m_get_kpoints_scale, &
                     only: get_kpoints_scale
   use m_io,         only: io_assign, io_close
@@ -361,7 +360,7 @@ program unfold
         call re_alloc( iline,  1,nq, myName//'iline' )
         q(:,nq) = qline
         iline(nq) = 1
-        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)  ! label for plot
+        if(nn .gt. 0) label(nq) = fdf_bnames(pline,1)  ! q label for plot
       else
         call re_alloc( q, 1,3, 1,nq+nqline, myName//'q' )
         call re_alloc( iline,  1,nq+nqline, myName//'iline' )
@@ -551,7 +550,6 @@ program unfold
     ! from SystemLabel.out:
  
     if (myNode==0) then
-      print*,'k'
       call system('grep ''Fermi = '' *out -h > fermi')
       open(8181,file='fermi',action='read')
       read(8181,'(a, a, f)'),dumm1,dumm2,efermi
@@ -584,7 +582,6 @@ program unfold
           write(iu,'(3(f12.8),i5,a12)') q(:,iq), iline(iq), string 
           do j = 0,ne
             write(iu,'(e15.6)') udos(iq,j,ispin)
-!            write(iu,'(3i4,e15.6)') iq,j,ispin,udos(iq,j,ispin)
           enddo
         enddo ! iq
         call io_close(iu)
@@ -612,7 +609,6 @@ program unfold
             write(iu,'(3(f14.8),i5,a12)') q(:,iq), iline(iq), string
             do j = 0,ne
               write(iu,'(e15.6)') rdos(iq,j,ispin)
-!              write(iu,'(3i4,e15.6)') iq,j,ispin,rdos(iq,j,ispin)
             enddo
           enddo ! iq
           call io_close(iu)
