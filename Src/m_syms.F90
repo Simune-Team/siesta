@@ -82,7 +82,7 @@ subroutine syms_equivpos(syms_this)
   type(SpglibDataset_ext), intent(in) :: syms_this
 
 ! local vars
-  integer :: ii, iatom, jatom, isym
+  integer :: iatom, jatom, isym
 
 ! atom found by application of operation isym on atom ia
   logical :: foundsymatom
@@ -103,7 +103,9 @@ subroutine syms_equivpos(syms_this)
       do jatom = 1, syms_this%num_atom
         if (syms_this%types(jatom) /= syms_this%types(iatom)) cycle
 ! the tolerance here should correspond to symprec in syms.f90
-        if (sum(abs(  syms_wrapvec_zero_one(xredb(:)-syms_this%xred(:,jatom))  )) > syms_prec) cycle
+        if (sum(abs(  syms_wrapvec_zero_one(xredb(:)-syms_this%xred(:,jatom))  )) > syms_prec) then
+          cycle
+        end if
         foundsymatom = .true.
         syms_map_atoms     (iatom, isym) = jatom
         syms_inv_map_atoms (jatom, isym) = iatom
@@ -179,6 +181,7 @@ subroutine syms_forces(syms_this, na, fa)
 
   integer :: iatom, isym, jatom
   integer :: force_sym_flag(na)
+  double precision :: maxdiff
   double precision :: avgforce(3)
   double precision, allocatable :: fa_sym(:,:)
 
@@ -201,11 +204,15 @@ subroutine syms_forces(syms_this, na, fa)
       if (force_sym_flag(jatom) /= 0) cycle
       fa_sym(:,jatom) = matmul (syms_this%symops_cart(:,:,isym), avgforce)
 !DEBUG
-print '(a,3E30.20)', 'change in fa due to symmetrization = ', fa(:,jatom)-fa_sym(:,jatom)
+!print '(a,3E30.20)', 'change in fa due to symmetrization = ', fa(:,jatom)-fa_sym(:,jatom)
 !END DEBUG
       force_sym_flag(jatom) = 1
     end do
   end do
+  maxdiff = maxval(abs(fa(:,:)-fa_sym(:,:)))
+  print '(a,E20.10)', 'Max change in any component of fa due to symmetrization = ', maxdiff
+!  maxdiff = maxval(abs((fa(:,:)-fa_sym(:,:))/(1.d-16+fa(:,:))))
+!  print '(a,E20.10)', 'Max relative change = ', maxdiff
   fa = fa_sym
   deallocate (fa_sym)
 
@@ -217,15 +224,23 @@ subroutine syms_stresses (syms_this, stress)
   double precision, intent(inout) :: stress(3,3)
 
   double precision :: stress_sym(3,3), dsymop(3,3), drecip(3,3)
+  double precision :: maxdiff
 
   stress_sym = 0.0d0
   do isym = 1, syms_this%n_operations
-    dsymop = dble(syms_this%rotations(:, :, isym))
-    drecip = dble(syms_this%symops_recip(:,:,isym))
+    dsymop = syms_this%symops_cart(:, :, isym)
+    drecip = transpose(syms_this%symops_recip_cart(:,:,isym))
 ! TODO: make trials with hex and trigonal space groups to check the order of recip and normal symops
     stress_sym = stress_sym + matmul(drecip, matmul(stress, dsymop))
   end do
-  stress = stress_sym/syms_this%n_operations
+  stress_sym = stress_sym/syms_this%n_operations
+  maxdiff = maxval(abs(stress - stress_sym))
+  print '(a)', 'change in components of stress due to symmetrization = '
+  print '(3E20.10)', stress_sym(:,1)-stress(:,1)
+  print '(3E20.10)', stress_sym(:,2)-stress(:,2)
+  print '(3E20.10)', stress_sym(:,3)-stress(:,3)
+
+  stress = stress_sym
 
 end subroutine syms_stresses
     
