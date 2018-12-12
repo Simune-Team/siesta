@@ -49,6 +49,7 @@ module spglib_f03
     ! The following are extensions to Keith Refson's datastructure
     !integer, allocatable :: symops_cart(:,:,:)
     double precision, allocatable :: symops_cart(:,:,:)
+    double precision, allocatable :: symops_recip_cart(:,:,:)
     integer, allocatable :: symops_recip(:,:,:)
     double precision, allocatable :: trans_cart(:,:)
   end type SpglibDataset_ext
@@ -379,7 +380,7 @@ contains
 
 ! local vars
     integer :: max_size
-    integer :: ii
+    integer :: ii, isym, jj
     double precision :: cellinv(3,3)
     double precision :: dsymop(3,3)
     double precision :: dsymopinv(3,3)
@@ -415,8 +416,6 @@ contains
 
     max_size = spg_get_multiplicity(syms_this%celltransp(1,1), syms_this%xred(1,1), types(1), num_atom, symprec)
 
-    ! spglib returns row-major not column-major matrices!!! --DAS
-    ! should we transpose these after reading in???
     allocate(syms_this%rotations(1:3, 1:3, 1:max_size))
     allocate(syms_this%translations(1:3, 1:max_size))
     allocate(syms_this%equivalent_atoms(1:syms_this%num_atom))
@@ -430,17 +429,28 @@ contains
     syms_this%hall_number = spg_get_hall_number_from_symmetry(syms_this%rotations(1, 1, 1),&
        & syms_this%translations(1, 1), syms_this%n_operations, symprec)
 
+    ! spglib returns row-major not column-major matrices!!! --DAS
+    ! we transpose these after reading in: later use in fortran is x'(:) = Rotation(:,:) * x(:) + trans(:)
+    do isym = 1, syms_this%n_operations
+      syms_this%rotations(:,:,isym) = transpose(syms_this%rotations(:,:,isym))
+    end do
+
 ! transpose needed or not? only visible on triclinic or hexagonal etc..
 ! Checked for 1 case with P6_3 c m (#185) comparing to abinit - a transpose is needed!!!
 
 ! get symops in cartesian coordinates - should still be integer -1 0 1 elements but store in floats
     allocate(syms_this%symops_cart(1:3, 1:3, 1:syms_this%n_operations))
 
-    call matr3inv(syms_this%celltransp, cellinv) ! NB: returns inverse transpose, which is what we want
+    !call matr3inv(syms_this%celltransp, cellinv) ! NB: returns inverse transpose, which is what we want
+    call matr3inv(cell, cellinv) ! NB: returns inverse transpose
+    cellinv = transpose(cellinv)
 
+    ! symcart = rprim * symred * gprim^T
     do ii = 1, syms_this%n_operations
-      dsymop = matmul(cellinv, matmul(dble(syms_this%rotations(:, :, ii)), syms_this%celltransp))
-      syms_this%symops_cart(:, :, ii) = nint(dsymop)
+      !dsymop = matmul(syms_this%celltransp, matmul(dble(syms_this%rotations(:, :, ii)), cellinv))
+      dsymop = matmul(cell, matmul(dble(syms_this%rotations(:, :, ii)), cellinv))
+      !syms_this%symops_cart(:, :, ii) = nint(dsymop)
+      syms_this%symops_cart(:, :, ii) = dsymop
 
 ! it appears these matrices can be non integer for hexagonal systems...  feels wrong to me, but still:
 !  for the moment, make them dble
@@ -450,21 +460,30 @@ contains
          print *, 'rot        ', syms_this%rotations(:, :, ii)
          print *, 'rotcart    ', syms_this%symops_cart(:, :, ii)
          print *, 'rotcart_dp ', dsymop
-         stop 'error : cartesian symop element is not -1 0 +1'
+         print *, 'error : cartesian symop element is not -1 0 +1'
+         !stop
       end if
 !END DEBUG
     end do
 
 ! get symops in reciprocal space = real space op^-1 ^T
     allocate(syms_this%symops_recip(1:3, 1:3, 1:syms_this%n_operations))
+    allocate(syms_this%symops_recip_cart(1:3, 1:3, 1:syms_this%n_operations))
     do ii = 1, syms_this%n_operations
       dsymop = dble(syms_this%rotations(:, :, ii)) 
-      call matr3inv(dsymop,dsymopinv)
-      syms_this%symops_recip(:,:,ii) = int(dsymopinv)
+      call matr3inv(dsymop,dsymopinv) ! still inverse transpose here
+      syms_this%symops_recip(:,:,ii) = nint(dsymopinv)
 ! DEBUG - perhaps comment out later
       if (any(abs(dble(syms_this%symops_recip(:, :, ii)) - dsymopinv(:,:)) > 1.e-10)) then
         stop 'error : recip symop element is not integer (normally -1 0 +1)'
       end if
+! END DEBUG
+      dsymop = matmul(transpose(cellinv), matmul(dble(syms_this%symops_recip(:, :, ii)), syms_this%celltransp))
+      syms_this%symops_recip_cart(:, :, ii) = nint(dsymop)
+! DEBUG - perhaps comment out later: one check is that the group of operations is closed.
+!      do jj = 1, ii-1
+!         print '(3(3E20.10, 3x))', matmul(syms_this%symops_recip_cart(:, :, ii), syms_this%symops_recip_cart(:, :, jj))
+!      end do
 ! END DEBUG
     end do
 
@@ -528,6 +547,14 @@ contains
       write (*,'(3I6)') syms_this%rotations(:,2,ii)
       write (*,'(3I6)') syms_this%rotations(:,3,ii)
       write (*, '(3(E20.10,2x))') syms_this%translations(:,ii)
+      write (*,*)
+    end do
+    write (*,'(a)') " symops and translations in cartesian coordinates = "
+    do ii = 1, syms_this%n_operations
+      write (*,'(3E20.10)') syms_this%symops_cart(:,1,ii)
+      write (*,'(3E20.10)') syms_this%symops_cart(:,2,ii)
+      write (*,'(3E20.10)') syms_this%symops_cart(:,3,ii)
+      write (*, '(3(E20.10,2x))') syms_this%trans_cart(:,ii)
       write (*,*)
     end do
     write (*,'(a)') "----------------------------------------------------------------------"
