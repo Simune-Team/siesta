@@ -1571,7 +1571,7 @@ contains
            MPI_double_precision, MPI_Sum, &
            mix%Comm, i)
       ! copy over reduced arrays
-      A = Ainv
+      A(:,:) = Ainv(:,:)
 #endif
 
       ! Get inverse of matrix
@@ -1774,7 +1774,7 @@ contains
       call MPI_AllReduce(A(1,1),Ainv(1,1),nh*nh, &
            MPI_double_precision, MPI_Sum, &
            mix%Comm, i)
-      A = Ainv
+      A(:,:) = Ainv(:,:)
 #endif
 
       ! Add the diagonal term

@@ -289,14 +289,9 @@ pushd Docs
 
 # Update manual information that is version/date dependent
 _date=$(date +"%B %d, %Y")
-sed -i -e "s/\\date{.*}/\\date{$_date}/" siesta.tex
-sed -i -e "s/\\date{.*}/\\date{$_date}/" tbtrans.tex
-# Version tags in the metadata-title
-sed -i -e "s/\\title{.*}/\\title{Siesta manual $_tag}/" siesta.tex
-sed -i -e "s/\\title{.*}/\\title{TBtrans manual $_tag}/" tbtrans.tex
+sed -s -i -e "s/\\date{.*}/\\date{$_date}/" siesta.tex tbtrans.tex
 # Version tags in the pdf-title
-sed -i -e "s/\\providecommand\\softwareversion{.*}/\\providecommand\\softwareversion{$_tag}/" siesta.tex
-sed -i -e "s/\\providecommand\\softwareversion{.*}/\\providecommand\\softwareversion{$_tag}/" tbtrans.tex
+sed -s -i -e "s/\\providecommand\\softwareversion{.*}/\\providecommand\\softwareversion{$_tag}/" siesta.tex tbtrans.tex
 
 # First create the screen variants...
 make final-screen

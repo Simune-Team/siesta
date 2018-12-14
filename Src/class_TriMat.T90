@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -141,7 +141,7 @@
   subroutine delete_Data(thisData)
     type(TYPE_NAME_) :: thisData
     call de_alloc( thisData%mat, &
-            name="val-"//trim(thisData%name),routine=STR_TYPE_NAME)	
+            name="val-"//trim(thisData%name),routine=STR_TYPE_NAME)     
     nullify(thisData%tri_nrows)
     nullify(thisData%tri_crows)
     nullify(thisData%tri_idx)
@@ -173,7 +173,7 @@
     integer             :: n
     do n = 1 , this%data%parts
        if ( no <= this%data%tri_crows(n) ) then
-	  return
+          return
        end if
     end do
     n = 0
@@ -186,7 +186,7 @@
     el = size(this%data%mat)
     if ( present(all) ) then
        if ( all ) then
-      	  return
+          return
        end if
     end if
     el = el - this%data%padding
@@ -248,8 +248,8 @@
       do j = max(1,i-1), min(i+1,parts)
         n = n + 1
         this%data%tri_idx(n) = this%data%tri_idx(n-1) + &
-	  tri_nrows(i) * tri_nrows(j)
-	elements = elements + tri_nrows(i) * tri_nrows(j)
+          tri_nrows(i) * tri_nrows(j)
+        elements = elements + tri_nrows(i) * tri_nrows(j)
       end do
     end do
 
@@ -269,7 +269,7 @@
     ! Check that we don't try and allocate too many elements
     if ( elements > int(huge(1), lp) ) then
         call die('TriMat: Number of elements is above the integer limit. &
-	   &Currently TriMat does not implement long-integers!')
+           &Currently TriMat does not implement long-integers!')
     end if
 
     ! Allocate the full tri-diagonal matrix

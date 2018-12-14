@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -61,6 +61,7 @@ contains
     type(Sparsity), intent(inout) :: sp
 
     type(Sparsity) :: tmpSp1, tmpSp2
+    type(tRgn) :: tmp_roEl
     integer :: i, iEl
 
     call timer('tri-init-elec',1)
@@ -75,7 +76,8 @@ contains
        call Sp_retain_region(dit,sp,r_oElpD(i),tmpSp2)
 
        ! Add the self-energy of the electrode (in its original position)
-       call crtSparsity_Union(dit,tmpSp2, r_oEl_alone(i),tmpSp1)
+       call rgn_range(tmp_roEl, Elecs(i)%idx_o, Elecs(i)%idx_o + TotUsedOrbs(Elecs(i)) - 1)
+       call crtSparsity_Union(dit,tmpSp2, tmp_roEl,tmpSp1)
        call delete(tmpSp2)
 
 #ifdef TRANSIESTA_DEBUG
@@ -92,6 +94,9 @@ contains
        call delete(tmpSp1)
 
     end do
+
+    ! Clean memory
+    call rgn_delete(tmp_roEl)
 
     ! The i'th processor has the following electrodes
     do iEl = 1 , N_Elec

@@ -132,7 +132,7 @@ contains
     do i = 1 , NC - 1
        tmp = real(cw(i)*conjg(cw(i)),dp)
        do j = i+1, NC
-          if ( tmp > real(cw(j)*conjg(cw(j))) ) then
+          if ( tmp > real(cw(j)*conjg(cw(j)),dp) ) then
              ctmp  = ce(i)
              ce(i) = ce(j)
              ce(j) = ctmp

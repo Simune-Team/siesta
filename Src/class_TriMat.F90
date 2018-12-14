@@ -80,7 +80,7 @@ module class_zTriMat
 #define NEW_TYPE newzTriMat
 #define VAR_TYPE complex
 #define PREC dp
-#define VAR_INIT dcmplx(0._dp,0._dp)
+#define VAR_INIT cmplx(0._dp,0._dp,dp)
 #include "class_TriMat.T90"
 !========================
 end module class_zTriMat

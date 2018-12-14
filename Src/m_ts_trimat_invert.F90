@@ -33,9 +33,9 @@ module m_ts_trimat_invert
   private
 
   ! Used for BLAS calls (local variables)
-  complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
-  complex(dp), parameter :: z1  = dcmplx( 1._dp, 0._dp)
-  complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+  complex(dp), parameter :: z0  = cmplx( 0._dp, 0._dp,dp)
+  complex(dp), parameter :: z1  = cmplx( 1._dp, 0._dp,dp)
+  complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp,dp)
 
   public :: invert_BiasTriMat_prep
 #ifdef TBTRANS
@@ -483,8 +483,8 @@ contains
     complex(dp), pointer :: z(:)
 
     ! Used for BLAS calls (local variables)
-    complex(dp), parameter :: z0  = dcmplx( 0._dp, 0._dp)
-    complex(dp), parameter :: zm1 = dcmplx(-1._dp, 0._dp)
+    complex(dp), parameter :: z0  = cmplx( 0._dp, 0._dp,dp)
+    complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp,dp)
 
     integer :: nr, np
     integer :: sPart, ePart
@@ -847,11 +847,11 @@ contains
     Mpinv => val(Minv,n,n)
 !$OMP parallel default(shared), private(i)
 !$OMP workshare
-    Mpinv((sCol-1)*sN+1:eCol*sN) = dcmplx(0._dp,0._dp)
+    Mpinv((sCol-1)*sN+1:eCol*sN) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 !$OMP do
     do i = sCol - 1 , eCol - 1
-       Mpinv(i * sN + i + 1) = dcmplx(1._dp,0._dp)
+       Mpinv(i * sN + i + 1) = cmplx(1._dp,0._dp,dp)
     end do
 !$OMP end do nowait
 !$OMP end parallel 

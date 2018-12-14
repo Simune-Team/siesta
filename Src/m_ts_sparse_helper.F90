@@ -168,18 +168,18 @@ contains
 
     ! Pre-calculate phases
     do jo = 0 , n_s - 1
-       ph(jo) = cdexp(dcmplx(0._dp, &
+       ph(jo) = exp(cmplx(0._dp, &
             k(1) * sc_off(1,jo) + &
             k(2) * sc_off(2,jo) + &
-            k(3) * sc_off(3,jo)))
+            k(3) * sc_off(3,jo),kind=dp))
     end do
     
 !$OMP parallel default(shared), &
 !$OMP&private(lio,io,io_T,kn,ind,jo,jo_T,ind_k)
 
 !$OMP workshare
-    zH(:) = dcmplx(0._dp,0._dp)
-    zS(:) = dcmplx(0._dp,0._dp)
+    zH(:) = cmplx(0._dp,0._dp,dp)
+    zS(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
 ! No data race condition as each processor takes a separate row
@@ -365,17 +365,17 @@ contains
 
           ! Symmetrize (notice that we transpose here!)
           ! See prep_GF
-          zS(rind) = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
-          zS(ind)  = dconjg(zS(rind))
+          zS(rind) = 0.5_dp * ( zS(ind) + conjg(zS(rind)) )
+          zS(ind)  = conjg(zS(rind))
 
-          zH(rind) = 0.5_dp * ( zH(ind) + dconjg(zH(rind)) ) &
+          zH(rind) = 0.5_dp * ( zH(ind) + conjg(zH(rind)) ) &
                - E_Ef(jEl) * zS(rind)
-          zH(ind)  = dconjg(zH(rind))
+          zH(ind)  = conjg(zH(rind))
 
           if ( ind == rind ) then
              ! This is the diagonal matrix elements
-             zS(ind) = dreal(zS(ind))
-             zH(ind) = dreal(zH(ind))
+             zS(ind) = real(zS(ind),dp)
+             zH(ind) = real(zH(ind),dp)
           end if
                       
        end do
@@ -900,7 +900,7 @@ contains
 !$OMP&private(i,io,lio,ind,j,is,ph,idx,w)
 
 !$OMP workshare
-    A_UT(:) = dcmplx(0._dp,0._dp)
+    A_UT(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
     w = log(0.5)
 
@@ -933,23 +933,23 @@ contains
 
           ! Calculate position
           if ( i > j ) then
-             ph = cdexp(dcmplx(w, - &
+             ph = exp(cmplx(w, - &
                   k(1) * sc_off(1,is) - &
                   k(2) * sc_off(2,is) - &
-                  k(3) * sc_off(3,is)))
+                  k(3) * sc_off(3,is),kind=dp))
              idx = j + (i - 1)* i/2
           else if ( i < j ) then
-             ph = cdexp(dcmplx(w, &
+             ph = exp(cmplx(w, &
                   k(1) * sc_off(1,is) + &
                   k(2) * sc_off(2,is) + &
-                  k(3) * sc_off(3,is)))
+                  k(3) * sc_off(3,is),kind=dp))
              idx = i  + (j-1)*j/2
           else
              ! diagonal elements are not "double" counted
-             ph = cdexp(dcmplx(0._dp, &
+             ph = exp(cmplx(0._dp, &
                   k(1) * sc_off(1,is) + &
                   k(2) * sc_off(2,is) + &
-                  k(3) * sc_off(3,is)))
+                  k(3) * sc_off(3,is),kind=dp))
              idx = i  + (j-1)*j/2
           end if
 
@@ -1014,17 +1014,17 @@ contains
          nrows=no_l,nrows_g=no_u)
 
     do is = 0 , n_s - 1
-       ph(is) = cdexp(dcmplx(0._dp, &
+       ph(is) = exp(cmplx(0._dp, &
             k(1) * sc_off(1,is) + &
             k(2) * sc_off(2,is) + &
-            k(3) * sc_off(3,is)))
+            k(3) * sc_off(3,is),kind=dp))
     end do
 
 !$OMP parallel default(shared), &
 !$OMP&private(i,io,lio,ind,jo,is)
 
 !$OMP workshare
-    A_full(:,:) = dcmplx(0._dp,0._dp)
+    A_full(:,:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! Loop over region orbitals

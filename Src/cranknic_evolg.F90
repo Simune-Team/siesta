@@ -111,7 +111,8 @@ SUBROUTINE cn_evolg ( delt )
           call mm_multiply(Hauxms,'n',wavef_ms(1,ispin),'n',wfaux1,cONE,cZERO,m_operation)
           call mm_multiply(wavef_ms(1,ispin),'c',wfaux1,'n',wfaux2,cONE,cZERO,m_operation)
           DO io=1,wavef_ms(1,ispin)%dim2
-            eo(io,ispin,1)= real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
+            eo(io,ispin,1)= real(wfaux2%zval(io,io),dp) +  &
+                            aimag(wfaux2%zval(io,io))
           END DO
         endif
         !

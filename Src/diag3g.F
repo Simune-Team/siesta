@@ -156,12 +156,16 @@ C of referencing has been changed in several places to reflect this.
           ind = listhptr(io) + j
           jo = listh(ind)
           jo = MODP(jo,nuotot) ! To allow auxiliary supercells
-          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
-          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
-          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
-          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
-          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
-          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + cmplx( S(ind), 0.0_dp,dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + cmplx( S(ind), 0.0_dp,dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) +
+     &                                     cmplx(H(ind,1), H(ind,5),dp)
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) +
+     &                                     cmplx(H(ind,2), H(ind,6),dp)
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) +
+     &                                     cmplx(H(ind,3),-H(ind,4),dp)
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) +
+     &                                     cmplx(H(ind,7), H(ind,8),dp)
         enddo
       enddo
       
@@ -181,12 +185,16 @@ C of referencing has been changed in several places to reflect this.
           ind = listhptr(io) + j
           jo = listh(ind)
           jo = MODP(jo,nuotot) ! To allow auxiliary supercells
-          Saux(1,jo,1,io) = Saux(1,jo,1,io) + dcmplx( S(ind), 0.0_dp)
-          Saux(2,jo,2,io) = Saux(2,jo,2,io) + dcmplx( S(ind), 0.0_dp)
-          Haux(1,jo,1,io) = Haux(1,jo,1,io) + dcmplx(H(ind,1), H(ind,5))
-          Haux(2,jo,2,io) = Haux(2,jo,2,io) + dcmplx(H(ind,2), H(ind,6))
-          Haux(1,jo,2,io) = Haux(1,jo,2,io) + dcmplx(H(ind,3),-H(ind,4))
-          Haux(2,jo,1,io) = Haux(2,jo,1,io) + dcmplx(H(ind,7), H(ind,8))
+          Saux(1,jo,1,io) = Saux(1,jo,1,io) + cmplx( S(ind), 0.0_dp,dp)
+          Saux(2,jo,2,io) = Saux(2,jo,2,io) + cmplx( S(ind), 0.0_dp,dp)
+          Haux(1,jo,1,io) = Haux(1,jo,1,io) +
+     &                                     cmplx(H(ind,1), H(ind,5),dp)
+          Haux(2,jo,2,io) = Haux(2,jo,2,io) +
+     &                                     cmplx(H(ind,2), H(ind,6),dp)
+          Haux(1,jo,2,io) = Haux(1,jo,2,io) +
+     &                                     cmplx(H(ind,3),-H(ind,4),dp)
+          Haux(2,jo,1,io) = Haux(2,jo,1,io) +
+     &                                     cmplx(H(ind,7), H(ind,8),dp)
         enddo
       enddo
       
@@ -246,7 +254,7 @@ C of referencing has been changed in several places to reflect this.
           iie = iie + 1
         endif
       
-        caux(:,:) = dcmplx(0.0_dp,0.0_dp)
+        caux(:,:) = cmplx(0.0_dp,0.0_dp,dp)
         if (abs(qe).gt.occtol) then
           if (Node.eq.BNode) then
             do j = 1,nuotot
@@ -266,27 +274,27 @@ C of referencing has been changed in several places to reflect this.
               jo = listd(ind)
               jo = MODP(jo,nuotot) ! To allow auxiliary supercells
 !------- 1,1 -----------------------------------------------------------
-              D11  = caux(1,iio) * dconjg(caux(1,jo))
+              D11  = caux(1,iio) * conjg(caux(1,jo))
 !------- 2,2 -----------------------------------------------------------
-              D22  = caux(2,iio) * dconjg(caux(2,jo))
+              D22  = caux(2,iio) * conjg(caux(2,jo))
 !------- 1,2 -----------------------------------------------------------
-              D12  = caux(1,iio) * dconjg(caux(2,jo))
+              D12  = caux(1,iio) * conjg(caux(2,jo))
 !------- 2,1 -----------------------------------------------------------
-              D21  = caux(2,iio) * dconjg(caux(1,jo))
+              D21  = caux(2,iio) * conjg(caux(1,jo))
       
-              Dnew(ind,1) = Dnew(ind,1) + dreal(D11) * qe
-              Dnew(ind,2) = Dnew(ind,2) + dreal(D22) * qe
-              Dnew(ind,3) = Dnew(ind,3) + dreal(D12) * qe
-              Dnew(ind,4) = Dnew(ind,4) - dimag(D12) * qe
-              Dnew(ind,5) = Dnew(ind,5) + dimag(D11) * qe
-              Dnew(ind,6) = Dnew(ind,6) + dimag(D22) * qe
-              Dnew(ind,7) = Dnew(ind,7) + dreal(D21) * qe
-              Dnew(ind,8) = Dnew(ind,8) + dimag(D21) * qe
+              Dnew(ind,1) = Dnew(ind,1) + real(D11,dp) * qe
+              Dnew(ind,2) = Dnew(ind,2) + real(D22,dp) * qe
+              Dnew(ind,3) = Dnew(ind,3) + real(D12,dp) * qe
+              Dnew(ind,4) = Dnew(ind,4) - aimag(D12) * qe
+              Dnew(ind,5) = Dnew(ind,5) + aimag(D11) * qe
+              Dnew(ind,6) = Dnew(ind,6) + aimag(D22) * qe
+              Dnew(ind,7) = Dnew(ind,7) + real(D21,dp) * qe
+              Dnew(ind,8) = Dnew(ind,8) + aimag(D21) * qe
       
-              Enew(ind,1) = Enew(ind,1) + dreal(D11) * ee
-              Enew(ind,2) = Enew(ind,2) + dreal(D22) * ee
-              Enew(ind,3) = Enew(ind,3) + dreal(D12) * ee
-              Enew(ind,4) = Enew(ind,4) - dimag(D12) * ee
+              Enew(ind,1) = Enew(ind,1) + real(D11,dp) * ee
+              Enew(ind,2) = Enew(ind,2) + real(D22,dp) * ee
+              Enew(ind,3) = Enew(ind,3) + real(D12,dp) * ee
+              Enew(ind,4) = Enew(ind,4) - aimag(D12) * ee
       
             enddo
           enddo

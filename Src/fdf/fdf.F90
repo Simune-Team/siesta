@@ -721,7 +721,7 @@ MODULE fdf
       if (rank == reading_node) then
          call fdf_read(filein)
       endif
-      call broadcast_fdf_struct(reading_node)		
+      call broadcast_fdf_struct(reading_node)
 
       RETURN
 !--------------------------------------------------------------------------- END

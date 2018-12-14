@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -12,22 +12,29 @@ C   Written by Pablo Ordejon
 C   Modified by DSP, December 2000
 C   Modified by DSP, January  2006
 
+      program optical
 
-       COMMON /EPSILON/ E1,E2
-       COMMON /ENERGY/ OMEGA,NE
-       INTEGER*4 NE, NEMX
-       PARAMETER (NEMX=10000)
-       REAL*8 E,E1(NEMX),E2(NEMX),ESTEP
-       REAL*8 K,OMEGA(NEMX),REFL,N, OMG
-       REAL*8 LAMBDA, COND, drude, gamm
+      implicit none
+      
+      integer, parameter :: dp = selected_real_kind(10,100)
+      
+       integer, PARAMETER :: NEMX = 10000
+       REAL(DP) E1(NEMX),E2(NEMX)
+       REAL(DP) OMEGA(NEMX)
+
+       INTEGER NE
+       REAL(DP) E,ESTEP
+       REAL(DP) K,REFL,N, OMG
+       REAL(DP) drude, gamm
        LOGICAL DRUD
-C  FROM eV to cm**-1
-       PARAMETER (LAMBDA=8067.422)
+
+       integer :: i
+       
+C   FROM eV to cm**-1
+       real(dp), PARAMETER :: LAMBDA = 8067.422_dp
 C   from eV to (meter*ohm)**-1 (conductivity)
-       PARAMETER (COND=13445.4)
-C
-C
-C
+       real(dp), PARAMETER :: COND = 13445.4_dp
+
        DRUD=.false.
        GAMM=0.0d0
        OPEN(UNIT=7,FILE='e2.dat',status='unknown')
@@ -144,17 +151,12 @@ C  OPTICAL  CONDUCTIVITY IN (ohm*m)**-1
        CLOSE(14)
        CLOSE(15)
 
-
-       STOP
-       END
-C
-C
+       CONTAINS
+       
        SUBROUTINE INTEG1(E,K)
 C
-       COMMON /ENERGY/ OMEGA,NE
-       REAL*8 E,EP,F,K,FAC
-       REAL*8 OMEGA(10000)
-       INTEGER*4 NE,I
+       REAL(DP) E,EP,F,K,FAC
+       INTEGER I, II
 C
        K=0.0D0
        DO 10 I=1,NE
@@ -183,29 +185,16 @@ C
           K=K+FAC*F
 10     CONTINUE
 C
-C
-C
-C
        K=K*(OMEGA(2)-OMEGA(1))
-C
-C
-       RETURN
-       END
-C
-C
+
+       END subroutine integ1
 C
        SUBROUTINE FUNC1(I,E,EP,F)
 C
-       COMMON /ENERGY/ OMEGA,NE
-       COMMON /EPSILON/ E1,E2
-       REAL*8 E,EP,F,E1(10000),E2(10000)
-       REAL*8 OMEGA(10000)
-       INTEGER*4 IEP,NE,I
-C
+       REAL(DP) E,EP,F
+       INTEGER I
 C
        F=0.0D0
-C
-C
 C
        IF (E .EQ. EP) THEN
        F=0.0D0
@@ -213,20 +202,15 @@ C
        ENDIF
        F=EP*E2(I)/(EP**2-E**2)
 C
-C
 1000   CONTINUE
 C
-C
-C
        RETURN
-       END
+       END subroutine func1
 
        SUBROUTINE INTEG2(E,K)
 C
-       COMMON /ENERGY/ OMEGA,NE
-       REAL*8 E,EP,F,K,FAC
-       REAL*8 OMEGA(10000)
-       INTEGER*4 NE,I
+       REAL(DP) E,EP,F,K,FAC
+       INTEGER I, II
 C
        K=0.0D0
        DO 10 I=1,NE
@@ -258,35 +242,24 @@ C
 C
        K=K*(OMEGA(2)-OMEGA(1))
 C
-C
        RETURN
-       END
-C
-C
+       END subroutine integ2
 C
        SUBROUTINE FUNC2(I,E,EP,F)
 C
-       COMMON /ENERGY/ OMEGA,NE
-       COMMON /EPSILON/ E1,E2
-       REAL*8 E,EP,F,E1(10000),E2(10000)
-       REAL*8 OMEGA(10000)
-       INTEGER*4 IEP,NE,I
-C
+       REAL(DP) E,EP,F
+       INTEGER I
 C
        F=0.0D0
-C
-C
 C
        IF (E .EQ. EP) THEN
        F=0.0D0
        GOTO 1000
        ENDIF
        F=E1(I)/(EP**2-E**2)
-C
-C
+
 1000   CONTINUE
 C
-C
-C
-       RETURN
-       END
+       END subroutine func2
+      
+      END PROGRAM OPTICAL

@@ -108,14 +108,18 @@
 % Include settings appropriate for siesta
 \input{tex/init.tex}
 
-% Title
-\title{SIESTA manual 4.1-b4}
+% Local command for the software version for printing
+% \unskip helps when space/newline chars are present in the
+% version.info file.
+\providecommand\softwareversion{\input{../version.info}\unskip}
+
+% Title (note that \input above will fail in the title, we however
+% don't care since it is only meaningful for final publications where
+% direct text is used.)
+\title{SIESTA manual \softwareversion}
 
 % Set the date
 \date{\today}
-
-% Local command for the software version for printing
-\providecommand\softwareversion{4.1-b4}
 
 % Specify Authors
 \author{%
@@ -731,17 +735,18 @@ installation scripts finishes by telling \emph{what} to add to the
   # OpenBLAS:
   LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
-  LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64 ...
-\end{shellexample}
-
-  To use the threaded (OpenMP) libraries, change the above linking
-  to
-\begin{shellexample}
-  # OpenBLAS:
-  LIBS += -L/opt/openblas/lib -lopenblasp
-  # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_blas95_lp64
-    -lmkl_<>_thread ...
+  -lmkl_<>_lp64 ...
+\end{shellexample}
+  where \shell{<>} is the compiler used (\shell{intel} or \shell{gf}
+  for gnu).
+
+  To use the threaded (OpenMP) libraries
+\begin{shellexample}
+  # OpenBLAS, change the above to:
+  LIBS += -L/opt/openblas/lib -lopenblasp
+  # or for MKL, add a single flag:
+  LIBS += -lmkl_<>_thread
 \end{shellexample}
   where \shell{<>} is the compiler used (\shell{intel} or \shell{gnu}).
 
@@ -764,14 +769,12 @@ installation scripts finishes by telling \emph{what} to add to the
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64 ...
 \end{shellexample}
 
-  To use the threaded (OpenMP) libraries, change the above linking
-  to
+  To use the threaded (OpenMP) libraries
 \begin{shellexample}
-  # OpenBLAS (OpenBLAS will default to build in LAPACK 3.6)
+  # OpenBLAS, change the above to:
   LIBS += -L/opt/openblas/lib -lopenblasp
-  # or for MKL
-  LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64
-    -lmkl_<>_thread ...
+  # or for MKL, add a single flag:
+  LIBS += -lmkl_<>_thread ...
 \end{shellexample}
   where \shell{<>} is the compiler used (\shell{intel} or \shell{gnu}).
 
@@ -794,7 +797,6 @@ installation scripts finishes by telling \emph{what} to add to the
 \end{shellexample}
 where \shell{<>} refers to the MPI version used, (\shell{intelmpi},
 \shell{openmpi}, \shell{sgimpt}).
-
 
 \end{description}
 
@@ -11575,6 +11577,32 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
     \frac{\langle\cdot^L\rangle}{\langle\cdot^L\rangle+\langle\cdot^R\rangle}.
   \end{equation}
 
+  When applying a bias, \tsiesta\ will printout the following during
+  the SCF cycle:
+\begin{output}[fontsize=\footnotesize]
+ts-err-D: ij(  447,   447), M =  1.8275, ew = -.257E-2, em = 0.258E-2. avg_em = 0.542E-06
+ts-err-E: ij(  447,   447), M = -6.7845, ew = 0.438E-3, em = -.439E-3. avg_em = -.981E-07
+ts-w-q:               qP1       qP2
+ts-w-q:           219.150   216.997
+ts-q:         D        E1        C1        E2        C2        dQ
+ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
+  \end{output}
+  % 
+  The extra output corresponds to fine details in the integration
+  scheme; \texttt{ts-err-D} refers to the difference between the
+  different integrals of the density matrix for the various chemical
+  potentials, see e.g. Eq.~(12) in \cite{Papior2017}. \texttt{ij(..,
+      ..)} refers to which matrix element it is (orbital indices),
+  \texttt{M} is the final weighted matrix element
+  $\sum_{\elec}w_\elec\DM^\elec$, \texttt{ew} is the maximum difference
+  between $\sum_{\elec}w_\elec\DM^\elec-\DM^\elec$ for all
+  $\elec$. \texttt{em} is the maximum difference between any two
+  $\DM^\elec$ and finally, \texttt{avg\_em} is average of the sum of all
+  $\DM^\elec-\DM^{\elec'}$ which tends to smooth out and be very close
+  to zero.
+  % 
+  The \texttt{ts-w-q} data shows the charges from the different
+  chemical potentials as $\Tr[w_\elec\DM^\elec\SO]$.
 
   \begin{fdfoptions}
 
@@ -12752,6 +12780,7 @@ Using \program{tselecs.sh -only-c} yields this output:
      from -40. eV + V/2 to -10 kT + V/2
        points 25
         method g-legendre
+         opt right
   %endblock
   %block TS.Contour.T-Left
     part tail
@@ -12764,6 +12793,7 @@ Using \program{tselecs.sh -only-c} yields this output:
      from -40. eV -V/2 to -10 kT -V/2
        points 25
         method g-legendre
+         opt right
   %endblock
   %block TS.Contour.T-Right
     part tail
@@ -12825,14 +12855,14 @@ The default options related to the non-equilibrium bias contour are
 defined as this:
 \begin{fdfexample}
   %block TS.Contours.nEq
-    neq-1
+    neq
   %endblock TS.Contours.nEq
-  %block TS.Contour.nEq.neq-1
+  %block TS.Contour.nEq.neq
     part line
      from -|V|/2 - 5 kT to |V|/2 + 5 kT
        delta 0.01 eV
         method mid-rule
-  %endblock TS.Contour.nEq.neq-1
+  %endblock TS.Contour.nEq.neq
 \end{fdfexample}
 If one chooses a different reference energy than $0$, then the limits
 should change accordingly. Note that here \fdf*{kT} refers to

@@ -194,7 +194,7 @@ C Resize Aux2 for re-use
 
       determ=det(1)
       deti=aimag(determ)
-      detr=real(determ)   
+      detr=real(determ,dp)   
 
 C Deallocate local memory
       call de_alloc( Auxint, name='Auxint' )

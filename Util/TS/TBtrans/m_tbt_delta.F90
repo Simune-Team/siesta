@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -868,10 +868,10 @@ contains
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do iu = 1 , size(sc_off, dim=2)
-       ph(iu-1) = cdexp(dcmplx(0._dp, &
+       ph(iu-1) = exp(cmplx(0._dp, &
             k(1) * sc_off(1,iu) + &
             k(2) * sc_off(2,iu) + &
-            k(3) * sc_off(3,iu)))
+            k(3) * sc_off(3,iu),kind=dp))
     end do
 
     Gfinv => val(Gfinv_tri)
@@ -934,10 +934,10 @@ contains
     ! Create the phases
     allocate( ph(0:size(sc_off,dim=2)-1) )
     do iu = 1 , size(sc_off, dim=2)
-       ph(iu-1) = cdexp(dcmplx(0._dp, &
+       ph(iu-1) = exp(cmplx(0._dp, &
             k(1) * sc_off(1,iu) + &
             k(2) * sc_off(2,iu) + &
-            k(3) * sc_off(3,iu)))
+            k(3) * sc_off(3,iu),kind=dp))
     end do
     
 !$OMP parallel do default(shared), private(iu,jo,ind,ju)

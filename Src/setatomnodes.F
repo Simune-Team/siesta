@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -751,15 +751,15 @@ C
             call io_assign(iu)
             open(unit=iu,file="SPATIAL_INDEXES",form="formatted")
             write(iu,*) "nl2g"
-            do Lorb = 1, no_u	
+            do Lorb = 1, no_u   
                write(iu, "(i6,8i9)") Lorb, (nL2G(Lorb,j),j=1,Nodes)
             enddo
             write(iu,*) "nNode"
-            do Gorb = 1, no_u	
+            do Gorb = 1, no_u   
                write(iu, "(i6,i5)") Gorb, nNode(Gorb)
             enddo
             write(iu,*) "nG2L (node 0)"
-            do Gorb = 1, no_u	
+            do Gorb = 1, no_u   
                write(iu, "(i6,i5)") Gorb, nG2L(Gorb)
             enddo
             write(iu,*) "nOrbPerNode"

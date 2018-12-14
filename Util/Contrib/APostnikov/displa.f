@@ -19,7 +19,7 @@ C
           dlen = 0.d0
           do ii=1,3
             disp(ii,iat,iev)=evr(ii,iat,iev)/sqrt(mass(iat))
-	    dlen = dlen + disp(ii,iat,iev)**2
+            dlen = dlen + disp(ii,iat,iev)**2
           enddo
           dlen = sqrt(dlen) 
           if (dlen.gt.dmax) dmax=dlen

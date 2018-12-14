@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -99,12 +99,12 @@ C **********************************************************************
      .   XIJ
 
       INTEGER
-     .  IA, ISEL, NNA, I, J, IN, IAT1, IO, IUO, IAVEC1, 
+     .  IA, ISEL, NNA, I, J, IAT1, IO, IUO, IAVEC1, 
      .  IS1, IPHI1, NX, NY, NZ, IWF, IK, ISPIN, UNITRE1,
      .  IX, IY, IZ, NSX, NSY, NAU
 
       REAL(DP)
-     .  DOT, RMAX, XPO(3), RMAX2, XVEC1(3),
+     .  RMAX, XPO(3), RMAX2, XVEC1(3),
      .  PHIMU, GRPHIMU(3),
      .  PHASE, SI, CO, ENER, PMIKR, SIMIKR, COMIKR, USAVE, VC, VU
 
@@ -199,7 +199,7 @@ C Check that cell is orthorombic
 
 ! Initialize density
 
-      RHO = 0
+      RHO(:,:,:) = 0
 C Loop over k-points and wavefunctions to include in the STM image
 
       DO IK  = 1, NK
@@ -249,9 +249,9 @@ C Initialize the wave function at each point -----------------------
 
 C Phase to cancel the phase of the wave function: -i.k.r
             PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+            SIMIKR=SIN(PMIKR)
+            COMIKR=COS(PMIKR)
+            EXMIKR=CMPLX(COMIKR,SIMIKR,kind=dp)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
@@ -280,7 +280,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
 
               SI=DSIN(PHASE)
               CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
+              EXPPHI=CMPLX(CO,SI,kind=dp)
 
                 DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                 IPHI1 = IPHORB(IO)
@@ -288,7 +288,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
                 CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
                 CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
+     .          CMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN),dp)*
      .          EXPPHI * EXMIKR
 
                 ENDDO
@@ -296,7 +296,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
             ENDDO
 
             RHO(NX-1,NY-1,NZ-1)  = RHO (NX-1,NY-1,NZ-1)    
-     &              + DREAL(CWAVE*DCONJG(CWAVE))* ARMUNI
+     &              + REAL(CWAVE*CONJG(CWAVE),dp)* ARMUNI
 
                 ENDDO  
              ENDDO  
@@ -329,9 +329,9 @@ C Determine position of current point in the reference plane
 
 C Phase to cancel the phase of the wave function: -i.k.r
             PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+            SIMIKR=SIN(PMIKR)
+            COMIKR=COS(PMIKR)
+            EXMIKR=CMPLX(COMIKR,SIMIKR,kind=dp)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
@@ -360,7 +360,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
 
               SI=DSIN(PHASE)
               CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
+              EXPPHI=CMPLX(CO,SI,kind=dp)
 
               DO 120 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                 IPHI1 = IPHORB(IO)
@@ -368,7 +368,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
                 CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
                 CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
+     .          CMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN),dp)*
      .          EXPPHI * EXMIKR
 
  120          ENDDO
@@ -389,7 +389,7 @@ C Call routine to extrapolate wave function and compute STM image
           CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF,ZMIN,ZMAX,UCELL,V0,
      .                     CW,ENER,K(IK,1),CWE)
 
-          RHO = RHO + DREAL(CWE*DCONJG(CWE))
+          RHO(:,:,:) = RHO(:,:,:) + REAL(CWE*CONJG(CWE),dp)
 
 
 C SECOND REFERENCE PLANE ZREF
@@ -412,9 +412,9 @@ C Determine position of current point in the SECOND reference plane
 
 C Phase to cancel the phase of the wave function: -i.k.r
             PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+            SIMIKR=SIN(PMIKR)
+            COMIKR=COS(PMIKR)
+            EXMIKR=CMPLX(COMIKR,SIMIKR,dp)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
@@ -441,9 +441,9 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
      .                K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
      .                K(IK,3)*(XPO(3)+XIJ(3,IAT1))
 
-              SI=DSIN(PHASE)
-              CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
+              SI=SIN(PHASE)
+              CO=COS(PHASE)
+              EXPPHI=CMPLX(CO,SI,kind=dp)
 
               DO 420 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                 IPHI1 = IPHORB(IO)
@@ -451,7 +451,7 @@ C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
                 CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
                 CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
+     .          CMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN),dp)*
      .          EXPPHI * EXMIKR
 
  420          ENDDO
@@ -470,8 +470,7 @@ C Call routine to extrapolate wave function and compute STM image
           CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF2,ZMIN,ZMAX,UCELL,V0,
      .                     CW,ENER,K(IK,1),CWE)
 
-          RHO = RHO + DREAL(CWE*DCONJG(CWE))
-
+          RHO(:,:,:) = RHO(:,:,:) + REAL(CWE*CONJG(CWE),dp)
           endif
           endif
 
@@ -504,19 +503,11 @@ C Check if lattice vectors in xy plane are orthogonal
       else
          FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.cube'
       endif
-      
-!     IF (DABS(DOT) .GT. 1.0D-2) THEN
-!       WRITE(6,*)
-!       WRITE(6,*) 'stm: WARNING: The cell is not orthorombic, so the'
-!       WRITE(6,*) '     results can not be plotted in cube format'
-!       WRITE(6,*)
-!       GOTO 200
-!     ELSE
-        WRITE(6,*)
-        WRITE(6,*) 'stm: writing cube format file ',FNAME
-        WRITE(6,*)
-        WRITE(6,*) '     ',NSCX,' x ',NSCY,' cells in cube plot'
-!     ENDIF
+
+      WRITE(6,*)
+      WRITE(6,*) 'stm: writing cube format file ',FNAME
+      WRITE(6,*)
+      WRITE(6,*) '     ',NSCX,' x ',NSCY,' cells in cube plot'
 
 C Calculate number of atoms in unit cell
       VC = VOLCEL(CELL)
@@ -552,8 +543,6 @@ C Calculate number of atoms in unit cell
       ENDDO
       ENDDO
 
-
-200   CONTINUE
 
       call io_close(unitre1)
 
