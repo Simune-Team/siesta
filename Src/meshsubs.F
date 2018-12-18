@@ -1283,7 +1283,8 @@ C     Functions
 
 !------------------------------------------------------------------
       subroutine distriPhiOnMesh( nm, nmpl, norb, iaorb,
-     &                            iphorb, isa, numphi )
+     &                            iphorb, isa, numphi,
+     &                            need_gradients_in_xc )
 
 C Computes the number of orbitals that intersects every mesh point
 C and calls initMeshDistr in order to compute a new data distribution
@@ -1297,7 +1298,7 @@ C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
 C integer isa(na)       : Species index of all atoms in supercell
-C
+C logical need_gradients_in_xc : 
 C OUTPUT:
 C The output values are in the module moreMeshSubs (New limits of the mesh
 C and the information needed to transfer data between data
@@ -1337,13 +1338,14 @@ C ==================================================================
       use moreMeshSubs, only: initMeshDistr
       use moreMeshSubs, only: allocASynBuffer
       use moreMeshSubs, only: UNIFORM, QUADRATIC, LINEAR
-      use cellxc_mod,   only: GGA, setGGA
       use alloc,        only: re_alloc, de_alloc
+      
       implicit none
 C     Passed arguments
       integer, intent(in)  :: nm(3), nmpl, norb, iaorb(norb),
      &                        iphorb(norb), isa(*)
       integer, intent(out) :: numphi(nmpl)
+      logical, intent(in)  :: need_gradients_in_xc
 C     Local variables
       integer              :: ii, io, ia, iphi, is, iop, ip0, isp
       real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
@@ -1402,7 +1404,7 @@ C           If within range, add one to number of point orbitals
           endif
         enddo
         call initMeshDistr( UNIFORM, LINEAR, nm, wload )
-        if (GGA) call initMeshExtencil( LINEAR, nm )
+        if (need_gradients_in_xc) call initMeshExtencil( LINEAR, nm )
 
 C       Free local memory
         call de_alloc( wload, 'wload', 'distriPhiOnMesh' )

@@ -57,7 +57,7 @@ operations have different load-balancing profiles:
   every point. A ``uniform`` distribution is appropriate. Each process
   handles a parallelepipedic portion of the mesh box of the same size.
 
-* The XC routine does not work on points where there is no charge
+* The XC routine does no work on points where there is no charge
   density. A special algorithm determines the allocation of points to
   processors so that all have approximately the same workload. This is
   the ``linear`` distribution (this is a misnomer: it should be
