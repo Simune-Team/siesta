@@ -2934,7 +2934,7 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer,         parameter:: maxFactors = 100  ! Max prime factors in nNodes
   type(distrType),pointer:: distr, newDistr, oldDistr
-  integer,allocatable:: axisBox(:,:,:), nodeBoxes(:,:,:), partBox(:,:,:)
+  integer,allocatable:: axisBox(:,:,:), partBox(:,:,:)
   integer:: axis, axisNodes(3), blockSize, boxSize, &
             factor(maxFactors), groupSize, &
             i1, i2, i3, iAxis, iBox, iDistr, iFac, iID, iNode, iPow, &
@@ -2997,9 +2997,7 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
 ! Handle box argument with priority
   if (present(box)) then
     ! Collect all node boxes and store them
-    allocate( nodeBoxes(2,3,0:totNodes-1) )
-    call gatherBoxes( box, nodeBoxes )
-    distr%box = nodeBoxes
+    call gatherBoxes( box, distr%box )
     goto 999  ! Exit, since no other arguments must be considered in this case
   end if ! (present(box))
 
