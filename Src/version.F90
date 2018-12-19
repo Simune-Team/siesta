@@ -69,6 +69,11 @@ write(6,'(2a)') 'Compiler flags  : ', trim(fflags)
 write(6,'(2a)') 'PP flags        : ', trim(fppflags)
 write(6,'(2a)') 'Libraries       : ', trim(libs)
 
+call getcwd(cwd, stat)
+if ( stat == 0 ) then
+write(6,'(2a)') 'Directory       : ', trim(cwd)
+end if
+
 #ifdef MPI
 write(6,'(a)') 'PARALLEL version'
 #else
@@ -104,11 +109,6 @@ write(6,'(a)') '******************************************************'
 write(6,'(a)') 'transiesta executable is deprecated, please use siesta'
 write(6,'(a)') '******************************************************'
 #endif
-
-call getcwd(cwd, stat)
-if ( stat == 0 ) then
-write(6,'(2a)') 'Directory       : ', trim(cwd)
-end if
 
 end subroutine prversion
 !----------------------------------------------------------
