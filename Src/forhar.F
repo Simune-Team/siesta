@@ -25,6 +25,7 @@ C **** BEHAVIOUR *******************************************************
 C   In the first SCF step, V_Hartree(DeltaRho_in) is zero, because
 C in that case, Rho_SCF(r) = Rho_atm(r) and therefore, DeltaRho(r) = 0
 C This calculation will be skipped.
+C NOTE: This is true only if the initial DM is built from atomic charges...    
 C   If Harris + Spin polarized in the first SCF step, then Vharris2 will
 C multiply to D Rho(Harris)/D R inside dfscf, and the change of 
 C the harris density respect the displacement
@@ -56,9 +57,9 @@ C **********************************************************************
       REAL(dp),                INTENT(IN) :: CELL(3,3)
       REAL(grid_p),            INTENT(IN) :: VNA(NTPL), RHOATM(NTPL),
      &                                       RHOPCC(NTPL)
-      REAL(grid_p),         INTENT(INOUT) :: DRHOOUT(NTPL,NSPIN)
-      REAL(grid_p), TARGET, INTENT(INOUT) :: VHARRIS1(NTPL,NSPIN)
-      REAL(grid_p),         INTENT(INOUT) :: VHARRIS2(NTPL)
+      REAL(grid_p),         INTENT(IN)    :: DRHOOUT(NTPL,NSPIN)
+      REAL(grid_p), TARGET, INTENT(OUT)   :: VHARRIS1(NTPL,NSPIN)
+      REAL(grid_p),         INTENT(OUT)   :: VHARRIS2(NTPL)
       
       EXTERNAL bsc_cellxc
 
@@ -81,7 +82,7 @@ C                                The charge density that enters in forhar
 C                                is Drho_out-Rhoatm.
 C ***** OUTPUT *********************************************************
 C REAL*4 VHARRIS1(NTPL,NSPIN)  : Vna + V_Hartree(DeltaRho_in) + V_xc(Rho_in)
-C REAL*4 VHARRIS2(NTPL)        : Vna + V_Hartree(Rho_in) +
+C REAL*4 VHARRIS2(NTPL)        : Vna + V_Hartree(DeltaRho_in) +
 C                              - DV_xc(Rho_in)/DRho_in * (Rho_out-Rho_in)
 C                                If Harris forces are computed in the 
 C                                first SCF step, it does not depend on spin
@@ -197,9 +198,6 @@ C ----------------------------------------------------------------------
       endif
 
       DO ISPIN = 1, NSPIN
-        IF( NPCC .EQ. 1) 
-     &    DRHOIN(1:NTPL,ISPIN) = DRHOIN(1:NTPL,ISPIN) - 
-     &                           RHOPCC(1:NTPL)/NSPIN
         DO IP = 1, NTPL
           VHARRIS1(IP,ISPIN) = VHARRIS1(IP,ISPIN) + VNA(IP)
         ENDDO
@@ -222,7 +220,7 @@ C ----------------------------------------------------------------------
 
 C ----------------------------------------------------------------------
 C Since V_Hartree(DeltaRho_in) = 0.0, we only add to vharris2 the neutral
-C atom potential
+C atom potential (note sign change of above intermediate result)
 C ----------------------------------------------------------------------
       DO IP = 1, NTPL
         VHARRIS2(IP) = VNA(IP) - VHARRIS2(IP)
