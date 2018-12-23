@@ -222,6 +222,13 @@ contains
           tmp = VNORM(r3)
           call cross(Elecs(iE)%cell(:,3), Elecs(iE)%cell(:,2), r3)
           tmp = max(tmp, VNORM(r3))
+        case ( 7 ) ! A-B-C
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
         end select
         
       else
