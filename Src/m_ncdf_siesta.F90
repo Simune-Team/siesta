@@ -780,6 +780,9 @@ contains
 
        ! Create all projector variables...
        if ( nk > 0 ) then
+          call ncdf_def_var(grp,'proj',NF90_DOUBLE, (/'ntb ','nkbs'/), &
+             compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
+
           dic = ('pjnl_l'.kv.NF90_INT)//('pjnl_j'.kv.NF90_DOUBLE)
           dic = dic//('pjnl_n'.kv.NF90_INT)//('pjnl_ekb'.kv.NF90_DOUBLE)
           dic = dic//('kbcutoff'.kv.NF90_DOUBLE)//('kbdelta'.kv.NF90_DOUBLE)
@@ -793,52 +796,37 @@ contains
              d = .next. d
           end do
           call delete(dic)
-          call delete(v)
        end if
+       call delete(v)
 
        ! Create orbital projector
        call ncdf_def_var(grp,'orb',NF90_DOUBLE,(/'ntb  ','norbs'/), &
-            compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
+           compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
+
+       if ( spp%z > 0 ) then ! negative are floating orbitals
        
-       ! Local potential
-       dic = ('cutoff'.kv.spp%vna%cutoff) // &
-            ('delta'.kv.spp%vna%delta)
-       call ncdf_def_var(grp,'vna',NF90_DOUBLE, (/'ntb'/), atts=dic, &
-            compress_lvl=cdf_comp_lvl,chunks=(/nt/))
+         ! Local potential
+         call save_rad_func('vna', spp%vna)
+         
+         ! Local potential charge density
+         call save_rad_func('chlocal', spp%chlocal)
+         
+         ! Reduced local potential (rV+2*Zval)
+         call save_rad_func('reduced_vlocal', spp%reduced_vlocal)
 
-       ! Local potential charge density
-       dic = dic//('cutoff'.kv.spp%chlocal%cutoff) // &
-            ('delta'.kv.spp%chlocal%delta)
-       call ncdf_def_var(grp,'chlocal',NF90_DOUBLE, (/'ntb'/), atts=dic, &
-            compress_lvl=cdf_comp_lvl,chunks=(/nt/))
-
-       ! Reduced local potential (rV+2*Zval)
-       dic = dic//('cutoff'.kv.spp%reduced_vlocal%cutoff) // &
-            ('delta'.kv.spp%reduced_vlocal%delta)
-       call ncdf_def_var(grp,'reduced_vlocal',NF90_DOUBLE, (/'ntb'/), atts=dic, &
-            compress_lvl=cdf_comp_lvl,chunks=(/nt/))
-
-       if ( spp%there_is_core ) then
-          ! Core charge, if it exists, the variable will be created
-          ! Hence, the old way of designating whether core is present
-          ! or not is removed.
-          ! I.e. no Core_flag [1|0] will be saved, Core_flag == .true. is 
-          ! apt if 'core' variable exists.
-          dic = dic//('cutoff'.kv.spp%core%cutoff) // &
-               ('delta'.kv.spp%core%delta)
-          call ncdf_def_var(grp,'core',NF90_DOUBLE, (/'ntb'/), atts=dic, &
-               compress_lvl=cdf_comp_lvl,chunks=(/nt/))
+         if ( spp%there_is_core ) then
+           ! Core charge, if it exists, the variable will be created
+           ! Hence, the old way of designating whether core is present
+           ! or not is removed.
+           ! I.e. no Core_flag [1|0] will be saved, Core_flag == .true. is 
+           ! apt if 'core' variable exists.
+           call save_rad_func('core', spp%core)
+         end if
 
        end if
 
        call delete(dic)
 
-       ! Define the projector
-       if ( nk > 0 ) then
-          call ncdf_def_var(grp,'proj',NF90_DOUBLE, (/'ntb ','nkbs'/), &
-               compress_lvl=cdf_comp_lvl,chunks=(/nt,1/))
-       end if
-          
        ! Save all variables to the group
 
        ! Save orbital
@@ -878,20 +866,6 @@ contains
           call ncdf_put_var(grp,'kbdelta',p%delta,start=(/i/))
        end do
 
-       ! Local potential
-       call ncdf_put_var(grp,'vna',spp%vna%f(1:nt))
-
-       ! Local potential charge density
-       call ncdf_put_var(grp,'chlocal',spp%chlocal%f(1:nt))
-
-       ! Reduced local potential
-       call ncdf_put_var(grp,'reduced_vlocal',spp%reduced_vlocal%f(1:nt))
-
-       if ( spp%there_is_core ) then
-          ! Save core
-          call ncdf_put_var(grp,'core',spp%core%f(1:nt))
-       end if
-
        do i = 1, no
           p => spp%orbnl(i)
           call ncdf_put_var(grp,'orb',p%f(1:nt),start=(/1,i/))
@@ -904,6 +878,27 @@ contains
     call ncdf_close(nf)
 
     call timer('CDF-basis',2)
+
+  contains
+
+    subroutine save_rad_func(name, rfunc)
+      use radial, only: rad_func
+
+      character(len=*), intent(in) :: name
+      type(rad_func), intent(in) :: rfunc
+      type(dict) :: dic
+
+      ! Only create it if it exists in the pseudo
+      if ( rfunc%n <= 0 ) return
+
+      dic = ('cutoff'.kv.rfunc%cutoff) // ('delta'.kv.rfunc%delta)
+      call ncdf_def_var(grp, name, NF90_DOUBLE, (/'ntb'/), atts=dic, &
+          compress_lvl=cdf_comp_lvl,chunks=(/nt/))
+      ! Save immediately
+      call ncdf_put_var(grp, name, rfunc%f(1:nt))
+      call delete(dic)
+
+    end subroutine save_rad_func
 
   end subroutine cdf_save_basis
 
