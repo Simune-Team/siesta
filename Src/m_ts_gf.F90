@@ -600,6 +600,8 @@ contains
        case ( 6 )
          kpt(1) = 0._dp
          kpt(2) = 0._dp
+       case ( 7 )
+         kpt(:) = 0._dp
        case default
          kpt(Elecs(i)%t_dir) = 0._dp
        end select

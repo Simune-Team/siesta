@@ -2538,12 +2538,12 @@ above.
   (which must be squared to obtain the valence density) are really
   filtered with a cutoff reduced by an empirical factor
   $0.7^2 \simeq 0.5$. The \fdf{FilterCutoff} should be similar or
-  lower than the \fdf{MeshCutoff} to avoid the \emph{eggbox
+  lower than the \fdf{Mesh!Cutoff} to avoid the \emph{eggbox
       effect} on the atomic forces.  However, one should not try to
-  converge \fdf{MeshCutoff} while simultaneously changing
+  converge \fdf{Mesh!Cutoff} while simultaneously changing
   \fdf{FilterCutoff}, since the latter in fact changes the used
   basis functions. Rather, fix a sufficiently large
-  \fdf{FilterCutoff} and converge only \fdf{MeshCutoff}.  If
+  \fdf{FilterCutoff} and converge only \fdf{Mesh!Cutoff}.  If
   \fdf{FilterCutoff} is not explicitly set, its value is calculated
   from \fdf{FilterTol}.
 
@@ -2571,7 +2571,7 @@ above.
   orbitals may be meaningless, leading to incorrect results or even a
   program crash.
 
-  To be implemented: If \fdf{MeshCutoff} is not present in the
+  To be implemented: If \fdf{Mesh!Cutoff} is not present in the
   input file, it can be set using the maximum filtering cutoff used
   for the given \fdf{FilterTol} (for the time being, you can use
   \fdf{AtomSetupOnly} \fdftrue\ to stop the program after basis generation,
@@ -5628,7 +5628,7 @@ simultaneously for complete control.
 \siesta\ uses a finite 3D grid for the calculation of some
 integrals and the representation of charge densities and potentials.
 Its fineness is determined by its plane-wave cutoff, as
-given by the \fdf{MeshCutoff} option. It means that all periodic
+given by the \fdf{Mesh!Cutoff} option. It means that all periodic
 plane waves with kinetic energy lower than this cutoff 
 can be represented in the grid without aliasing. In turn,
 this implies that if a function (e.g. the density or the 
@@ -5656,28 +5656,51 @@ The \program{Util/Scripting/eggbox\_checker.py} script can be used to
 diagnose the eggbox effect to be expected for a particular
 pseudopotential/basis-set combination.
 
-Apart from increasing the mesh cutoff (see the \fdf{MeshCutoff} option),
+Apart from increasing the mesh cutoff (see the \fdf{Mesh!Cutoff} option),
 the following options might help in lessening a given eggbox problem. But
 note also that a filtering of the orbitals and the relevant parts of
 the pseudopotential and the pseudocore charge might be enough to solve
 the issue (see Sec.~\ref{sec:filtering}).
 
-\begin{fdfentry}{MeshCutoff}[energy]<$300\,\mathrm{Ry}$>
+\begin{fdfentry}{Mesh!Cutoff}[energy]<$300\,\mathrm{Ry}$>
   \index{grid}%
   \index{mesh}
 
   Defines the plane wave cutoff for the grid.
   
   % JMS/AG. To be implemented:
-  % \textit{Default value:} If not present, \textbf{MeshCutoff} is made equal 
-  % to \textbf{FilterCutoff}, if present. If not, it is obtained from
-  % \textbf{FilterTol}, if present, as explained in that parameter.
+  % \textit{Default value:} If not present, \fdf{Mesh!Cutoff} is made equal 
+  % to \fdf{FilterCutoff}, if present. If not, it is obtained from
+  % \fdf{FilterTol}, if present, as explained in that parameter.
   % If none of these parameters is present, the default value for 
-  % \textbf{MeshCutoff} is \texttt{100 Ry}
+  % \fdf{Mesh!Cutoff} is \texttt{100 Ry}
  
 \end{fdfentry}
 
-\begin{fdfentry}{MeshSubDivisions}[integer]<$2$>
+\begin{fdfentry}{Mesh!Sizes}[list]<\fdfvalue{Mesh!Cutoff}>
+  \index{grid}%
+  \index{mesh}
+
+  Manual definition of grid size along each lattice vector. The value
+  must be divisible by \fdf{Mesh!SubDivisions}, otherwise the
+  program will die. The numbers should also be divisible with $2$, $3$
+  and $5$ due to the FFT algorithms.
+
+  This option may be specified as a block, or a list:
+  \begin{fdfexample}
+    %block Mesh.Sizes
+      100 202 210
+    %endblock
+    # Or equivalently:
+    Mesh.Sizes [100 202 210]  
+  \end{fdfexample}
+
+  By default the grid size is determined via \fdf{Mesh!Cutoff}. This
+  option has precedence if both are specified.
+
+\end{fdfentry}
+
+\begin{fdfentry}{Mesh!SubDivisions}[integer]<$2$>
   \index{grid}%
   \index{mesh}
   
@@ -8947,7 +8970,7 @@ an alternative way to plot the charge density (and wavefunctions).
   the ``cube'' format, accepted by several Bader-analysis programs
   (for example, see \url{http://theory.cm.utexas.edu/bader/}).  Due to
   the need to represent a localized core charge, it is advisable to
-  use a moderately high MeshCutoff when invoking this option (300-500
+  use a moderately high Mesh!Cutoff when invoking this option (300-500
   Ry). The size of the ``basin of attraction'' around each atom in
   the Bader analysis should be monitored to check that the model core
   charge is contained in it.
@@ -9513,7 +9536,7 @@ implemented, selected by
 
       \item New MD routines
 
-      \item Convergence tests of \fdf{MeshCutoff} and
+      \item Convergence tests of \fdf{Mesh!Cutoff} and
       \fdf{kgrid.MonkhorstPack}, or other parameters (currently basis
       set optimizations cannot be performed in the Lua script).
 
@@ -10933,7 +10956,7 @@ end
     \option[Initialize-MD]%
     Right before the SCF step starts. This point is somewhat
     superfluous, but is necessary to communicate the actual meshcutoff
-    used\footnote{Remember that the \fdf{MeshCutoff} defined is the
+    used\footnote{Remember that the \fdf{Mesh!Cutoff} defined is the
         minimum cutoff used.}.
 
     \note \program{siesta.state == siesta.INIT\_MD}.

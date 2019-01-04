@@ -95,6 +95,12 @@ module m_ts_electype
      ! transport direction (determines H01)
      ! And is considered with respect to the electrode direction...
      !  t_dir is with respect to the electrode unit-cell
+     ! This number defines the semi-infinite direction.
+     ! 1 - 3: corresponds to the electrode lattice directions
+     ! 4 : E2 + E3 (double semi-infinite)
+     ! 5 : E1 + E3 (double semi-infinite)
+     ! 6 : E1 + E2 (double semi-infinite)
+     ! 7 : E1 + E2 + E3 (completely semi-infinite)
      integer :: t_dir = 3
      ! This is the cell pivoting table from the
      ! electrode unit-cell to the simulation unit-cell
@@ -420,7 +426,9 @@ contains
          ! The 3 below cases are *special* in the sense that they require the user
          ! to supply the GF files (TranSiesta/TBtrans cannot calculate the self-energies of
          ! real-space Green functions).
-         if ( leqi(ln,'ab') .or. leqi(ln, 'ba') ) then
+         if ( leqi(ln,'abc') ) then
+           this%t_dir = 7 ! Completely surrounding
+         else if ( leqi(ln,'ab') .or. leqi(ln, 'ba') ) then
            this%t_dir = 6 ! Voigt notation
          else if ( leqi(ln,'ac') .or. leqi(ln, 'ca') ) then
            this%t_dir = 5
@@ -740,6 +748,15 @@ contains
         fmax = max(fmax,rc)
       end do
       this%is_Gamma = this%nsc(3) == 1
+    case ( 7 ) ! A-B-C
+      do i = 1 , this%na_u
+        do j = 1, 3
+          rc = sum(this%xa(:,i) * rcell(:,j))
+          fmin = min(fmin,rc)
+          fmax = max(fmax,rc)
+        end do
+      end do
+      this%is_Gamma = .true.
     case default
       do i = 1 , this%na_u
         rc = sum(this%xa(:,i) * rcell(:,this%t_dir))
@@ -763,6 +780,12 @@ contains
     case ( 6 ) ! A-B
       fmin = VNORM( rc * this%cell(:,1) )
       fmax = VNORM( rc * this%cell(:,2) )
+      this%dINF_layer = min(fmin, fmax)
+    case ( 7 ) ! A-B-C
+      fmin = VNORM( rc * this%cell(:,1) )
+      fmax = VNORM( rc * this%cell(:,2) )
+      fmin = min(fmin, fmax)
+      fmax = VNORM( rc * this%cell(:,3) )
       this%dINF_layer = min(fmin, fmax)
     case default
       this%dINF_layer = VNORM( rc * this%cell(:,this%t_dir) )
@@ -907,6 +930,21 @@ contains
       else
         p = this%cell(:,1)
       end if
+    case ( 7 ) ! A-B-C
+      call cross(this%cell(:,1), this%cell(:,2), p)
+      contrib = VNORM(p)
+      call cross(this%cell(:,1), this%cell(:,3), p)
+      if ( contrib > VNORM(p) ) then
+        i = 3
+      else
+        i = 2
+        contrib = VNORM(p)
+      end if
+      call cross(this%cell(:,2), this%cell(:,3), p)
+      if ( VNORM(p) > contrib ) then
+        i = 1
+      end if
+      p = this%cell(:, i)
     case default
       p = this%cell(:,this%t_dir)
     end select
@@ -1453,6 +1491,8 @@ contains
        case ( 6 )
          tmp(1) = 0._dp
          tmp(2) = 0._dp
+       case ( 7 )
+         tmp(:) = 0._dp
        case default
          tmp(this%t_dir) = 0._dp
        end select
@@ -1724,6 +1764,8 @@ contains
     case ( 6 ) ! A-B
       tm(1) = 0
       tm(2) = 0
+    case ( 7 ) ! A-B-C
+      tm(:) = 0
     case default
       tm(this%t_dir) = 0
       has_01 = .true.
@@ -2253,6 +2295,8 @@ contains
       chars = 'E1 and E3'
     case ( 6 )
       chars = 'E1 and E2'
+    case ( 7 )
+      chars = 'all'
     end select
     if ( this%t_dir <= 3 ) then
       if ( this%inf_dir == INF_POSITIVE ) then
