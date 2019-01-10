@@ -2636,19 +2636,14 @@ C
         cnfigtb(:,:,is) = 0
 
         if (iz.ne.-100) then  
-          do l=0,lmxo
+          ! Note that cnfigmx and nsemic are now properly extended
+          ! all the way to lmaxd (in basis_types) to give a proper cnfigtb
+          do l=0,lmaxd
             do nsm=1, nsemic(l)+1
               cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
             enddo
           enddo 
-          do l=min(lmaxd,lmxo+1),lmaxd
-            cnfigtb(l,1,is)=l+1         ! AG*** Why??
-                                           ! To deal with polarization
-                                           ! orbitals beyond lmxo?
-! BUT, what happens to "in-between" polarization orbitals?
-! 
-!
-          enddo
+
         else
 !
 !          Arbitrary "n" for "semicore" bessel states...

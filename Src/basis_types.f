@@ -578,6 +578,24 @@
      $           cnfigmx(l,isp) = basp%ground_state%n(l)
 
          enddo
+
+         ! NOTE: cnfigmx and nsemic are only initialized for l up to lmxo
+         !       in the above loop
+         !       Extend them so that we can deal properly with outer polarization states
+
+         do l=basp%lmxo+1, lmaxd
+            !     gs is only setup up to l=3 (f)
+            if (l <= 3) then
+               cnfigmx(l,isp) = basp%ground_state%n(l)
+            else
+               ! g orbitals. Use the "l+1" heuristic
+               ! For example, 5g pol orb associated to a 4f orb.
+               cnfigmx(l,isp) = l + 1
+            endif
+            nsemic(l,isp) = 0
+         enddo
+         
+
          do l=0,basp%lmxkb
             k=>basp%kbshell(l)
             nkbl(l,isp) = k%nkbl

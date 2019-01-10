@@ -403,10 +403,13 @@ C Returns the valence-shell configuration in the atomic ground state
 C (i.e. the principal quatum number for orbitals of angular momentum l)
 
 C   INTEGER CNFIGFIO: Principal quantum number of the shell to what 
-C                     the orbital belongs ( for polarization orbitals
-C                     the quantum number corresponds to the shell which
-C                     is polarized by the orbital io) 
-
+C     the orbital belongs
+C              (NO: for polarization orbitals
+C                   the quantum number corresponds to the shell which
+C                   is polarized by the orbital io) 
+C     **NOTE: This behavior for polarization orbitals is meaningless,
+C             and has been replaced      
+      
       integer l, norb, lorb, izeta, ipol,nsm
       integer  indx, nsmorb
 
@@ -419,6 +422,9 @@ C
          call die()
       endif
 
+      ! This routine assumes that polarization orbitals are the last ones
+      ! in the list indexed by 'io'
+      
         norb=0
         indx=0
         do 10 l=0,lmxosave(is)
@@ -450,8 +456,9 @@ C
         cnfigfio=cnfigtb(lorb,nsmorb,is)
         return
 
-40      lorb=l
-        nsmorb=nsm
+        ! Deal properly with polarization orbitals
+40      lorb=l+1
+        nsmorb=1
         cnfigfio=cnfigtb(lorb,nsmorb,is)  
         return
 
