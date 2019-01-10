@@ -2635,9 +2635,12 @@ C
             
         cnfigtb(:,:,is) = 0
 
-        if (iz.ne.-100) then  
+        ! Generate the array with 'n' quantum number information
+        if (iz.ne.-100) then  ! Normal case
+           
           ! Note that cnfigmx and nsemic are now properly extended
           ! all the way to lmaxd (in basis_types) to give a proper cnfigtb
+
           do l=0,lmaxd
             do nsm=1, nsemic(l)+1
               cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
