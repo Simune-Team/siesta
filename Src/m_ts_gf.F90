@@ -546,35 +546,19 @@ contains
     ! Furthermore we include the weight of the k-point
 
     ! the number of points we wish to read in this segment
-    NEReqs = 1
 #ifdef MPI
-    i = 0
-    if ( cE%exist .and. .not. cE%fake) i = 1
-    call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
-         MPI_Comm_World, MPIerror)
-#endif
-
-    if ( present(reread) ) then
-       if ( IONode .and. reread ) then
-          do j = 1 , N_Elec
-             if ( .not. Elecs(j)%out_of_core ) cycle
-             do i = 1 , NEReqs * 2
-                backspace(unit=uGF(j))
-             end do
-          end do
-! Currently the equilibrium energy points are just after
-! the k-point, hence we will never need to backspace behind the
-! HAA and SAA reads
-! however, when we add kpoints for the bias contour, then it might be
-! necessary!
-!           if ( new_kpt ) then
-!             do i = 1 , 2
-!                backspace(unit=uGFL)
-!                backspace(unit=uGFR)
-!             end do
-!          end if
-       end if
+    if ( any(Elecs(:)%out_of_core) ) then
+      if ( cE%exist .and. .not. cE%fake) then
+        i = 1
+      else
+        i = 0
+      end if
+      call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
+          MPI_Comm_World, MPIerror)
     end if
+#else
+    NEReqs = 1
+#endif
 
     ! TODO Move reading of the energy points
     ! directly into the subroutines which need them
@@ -619,6 +603,27 @@ contains
 #endif
        end if
        if ( Elecs(i)%out_of_core ) then
+
+          ! Backspace the file if needed
+          if ( present(reread) ) then
+            ! Currently the equilibrium energy points are just after
+            ! the k-point, hence we will never need to backspace behind the
+            ! HAA and SAA reads
+            ! however, when we add kpoints for the bias contour, then it might be
+            ! necessary!
+            if ( IONode .and. reread ) then
+              do j = 1 , NEReqs * 2
+                backspace(unit=uGF(j))
+              end do
+              ! if ( new_kpt ) then
+              !  do j = 1 , 2
+              !   backspace(unit=uGFL)
+              !   backspace(unit=uGFR)
+              !  end do
+              ! end if
+            end if
+          end if
+
           ! Set k-point for calculating expansion
           Elecs(i)%bkpt_cur = kpt
           call read_next_GS_Elec(uGF(i), NEReqs, &
