@@ -17,7 +17,8 @@
      .                  listdptr, listd, H, S, qtot, fixspin, 
      .                  qs, temp, e1, e2, xij, indxuo, gamma, nk, 
      .                  kpoint, wk, eo, qo, Dnew, Enew, ef, efs, 
-     .                  Entropy, nuotot, occtol, iscf, neigwanted )
+     .                  Entropy, nuotot, occtol, iscf, neigwanted,
+     .                  dealloc_psi)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -71,12 +72,14 @@ C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
 C integer iscf                : SCF cycle number
 C integer neigwanted          : Number of eigenvalues wanted
+C logical, dealloc_psi        : [OPTIONAL] whether or not to deallocate
+C                               the densematrices used [[densematrix]]
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,nspin,nk)  : Eigenvalues 
 C real*8 qo(maxo,nspin,nk)  : Occupations of eigenstates
 C real*8 Dnew(maxnd,spin%DM)  : Output Density Matrix
 C real*8 Enew(maxnd,spin%EDM)  : Output Energy-Density Matrix
-C real*8 ef                      : Fermi energy
+C real*8 ef                    : Fermi energy
 C real*8 efs(nspin)         : Fermi energy for each spin
 C                                   (for fixed spin calculations)
 C real*8 Entropy                 : Electronic entropy
@@ -137,6 +140,8 @@ C
       logical
      .  fixspin, getD, getPSI
 
+      logical, intent(in), optional :: dealloc_psi
+      
       external
      .  diag2g, diag2k, diagsprl
 #ifdef CDF
@@ -304,7 +309,8 @@ C Call apropriate routine
 
 C Free local arrays
       call de_alloc( aux, name='aux', routine='diagon' )
-      call resetDenseMatrix()
+
+      call resetDenseMatrix(dealloc_psi=dealloc_psi)
 
 C Stop time counter
       call timer( 'diagon', 2 )

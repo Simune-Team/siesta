@@ -49,8 +49,8 @@ PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
 #
 # Routines used by pipes and sockets versions (VPATH knows where they are)
 #
-FSIESTA_PIPES= fsiesta_pipes.o pxf.o
-FSIESTA_SOCKETS= fsockets.o sockets.o fsiesta_sockets.o 
+FSIESTA_PIPES= posix_calls.o fsiesta_pipes.o pxf.o 
+FSIESTA_SOCKETS= posix_calls.o fsockets.o sockets.o fsiesta_sockets.o 
 #
 # Siesta libraries used by MPI version
 #

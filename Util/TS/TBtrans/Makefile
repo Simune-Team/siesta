@@ -49,7 +49,7 @@ SIESTA_OBJS= bye.o precision.o m_io.o alloc.o memory_log.o memory.o pxf.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
              diag.o diag_option.o \
-	     debugmpi.o find_kgrid.o units.o m_cite.o
+	     debugmpi.o find_kgrid.o units.o m_cite.o posix_calls.o
 
 # Siesta timings
 SIESTA_OBJS += m_walltime.o timer_tree.o m_timer.o timer.o
@@ -148,7 +148,7 @@ endif
 # The version program
 .PHONY: version.o
 version.o: version
-version: version.F90
+version: version.F90 posix_calls.o
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
 	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;\
@@ -339,16 +339,16 @@ cellsubs.o: precision.o
 cellsubs.o: precision.o
 class_Data1D.o: alloc.o
 class_Data2D.o: alloc.o
+class_Data3D.o: alloc.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_Data1D.o
 class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData1D.o: class_Data1D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
+class_SpData3D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
 class_TriMat.o: alloc.o intrinsic_missing.o
@@ -674,12 +674,12 @@ m_tbt_regions.o: m_ts_pivot.o m_ts_sparse.o m_verbosity.o parallel.o
 m_tbt_regions.o: precision.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_ncdf_io.o m_os.o m_region.o m_tbt_hs.o
-m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o precision.o timestamp.o
-m_tbt_save.o: units.o
+m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o posix_calls.o
+m_tbt_save.o: precision.o timestamp.o units.o
 m_tbt_save.o: class_OrbitalDistribution.o class_SpData1D.o class_Sparsity.o
 m_tbt_save.o: files.o m_interpolate.o m_ncdf_io.o m_os.o m_region.o m_tbt_hs.o
-m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o precision.o timestamp.o
-m_tbt_save.o: units.o
+m_tbt_save.o: m_ts_electype.o m_verbosity.o parallel.o posix_calls.o
+m_tbt_save.o: precision.o timestamp.o units.o
 m_tbt_sigma_save.o: m_os.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
 m_tbt_sigma_save.o: parallel.o precision.o timestamp.o units.o
 m_tbt_sigma_save.o: m_os.o m_region.o m_tbt_hs.o m_tbt_save.o m_ts_electype.o
@@ -774,10 +774,6 @@ tbt_reinit.o: m_verbosity.o parallel.o
 tbt_reinit.o: m_verbosity.o parallel.o
 tbtrans.o: m_tbt_hs.o m_tbt_options.o m_tbtrans.o
 tbtrans.o: m_tbt_hs.o m_tbt_options.o m_tbtrans.o
-class_cdata1d.o: class_Data1D.o
-class_cdata2d.o: class_Data2D.o
-class_cspdata1d.o: class_SpData1D.o
-class_cspdata2d.o: class_SpData2D.o
 class_ctrimat.o: class_TriMat.o
 class_ddata1d.o: class_Data1D.o
 class_ddata2d.o: class_Data2D.o
@@ -792,14 +788,10 @@ class_ispdata1d.o: class_SpData1D.o
 class_ispdata2d.o: class_SpData2D.o
 class_itrimat.o: class_TriMat.o
 class_ldata1d.o: class_Data1D.o
-class_ldata2d.o: class_Data2D.o
 class_lspdata1d.o: class_SpData1D.o
-class_lspdata2d.o: class_SpData2D.o
 class_ltrimat.o: class_TriMat.o
 class_sdata1d.o: class_Data1D.o
-class_sdata2d.o: class_Data2D.o
 class_sspdata1d.o: class_SpData1D.o
-class_sspdata2d.o: class_SpData2D.o
 class_strimat.o: class_TriMat.o
 class_zdata1d.o: class_Data1D.o
 class_zdata2d.o: class_Data2D.o

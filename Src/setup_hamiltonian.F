@@ -283,16 +283,16 @@
         
 !------- H(u,u)
          H(:,1) = H(:,1) + real(H_so_off(:,1), dp)
-         H(:,5) =         dimag(H_so_off(:,1))
+         H(:,5) =         aimag(H_so_off(:,1))
 !------- H(d,d)
          H(:,2) = H(:,2) + real(H_so_off(:,2), dp)
-         H(:,6) =         dimag(H_so_off(:,2))
+         H(:,6) =         aimag(H_so_off(:,2))
 !------- H(u,d)
          H(:,3) = H(:,3) + real(H_so_off(:,3), dp)
-         H(:,4) = H(:,4) +dimag(H_so_off(:,3))
+         H(:,4) = H(:,4) +aimag(H_so_off(:,3))
 !------- H(d,u)
          H(:,7) = H(:,7) + real(H_so_off(:,4), dp)
-         H(:,8) = H(:,8) -dimag(H_so_off(:,4))
+         H(:,8) = H(:,8) -aimag(H_so_off(:,4))
 
       endif
 

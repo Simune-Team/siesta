@@ -30,7 +30,7 @@ if [ -z "$TBT" ] ; then
     TBT="${TS_EXEC_PREFIX} ${ROOT_DIR}/Util/TS/TBtrans/tbtrans"
     if [ ! -e ${ROOT_DIR}/Util/TS/TBtrans/tbtrans ]; then
 	(cd "${ROOT_DIR}/Util/TS/TBtrans" ;
-	 make OBJDIR="$OBJDIR" )
+	 make -j OBJDIR="$OBJDIR" )
     fi
 fi
 
@@ -45,8 +45,7 @@ ln ../../Au.psf .
 ln ../../${ELEC}.fdf .
 ${TS} --electrode ${ELEC}.fdf > ${ELEC}.out
 RETVAL=$?
-if [ $RETVAL -ne 0 ]
-then
+if [ $RETVAL -ne 0 ]; then
    echo "The electrode calculation did not go well ..."
    exit
 fi
@@ -70,8 +69,7 @@ do
   ln ../Elec/${ELEC}.TSHS .
   $TS ${SCAT}.fdf > ${SCAT}.out
   RETVAL=$?
-  if [ $RETVAL -ne 0 ]
-      then
+  if [ $RETVAL -ne 0 ]; then
       echo "** The scattering region calculation for $SCAT did not go well ..."
       exit
   fi
@@ -92,10 +90,9 @@ do
  ln ../Elec/${ELEC}.TSHS .
  ln ../Scat_$SCAT/${SCAT}.TSHS .
  ln ../../${SCAT}.fdf .
- $TBT < ${SCAT}.fdf  > tbt_${SCAT}.out
+ $TBT ${SCAT}.fdf > tbt_${SCAT}.out
  RETVAL=$?
- if [ $RETVAL -ne 0 ]
- then
+ if [ $RETVAL -ne 0 ]; then
    echo "The scattering region calculation did not go well ..."
    exit
  fi

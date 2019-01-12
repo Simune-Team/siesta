@@ -182,7 +182,8 @@ c$$$     &           S, 'S.matrix')
      $              xijo, indxuo, gamma_SCF,
      &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
      &              eo, qo, Dscf, Escf, ef, efs, Entropy, no_u,
-     &              occtol, iscf, neigwanted)
+     &              occtol, iscf, neigwanted,
+     &              dealloc_psi=.not. CallDiagon)
         Ecorrec = 0.0_dp
         PreviousCallDiagon=.true.
       elseif (isolve .eq. SOLVE_ORDERN) then

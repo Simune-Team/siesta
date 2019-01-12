@@ -1,4 +1,4 @@
-	program fmPDOS
+        program fmPDOS
 C
 C       extracts data from PDOS file of SIESTA,
 C       taking care of flexible format in index, atom_index, etc. fields
@@ -20,7 +20,7 @@ C
       logical filexist,redos,nptdef
       external iquoted,squoted,iparsed
 
-	Ef = 0.d0
+        Ef = 0.d0
       do it=1,nmax
       do is=1,2
         dos(it,is)=0.d0
@@ -130,30 +130,30 @@ C --- line by line read and analyze PDOS file: -----------
       elseif (string(1:13).eq.'<fermi_energy') then
         llabel = '<fermi_energy units="eV">'
         rlabel = '</fermi_energy>'
-	! Currently not read
+        ! Currently not read
         goto 11
       elseif (string(1:8).eq.'<energy_') then   !  list of energies opens:
         nene = 0
-	do 
-	  read(ii1,'(a80)') string
-	  if (string(1:16).eq.'</energy_values>') then ! list of energies closes
-	    nt = nene
-	    if (nt > nmax ) then
-	      write(6,*)'  nt=',nt,' > nmax=',nmax
-	      stop
-	    end if
-	    if ( nptdef .and. nt /= npts ) then
-	      write(6,*)'  nt=',nt,' differs from npoints=',npts
-	      stop
-	    end if
-	    exit
-	  end if
-	  
-	  ! Read next energy point
-	  nene = nene + 1
-	  read(string,*) ene(nene)
-	end do
-	
+        do 
+          read(ii1,'(a80)') string
+          if (string(1:16).eq.'</energy_values>') then ! list of energies closes
+            nt = nene
+            if (nt > nmax ) then
+              write(6,*)'  nt=',nt,' > nmax=',nmax
+              stop
+            end if
+            if ( nptdef .and. nt /= npts ) then
+              write(6,*)'  nt=',nt,' differs from npoints=',npts
+              stop
+            end if
+            exit
+          end if
+          
+          ! Read next energy point
+          nene = nene + 1
+          read(string,*) ene(nene)
+        end do
+        
         goto 11
       elseif (string(1:8).eq.'<orbital') then      !  new orbital follows:
         goto 11
@@ -331,4 +331,4 @@ C --- position in 'string' just before the appearance of substring 'rlabel'
       write (6,*) string
       stop
       end
-	
+        

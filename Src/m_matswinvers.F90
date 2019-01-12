@@ -3,14 +3,14 @@
  use MatrixSwitch
  implicit none
  private
- public 						:: getinverse
+ public                                                 :: getinverse
 
  contains
   
  subroutine getinverse(C,label)
  implicit none
  character(3),intent(in), optional                      :: label
- type(matrix), intent(inout) 				:: C 
+ type(matrix), intent(inout)                            :: C 
 
 ! We make a disctintion between symmetric and hermitician matrices
 

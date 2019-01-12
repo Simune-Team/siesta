@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -474,13 +474,13 @@ contains
              select case ( i )
              case ( 1 )
                 allocate( k3_1(size(tmp3,1),2) )
-                k3_1 = tmp3
+                k3_1(:,:) = tmp3
              case ( 2 )
                 allocate( k3_2(size(tmp3,1),2) )
-                k3_2 = tmp3
+                k3_2(:,:) = tmp3
              case ( 3 )
                 allocate( k3_3(size(tmp3,1),2) )
-                k3_3 = tmp3
+                k3_3(:,:) = tmp3
              end select
              deallocate(tmp3)
 

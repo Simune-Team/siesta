@@ -282,7 +282,7 @@ C     Create extended mesh arrays for the first data distribution
       integer, intent(out)  :: ntm(3)
       
       real(dp)  :: rcell(3,3), vecmod
-      integer   :: i
+      integer   :: i, itmp
       real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
 
       type(block_fdf)            :: bfdf
@@ -326,25 +326,65 @@ C     Create extended mesh arrays for the first data distribution
 
       end do impose_cutoff
 
-      if (fdf_block('MeshSizes',bfdf)) then
-        if (fdf_bline(bfdf, pline)) then
+
+!     Let the user manually decide the mesh-box size
+!     This option may be useful when testing Mesh.SubDivisions
+!     for performance.
+!     NOTE/TODO: manual specification is not checked with respect
+!                to nfft (allowed integers). I don't know if this should
+!                forced or not?
+      if ( fdf_block('Mesh.Sizes',bfdf) ) then
+        
+        if ( fdf_bline(bfdf, pline) ) then
            ntm(1) = fdf_bintegers(pline,1)
            ntm(2) = fdf_bintegers(pline,2)
            ntm(3) = fdf_bintegers(pline,3)
         else
-           call die('initmesh: ERROR in MeshSizes block')
+           call die('initmesh: ERROR in Mesh.Sizes block')
         endif
         call fdf_bclose(bfdf)
+        
+        ! Calculate the actual meshcutoff from the grid
         RealCutoff = huge(1.0_dp)
         call chkgmx( k0, rcell, ntm, RealCutoff )
-        if (RealCutoff < G2max) then
-           call message("WARNING","Read mesh sizes give a smaller"
-     $                   // " cutoff than requested")
-        endif
-        if (any(mod(ntm,nsm) /= 0)) then
-           call die("Read mesh sizes are not multiples of nsm")
-        endif
-      endif
+
+      else if ( fdf_islist('Mesh.Sizes') ) then
+
+        i = -1
+        call fdf_list('Mesh.Sizes', i, ntm)
+        if ( i /= 3 )
+     &      call die('initmesh: ERROR in Mesh.Sizes list')
+        ! Do the actual read of the mesh sizes
+        call fdf_list('Mesh.Sizes', i, ntm)
+
+        ! Calculate the actual meshcutoff from the grid
+        RealCutoff = huge(1.0_dp)
+        call chkgmx( k0, rcell, ntm, RealCutoff )
+        
+      end if
+
+!     Issue a warning if the mesh sizes are smaller than
+!     the requested mesh cutoff
+      if ( RealCutoff < G2max ) then
+        call message("WARNING","Read mesh sizes give a smaller"
+     $      // " cutoff than requested")
+      end if
+
+!     Check whether the resulting mesh sizes are multiples
+!     of nsm.
+      if ( any(mod(ntm,nsm) /= 0) ) then
+        call die("initmesh: Read mesh sizes are not multiples of nsm")
+      end if
+
+!     Check that the numbers are divisible with the FFT algorithms
+      do i = 1, 3
+        itmp = ntm(i)
+        call nfft( itmp )
+        if ( itmp /= ntm(i) ) then
+          call die("initmesh: Read mesh sizes are not compatible "
+     &        // "with the FFT algorithm: % [2, 3, 5] == 0")
+        end if
+      end do
 
       end subroutine get_mesh_sizes
 

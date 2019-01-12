@@ -104,7 +104,7 @@ module m_timer_tree
 
   interface
      subroutine die(str)
-       character(len=*), intent(in), optional :: str
+       character(len=*), intent(in) :: str
      end subroutine die
      function use_walltime_in_timer() result(use_walltime)
        logical :: use_walltime

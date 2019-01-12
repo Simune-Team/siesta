@@ -50,7 +50,7 @@
 !               k(2) * xij(2,pnt(lind)) + &
 !               k(3) * xij(3,pnt(lind))
 !
-!          ph = fact * cdexp(dcmplx(0._dp,-kx))
+!          ph = fact * exp(cmplx(0._dp,-kx,dp))
 !
 !          ! The integration is:
 !          ! \rho = e^{-i.k.R} [ \int (Gf^R-Gf^A)/2 dE + \int Gf^R\Gamma Gf^A dE ]
@@ -181,10 +181,10 @@ contains
          &expected k-DM.')
 
     do jo = 0 , n_s - 1
-       ph(jo) = cdexp(dcmplx(0._dp, -&
+       ph(jo) = exp(cmplx(0._dp, -&
             k(1) * sc_off(1,jo) - &
             k(2) * sc_off(2,jo) - &
-            k(3) * sc_off(3,jo)))
+            k(3) * sc_off(3,jo),kind=dp))
     end do
 
     if ( non_Eq ) then
@@ -724,7 +724,7 @@ contains
 
        ! As we have shifted the fermi-level up to 0, we need to shift the
        ! energy-density matrix back
-       ph(0) = dcmplx(Ef,0._dp)
+       ph(0) = cmplx(Ef,0._dp,dp)
        call zaxpy(jo,ph(0),zD(1,1),1,zE(1,1),1)
 
     end if
@@ -736,10 +736,10 @@ contains
          &expected uz-DM.')
 
     do jo = 0 , n_s - 1
-       ph(jo) = cdexp(dcmplx(0._dp, -&
+       ph(jo) = exp(cmplx(0._dp, -&
             k(1) * sc_off(1,jo) - &
             k(2) * sc_off(2,jo) - &
-            k(3) * sc_off(3,jo)))
+            k(3) * sc_off(3,jo), kind=dp) )
     end do
 
     ! This loop is across the local rows...

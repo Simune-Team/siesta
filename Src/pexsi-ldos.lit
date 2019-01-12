@@ -716,7 +716,7 @@ character(len=*), intent(in) :: str
           call die("Error exit from " // trim(str) // " routine")
        endif
       call pxfflush(6)
-    endif	
+    endif       
 end subroutine check_info
 #+END_SRC
 

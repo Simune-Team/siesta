@@ -103,7 +103,7 @@ $(FDF):
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 
 LOCAL_OBJS = atompla.o fftw3_mymod.o extrapolate.o \
-        length.o mainstm.o matvect.o m_wfsx.o neighb.o ranger.o \
+        mainstm.o matvect.o m_wfsx.o neighb.o ranger.o \
         readstm.o redata.o  reinitstm.o stm.o \
 	vacpot.o handlers.o local_sys.o
 
@@ -113,7 +113,7 @@ SIESTA_OBJS= bessph.o chkdim.o dismin.o dot.o io.o iodm.o memory.o \
 SIESTA_OBJS +=precision.o parallel.o m_io.o alloc.o listsc.o  \
          atmparams.o atom_options.o atmfuncs.o atm_types.o \
          radial.o spher_harm.o basis_io.o basis_types.o \
-         domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
+         domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o \
          sparse_matrices.o interpolation.o m_fft_gpfa.o \
          files.o   chemical.o xml.o \
          parallelsubs.o spatial.o memory_log.o
@@ -173,6 +173,7 @@ chkdim.o: local_sys.o
 chkdim.o: local_sys.o
 class_Data1D.o: alloc.o
 class_Data2D.o: alloc.o
+class_Data3D.o: alloc.o
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Geometry_SpData2D.o: class_Pair_Geometry_SpData2D.o
@@ -184,15 +185,14 @@ class_Pair_Data1D.o: class_Data1D.o class_Data1D.o
 class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_Data1D.o
 class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData1D.o: class_Data1D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
+class_SpData3D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
 class_TriMat.o: alloc.o
@@ -248,10 +248,6 @@ stm.o: atmfuncs.o chemical.o precision.o
 stm.o: atmfuncs.o chemical.o precision.o
 vacpot.o: precision.o
 vacpot.o: precision.o
-class_cdata1d.o: class_Data1D.o
-class_cdata2d.o: class_Data2D.o
-class_cspdata1d.o: class_SpData1D.o
-class_cspdata2d.o: class_SpData2D.o
 class_ddata1d.o: class_Data1D.o
 class_ddata2d.o: class_Data2D.o
 class_dspdata1d.o: class_SpData1D.o
@@ -267,17 +263,13 @@ class_idata2d.o: class_Data2D.o
 class_ispdata1d.o: class_SpData1D.o
 class_ispdata2d.o: class_SpData2D.o
 class_ldata1d.o: class_Data1D.o
-class_ldata2d.o: class_Data2D.o
 class_lspdata1d.o: class_SpData1D.o
-class_lspdata2d.o: class_SpData2D.o
 class_pair_ddata1d.o: class_Pair_Data1D.o
 class_pair_gdata1d.o: class_Pair_Data1D.o
 class_pair_geometry_dspdata2d.o: class_Pair_Geometry_SpData2D.o
 class_pair_sdata1d.o: class_Pair_Data1D.o
 class_sdata1d.o: class_Data1D.o
-class_sdata2d.o: class_Data2D.o
 class_sspdata1d.o: class_SpData1D.o
-class_sspdata2d.o: class_SpData2D.o
 class_zdata1d.o: class_Data1D.o
 class_zdata2d.o: class_Data2D.o
 class_zspdata1d.o: class_SpData1D.o

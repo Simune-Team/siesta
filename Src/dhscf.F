@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -493,6 +493,9 @@ C ----------------------------------------------------------------------
              ortho = abs(ddot(3,field2,1,field,1))
              field2 = Elecs(iE)%cell(:,2)
              ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 7 )           ! A-B-C
+             call die('dhscf: cannot use dipole correction when
+     &having all directions semi-infinite.')
            case default
              field2 = Elecs(iE)%cell(:,Elecs(iE)%t_dir)
              ortho = ddot(3,field2,1,field,1)
@@ -1291,6 +1294,8 @@ C Find dipole
                x0 = Elecs(ia)%cell(:,2)
                const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
                dipol(1:3) = dipol(1:3) - const * x0
+             case ( 7 )         ! A-B-C
+               call die('dhscf: no dipole moment in infinite systems')
              case default
                x0 = Elecs(ia)%cell(:,Elecs(ia)%t_dir)
                const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
@@ -1389,9 +1394,9 @@ C ----------------------------------------------------------------------
          if ( dipole_correction ) then
             field = get_field_from_dipole(dipol,cell)
             if (Node == 0) then
-	       write(6,'(a,3f12.4,a)')
+               write(6,'(a,3f12.4,a)')
      $              'Dipole moment in unit cell   =', dipol/Debye, ' D'
-	       write(6,'(a,3f12.6,a)')
+               write(6,'(a,3f12.6,a)')
      $              'Electric field for dipole correction =',
      $              field/eV*Ang, ' eV/Ang/e'
             end if

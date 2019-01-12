@@ -95,7 +95,7 @@ SIESTA_OBJS += precision.o parallel.o debugmpi.o m_io.o alloc.o listsc.o  \
          radial.o spher_harm.o basis_io.o basis_types.o parallelsubs.o \
          schecomm.o sparse_matrices.o\
          files.o interpolation.o chemical.o xml.o \
-         domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
+         domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o \
          spatial.o 
 
 # Additional class objects
@@ -164,6 +164,7 @@ chkdim.o: local_sys.o
 chkdim.o: local_sys.o
 class_Data1D.o: alloc.o
 class_Data2D.o: alloc.o
+class_Data3D.o: alloc.o
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Geometry_SpData2D.o: class_Pair_Geometry_SpData2D.o
@@ -175,15 +176,14 @@ class_Pair_Data1D.o: class_Data1D.o class_Data1D.o
 class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_Data1D.o
 class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData1D.o: class_Data1D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
+class_SpData3D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
 class_TriMat.o: alloc.o
@@ -263,10 +263,6 @@ wavofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
 wavofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
 wrout.o: precision.o
 wrout.o: precision.o
-class_cdata1d.o: class_Data1D.o
-class_cdata2d.o: class_Data2D.o
-class_cspdata1d.o: class_SpData1D.o
-class_cspdata2d.o: class_SpData2D.o
 class_ddata1d.o: class_Data1D.o
 class_ddata2d.o: class_Data2D.o
 class_dspdata1d.o: class_SpData1D.o
@@ -282,17 +278,13 @@ class_idata2d.o: class_Data2D.o
 class_ispdata1d.o: class_SpData1D.o
 class_ispdata2d.o: class_SpData2D.o
 class_ldata1d.o: class_Data1D.o
-class_ldata2d.o: class_Data2D.o
 class_lspdata1d.o: class_SpData1D.o
-class_lspdata2d.o: class_SpData2D.o
 class_pair_ddata1d.o: class_Pair_Data1D.o
 class_pair_gdata1d.o: class_Pair_Data1D.o
 class_pair_geometry_dspdata2d.o: class_Pair_Geometry_SpData2D.o
 class_pair_sdata1d.o: class_Pair_Data1D.o
 class_sdata1d.o: class_Data1D.o
-class_sdata2d.o: class_Data2D.o
 class_sspdata1d.o: class_SpData1D.o
-class_sspdata2d.o: class_SpData2D.o
 class_zdata1d.o: class_Data1D.o
 class_zdata2d.o: class_Data2D.o
 class_zspdata1d.o: class_SpData1D.o

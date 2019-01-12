@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -91,7 +91,7 @@ C format of atomic coordinates
      .   'recoor: Atomic-coordinates input format  = ',
      .   'Ref. to lattice vectors'
       else
-        write(6,"(/,'recoor: ',72(1h*))")
+        write(6,"(/,'recoor: ',72('*'))")
         write(6,"('recoor:                  INPUT ERROR')")
         write(6,'(a)') 'recoor: '
         write(6,'(2a)') 'recoor: You must use one of the following',
@@ -101,7 +101,7 @@ C format of atomic coordinates
         write(6,'(a)') 'recoor:     - ScaledCartesian                '
         write(6,'(2a)') 'recoor:     - ScaledByLatticeVectors ',
      .                                               '(or Fractional)'
-        write(6,"('recoor: ',72(1h*))")
+        write(6,"('recoor: ',72('*'))")
         stop 'recoor: ERROR: Wrong atomic-coordinate input format'
       endif
 
@@ -128,11 +128,11 @@ c read atomic coordinates and species
             xmass(ia)  = fdf_bvalues(pline,5)
           enddo
         else
-          write(6,"(/,'recoor: ',72(1h*))")
+          write(6,"(/,'recoor: ',72('*'))")
           write(6,"('recoor:                  INPUT ERROR')")
           write(6,'(a)')
      .    'recoor:   You must specify the atomic coordinates'
-          write(6,"('recoor: ',72(1h*))")
+          write(6,"('recoor: ',72('*'))")
           stop 'recoor: ERROR: Atomic coordinates missing'
         endif
 

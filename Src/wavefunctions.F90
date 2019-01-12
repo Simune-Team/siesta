@@ -207,7 +207,7 @@ CONTAINS
             ckxij = 1.0_dp
             skxij = 0.0_dp
           END IF
-          varaux = real(Daux%zval(jo,io))*ckxij +     &
+          varaux = real(Daux%zval(jo,io),dp)*ckxij +     &
                    aimag(Daux%zval(jo,io))*skxij
           Dnew(ind,ispin)  = Dnew(ind,ispin) + varaux
         END DO
@@ -315,7 +315,7 @@ CONTAINS
                 ckxij = 1.0_dp
                 skxij = 0.0_dp
               END IF
-              cvar1 =  real(Eaux%zval(jo,io))*ckxij +     &
+              cvar1 =  real(Eaux%zval(jo,io),dp)*ckxij +     &
                        aimag(Eaux%zval(jo,io))*skxij
               Enew(ind,ispin)  = Enew(ind,ispin) + cvar1
             END DO

@@ -140,16 +140,16 @@ dep:
 # DO NOT DELETE THIS LINE - used by make depend
 class_Data1D.o: alloc.o
 class_Data2D.o: alloc.o
+class_Data3D.o: alloc.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_Data1D.o
 class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
-class_SpData1D.o: class_Data1D.o class_Data1D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData1D.o: class_Data1D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
-class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
+class_SpData3D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
 class_TriMat.o: alloc.o intrinsic_missing.o
@@ -187,10 +187,6 @@ tshs2tshs.o: precision.o units.o
 tshs2tshs.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 tshs2tshs.o: class_Sparsity.o geom_helper.o m_sparse.o m_ts_io.o parallel.o
 tshs2tshs.o: precision.o units.o
-class_cdata1d.o: class_Data1D.o
-class_cdata2d.o: class_Data2D.o
-class_cspdata1d.o: class_SpData1D.o
-class_cspdata2d.o: class_SpData2D.o
 class_ddata1d.o: class_Data1D.o
 class_ddata2d.o: class_Data2D.o
 class_dspdata1d.o: class_SpData1D.o
@@ -202,13 +198,9 @@ class_idata2d.o: class_Data2D.o
 class_ispdata1d.o: class_SpData1D.o
 class_ispdata2d.o: class_SpData2D.o
 class_ldata1d.o: class_Data1D.o
-class_ldata2d.o: class_Data2D.o
 class_lspdata1d.o: class_SpData1D.o
-class_lspdata2d.o: class_SpData2D.o
 class_sdata1d.o: class_Data1D.o
-class_sdata2d.o: class_Data2D.o
 class_sspdata1d.o: class_SpData1D.o
-class_sspdata2d.o: class_SpData2D.o
 class_zdata1d.o: class_Data1D.o
 class_zdata2d.o: class_Data2D.o
 class_zspdata1d.o: class_SpData1D.o

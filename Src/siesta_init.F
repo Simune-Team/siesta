@@ -175,7 +175,9 @@ C     Initialise MPI and set processor number
       call reset_messages_file()
 #endif
       if (Node==0) then
-         call system("/bin/rm -f 0_NORMAL_EXIT")
+         ! Make sure we delete this sentinel file
+         open(unit=1,file="0_NORMAL_EXIT",status="unknown")
+         close(unit=1,status="delete")
       endif
 
       ! Initialize the output file

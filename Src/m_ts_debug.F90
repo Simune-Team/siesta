@@ -78,7 +78,7 @@ contains
     subroutine test(z1,i,j)
       complex(dp), intent(in) :: z1
       integer, intent(in) :: i,j
-      if ( cdabs(z1-zf(index(tri,i,j))) > 1e-10_dp ) then
+      if ( abs(z1-zf(index(tri,i,j))) > 1e-10_dp ) then
          write(*,*) i,j,z1,zf(index(tri,i,j))
          call die('Not same element')
       end if
@@ -106,7 +106,7 @@ contains
   subroutine out_write(iu,i,j,z)
     integer, intent(in) :: iu,i,j
     complex(dp), intent(in) :: z
-    write(iu,'(2(tr1,i5),2(tr1,e20.13))') i,j,real(z),aimag(z)
+    write(iu,'(2(tr1,i5),2(tr1,e20.13))') i,j,real(z,dp),aimag(z)
   end subroutine out_write
   
   subroutine sp_to_file(u,sp)

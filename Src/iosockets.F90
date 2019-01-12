@@ -262,18 +262,18 @@ subroutine forcesToSocket( na, energy, forces, stress )
 ! Copy input to local variables
   allocate(f(3*na))
   e = energy
-  f = reshape( forces, (/3*na/) )
-  s = reshape( stress, (/9/) )
+  f(:) = reshape( forces, (/3*na/) )
+  s(:) = reshape( stress, (/9/) )
   
 ! Convert physical units
   e = e * fdf_convfac( siesta_eunit, master_eunit )
-  f = f * fdf_convfac( siesta_eunit, master_eunit ) &
+  f(:) = f(:) * fdf_convfac( siesta_eunit, master_eunit ) &
         / fdf_convfac( siesta_xunit, master_xunit )
-  s = s * fdf_convfac( siesta_eunit, master_eunit ) &
+  s(:) = s(:) * fdf_convfac( siesta_eunit, master_eunit ) &
         / fdf_convfac( siesta_xunit, master_xunit )**3
 
 ! Find virial tensor for i-pi, in master's units
-  vir = -s * cellv * fdf_convfac( siesta_xunit, master_xunit )**3
+  vir(:) = -s * cellv * fdf_convfac( siesta_xunit, master_xunit )**3
 
 ! Write forces to socket
   if (IOnode) then

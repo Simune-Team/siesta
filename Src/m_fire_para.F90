@@ -148,9 +148,9 @@ CONTAINS
          endif   ! Power
 
          ! Euler with midpoint correction
-         dx =  b%v*dt/2     ! half of the mid-point rule (v(0))
+         dx(:) =  b%v*dt/2     ! half of the mid-point rule (v(0))
          b%v = b%v + f*dt     ! v at dt
-         dx = dx + b%v*dt/2  ! the other half  (v(t))
+         dx(:) = dx + b%v*dt/2  ! the other half  (v(t))
 
          where (abs(dx) <= maxstep)
             x = x + dx

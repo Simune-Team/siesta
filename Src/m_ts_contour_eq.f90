@@ -218,6 +218,8 @@ contains
                 Eq_io(i)%b = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%method = 'g-legendre'
+             call c_io_add_opt(Eq_io(i),'right','right')
+
           else
              Eq_io(i)%part = 'tail'
              Eq_io(i)%N = 10
@@ -699,20 +701,20 @@ contains
     call ID2idx(c,mu%ID,idx)
 
     do i = 1 , c%c_io%N
-       ztmp = R * cdexp(dcmplx(0._dp,ce(i)))
+       ztmp = R * exp(cmplx(0._dp,ce(i),dp))
 
        if ( set_c ) then
-          c%c(i) = dcmplx(cR,0._dp) + ztmp
+          c%c(i) = cmplx(cR,0._dp,dp) + ztmp
        else
-          if ( abs(c%c(i) - (dcmplx(cR,0._dp) + ztmp) ) > 1.e-10_dp ) then
-             print *,c%c(i),dcmplx(cR,0._dp) + ztmp
+          if ( abs(c%c(i) - (cmplx(cR,0._dp,dp) + ztmp) ) > 1.e-10_dp ) then
+             print *,c%c(i),cmplx(cR,0._dp,dp) + ztmp
              call die('contours does not match')
           end if
        end if
 
        ! Factor i, comes from Ed\theta=dE=iR e^{i\theta}
-       c%w(idx,i) = cw(i) * nf((dcmplx(cR,0._dp)+ztmp-mu%mu)/mu%kT) &
-            * dcmplx(0._dp,1._dp) * ztmp
+       c%w(idx,i) = cw(i) * nf((cmplx(cR,0._dp,dp)+ztmp-mu%mu)/mu%kT) &
+            * cmplx(0._dp,1._dp,dp) * ztmp
 
     end do
 
@@ -840,8 +842,8 @@ contains
     call get_abscissas(Ni(1),0._dp,li(1), ce(1), cw(1))
     ! translate to correct contours
     do i = 1 , Ni(1)
-       ztmp(1) = dcmplx( a, im(1) + ce(i) )
-       ztmp(2) = dcmplx( 0._dp , 1._dp ) * cw(i)
+       ztmp(1) = cmplx( a, im(1) + ce(i), dp )
+       ztmp(2) = cmplx( 0._dp , 1._dp, dp ) * cw(i)
        call set_abscissas(c%c(i),c%w(idx,i), ztmp)
     end do
 
@@ -851,8 +853,8 @@ contains
     j = Ni(1)
     do i = 1 , Ni(2)
        ! Convert to parameterisation
-       ztmp(1) = dcmplx( a + ce(i) , im(2) )
-       ztmp(2) = dcmplx( 1._dp , 0._dp ) * cw(i)
+       ztmp(1) = cmplx( a + ce(i) , im(2), dp )
+       ztmp(2) = cmplx( 1._dp , 0._dp, dp ) * cw(i)
        call set_abscissas(c%c(j+i),c%w(idx,j+i), ztmp)
     end do
     
@@ -862,8 +864,8 @@ contains
        ! translate to correct contours
        j = Ni(1) + Ni(2)
        do i = 1 , Ni(3)
-          ztmp(1) = dcmplx( b, im(2) + ce(i) )
-          ztmp(2) = dcmplx( 0._dp , 1._dp ) * cw(i)
+          ztmp(1) = cmplx( b, im(2) + ce(i), dp )
+          ztmp(2) = cmplx( 0._dp , 1._dp, dp ) * cw(i)
           call set_abscissas(c%c(j+i),c%w(idx,j+i), ztmp)
        end do
     end if
@@ -1159,9 +1161,9 @@ contains
 
       do i = 1 , c%c_io%N
         if ( set_c ) then
-          c%c(i) = dcmplx(ce(i),Eta)
+          c%c(i) = cmplx(ce(i),Eta,dp)
         else
-          if ( abs(c%c(i) - dcmplx(ce(i),Eta)) > 1.e-10_dp ) then
+          if ( abs(c%c(i) - cmplx(ce(i),Eta,dp)) > 1.e-10_dp ) then
             call die('contour_line: Error on contour match')
           end if
         end if
@@ -1268,7 +1270,7 @@ contains
        call ID2idx(c,mu%ID,idx)
 
        ! move over the weights and the contour values
-       c%c        = dcmplx(ce,Eta)
+       c%c(:)        = cmplx(ce,Eta,dp)
        c%w(idx,:) = cw
 
     case default
@@ -1310,10 +1312,10 @@ contains
     integer :: i
 
     ! all pole-weights have the same weight (negative due to contour method)
-    c%w(:,:) =  - dcmplx(0._dp, Pi * kT * 2._dp)
+    c%w(:,:) =  - cmplx(0._dp, Pi * kT * 2._dp, dp)
     ! Residuals
     do i = 1 , c%c_io%N
-       c%c(i) = dcmplx(E , Pi * kT * (2._dp*(i-1)+1._dp))
+       c%c(i) = cmplx(E , Pi * kT * (2._dp*(i-1)+1._dp), dp)
     end do
 
   end subroutine contour_poles
@@ -1359,7 +1361,7 @@ contains
     do i = 1 , c%c_io%N - 1
        
        ! Calculate current contour point
-       cc = dcmplx(mu%mu, ce(i) * mu%kT)
+       cc = cmplx(mu%mu, ce(i) * mu%kT, dp)
        
        if ( set_c ) then
           c%c(i) = cc
@@ -1372,12 +1374,12 @@ contains
        ! Extra minus in implementation and Im[]
        ! We also divide the weight by Pi in the loop (and it should
        ! not exist in the continued fraction scheme)
-       c%w(idx,i) = dcmplx( 0._dp , 2._dp * cw(i) * mu%kT * Pi)
+       c%w(idx,i) = cmplx( 0._dp , 2._dp * cw(i) * mu%kT * Pi, dp)
 
     end do
 
     ! The zero'th moment lies infinitely far and is from -inf -- inf
-    cc = dcmplx( mu%mu , c%c_io%a )
+    cc = cmplx( mu%mu , c%c_io%a, dp )
     
     if ( set_c ) then
        ! The last pole is set
@@ -1391,7 +1393,7 @@ contains
     ! The zeroth moment (extra minus in implementation and Im[])
     ! w = iR, but from -\Im we get w = R
     ! And remove the loop division by Pi
-    c%w(idx,c%c_io%N) = dcmplx( 0.5_dp * c%c_io%a * Pi, 0._dp)
+    c%w(idx,c%c_io%N) = cmplx( 0.5_dp * c%c_io%a * Pi, 0._dp, dp)
 
     deallocate(ce,cw)
 
@@ -1514,8 +1516,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW, iW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE,dp) * conv
+        c%w(idx,ne) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -1528,8 +1530,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE,dp) * conv
+        c%w(idx,ne) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -1543,8 +1545,8 @@ contains
         read(line, *, iostat=iostat) rE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE * conv,iE)
-        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE * conv,iE,dp)
+        c%w(idx,ne) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -1588,7 +1590,7 @@ contains
     integer :: i,j,iE
     c%exist = .false.
     c%fake  = .false.
-    c%e     = dcmplx(0._dp,0._dp)
+    c%e     = cmplx(0._dp,0._dp,dp)
     c%idx   = 0
     if ( id < 1 ) return
 

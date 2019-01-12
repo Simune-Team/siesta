@@ -22,9 +22,9 @@ module m_ts_electrode
   private
 
   ! BLAS parameters
-  complex(dp), parameter :: z_1  = dcmplx(1._dp,0._dp)
-  complex(dp), parameter :: z_m1 = dcmplx(-1._dp,0._dp)
-  complex(dp), parameter :: z_0  = dcmplx(0._dp,0._dp)
+  complex(dp), parameter :: z_1  = cmplx(1._dp,0._dp,dp)
+  complex(dp), parameter :: z_m1 = cmplx(-1._dp,0._dp,dp)
+  complex(dp), parameter :: z_0  = cmplx(0._dp,0._dp,dp)
 
   interface set_HS_transfer
      module procedure set_HS_Transfer_1d
@@ -167,7 +167,7 @@ contains
        ic = no * (j-1)
        do i = 1 , no
           ic2 = no*(i-1) + j
-          beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
+          beta(ic+i) = conjg(H01(ic2)) - ZE * conjg(S01(ic2))
        end do
     end do
 !$OMP end do nowait
@@ -307,16 +307,16 @@ contains
           zji = ZE*S00(ic2) - H00(ic2)
           
           ! left scattering states
-          alpha(ic)  = gsL(ic ) - dconjg(gsL(ic2))
-          alpha(ic2) = gsL(ic2) - dconjg(gsL(ic ))
+          alpha(ic)  = gsL(ic ) - conjg(gsL(ic2))
+          alpha(ic2) = gsL(ic2) - conjg(gsL(ic ))
           
           ! Correct for bulk self-energy + bulk Hamiltonian
           gsL(ic ) = zij + gsL(ic )
           gsL(ic2) = zji + gsL(ic2)
 
           ! right scattering states (transposed)
-          beta(ic2) = gsR(ic ) - dconjg(gsR(ic2))
-          beta(ic ) = gsR(ic2) - dconjg(gsR(ic ))
+          beta(ic2) = gsR(ic ) - conjg(gsR(ic2))
+          beta(ic ) = gsR(ic2) - conjg(gsR(ic ))
 
           ! Correct for bulk self-energy + bulk Hamiltonian
           gsR(ic ) = zij + gsR(ic )
@@ -329,13 +329,13 @@ contains
        zij = ZE*S00(ic) - H00(ic)
        
        ! left scattering state
-       alpha(ic) = gsL(ic) - dconjg(gsL(ic))
+       alpha(ic) = gsL(ic) - conjg(gsL(ic))
        
        ! Correct for bulk self-energy + bulk Hamiltonian
        gsL(ic) = zij + gsL(ic)
        
        ! right scattering state (transposed)
-       beta(ic) = gsR(ic) - dconjg(gsR(ic))
+       beta(ic) = gsR(ic) - conjg(gsR(ic))
        
        ! Correct for bulk self-energy + bulk Hamiltonian
        gsR(ic) = zij + gsR(ic)
@@ -408,7 +408,7 @@ contains
 !$OMP do
     do i = 1 , nosq
        ! notice, we utilize the relation (H10-z*S10) = (H01-conjg(z)*S01)^H
-       beta(i)  = H01(i) - dconjg(ZE) * S01(i)
+       beta(i)  = H01(i) - conjg(ZE) * S01(i)
     end do
 !$OMP end do nowait
 !$OMP end parallel
@@ -613,7 +613,7 @@ contains
        ic = no * (j-1) + 1
        do i = 0 , nom1
           ic2 = j + no*i
-          beta(ic+i) = dconjg(H01(ic2)) - ZE * dconjg(S01(ic2))
+          beta(ic+i) = conjg(H01(ic2)) - ZE * conjg(S01(ic2))
        end do
     end do
 !$OMP end do nowait
@@ -991,7 +991,7 @@ contains
     ! Calculate offsets
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
-    sc_off = matmul(El%cell,El%isc_off)
+    sc_off(:,:) = matmul(El%cell,El%isc_off)
 
     ! Print information on file-size and electrode type.
     call print_Elec_Green(El, NEn, nkpnt)
@@ -1672,7 +1672,7 @@ contains
     ! The algorithm outside should take care of the
     ! nullification of the k-point in the semi-infinite direction
     do i = 0 , n_s - 1
-       ph(i) = cdexp(dcmplx(0._dp, sum(kq*sc_off(:,i))) )
+       ph(i) = exp(cmplx(0._dp, sum(kq*sc_off(:,i)),kind=dp) )
     end do
 
 !$OMP parallel default(shared), private(i,j,io,jo,ind,is)
@@ -1719,12 +1719,12 @@ contains
     do io = 1 , no
        do jo = 1 , io - 1
 
-          Sk(io,jo) = 0.5_dp*( Sk(io,jo) + dconjg(Sk(jo,io)) )
-          Sk(jo,io) = dconjg(Sk(io,jo))
+          Sk(io,jo) = 0.5_dp*( Sk(io,jo) + conjg(Sk(jo,io)) )
+          Sk(jo,io) = conjg(Sk(io,jo))
 
-          Hk(io,jo) = 0.5_dp*( Hk(io,jo) + dconjg(Hk(jo,io)) ) - &
+          Hk(io,jo) = 0.5_dp*( Hk(io,jo) + conjg(Hk(jo,io)) ) - &
                Ef * Sk(io,jo)
-          Hk(jo,io) = dconjg(Hk(io,jo))
+          Hk(jo,io) = conjg(Hk(io,jo))
 
           ! Transfer matrix is not symmetric, so do not symmetrize
           Hk_T(jo,io) = Hk_T(jo,io) - Ef * Sk_T(jo,io)
@@ -1834,7 +1834,7 @@ contains
 
     n_s = size(El%isc_off,dim=2)
     allocate(sc_off(3,n_s))
-    sc_off = matmul(El%cell,El%isc_off)
+    sc_off(:,:) = matmul(El%cell,El%isc_off)
     
     ! whether we already have the H and S set correctly, 
     ! update accordingly, it will save a bit of time, but not much

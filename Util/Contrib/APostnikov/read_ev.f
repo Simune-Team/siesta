@@ -36,7 +36,7 @@ C
           do iat=1,nat
             read (ii2,104,err=305) (dummy(ii),ii=1,3)
           enddo
-	    if ((dummy(1)**2+dummy(2)**2+dummy(3)**2).gt.small) then
+            if ((dummy(1)**2+dummy(2)**2+dummy(3)**2).gt.small) then
               print *,' For iev =',iev,' iat =',iat,
      .                ' Imag. part of eigenvector is not zero!',
      .                ' - Unsuited for visualization'
@@ -52,7 +52,7 @@ C
           do iat=1,nat
             read (ii2,104,err=305) (dummy(ii),ii=1,3)
           enddo
-	    if ((dummy(1)**2+dummy(2)**2+dummy(3)**2).gt.small) then
+            if ((dummy(1)**2+dummy(2)**2+dummy(3)**2).gt.small) then
               print *,' For iev =',iev,' iat =',iat,
      .                ' Imag. part of eigenvector is not zero!',
      .                ' - Unsuited for visualization'

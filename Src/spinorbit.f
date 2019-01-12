@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -163,7 +163,7 @@ C integer listh(maxnh)     : Column indexes of the nonzero elements
 C                            of each row of the hamiltonian matrix
 C integer Dscf(maxnh,8)    : Density matrix
 C **************************** INPUT / OUTPUT *********************************
-C real*8 Eso:		   : Spin-orbit energy
+C real*8 Eso:              : Spin-orbit energy
 C **************************** INPUT / OUTPUT *********************************
 C real*8 H(maxnh,3:8)      : Spin-Orbit H matrix elements
 C *********************************************************************

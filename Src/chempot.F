@@ -125,7 +125,7 @@ C nvmax = maximum number of non-zero elements within a sparse vector v
      .  rmax, rrmod, ri(3), tol
 
       integer,  dimension(:,:), pointer :: listhp, listhpp
-      real(dp), dimension(:),   pointer :: paux, vec
+      real(dp), dimension(:),   pointer :: paux, vecin, vec
       real(dp), dimension(:,:), pointer :: hbar, Hdense, Sdense
       real(dp), dimension(:,:), pointer :: v
 
@@ -160,6 +160,8 @@ C Allocate arrays that depend on maxnh
      &               routine='chempot' )
       nullify( paux )
       call re_alloc( paux, 1, nhmax, name='paux', routine='chempot' )
+      nullify( vecin )
+      call re_alloc( vecin, 1, nhmax, name='vecin', routine='chempot' )
       nullify( vec )
       call re_alloc( vec, 1, nhmax, name='vec', routine='chempot' )
       nullify( hbar )
@@ -298,9 +300,10 @@ C Loop over orbitals of atom ia ....
 C  Check if ii is in atom ia
           if (ii .ge. (lasto(ia-1)+1) .and. ii .le. lasto(ia)) then
             do j = 1,nu
-              vec(j) = Hdense(j,i)
+              vecin(j) = Hdense(j,i)
             enddo
-            call cholLinSys(Sdense,nu,nhmax,paux,vec,vec)
+            ! Note that we need different variables for in and out intent
+            call cholLinSys(Sdense,nu,nhmax,paux,vecin,vec)
 
 C  vec contains the elements of H' in reduced space.
 C  now H' must be formed in sparse format -
@@ -520,6 +523,7 @@ C Deallocate local arrays
       call de_alloc( listhp, name='listhp' )
       call de_alloc( listhpp, name='listhpp' )
       call de_alloc( paux, name='paux' )
+      call de_alloc( vecin, name='vecin' )
       call de_alloc( vec, name='vec' )
       call de_alloc( hbar, name='hbar' )
       call de_alloc( Hdense, name='Hdense' )
