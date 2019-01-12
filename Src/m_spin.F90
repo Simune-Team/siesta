@@ -118,7 +118,7 @@ contains
     use files, only: slabel
     use parallel, only: IONode
 
-    character(len=32) :: opt
+    character(len=32) :: opt, opt_old
 
     ! Create pointer assignments...
     call int_pointer(spinor_dim, spin%spinor)
@@ -155,36 +155,45 @@ contains
 
     ! Set default option from "old" options
     if ( spin%SO ) then
-       opt = 'spin-orbit'
+       opt_old = 'spin-orbit'
     else if ( spin%NCol ) then
-       opt = 'non-collinear'
+       opt_old = 'non-collinear'
     else if ( spin%Col ) then
-       opt = 'collinear'
+       opt_old = 'polarized'
     else
-       opt = 'none'
+       opt_old = 'none'
     end if
 
     ! In order to enable text input (and obsolete the
     ! 4 different options we use a single value now)
-    opt = fdf_get('Spin', opt)
-
+    opt = fdf_get('Spin', opt_old)
+    
     if ( leqi(opt, 'none') .or. &
          leqi(opt, 'non-polarized') .or. &
          leqi(opt, 'non-polarised') .or. &
          leqi(opt, 'NP') .or. leqi(opt,'N-P') ) then
 
        spin%none = .true.
+       call warn_and_set_to_false(Spin%Col)
+       call warn_and_set_to_false(Spin%NCol)
+       call warn_and_set_to_false(Spin%SO)
        
     else if ( leqi(opt, 'polarized') .or. &
          leqi(opt, 'collinear') .or. leqi(opt, 'colinear') .or. &
          leqi(opt, 'polarised') .or. leqi(opt, 'P') ) then
        
        spin%Col = .true.
+       call warn_and_set_to_false(Spin%none)
+       call warn_and_set_to_false(Spin%NCol)
+       call warn_and_set_to_false(Spin%SO)
        
     else if ( leqi(opt, 'non-collinear') .or.  leqi(opt, 'non-colinear') .or. &
          leqi(opt, 'NC') .or. leqi(opt, 'N-C') ) then
        
        spin%NCol = .true.
+       call warn_and_set_to_false(Spin%none)
+       call warn_and_set_to_false(Spin%Col)
+       call warn_and_set_to_false(Spin%SO)
        
     else if ( leqi(opt, 'spin-orbit') .or. leqi(opt, 'S-O') .or. &
          leqi(opt, 'SOC') .or. leqi(opt, 'SO') .or. &
@@ -194,12 +203,18 @@ contains
        
        spin%SO = .true.
        spin%SO_offsite = .true.
+       call warn_and_set_to_false(Spin%none)
+       call warn_and_set_to_false(Spin%Col)
+       call warn_and_set_to_false(Spin%NCol)
 
     else if ( leqi(opt, 'spin-orbit+onsite') .or. leqi(opt, 'S-O+onsite') .or. &
          leqi(opt, 'SOC+onsite') .or. leqi(opt, 'SO+onsite') ) then
        
        spin%SO = .true.
        spin%SO_onsite = .true.
+       call warn_and_set_to_false(Spin%none)
+       call warn_and_set_to_false(Spin%Col)
+       call warn_and_set_to_false(Spin%NCol)
 
     else
        write(*,*) 'Unknown spin flag: ', trim(opt)
@@ -325,7 +340,17 @@ contains
 
     end subroutine log_pointer
     
-  end subroutine init_spin
+  subroutine warn_and_set_to_false(var)
+    logical, intent(inout) :: var
+    if (var) then
+       call message("WARNING","Deprecated spin keyword overridden by new-style 'Spin' input")
+       call message("WARNING","Option from deprecated keyword: "//trim(opt_old))
+       call message("WARNING","Option from 'Spin' keyword input: "//trim(opt))
+       var = .false.
+    endif
+  end subroutine warn_and_set_to_false
+
+end subroutine init_spin
 
 
   ! Print out spin-configuration options
@@ -339,8 +364,10 @@ contains
     if ( spin%SO ) then
        if ( spin%SO_offsite ) then
           opt = 'spin-orbit+offsite'
-       else
+       else if (spin%SO_onsite) then
           opt = 'spin-orbit+onsite'
+       else
+          call die("Inconsistent SO option")
        end if
     else if ( spin%NCol ) then
        opt = 'non-collinear'
@@ -444,5 +471,6 @@ contains
     end if
     
   end function fname_spin
-  
+
+
 end module m_spin
