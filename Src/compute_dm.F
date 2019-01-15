@@ -156,7 +156,7 @@
      &              xijo,
      &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
      &              eo, qo, Dscf, Escf, ef, Entropy,
-     &              occtol, neigwanted)
+     &              occtol, neigwanted, Get_EDM_Only=.false.)
          Ecorrec = 0.0_dp
       endif
       if (.not. SIESTA_worker) RETURN

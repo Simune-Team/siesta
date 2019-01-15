@@ -832,7 +832,7 @@ m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
 m_efield.o: atmfuncs.o m_cite.o m_ts_global_vars.o mesh.o parallel.o
 m_efield.o: precision.o siesta_cml.o siesta_geom.o sys.o units.o
 m_elsi_interface.o: alloc.o class_Distribution.o fold_auxcell.o m_mpi_utils.o
-m_elsi_interface.o: m_redist_spmatrix.o parallel.o precision.o
+m_elsi_interface.o: m_redist_spmatrix.o parallel.o precision.o units.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_evolve.o: atomlist.o cranknic_evolg.o cranknic_evolk.o m_spin.o precision.o
@@ -1188,8 +1188,9 @@ poison.o: alloc.o cellsubs.o chkgmx.o fft.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o class_Fstack_Pair_Geometry_SpData2D.o
 post_scf_work.o: class_Geometry.o class_Pair_Geometry_SpData2D.o compute_dm.o
 post_scf_work.o: diagon.o final_H_f_stress.o kpoint_scf.o m_dminim.o
-post_scf_work.o: m_energies.o m_eo.o m_spin.o m_steps.o m_zminim.o mneighb.o
-post_scf_work.o: parallel.o siesta_geom.o siesta_options.o sparse_matrices.o
+post_scf_work.o: m_elsi_interface.o m_energies.o m_eo.o m_spin.o m_steps.o
+post_scf_work.o: m_zminim.o mneighb.o parallel.o siesta_geom.o siesta_options.o
+post_scf_work.o: sparse_matrices.o
 print_spin.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 print_spin.o: siesta_cml.o sparse_matrices.o
 printmatrix.o: alloc.o

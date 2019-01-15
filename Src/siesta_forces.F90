@@ -518,14 +518,9 @@ contains
        call pexsi_finalize_scfloop()
     end if
 #endif
-#ifdef SIESTA__ELSI
-    if ( isolve == SOLVE_ELSI ) then
-       call elsi_finalize_scfloop()
-    end if
-#endif
 
-    if ( .not. SIESTA_worker ) return
-
+    if ( SIESTA_worker ) then
+!===
     call end_of_cycle_save_operations()
 
     if ( .not. SCFconverged ) then
@@ -562,11 +557,18 @@ contains
     ! Clean-up here to limit memory usage
     call mixers_scf_history_init( )
     
+!===
+    endif  ! Siesta_Worker
+
     ! End of standard SCF loop.
     ! Do one more pass to compute forces and stresses
     
     ! Note that this call will no longer overwrite H while computing the
     ! final energies, forces and stresses...
+
+    ! If we want to preserve the "Siesta_Worker" subset implementation for ELSI,
+    ! this block needs to be executed by everybody
+    ! as it contains a call to the ELSI interface to get the EDM
     
     if ( fdf_get("compute-forces",.true.) ) then
        call post_scf_work( istep, iscf , SCFconverged )
@@ -574,6 +576,15 @@ contains
        if (ionode) call memory_snapshot("after post_scf_work")
 #endif
     end if
+
+#ifdef SIESTA__ELSI
+    ! Recall that there could be an extra call after the scf loop to get the EDM
+    if ( isolve == SOLVE_ELSI ) then
+       call elsi_finalize_scfloop()
+    end if
+#endif
+
+    if (.not. Siesta_Worker) RETURN
     
     ! ... so H at this point is the latest generator of the DM, except
     ! if mixing H beyond self-consistency or terminating the scf loop
