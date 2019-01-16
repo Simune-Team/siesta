@@ -289,8 +289,9 @@
      .      ' ( Floating basis ) ' 
 
         elseif(iz.eq.-100) then
-          write(6,'(a,i4,a)')
-     .      'atom: Called for Z=',iz,'( Floating Bessel functions)'  
+          write(6,'(3a,i4,a,a)')
+     .      'atom: Called for ', atm_label, '  (Z =', iz,')',
+     .      ' ( Floating Bessel functions ) ' 
 
         endif
 ! 
@@ -2578,7 +2579,7 @@ C
 C
 C       Internal and common variables
 C
-        integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max
+        integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max, n_user
 C
 C Adding a new species to the list
 C          
@@ -2649,11 +2650,23 @@ C
 
         else
 !
-!          Arbitrary "n" for "semicore" bessel states...
-!
-          do l=0,lmaxd
+!          For bessel-function states, the 'n' quantum number
+!          does not follow the heuristics for real 'atomic'
+!          states. For a given l, the states are ordered in energy           
+!          according to the bessel root index. The lowest can be
+!          assigned n=1, etc. So we can match 'n' to the "shell index" (nsm)
+!          for each l.
+!          In case the user has specified a different index, warn.           
+
+           do l=0,lmaxd
             do nsm=1,nsemic(l)+1
+              n_user = cnfigmx(l)-(nsemic(l)+1)+nsm
               cnfigtb(l,nsm,is)=nsm
+              if ((l <= lmxo) .and. (n_user > nsm)) then
+                 write(*,'(a,i1,a,i1,a,i1)')
+     $                'Bessel state with n=',n_user,' and l=',l,
+     $                ' relabeled to n=',nsm
+              endif
             enddo
           enddo 
         endif   ! iz.ne.-100
