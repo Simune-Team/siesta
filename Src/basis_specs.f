@@ -592,6 +592,7 @@ C Sanity checks on values
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
+      integer nrcs_zetas
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -742,11 +743,21 @@ C Sanity checks on values
           s%rc(:) = 0.d0
           s%lambda(:) = 1.d0
           if (.not. fdf_bline(bfdf,pline)) call die("No rc's")
-          if (fdf_bnvalues(pline) .ne. s%nzeta)
-     .      call die("Wrong number of rc's")
+          
+          ! Use the last rc entered for the successive zetas
+          ! if there are not enough values (useful for Bessel)
+          nrcs_zetas = fdf_bnvalues(pline)
+          if (nrcs_zetas < 1) then
+           call die("Need at least one rc per shell in PAO.Basis block")
+          endif
           do i= 1, s%nzeta
-            s%rc(i) = fdf_bvalues(pline,i)
+             if (i <= nrcs_zetas) then
+                s%rc(i) = fdf_bvalues(pline,i)
+             else
+                s%rc(i) = s%rc(nrcs_zetas)
+             endif
           enddo
+
           if (s%split_norm_specified) then
             do i = 2,s%nzeta
               if (s%rc(i) /= 0.0_dp) then

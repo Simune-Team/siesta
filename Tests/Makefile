@@ -36,7 +36,7 @@
 #
 label = work
 
-tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel born \
+tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel bessel-rich born \
 	born_spin carbon_nanoscroll ch4 chargeconf-h2o constant_volume \
 	dipole_correction fe fe_broyden fe_clust_noncollinear fe_cohp \
 	fen fe_noncol_kp fire_benzene floating force_2 force_constants \
