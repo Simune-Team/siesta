@@ -1669,7 +1669,11 @@ valence shell have been included in the calculation)
 \item[-] {\tt l}: Angular momentum of
 basis orbitals of this shell
 \item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell. For a filteret 
-basis this number is ignored since the number is controlled by the cutoff.
+basis this number is ignored since the number is controlled by the
+cutoff.
+For bessel-floating orbitals, the different 'zetas' map to
+increasingly excited states with the same angular momentum (with
+increasing number of nodes).
 \item[-] {\tt PolOrb(l+1)}: {\it Optional input}. If set equal to {\tt P}, a
 shell of
 polarization functions (with angular momentum $l+1$)  will be constructed
