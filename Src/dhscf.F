@@ -614,16 +614,12 @@ C ----------------------------------------------------------------------
 C     Modules
       use precision,     only  : dp, grid_p
 
-      use parallel, only : ProcessorY
-
-!     Number of Mesh divisions of each cell vector (global)
-!     The status of this variable is confusing
       use parallel,      only  : Node, Nodes
       use atmfuncs,      only  : rcut, rcore
       use units,         only  : Debye, eV, Ang
       use fdf
       use sys,           only  : die, bye
-      use mesh,          only  : nsm, nsp
+      use mesh,          only  : nsm, nsp, meshLim
       use parsing
       use m_iorho,       only  : write_rho
       use m_forhar,      only  : forhar
@@ -742,7 +738,6 @@ C logical IsDiag        : Is supercell diagonal?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
 
-C integer JDGdistr      : J.D.Gale's parallel distribution of mesh points
 C integer myBox(2,3)    : My processor's mesh box 
 
 C integer nbcell        : Number of independent bulk lattice vectors
@@ -790,7 +785,6 @@ C     Local variables
 
 !     Interface to JMS's SiestaXC
       integer       :: myBox(2,3)
-      integer, save :: JDGdistr=-1
       real(dp) :: stressXC(3,3)
 
 C     Work arrays
@@ -1499,9 +1493,7 @@ C ----------------------------------------------------------------------
 
 !     Everything now is in UNIFORM, sequential form
 
-      if (use_bsc_cellxc) then
-
-         call timer("BSC-CellXC",1)
+         call timer("XC",1)
 
          ! Switch to "zero/not-zero rho" distribution (miscalled 'LINEAR')
          if (nodes.gt.1) then
@@ -1518,10 +1510,42 @@ C ----------------------------------------------------------------------
             call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
          enddo
 
+      if (use_bsc_cellxc) then
+
+         call timer("BSC-CellXC",1)
          call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &                    DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &                    dummy_DVxcdn, stressl )
 
+         call timer("BSC-CellXC",2)
+
+      else
+         
+         call timer("GXC-CellXC",1)
+
+         ! Note that RG's meshLim is in blocks of nsm points, and 1-based
+         ! Example.
+         ! 1:16 17:32  (base 1)
+         ! 0:15 16:31  (base 0)
+         ! Times nsm=2:
+         ! 0:30 32:62
+         ! Add 1 to lb, and nsm to ub:
+         ! 1:32 33:64  (base 1, in units of small-points)
+
+         myBox(1,:) = (meshLim(1,:)-1)*nsm + 1
+         myBox(2,:) = (meshLim(2,:)-1)*nsm + nsm
+         
+         call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
+     &                myBox(1,2), myBox(2,2),
+     &                myBox(1,3), myBox(2,3), nspin,
+     &                DRho_gga, Ex, Ec, DEx, DEc, stressXC, Vscf_gga,
+     &                keep_input_distribution = .true. )
+   !     Vscf is still sequential after the call to JMS's cellxc
+         stress = stress + stressXC
+         call timer("GXC-CellXC",2)
+         
+      endif  ! use_bsc_cellxc
+      
          ! Go back to uniform distribution
          if (nodes.gt.1) then
             call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl)
@@ -1535,30 +1559,8 @@ C ----------------------------------------------------------------------
          enddo
          call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
          call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
-         call timer("BSC-CellXC",2)
 
-      else
-         
-         call timer("GXC-CellXC",1)
-
-   !     This is the initial interface to JM Soler's own cellxc routine, which sets
-   !     up further distribution(s) internally. To begin, it is given the parameters
-   !     pertaining to the UNIFORM distribution of mesh points, which is in force at
-   !     this point. 
-
-         call jms_setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
-     &        nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
-         call myMeshBox( ntm, JDGdistr, myBox )
-
-         call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
-     &                myBox(1,2), myBox(2,2),
-     &                myBox(1,3), myBox(2,3), nspin,
-     &                DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
-   !     Vscf is still sequential after the call to JMS's cellxc
-         stress = stress + stressXC
-         call timer("GXC-CellXC",2)
-         
-      endif ! use_bsc_cellxc
+         call timer("XC",2)
 
       if ( debug_dhscf ) then
          write(*,debug_fmt) Node,'XC',

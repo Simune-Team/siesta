@@ -37,13 +37,9 @@ C **********************************************************************
       use precision,    only : dp, grid_p
       use alloc,        only : re_alloc, de_alloc
 
-      use parallel,  only : ProcessorY, nodes
-      use mesh,      only : NSM, nsp
+      use parallel,  only : nodes
+      use mesh,      only : NSM, nsp, meshLim
       use siestaXC,  only : cellXC       ! Finds xc energy and potential
-      use siestaXC,  only : myMeshBox    ! Returns my processor mesh box
-      use siestaXC, only : jms_setMeshDistr => setMeshDistr
-                                        ! Sets a distribution of mesh
-                                        ! points over parallel processors
 
       use moreMeshSubs, only : setMeshDistr, distMeshData
       use moreMeshSubs, only: UNIFORM, LINEAR
@@ -97,7 +93,6 @@ C ----------------------------------------------------------------------
 
       INTEGER IP, ISPIN, ISPIN2, myBox(2,3), NMPL
       REAL(dp) EX, EC, DEX, DEC, STRESS(3,3)
-      INTEGER, SAVE:: JDGdistr=-1
 
       real(grid_p)           :: aux3(3,1)   !! dummy arrays for cellxc
       real(grid_p),  pointer :: drhoin(:,:), drhoin_par(:,:),
@@ -135,7 +130,6 @@ C ----------------------------------------------------------------------
       ! Give the opportunity to use BSC's version
       use_bsc_cellxc = fdf_get("XC.Use.BSC.Cellxc",.false.)
 
-      if (use_bsc_cellxc) then
       ! The input distribution is UNIFORM, but we need to work with the
       ! "zero/not-zero rho" distribution (miscalled 'LINEAR')
       if (nodes.gt.1) then
@@ -156,10 +150,25 @@ C ----------------------------------------------------------------------
         call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
       ENDDO
 
-      STRESS(:,:)  = 0.0_dp
-      CALL bsc_cellxc( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
+      if (use_bsc_cellxc) then
+
+         STRESS(:,:)  = 0.0_dp
+         CALL bsc_cellxc( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
      &             DRHOIN_PAR, EX, EC, DEX, DEC, VHARRIS1_PAR,
      &             DVXCDN_PAR, STRESS )
+
+      else
+         
+         myBox(1,:) = (meshLim(1,:)-1)*nsm + 1
+         myBox(2,:) = (meshLim(2,:)-1)*nsm + nsm
+
+         CALL CELLXC( 0, CELL, NTM, myBox(1,1), myBox(2,1),
+     .        myBox(1,2), myBox(2,2),
+     .        myBox(1,3), myBox(2,3), NSPIN, DRHOIN_par,
+     .        EX, EC, DEX, DEC, STRESS, VHARRIS1_par, DVXCDN_par,
+     &        keep_input_distribution = .true. )
+
+      endif
 
       if (nodes.gt.1) then
 !     Everything back to UNIFORM, sequential
@@ -181,21 +190,6 @@ C ----------------------------------------------------------------------
       call de_alloc( vharris1_par, 'vharris1_par', 'forhar' )
       call de_alloc( drhoin_par,   'drhoin_par',   'forhar' )
 
-      else
-         
-         ! Set the mapping to a uniform distribution of mesh points
-         ! and find my processor's mesh box
-
-         call jms_setMeshDistr( distrID=JDGdistr, nMesh=NTM, 
-     .        nNodesX=1, nNodesY=ProcessorY, nBlock=NSM )
-         call myMeshBox( NTM, JDGdistr, myBox )
-
-         CALL CELLXC( 0, CELL, NTM, myBox(1,1), myBox(2,1),
-     .        myBox(1,2), myBox(2,2),
-     .        myBox(1,3), myBox(2,3), NSPIN, DRHOIN,
-     .        EX, EC, DEX, DEC, STRESS, VHARRIS1, DVXCDN )
-
-      endif
 
       DO ISPIN = 1, NSPIN
         DO IP = 1, NTPL
