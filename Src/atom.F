@@ -2642,9 +2642,14 @@ C
           ! Note that cnfigmx and nsemic are now properly extended
           ! all the way to lmaxd (in basis_types) to give a proper cnfigtb
 
+          print *, "-- is: ", is
           do l=0,lmaxd
-            do nsm=1, nsemic(l)+1
-              cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
+             print *, "------- l, cnfigmx(l), nsemic(l): ",
+     $            l, cnfigmx(l), nsemic(l)
+             do nsm=1, nsemic(l)+1
+               cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
+               print *, " ------------ nsm, cnfigtb: ",
+     $              nsm, cnfigtb(l,nsm,is)
             enddo
           enddo 
 

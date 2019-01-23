@@ -489,8 +489,16 @@ C Sanity checks on values
             k%l = l
             if (l.gt.basp%lmxo) then
               k%nkbl = 1
-            else           ! Set equal to the number of PAO shells
-              k%nkbl = basp%lshell(l)%nn
+            else           ! Set equal to the number of PAO shells 
+              k%nkbl = basp%lshell(l)%nn     ! ***** Should include polarization orbs (as in Ti case) 3p..4p*
+              if (l>0) then
+                 do i = 1, basp%lshell(l-1)%nn
+                    if (basp%lshell(l-1)%shell(i)%polarized) then
+                       k%nkbl = k%nkbl + 1
+                       write(6,*) 'nkbl increased for pol orb with l=',l
+                    endif
+                 enddo
+              endif
               if (k%nkbl.eq.0) then
                 write(6,*) 'Warning: Empty PAO shell. l =', l
                 write(6,*) 'Will have a KB projector anyway...'
