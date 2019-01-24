@@ -2580,6 +2580,7 @@ C
 C       Internal and common variables
 C
         integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max, n_user
+        integer  npols_lm1
 C
 C Adding a new species to the list
 C          
@@ -2642,15 +2643,22 @@ C
           ! Note that cnfigmx and nsemic are now properly extended
           ! all the way to lmaxd (in basis_types) to give a proper cnfigtb
 
-          print *, "-- is: ", is
           do l=0,lmaxd
-             print *, "------- l, cnfigmx(l), nsemic(l): ",
-     $            l, cnfigmx(l), nsemic(l)
              do nsm=1, nsemic(l)+1
-               cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
-               print *, " ------------ nsm, cnfigtb: ",
-     $              nsm, cnfigtb(l,nsm,is)
-            enddo
+                cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
+             enddo
+
+             if (l==0) cycle
+
+             ! Special case where a polarization orbital has the same l
+             ! as a lower-lying state (e.g. Ti: 3s2 3p6 4s2 3d2 4p0*) 4p0 is a polarization
+             ! orbital, with the same l as 3p.
+             npols_lm1 = sum(npolorb(l-1,:))
+             if (npols_lm1 > 0) then
+                nsm = nsemic(l)+2
+                cnfigtb(l,nsm,is)= cnfigmx(l) + 1  ! in the above case, 4p 
+             endif
+            
           enddo 
 
         else

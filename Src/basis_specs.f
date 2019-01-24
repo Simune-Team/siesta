@@ -489,13 +489,17 @@ C Sanity checks on values
             k%l = l
             if (l.gt.basp%lmxo) then
               k%nkbl = 1
-            else           ! Set equal to the number of PAO shells 
-              k%nkbl = basp%lshell(l)%nn     ! ***** Should include polarization orbs (as in Ti case) 3p..4p*
+            else
+              ! Set equal to the number of PAO shells with this l
+              k%nkbl = basp%lshell(l)%nn     
+              ! Should include polarization orbs (as in Ti case: 3p..4p*)
               if (l>0) then
                  do i = 1, basp%lshell(l-1)%nn
                     if (basp%lshell(l-1)%shell(i)%polarized) then
                        k%nkbl = k%nkbl + 1
-                       write(6,*) 'nkbl increased for pol orb with l=',l
+                       write(6,"(a,i1,a)") trim(basp%label) //
+     $                  ': nkbl increased for l=',l,
+     $                  ' due to the presence of a polarization orbital'
                     endif
                  enddo
               endif

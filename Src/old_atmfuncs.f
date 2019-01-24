@@ -456,12 +456,15 @@ C
         cnfigfio=cnfigtb(lorb,nsmorb,is)
         return
 
-        ! Deal properly with polarization orbitals
-        ! Actually, this nsmorb refers to the polarized shell...
-        ! It might not work in all cases.
 40      lorb=l+1
-        nsmorb=nsemicsave(lorb,is)+1
-        cnfigfio=cnfigtb(lorb,nsmorb,is)  
+        ! Deal properly with polarization orbitals
+        !        Actually, this nsmorb refers to the polarized shell...
+        !        It might not work in all cases.
+        !        nsmorb=nsemicsave(lorb,is)+1
+        !        cnfigfio=cnfigtb(lorb,nsmorb,is)
+        ! It is better to return the highest n for this l
+        cnfigfio=maxval(cnfigtb(lorb,:,is))
+
         return
 
       end function cnfigfio

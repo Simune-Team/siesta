@@ -376,7 +376,7 @@
       use alloc, only: re_alloc
 
       integer lmax, lmaxkb, nzeta_max, nsemi_max, nkb_max
-      integer l, isp, n, inz, npols_lm1
+      integer l, isp, n, inz
 
       type(basis_def_t), pointer::   basp
       type(shell_t), pointer::  s
@@ -579,18 +579,6 @@
 
          enddo
 
-         ! Correct nsemic and cnfigmx in the case where a polarization orbital has the same l
-         ! as a lower-lying state (e.g. Ti: 3s2 3p6 4s2 3d2 4p0*) 4p0 is a polarization
-         ! orbital, with the same l as 3p.
-
-         do l = 1, basp%lmxo
-            npols_lm1 = sum(polorb(l-1,:,isp))
-            if (npols_lm1 > 0) then
-               nsemic(l,isp) = nsemic(l,isp) + 1
-               cnfigmx(l,isp) = cnfigmx(l,isp) + 1
-            endif
-         enddo
-         
          ! NOTE: cnfigmx and nsemic are only initialized for l up to lmxo
          !       in the above loop
          !       Extend them so that we can deal properly with outer polarization states
