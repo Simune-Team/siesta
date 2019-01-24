@@ -2653,6 +2653,7 @@ C
              ! Special case where a polarization orbital has the same l
              ! as a lower-lying state (e.g. Ti: 3s2 3p6 4s2 3d2 4p0*) 4p0 is a polarization
              ! orbital, with the same l as 3p.
+             ! (See 'archaeological note' in the header of 'basis_specs.f')
              npols_lm1 = sum(npolorb(l-1,:))
              if (npols_lm1 > 0) then
                 nsm = nsemic(l)+2

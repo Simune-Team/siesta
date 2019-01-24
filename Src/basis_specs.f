@@ -76,7 +76,7 @@
 !   There are no 'per l-shell' polarization orbitals, except if the
 !   third character of 'basis_size' is 'p' (as in 'dzp'), in which
 !   case polarization orbitals are defined so they have the minimum      
-!   angular momentum l such that there are not occupied orbitals 
+!   angular momentum l such that there are no occupied orbitals 
 !   with the same l in the valence shell of the ground-state 
 !   atomic configuration. They polarize the corresponding l-1 shell.
 ! 
@@ -86,7 +86,7 @@
 ! 
 !   rc(1:nzeta) is set to 0.0
 !   lambda(1:nzeta) is set to 1.0  (this is a change from old practice)
-! 
+!
 !  ----------------------------------
 !  
 !   Next come the blocks associated to the KB projectors:
@@ -115,7 +115,28 @@
 !       n-shells in the corresponding PAO shell with the same l. For l
 !       greater than lmxo, it is set to 1. The reference energies are
 !       in all cases set to huge(1.d0) to mark the default.
-!       
+!
+!       Archaeological note: The first implementation of the basis-set generation
+!       module had only non-polarization orbitals. Polarization orbitals were added
+!       later as "second-class" companions. This shows in details like "lmxo" (the
+!       maximum l of the basis set) not taking into account polarization orbitals.
+!       Polarization orbitals were tagged at the end, without maintaining l-shell
+!       ordering.
+!       Even later, support for "semicore" orbitals was added. A new ('nsm') index was
+!       used to distinguish the different orbitals in a l-shell. Polarization orbitals
+!       were not brought into this classification. 
+!       The code is strained when semicore and polarization orbitals coexist for the same l,
+!       as in Ti, whose electronic structure is []3s2 3p6 3d2 4s2 (4p0*)  with 4p as the
+!       polarization orbital.  
+!       Here 'nsemic' (the number of semicore states) is kept at zero for l=1 
+!       (the polarization orbital is not counted), with the side-effect that only one KB
+!       projector is generated for l=1.
+!       Special checks have been implemented to cover these cases.
+! 
+!       Future work should probably remove the separate treatment of polarization orbitals.
+!       (Note that if *all* orbitals are specified in a PAO.Basis block, in effect turning
+!       perturbative polarization orbitals into 'normal' orbitals, this problem is not present.)
+!     
 ! =======================================================================
 !
       use precision
@@ -493,6 +514,7 @@ C Sanity checks on values
               ! Set equal to the number of PAO shells with this l
               k%nkbl = basp%lshell(l)%nn     
               ! Should include polarization orbs (as in Ti case: 3p..4p*)
+              ! (See 'archaeological note' in the header of this file)
               if (l>0) then
                  do i = 1, basp%lshell(l-1)%nn
                     if (basp%lshell(l-1)%shell(i)%polarized) then
