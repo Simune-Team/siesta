@@ -612,6 +612,10 @@
       integer, intent(in)  :: is
 
       integer l,  n, i
+      integer :: nprin
+      character(len=4) :: orb_id
+      character(len=1), parameter   ::
+     $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
       write(lun,'(/a/79("="))') '<basis_specs>'
          write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
@@ -627,9 +631,11 @@
      $           'Cnfigmx=', cnfigmx(l,is)
             do n=1,nsemic(l,is)+1
                if (nzeta(l,n,is) == 0) exit
-               write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
-     $                         'n=', n, 'nzeta=',nzeta(l,n,is),
-     $                         'polorb=', polorb(l,n,is)
+               nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
+               write(orb_id,"(a1,i1,a1,a1)") "(",nprin, sym(l), ")"
+               write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1,2x,a4)')
+     $                         'i=', n, 'nzeta=',nzeta(l,n,is),
+     $                         'polorb=', polorb(l,n,is), orb_id
                if (basistype(is).eq.'filteret') then
                  write(lun,'(10x,a10,2x,g12.5)') 
      $                         'fcutoff:', filtercut(l,n,is)
