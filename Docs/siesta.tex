@@ -6853,7 +6853,8 @@ necessary.
 \index{ELSI solvers}
 
 The ELSI library provides a unified interface to a range of solvers,
-including ELPA (diagonalization), PEXSI, OMM, and SIPS (based on spectrum
+including ELPA (diagonalization), PEXSI, OMM, density-matrix
+purification (using NTPoly), and SIPS (based on spectrum
 slicing). It can be downloaded and installed freely from
 \url{http://elsi-interchange.org}.
 
@@ -6879,10 +6880,11 @@ always appropriate.
 \begin{fdfentry}{ELSI!Solver}[string]<ELPA>
   A specification of the solver wanted. Possible values are
   \begin{itemize}
-  \item ELPA
-  \item OMM
-  \item PEXSI
-  \item SIPS
+  \item elpa
+  \item omm
+  \item pexsi
+  \item ntpoly
+  \item sips
   \end{itemize}
 \end{fdfentry}
 
@@ -6916,7 +6918,7 @@ ELSI manual:
 \begin{fdfentry}{ELSI!OMM!ELPA!Steps}[integer]<3>
 \end{fdfentry}
 
-\begin{fdfentry}{ELSI!OMM!Tolerance}[real]<10e-9>
+\begin{fdfentry}{ELSI!OMM!Tolerance}[real]<$10^{-9}$>
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!PEXSI!TasksPerPole}[integer]< {\bf no default}>
@@ -6924,6 +6926,15 @@ ELSI manual:
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!PEXSI!TasksSymbolic}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Method}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Filter}[real]<$10^{-9}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Tolerance}[real]<$10^{-6}$>
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!SIPS!Slices}[integer]<{\bf no default}>
