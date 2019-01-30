@@ -47,9 +47,11 @@
 ! 
 !          rc_1  rc_2 .... rc_nzeta  
 ! 
-!   are the cutoff radii in bohrs. This line is mandatory and there must
-!   be at least nzeta values (the extra ones are discarded)
-! 
+!   are the cutoff radii in bohrs. This line is mandatory
+!   If the number of rc's for a given shell is less than the number of
+!   'zetas', the program will assign the last rc value to the remaining
+!   zetas, rather than stopping with an error. This is particularly
+!   useful for Bessel suites of orbitals.
 !   A line containing contraction (scale) factors is optional, but if it
 !   appears, the values *must be* real numbers, and there must be at
 !   least nzeta of them.
@@ -815,11 +817,20 @@ C Sanity checks on values
      .          call die('repaobasis: ERROR in PAO.Basis block')
               cycle shells
             else
-              if (fdf_bnreals(pline) .ne. s%nzeta)
-     .          call die("Wrong number of lambda's")
-              do i=1,s%nzeta
-                s%lambda(i) = fdf_breals(pline,i)
-              enddo
+              ! Read scale factors
+              ! Use the last scale factor entered for the successive zetas
+              ! if there are not enough values 
+               nrcs_zetas = fdf_bnreals(pline)
+               if (nrcs_zetas < 1) then
+                 call die("Need at least one scale factor in PAO.Basis")
+               endif
+               do i= 1, s%nzeta
+                  if (i <= nrcs_zetas) then
+                     s%lambda(i) = fdf_breals(pline,i)
+                  else
+                     s%lambda(i) = s%lambda(nrcs_zetas)
+                  endif
+               enddo
             endif
           endif
 
