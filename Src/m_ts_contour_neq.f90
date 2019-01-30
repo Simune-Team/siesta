@@ -915,7 +915,7 @@ contains
     write(unit,'(a,/,9a)') '# Approximated Fermi function: ', &
          '#   nF(E ', trim(cm1),' eV, ',trim(kT1),' K) &
          &- nF(E ',trim(cm2),' eV, ',trim(kT2),' K)'
-    write(unit,'(a,a19,2(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','w'
+    write(unit,'(a,a19,2(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','w [eV]'
     
     do i = 1 , N_nEq_E()
 

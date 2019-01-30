@@ -93,11 +93,19 @@ contains
     if ( present(non_Eq) ) lnon_Eq = non_Eq
     
     if ( lnon_Eq ) then
+      if ( El%Eta > 0._dp ) then
 #ifdef TBT_PHONON
-      E = dcmplx(real(cE%e,dp)**2,El%Eta)
+        E = cmplx(real(cE%e,dp)**2,El%Eta, dp)
 #else
-      E = dcmplx(real(cE%e,dp),El%Eta)
+        E = cmplx(real(cE%e,dp),El%Eta, dp)
 #endif
+      else
+#ifdef TBT_PHONON
+        E = cmplx(real(cE%e,dp)**2,aimag(cE%e)**2, dp)
+#else
+        E = cE%e
+#endif
+      endif
       call UC_expansion_Sigma_GammaT(E, &
           nou,no,El,nq, &
           El%GA,El%Sigma,El%Gamma,nwork,work)
@@ -107,11 +115,19 @@ contains
             El%GA,El%Sigma,nwork,work)
       else
         if ( cE%idx(1) /= 1 ) then ! .not. CONTOUR_EQ
+          if ( El%Eta > 0._dp ) then
 #ifdef TBT_PHONON
-          E = dcmplx(real(cE%e,dp)**2,El%Eta)
+            E = cmplx(real(cE%e,dp)**2,El%Eta, dp)
 #else
-          E = dcmplx(real(cE%e,dp),El%Eta)
+            E = cmplx(real(cE%e,dp),El%Eta, dp)
 #endif
+          else
+#ifdef TBT_PHONON
+            E = cmplx(real(cE%e,dp)**2,aimag(cE%e)**2, dp)
+#else
+            E = cE%e
+#endif
+          endif
         end if
         call UC_expansion_Sigma(E,nou,no,El,nq, &
             El%GA,El%Sigma,nwork,work)

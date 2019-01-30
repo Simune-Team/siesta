@@ -11887,13 +11887,23 @@ electrodes in a generic input format.
     
     \option[Eta]%
     \fdfindex*{TS!Elec.<>!Eta}%
-    \fdfdepend{TS!Elecs!Eta}
-    Control the imaginary part of the surface Green function for this
-    electrode.
+    \fdfdepend{TS!Elecs!Eta}%
+    Control the imaginary energy ($\eta$) of the surface Green
+    function for this electrode.
+
+    The imaginary part is \emph{only} used in the non-equilibrium
+    contours since the equilibrium are already lifted into the complex
+    plane. Thus this $\eta$ reflects the imaginary part in the
+    $G\Gamma G^\dagger$ calculations. Ensure that all imaginary values
+    are larger than $0$ as otherwise \tsiesta\ may seg-fault.
+
+    \note if this energy is negative the complex value associated with
+    the non-equilibrium contour is used. This is particularly useful
+    when providing a user-defined contour along the real axis.
 
     \option[Accuracy]%
     \fdfindex*{TS!Elec.<>!Accuracy}%
-    \fdfdepend{TS!Elecs!Accuracy}
+    \fdfdepend{TS!Elecs!Accuracy}%
     Control the convergence accuracy required for the self-energy
     calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
     scheme. 
@@ -11973,12 +11983,13 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TS!Elecs!Eta}[energy]<$10^{-4}\,\mathrm{eV}$>
+\begin{fdfentry}{TS!Elecs!Eta}[energy]<$1\,\mathrm{meV}$>
   
-  Globally control the imaginary part used for the surface Green
-  function calculation.
+  Globally control the imaginary energy ($\eta$) used for the surface
+  Green function calculation on the non-equilibrium contour.
   %
-  See \fdf{TS!Elec.<>!Eta}.
+  See \fdf{TS!Elec.<>!Eta} for extended details on the usage of this
+  flag. 
   
 \end{fdfentry}
 
@@ -12381,7 +12392,7 @@ create default input blocks.
   The imaginary part ($\eta$) of the device states. Generally this is
   not necessary to define as the imaginary part naturally arises from
   the self-energies (where $\eta>0$).
-  
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!Contours.nEq!Fermi.Cutoff}[energy]<$5\,k_BT$>

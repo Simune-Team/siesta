@@ -171,8 +171,19 @@ module m_ts_electype
      real(dp) :: accu = 7.349806700083788e-15_dp
 
      ! The imaginary part in the electrode
-     !  == 0.0001 * eV
-     real(dp) :: Eta = 7.3498067e-6_dp
+     !  == 0.001 * eV
+     ! Note these values are always set in m_ts/tbt_options
+     ! so the values here are not important (more for reference)
+#ifdef TBTRANS
+#ifdef TBT_PHONON
+     ! Squared!
+     real(dp) :: Eta = 5.401965852736489e-09_dp
+#else
+     real(dp) :: Eta = 7.3498067e-5_dp
+#endif
+#else
+     real(dp) :: Eta = 7.3498067e-5_dp
+#endif
 
      ! The region of the down-folded region
      type(tRgn) :: o_inD, inDpvt
@@ -616,8 +627,11 @@ contains
          call pline_E_parse(pline,1,ln, val=this%Eta, before=3)
 #ifdef TBTRANS
 #ifdef TBT_PHONON
-          ! eta value needs to be squared as it is phonon spectrum
-          this%Eta = this%Eta ** 2
+         ! eta value needs to be squared as it is phonon spectrum
+         ! If the eta value is negative, then it is the
+         ! contour value
+         if ( this%Eta > 0._dp ) &
+             this%Eta = this%Eta ** 2
 #endif
 #endif
 
@@ -645,14 +659,6 @@ contains
        write(*,*)' - electrode-position'
        call die('You have not supplied all electrode information')
     end if
-
-#ifndef TBTRANS
-    if ( this%Eta <= 0._dp ) then
-       call die('We do not allow the advanced Green function &
-            &to be calculated. Please ensure a positive imaginary &
-            &part of the energy (non-zero).')
-    end if
-#endif
 
     ! If the user will not use bulk, set DM_update to 'all'
     if ( .not. this%Bulk ) then
@@ -2337,15 +2343,19 @@ contains
        write(*,f11)  '  Will NOT check the kgrid-cell! Ensure sampling!'
     end if
 #endif
+    if ( this%Eta < 0._dp ) then
+      write(*,f11)  '  Electrode self-energy imaginary Eta will be taken from the contour (ensure non-zero value)'
+    else
 #ifdef TBTRANS
-#ifdef TBT_PHONON
-    write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV**2,' eV**2'
+# ifdef TBT_PHONON
+      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV**2,' eV**2'
+# else
+      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
+# endif
 #else
-    write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
+      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
 #endif
-#else
-    write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
-#endif
+    end if
     write(*,f9)  '  Electrode self-energy accuracy', this%accu/eV,' eV'
     write(*,f6)  '  Electrode inter-layer distance (semi-inf)', this%dINF_layer/Ang,' Ang'
 

@@ -71,11 +71,8 @@ contains
 
     ! broadening
     tbt_Eta = fdf_get('TBT.Contours.Eta',0._dp,'Ry')
-#ifdef TBT_PHONON
-    ! The half-width is squared as the phonon energy is
-    tbt_Eta = tbt_Eta ** 2
-#endif
     if ( tbt_Eta < 0._dp .and. Node == 0 ) then
+      call die('tbtrans: error cannot use the advanced Green function')
        write(*,'(a)')'*** NOTICE ***'
        write(*,'(a)')'tbtrans will use the advanced Green function'
     end if
@@ -136,6 +133,12 @@ contains
     end if
 
 #ifdef TBT_PHONON
+    ! The half-width is squared as the phonon energy
+    ! Important to do it here since the Eta should be propagated
+    ! in units of Ry (and not Ry ** 2). All contours should be
+    ! created with units Ry.
+    tbt_Eta = tbt_Eta ** 2
+    
     do i = 1 , N_tbt
        if ( tbt_io(i)%a < 0._dp ) then
           call die('Phonon transport is only defined for positive &
@@ -325,8 +328,8 @@ contains
 
     end select
 
-    c%c = dcmplx(ce,Eta)
-    c%w(:,1) = dcmplx(cw,0._dp)
+    c%c = cmplx(ce,Eta, dp)
+    c%w(:,1) = cmplx(cw,0._dp, dp)
 
     deallocate(ce,cw)
     
@@ -461,7 +464,7 @@ contains
     integer :: i,j,iE
     c%exist = .false.
     c%fake  = .false.
-    c%e     = dcmplx(0._dp,0._dp)
+    c%e     = cmplx(0._dp,0._dp, dp)
     c%idx   = 0
     if ( id < 1 ) return
 
@@ -583,7 +586,7 @@ contains
     call io_assign( iu )
     open( iu, file=trim(fname), status='unknown' )
     write(iu,'(a)') '# Contour path for the transport part'
-    write(iu,'(a,a19,3(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','Weight'
+    write(iu,'(a,a19,3(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','w [eV]'
 
     cidx%idx(1) = CONTOUR_TBT
 
@@ -613,7 +616,7 @@ contains
     end if
 
     do i = 1 , size(c%c)
-       write(iu,'(3(e20.13,tr1))') c%c(i) / eV,real(c%w(i,1),dp) / eV
+       write(iu,'(3(e20.13,tr1))') c%c(i) / eV, real(c%w(i,1),dp) / eV
     end do
 
   end subroutine io_contour_c

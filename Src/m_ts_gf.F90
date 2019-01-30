@@ -40,6 +40,7 @@ module m_ts_GF
 
 contains
 
+  ! This method should only be called from transiesta (not tbtrans)
   subroutine do_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        xa_EPS, CalcDOS )
@@ -122,7 +123,7 @@ contains
     do i = 1 , N_nEq_E()
       c = nEq_E(i)
       ! We utilize the eta value for the electrode
-      ce(iE+i) = dcmplx(real(c%e,dp),El%Eta)
+      ce(iE+i) = cmplx(real(c%e,dp),El%Eta, dp)
     end do
 
     ! We return if we should not calculate it
@@ -168,6 +169,7 @@ contains
 
   end subroutine do_Green
 
+  ! This method should only be called from transiesta (not tbtrans)
   subroutine do_Green_Fermi(El, &
        ucell,nkpnt,kpoint,kweight, &
        xa_EPS, CalcDOS )
@@ -239,8 +241,8 @@ contains
 
     errorGF = .false.
 
-    ! We use the "first" pole of the 
-    ce(1) = dcmplx(0._dp, El%Eta)
+    ! We use the "first" pole of the
+    ce(1) = cmplx(0._dp, El%Eta, dp)
 
     ! We return if we should not calculate it
     if ( cReUseGF ) then
@@ -595,12 +597,20 @@ contains
        ! charge correction
        ! If it is different from 1 we do not have an equilibrium contour
        if ( c%idx(1) /= 1 ) then
-          ! In this case the energy is the eta value of the electrode
+         ! In this case the energy is the eta value of the electrode
+         if ( Elecs(i)%Eta > 0._dp ) then
 #ifdef TBT_PHONON
-          c%e = dcmplx(real(cE%e,dp)**2,Elecs(i)%Eta)
+           c%e = cmplx(real(cE%e,dp)**2,Elecs(i)%Eta, dp)
 #else
-          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
+           c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta, dp)
 #endif
+         else
+#ifdef TBT_PHONON
+           c%e = cmplx(real(cE%e,dp)**2,aimag(cE%e)**2, dp)
+#else
+           c%e = cE%e
+#endif
+         end if
        end if
        if ( Elecs(i)%out_of_core ) then
 
