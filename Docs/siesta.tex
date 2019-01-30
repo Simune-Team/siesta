@@ -1669,7 +1669,11 @@ valence shell have been included in the calculation)
 \item[-] {\tt l}: Angular momentum of
 basis orbitals of this shell
 \item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell. For a filteret 
-basis this number is ignored since the number is controlled by the cutoff.
+basis this number is ignored since the number is controlled by the
+cutoff.
+For bessel-floating orbitals, the different 'zetas' map to
+increasingly excited states with the same angular momentum (with
+increasing number of nodes).
 \item[-] {\tt PolOrb(l+1)}: {\it Optional input}. If set equal to {\tt P}, a
 shell of
 polarization functions (with angular momentum $l+1$)  will be constructed
@@ -1718,9 +1722,16 @@ $\delta$ in equation (2) above for charge confinement (in Bohr).
 each 'zeta' for this shell. For the second zeta onwards, if this value
 is negative, the actual rc used will be the given fraction of the
 first zeta's rc.
+If the number of rc's for a given shell is less than the number of
+'zetas', the program will assign the last rc value to the remaining
+zetas, rather than stopping with an error. This is particularly
+useful for Bessel suites of orbitals.
 \item[-] {\tt contrf(izeta,l,is)}: {\it Optional input}.
 Contraction factor\index{scale factor} of
 each 'zeta' for this shell.
+If the number of entries for a given shell is less than the number of
+'zetas', the program will assign the last contraction value to the remaining
+zetas, rather than stopping with an error.
 {\it Default value}: {\tt 1.0}
 \end{itemize}
 
@@ -1751,7 +1762,7 @@ A species with atomic number = -100 will be considered by {\sc Siesta} as
 a constant-pseudopotential atom, {\it i.e.}, the basis functions
 generated will be spherical Bessel functions\index{Bessel functions}
 with the specified $r_c$. In this case, $r_c$ has to be given, as
-{\bf EnergyShift} will not calculate it.\index{basis!Bessel functions}
+{\bf PAO.EnergyShift} will not calculate it.\index{basis!Bessel functions}
 
 Other negative atomic numbers will be interpreted by {\sc Siesta} as
 {\it ghosts}\index{ghost atoms}\index{basis!ghost atoms}

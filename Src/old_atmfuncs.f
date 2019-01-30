@@ -399,18 +399,17 @@ C ground state configuration.
       integer, intent(in) :: is    ! Species index
       integer, intent(in) :: io    ! Orbital index (within atom)
 
-C Returns the valence-shell configuration in the atomic ground state
-C (i.e. the principal quatum number for orbitals of angular momentum l)
+C   INTEGER CNFIGFIO: Principal quantum number of the shell to which
+C                     the orbital belongs
 
-C   INTEGER CNFIGFIO: Principal quantum number of the shell to what 
-C                     the orbital belongs ( for polarization orbitals
-C                     the quantum number corresponds to the shell which
-C                     is polarized by the orbital io) 
+C               (Formerly, for polarization orbitals
+C               the quantum number corresponded to the shell which
+C               is polarized by the orbital io.
+C               This behavior for polarization orbitals is meaningless,
+C               and has been replaced.)
+      
+      integer l, norb, izeta, ipol, nsm
 
-      integer l, norb, lorb, izeta, ipol,nsm
-      integer  indx, nsmorb
-
-C
       call check_is('cnfigfio',is)
       if ((io.gt.nomax(is)).or.(io.lt.1)) then
             write(6,*) 'CNFIGFIO: THERE ARE NO DATA FOR IO=',IO
@@ -419,41 +418,38 @@ C
          call die()
       endif
 
+      ! This routine assumes that polarization orbitals are the last ones
+      ! in the list indexed by 'io'
+      
         norb=0
-        indx=0
         do 10 l=0,lmxosave(is)
          do 8 nsm=1,nsemicsave(l,is)+1
           do 5 izeta=1,nzetasave(l,nsm,is)
             norb=norb+(2*l+1)
-            indx=indx+1
-            if(norb.ge.io) goto 30
+            if(norb.ge.io) then
+               cnfigfio=cnfigtb(l,nsm,is)
+               return
+            endif
  5        continue
  8       continue
 10      continue
 
-        indx=0
         do  20 l=0,lmxosave(is)
           do 18 nsm=1,nsemicsave(l,is)+1
             do 15 ipol=1, npolorbsave(l,nsm,is)
               norb=norb+(2*(l+1)+1)
-              indx=indx+1
-              if(norb.ge.io) goto 40
+              if(norb.ge.io) then
+                 ! Deal properly with polarization orbitals
+                 ! Return the highest n for l+1
+                 cnfigfio=maxval(cnfigtb(l+1,:,is))
+                 return
+              endif
 15          continue
 18        continue
 20      continue
            write(6,*) 'CNFIGFIO: ERROR: ORBITAL INDEX IO=',IO
            write(6,*) 'CNFIGFIO: ERROR: NOT FOUND'
         call die()
-
-30      lorb=l
-        nsmorb=nsm
-        cnfigfio=cnfigtb(lorb,nsmorb,is)
-        return
-
-40      lorb=l
-        nsmorb=nsm
-        cnfigfio=cnfigtb(lorb,nsmorb,is)  
-        return
 
       end function cnfigfio
 !
