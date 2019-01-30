@@ -682,6 +682,24 @@
      $           cnfigmx(l,isp) = basp%ground_state%n(l)
 
          enddo
+
+         ! NOTE: cnfigmx and nsemic are only initialized for l up to lmxo
+         !       in the above loop
+         !       Extend them so that we can deal properly with outer polarization states
+
+         do l=basp%lmxo+1, lmaxd
+            !     gs is only setup up to l=3 (f)
+            if (l <= 3) then
+               cnfigmx(l,isp) = basp%ground_state%n(l)
+            else
+               ! g orbitals. Use the "l+1" heuristic
+               ! For example, 5g pol orb associated to a 4f orb.
+               cnfigmx(l,isp) = l + 1
+            endif
+            nsemic(l,isp) = 0
+         enddo
+         
+
          do l=0,basp%lmxkb
             k=>basp%kbshell(l)
             nkbl(l,isp) = k%nkbl
@@ -702,6 +720,10 @@
       type(ldaushell_t), pointer :: ldau
 
       integer :: l, n, i
+      integer :: nprin
+      character(len=4) :: orb_id
+      character(len=1), parameter   ::
+     $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
       basp => basis_parameters(is)
 
@@ -719,9 +741,11 @@
      $        'Cnfigmx=', cnfigmx(l,is)
          do n=1,nsemic(l,is)+1
             if (nzeta(l,n,is) == 0) exit
-            write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
-     $           'n=', n, 'nzeta=',nzeta(l,n,is),
-     $           'polorb=', polorb(l,n,is)
+            nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
+            write(orb_id,"(a1,i1,a1,a1)") "(",nprin, sym(l), ")"
+            write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1,2x,a4)')
+     $            'i=', n, 'nzeta=',nzeta(l,n,is),
+     $            'polorb=', polorb(l,n,is), orb_id
             if (basistype(is).eq.'filteret') then
                write(lun,'(10x,a10,2x,g12.5)') 
      $              'fcutoff:', filtercut(l,n,is)

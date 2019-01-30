@@ -2395,6 +2395,10 @@ H    2               # Label, l_shells, type (opt), ionic_charge (opt)
     \texttt{nzls(lsh,is)}: Number of ``zetas'' for this shell. For a
     filteret basis this number is ignored since the number is
     controlled by the cutoff.
+    For bessel-floating orbitals, the different 'zetas' map to
+    increasingly excited states with the same angular momentum (with
+    increasing number of nodes).
+    
 
     \item[-]%
     \texttt{PolOrb(l+1)}: \textit{Optional input}. If set equal to
@@ -2473,12 +2477,18 @@ H    2               # Label, l_shells, type (opt), ionic_charge (opt)
     this shell. For the second zeta onwards, if this value is
     negative, the actual rc used will be the given fraction of the
     first zeta's rc.
+    If the number of rc's for a given shell is less than the number of
+    'zetas', the program will assign the last rc value to the remaining
+    zetas, rather than stopping with an error. This is particularly
+    useful for Bessel suites of orbitals.
 
     \item[-]%
     \texttt{contrf(izeta,l,is)}: \textit{Optional input}.  Contraction
-    factor\index{scale factor} of each ``zeta'' for this shell.
+    factor\index{scale factor} of each ``zeta'' for this shell.   
+    If the number of entries for a given shell is less than the number of
+    'zetas', the program will assign the last contraction value to the remaining
+    zetas, rather than stopping with an error.
     \textit{Default value}: \texttt{1.0}
-
 \end{itemize}
 
 Polarization orbitals\index{perturbative
@@ -2508,7 +2518,7 @@ A species with atomic number = -100 will be considered by \siesta\ as
 a constant-pseudopotential atom, \textit{i.e.}, the basis functions
 generated will be spherical Bessel functions\index{Bessel functions}
 with the specified $r_c$. In this case, $r_c$ has to be given, as
-\fdf*{EnergyShift} will not calculate it.\index{basis!Bessel functions}
+\fdf*{PAO.EnergyShift} will not calculate it.\index{basis!Bessel functions}
 
 Other negative atomic numbers will be interpreted by \siesta\ as
 \textit{ghosts}\index{ghost atoms}\index{basis!ghost atoms}
@@ -12349,13 +12359,23 @@ electrodes in a generic input format.
     
     \option[Eta]%
     \fdfindex*{TS!Elec.<>!Eta}%
-    \fdfdepend{TS!Elecs!Eta}
-    Control the imaginary part of the surface Green function for this
-    electrode.
+    \fdfdepend{TS!Elecs!Eta}%
+    Control the imaginary energy ($\eta$) of the surface Green
+    function for this electrode.
+
+    The imaginary part is \emph{only} used in the non-equilibrium
+    contours since the equilibrium are already lifted into the complex
+    plane. Thus this $\eta$ reflects the imaginary part in the
+    $G\Gamma G^\dagger$ calculations. Ensure that all imaginary values
+    are larger than $0$ as otherwise \tsiesta\ may seg-fault.
+
+    \note if this energy is negative the complex value associated with
+    the non-equilibrium contour is used. This is particularly useful
+    when providing a user-defined contour along the real axis.
 
     \option[Accuracy]%
     \fdfindex*{TS!Elec.<>!Accuracy}%
-    \fdfdepend{TS!Elecs!Accuracy}
+    \fdfdepend{TS!Elecs!Accuracy}%
     Control the convergence accuracy required for the self-energy
     calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
     scheme. 
@@ -12435,12 +12455,13 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TS!Elecs!Eta}[energy]<$10^{-4}\,\mathrm{eV}$>
+\begin{fdfentry}{TS!Elecs!Eta}[energy]<$1\,\mathrm{meV}$>
   
-  Globally control the imaginary part used for the surface Green
-  function calculation.
+  Globally control the imaginary energy ($\eta$) used for the surface
+  Green function calculation on the non-equilibrium contour.
   %
-  See \fdf{TS!Elec.<>!Eta}.
+  See \fdf{TS!Elec.<>!Eta} for extended details on the usage of this
+  flag. 
   
 \end{fdfentry}
 
@@ -12843,7 +12864,7 @@ create default input blocks.
   The imaginary part ($\eta$) of the device states. Generally this is
   not necessary to define as the imaginary part naturally arises from
   the self-energies (where $\eta>0$).
-  
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!Contours.nEq!Fermi.Cutoff}[energy]<$5\,k_BT$>

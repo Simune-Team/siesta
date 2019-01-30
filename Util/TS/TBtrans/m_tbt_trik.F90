@@ -874,6 +874,8 @@ contains
 #endif
           
           ! B-cast all nodes current energy segment
+          ! TODO simply retrieve them from tbt_E rather than
+          !      Bcast-ing (which is slow)
           call MPI_BcastNode(iE_N, cE%E, nE)
 
           ! Print out information about current progress.
