@@ -628,6 +628,9 @@ contains
     mem = mem + calc_mem(NF90_DOUBLE, NE)
 
     dic = dic//('info'.kv.'Imaginary part for device')
+#ifdef TBT_PHONON
+    dic = dic//('unit'.kv.'Ry**2')
+#endif
     call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
     ! Clean-up dictionary

@@ -148,6 +148,7 @@
           integer                   ::  nldauprojs_lm    ! How many projectors
                                                          !  including angular 
                                                          !  dependencies.
+          logical                   ::  in_pao_basis_block = .false.
           integer                   ::  lmxkb_requested
           integer                   ::  lmxldaupj_requested
           logical                   ::  non_perturbative_polorbs=.false.
@@ -763,10 +764,9 @@
          do n=1,nsemic(l,is)+1
             nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
             write(orb_id,"(a1,i1,a1,a1)") "(",nprin, sym(l), ")"
-            ! but we still write n as index within the shell
             write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1,2x,a4)',
      $                 advance="no")
-     $           'n=', n, 'nzeta=',nzeta(l,n,is),
+     $           'i=', n, 'nzeta=',nzeta(l,n,is),
      $           'polorb=', polorb(l,n,is), orb_id
 
             if (nzeta(l,n,is) == 0) then
@@ -777,7 +777,7 @@
                if (l == basp%lmxo) then
                   write(lun,'(tr2,a)')
      $             '(perturbative polarization orbital)'
-               else
+               else   ! It is difficult to detect a polarization orbital with intermediate l.
                   write(lun,'(tr2,a)')
      $             '(empty shell -- could be pol. orbital)'
                endif

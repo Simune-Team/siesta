@@ -385,9 +385,13 @@ libsiestaBLAS.a: Libs/blas.F
 
 ifneq (,$(findstring libsiestaLAPACK.a,$(COMP_LIBS)))
  # Automatically add the DIAG_2STAGE solvers.
- FPPFLAGS += -DSIESTA__DIAG_2STAGE
+ ifeq (,$(findstring SIESTA__DIAG_2STAGE,$(FPPFLAGS)))
+   FPPFLAGS += -DSIESTA__DIAG_2STAGE
+ endif
  ifeq (,$(findstring MPI,$(FPPFLAGS)))
-  FPPFLAGS += -DSIESTA__MRRR
+   ifeq (,$(findstring SIESTA__MRRR,$(FPPFLAGS)))
+     FPPFLAGS += -DSIESTA__MRRR
+   endif
  endif
 endif
 libsiestaLAPACK.a: Libs/lapack.F

@@ -340,15 +340,15 @@ contains
 
     end subroutine log_pointer
     
-  subroutine warn_and_set_to_false(var)
-    logical, intent(inout) :: var
-    if (var) then
-       call message("WARNING","Deprecated spin keyword overridden by new-style 'Spin' input")
-       call message("WARNING","Option from deprecated keyword: "//trim(opt_old))
-       call message("WARNING","Option from 'Spin' keyword input: "//trim(opt))
-       var = .false.
-    endif
-  end subroutine warn_and_set_to_false
+    subroutine warn_and_set_to_false(var)
+      logical, intent(inout) :: var
+      if (var) then
+         call message("WARNING","Deprecated spin keyword overridden by new-style 'Spin' input")
+         call message("WARNING","Option from deprecated keyword: "//trim(opt_old))
+         call message("WARNING","Option from 'Spin' keyword input: "//trim(opt))
+         var = .false.
+      endif
+    end subroutine warn_and_set_to_false
 
 end subroutine init_spin
 

@@ -40,6 +40,7 @@ module m_ts_GF
 
 contains
 
+  ! This method should only be called from transiesta (not tbtrans)
   subroutine do_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        xa_EPS, CalcDOS )
@@ -122,7 +123,7 @@ contains
     do i = 1 , N_nEq_E()
       c = nEq_E(i)
       ! We utilize the eta value for the electrode
-      ce(iE+i) = cmplx(real(c%e,dp),El%Eta,dp)
+      ce(iE+i) = cmplx(real(c%e,dp),El%Eta, dp)
     end do
 
     ! We return if we should not calculate it
@@ -168,6 +169,7 @@ contains
 
   end subroutine do_Green
 
+  ! This method should only be called from transiesta (not tbtrans)
   subroutine do_Green_Fermi(El, &
        ucell,nkpnt,kpoint,kweight, &
        xa_EPS, CalcDOS )
@@ -239,8 +241,8 @@ contains
 
     errorGF = .false.
 
-    ! We use the "first" pole of the 
-    ce(1) = cmplx(0._dp, El%Eta,dp)
+    ! We use the "first" pole of the
+    ce(1) = cmplx(0._dp, El%Eta, dp)
 
     ! We return if we should not calculate it
     if ( cReUseGF ) then
@@ -546,35 +548,19 @@ contains
     ! Furthermore we include the weight of the k-point
 
     ! the number of points we wish to read in this segment
-    NEReqs = 1
 #ifdef MPI
-    i = 0
-    if ( cE%exist .and. .not. cE%fake) i = 1
-    call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
-         MPI_Comm_World, MPIerror)
-#endif
-
-    if ( present(reread) ) then
-       if ( IONode .and. reread ) then
-          do j = 1 , N_Elec
-             if ( .not. Elecs(j)%out_of_core ) cycle
-             do i = 1 , NEReqs * 2
-                backspace(unit=uGF(j))
-             end do
-          end do
-! Currently the equilibrium energy points are just after
-! the k-point, hence we will never need to backspace behind the
-! HAA and SAA reads
-! however, when we add kpoints for the bias contour, then it might be
-! necessary!
-!           if ( new_kpt ) then
-!             do i = 1 , 2
-!                backspace(unit=uGFL)
-!                backspace(unit=uGFR)
-!             end do
-!          end if
-       end if
+    if ( any(Elecs(:)%out_of_core) ) then
+      if ( cE%exist .and. .not. cE%fake) then
+        i = 1
+      else
+        i = 0
+      end if
+      call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
+          MPI_Comm_World, MPIerror)
     end if
+#else
+    NEReqs = 1
+#endif
 
     ! TODO Move reading of the energy points
     ! directly into the subroutines which need them
@@ -611,14 +597,43 @@ contains
        ! charge correction
        ! If it is different from 1 we do not have an equilibrium contour
        if ( c%idx(1) /= 1 ) then
-          ! In this case the energy is the eta value of the electrode
+         ! In this case the energy is the eta value of the electrode
+         if ( Elecs(i)%Eta > 0._dp ) then
 #ifdef TBT_PHONON
-          c%e = cmplx(real(cE%e,dp)**2,Elecs(i)%Eta,dp)
+           c%e = cmplx(real(cE%e,dp)**2,Elecs(i)%Eta, dp)
 #else
-          c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta,dp)
+           c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta, dp)
 #endif
+         else
+#ifdef TBT_PHONON
+           c%e = cmplx(real(cE%e,dp)**2,aimag(cE%e)**2, dp)
+#else
+           c%e = cE%e
+#endif
+         end if
        end if
        if ( Elecs(i)%out_of_core ) then
+
+          ! Backspace the file if needed
+          if ( present(reread) ) then
+            ! Currently the equilibrium energy points are just after
+            ! the k-point, hence we will never need to backspace behind the
+            ! HAA and SAA reads
+            ! however, when we add kpoints for the bias contour, then it might be
+            ! necessary!
+            if ( IONode .and. reread ) then
+              do j = 1 , NEReqs * 2
+                backspace(unit=uGF(j))
+              end do
+              ! if ( new_kpt ) then
+              !  do j = 1 , 2
+              !   backspace(unit=uGFL)
+              !   backspace(unit=uGFR)
+              !  end do
+              ! end if
+            end if
+          end if
+
           ! Set k-point for calculating expansion
           Elecs(i)%bkpt_cur = kpt
           call read_next_GS_Elec(uGF(i), NEReqs, &

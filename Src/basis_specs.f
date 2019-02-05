@@ -50,12 +50,14 @@
 ! 
 !          rc_1  rc_2 .... rc_nzeta  
 ! 
-!   are the cutoff radii in bohrs. This line is mandatory and there must
-!   be at least nzeta values (the extra ones are discarded)
-! 
+!   are the cutoff radii in bohrs. This line is mandatory
+!   If the number of rc's for a given shell is less than the number of
+!   'zetas', the program will assign the last rc value to the remaining
+!   zetas, rather than stopping with an error. This is particularly
+!   useful for Bessel suites of orbitals.
 !   A line containing contraction (scale) factors is optional, but if it
-!   appears, the values *must be* real numbers, and there must be at
-!   least nzeta of them.
+!   appears, the values *must be* real numbers. The same extension feature
+!   as for the rc values works here.      
 !   --------------------------------------------------------------------
 ! 
 !   After processing PAO.Basis (if it exists), whatever PAO information
@@ -94,7 +96,7 @@
 ! 
 !   rc(1:nzeta) is set to 0.0
 !   lambda(1:nzeta) is set to 1.0  (this is a change from old practice)
-! 
+!
 !  ----------------------------------
 !  
 !   Next come the blocks associated to the KB projectors:
@@ -129,7 +131,22 @@
 !       n-shells in the corresponding PAO shell with the same l. For l
 !       greater than lmxo, it is set to 1. The reference energies are
 !       in all cases set to huge(1.d0) to mark the default.
-!       
+!
+!       Archaeological note: The first implementation of the basis-set generation
+!       module had only non-polarization orbitals. Polarization orbitals were added
+!       later as "second-class" companions. This showed in details like "lmxo" (the
+!       maximum l of the basis set) not taking into account polarization orbitals.
+!       Polarization orbitals were tagged at the end, without maintaining l-shell
+!       ordering.
+!       Even later, support for "semicore" orbitals was added. A new ('nsm') index was
+!       used to distinguish the different orbitals in a l-shell. Polarization orbitals
+!       were not brought into this classification.
+!       In this version, 'lmxo' takes into account any polarization orbitals.      
+! 
+!       Future work should probably remove the separate treatment of polarization orbitals.
+!       (Note that if *all* orbitals are specified in a PAO.Basis block, in effect turning
+!       perturbative polarization orbitals into 'normal' orbitals, this problem is not present.)
+!     
 ! =======================================================================
 !
       use precision
@@ -527,8 +544,23 @@ C Sanity checks on values
             k%l = l
             if (l.gt.basp%lmxo) then
               k%nkbl = 1
-            else           ! Set equal to the number of PAO shells
-              k%nkbl = basp%lshell(l)%nn
+            else
+              ! Set equal to the number of PAO shells with this l
+              k%nkbl = basp%lshell(l)%nn     
+              ! Should include polarization orbs (as in Ti case: 3p..4p*)
+              ! (See 'archaeological note' in the header of this file)
+              ! ... but if the element was not in the PAO.Basis block, any such polarization orbital
+              !     has been included in 'nn' already.
+              if (l>0 .and. basp%in_pao_basis_block) then
+                 do i = 1, basp%lshell(l-1)%nn
+                    if (basp%lshell(l-1)%shell(i)%polarized) then
+                       k%nkbl = k%nkbl + 1
+                       write(6,"(a,i1,a)") trim(basp%label) //
+     $                  ': nkbl increased for l=',l,
+     $                  ' due to the presence of a polarization orbital'
+                    endif
+                 enddo
+              endif
               if (k%nkbl.eq.0) then
                 write(6,*) 'Warning: Empty PAO shell. l =', l
                 write(6,*) 'Will have a KB projector anyway...'
@@ -618,7 +650,7 @@ C Sanity checks on values
               k%l = l
               k%nkbl = 1
               allocate(k%erefkb(1))
-              k%erefkb(1) = huge(1.d0)
+              k%erefkb(1) = huge(1.d0) / 4.d0   ! signal different phase
             endif
           enddo
         enddo   !! Over species
@@ -644,6 +676,7 @@ C Sanity checks on values
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
+      integer nrcs_zetas
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -662,6 +695,7 @@ C Sanity checks on values
         endif
 
         basp => basis_parameters(isp)
+        basp%in_pao_basis_block = .true.
         basp%label = fdf_bnames(pline,1)
         basp%nshells_tmp = fdf_bintegers(pline,1)
         basp%lmxo = 0
@@ -796,11 +830,21 @@ C Sanity checks on values
           s%rc(:) = 0.d0
           s%lambda(:) = 1.d0
           if (.not. fdf_bline(bfdf,pline)) call die("No rc's")
-          if (fdf_bnvalues(pline) .ne. s%nzeta)
-     .      call die("Wrong number of rc's")
+          
+          ! Use the last rc entered for the successive zetas
+          ! if there are not enough values (useful for Bessel)
+          nrcs_zetas = fdf_bnvalues(pline)
+          if (nrcs_zetas < 1) then
+           call die("Need at least one rc per shell in PAO.Basis block")
+          endif
           do i= 1, s%nzeta
-            s%rc(i) = fdf_bvalues(pline,i)
+             if (i <= nrcs_zetas) then
+                s%rc(i) = fdf_bvalues(pline,i)
+             else
+                s%rc(i) = s%rc(nrcs_zetas)
+             endif
           enddo
+
           if (s%split_norm_specified) then
             do i = 2,s%nzeta
               if (s%rc(i) /= 0.0_dp) then
@@ -824,11 +868,20 @@ C Sanity checks on values
      .          call die('repaobasis: ERROR in PAO.Basis block')
               cycle shells
             else
-              if (fdf_bnreals(pline) .ne. s%nzeta)
-     .          call die("Wrong number of lambda's")
-              do i=1,s%nzeta
-                s%lambda(i) = fdf_breals(pline,i)
-              enddo
+              ! Read scale factors
+              ! Use the last scale factor entered for the successive zetas
+              ! if there are not enough values 
+               nrcs_zetas = fdf_bnreals(pline)
+               if (nrcs_zetas < 1) then
+                 call die("Need at least one scale factor in PAO.Basis")
+               endif
+               do i= 1, s%nzeta
+                  if (i <= nrcs_zetas) then
+                     s%lambda(i) = fdf_breals(pline,i)
+                  else
+                     s%lambda(i) = s%lambda(nrcs_zetas)
+                  endif
+               enddo
             endif
           endif
 
@@ -894,7 +947,7 @@ C Sanity checks on values
                   ind = ind + 1
                   ! Copy again to inherit data
                   call copy_shell(source=s,target=ls%shell(ind))
-                  ls%shell(ind)%n = -1   ! reset to find later
+                  ls%shell(ind)%n = basp%ground_state%n(l)     !! earlier: -1   ! reset to find later
                   ls%shell(ind)%l = l
                   ls%shell(ind)%nzeta = s%nzeta_pol
                   ls%shell(ind)%nzeta_pol = 0
@@ -909,11 +962,11 @@ C Sanity checks on values
 
          enddo
 
-         if (nn.eq.1) then
+!!##         if (nn.eq.1) then
             ! If n was not specified, set it to ground state n
-            if (ls%shell(1)%n.eq.-1)
-     .        ls%shell(1)%n=basp%ground_state%n(l)
-          endif
+!!            if (ls%shell(1)%n.eq.-1)
+!!     .        ls%shell(1)%n=basp%ground_state%n(l)
+!!##          endif
           !! Do we have to sort by n value????
           !!
         enddo loop_l
@@ -1335,10 +1388,10 @@ c (according to atmass subroutine).
             call initialize(s)
             s%l = l
             s%n = basp%ground_state%n(l)
-            if (basp%ground_state%occupied(l)) then
+            if (basp%ground_state%occupied(l)) then   
                s%nzeta = nzeta
             else
-               s%nzeta = 0
+               s%nzeta = 0  ! This might be a polarization orbital... **, and still be counted as a "shell"
             endif
             s%polarized = .false.
             s%polarization_shell = .false.

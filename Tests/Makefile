@@ -42,7 +42,7 @@ default: all
 
 label = work
 
-tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
+tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel bessel-rich \
 	born born_spin carbon_nanoscroll ch4 chargeconf-h2o \
 	constant_volume dipole_correction fe fe_broyden \
 	fe_clust_noncollinear fe_clust_noncollinear-gga fe_cohp \

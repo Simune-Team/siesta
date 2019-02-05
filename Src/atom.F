@@ -333,8 +333,9 @@
      .      ' ( Floating basis ) ' 
 
         elseif(iz.eq.-100) then
-          write(6,'(a,i4,a)')
-     .      'atom: Called for Z=',iz,'( Floating Bessel functions)'  
+          write(6,'(3a,i4,a,a)')
+     .      'atom: Called for ', atm_label, '  (Z =', iz,')',
+     .      ' ( Floating Bessel functions ) ' 
 
         endif
 !
@@ -831,7 +832,7 @@ c    .          'atom: The above configuration will be used ',
           spp%self_energy = 0.0d0
 ! Calculate Bessel functions
           call Bessel(is,a,b,rofi,drdi,s,
-     .                lmxo,nzeta,rco,lambda,filtercut,no,spp)
+     .                lmxo,nzeta,rco,lambda,filtercut,no,nsemic,spp)
  
           write(6,'(/a,i3)')
      .      'atom: Total number of floating Bessel orbitals:', no
@@ -2110,7 +2111,8 @@ C
 C
 C       Internal and common variables
 C
-        integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max
+        integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max, n_user
+        integer  npols_lm1
 C
 C Adding a new species to the list
 C          
@@ -2165,27 +2167,40 @@ C
             
         cnfigtb(:,:,is) = 0
 
-        if (iz.ne.-100) then  
+        ! Generate the array with 'n' quantum number information
+        if (iz.ne.-100) then  ! Normal case
+           
+          ! Note that lmxo now covers any polarization orbitals
+
           do l=0,lmxo
-            do nsm=1, nsemic(l)+1
-              cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
-            enddo
-          enddo 
-          do l=min(lmaxd,lmxo+1),lmaxd
-            cnfigtb(l,1,is)=l+1         ! AG*** Why??
-                                           ! To deal with polarization
-                                           ! orbitals beyond lmxo?
-! BUT, what happens to "in-between" polarization orbitals?
-! 
-!
+             do nsm=1, nsemic(l)+1
+                cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
+             enddo
+
+             if (l==0) cycle
+
+             ! Special case where a polarization orbital has the same l                           
+             ! as a lower-lying state (e.g. Ti: 3s2 3p6 4s2 3d2 4p0*) 4p0 is a polarization       
+             ! orbital, with the same l as 3p.                                                    
+             ! (See 'archaeological note' in the header of 'basis_specs.f')                       
+             npols_lm1 = sum(npolorb(l-1,:))
+             if (npols_lm1 > 0) then
+                nsm = nsemic(l)+2
+                cnfigtb(l,nsm,is)= cnfigmx(l) + 1 ! in the above case, 4p                        
+             endif
           enddo
+
         else
 !
-!          Arbitrary "n" for "semicore" bessel states...
-!
-          do l=0,lmaxd
+!          For bessel-function states, the 'n' quantum number
+!          does not follow the heuristics for real 'atomic'
+!          states, but since the user has to specify them in the
+!          PAO.Basis block, we use them.           
+
+           do l=0,lmxo
             do nsm=1,nsemic(l)+1
-              cnfigtb(l,nsm,is)=nsm
+              n_user = cnfigmx(l)-(nsemic(l)+1)+nsm
+              cnfigtb(l,nsm,is) = n_user
             enddo
           enddo 
         endif   ! iz.ne.-100
@@ -6768,10 +6783,17 @@ C
         ntot = spp%norbs        ! Value so far
         spp%n_orbnl = spp%n_orbnl + 1
         n = spp%n_orbnl
-        ! NOTE: the assigned n quantum number is the polarized shell's n!
-        ! For example, for H, the 'p' orbital comes out to be '1p'...
-        ! This is different if the orbital is specified in PAO.Basis explicitly
-        spp%orbnl_n(n) = cnfigtb(l,nsm,is) 
+
+        ! NOTE: the assigned n quantum number used to be the polarized shell's n!
+        ! For example, for H, the 'p' orbital came out to be '1p'...
+        ! This was different if the orbital was specified in PAO.Basis explicitly
+        !spp%orbnl_n(n) = cnfigtb(l,nsm,is)
+
+        ! The proper fix involves taking into account the proper l, and the possibility
+        ! that this polarization orbital has the same l as a 'semicore' state.
+        ! Hence the implicit scan of the 'nsm' dimension to get the highest number.
+        spp%orbnl_n(n) = maxval(cnfigtb(l+1,:,is))
+        
         spp%orbnl_l(n) = l+1   ! NOTE
         spp%orbnl_z(n) = ipol  
         spp%orbnl_ispol(n) = .true.
@@ -6866,7 +6888,7 @@ C
 !
         subroutine BESSEL(is,a,b,rofi,drdi,s,lmxo,
      .                    nzeta,rco,lambda,filtercut,
-     .                    norb,spp) 
+     .                    norb,nsemic,spp) 
 
         use basis_specs, only: restricted_grid
         use atm_types, only: species_info, maxnorbs, maxn_orbnl
@@ -6886,9 +6908,8 @@ C
 
         type(species_info), intent(inout)  :: spp
         integer :: norb_tot, norb_nl, nsm
-
         integer
-     .    lmxo, is, nzeta(0:lmaxd,nsemx), norb
+     .    lmxo, is, nzeta(0:lmaxd,nsemx), norb, nsemic(0:lmaxd)
 C
 C Internal variables
 C
@@ -6932,17 +6953,28 @@ C
         indx=0
         do l=0,lmxo 
 
-          if (nzeta(l,1).gt.0) then
+           do nsm=1,nsemic(l)+1 
+              if (nzeta(l,nsm).gt.0) then
+                 write(6,'(/2A,I2)')
+     .                'Bessel: floating Bessel functions ',
+     .                'with angular momentum L=',l
+                 exit
+              endif
+           enddo 
 
-            write(6,'(/2A,I2)')
-     .        'Bessel: floating Bessel functions ',
-     .        'with angular momentum L=',l
+           do nsm=1,nsemic(l)+1     ! Note extra shell loop
+           
+             if (nzeta(l,nsm).eq.0) CYCLE
 
-            do izeta=1, nzeta(l,1) 
+             write(6,'(/A,I1,A)')
+     .            'Bessel: Basis orbitals for "state" ',
+     .            cnfigtb(l,nsm,is), sym(l)
+
+             do izeta=1, nzeta(l,nsm) 
 C
 C Cut-off radius for Bessel functions must be an explicit input
 C
-              if (rco(izeta,l,1).lt.1.0d-5) then 
+              if (rco(izeta,l,nsm).lt.1.0d-5) then 
                 write(6,'(a)')
      .     'Bessel: ERROR Zero cut-off radius with Z=-100 option'
                 write(6,'(a)')
@@ -6952,15 +6984,15 @@ C
                 call die
               endif
 C
-              if (abs(lambda(izeta,l,1)).lt.1.0d-3) 
-     .          lambda(izeta,l,1)=1.0d0
-              if (abs(lambda(izeta,l,1)-1.0d0).gt.1.0d-3) then
+              if (abs(lambda(izeta,l,nsm)).lt.1.0d-3) 
+     .          lambda(izeta,l,nsm)=1.0d0
+              if (abs(lambda(izeta,l,nsm)-1.0d0).gt.1.0d-3) then
                 write(6,'(/,a)')
      . 'Bessel: WARNING Scale factor is not active with Z=-100 option' 
               endif 
-              lambda(izeta,l,1)=1.0d0
+              lambda(izeta,l,nsm)=1.0d0
 
-              rc=rco(izeta,l,1)
+              rc=rco(izeta,l,nsm)
               nrc=nint(log(rc/b+1.0d0)/a)+1
               if (restricted_grid) then
                 nodd=mod(nrc,2)
@@ -6969,10 +7001,17 @@ C
                 endif
               endif
               rc=b*(exp(a*(nrc-1))-1.0d0)
-              rco(izeta,l,1)=rc
+              rco(izeta,l,nsm)=rc
 
-              nnodes=izeta
-              nprin=l+1
+              ! Instead of generating directly j_l(k*r), where
+              ! k is chosen to have a zero at rc, the effective Schrodinger
+              ! equation is integrated with a zero potential.
+
+              ! Note that the the different zetas here mean successively
+              ! excited states for this l
+
+              nnodes=izeta      ! Including the one at r=rc...
+              nprin=l+1       
               call schro_eq(1.0d0,rofi,v,v,s,drdi,
      .                      nrc,l,a,b,nnodes,nprin,
      .                      eorb,g) 
@@ -6995,19 +7034,17 @@ C
 
               write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
      .          'izeta =',izeta,
-     .          'rc =',rco(izeta,l,1),
+     .          'rc =',rco(izeta,l,nsm),
      .          'energy =',eorb  
 
               norb=norb+(2*l+1)
               indx=indx+1
               call comBasis(is,a,b,rofi,g,l,
-     .           rco(izeta,l,1),lambda(izeta,l,1),
-     .           filtercut(l,1),izeta,1,nrc,indx,spp)
+     .           rco(izeta,l,nsm),lambda(izeta,l,nsm),
+     .           filtercut(l,nsm),izeta,nsm,nrc,indx,spp)
 
             enddo 
-        
-          endif  
-
+           enddo
         enddo 
 
         end subroutine bessel

@@ -466,6 +466,9 @@ contains
       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
       dic = dic//('info'.kv.'Imaginary part of self-energy')
+#ifdef TBT_PHONON
+      dic = dic//('unit'.kv.'Ry**2')
+#endif
       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
       dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
