@@ -13,7 +13,7 @@
 # VERY BASIC installation script of required libraries
 # for installing these packages:
 #   zlib-1.2.11
-#   hdf5-1.8.21
+#   hdf5-1.10.4
 #   netcdf-c-4.6.1
 #   netcdf-fortran-4.4.4
 # If you want to change your compiler version you should define the
@@ -23,9 +23,9 @@
 
 # If you have downloaded other versions edit these version strings
 z_v=1.2.11
-h_v=1.8.21
-nc_v=4.6.1
-nf_v=4.4.4
+h_v=1.10.4
+nc_v=4.6.2
+nf_v=4.4.5
 
 # Install path, change accordingly
 # You can change this variable to control the installation path
