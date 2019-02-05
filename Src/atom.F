@@ -3257,13 +3257,13 @@ C
      .                polorb,lmxo,nsemic,noPOL, rinn, vcte,
      .                qcoe, qyuk, qwid, nrval,
      .                split_norm,
-     .                filtercut,atm_label, spp) 
+     .                filtercut,atm_label, basp, spp) 
         else
           call POLgen(is, iz, a,b,rofi,drdi,
      .                ePAO,rphi,rco,vps,vePAO,
      .                polorb, lmxo, nsemic, noPOL, rinn, vcte,
      .                qcoe, qyuk, qwid, nrval, split_norm, 
-     .                filtercut,atm_label, spp)
+     .                filtercut,atm_label, basp, spp)
         endif
 C
 C Total number of orbitals
@@ -5753,15 +5753,18 @@ C
         subroutine POLgen(is,iz,a,b,rofi,drdi,ePAO,rphi,rco,vps,ve,
      .                    polorb,lmxo, nsemic,norb,rinn,vcte,
      .                    qcoe,qyuk,qwid,nrval,
-     .                    split_norm,filtercut,atm_label, spp)
+     .                    split_norm,filtercut,atm_label, basp, spp)
 C
 C Calculates the polarization  orbitals for the basis set augmentation.
 C Written by D. Sanchez-Portal, Aug. 1998.
 C Modify by DSP, July 1999
 C
         use atm_types, only: species_info
-
+        use basis_types, only: basis_def_t
+        
         implicit none
+
+        type(basis_def_t)   :: basp
 
         real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
@@ -6081,7 +6084,7 @@ C
                 endif 
 
                 call comPOL(is,a,b,rofi,g,l,nsm,rcpol(ipol,l,nsm),
-     .                      ipol,nrc,indx, spp)
+     .                      ipol,nrc,indx, basp, spp)
 
               enddo 
 
@@ -6095,7 +6098,8 @@ C
      .                             rco,vps,ve,polorb,lmxo,nsemic,
      .                             norb,rinn,vcte,
      .                             qcoe, qyuk, qwid, nrval,
-     .                             split_norm,filtercut,atm_label,spp)
+     .                             split_norm,filtercut,atm_label,basp,
+     $                             spp)
 C
 C Calculates the polarization orbitals for the basis set augmentation.
 C This version uses filterets to create the basis functions. In this
@@ -6107,9 +6111,12 @@ C Based on POLgen by D. Sanchez-Portal, Aug. 1998.
 C Modified by J.D. Gale, Sept. 2009
 C
         use atm_types, only: species_info
+        use basis_types, only: basis_def_t
         
         implicit none
 
+        type(basis_def_t), intent(in) :: basp
+        
         real(dp)
      .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .    ve(nrmax), drdi(nrmax),
@@ -6338,7 +6345,7 @@ C
 
                   call comPOL(is,a,b,rofi,g,l,nsm,
      .                        rcpol(polorb(l,nsm),l,nsm),
-     .                        ipol,nrc,indx,spp)
+     .                        ipol,nrc,indx,basp,spp)
                 endif
 
               enddo 
@@ -6355,7 +6362,8 @@ C
      .                             rco,vps,ve,polorb,lmxo,nsemic,
      .                             norb,rinn,vcte,
      .                             qcoe,qyuk,qwid,nrval,
-     .                             split_norm,filtercut,atm_label,spp)
+     .                             split_norm,filtercut,atm_label,basp,
+     $                             spp)
 C
 C Calculates the polarization orbitals for the basis set augmentation.
 C This version uses filterets to create the basis functions. In this
@@ -6367,9 +6375,12 @@ C Based on POLgen by D. Sanchez-Portal, Aug. 1998.
 C Modified by J.D. Gale, Sept. 2009
 C
         use atm_types, only: species_info
+        use basis_types, only: basis_def_t
 
         implicit none
 
+        type(basis_def_t), intent(in) :: basp
+        
         real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
      .    a, b, rofi(nrmax),
@@ -6733,7 +6744,7 @@ C
 
                   call comPOL(is,a,b,rofi,g,l,nsm,
      .                        rcpol(polorb(l,nsm),l,nsm),
-     .                        ipol,nrc,indx,spp)
+     .                        ipol,nrc,indx,basp,spp)
                 endif
 
               enddo 
@@ -6750,7 +6761,7 @@ C
         end subroutine POLgen_filteret_new
 
         subroutine comPOL(is,a,b,rofi,rphi,l,nsm,rc,ipol,nrc,norb,
-     $                        spp)
+     $                      basp, spp)
 C
 C Generates the common block with the information about the polarization
 C orbitals.
@@ -6758,9 +6769,12 @@ C  Written by D. Sanchez-Portal, Aug. 1998.
 C  Modify by DSP, July 1999
 C
         use atm_types, only: species_info
+        use basis_types, only: basis_def_t
         use radial, only: rad_func, rad_alloc, rad_setup_d2
 
         implicit none
+
+        type(basis_def_t)  :: basp
 
         integer l, is, norb, nrc, ipol, nsm
 
@@ -6784,15 +6798,12 @@ C
         spp%n_orbnl = spp%n_orbnl + 1
         n = spp%n_orbnl
 
-        ! NOTE: the assigned n quantum number used to be the polarized shell's n!
-        ! For example, for H, the 'p' orbital came out to be '1p'...
-        ! This was different if the orbital was specified in PAO.Basis explicitly
-        !spp%orbnl_n(n) = cnfigtb(l,nsm,is)
-
-        ! The proper fix involves taking into account the proper l, and the possibility
-        ! that this polarization orbital has the same l as a 'semicore' state.
-        ! Hence the implicit scan of the 'nsm' dimension to get the highest number.
-        spp%orbnl_n(n) = maxval(cnfigtb(l+1,:,is))
+        ! If we are dealing with polarization orbitals, they must
+        ! be unoccupied valence states 
+        if (basp%ground_state%occupied(l+1)) then
+           call die("Inconsistent handling of polarization orbital")
+        endif
+        spp%orbnl_n(n) = basp%ground_state%n(l+1)
         
         spp%orbnl_l(n) = l+1   ! NOTE
         spp%orbnl_z(n) = ipol  
