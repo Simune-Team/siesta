@@ -120,11 +120,19 @@ contains
       ce(i) = c%e
     end do
     iE = N_Eq_E()
-    do i = 1 , N_nEq_E()
-      c = nEq_E(i)
-      ! We utilize the eta value for the electrode
-      ce(iE+i) = cmplx(real(c%e,dp),El%Eta, dp)
-    end do
+    if ( El%Eta > 0._dp ) then
+      do i = 1 , N_nEq_E()
+        c = nEq_E(i)
+        ! We utilize the eta value for the electrode
+        ce(iE+i) = cmplx(real(c%e,dp),El%Eta, dp)
+      end do
+    else
+      ! Specified to use the device eta (ensure it is larger than 0)
+      do i = 1 , N_nEq_E()
+        c = nEq_E(i)
+        ce(iE+i) = c%e
+      end do
+    end if
 
     ! We return if we should not calculate it
     if ( cReUseGF ) then
@@ -184,6 +192,7 @@ contains
     use m_os, only : file_exist
     use m_ts_electype
     use m_ts_electrode, only : create_Green
+    use m_ts_contour_neq, only: nEq_Eta
 
     implicit none
     
@@ -241,8 +250,11 @@ contains
 
     errorGF = .false.
 
-    ! We use the "first" pole of the
-    ce(1) = cmplx(0._dp, El%Eta, dp)
+    if ( El%Eta > 0._dp ) then
+      ce(1) = cmplx(0._dp, El%Eta, dp)
+    else
+      ce(1) = cmplx(0._dp, nEq_Eta, dp)
+    end if
 
     ! We return if we should not calculate it
     if ( cReUseGF ) then
@@ -901,7 +913,8 @@ contains
       c_NEn,c_ce, &
       xa_Eps, errorGF)
 
-    use units, only: Ang, eV
+    use fdf, only: fdf_convfac
+    use units, only: Ang
     use m_ts_cctype
     use m_ts_electype
 
@@ -950,6 +963,7 @@ contains
     real(dp) :: kpt(3)
     logical :: localErrorGf, eXa, repeat
     logical :: showed_warn
+    real(dp) :: Ry2eV
 
     ! we should only read if the GF-should exist
     errorGF = .false.
@@ -958,6 +972,9 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE check_Green' )
 #endif
+
+    ! Conversion
+    Ry2eV = fdf_convfac('Ry', 'eV')
 
     ! Initialize it to be an error unless the entire routine is runned through.
     ! Upon normal exit it will be changed to .FALSE.
@@ -1074,7 +1091,7 @@ contains
       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
       write(*,*)"The chemical shift in the electrode does not match the &
           &required shift! [eV]"
-      write(*,'(2(a,f12.6))')"Found: ",mu / eV,", expected: ",El%mu%mu / eV
+      write(*,'(2(a,f12.6))')"Found: ",mu * Ry2eV,", expected: ",El%mu%mu * Ry2eV
       localErrorGf = .true.
     end if
 
@@ -1155,10 +1172,10 @@ contains
     end do
     if ( eXa ) then
       localErrorGf = .true.
-      write(*,'(2(2(tr1,a20),tr1))') 'TS E.real [eV]', 'TS E.imag [eV]', &
+      write(*,'(2(2(tr1,a25),tr1))') 'TS E.real [eV]', 'TS E.imag [eV]', &
           'File E.real [eV]', 'File E.imag [eV]'
       do iEn = 1 , min(c_NEn, NEn)
-        write(*,'(2(2(tr1,e20.13)))') c_ce(iEn) / eV, ce(iEn) / eV
+        write(*,'(2(2(tr1,e25.17),tr1))') c_ce(iEn) * Ry2eV, ce(iEn) * Ry2eV
       end do
     end if
     deallocate(ce)
