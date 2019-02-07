@@ -2751,13 +2751,15 @@ C
      .    ea, rpb, chgvps
 
         integer  
-     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i
+     .    nr, nodd, linput, npotd, npotu, ndown, l, ir, i
 
         character method(6)*10,text*70
 
         type(pseudopotential_t), pointer :: vp
 
         vp => basp%pseudopotential
+
+        vps(:,:) = 0.0_dp
 
         icorr = vp%icorr
         irel = vp%irel
@@ -2772,15 +2774,14 @@ C
         zval = vp%zval
 
         linput=max(lmxo,lmxkb)
-        lmax=min(npotd-1,linput)
-        lmax_ps = npotd-1
+        lmax_ps = npotd-1        ! Sets it for the rest of the module
 
         if (lmax_ps.lt.linput) then
           write(6,'(a,i1)') 
-     .      'NOTE: Your pseudopotential has channels up to l= ', lmax_ps
+     .      'NOTE: ' // trim(basp%label) //
+     .          ' pseudopotential has channels up to l= ', lmax_ps
           write(6,'(a)') 
      .      'NOTE: PAOs with higher l will be generated with V_local'
-          !! call die  ! do not die any more
         endif
 
         nrval=nr+1 
@@ -2808,12 +2809,7 @@ C
         write(6,'(7a)')   
      .    'read_vps: ',method(1),(method(i),i=3,6)
           
-C We are going to find the charge configuration
-C used for the pseudopotential generation using the information given in
-C the 'text' variable.
-
         chgvps = vp%gen_zval
-
         write(6,'(a,f10.5)') 'Total valence charge: ', chgvps
 
         if (nicore.ne.'nc  ') then
@@ -2827,7 +2823,7 @@ C the 'text' variable.
      .        'read_vps: Pseudo-core for hartree and xc-correction'
             write(6,'(a)') 'Siesta cannot use this pseudopotential'
             write(6,'(a)') 'Use option pe instead of ph in ATOM program'
-            call die()
+            call die("Obsolete pche pseudo")
           elseif(nicore.eq.'fcec') then
             write(6,'(a)') 'read_vps: Full-core for xc-correction'
           elseif(nicore.eq.'fche') then
@@ -2835,7 +2831,7 @@ C the 'text' variable.
      .        'read_vps: Full-core for hartree and xc-correction'
             write(6,'(a)') 'Siesta cannot use this pseudopotential'
             write(6,'(a)') 'Use option pe instead of ph in ATOM program'
-            call die()
+            call die("Obsolete fche pseudo")
           endif
 
         endif
@@ -2881,29 +2877,6 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
 
         chcore(1:nrval) = vp%chcore(1:nrval)
         rho(1:nrval) = vp%chval(1:nrval)
-C
-C Obtain an ionic-pseudopotential if core correction for Hartree
-C potential
-!
-! AG: OBSOLETE, as the program will stop in this case.
-
-        if ((nicore.eq.'pche').or.(nicore.eq.'fche')) then
-          call vhrtre(chcore,ve,rofi,drdi,s,nrval,a)
-          do l=0,lmax_ps
-            do ir=2,nrval
-              vps(ir,l)=vps(ir,l)+ve(ir)
-            enddo
-            vps(1,l) = vps(2,l)    ! AG
-          enddo
-        endif
-
-        return
-
- 5000   continue
-        write(6,*)
-     .      'ERROR: You are using an old pseudopotential file.',
-     .      ' Siesta needs a newer version.'
-        call die
           
         end subroutine read_vps
 !
