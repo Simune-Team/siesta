@@ -617,6 +617,20 @@ C Sanity checks on values
         enddo   !! Over species
       endif
 
+      do isp=1,nsp
+!
+!      Check that we have enough semilocal components...
+!
+         basp=>basis_parameters(isp)
+         lmax_pseudo = basp%pseudopotential%npotd - 1 
+         if (basp%lmxkb > lmax_pseudo) then
+            write(6,'(a,i1,a)')
+     .           "Pseudopotential only contains V_ls up to l=",
+     .           lmax_pseudo, " -- lmxkb reset."
+            basp%lmxkb = lmax_pseudo
+         endif
+      enddo
+
       end subroutine readkb
 !---------------------------------------------------------------
 
