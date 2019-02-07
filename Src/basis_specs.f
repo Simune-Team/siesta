@@ -447,6 +447,8 @@ C Sanity checks on values
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
+      integer :: lmax_pseudo
+      
       lpol = 0
 
       if (fdf_block('PS.KBprojectors',bfdf) ) then
@@ -625,7 +627,8 @@ C Sanity checks on values
          lmax_pseudo = basp%pseudopotential%npotd - 1 
          if (basp%lmxkb > lmax_pseudo) then
             write(6,'(a,i1,a)')
-     .           "Pseudopotential only contains V_ls up to l=",
+     .           trim(basp%label) //
+     .           " pseudopotential only contains V_ls up to l=",
      .           lmax_pseudo, " -- lmxkb reset."
             basp%lmxkb = lmax_pseudo
          endif
