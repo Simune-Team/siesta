@@ -2775,12 +2775,12 @@ C
         lmax=min(npotd-1,linput)
         lmax_ps = npotd-1
 
-        if (lmax.lt.linput) then
+        if (lmax_ps.lt.linput) then
+          write(6,'(a,i1)') 
+     .      'NOTE: Your pseudopotential has channels up to l= ', lmax_ps
           write(6,'(a)') 
-     .      'read_vps: ERROR: You must generate a pseudopotential'
-          write(6,'(a,i4)') 
-     .      'read_vps: ERROR: for each L up to ',linput
-          call die
+     .      'NOTE: PAOs with higher l will be generated with V_local'
+          !! call die  ! do not die any more
         endif
 
         nrval=nr+1 
