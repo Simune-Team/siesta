@@ -82,7 +82,8 @@
         real(dp)             :: filter_cutoff_orbitals = 0.0_dp
         real(dp)             :: filter_tol    = EkinTolDefault
 !---------------------------------------------------------------------
-       
+        integer           :: lmax_ps ! maximum l in semi-local pseudo
+        
       contains
 
         subroutine atom_main(izin,lmxkb_in,nkbl,erefkb,lmxo, nzeta, 
@@ -2751,7 +2752,7 @@ C
      .    ea, rpb, chgvps
 
         integer  
-     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i
+     .    nr, nodd, linput, npotd, npotu, ndown, l, ir, i
 
         character method(6)*10,text*70
 
@@ -2772,15 +2773,18 @@ C
         zval = vp%zval
 
         linput=max(lmxo,lmxkb)
-        lmax=min(npotd-1,linput)
+        lmax_ps = npotd - 1
 
-        if (lmax.lt.linput) then
-          write(6,'(a)') 
-     .      'read_vps: ERROR: You must generate a pseudopotential'
-          write(6,'(a,i4)') 
-     .      'read_vps: ERROR: for each L up to ',linput
-          call die
-        endif
+        ! Note that lmxkb has already been reset in 'basis_specs'
+        ! Here lmxo excludes perturbative polarization orbitals
+        if (lmax_ps.lt.lmxo) then
+          write(6,'(a,i1)')
+     .      'ERROR: ' // trim(basp%label) //
+     .          ' pseudopotential has channels up to l= ', lmax_ps
+          write(6,'(a)')
+     .      'ERROR: PAOs with higher l cannot be generated'
+          call die("Cannot generate PAOs with l > lmax_pseudo")
+	endif
 
         nrval=nr+1 
         if (rmax_radial_grid /= 0.0_dp) then
@@ -2807,10 +2811,6 @@ C
         write(6,'(7a)')   
      .    'read_vps: ',method(1),(method(i),i=3,6)
           
-C We are going to find the charge configuration
-C used for the pseudopotential generation using the information given in
-C the 'text' variable.
-
         chgvps = vp%gen_zval
 
         write(6,'(a,f10.5)') 'Total valence charge: ', chgvps
@@ -2856,10 +2856,9 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
           rpb=rpb*ea
         enddo 
 
-
 !       Ionic pseudopotentials   (Only 'down' used)
 
-        do 20 ndown=1,lmax+1
+        do 20 ndown=1,lmax_ps+1
           l = vp%ldown(ndown) 
           if (l.ne.ndown-1) then
             write(6,'(a)')
@@ -2875,34 +2874,10 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
 
   20    continue
 
-
 !       Core and valence charge density
 
         chcore(1:nrval) = vp%chcore(1:nrval)
         rho(1:nrval) = vp%chval(1:nrval)
-C
-C Obtain an ionic-pseudopotential if core correction for Hartree
-C potential
-!
-! AG: OBSOLETE, as the program will stop in this case.
-
-        if ((nicore.eq.'pche').or.(nicore.eq.'fche')) then
-          call vhrtre(chcore,ve,rofi,drdi,s,nrval,a)
-          do l=0,lmax
-            do ir=2,nrval
-              vps(ir,l)=vps(ir,l)+ve(ir)
-            enddo
-            vps(1,l) = vps(2,l)    ! AG
-          enddo
-        endif
-
-        return
-
- 5000   continue
-        write(6,*)
-     .      'ERROR: You are using an old pseudopotential file.',
-     .      ' Siesta needs a newer version.'
-        call die
           
         end subroutine read_vps
 !
@@ -5781,6 +5756,10 @@ C Calculate the soft-confinement potential for the polarization orbitals
                     lpol = l
                   else
                     lpol = l + 1
+                    if (lpol > lmax_ps) then
+                       call die("Cannot generate polarization PAO " //
+     $                      "in 'l+1' mode: V_(l+1) not in ps file")
+                    endif
                   endif
                   call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
@@ -6003,263 +5982,6 @@ C
         enddo 
       
         end subroutine POLgen
-
-        subroutine POLgen_filteret_old(is,iz,a,b,rofi,drdi,ePAO,rphi,
-     .                             rco,vps,ve,polorb,lmxo,nsemic,
-     .                             norb,rinn,vcte,
-     .                             qcoe, qyuk, qwid, nrval,
-     .                             split_norm,filtercut,atm_label)
-C
-C Calculates the polarization orbitals for the basis set augmentation.
-C This version uses filterets to create the basis functions. In this
-C case it is necessary that the radius be specified. This is the old
-C version in which the filterets are created without an underlying 
-C orbital.
-C
-C Based on POLgen by D. Sanchez-Portal, Aug. 1998.
-C Modified by J.D. Gale, Sept. 2009
-C
-        implicit none
-
-        real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
-     .    ve(nrmax), drdi(nrmax),
-     .    rphi(nrmax,0:lmaxd,nsemx), 
-     .    rco(nzetmx,0:lmaxd,nsemx),
-     .    ePAO(0:lmaxd,nsemx),
-     .    rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
-     .    qcoe(0:lmaxd,nsemx), qwid(0:lmaxd,nsemx), 
-     .    qyuk(0:lmaxd,nsemx), 
-     .    split_norm(0:lmaxd,nsemx),
-     .    filtercut(0:lmaxd,nsemx)
-
-        character(len=*) atm_label
-
-        integer
-     .    lmxo, is, iz, norb, polorb(0:lmaxd,nsemx), 
-     .    nsemic(0:lmaxd), nrval
-
-C
-C Internal variables
-C
-        integer
-     .    l, nrc, nsp, ir,indx, ipol, nsm, nrcomp
-
-        real(dp)
-     .    rc, rcpol(nzetmx,0:lmaxd,nsemx),
-     .    phipol(nrmax), split_table(nrmax),
-     .    rnrm(nrmax), dnrm, phi,
-     .    g(nrmax), r, ekin, eorbcut,
-     .    r1, r2, dfdi, d2fdi2, d2fdr2, dr,
-     .    epot, epot2, eorb, eps
-
-        integer :: nfilteret, maxfilteret
-        real(dp),allocatable,dimension(:,:) :: filterets !filtered orbitals
-
-        logical :: filterorbitals
-        real(dp):: kmax, kmax_tol, etol, paoFilterFactor, filter_shell
-      
-        eorbcut = 
-     .    fdf_physical('PAO.EnergyPolCutoff',eorbcut_default,'Ry')
-
-        norb = 0 
-        indx = 0
-C
-C Loop over angular momentum to be polarized
-C
-        do l = 0,lmxo
-          do nsm = 1,nsemic(l)+1
-            if (polorb(l,nsm).gt.0) then
-              write(6,'(/A,I2)')
-     .    'POLgen: Filteret polarization orbital with L= ',l+1
-              goto 50
-            endif
-          enddo
-
-50        continue
-
-          do nsm = 1,nsemic(l)+1
-
-            if (polorb(l,nsm).gt.0) then 
-C
-C  Check radius for this zeta
-C
-              if (rco(1,l,nsm) < 0.0_dp) then
-                call die("rc < 0 for polarization orbital")
-              endif
-              rc = rco(1,l,nsm) 
-              nrc = nint(log(rc/b+1.0_dp)/a) + 1
-
-C
-C Construct Filteret polarization functions
-C
-              ! Note that the real angular momentum is l+1... ??
-
-              filter_shell = filtercut(l,nsm)
-              ! Allow re-setting by user
-              if (filter_shell.gt.0.0d0) then
-                paoFilterFactor = fdf_double("PAO.FilterFactor",
-     .            (0.7_dp)**2.0_dp)
-                kmax = sqrt(filter_shell * paoFilterFactor)
-              elseif (filter_cutoff_specified) then
-                paoFilterFactor = fdf_double("PAO.FilterFactor",
-     .            (0.7_dp)**2.0_dp)
-                kmax = sqrt(filter_cutoff * paoFilterFactor)
-                filter_shell = filter_cutoff
-              else
-                call die("cut-off needed for poln filter")
-              endif
-C
-C  Create filteret workspace
-C
-              maxfilteret = nzetmx
-              allocate(filterets(1:nrc,1:maxfilteret))
-C
-C  Generate filterets
-C
-              call gen_pol_filteret(l=l+1,nr=nrc,
-     .                              maxfilteret=maxfilteret,
-     .                              r=rofi(1:nrc),kc=kmax,
-     .                              nfilteret=nfilteret,
-     .                              filteret=filterets)
-C
-C  If number of filterets exceeds limit on number of zetas then stop
-C
-              if (nfilteret.gt.nzetmx) then
-                call die("number of filterets exceeds nzetmx")
-              endif
-C
-              filter_cutoff_orbitals = max(filter_cutoff_orbitals,
-     .                                   kmax**2)
-              filtercut(l,nsm) = filter_shell
-C
-C  Initialise the number of zetas for the polarisation orbitals
-C
-              polorb(l,nsm) = 0
-              npolorbsave(l,nsm,is) = 0
-
-C
-C  Loop over the filterets using them to create new polarization zetas
-C
-              do ipol = 1,nfilteret
-                  
-                ! Copy filteret back to g array
-                if (ipol.eq.1) then
-                  g = 0.0_dp
-                  dnrm = 0.0_dp
-                  do ir = 2,nrc-1
-                    g(ir) = filterets(ir,ipol)
-                    phi = g(ir)  
-                    phipol(ir) = phi
-                    dnrm = dnrm + drdi(ir)*phi*phi
-                    rnrm(ir) = dnrm 
-                    g(ir) = g(ir)/(rofi(ir)**(l+1))
-                  enddo
-                  g(1) = g(2)
-                  g(nrc) = 0.0_dp
-                  phipol(1) = phipol(2)
-                  phipol(nrc) = 0.0_dp
-                else
-                  g = 0.0_dp
-                  dnrm = 0.0_dp
-                  do ir = 2,nrc-1
-                    r = rofi(ir)
-                    phi = filterets(ir,ipol)/(r**(l+1))
-                    dnrm = dnrm + drdi(ir)*(phi*r**(l+1))**2
-                    g(ir) = phi
-                  enddo
-                  g(1) = g(2)
-                  g(nrc) = 0.0_dp
-                endif
-
-C
-C Cut-off radius for the split polarization function
-C
-                rcpol(polorb(l,nsm)+1,l,nsm) = rofi(nrc)
-C
-C Normalization of basis functions
-C
-                eps = 1.0d-4
-                if (abs(dnrm-1.0_dp).gt.eps) then
-                  do ir = 1,nrc
-                    g(ir) = g(ir)/sqrt(dnrm)
-                    if (ipol.eq.1) then
-                      phipol(ir) = phipol(ir)/sqrt(dnrm)
-                      rnrm(ir) = rnrm(ir)/dnrm
-                    endif
-                  enddo
-                endif
-C
-C Calculation of the mean value of kinetic and potential energy
-C Potential and kinetic energy of the orbital
-C
-
-                ekin = 0.0_dp 
-                epot = 0.0_dp
-                epot2 = 0.0_dp
-                do ir = 2,nrc-1
-                  r = rofi(ir)
-                  r1 = rofi(ir-1)
-                  r2 = rofi(ir+1)
-                  d2fdi2 = (g(ir-1)*r1**(l+2)+g(ir+1)*r2**(l+2)
-     .                       -2.0_dp*g(ir)*r**(l+2))
-                  dfdi = 0.5_dp*(g(ir+1)*r2**(l+2)-g(ir-1)*r1**(l+2))
-                  dr = drdi(ir)
-                  d2fdr2 = ((-a)*dfdi +  d2fdi2)/dr**2
-                  ekin = ekin +
-     .              dr*g(ir)*r**(l+2)*(-d2fdr2) +
-     .              dr*(l+1)*(l+2)*(g(ir)*r**(l+1))**2  
-
-                  epot = epot +  
-     .              drdi(ir)*(vps(ir,l))*
-     .              (g(ir)*r**(l+2))**2 
-                  epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(g(ir)*r**(l+2))**2
-                enddo
-                eorb = ekin + epot
-C
-C  Only accept zeta if the energy is below the cutoff or if this is the PAO
-C
-                if (eorb.lt.eorbcut.or.ipol.eq.1) then
-                  polorb(l,nsm) = polorb(l,nsm) + 1
-                  npolorbsave(l,nsm,is) = npolorbsave(l,nsm,is) + 1
-       
-                  write(6,'(/A,I1,A)')
-     .              'POLgen: Polarization orbital for state ',
-     .              cnfigtb(l,nsm,is), sym(l)
-                  if (ipol.eq.1) then  
-                    write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
-     .                'izeta =',ipol,
-     .                'rc =',rcpol(ipol,l,nsm),
-     .                'energy =',eorb 
-                  elseif(ipol.gt.1) then 
-                    write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
-     .                'izeta =',polorb(l,nsm),
-     .                'rmatch =',rcpol(polorb(l,nsm),l,nsm),
-     .                'energy =',eorb 
-                  endif 
-
-                  write(6,'(a25,f12.6)') 'kinetic =',ekin
-                  write(6,'(a25,f12.6)') 'potential(screened) =',epot
-                  write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
-
-                  norb = norb + (2*(l+1)+1)
-                  indx = indx + 1
-
-                  call comPOL(is,a,b,rofi,g,l,nsm,
-     .                        rcpol(polorb(l,nsm),l,nsm),
-     .                        ipol,nrc,indx)
-                endif
-
-              enddo 
-
-              deallocate(filterets)
-
-            endif    
-          enddo  
-        enddo 
-      
-        end subroutine POLgen_filteret_old
 !
         subroutine POLgen_filteret_new(is,iz,a,b,rofi,drdi,ePAO,rphi,
      .                             rco,vps,ve,polorb,lmxo,nsemic,
@@ -6370,6 +6092,10 @@ C
                 lpol = l
               else
                 lpol = l + 1
+                if (lpol > lmax_ps) then
+                   call die("Cannot generate polarization PAO " //
+     $                      "in 'l+1' mode: V_(l+1) not in ps file")
+                endif
               endif
               call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)

@@ -112,7 +112,11 @@
 !           Set it to lmxo+1, or to lpol+1, where lpol is the angular
 !           momentum of the highest-l polarization orbital.
 !       endif
-! 
+!
+!       There is a hard limit for lmxkb: if the pseudopotential file
+!       contains semilocal pseudopotentials up to lmax_pseudo, then
+!       lmxkb <= lmax_pseudo.
+!     
 !       The  number of KB projectors per l is set to the number of
 !       n-shells in the corresponding PAO shell with the same l. For l
 !       greater than lmxo, it is set to 1. The reference energies are
@@ -452,6 +456,8 @@ C Sanity checks on values
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
 
+      integer :: lmax_pseudo
+      
       lpol = 0
 
       if (fdf_block('PS.KBprojectors',bfdf) ) then
@@ -621,6 +627,21 @@ C Sanity checks on values
           enddo
         enddo   !! Over species
       endif
+
+      do isp=1,nsp
+!
+!      Check that we have enough semilocal components...
+!
+         basp=>basis_parameters(isp)
+         lmax_pseudo = basp%pseudopotential%npotd - 1 
+         if (basp%lmxkb > lmax_pseudo) then
+            write(6,'(a,i1,a)')
+     .           trim(basp%label) //
+     .           " pseudopotential only contains V_ls up to l=",
+     .           lmax_pseudo, " -- lmxkb reset."
+            basp%lmxkb = lmax_pseudo
+         endif
+      enddo
 
       end subroutine readkb
 !---------------------------------------------------------------

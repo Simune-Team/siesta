@@ -1488,6 +1488,9 @@ This information is optional. If the block
 is absent, or for a species which is not mentioned inside
 it, {\sc Siesta} will take {\tt lmxkb(is) = lmxo(is) + 1}, where {\tt lmxo(is)}
 is the maximum angular momentum of the basis orbitals of species {\tt is}.
+However, the value of \texttt{lmxkb} is actually
+limited by the highest-l channel in the pseudopotential file.
+
 \begin{verbatim}
          %block Ps.lmax
               Al_adatom   3
@@ -1496,7 +1499,8 @@ is the maximum angular momentum of the basis orbitals of species {\tt is}.
          %endblock Ps.lmax
 \end{verbatim}
 {\it Default:} (Block absent or empty). Maximum angular momentum
-of the basis orbitals plus one.
+of the basis orbitals plus one, limited by the highest-l channel
+in the pseudopotential file.
 \noindent
 
 \item[{\bf PS.KBprojectors}] ({\it data block}):
@@ -1572,6 +1576,8 @@ with the presence of ghost states.
 {\it Default:} (Block absent or empty). Only one KB projector,
 constructed from the nodeless eigenfunction, used for each angular
 momentum.
+Note that the value of \texttt{lmxkb} is actually limited by the
+highest-l channel in the pseudopotential file.
 \noindent
 
 \item[{\bf KB.New.Reference.Orbitals}] ({\it boolean}):
