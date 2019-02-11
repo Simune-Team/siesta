@@ -57,7 +57,7 @@ OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o pxf.o dot.o  atom_options.o arw.o  \
           timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
-          xc.o bsc_xcmod.o local_sys.o
+          xc.o bsc_xcmod.o 
 #
 IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
           parsing.o m_io.o io.o alloc.o atom_options.o basis_io.o  atm_types.o\
@@ -65,7 +65,7 @@ IONCAT_OBJS=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
 	  paste.o pseudopotential.o chemical.o \
           basis_specs.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
            atmfuncs.o spher_harm.o interpolation.o\
-          xml.o m_walltime.o ioncat.o  local_sys.o $(SYSOBJ)
+          xml.o m_walltime.o ioncat.o  $(SYSOBJ)
 #
 # Compile XC in a private directory, without MPI
 #
@@ -103,13 +103,18 @@ link_linalg:
    [ -f ../../$(OBJDIR)/$$llibs ] && ln -sf ../../$(OBJDIR)/$$llibs . ; \
 	done
 #
+# SiestaXC contains already the 'sys' module and the stand-alone 'die' routine.
+#
+$(OBJS_GEN-BASIS): INCFLAGS:= -I./SiestaXC $(INCFLAGS)
+$(IONCAT_OBJS): INCFLAGS:= -I./SiestaXC $(INCFLAGS)
+#
 gen-basis: $(FDF) $(XC) $(OBJS_GEN-BASIS) link_linalg
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(OBJS_GEN-BASIS) $(FDF) $(XC) $(NETCDF_LIBS) $(COMP_LIBS) $(LIBS)
 #
-ioncat:  $(FDF) $(IONCAT_OBJS)
+ioncat:  $(FDF) $(XC) $(IONCAT_OBJS) 
 	$(FC) -o ioncat \
-	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) $(NETCDF_LIBS)
+	       $(LDFLAGS) $(IONCAT_OBJS) $(FDF) $(XC) $(NETCDF_LIBS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
@@ -131,61 +136,73 @@ dep:
 	@echo "ok"
 	@csplit -k -f "protomake" Makefile '/^# -- specially prepared/+1'
 	@cat protomake00 deps.list >| Makefile
+	@sed "/Makefile/! s/sys.o//g"  Makefile > tmp.Makefile
+	@mv tmp.Makefile Makefile
+#
+#       The last sed command above will remove all mentions to 'sys.o' from this Makefile,
+#       (except in lines containing 'Makefile'). The 'sys' module is now imported from
+#       the SiestaXC subdirectory (see below for redefinition of INCFLAGS) and libSiestaXC.a
+#       is then linked in explicitly for 'ioncat'.
+#       This seems to be necessary to avoid duplication of symbols if another 'local_sys'
+#       file is used. (Recall that the 'local_sys' trick was used to lighten the dependency
+#       cascade from the top-level 'sys', but for Gen-basis both the local program AND SiestaXC
+#       were using it.)
+#       Empty dependency lines below correspond to those files which use 'sys'.
 #
 # -- specially prepared dependency list -- do not remove this line!
 m_getopts.o: f2kcli.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o local_sys.o
-m_io.o: local_sys.o
-io.o: local_sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o local_sys.o
-atom_options.o: local_sys.o
+basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o 
+m_io.o: 
+io.o: 
+alloc.o: m_io.o parallel.o precision.o 
+atom_options.o: 
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o local_sys.o xml.o
+basis_io.o: precision.o pseudopotential.o radial.o  xml.o
 atm_types.o: precision.o radial.o
 radial.o: alloc.o interpolation.o precision.o xml.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
-chkdim.o: local_sys.o
-pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o local_sys.o
-chemical.o: parallel.o precision.o local_sys.o
+chkdim.o: 
+pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o 
+chemical.o: parallel.o precision.o 
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o local_sys.o
+basis_specs.o: pseudopotential.o 
 memoryinfo.o: precision.o
-m_memory.o: memoryinfo.o parallel.o local_sys.o
-periodic_table.o: precision.o local_sys.o
-atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o local_sys.o
-spher_harm.o: alloc.o precision.o local_sys.o
+m_memory.o: memoryinfo.o parallel.o 
+periodic_table.o: precision.o 
+atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o 
+spher_harm.o: alloc.o precision.o 
 xml.o: precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
-m_io.o: local_sys.o
-io.o: local_sys.o
-alloc.o: debugmpi.o m_io.o parallel.o precision.o local_sys.o
-basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o local_sys.o
+m_io.o: 
+io.o: 
+alloc.o: m_io.o parallel.o precision.o 
+basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o 
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
-basis_io.o: precision.o pseudopotential.o radial.o local_sys.o xml.o
-chemical.o: parallel.o precision.o local_sys.o
+basis_io.o: precision.o pseudopotential.o radial.o  xml.o
+chemical.o: parallel.o precision.o 
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
-atm_transfer.o: radial.o local_sys.o
+atm_transfer.o: radial.o 
 atm_types.o: precision.o radial.o
-old_atmfuncs.o: alloc.o atmparams.o precision.o local_sys.o
+old_atmfuncs.o: alloc.o atmparams.o precision.o 
 radial.o: alloc.o interpolation.o precision.o xml.o
-bessph.o: precision.o local_sys.o
+bessph.o: precision.o 
 radfft.o: alloc.o bessph.o m_fft_gpfa.o precision.o
-m_filter.o: bessph.o precision.o radfft.o sorting.o local_sys.o
+m_filter.o: bessph.o precision.o radfft.o sorting.o 
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
-basis_specs.o: pseudopotential.o local_sys.o
+basis_specs.o: pseudopotential.o 
 atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o bsc_xcmod.o
 atom.o: interpolation.o m_filter.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: pseudopotential.o local_sys.o
+atom.o: pseudopotential.o 
 memoryinfo.o: precision.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
-periodic_table.o: precision.o local_sys.o
-pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o local_sys.o
-atom_options.o: local_sys.o
-arw.o: alloc.o parallel.o precision.o local_sys.o
-timer.o: m_timer.o parallel.o local_sys.o timer_tree.o
+periodic_table.o: precision.o 
+pseudopotential.o: alloc.o atom_options.o interpolation.o precision.o 
+atom_options.o: 
+arw.o: alloc.o parallel.o precision.o 
+timer.o: m_timer.o parallel.o  timer_tree.o
 xml.o: precision.o
-read_xc_info.o: parallel.o precision.o local_sys.o
+read_xc_info.o: parallel.o precision.o 
 gen-basis.o: atom.o atom_options.o basis_io.o basis_specs.o basis_types.o
-gen-basis.o: old_atmfuncs.o parallel.o precision.o local_sys.o
-xc.o: alloc.o bsc_xcmod.o precision.o local_sys.o
-bsc_xcmod.o: parallel.o precision.o local_sys.o
+gen-basis.o: old_atmfuncs.o parallel.o precision.o 
+xc.o: alloc.o bsc_xcmod.o precision.o 
+bsc_xcmod.o: parallel.o precision.o 
