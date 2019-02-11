@@ -1504,14 +1504,15 @@ in the pseudopotential file.
 \noindent
 
 \item[{\bf PS.KBprojectors}] ({\it data block}):
-\index{PS.KBprojectors@{\bf PS.KBprojectors} }
-This block provides information about the number of Kleinman-Bylander
-projectors per angular momentum, and for each species, that will used
-in the calculation. This block is optional.
-If the block is absent, or for species not mentioned in it, only
-one projector will be used for each angular momentum. The projectors
-will be constructed using the eigenfunctions of the respective
-pseudopotentials.
+  \index{PS.KBprojectors@{\bf PS.KBprojectors} } This block provides
+  information about the number of Kleinman-Bylander projectors per
+  angular momentum, and for each species, that will used in the
+  calculation. This block is optional.  If the block is absent, or for
+  species not mentioned in it, only one projector will be used for
+  each angular momentum (except for l-shells with semicore states, for
+  which two projectors will be constructed). The projectors will be
+  constructed using the eigenfunctions of the respective
+  pseudopotentials.
 
 
 This block allows to specify the number of projector for each l, and also
@@ -1521,8 +1522,8 @@ energies are not given, the program will use the eigenfunctions with an
 increasing number of nodes (if there is not bound state with
 the corresponding number of nodes, the ``eigenstates" are taken to be just
 functions which are made zero at very long distance of the nucleus).
-The units for the energy can be optionally specified, if not, the
-program will assumed that are given in Rydbergs.
+The units for the energy can be optionally specified; if not, the
+program will assumed that they are given in Rydbergs.
 The data provided in this block must be consistent with those
 read from the block {\bf PS.lmax}. For example,
 
@@ -1541,8 +1542,7 @@ read from the block {\bf PS.lmax}. For example,
 \end{verbatim}
 
 The reading is done this way (those variables in brackets are optional,
-therefore they are only read if
-present):
+therefore they are only read if present):
 
 \begin{verbatim}
  From is = 1 to  nspecies
@@ -1552,10 +1552,20 @@ present):
          read: {erefKB(izeta,il,is)}, from ikb = 1 to nkbl(l,is), {units}
 \end{verbatim}
 
+All angular momentum shells should be specified.  Default values are
+assigned to missing shells with l below lmax, where lmax is the
+highest angular momentum present in the block for that particular
+species. High-l shells (beyond lmax) not specified in the block will
+also be assigned default values.
+
+Care should be taken for l-shells with semicore states. For them, two
+KB projectors should be generated. This is not checked while
+processing this block.
+
 When a very high energy, higher that 1000 Ry, is specified, the
 default is taken instead.  On the other hand, very low (negative)
 energies, lower than -1000 Ry, are used to indicate that the energy
-derivative of the last state must be used. For example, in the example
+derivative of the last state must be used. For example, in the block
 given above, two projectors will be used for the {\it s}
 pseudopotential of Si. One generated using a reference energy of -0.5
 Hartree, and the second one using the energy derivative of this
@@ -1575,7 +1585,8 @@ with the presence of ghost states.
 
 {\it Default:} (Block absent or empty). Only one KB projector,
 constructed from the nodeless eigenfunction, used for each angular
-momentum.
+momentum, except for l-shells with semicore states, for which two
+projectors will be constructed.
 Note that the value of \texttt{lmxkb} is actually limited by the
 highest-l channel in the pseudopotential file.
 \noindent
