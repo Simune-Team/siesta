@@ -253,7 +253,7 @@
      .    rofi(nrmax), drdi(nrmax), s(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx),
      .    vps_u(nrmax,0:lmaxd),
-     .    vlocal(nrmax), vxc(nrmax), ve(nrmax),
+     .    vxc(nrmax), ve(nrmax),
      .    rho(nrmax), chcore(nrmax), rho_PAO(nrmax), auxrho(nrmax),
      .    vePAO(nrmax), qPAO(0:lmaxd,nsemx), chlocal(nrmax),
      .    red_vlocal(nrmax)
@@ -332,7 +332,7 @@
         call new_specie(iz,lmxkb, nkbl, lmxo,
      .                  nzeta, atm_label,
      .                  npolorb, semic, nsemic, cnfigmx,
-     .                  is, new, no, nkb) 
+     .                  is, new, no, nkb, basp) 
 ! 
         basistype_save(is) = basistype
         spp%mass = smass
@@ -2591,7 +2591,7 @@ C
         subroutine new_specie(iz,lmxkb, nkbl, lmxo,
      .                        nzeta, atm_label,
      .                        npolorb, semic, nsemic, cnfigmx,
-     .                        is, new, no, nkb)
+     .                        is, new, no, nkb, basp)
 
         implicit none
 
@@ -2602,6 +2602,8 @@ C
         character 
      .    atm_label*20 
 
+        type(basis_def_t), intent(in) :: basp
+        
         logical new, semic
 C
 C       Internal and common variables
@@ -2760,7 +2762,6 @@ C
      .    a, b, zval
         integer  nrval, lmxo, lmxkb 
         character nicore*4, irel*3, icorr*2
-        integer :: nup_end
 C
 C Internal variables
 C
@@ -2771,7 +2772,8 @@ C
      .    ea, rpb, chgvps
 
         integer  
-     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i, nup
+     .    nr, nodd, linput, npotd, npotu, ndown, l, ir, i, nup
+        integer :: nup_end
 
         character method(6)*10,text*70
 
@@ -2780,6 +2782,9 @@ C
         real(dp) :: so_strength
         
         vp => basp%pseudopotential
+
+        vps(:,:) = 0.0_dp
+        vps_u(:,:) = 0.0_dp
 
         icorr = vp%icorr
         irel = vp%irel
@@ -2794,15 +2799,17 @@ C
         zval = vp%zval
 
         linput=max(lmxo,lmxkb)
-        lmax=min(npotd-1,linput)
+        lmax_ps = npotd-1        ! Sets it for the rest of the module
 
-        if (lmax.lt.linput) then
-          write(6,'(a)') 
-     .      'read_vps: ERROR: You must generate a pseudopotential'
-          write(6,'(a,i4)') 
-     .      'read_vps: ERROR: for each L up to ',linput
-          call die
-        endif
+        ! Note that lmxkb has already been reset in 'basis_specs'
+        ! Here lmxo excludes perturbative polarization orbitals
+        if (lmax_ps.lt.lmxo) then
+          write(6,'(a,i1)')
+     .      'NOTE: ' // trim(basp%label) //
+     .          ' pseudopotential has channels up to l= ', lmax_ps
+          write(6,'(a)')
+     .      'NOTE: PAOs with higher l will be generated with V_local'
+	endif
 
         nrval=nr+1 
         if (rmax_radial_grid /= 0.0_dp) then
@@ -2877,7 +2884,7 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
 
 !       Ionic pseudopotentials (down and up)
 
-        do ndown=1,lmax+1
+        do ndown=1,lmax_ps+1
           l = vp%ldown(ndown) 
           if (l.ne.ndown-1) then
             write(6,'(a)')
@@ -2898,7 +2905,7 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
        ! put 'keep-npotu-bug T' in fdf file
        ! To be removed altogether for releases
        if (fdf_get('keep-npotu-bug',.false.))  then
-          nup_end =  min(lmax,npotu-1)
+          nup_end =  min(lmax_ps,npotu-1)
           write(6,'(a)') 'atom: *** Buggy code in highest-l ' //
      $                   'SO component setup enabled ***'
        else
