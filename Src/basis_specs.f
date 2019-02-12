@@ -509,17 +509,21 @@ C Sanity checks on values
             ! inputs.
             if (l .gt. basp%lmxkb) basp%lmxkb = l
             if (.not. fdf_bline(bfdf, pline)) then
-              if (ish .ne. basp%nkbshells)
-     .          call die("Not enough shells for this species...")
+               if (ish .ne. basp%nkbshells)
+     .          call die("Not enough kb shells for this species...")
               ! There is no line with ref energies
-            else 
-              if (fdf_bmatch(pline,'ni')) then
+            else  if (fdf_bmatch(pline,'ni')) then
                 ! We are seeing the next species' section
-                if (ish .ne. basp%nkbshells)
+               if (ish .ne. basp%nkbshells)
      .            call die("Not enough shells for this species...")
-                if (.not. fdf_bbackspace(bfdf))
+               if (.not. fdf_bbackspace(bfdf))
+     .               call die('readkb: ERROR in PS.KBprojectors block')
+            else if (fdf_bmatch(pline,'ii')) then
+                ! We are seeing the next shell's section
+               if (ish .gt. basp%nkbshells)
+     .            call die("Too many kb shells for this species...")
+               if (.not. fdf_bbackspace(bfdf))
      .            call die('readkb: ERROR in PS.KBprojectors block')
-              endif
             endif
           enddo       ! end of loop over shells for species isp
 
@@ -573,7 +577,8 @@ C Sanity checks on values
         else          ! Set in KBprojectors
           if (basp%lmxkb_requested.ne.-1) then ! set in PS.lmax
             if (basp%lmxkb.ne.basp%lmxkb_requested) then
-              call die("LmaxKB conflict")
+              call die("LmaxKB conflict between " //
+     $                 "PS.Lmax and PS.KBprojectors blocks")
             endif
           endif
           !! OK, we have a genuine lmxkb
@@ -612,6 +617,12 @@ C Sanity checks on values
             k => basp%kbshell(l)
             k%l = l
             k%nkbl = fdf_bintegers(pline,2)
+            if (k%nkbl < 0) then
+               call die("nkbl < 0 in PS.KBprojectors")
+            endif
+            if (k%nkbl == 0) then
+               call message("WARNING","nkbl=0 in PS.KBprojectors")
+            endif
             allocate(k%erefkb(k%nkbl))
             if (.not. fdf_bline(bfdf,pline)) then
               if (ish .ne. basp%nkbshells)
@@ -619,17 +630,24 @@ C Sanity checks on values
               ! There is no line with ref energies
               ! Use default values
               k%erefKB(1:k%nkbl) = huge(1.d0)
-            else 
-              if (fdf_bmatch(pline,'ni')) then
+            else if (fdf_bmatch(pline,'ni')) then
                 ! We are seeing the next species' section
-                if (ish .ne. basp%nkbshells)
-     .            call die("Not enough shells for this species...")
+               if (ish .ne. basp%nkbshells)
+     .            call die("Not enough kb shells for this species...")
+                ! Use default values for ref energies
+               k%erefKB(1:k%nkbl) = huge(1.d0)
+               if (.not. fdf_bbackspace(bfdf))
+     .            call die('readkb: ERROR in PS.KBprojectors block')
+            else if (fdf_bmatch(pline,'ii')) then
+                ! We are seeing the next shell's section
+                if (ish .gt. basp%nkbshells)
+     .            call die("Too many kb shells for this species...")
                 ! Use default values for ref energies
                 k%erefKB(1:k%nkbl) = huge(1.d0)
                 if (.not. fdf_bbackspace(bfdf))
      .            call die('readkb: ERROR in PS.KBprojectors block')
-              else
-                if (fdf_bnvalues(pline) .ne. k%nkbl)
+             else
+                if (fdf_bnreals(pline) .ne. k%nkbl)
      .            call die("Wrong number of energies")
                 unitstr = 'Ry'
                 if (fdf_bnnames(pline) .eq. 1)
@@ -637,10 +655,9 @@ C Sanity checks on values
                 ! Insert ref energies in erefkb
                 do i= 1, k%nkbl
                   k%erefKB(i) =
-     .                 fdf_bvalues(pline,i)*fdf_convfac(unitstr,'Ry')
+     .                 fdf_breals(pline,i)*fdf_convfac(unitstr,'Ry')
                 enddo
-              endif
-            endif
+             endif
           enddo            ! end of loop over shells for species isp
 
           ! For those l's not specified in block, use default values
@@ -655,6 +672,21 @@ C Sanity checks on values
           enddo
         enddo   !! Over species
       endif
+
+      do isp=1,nsp
+!
+!      Check that we have enough semilocal components...
+!
+         basp=>basis_parameters(isp)
+         lmax_pseudo = basp%pseudopotential%npotd - 1 
+         if (basp%lmxkb > lmax_pseudo) then
+            write(6,'(a,i1,a)')
+     .           trim(basp%label) //
+     .           " pseudopotential only contains V_ls up to l=",
+     .           lmax_pseudo, " -- lmxkb reset."
+            basp%lmxkb = lmax_pseudo
+         endif
+      enddo
 
       do isp=1,nsp
 !

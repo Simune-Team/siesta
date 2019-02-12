@@ -354,7 +354,7 @@
         call new_specie(iz,lmxkb, nkbl, lmxo,
      .                  nzeta, atm_label,
      .                  npolorb, semic, nsemic, cnfigmx,
-     .                  is, new, no, nkb) 
+     .                  is, new, no, nkb, basp) 
 ! 
         basistype_save(is) = basistype
         spp%mass = smass
@@ -2096,10 +2096,12 @@ C
         subroutine new_specie(iz,lmxkb, nkbl, lmxo,
      .                        nzeta, atm_label,
      .                        npolorb, semic, nsemic, cnfigmx,
-     .                        is, new, no, nkb)
+     .                        is, new, no, nkb, basp)
 
         implicit none
 
+        type(basis_def_t), intent(in) :: basp
+        
         integer
      .    iz, lmxkb, lmxo, nzeta(0:lmaxd,nsemx), npolorb(0:lmaxd,nsemx),
      .    nsemic(0:lmaxd), is, no, nkb, nkbl(0:lmaxd), cnfigmx(0:lmaxd)
@@ -2179,15 +2181,24 @@ C
 
              if (l==0) cycle
 
-             ! Special case where a polarization orbital has the same l                           
-             ! as a lower-lying state (e.g. Ti: 3s2 3p6 4s2 3d2 4p0*) 4p0 is a polarization       
-             ! orbital, with the same l as 3p.                                                    
-             ! (See 'archaeological note' in the header of 'basis_specs.f')                       
+             ! Special case for polarization orbitals with l<lmxo
+             ! Examples:
+             !    Ti: 3s2 3p6 4s2 3d2 4p0* 4p0 is a polarization
+             !                             orbital, with the same l as 3p.
+             !    Fe: 4s-4p*-3d
+             ! (See 'archaeological note' in the header of 'basis_specs.f')
+             ! We assign formally a "shell index" nsm beyond the last one,
+             ! and the appropriate n from the ground state record.
+             ! 
              npols_lm1 = sum(npolorb(l-1,:))
              if (npols_lm1 > 0) then
                 nsm = nsemic(l)+2
-                cnfigtb(l,nsm,is)= cnfigmx(l) + 1 ! in the above case, 4p                        
+                cnfigtb(l,nsm,is)= basp%ground_state%n(l)
+                if (basp%ground_state%occupied(l)) then
+                   call die("Inconsistency in polarization orbital")
+                endif
              endif
+
           enddo
 
         else
@@ -2265,7 +2276,7 @@ C
      .    ea, rpb, chgvps
 
         integer  
-     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i, nup
+     .    nr, nodd, linput, npotd, npotu, ndown, l, ir, i, nup
         integer :: nup_end
 
         character method(6)*10,text*70
@@ -2288,16 +2299,17 @@ C
         zval = vp%zval
 
         linput=max(lmxo,lmxkb)
-        lmax=min(npotd-1,linput)
-        lmax_ps = npotd-1
+        lmax_ps = npotd-1        ! Sets it for the rest of the module
 
-        if (lmax.lt.linput) then
-          write(6,'(a)') 
-     .      'read_vps: NOTE: Your pseudopotential does not have'
-          write(6,'(a,i4)') 
-     .      'read_vps: NOTE: L up to the canonical',linput
-          !! call die  ! do not die any more
-        endif
+        ! Note that lmxkb has already been reset in 'basis_specs'
+        ! Here lmxo excludes perturbative polarization orbitals
+        if (lmax_ps.lt.lmxo) then
+          write(6,'(a,i1)')
+     .      'NOTE: ' // trim(basp%label) //
+     .          ' pseudopotential has channels up to l= ', lmax_ps
+          write(6,'(a)')
+     .      'NOTE: PAOs with higher l will be generated with V_local'
+	endif
 
         nrval=nr+1 
         if (rmax_radial_grid /= 0.0_dp) then
@@ -2375,7 +2387,7 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
 
 !       Ionic pseudopotentials (down and up)
 
-        do ndown=1,lmax+1
+        do ndown=1,lmax_ps+1
           l = vp%ldown(ndown) 
           if (l.ne.ndown-1) then
             write(6,'(a)')
@@ -2396,7 +2408,7 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
        ! put 'keep-npotu-bug T' in fdf file
        ! To be removed altogether for releases
        if (fdf_get('keep-npotu-bug',.false.))  then
-          nup_end =  min(lmax,npotu-1)
+          nup_end =  min(lmax_ps,npotu-1)
           write(6,'(a)') 'atom: *** Buggy code in highest-l ' //
      $                   'SO component setup enabled ***'
        else

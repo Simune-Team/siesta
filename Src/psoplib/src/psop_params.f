@@ -18,7 +18,7 @@
 C INTEGER  NKBMX    : Maximum number of Kleinman-Bylander projectors
 C                     for each angular momentum
 
-         integer, parameter, public  :: nkbmx  =    4
+         integer, parameter, public  :: nkbmx  =    6
 
 C INTEGER LMAXD     : Maximum angular momentum for both orbitals and 
 C                      projectors.
