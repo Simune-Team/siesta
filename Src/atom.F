@@ -310,7 +310,7 @@
         call new_specie(iz,lmxkb, nkbl, lmxo,
      .                  nzeta, atm_label,
      .                  npolorb, semic, nsemic, cnfigmx,
-     .                  is, new, no, nkb) 
+     .                  is, new, no, nkb, basp) 
 ! 
         basistype_save(is) = basistype
         smasstb(is) = smass
@@ -2574,10 +2574,12 @@ C
         subroutine new_specie(iz,lmxkb, nkbl, lmxo,
      .                        nzeta, atm_label,
      .                        npolorb, semic, nsemic, cnfigmx,
-     .                        is, new, no, nkb)
+     .                        is, new, no, nkb, basp)
 
         implicit none
 
+        type(basis_def_t) :: basp
+        
         integer
      .    iz, lmxkb, lmxo, nzeta(0:lmaxd,nsemx), npolorb(0:lmaxd,nsemx),
      .    nsemic(0:lmaxd), is, no, nkb, nkbl(0:lmaxd), cnfigmx(0:lmaxd)
@@ -2660,14 +2662,22 @@ C
 
              if (l==0) cycle
 
-             ! Special case where a polarization orbital has the same l
-             ! as a lower-lying state (e.g. Ti: 3s2 3p6 4s2 3d2 4p0*) 4p0 is a polarization
-             ! orbital, with the same l as 3p.
+             ! Special case for polarization orbitals with l<lmxo
+             ! Examples:
+             !    Ti: 3s2 3p6 4s2 3d2 4p0* 4p0 is a polarization
+             !                             orbital, with the same l as 3p.
+             !    Fe: 4s-4p*-3d
              ! (See 'archaeological note' in the header of 'basis_specs.f')
+             ! We assign formally a "shell index" nsm beyond the last one,
+             ! and the appropriate n from the ground state record.
+             ! 
              npols_lm1 = sum(npolorb(l-1,:))
              if (npols_lm1 > 0) then
                 nsm = nsemic(l)+2
-                cnfigtb(l,nsm,is)= cnfigmx(l) + 1  ! in the above case, 4p 
+                cnfigtb(l,nsm,is)= basp%ground_state%n(l)
+                if (basp%ground_state%occupied(l)) then
+                   call die("Inconsistency in polarization orbital")
+                endif
              endif
             
           enddo 
@@ -2776,13 +2786,15 @@ C
         linput=max(lmxo,lmxkb)
         lmax_ps = npotd-1        ! Sets it for the rest of the module
 
-        if (lmax_ps.lt.linput) then
-          write(6,'(a,i1)') 
+        ! Note that lmxkb has already been reset in 'basis_specs'
+        ! Here lmxo excludes perturbative polarization orbitals
+        if (lmax_ps.lt.lmxo) then
+          write(6,'(a,i1)')
      .      'NOTE: ' // trim(basp%label) //
      .          ' pseudopotential has channels up to l= ', lmax_ps
-          write(6,'(a)') 
+          write(6,'(a)')
      .      'NOTE: PAOs with higher l will be generated with V_local'
-        endif
+	endif
 
         nrval=nr+1 
         if (rmax_radial_grid /= 0.0_dp) then
@@ -2853,7 +2865,6 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
           rpb=rpb*ea
         enddo 
 
-
 !       Ionic pseudopotentials   (Only 'down' used)
 
         do 20 ndown=1,lmax_ps+1
@@ -2871,7 +2882,6 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
           vps(1,l) = vps(2,l)     ! AG
 
   20    continue
-
 
 !       Core and valence charge density
 
@@ -6020,7 +6030,6 @@ C
         enddo 
       
         end subroutine POLgen
-
 !
         subroutine POLgen_filteret_new(is,iz,a,b,rofi,drdi,ePAO,rphi,
      .                             rco,vps,ve,polorb,lmxo,nsemic,
