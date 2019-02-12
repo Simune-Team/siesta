@@ -273,7 +273,7 @@ contains
     use class_Sparsity
     use class_dSpData1D
     use geom_helper,       only : UCORB
-    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
+    use sorted_search_m, only: ssearch_t, ssearch_init, ssearch_find
 
     type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: Gfd_tri, Gfo_tri
@@ -556,7 +556,7 @@ contains
     use class_Sparsity
     use class_dSpData1D
     use geom_helper,       only : UCORB
-    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
+    use sorted_search_m, only: ssearch_t, ssearch_init, ssearch_find
 
     type(tRgn), intent(in) :: r
     type(zTriMat), intent(inout) :: A_tri
@@ -1574,7 +1574,7 @@ contains
     use class_zSpData1D
     use class_dSpData1D
     use geom_helper,       only : UCORB
-    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
+    use sorted_search_m, only: ssearch_t, ssearch_init, ssearch_find
 
     use m_ts_cctype, only: ts_c_idx
 

@@ -115,7 +115,7 @@ TBTOBJS  = version.o m_verbosity.o
 TBTOBJS += tbt_init.o tbt_end.o tbt_reinit.o m_tbt_hs.o m_tbt_regions.o
 TBTOBJS += m_tbt_options.o m_tbt_tri_init.o
 TBTOBJS += m_tbt_contour.o m_tbt_kpoint.o m_tbt_gf.o
-TBTOBJS += sorted_search_t.o
+TBTOBJS += sorted_search.o
 
 # Different solution methods
 TBTOBJS += m_tbtrans.o m_tbt_trik.o m_tbt_tri_scat.o
@@ -591,11 +591,9 @@ units.o: precision.o
 m_tbt_contour.o: m_gauss_quad.o m_integrate.o m_io.o m_tbt_save.o m_ts_aux.o
 m_tbt_contour.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o
 m_tbt_contour.o: m_ts_io_contour.o m_ts_io_ctype.o parallel.o precision.o
-m_tbt_contour.o: units.o
 m_tbt_contour.o: m_gauss_quad.o m_integrate.o m_io.o m_tbt_save.o m_ts_aux.o
 m_tbt_contour.o: m_ts_cctype.o m_ts_chem_pot.o m_ts_electype.o
 m_tbt_contour.o: m_ts_io_contour.o m_ts_io_ctype.o parallel.o precision.o
-m_tbt_contour.o: units.o
 m_tbt_dH.o: class_Sparsity.o m_tbt_delta.o parallel.o
 m_tbt_dH.o: class_Sparsity.o m_tbt_delta.o parallel.o
 m_tbt_dSE.o: m_tbt_delta.o parallel.o
@@ -710,12 +708,12 @@ m_tbt_tri_scat.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_tbt_tri_scat.o: class_TriMat.o geom_helper.o intrinsic_missing.o m_region.o
 m_tbt_tri_scat.o: m_tbt_proj.o m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o
 m_tbt_tri_scat.o: m_ts_tri_scat.o m_ts_trimat_invert.o precision.o
-m_tbt_tri_scat.o: sorted_search_t.o units.o
+m_tbt_tri_scat.o: sorted_search.o units.o
 m_tbt_tri_scat.o: class_SpData1D.o class_SpData1D.o class_Sparsity.o
 m_tbt_tri_scat.o: class_TriMat.o geom_helper.o intrinsic_missing.o m_region.o
 m_tbt_tri_scat.o: m_tbt_proj.o m_ts_cctype.o m_ts_electype.o m_ts_tri_common.o
 m_tbt_tri_scat.o: m_ts_tri_scat.o m_ts_trimat_invert.o precision.o
-m_tbt_tri_scat.o: sorted_search_t.o units.o
+m_tbt_tri_scat.o: sorted_search.o units.o
 m_tbt_trik.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_tbt_trik.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o class_TriMat.o
 m_tbt_trik.o: m_iterator.o m_mat_invert.o m_pivot_array.o m_region.o
@@ -726,7 +724,7 @@ m_tbt_trik.o: m_tbt_sparse_helper.o m_tbt_tri_init.o m_tbt_tri_scat.o m_timer.o
 m_tbt_trik.o: m_trimat_invert.o m_ts_cctype.o m_ts_elec_se.o m_ts_electype.o
 m_tbt_trik.o: m_ts_method.o m_ts_sparse_helper.o m_ts_tri_common.o
 m_tbt_trik.o: m_ts_trimat_invert.o m_verbosity.o parallel.o precision.o
-m_tbt_trik.o: sorted_search_t.o units.o
+m_tbt_trik.o: sorted_search.o units.o
 m_tbt_trik.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData1D.o
 m_tbt_trik.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o class_TriMat.o
 m_tbt_trik.o: m_iterator.o m_mat_invert.o m_pivot_array.o m_region.o
@@ -737,7 +735,7 @@ m_tbt_trik.o: m_tbt_sparse_helper.o m_tbt_tri_init.o m_tbt_tri_scat.o m_timer.o
 m_tbt_trik.o: m_trimat_invert.o m_ts_cctype.o m_ts_elec_se.o m_ts_electype.o
 m_tbt_trik.o: m_ts_method.o m_ts_sparse_helper.o m_ts_tri_common.o
 m_tbt_trik.o: m_ts_trimat_invert.o m_verbosity.o parallel.o precision.o
-m_tbt_trik.o: sorted_search_t.o units.o
+m_tbt_trik.o: sorted_search.o units.o
 m_tbtrans.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_tbtrans.o: class_SpData2D.o class_Sparsity.o m_region.o m_sparsity_handling.o
 m_tbtrans.o: m_tbt_contour.o m_tbt_dH.o m_tbt_dSE.o m_tbt_delta.o m_tbt_hs.o
@@ -752,8 +750,8 @@ m_tbtrans.o: m_tbt_kpoint.o m_tbt_kregions.o m_tbt_options.o m_tbt_proj.o
 m_tbtrans.o: m_tbt_regions.o m_tbt_save.o m_tbt_sigma_save.o m_tbt_tri_init.o
 m_tbtrans.o: m_tbt_trik.o m_ts_electype.o m_ts_gf.o m_verbosity.o parallel.o
 m_tbtrans.o: precision.o units.o
-sorted_search_t.o: intrinsic_missing.o
-sorted_search_t.o: intrinsic_missing.o
+sorted_search.o: intrinsic_missing.o
+sorted_search.o: intrinsic_missing.o
 tbt_end.o: m_tbt_dH.o m_tbt_dSE.o m_tbt_delta.o m_wallclock.o memory_log.o
 tbt_end.o: parallel.o timestamp.o
 tbt_end.o: m_tbt_dH.o m_tbt_dSE.o m_tbt_delta.o m_wallclock.o memory_log.o
@@ -806,6 +804,7 @@ m_object_debug.o: object_debug.o
 m_timer_tree.o: timer_tree.o
 m_timestamp.o: timestamp.o
 mtprng.o: m_uuid.o
+sorted_search_m.o: sorted_search.o
 sys.o: local_sys.o
 t_spin.o: m_spin.o
 timer_options.o: timer.o

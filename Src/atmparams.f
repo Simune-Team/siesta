@@ -24,7 +24,7 @@ C                     for each angular momentum
 C         For the off-site SO calculation plus semicore states
 C         there will be at least 4 KBs for each l angular momentum
 C         (for each l shell we have J = l +/- 1/2 )
-         integer, parameter, public  :: nkbmx  =    4
+         integer, parameter, public  :: nkbmx  =    6
 
 
 C INTEGER  NSMX    : Maximum number of semicore shells for each angular

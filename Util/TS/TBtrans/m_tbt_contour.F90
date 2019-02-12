@@ -13,7 +13,7 @@
 module m_tbt_contour
 
   use precision, only : dp
-  use fdf, only : leqi
+  use fdf, only : leqi, fdf_convfac
 
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
@@ -53,7 +53,6 @@ contains
   subroutine read_contour_options(N_Elec,Elecs,N_mu,mus)
 
     use parallel, only : Node
-    use units, only : eV
     use fdf
     use m_ts_electype
 
@@ -63,11 +62,13 @@ contains
     integer, intent(in) :: N_mu
     type(ts_mu), intent(in), target :: mus(N_mu)
     
-    real(dp) :: Volt, tmp, max_kT
+    real(dp) :: Volt, tmp, max_kT, Ry2eV
     character(len=C_N_NAME_LEN) :: ctmp
 #ifdef TBT_PHONON
     integer :: i
 #endif
+
+    Ry2eV = fdf_convfac('Ry', 'eV')
 
     ! broadening
     tbt_Eta = fdf_get('TBT.Contours.Eta',0._dp,'Ry')
@@ -111,16 +112,16 @@ contains
           tbt_io(1)%ca = '0. eV'
           tbt_io(1)%a  = 0._dp
           tbt_io(1)%cb = '0.5 eV'
-          tbt_io(1)%b  =  0.5_dp * eV
+          tbt_io(1)%b  =  0.5_dp / Ry2eV
           tbt_io(1)%cd = '0.0025 eV'
-          tbt_io(1)%d = 0.0025_dp * eV
+          tbt_io(1)%d = 0.0025_dp / Ry2eV
 #else
           tbt_io(1)%ca = '-2. eV'
-          tbt_io(1)%a  = - 2._dp * eV
+          tbt_io(1)%a  = - 2._dp / Ry2eV
           tbt_io(1)%cb = '2. eV'
-          tbt_io(1)%b  =  2._dp * eV
+          tbt_io(1)%b  =  2._dp / Ry2eV
           tbt_io(1)%cd = '0.01 eV'
-          tbt_io(1)%d = 0.01_dp * eV
+          tbt_io(1)%d = 0.01_dp / Ry2eV
 #endif
           tbt_io(1)%method = 'mid-rule'
        end if
@@ -390,8 +391,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW, iW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = cmplx(rE,iE,dp) * conv
-        c%w(ne,1) = cmplx(rW,iW,dp) * conv
+        c%c(ne) = cmplx(rE,iE, dp) * conv
+        c%w(ne,1) = cmplx(rW,iW, dp) * conv
         cycle
       end if
 
@@ -404,8 +405,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = cmplx(rE,iE,dp) * conv
-        c%w(ne,1) = cmplx(rW,iW,dp) * conv
+        c%c(ne) = cmplx(rE,iE, dp) * conv
+        c%w(ne,1) = cmplx(rW,iW, dp) * conv
         cycle
       end if
 
@@ -419,8 +420,8 @@ contains
         read(line, *, iostat=iostat) rE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = cmplx(rE * conv,iE,dp)
-        c%w(ne,1) = cmplx(rW,iW,dp) * conv
+        c%c(ne) = cmplx(rE * conv,iE, dp)
+        c%w(ne,1) = cmplx(rW,iW, dp) * conv
         cycle
       end if
 
@@ -530,23 +531,24 @@ contains
   subroutine print_contour_tbt_options(prefix)
 
     use parallel, only : IONode
-    use units, only : eV
-
     use m_ts_io_contour
 
     character(len=*), intent(in) :: prefix
     character(len=200) :: chars
     integer :: i
     type(ts_c_opt_ll), pointer :: opt
+    real(dp) :: Ry2eV
 
     if ( .not. IONode ) return
+
+    Ry2eV = fdf_convfac('Ry', 'eV')
     
     write(*,opt_n) '             >> TBtrans contour << '
 #ifdef TBT_PHONON
     write(*,opt_g_u) 'Device Green function imaginary Eta', &
-         tbt_Eta/eV**2,'eV**2'
+         tbt_Eta*Ry2eV**2,'eV**2'
 #else
-    write(*,opt_g_u) 'Device Green function imaginary Eta',tbt_Eta/eV,'eV'
+    write(*,opt_g_u) 'Device Green function imaginary Eta',tbt_Eta*Ry2eV,'eV'
 #endif
     do i = 1 , N_tbt
        chars = '  '//trim(tbt_io(i)%part)
@@ -586,7 +588,7 @@ contains
     call io_assign( iu )
     open( iu, file=trim(fname), status='unknown' )
     write(iu,'(a)') '# Contour path for the transport part'
-    write(iu,'(a,a19,3(tr1,a20))') '#','Re(c) [eV]','Im(c) [eV]','w [eV]'
+    write(iu,'(a,a24,3(tr1,a25))') '#','Re(c) [eV]','Im(c) [eV]','w [eV]'
 
     cidx%idx(1) = CONTOUR_TBT
 
@@ -602,12 +604,15 @@ contains
   end subroutine io_contour_tbt
 
   subroutine io_contour_c(iu,cidx)
-    use units,    only : eV
+    use fdf, only: fdf_convfac
     use m_ts_aux, only : nf
     integer, intent(in) :: iu
     type(ts_c_idx), intent(inout) :: cidx
     type(ts_cw), pointer :: c
     integer :: i
+    real(dp) :: Ry2eV
+    
+    Ry2eV = fdf_convfac('Ry', 'eV')
 
     if ( cidx%idx(1) == CONTOUR_TBT ) then
        c => tbt_c(cidx%idx(2))
@@ -616,7 +621,7 @@ contains
     end if
 
     do i = 1 , size(c%c)
-       write(iu,'(3(e20.13,tr1))') c%c(i) / eV, real(c%w(i,1),dp) / eV
+       write(iu,'(3(e25.17,tr1))') c%c(i) * Ry2eV, real(c%w(i,1),dp) * Ry2eV
     end do
 
   end subroutine io_contour_c

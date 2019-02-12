@@ -2180,7 +2180,7 @@ contains
     use class_Sparsity
     use class_zSpData1D
     use m_tbt_tri_scat, only : insert_Self_Energy
-    use sorted_search_t, only: ssearch_t, ssearch_init, ssearch_find
+    use sorted_search_m, only: ssearch_t, ssearch_init, ssearch_find
 
 #ifdef NCDF_4
     use m_tbt_delta, only : add_zdelta_Mat
