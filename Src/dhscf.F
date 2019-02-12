@@ -45,6 +45,8 @@
      &                           dvol, field(3), rmax, scell(3,3)
       real(dp)                :: G2mesh =  0.0_dp
       logical :: debug_dhscf = .false.
+      logical :: use_bsc_cellxc
+      
       character(len=*), parameter :: debug_fmt =
      &     '('' -- dhscf : Node '',i3,tr1,a,4(tr1,e20.7))'
 
@@ -66,11 +68,7 @@
       use sys,            only : die
       use mesh,           only : xdsp, nsm, nsp, meshLim
       use parsing
-#ifndef BSC_CELLXC
-      use siestaXC, only : getXC        ! Returns the XC functional used
-#else /* BSC_CELLXC */
-      use bsc_xcmod,          only : nXCfunc, XCauth
-#endif /* BSC_CELLXC */
+
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
       use meshsubs,       only : PartialCoreOnMesh
@@ -93,9 +91,6 @@
       use m_ncdf_siesta, only : cdf_init_grid
       use m_ncdf_io, only : cdf_init_mesh
 #endif
-#ifdef BSC_CELLXC
-      use cellxc_mod,     only : setGGA
-#endif /* BSC_CELLXC */
       use m_efield,       only : initialize_efield, acting_efield
       use m_efield,       only : get_field_from_dipole
       use m_efield,       only : dipole_correction
@@ -145,10 +140,8 @@
       integer,        pointer :: numphi(:), numphi_par(:)
 
       integer                 :: nm(3)   ! For call to initMesh
-#ifndef BSC_CELLXC
-      integer                 :: nXCfunc
-      character(len=20)       :: XCauth(10), XCfunc(10)
-#endif /* ! BSC_CELLXC */
+      logical                 :: need_gradients_in_xc, is_vdw
+      
       ! Transport direction (unit-cell aligned)
       integer                 :: iE
       real(dp)                :: ortho, field(3), field2(3)
@@ -182,18 +175,6 @@ C       Check spin-spiral wavevector (if defined)
      &    call die('dhscf: ERROR: spiral defined but nspin < 4')
       endif   ! First time
 
-#ifndef BSC_CELLXC
-C Get functional(s) being used
-      call getXC( nXCfunc, XCfunc, XCauth )
-#endif /* ! BSC_CELLXC */
-
-      if (harrisfun) then
-        do n = 1,nXCfunc
-          if (.not.(leqi(XCauth(n),'PZ').or.leqi(XCauth(n),'CA'))) then
-            call die("** Harris forces not implemented for non-LDA XC")
-          endif
-        enddo
-      endif
 
 C ----------------------------------------------------------------------
 C     Orbital initialisation : part 1
@@ -278,11 +259,23 @@ C     Start time counter for atomic initializations
 C     Initialise quantities relating to the atom-mesh positioning
       call InitAtomMesh( UNIFORM, na, xa )
 
-#ifdef BSC_CELLXC
-C     Check if we need extencils in cellxc
-      call setGGA( )
+!     Check if we need stencils in cellxc, and detect incompatibility
+!     with Harris forces 
+      call xc_setup(need_gradients_in_xc, is_vdw)
 
-#endif /* BSC_CELLXC */
+      if (need_gradients_in_xc .and. harrisfun) then
+         call die("** Harris forces not implemented for non-LDA XC")
+      endif
+
+      ! Give the opportunity to use BSC's version,
+      ! unless we have a vdw functional
+      use_bsc_cellxc = fdf_get("XC.Use.BSC.CellXC", .false.)
+      if (is_vdw .and. use_bsc_cellxc) then
+         call message("INFO",
+     $        "BSC's cellxc cannot be used with vdW functionals")
+         use_bsc_cellxc = .false.
+      endif
+      
 C     Compute the number of orbitals on the mesh and recompute the
 C     partions for every processor in order to have a similar load
 C     in each of them.
@@ -295,7 +288,7 @@ C     in each of them.
 !$OMP end parallel do
 
       call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
-     &                      isa, numphi )
+     &                      isa, numphi, need_gradients_in_xc )
 
 C     Find if there are partial-core-corrections for any atom
       npcc = 0
@@ -623,18 +616,13 @@ C Distances in Bohr
 C ----------------------------------------------------------------------
 C     Modules
       use precision,     only  : dp, grid_p
-#ifndef BSC_CELLXC
-      use parallel, only : ProcessorY
-#endif /* ! BSC_CELLXC */
 
-!     Number of Mesh divisions of each cell vector (global)
-!     The status of this variable is confusing
       use parallel,      only  : Node, Nodes
       use atmfuncs,      only  : rcut, rcore
       use units,         only  : Debye, eV, Ang
       use fdf
       use sys,           only  : die, bye
-      use mesh,          only  : nsm, nsp
+      use mesh,          only  : nsm, nsp, meshLim
       use parsing
       use m_iorho,       only  : write_rho
       use m_forhar,      only  : forhar
@@ -652,14 +640,12 @@ C     Modules
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP
       use m_partial_charges, only: compute_partial_charges
       use m_partial_charges, only: want_partial_charges
-#ifndef BSC_CELLXC
 
-      use siestaXC, only : cellXC       ! Finds xc energy and potential
+      use siestaXC, only : cellXC ! Finds xc energy and potential
       use siestaXC, only : myMeshBox    ! Returns my processor mesh box
       use siestaXC, only : jms_setMeshDistr => setMeshDistr
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
-#endif /* BSC_CELLXC */
       use m_vmat,  only  : vmat
       use m_rhoofd, only: rhoofd
 #ifdef MPI
@@ -754,10 +740,9 @@ C integer is            : Species index
 C logical IsDiag        : Is supercell diagonal?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
-#ifndef BSC_CELLXC
-C integer JDGdistr      : J.D.Gale's parallel distribution of mesh points
-C integer myBox(2,3)    : My processor's mesh box
-#endif /* ! BSC_CELLXC */
+
+C integer myBox(2,3)    : My processor's mesh box 
+
 C integer nbcell        : Number of independent bulk lattice vectors
 C integer npcc          : Partial core corrections? (0=no, 1=yes)
 C integer nsd           : Number of diagonal spin values (1 or 2)
@@ -780,22 +765,11 @@ C ----------------------------------------------------------------------
 
 C     Local variables
       integer  :: i, ia, ip, ispin, nsd, np_vac
-#ifndef BSC_CELLXC
-!     Interface to JMS's SiestaXC
-      integer       :: myBox(2,3)
-      integer, save :: JDGdistr=-1
-      real(dp) :: stressXC(3,3)
-#endif /* ! BSC_CELLXC */
       real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
      &            Ec, Ex, rhotot, x0(3), volume, Vmax_vac, Vmean_vac
-#ifdef BSC_CELLXC
-!     Dummy arrays for cellxc call
-      real(grid_p) :: aux3(3,1)
-      real(grid_p) :: dummy_DVxcdn(1,1,1)
-#endif /* BSC_CELLXC */
 
       logical :: use_rhog
-
+      
       real(dp), external :: volcel, ddot
 
       external
@@ -805,9 +779,16 @@ C     Local variables
      &  reord, rhooda, rhoofdsp, 
      &  timer, vmatsp, 
      &  readsp
-#ifdef BSC_CELLXC
+
+!     Dummy arrays for bsc_cellxc call
+      real(grid_p) :: aux3(3,1)
+      real(grid_p) :: dummy_DVxcdn(1,1,1)
+      real(grid_p), pointer :: Vscf_gga(:,:), DRho_gga(:,:)
       external bsc_cellxc
-#endif /* BSC_CELLXC */
+
+!     Interface to JMS's SiestaXC
+      integer       :: myBox(2,3)
+      real(dp) :: stressXC(3,3)
 
 C     Work arrays
       real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:),
@@ -818,9 +799,7 @@ C     Work arrays
      &                         DRho_quad(:,:) => null()
       ! Temporary reciprocal spin quantity
       real(grid_p) :: rnsd
-#ifdef BSC_CELLXC
-      real(grid_p), pointer :: Vscf_gga(:,:), DRho_gga(:,:)
-#endif /* BSC_CELLXC */
+
 #ifdef MPI
       integer  :: MPIerror
       real(dp) :: sbuffer(7), rbuffer(7)
@@ -862,9 +841,7 @@ C ----------------------------------------------------------------------
 
       nullify( Vscf, Vscf_par, DRho, DRho_par,
      &         Vaux, Vaux_par, Chlocal, Totchar )
-#ifdef BSC_CELLXC
       nullify( Vscf_gga, DRho_gga)
-#endif /* BSC_CELLXC */
 
       volume = volcel(cell)
 
@@ -1471,19 +1448,6 @@ C     Get back spin density from sum and difference
 !$OMP end parallel do
       endif
 
-C ----------------------------------------------------------------------
-#ifndef BSC_CELLXC
-C Set uniform distribution of mesh points and find my processor mesh box
-C This is the interface to JM Soler's own cellxc routine, which sets
-C up the right distribution internally.
-C ----------------------------------------------------------------------
-
-      call jms_setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
-     .                   nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
-      call myMeshBox( ntm, JDGdistr, myBox )
-
-C ----------------------------------------------------------------------
-#endif /* ! BSC_CELLXC */
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
       call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
@@ -1534,63 +1498,82 @@ C ----------------------------------------------------------------------
 
 !     Everything now is in UNIFORM, sequential form
 
-      call timer("CellXC",1)
-#ifdef BSC_CELLXC
-      if (nodes.gt.1) then
-         call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
-      endif
+         call timer("XC",1)
 
-      call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga', 'dhscf' )
-      call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga', 'dhscf' )
+         ! Switch to "zero/not-zero rho" distribution (miscalled 'LINEAR')
+         if (nodes.gt.1) then
+            call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
+         endif
 
-      ! Redistribute all spin densities
-      do ispin = 1, nspin
-        fsrc => DRho(:,ispin)
-        fdst => DRho_gga(:,ispin)
-        call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
-      enddo
+         call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga','dhscf')
+         call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga','dhscf')
 
-      call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
-     &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
-     &             dummy_DVxcdn, stressl )
-#endif /* BSC_CELLXC */
+         ! Redistribute all spin densities
+         do ispin = 1, nspin
+            fsrc => DRho(:,ispin)
+            fdst => DRho_gga(:,ispin)
+            call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
+         enddo
 
-#ifndef BSC_CELLXC
-      call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
-     .                           myBox(1,2), myBox(2,2),
-     .                           myBox(1,3), myBox(2,3), nspin,
-     .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
-#else /* BSC_CELLXC */
+      if (use_bsc_cellxc) then
 
-      if (nodes.gt.1) then
-         call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
-      endif
+         call timer("BSC-CellXC",1)
+         call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
+     &                    DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
+     &                    dummy_DVxcdn, stressl )
 
-      ! Redistribute to the Vxc array
-      do ispin = 1,nspin
-        fsrc => Vscf_gga(:,ispin)
-        fdst => Vscf(:,ispin)
-        call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
-      enddo
-#endif /* BSC_CELLXC */
+         call timer("BSC-CellXC",2)
+
+      else
+         
+         call timer("GXC-CellXC",1)
+
+         ! Note that RG's meshLim is in blocks of nsm points, and 1-based
+         ! Example.
+         ! 1:16 17:32  (base 1)
+         ! 0:15 16:31  (base 0)
+         ! Times nsm=2:
+         ! 0:30 32:62
+         ! Add 1 to lb, and nsm to ub:
+         ! 1:32 33:64  (base 1, in units of small-points)
+
+         myBox(1,:) = (meshLim(1,:)-1)*nsm + 1
+         myBox(2,:) = (meshLim(2,:)-1)*nsm + nsm
+         
+         call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
+     &                myBox(1,2), myBox(2,2),
+     &                myBox(1,3), myBox(2,3), nspin,
+     &                DRho_gga, Ex, Ec, DEx, DEc, stressXC, Vscf_gga,
+     &                keep_input_distribution = .true. )
+   !     Vscf is still sequential after the call to JMS's cellxc
+         stress = stress + stressXC
+         call timer("GXC-CellXC",2)
+         
+      endif  ! use_bsc_cellxc
+      
+         ! Go back to uniform distribution
+         if (nodes.gt.1) then
+            call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl)
+         endif
+
+         ! Redistribute to the Vxc array
+         do ispin = 1,nspin
+            fsrc => Vscf_gga(:,ispin)
+            fdst => Vscf(:,ispin)
+            call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
+         enddo
+         call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
+         call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
+
+         call timer("XC",2)
 
       if ( debug_dhscf ) then
          write(*,debug_fmt) Node,'XC',
      &        (sqrt(sum(Vscf(:,ispin)**2)),ispin=1,nspin)
       end if
       
-      
-#ifndef BSC_CELLXC
-!     Vscf is still sequential after the call to JMS's cellxc
-#else /* BSC_CELLXC */
-      call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
-      call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
-#endif /* BSC_CELLXC */
-
       Exc =  Ex +  Ec
       Dxc = DEx + DEc
-
-      call timer("CellXC",2)
 
 !     Vscf contains only Vxc, and is UNIFORM and sequential
 !     Now we add up the other contributions to it, at 
@@ -1617,10 +1600,6 @@ C ----------------------------------------------------------------------
         endif
       enddo
 !$OMP end parallel
-
-#ifndef BSC_CELLXC
-      stress = stress + stressXC
-#endif /* ! BSC_CELLXC */
 
 C ----------------------------------------------------------------------
 C     Save total potential
@@ -1700,20 +1679,16 @@ C ----------------------------------------------------------------------
 
 #ifdef MPI
 C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
-#ifndef BSC_CELLXC
-!     Note that Exc and Dxc are already reduced in the new cellxc
-#endif /* ! BSC_CELLXC */
       sbuffer(1) = Uscf
       sbuffer(2) = DUscf
       sbuffer(3) = Uatm
       sbuffer(4) = Enaatm
       sbuffer(5) = Enascf
-#ifdef BSC_CELLXC
-      sbuffer(6) = Exc
-      sbuffer(7) = Dxc
-#else
-      sbuffer(6:7) = 0._dp
-#endif /* BSC_CELLXC */
+      if (use_bsc_cellxc) then
+         sbuffer(6) = Exc
+         sbuffer(7) = Dxc
+      endif
+
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
       Uscf   = rbuffer(1)
@@ -1721,10 +1696,10 @@ C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Uatm   = rbuffer(3)
       Enaatm = rbuffer(4)
       Enascf = rbuffer(5)
-#ifdef BSC_CELLXC
-      Exc    = rbuffer(6)
-      Dxc    = rbuffer(7)
-#endif /* BSC_CELLXC */
+      if (use_bsc_cellxc) then
+         Exc    = rbuffer(6)
+         Dxc    = rbuffer(7)
+      endif
 #endif /* MPI */
 
 C     Add contribution to stress from the derivative of the Jacobian of ---
@@ -1782,11 +1757,8 @@ C       Find contribution of partial-core-correction
         if ( harrisfun) then
 !         Forhar deals internally with its own needs
 !         for distribution changes
-#ifndef BSC_CELLXC
+!         Upon entry, everything is UNIFORM, sequential form
           call forhar( ntpl, nspin, nml, ntml, ntm, npcc, cell, 
-#else /* BSC_CELLXC */
-          call forhar( ntpl, nspin, nml, ntml, npcc, cell, 
-#endif /* BSC_CELLXC */
      &                 rhoatm, rhopcc, Vna, DRho, Vscf, Vaux )
 !         Upon return, everything is UNIFORM, sequential form
         endif
@@ -1993,4 +1965,30 @@ C ----------------------------------------------------------------------
         endif
       end subroutine delk_wrapper
 
+      !> Chech whether we need to initialize stencils for
+      !> BSC's version of cellxc, and whether we have a vdw
+      !> functional
+      subroutine xc_setup(need_grads,is_vdw)
+      use siestaxc, only: getxc
+
+      logical, intent(out) :: need_grads
+      logical, intent(out) :: is_vdw
+
+      integer         :: nf, nXCfunc
+      character(len=20):: XCauth(10), XCfunc(10)
+
+      need_grads = .false.
+      is_vdw = .false.
+      call getXC( nXCfunc, XCfunc, XCauth )
+      do nf = 1,nXCfunc
+        if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
+           need_grads = .true.
+        endif
+        if ( XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
+           need_grads = .true.
+           is_vdw = .true.
+        endif
+      enddo
+      end subroutine xc_setup
+      
       end module m_dhscf
