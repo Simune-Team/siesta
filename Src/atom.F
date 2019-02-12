@@ -2675,14 +2675,22 @@ C
 
              if (l==0) cycle
 
-             ! Special case where a polarization orbital has the same l
-             ! as a lower-lying state (e.g. Ti: 3s2 3p6 4s2 3d2 4p0*) 4p0 is a polarization
-             ! orbital, with the same l as 3p.
+             ! Special case for polarization orbitals with l<lmxo
+             ! Examples:
+             !    Ti: 3s2 3p6 4s2 3d2 4p0* 4p0 is a polarization
+             !                             orbital, with the same l as 3p.
+             !    Fe: 4s-4p*-3d
              ! (See 'archaeological note' in the header of 'basis_specs.f')
+             ! We assign formally a "shell index" nsm beyond the last one,
+             ! and the appropriate n from the ground state record.
+             ! 
              npols_lm1 = sum(npolorb(l-1,:))
              if (npols_lm1 > 0) then
                 nsm = nsemic(l)+2
-                cnfigtb(l,nsm,is)= cnfigmx(l) + 1  ! in the above case, 4p 
+                cnfigtb(l,nsm,is)= basp%ground_state%n(l)
+                if (basp%ground_state%occupied(l)) then
+                   call die("Inconsistency in polarization orbital")
+                endif
              endif
             
           enddo 
