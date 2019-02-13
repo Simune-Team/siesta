@@ -61,7 +61,7 @@ DEPS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           basis_specs.o ldau_specs.o atom.o periodic_table.o\
           pxf.o dot.o  atom_options.o arw.o m_spin_orbit_potentials.o \
           xml.o m_walltime.o read_xc_info.o  $(SYSOBJ) \
-          xc.o bsc_xcmod.o  m_fft_gpfa.o m_cite.o reclat.o units.o \
+          m_fft_gpfa.o m_cite.o reclat.o units.o \
           semicore_info_froyen.o hamann.o files.o
 GEN-BASIS_LOCAL_OBJS=gen-basis.o handlers.o local_sys.o
 OBJS_GEN-BASIS=$(DEPS_GEN-BASIS) $(GEN-BASIS_LOCAL_OBJS)
@@ -72,7 +72,7 @@ DEPS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
 	  chemical.o m_spin.o m_spin_orbit_potentials.o reclat.o \
           basis_specs.o periodic_table.o pxf.o semicore_info_froyen.o \
           atom.o atmfuncs.o spher_harm.o interpolation.o arw.o \
-          xc.o bsc_xcmod.o xml.o m_walltime.o ldau_specs.o\
+          xml.o m_walltime.o ldau_specs.o\
           hamann.o m_cite.o  units.o files.o $(SYSOBJ)
 IONCAT_LOCAL_OBJS=ioncat.o handlers.o local_sys.o
 OBJS_IONCAT=$(DEPS_IONCAT) $(IONCAT_LOCAL_OBJS)
@@ -144,11 +144,11 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o local_sys.o precision.o radial.o spher_harm.o
 atmfuncs.o: atm_types.o local_sys.o precision.o radial.o spher_harm.o
 atom.o: atm_types.o atmparams.o atom_options.o basis_specs.o basis_types.o
-atom.o: bsc_xcmod.o hamann.o interpolation.o local_sys.o m_filter.o
-atom.o: periodic_table.o precision.o radial.o
+atom.o: hamann.o interpolation.o local_sys.o m_filter.o periodic_table.o
+atom.o: precision.o radial.o
 atom.o: atm_types.o atmparams.o atom_options.o basis_specs.o basis_types.o
-atom.o: bsc_xcmod.o hamann.o interpolation.o local_sys.o m_filter.o
-atom.o: periodic_table.o precision.o radial.o
+atom.o: hamann.o interpolation.o local_sys.o m_filter.o periodic_table.o
+atom.o: precision.o radial.o
 atom_options.o: local_sys.o
 atom_options.o: local_sys.o
 basis_io.o: atm_types.o atmparams.o atom_options.o basis_types.o chemical.o
@@ -165,8 +165,6 @@ basis_types.o: alloc.o atmparams.o local_sys.o precision.o
 basis_types.o: alloc.o atmparams.o local_sys.o precision.o
 bessph.o: local_sys.o precision.o
 bessph.o: local_sys.o precision.o
-bsc_xcmod.o: local_sys.o parallel.o precision.o
-bsc_xcmod.o: local_sys.o parallel.o precision.o
 chemical.o: local_sys.o parallel.o precision.o
 chemical.o: local_sys.o parallel.o precision.o
 chkdim.o: local_sys.o
@@ -197,8 +195,6 @@ spher_harm.o: alloc.o local_sys.o precision.o
 spher_harm.o: alloc.o local_sys.o precision.o
 units.o: precision.o
 units.o: precision.o
-xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
-xc.o: alloc.o bsc_xcmod.o local_sys.o precision.o
 xml.o: precision.o
 xml.o: precision.o
 gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o

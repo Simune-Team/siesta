@@ -3954,6 +3954,7 @@ numerical id:
      %endblock XC.cocktail
 \end{fdfexample}
 
+
 If both fields are used the information must be compatible. Also, the
 ``family'' field (GGA, LDA) must be compatible with the functional
 specified.
@@ -3965,6 +3966,17 @@ confusingly, \textbf{XC.Hybrid}
 information is read from the fdf variables above.
 
 \end{fdfentry}
+
+\begin{fdflogicalF}{XC!Use.BSC.CellXC}
+  \index{exchange-correlation!cellXC}
+
+  If \fdftrue, the version of \texttt{cellXC} from the BSC's mesh
+  suite is used instead of the default SiestaXC version. BSC's version
+  might be slightly better for GGA operations. SiestaXC's version is
+  mandatory when dealing with van der Waals functionals.
+
+\end{fdflogicalF}
+
 
 \subsection{Spin polarization}
 
@@ -13253,12 +13265,11 @@ let us know.
   generation of the basis orbitals and the screened pseudopotentials.
 
   \item%
-  The exchange-correlation routines contained in file xc.f were
-  written by J.M.Soler in 1996 and 1997, in collaboration with
-  \textbf{C.\ Balb\'as} and \textbf{J. L.\ Martins}.  Routine pzxc (in
-  the same file), which implements the Perdew-Zunger LDA
-  parametrization of xc, is based on routine velect, written by
-  \textbf{S.\ Froyen}.
+  The exchange-correlation routines contained in SiestaXC were written
+  by J.M.Soler in 1996 and 1997, in collaboration with
+  \textbf{C.\ Balb\'as} and \textbf{J. L.\ Martins}.  Routine pzxc,
+  which implements the Perdew-Zunger LDA parametrization of xc, is
+  based on routine velect, written by \textbf{S.\ Froyen}.
 
   \item%
   The serial version of the multivariate fast fourier transform used

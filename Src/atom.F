@@ -1,3 +1,5 @@
+
+
 ! 
 ! Copyright (C) 1996-2016	The SIESTA group
 !  This file is distributed under the terms of the
@@ -30,10 +32,10 @@
       use basis_types, only: basis_def_t
       use fdf
       use m_ncps, only: pseudopotential_t => froyen_ps_t
-#ifndef BSC_CELLXC
+
       use gridXC, only: atomXC=>gridxc_atomXC  ! XC for a spherical charge
       use gridXC, only: getXC=>gridxc_getXC ! Returns the XC functional to be used
-#endif /* ! BSC_CELLXC */
+
 
       implicit none      
 
@@ -1515,20 +1517,20 @@ C
 C Checking the functional used for exchange-correlation energy.
 C Written by D. Sanchez-Portal, Aug. 1998
 
-#ifdef BSC_CELLXC
-        use bsc_xcmod, only : nXCfunc, XCfunc, XCauth
 
-#endif /* BSC_CELLXC */
+
+
+
 C Passed variable
         character(len=2), intent(in) :: icorr
 
 C Local variables
-#ifndef BSC_CELLXC
+
         integer                      :: nf, nXCfunc
         character(len=20)            :: XCauth(10), XCfunc(10)
-#else /* BSC_CELLXC */
-        integer                      :: nf
-#endif /* BSC_CELLXC */
+
+
+
         character(len=40)            :: ps_string
 
         ps_string = "Unknown atomic XC code"
@@ -1541,7 +1543,7 @@ C Local variables
         if (icorr .eq. "wc") ps_string ="GGA WC"
         if (icorr .eq. "bl") ps_string ="GGA BLYP"
         if (icorr .eq. "ps") ps_string ="GGA PBEsol"
-#ifndef BSC_CELLXC
+
         if (icorr .eq. "jo") ps_string ="GGA PBEJsJrLO"
         if (icorr .eq. "jh") ps_string ="GGA PBEJsJrHEG"
         if (icorr .eq. "go") ps_string ="GGA PBEGcGxLO"
@@ -1557,7 +1559,7 @@ C Local variables
 
 C Get functional(s) being used
         call getXC( nXCfunc, XCfunc, XCauth )
-#endif /* ! BSC_CELLXC */
+
 
 C Loop over functionals
         do nf = 1,nXCfunc
@@ -1635,7 +1637,7 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
 
-#ifndef BSC_CELLXC
+
           elseif((XCauth(nf).eq.'PW91').and.(XCfunc(nf).eq.'GGA')) then
 
             write(6,'(a)')
@@ -1755,7 +1757,7 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
 
-#endif /* ! BSC_CELLXC */
+
          else
 
            write(6,'(a)')

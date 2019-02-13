@@ -33,11 +33,8 @@
      &                              iza, rmaxo, zvaltot, superc,
      &                              initatomlists, no_l, rmaxldau
       use fdf
-#ifdef BSC_CELLXC
-      use bsc_xcmod,          only: setXC
-#else
+
       use gridxc,             only: gridxc_init
-#endif /* BSC_CELLXC */
       use molecularmechanics, only: inittwobody
       use metaforce,          only: initmeta
       use m_mpi_utils,        only: broadcast
@@ -389,7 +386,6 @@ C     Initialise MPI and set processor number
 
 
 !     Initialise exchange-correlation functional information
-#ifndef BSC_CELLXC
       call read_xc_info()
 #ifdef MPI
       call gridxc_init(comm=MPI_Comm_World,
@@ -397,9 +393,6 @@ C     Initialise MPI and set processor number
 #else
       call gridxc_init()
 #endif
-#else /* BSC_CELLXC */
-      call setXC( )
-#endif /* BSC_CELLXC */
 
 !     Initialise force field component
       call inittwobody( )

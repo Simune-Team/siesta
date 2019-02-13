@@ -8,11 +8,11 @@ These can be downloaded from Launchpad:
 
 https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.4.tar.gz
 https://launchpad.net/libpsml/trunk/1.1/+download/libpsml-1.1.7.tgz
-https://launchpad.net/libgridxc/trunk/0.8/+download/libgridxc-0.8.0.tgz
+https://launchpad.net/libgridxc/trunk/0.8/+download/libgridxc-0.8.5.tgz
 
 
 NOTE: You need version 1.5.4 of the xmlf90 library,
-      at least version 0.8.0 of the libgridxc library, and
+      at least version 0.8.5 of the libgridxc library, and
       at least version 1.1.7 of the libpsml library.
 
 ** Steps in detail
