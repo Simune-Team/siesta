@@ -753,7 +753,7 @@ contains
        ! Save generic information about electrode
        dic = dic//('info'.kv.'Bloch expansion')
        call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), atts = dic)
-       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch%B)
 
        dic = dic//('info'.kv.'Downfolding region orbital pivot table')
        call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_down'/), atts = dic)

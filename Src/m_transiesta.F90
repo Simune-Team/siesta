@@ -185,7 +185,7 @@ contains
     do iEl = 1 , N_Elec
 
        ! Calculate number of Bloch expansion k-points
-       nq(iEl) = product(Elecs(iEl)%Bloch)
+       nq(iEl) = Elecs(iEl)%Bloch%size()
 
        ! Allocate the electrode quantities
        nullify(Elecs(iEl)%HA,Elecs(iEl)%SA,Elecs(iEl)%Gamma)
