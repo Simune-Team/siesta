@@ -6954,8 +6954,7 @@ C
         norb_nl = 0
         spp%lmax_basis = lmxo
         do l = 0, lmxo
-           !     do nsm = 1,nsemic(l)+1 -- Here nsemic=0 
-           do nsm = 1, 1   
+           do nsm = 1,nsemic(l)+1
               norb_tot = norb_tot + (2*l+1)*nzeta(l,nsm) 
               norb_nl = norb_nl + nzeta(l,nsm) 
               ! No polarization orbs
