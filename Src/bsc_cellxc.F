@@ -115,12 +115,11 @@ C GGAXC, LDAXC, RECLAT, TIMER, VOLCEL
 C *******************************************************************
 
       use precision,    only : dp, grid_p
-      use bsc_xcmod,    only : nXCfunc, XCfunc, XCauth
-      use bsc_xcmod,    only : XCweightX, XCweightC
       use sys,          only : die
       use alloc,        only : re_alloc, de_alloc
-      use cellxc_mod,   only : GGA
       use mesh,         only : nsm, meshLim
+      use siestaxc,     only : ggaxc, ldaxc
+      use siestaxc,     only : getXC
 #ifdef MPI
 C  Modules
       use mesh,         only : nmeshg
@@ -179,7 +178,7 @@ C MPI related variables
 #endif
 
 C Local variables and arrays
-      logical           GGAfunctl
+      logical           GGA, GGAfunctl
       integer           I1, I2, I3, IC, IN, IP, IS, IX,
      &                  J1, J2, J3, JN, JP(3,-NN:NN), JS, JX,
      &                  KS, NPG, nf
@@ -190,11 +189,16 @@ C Local variables and arrays
      &                  DVCDN(mspin*mspin), DVXDN(mspin*mspin),
      &                  EPSC, EPSX, F1, F2, GD(3,mspin),
      &                  VOLCEL, volume, stress(3,3)
-      external          GGAXC, LDAXC, RECLAT, VOLCEL
+      external          RECLAT, VOLCEL
+      
       integer           BS(3), iDistr
       real(grid_p), pointer :: bdensX(:,:,:), bdensY(:,:,:),
      &                         bdensZ(:,:,:), bvxcX(:,:,:),
      &                         bvxcY(:,:,:), bvxcZ(:,:,:)
+
+      integer                 :: nXCfunc
+      character(len=20)       :: XCauth(10), XCfunc(10)
+      real(dp)                :: XCweightX(10), XCweightC(10)
 
 #ifdef DEBUG
       call write_debug( '    PRE cellxc' )
@@ -207,9 +211,21 @@ C Start time counter (intended only for debugging and development)
 #endif
       call timer( 'cellXC', 1 )
 
-C Check ider
-      if (ider.ne.0 .and. GGA)
-     $     call die('cellXC: ider=1 available only for LDA')
+      call getXC( nXCfunc, XCfunc, XCauth, XCweightX, XCweightC)
+
+      GGA = .false.
+      do nf = 1,nXCfunc
+         if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga' ) then
+            GGA = .true.
+         endif
+         if ( XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
+            call die("BSC's cellxc cannot handle VDW functionals")
+         endif
+      enddo
+      
+      if (ider.ne.0 .and. GGA) then
+         call die('BSC cellXC: ider=1 available only for LDA')
+      endif
 
 C Check value of mspin
       if (mspin.lt.nspin) then
@@ -583,6 +599,7 @@ C avoid floating point errors in ggaxc. JDG & JMS
           endif
 #endif
         endif
+
 
 C Loop over all functionals
         do nf = 1,nXCfunc

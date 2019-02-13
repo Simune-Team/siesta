@@ -26,7 +26,7 @@ module m_iodm
 
 contains
         
-  subroutine read_dm( file, dit, DM, found, Bcast )
+  subroutine read_dm( file, dit, nsc, DM, found, Bcast )
 
 #ifdef MPI
     use mpi_siesta
@@ -39,6 +39,8 @@ contains
     ! The orbital distribution that should be attached to
     ! DM
     type(OrbitalDistribution), intent(in) :: dit
+    ! The supercell information (if present, otherwise return 0s)
+    integer, intent(inout) :: nsc(3)
     ! The density matrix
     type(dSpData2D), intent(inout) :: DM
     logical, intent(out) :: found
@@ -48,9 +50,9 @@ contains
 ! * LOCAL variables      *
 ! ************************
     type(Sparsity) :: sp
-    character(len=500) :: fn
+    character(len=256) :: fn
     logical :: lBcast
-    integer :: iu, two(2), no_u, nspin
+    integer :: iu, five(5), no_u, nspin, ierr
     integer, allocatable, target :: gncol(:)
 #ifdef MPI
     integer :: MPIerror
@@ -80,15 +82,28 @@ contains
        call io_assign(iu)
        open( iu, file=file, form='unformatted', status='old' )
        rewind(iu)
-       read(iu) two
+       read(iu,iostat=ierr) five
+       if ( ierr /= 0 ) then
+         rewind(iu)
+         read(iu) five(1), five(2)
+         five(3:5) = 0
+       end if
     end if
 
 #ifdef MPI
-    call MPI_Bcast(two,2,MPI_integer,0,MPI_Comm_World,MPIerror)
+    if ( lBcast ) then
+      call MPI_Bcast(five,5,MPI_integer,0,MPI_Comm_World,MPIerror)
+    else
+      ierr = dist_comm(dit)
+      call MPI_Bcast(five,5,MPI_integer,0,ierr,MPIerror)
+    end if
 #endif
 
-    no_u = two(1)
-    nspin = two(2)
+    no_u = five(1)
+    nspin = five(2)
+    nsc(1) = five(3)
+    nsc(2) = five(4)
+    nsc(3) = five(5)
 
     allocate(gncol(no_u))
     gncol(1) = 1
@@ -123,12 +138,13 @@ contains
 
   end subroutine read_dm
   
-  subroutine write_dm( file, DM )
+  subroutine write_dm( file, nsc, DM )
     
 ! **********************
 ! * INPUT variables    *
 ! **********************
     character(len=*), intent(in) :: file
+    integer, intent(in) :: nsc(3)
     type(dSpData2D), intent(inout) :: DM
     
 ! ************************
@@ -153,11 +169,10 @@ contains
 
        ! Open file
        call io_assign( iu )
-       open( iu, file=file, &
-            form='unformatted', status='unknown' )
+       open( iu, file=file, form='unformatted', status='unknown' )
        rewind(iu)
        
-       write(iu) no_u, nspin
+       write(iu) no_u, nspin, nsc
 
     end if
 

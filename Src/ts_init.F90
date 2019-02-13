@@ -68,7 +68,6 @@ contains
     logical :: neglect_conn
     integer :: i, ia
     integer :: nC, nTS
-    real(dp) :: mean_kT
 
     if ( isolve .eq. SOLVE_TRANSI ) then
        TSmode = .true.
@@ -111,13 +110,6 @@ contains
 
     ! Print out the contour blocks etc. for transiesta
     call print_ts_blocks( na_u, xa )
-
-
-    ! Check the electrodes (calculate mean temperature)
-    mean_kT = 0._dp
-    do i = 1 , N_Elec
-       mean_kT = mean_kT + Elecs(i)%mu%kT / N_Elec
-    end do
 
     ! Check that an eventual CGrun will fix all electrodes and 
     ! buffer atoms
@@ -187,16 +179,30 @@ contains
           ! initialize the electrode for Green function calculation
           call init_Electrode_HS(Elecs(i))
 
-          call do_Green(Elecs(i), &
-               ucell,ts_kpoint_scf%N,ts_kpoint_scf%k,ts_kpoint_scf%w, &
-               Elecs_xa_Eps, .false. )
+          ! Whether we can do with a single k-point (say a chain)
+          if ( Elecs(i)%is_gamma ) then
+            call do_Green(Elecs(i), &
+                ucell,1,(/(/0._dp, 0._dp, 0._dp/)/),(/1._dp/), &
+                Elecs_xa_Eps, .false. )
+            
+            if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+              call do_Green_Fermi(Elecs(i), &
+                  ucell,1,(/(/0._dp, 0._dp, 0._dp/)/),(/1._dp/), &
+                  Elecs_xa_Eps, .false. )
+            end if
+            
+          else
+            call do_Green(Elecs(i), &
+                ucell,ts_kpoint_scf%N,ts_kpoint_scf%k,ts_kpoint_scf%w, &
+                Elecs_xa_Eps, .false. )
 
-          if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
-             
-             call do_Green_Fermi(mean_kT, Elecs(i), &
+            if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+
+              call do_Green_Fermi(Elecs(i), &
                   ucell,ts_kpoint_scf%N,ts_kpoint_scf%k,ts_kpoint_scf%w, &
                   Elecs_xa_Eps, .false. )
 
+            end if
           end if
           
           ! clean-up

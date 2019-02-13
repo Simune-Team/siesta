@@ -28,7 +28,8 @@ module m_ts_rgn2trimat
   use m_region
 
   use m_ts_electype
-  use m_ts_tri_common, only : needed_mem
+  use m_ts_tri_common, only : GFGGF_needed_worksize
+  use m_ts_tri_common, only : nnzs_tri_i8b
 
   ! method of BTD matrix
   use m_ts_method, only: TS_BTD_A_PROPAGATION, TS_BTD_A_COLUMN
@@ -364,49 +365,71 @@ contains
 
   contains 
 
-    recursive subroutine select_better(method, parts,n_part, &
-         guess_parts, guess_part)
-
+    subroutine select_better(method, cur_parts, cur_part, guess_parts, guess_part)
+      
       integer, intent(in)    :: method
-      integer, intent(inout) :: parts
+      integer, intent(inout) :: cur_parts
       integer, intent(in)    :: guess_parts
-      integer, intent(inout) :: n_part(max(parts,guess_parts))
+      integer, intent(inout) :: cur_part(max(cur_parts,guess_parts))
       integer, intent(in)    :: guess_part(guess_parts)
       logical :: copy
-      integer :: part_work, guess_work
+      integer :: cur_work, guess_work
+      integer :: cur_pad, guess_pad
 
       ! We check whether the number of elements is smaller
       ! or that the number of parts is greater (however, this should
       ! in principle always go together)
       ! If the method of optimization is memory:
       if ( method == 0 ) then
-
-         copy = faster_parts(parts,n_part,guess_parts,guess_part)
-
+        
+        copy = faster_parts(cur_parts,cur_part,guess_parts,guess_part)
+        
       else if ( method == 1 ) then
-         copy = IsVolt .and. ts_A_method == TS_BTD_A_COLUMN
+        
+        ! We optimize for memory, i.e. we check for number of elements
+        ! in this regard we also check whether we should allocate
+        ! a work-array in case of bias calculations.
+        if ( IsVolt .and. ts_A_method == TS_BTD_A_COLUMN ) then
+          call GFGGF_needed_worksize(guess_parts, guess_part, &
+              N_Elec, Elecs, guess_pad, guess_work)
+          call GFGGF_needed_worksize(cur_parts, cur_part, &
+              N_Elec, Elecs, cur_pad, cur_work)
 
-         ! We optimize for memory, i.e. we check for number of elements
-         ! in this regard we also check whether we should allocate
-         ! a work-array in case of bias calculations.
-         call needed_mem(copy,N_Elec,Elecs,guess_parts,guess_part, guess_work)
-         call needed_mem(copy,N_Elec,Elecs,parts, n_part, part_work)
-         
-         copy = part_work > guess_work
-         if ( .not. copy ) then
-            ! in case the work-size is the same...
-            if ( part_work == guess_work ) then
-               call select_better(0, parts,n_part, guess_parts, guess_part)
-            end if
-         end if
+          ! Update values
+          guess_work = guess_work + guess_pad
+          cur_work = cur_work + cur_pad
+
+          ! Calculate difference between old and new
+          cur_pad = cur_work - guess_work
+        else
+          ! No default values
+          cur_pad = 0
+        end if
+
+        ! Difference between the two BTD matrices
+        guess_pad = nnzs_tri_i8b(cur_parts, cur_part) - &
+            nnzs_tri_i8b(guess_parts, guess_part)
+
+        ! total difference in number of elements
+        ! If this is positive the guessed BTD matrix has fewer
+        ! memory elements allocated than the currently selected one
+        cur_pad = guess_pad + cur_pad
+
+        copy = cur_pad > 0
+        if ( .not. copy ) then
+          ! in case the work-size is the same we fall-back to the fastests method
+          if ( cur_pad == 0 ) then
+            copy = faster_parts(cur_parts,cur_part,guess_parts,guess_part)
+          end if
+        end if
 
       else
-         call die('Unknown optimization scheme for the tri-mat')
+        call die('Unknown optimization scheme for the tri-mat')
       end if
 
       if ( copy ) then
-         parts = guess_parts
-         n_part(1:parts) = guess_part(1:parts)
+        cur_parts = guess_parts
+        cur_part(1:cur_parts) = guess_part(1:cur_parts)
       end if
 
     end subroutine select_better

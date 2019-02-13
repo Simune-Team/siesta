@@ -40,6 +40,7 @@ MODULE siesta_options
   logical :: allow_dm_reuse! Allow re-use of the previous geometry DM ? (with possible extrapolation)
   logical :: allow_dm_extrapolation ! Allow the extrapolation of previous geometries' DM ?
   logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
+  logical :: use_aux_cell  ! Force the use of the auxiliary cell
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
@@ -71,6 +72,7 @@ MODULE siesta_options
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
   logical :: write_coop    ! Write information for COOP/COHP analysis ?
+  logical :: save_ORB_INDX ! Write orbital information to ORB_INDX file ?
 
   ! Create graphviz information to visualize connectivity graph
   integer :: write_GRAPHVIZ
@@ -205,9 +207,6 @@ MODULE siesta_options
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
 
-  logical :: naive_aux_cell ! Control whether the auxiliary superc-cell will always be the maximal allowed cell size
-                            ! This will default to true for MD, FC and Lua controlled calculations since atoms may move
-  
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
   real(dp) :: charnet       ! Net electric charge

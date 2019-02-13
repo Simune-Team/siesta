@@ -96,7 +96,7 @@ subroutine read_options( na, ns, nspin )
   ! real*8 beta              : Inverse temperature to compute chem.pot.
   ! integer pmax             : Order of Chebi expansion for chem.pot.
   ! integer idyn             : Atomic dynamics option:
-  !                             0 = CG geometry optimization
+  !                             0 = Geometry optimization
   !                             1 = Standard MD run (Verlet)
   !                             2 = Nose thermostat MD
   !                             3 = Parrinello-Rahman MD
@@ -109,9 +109,9 @@ subroutine read_options( na, ns, nspin )
   !                            10 = Lua controlled dynamics
   ! integer istart           : Initial time step for MD
   ! integer ifinal           : Final time step for MD
-  ! integer nmove            : Number of CG steps in CG optimization
-  ! real*8 ftol              : Maximum force for CG structure optimization
-  ! real*8 strtol            : Maximum stress for CG structure optimization
+  ! integer nmove            : Number of steps in *any* MD/optimization
+  ! real*8 ftol              : Maximum force for structural optimization
+  ! real*8 strtol            : Maximum stress for structural optimization
   ! integer ianneal          : Annealing option for idyn = 5
   !                             1 = Temperature 
   !                             2 = Pressure
@@ -122,7 +122,7 @@ subroutine read_options( na, ns, nspin )
   !                             calculation
   ! integer ia1              : First atom to displace for force constants
   ! integer ia2              : Last atom to displace for force constants
-  ! real*8 dxmax             : Maximum atomic displacement in one CG move
+  ! real*8 dxmax             : Maximum atomic displacement in one atomic move
   ! real*8 tt                : Target temperature (Kelvin)
   ! real*8 tp                : Target Pressure (Ry/Bohr**3)
   ! real*8 mn                : Mass of Nose variable (Ry/fs**2)
@@ -152,13 +152,13 @@ subroutine read_options( na, ns, nspin )
   ! logical dumpcharge       : True: Dump information to plot charge contours
   !                            by the external DENCHAR application program.
   !     (This is now obsolete: info will appear in .RHO file)
-  ! logical varcel           : variable shape for CG optimization or dynamics
+  ! logical varcel           : variable shape for optimization or dynamics
   ! logical harrisfun        : swith that indicates if harris functional will
   !                            be used or not
   ! real*8  occtol           : Occupancy threshold for DM build
   ! integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
   ! logical require_energy_convergence  : Impose E. conv. criterion?
-  ! logical broyden_optim    : Broyden for forces instead of CG
+  ! logical broyden_optim    : Use Broyden method for optimization
   ! logical want_domain_decomposition:  Use domain decomposition for orbitals in O(N)
   ! logical want_spatial_decomposition:  Use spatial decomposition for orbitals in O(N)
 
@@ -319,7 +319,7 @@ subroutine read_options( na, ns, nspin )
   !     Minimum/Maximum number of SCF iterations
   min_nscf = fdf_get('MinSCFIterations',0)
   nscf     = fdf_get('MaxSCFIterations',1000)
-  SCFMustConverge = fdf_get('SCFMustConverge', .true.)
+  SCFMustConverge = fdf_get('SCF.MustConverge', .true.)
   if (ionode) then
      write(6,4) 'redata: Min. number of SCF Iter',min_nscf
      write(6,4) 'redata: Max. number of SCF Iter',nscf
@@ -736,6 +736,9 @@ subroutine read_options( na, ns, nspin )
         call add_citation("10.1016/j.cpc.2016.09.022")
         write(*,3) 'redata: Method of Calculation','Transiesta'
      endif
+     if ( nspin > 2 ) then
+       call die('transiesta does not work for non-collinear or spin-orbit')
+     end if
   else
      call die( 'redata: The method of solution must be either '//&
 #ifdef SIESTA__CHESS
@@ -1122,11 +1125,13 @@ subroutine read_options( na, ns, nspin )
      call die('Invalid Option selected - value of MD.TypeOfRun not recognised')
   endif
 
-  ! Maximum number of steps in CG/Broyden coordinate optimization
+  ! Maximum number of steps in MD/coordinate optimization
   nmove = fdf_get('MD.NumCGsteps',0)
+  nmove = fdf_get('MD.Steps',nmove)
 
-  ! Maximum atomic displacement in one CG step
+  ! Maximum atomic displacement in one step
   dxmax = fdf_get('MD.MaxCGDispl',0.2_dp,'Bohr')
+  dxmax = fdf_get('MD.MaxDispl',dxmax,'Bohr')
 
   ! Tolerance in the maximum atomic force [0.04 eV/Ang]
   ftol = fdf_get('MD.MaxForceTol', 0.00155574_dp, 'Ry/Bohr')
@@ -1153,7 +1158,7 @@ subroutine read_options( na, ns, nspin )
               write(6,1) 'redata: Use continuation files for CG', usesavecg
               write(6,6) 'redata: Max atomic displ per move', dxmax/Ang, ' Ang'
            endif
-           write(6,4) 'redata: Maximum number of CG moves', nmove
+           write(6,4) 'redata: Maximum number of optimization moves', nmove
            write(6,6) 'redata: Force tolerance', ftol/eV*Ang, ' eV/Ang'
            if (varcel) then
               write(6,6) 'redata: Stress tolerance', &
@@ -1182,9 +1187,17 @@ subroutine read_options( na, ns, nspin )
                    name  = 'MD.NumCGSteps', &
                    value = nmove,           &
                    units = "cmlUnits:countable" )
+              call cmlAddParameter( xf    = mainXML,         &
+                   name  = 'MD.Steps', &
+                   value = nmove,           &
+                   units = "cmlUnits:countable" )
 
               call cmlAddParameter( xf    = mainXML,           &
                    name  = 'MD.MaxCGDispl',   &
+                   value = dxmax,             &
+                   units = 'siestaUnits:Bohr' )
+              call cmlAddParameter( xf    = mainXML,           &
+                   name  = 'MD.MaxDispl',   &
                    value = dxmax,             &
                    units = 'siestaUnits:Bohr' )
 
@@ -1286,7 +1299,11 @@ subroutine read_options( na, ns, nspin )
 
   ! Initial and final time steps for MD
   istart = fdf_get('MD.InitialTimeStep',1)
-  ifinal = fdf_get('MD.FinalTimeStep',1)
+  if ( fdf_defined('MD.Steps') ) then
+    ifinal = fdf_get('MD.FinalTimeStep',max(1,nmove - istart + 1))
+  else
+    ifinal = fdf_get('MD.FinalTimeStep',1)
+  end if
 
   ! Length of time step for MD
   dt = fdf_get('MD.LengthTimeStep',1._dp,'fs')
@@ -1580,6 +1597,10 @@ subroutine read_options( na, ns, nspin )
 
   harrisfun = fdf_get('Harris_functional',.false.)
 
+  ! First read in, then later correct depending on
+  ! the other usages
+  use_aux_cell = fdf_get('ForceAuxCell', .false.)
+
   if (harrisfun) then
      mixH = .false.
      mix_charge = .false.
@@ -1613,47 +1634,6 @@ subroutine read_options( na, ns, nspin )
   write_H_at_end_of_cycle  = fdf_get( 'Write.H.End.Of.Cycle', writeH )
 
   writeDM_cdf           = fdf_get('Write.DM.NetCDF', .false. )
-#ifdef NCDF_4
-  write_cdf             = fdf_get('CDF.Save', .false. )
-  ! No compression is by far the fastest
-  cdf_comp_lvl          = fdf_get('CDF.Compress', 0 )
-  if ( Nodes > 1 ) then
-     cdf_w_parallel     = fdf_get('CDF.MPI', .false. )
-  else
-     cdf_w_parallel     = .false.
-  end if
-#ifndef NCDF_PARALLEL
-  ! If not compiled with NCDF_PARALLEL, we do not
-  ! allow parallel writes.....!!!!
-  cdf_w_parallel = .false.
-#endif
-  if ( cdf_w_parallel ) then
-     ! Doing parallel writes does not allow
-     ! compression (the offsets cannot be calculated)
-     cdf_comp_lvl = 0
-  end if
-  cdf_r_parallel = fdf_get('CDF.Read.Parallel', cdf_w_parallel )
-
-  if ( IONode ) then
-     ! Write out
-     write(*,1) 'redata: Save all siesta data in one NC',write_cdf
-     if ( write_cdf ) then
-        if ( grid_p == dp ) then
-           ctmp = fdf_get('CDF.Grid.Precision','double')
-           if ( leqi(ctmp,'single') .or. leqi(ctmp,'float') ) then
-              write(*,2) 'redata: Grids in NC reduced to single precision'
-           end if
-        end if
-        write(*,4) 'redata: NC compression level',cdf_comp_lvl
-        if ( cdf_r_parallel ) then
-           write(*,2) 'redata: Reads NC in parallel'
-        end if
-        if ( cdf_w_parallel ) then
-           write(*,2) 'redata: Writes NC in parallel (possibly not working)'
-        end if
-     end if
-  end if
-#endif
   writedm_cdf_history   = fdf_get('WriteDM.History.NetCDF', .false. )
   writedmhs_cdf         = fdf_get('WriteDMHS.NetCDF', .false. )
   writedmhs_cdf_history = fdf_get('WriteDMHS.History.NetCDF', .false.)
@@ -1684,6 +1664,7 @@ subroutine read_options( na, ns, nspin )
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   writmd                 = fdf_get( 'WriteMDhistory', .false. )
   writpx                 = fdf_get( 'WriteMDXmol', .not. writec )
+  save_ORB_INDX          = fdf_get( 'WriteOrbitalIndex', .true. )
   ! Do options of graphviz
   ctmp = fdf_get( 'Write.Graphviz', 'none' )
   write_GRAPHVIZ = 0
@@ -1716,14 +1697,6 @@ subroutine read_options( na, ns, nspin )
   end if
 
 
-  ! Default variable depending on the action required
-  if ( idyn == 0 .and. nmove <= 1 ) then
-    ! Single-point calculation: use the tight auxiliary supercell by default
-    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .false. )
-  else
-    naive_aux_cell = fdf_get( 'NaiveAuxiliaryCell', .true. )
-  end if
-  
   writec                 = fdf_get( 'WriteCoorStep', outlng )
   savehs                 = fdf_get( 'SaveHS', .false. )
   initdmaux              = fdf_get( 'ReInitialiseDM', .TRUE. )
@@ -1780,6 +1753,72 @@ subroutine read_options( na, ns, nspin )
   nobup      = fdf_get( 'Siesta2Wannier90.NumberOfBandsUp',   0)
   nobdown    = fdf_get( 'Siesta2Wannier90.NumberOfBandsDown', 0)
   nob        = fdf_get( 'Siesta2Wannier90.NumberOfBands',     0)
+
+#ifdef NCDF_4
+  write_cdf = fdf_get('CDF.Save', .false.)
+  ! No compression is by far the fastest
+  cdf_comp_lvl = fdf_get('CDF.Compress', 0)
+  if ( Nodes > 1 ) then
+    cdf_w_parallel = fdf_get('CDF.MPI', .false.)
+  else
+    cdf_w_parallel = .false.
+  end if
+
+  ! Only allow writing the CDF file for FC and non-MD calculations
+  ! The MD file should be something different that only contains
+  ! these things.
+  if ( write_cdf ) then
+    if ( idyn == 0 .and. nmove == 0 ) then
+      ! non-MD calculation
+    else if ( idyn == 6 ) then
+      ! FC calculation, the FC calculation is fine
+      ! Here we disable saving any real-space grid data
+      save_initial_charge_density = .false.
+      saverho = .false.
+      savedrho = .false.
+      saverhoxc = .false.
+      savevh = .false.
+      savevna = .false.
+      savevt = .false.
+      savepsch = .false.
+      savebader = .false.
+      savetoch = .false.
+    else
+      write_cdf = .false.
+    end if
+  end if
+# ifndef NCDF_PARALLEL
+  ! If not compiled with NCDF_PARALLEL, we do not
+  ! allow parallel writes.....!!!!
+  cdf_w_parallel = .false.
+# endif
+  if ( cdf_w_parallel ) then
+     ! Doing parallel writes does not allow
+     ! compression (the offsets cannot be calculated)
+     cdf_comp_lvl = 0
+  end if
+  cdf_r_parallel = fdf_get('CDF.Read.Parallel', cdf_w_parallel )
+
+  if ( IONode ) then
+     ! Write out
+     write(*,1) 'redata: Save all siesta data in one NC',write_cdf
+     if ( write_cdf ) then
+        if ( grid_p == dp ) then
+           ctmp = fdf_get('CDF.Grid.Precision','double')
+           if ( leqi(ctmp,'single') .or. leqi(ctmp,'float') ) then
+              write(*,2) 'redata: Grids in NC reduced to single precision'
+           end if
+        end if
+        write(*,4) 'redata: NC compression level',cdf_comp_lvl
+        if ( cdf_r_parallel ) then
+           write(*,2) 'redata: Reads NC in parallel'
+        end if
+        if ( cdf_w_parallel ) then
+           write(*,2) 'redata: Writes NC in parallel (possibly not working)'
+        end if
+     end if
+  end if
+#endif
 
   if (ionode) then
      write(6,'(2a)') 'redata: ', repeat('*', 71)

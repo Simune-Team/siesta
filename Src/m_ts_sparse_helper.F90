@@ -146,7 +146,7 @@ contains
     complex(dp), pointer :: zH(:), zS(:)
     complex(dp) :: ph(0:n_s-1)
     type(Sparsity), pointer :: sp_k
-    integer :: no_l, lio, io, ind, jo, ind_k, kn
+    integer :: no_l, lio, io, io_T, ind, jo, jo_T, ind_k, kn
      
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -168,18 +168,18 @@ contains
 
     ! Pre-calculate phases
     do jo = 0 , n_s - 1
-       ph(jo) = cdexp(dcmplx(0._dp, &
+       ph(jo) = exp(cmplx(0._dp, &
             k(1) * sc_off(1,jo) + &
             k(2) * sc_off(2,jo) + &
-            k(3) * sc_off(3,jo)))
+            k(3) * sc_off(3,jo),kind=dp))
     end do
     
 !$OMP parallel default(shared), &
-!$OMP&private(lio,io,kn,ind,jo,ind_k)
+!$OMP&private(lio,io,io_T,kn,ind,jo,jo_T,ind_k)
 
 !$OMP workshare
-    zH(:) = dcmplx(0._dp,0._dp)
-    zS(:) = dcmplx(0._dp,0._dp)
+    zH(:) = cmplx(0._dp,0._dp,dp)
+    zS(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
 ! No data race condition as each processor takes a separate row
@@ -187,56 +187,58 @@ contains
     do lio = 1 , no_l
 
        ! obtain the global index of the orbital.
-       io = index_local_to_global(dit,lio)
-       kn = k_ncol(io)
-       ! if there is no contribution in this row
-       if ( kn /= 0 ) then
-
+      io = index_local_to_global(dit,lio)
+      io_T = orb_type(io)
+      kn = k_ncol(io)
+      ! if there is no contribution in this row
+      if ( kn /= 0 ) then
+        
 #ifndef TS_NOCHECKS
        ! The io orbitals are in the range [1;no_u_TS]
        ! This should be redundant as it is catched by kn==0
-       if ( orb_type(io) == TYP_BUFFER ) then
-          call die('Error in code, &
-               &please contact Nick Papior Andersen nickpapior@gmail.com')
+       if ( io_T == TYP_BUFFER ) then
+         call die('Error in code, &
+             &please contact Nick Papior Andersen nickpapior@gmail.com')
        end if
 #endif
 
        ! Loop number of entries in the row... (index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          ! as the local sparsity pattern is a super-cell pattern,
-          ! we need to check the unit-cell orbital
-          ! The unit-cell column index
-          jo = UCORB(l_col(ind),no_u)
+         ! as the local sparsity pattern is a super-cell pattern,
+         ! we need to check the unit-cell orbital
+         ! The unit-cell column index
+         jo = UCORB(l_col(ind),no_u)
+         jo_T = orb_type(jo)
 
-          ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-          if ( orb_type(jo) == TYP_BUFFER ) cycle
+         ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
+         if ( jo_T == TYP_BUFFER ) cycle
 
-          ! Do a check whether we have connections
-          ! across the junction...
-          ! This is the same as removing all electrode connections
-          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) > 1 ) cycle
+         ! Do a check whether we have connections
+         ! across the junction...
+         ! This is the same as removing all electrode connections
+         if ( io_T > 0 .and. jo_T > 0 .and. io_T /= jo_T ) cycle
            
-          ! find the equivalent position in the sparsity pattern
-          ! of the full unit cell
-          ind_k = k_ptr(io)
+         ! find the equivalent position in the sparsity pattern
+         ! of the full unit cell
+         ind_k = k_ptr(io)
 
-          ! Notice that SFIND REQUIRES that the sparsity pattern
-          ! is SORTED!
-          ! Thus it will only work for UC sparsity patterns.
-          ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
-          ! if ( ind_k <= k_ptr(io) ) &
-          ! call die('Could not find k-point index')
-          if ( ind_k <= k_ptr(io) ) cycle
+         ! Notice that SFIND REQUIRES that the sparsity pattern
+         ! is SORTED!
+         ! Thus it will only work for UC sparsity patterns.
+         ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
+         ! if ( ind_k <= k_ptr(io) ) &
+         ! call die('Could not find k-point index')
+         if ( ind_k <= k_ptr(io) ) cycle
 
-          jo = (l_col(ind)-1) / no_u
-          
-          zH(ind_k) = zH(ind_k) + H(ind) * ph(jo)
-          zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
+         jo = (l_col(ind)-1) / no_u
+
+         zH(ind_k) = zH(ind_k) + H(ind) * ph(jo)
+         zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
 
        end do
 
-       end if
+      end if
 
     end do
 !$OMP end do nowait
@@ -363,17 +365,17 @@ contains
 
           ! Symmetrize (notice that we transpose here!)
           ! See prep_GF
-          zS(rind) = 0.5_dp * ( zS(ind) + dconjg(zS(rind)) )
-          zS(ind)  = dconjg(zS(rind))
+          zS(rind) = 0.5_dp * ( zS(ind) + conjg(zS(rind)) )
+          zS(ind)  = conjg(zS(rind))
 
-          zH(rind) = 0.5_dp * ( zH(ind) + dconjg(zH(rind)) ) &
+          zH(rind) = 0.5_dp * ( zH(ind) + conjg(zH(rind)) ) &
                - E_Ef(jEl) * zS(rind)
-          zH(ind)  = dconjg(zH(rind))
+          zH(ind)  = conjg(zH(rind))
 
           if ( ind == rind ) then
              ! This is the diagonal matrix elements
-             zS(ind) = dreal(zS(ind))
-             zH(ind) = dreal(zH(ind))
+             zS(ind) = real(zS(ind),dp)
+             zH(ind) = real(zH(ind),dp)
           end if
                       
        end do
@@ -436,7 +438,7 @@ contains
     integer, pointer  :: k_ncol(:), k_ptr(:), k_col(:)
     real(dp), pointer :: dH(:), dS(:)
     type(Sparsity), pointer :: sp_G
-    integer :: no_l, lio, io, ind, jo, ind_k
+    integer :: no_l, lio, io, ind, jo, ind_k, io_T, jo_T
     
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -457,7 +459,7 @@ contains
     dS => val(SpArrS)
 
 !$OMP parallel default(shared), &
-!$OMP&private(lio,io,ind,jo,ind_k)
+!$OMP&private(lio,io,io_T,ind,jo,jo_T,ind_k)
 
     ! initialize to 0
 !$OMP workshare
@@ -468,49 +470,51 @@ contains
 !$OMP do 
     do lio = 1 , no_l
 
-       ! obtain the global index of the orbital.
-       io = index_local_to_global(dit,lio)
-       ! if there is no contribution in this row
-       if ( k_ncol(io) /= 0 ) then
-
+      ! obtain the global index of the orbital.
+      io = index_local_to_global(dit,lio)
+      io_T = orb_type(io)
+      ! if there is no contribution in this row
+      if ( k_ncol(io) /= 0 ) then
+        
 #ifndef TS_NOCHECKS
        ! The io orbitals are in the range [1;no_u]
-       if ( orb_type(io) == TYP_BUFFER ) then
-          call die('Error in programming: Contact &
-               &Nick Papior Andersen: nickpapior@gmail.com')
+       if ( io_T == TYP_BUFFER ) then
+         call die('Error in programming: Contact &
+             &Nick Papior Andersen: nickpapior@gmail.com')
        end if
 #endif
 
        ! Loop number of entries in the row... (in the index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          ! as the local sparsity pattern is a super-cell pattern,
-          ! we need to check the unit-cell orbital
-          ! The unit-cell column index
-          jo = UCORB(l_col(ind),no_u)
+         ! as the local sparsity pattern is a super-cell pattern,
+         ! we need to check the unit-cell orbital
+         ! The unit-cell column index
+         jo = UCORB(l_col(ind),no_u)
+         jo_T = orb_type(jo)
 
-          ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-          if ( orb_type(jo) == TYP_BUFFER ) cycle
+         ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
+         if ( jo_T == TYP_BUFFER ) cycle
 
-          ! Do a check whether we have connections
-          ! across the junction...
-          ! This is the same as removing all electrode connections
-          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) > 1 ) cycle
-           
-          ! find the equivalent position in the sparsity pattern
-          ! of the full unit cell
-          ind_k = k_ptr(io)
-          ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
-          ! if ( ind_k <= k_ptr(io) ) &
-          ! call die('Could not find k-point index')
-          if ( ind_k <= k_ptr(io) ) cycle
-
-          dH(ind_k) = dH(ind_k) + H(ind)
-          dS(ind_k) = dS(ind_k) + S(ind)
-
+         ! Do a check whether we have connections
+         ! across the junction...
+         ! This is the same as removing all electrode connections
+         if ( io_T > 0 .and. jo_T > 0 .and. io_T /= jo_T ) cycle
+         
+         ! find the equivalent position in the sparsity pattern
+         ! of the full unit cell
+         ind_k = k_ptr(io)
+         ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
+         ! if ( ind_k <= k_ptr(io) ) &
+         ! call die('Could not find k-point index')
+         if ( ind_k <= k_ptr(io) ) cycle
+         
+         dH(ind_k) = dH(ind_k) + H(ind)
+         dS(ind_k) = dS(ind_k) + S(ind)
+         
        end do
 
-       end if
+      end if
 
     end do
 !$OMP end do nowait
@@ -896,7 +900,7 @@ contains
 !$OMP&private(i,io,lio,ind,j,is,ph,idx,w)
 
 !$OMP workshare
-    A_UT(:) = dcmplx(0._dp,0._dp)
+    A_UT(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
     w = log(0.5)
 
@@ -929,23 +933,23 @@ contains
 
           ! Calculate position
           if ( i > j ) then
-             ph = cdexp(dcmplx(w, - &
+             ph = exp(cmplx(w, - &
                   k(1) * sc_off(1,is) - &
                   k(2) * sc_off(2,is) - &
-                  k(3) * sc_off(3,is)))
+                  k(3) * sc_off(3,is),kind=dp))
              idx = j + (i - 1)* i/2
           else if ( i < j ) then
-             ph = cdexp(dcmplx(w, &
+             ph = exp(cmplx(w, &
                   k(1) * sc_off(1,is) + &
                   k(2) * sc_off(2,is) + &
-                  k(3) * sc_off(3,is)))
+                  k(3) * sc_off(3,is),kind=dp))
              idx = i  + (j-1)*j/2
           else
              ! diagonal elements are not "double" counted
-             ph = cdexp(dcmplx(0._dp, &
+             ph = exp(cmplx(0._dp, &
                   k(1) * sc_off(1,is) + &
                   k(2) * sc_off(2,is) + &
-                  k(3) * sc_off(3,is)))
+                  k(3) * sc_off(3,is),kind=dp))
              idx = i  + (j-1)*j/2
           end if
 
@@ -1010,17 +1014,17 @@ contains
          nrows=no_l,nrows_g=no_u)
 
     do is = 0 , n_s - 1
-       ph(is) = cdexp(dcmplx(0._dp, &
+       ph(is) = exp(cmplx(0._dp, &
             k(1) * sc_off(1,is) + &
             k(2) * sc_off(2,is) + &
-            k(3) * sc_off(3,is)))
+            k(3) * sc_off(3,is),kind=dp))
     end do
 
 !$OMP parallel default(shared), &
 !$OMP&private(i,io,lio,ind,jo,is)
 
 !$OMP workshare
-    A_full(:,:) = dcmplx(0._dp,0._dp)
+    A_full(:,:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! Loop over region orbitals

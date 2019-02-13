@@ -42,7 +42,7 @@ default: all
 
 label = work
 
-tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
+tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel bessel-rich \
 	born born_spin carbon_nanoscroll ch4 chargeconf-h2o \
 	constant_volume dipole_correction fe fe_broyden \
 	fe_clust_noncollinear fe_clust_noncollinear-gga fe_cohp \
@@ -65,6 +65,10 @@ tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
 	var_cell wannier zmatrix \
 	TDDFT_h2o TDDFT_Ge
 
+# Tests that won't work with more than a few processors
+tests_mpi_max2 = h2_bessel h_chain h_chain2 \
+	born born_spin \
+	force_2 md_anneal n_chain
 
 # Tests that have been disabled, currently
 #  chess (requires CheSS)
@@ -73,7 +77,6 @@ tests = 32_h2o ag anneal-cont ar2_vdw batio3 benzene bessel \
 #  si64-pexsi
 #  sih-pexsi
 #  sih-pexsi-spin
-#  TranSiesta-TBTrans
 
 # SOC tests
 tests_soc = ge_soc_bands Pt_dimer_soc FePt_soc
@@ -94,6 +97,12 @@ tests: $(tests)
 tests-soc: $(tests_soc)
 tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
+tests-proc-limit: $(tests_mpi_max2)
+
+.NOTPARALLEL: tests-ts
+.PHONY: tests-ts
+tests-ts:
+	(cd TranSiesta-TBTrans ; MPI="$(MPI)" bash ./run_tests.sh)
 
 # Ensure that tests may be called individually
 # (and that they are run, PHONY is required)

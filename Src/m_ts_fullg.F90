@@ -123,6 +123,7 @@ contains
     type(ts_c_idx) :: cE
     real(dp)    :: kw
     complex(dp) :: W, ZW
+    logical :: eq_full_Gf
 ! ************************************************************
 
 ! ******************** Loop variables ************************
@@ -160,7 +161,8 @@ contains
 
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require the full matrix...
-    nzwork = no_u_TS ** 2
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, no)
+    nzwork = max(no_u_TS ** 2, no)
     allocate(zwork(nzwork),stat=ierr)
     if (ierr/=0) call die('Could not allocate space for zwork')
     call memory('A','Z',nzwork,'transiesta')
@@ -250,6 +252,9 @@ contains
        end if
     end if
 
+    ! Whether we should always calculate the full Green function
+    eq_full_Gf = all(Elecs(:)%DM_update /= 0)
+
     ! start the itterators
     call itt_init  (Sp,end=nspin)
     ! point to the index iterators
@@ -321,24 +326,24 @@ contains
 #ifdef TS_DEV
 io=100+iE+node
 open(io,form='unformatted')
-write(io) cE%e
+write(io) cE%e / eV
 write(io) no_u_TS,no_u_TS
-write(io) zwork(1:no_u_TS**2)
+write(io) zwork(1:no_u_TS**2) / eV
 close(io)
 #endif
 
           ! *******************
           ! * calc GF         *
           ! *******************
-          if ( all(Elecs(:)%DM_update /= 0) ) then
+          if ( eq_full_Gf ) then
              call calc_GF(cE,no_u_TS, zwork, GF)
 
 #ifdef TS_DEV
 io=300+iE+node
 open(io,form='unformatted')
-write(io) cE%e
+write(io) cE%e / eV
 write(io) no_u_TS, no_u_TS
-write(io) gf(1:no_u_TS**2)
+write(io) gf(1:no_u_TS**2) * eV
 close(io)
 #endif
 
@@ -460,11 +465,11 @@ close(io)
 #ifdef TS_DEV
 io = 500 + iE + Node
 open(io,form='unformatted')
-write(io) cE%e
+write(io) cE%e / eV
 write(io) no_u_TS, TotUsedOrbs(Elecs(1))
-write(io) GF(1:no_u_TS * totusedorbs(Elecs(1)))
+write(io) GF(1:no_u_TS * totusedorbs(Elecs(1))) * eV
 write(io) no_u_TS, TotUsedOrbs(Elecs(2))
-write(io) GF(no_u_TS*totusedorbs(Elecs(1))+1:no_u_TS * sum(totusedorbs(Elecs)))
+write(io) GF(no_u_TS*totusedorbs(Elecs(1))+1:no_u_TS * sum(totusedorbs(Elecs))) * eV
 close(io)
 #endif
 
@@ -577,7 +582,12 @@ close(io)
     if ( IsVolt ) then
        call de_alloc(GFGGF_work, routine='transiesta')
     end if
-   
+
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
+
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
@@ -655,8 +665,8 @@ close(io)
                 ju = l_col(ind) - orb_offset(l_col(ind)) &
                      - offset(N_Elec,Elecs,l_col(ind))
                 
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact  )
-                E(ind,i2) = E(ind,i2) - dimag( GF(iu,ju) * EDMfact )
+                D(ind,i1) = D(ind,i1) - aimag( GF(iu,ju) * DMfact  )
+                E(ind,i2) = E(ind,i2) - aimag( GF(iu,ju) * EDMfact )
                 
              end do
 
@@ -697,7 +707,7 @@ close(io)
                 ju = l_col(ind) - orb_offset(l_col(ind)) &
                      - offset(N_Elec,Elecs,l_col(ind))
                 
-                D(ind,i1) = D(ind,i1) - dimag( GF(iu,ju) * DMfact )
+                D(ind,i1) = D(ind,i1) - aimag( GF(iu,ju) * DMfact )
                 
              end do
              end if
@@ -790,7 +800,7 @@ integer :: i
 #ifdef TS_DEV    
     if (.not. hasSaved )then
        hasSaved = .true.
-       GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+       GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
        do io = 1, no_u
           if ( l_ncol(io) == 0 ) cycle
           ioff = orb_offset(io) - 1
@@ -803,12 +813,12 @@ integer :: i
        if (ionode) then
           i = 50
           open(i,form='unformatted')
-          write(i) dcmplx(100._dp,100._dp)
+          write(i) cmplx(100._dp,100._dp,dp)
           write(i) no_u
           write(i) no_u
-          write(i) GFinv(1:no_u**2)
+          write(i) GFinv(1:no_u**2) / eV
           write(i) no_u
-          GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+          GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
           do io = 1, no_u
              if ( l_ncol(io) == 0 ) cycle
              ioff = orb_offset(io) - 1
@@ -828,7 +838,7 @@ integer :: i
 
     ! Initialize
 !$OMP workshare
-    GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+    GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region

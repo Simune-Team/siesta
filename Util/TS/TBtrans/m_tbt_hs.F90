@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -219,16 +219,16 @@ contains
 
     ! We determine which spin of the files we should use
     if ( nspin == 1 ) then
-       ! If there is only one spin, then
-       ! we do not read in the option.
-       spin_idx = 0
+      ! If there is only one spin, then
+      ! we do not read in the option.
+      spin_idx = 0
     else
-       spin_idx = fdf_get('TBT.Spin',0)
-       if ( spin_idx > nspin ) then
-          call die('You have asked for a spin index not existing')
-       else if ( spin_idx <= 0 ) then
-          spin_idx = 0 ! all spins are used
-       end if
+      spin_idx = fdf_get('TBT.Spin',0)
+      if ( spin_idx > nspin ) then
+        call die('You have asked for a spin index not existing')
+      else if ( spin_idx <= 0 ) then
+        spin_idx = 0 ! all spins are used
+      end if
     end if
 
     ! Start by creating the Hamiltonian!

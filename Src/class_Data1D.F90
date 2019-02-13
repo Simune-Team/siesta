@@ -62,18 +62,18 @@ use class_dData1D, gData1D => dData1D, newgData1D => newdData1D
 #endif
 end module class_gData1D
 
-module class_cData1D
-!========================
-#define TYPE_NAME cData1D
-#define STR_TYPE_NAME "cData1D"
-#define TYPE_NAME_ cData1D_
-#define NEW_TYPE newcData1D
-#define VAR_TYPE complex
-#define PREC sp
-#define VAR_INIT cmplx(0._sp,0._sp)
-#include "class_Data1D.T90"
-!========================
-end module class_cData1D
+!!$module class_cData1D
+!!$!========================
+!!$#define TYPE_NAME cData1D
+!!$#define STR_TYPE_NAME "cData1D"
+!!$#define TYPE_NAME_ cData1D_
+!!$#define NEW_TYPE newcData1D
+!!$#define VAR_TYPE complex
+!!$#define PREC sp
+!!$#define VAR_INIT cmplx(0._sp,0._sp)
+!!$#include "class_Data1D.T90"
+!!$!========================
+!!$end module class_cData1D
 
 module class_zData1D
 !========================
@@ -83,9 +83,7 @@ module class_zData1D
 #define NEW_TYPE newzData1D
 #define VAR_TYPE complex
 #define PREC dp
-#define VAR_INIT dcmplx(0._dp,0._dp)
+#define VAR_INIT cmplx(0._dp,0._dp,dp)
 #include "class_Data1D.T90"
 !========================
 end module class_zData1D
-
-

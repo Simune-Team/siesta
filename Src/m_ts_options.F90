@@ -147,8 +147,8 @@ contains
     TS_HS_save = fdf_get('TS.HS.Save',.false.)
     TS_DE_save = fdf_get('TS.DE.Save',.false.)
 #endif
-    onlyS      = fdf_get('TS.onlyS',.false.)
-    onlyS      = fdf_get('TS.S.Save',onlyS)
+    onlyS = fdf_get('TS.onlyS',.false.)
+    onlyS = fdf_get('TS.S.Save',onlyS)
 
     ! Immediately return from transiesta when this occurs
     ! no settings from the intrinsic transiesta routines
@@ -442,9 +442,8 @@ contains
     ! We should probably warn if +2 electrodes are used and t_dir is the
     ! same for all electrodes... Then the user needs to know what (s)he is doing...
     ! Accuracy required for self-energy convergence
-    Elecs(:)%accu = fdf_get('TS.Elecs.Accuracy',1.e-14_dp*eV,'Ry')
-    Elecs(:)%Eta  = fdf_get('TS.Contours.nEq.Eta',0.0001_dp*eV,'Ry')
-    Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',Elecs(1)%Eta,'Ry')
+    Elecs(:)%accu = fdf_get('TS.Elecs.Accuracy',1.e-13_dp*eV,'Ry')
+    Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',0.001_dp*eV,'Ry')
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( Elecs(1)%Bulk ) then
        ! Default is cross-terms if we use bulk electrodes
@@ -528,77 +527,81 @@ contains
 
     ! If many electrodes, no transport direction can be specified
     ! Hence we use this as an error-check (also for N_Elec == 1)
-    select case ( N_Elec )
-    case ( 1 )
-       ! The easy case
-       ! We simple need to figure out if the electrode
-       ! has its transport direction aligned with the
-       ! lattice vectors
+    if ( any(Elecs(:)%t_dir > 3) ) then
+      ts_tidx = - N_Elec
+    else
+      select case ( N_Elec )
+      case ( 1 )
+        ! The easy case
+        ! We simple need to figure out if the electrode
+        ! has its transport direction aligned with the
+        ! lattice vectors
 
-       i = Elecs(1)%pvt(Elecs(1)%t_dir)
+        i = Elecs(1)%pvt(Elecs(1)%t_dir)
 
-       ! For a single transport direction to be true,
-       ! both the projections _has_ to be 1, exactly!
-       rtmp = VEC_PROJ_SCA(cell(:,i), Elecs(1)%cell(:,Elecs(1)%t_dir))
-       rtmp = rtmp / VNORM(Elecs(1)%cell(:,Elecs(1)%t_dir))
-       bool = abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+        ! For a single transport direction to be true,
+        ! both the projections _has_ to be 1, exactly!
+        rtmp = VEC_PROJ_SCA(cell(:,i), Elecs(1)%cell(:,Elecs(1)%t_dir))
+        rtmp = rtmp / VNORM(Elecs(1)%cell(:,Elecs(1)%t_dir))
+        bool = abs(abs(rtmp) - 1._dp) < 1.e-5_dp
 
-       if ( bool ) then
-          
+        if ( bool ) then
+
           ! The transport direction for the electrodes are the same...
           ! And fully encompassed! We have a single transport
           ! direction.
           ts_tidx = i
-          
-       else
-          
+
+        else
+
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tidx = - N_Elec
-          
-       end if
 
-    case ( 2 )
-       
-       ! Retrieve the indices of the unit-cell directions
-       ! according to the electrode transport directions.
-       ! We have already calculated the pivoting table for
-       ! the electrodes
-       i = Elecs(1)%pvt(Elecs(1)%t_dir)
-       j = Elecs(2)%pvt(Elecs(2)%t_dir)
-       bool = i == j
+        end if
 
-       ! For a single transport direction to be true,
-       ! both the projections _has_ to be 1, exactly!
-       rtmp = VEC_PROJ_SCA(cell(:,i), Elecs(1)%cell(:,Elecs(1)%t_dir))
-       rtmp = rtmp / VNORM(Elecs(1)%cell(:,Elecs(1)%t_dir))
-       bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
-       rtmp = VEC_PROJ_SCA(cell(:,j), Elecs(2)%cell(:,Elecs(2)%t_dir))
-       rtmp = rtmp / VNORM(Elecs(2)%cell(:,Elecs(2)%t_dir))
-       bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
-       
-       if ( bool ) then
-          
+      case ( 2 )
+
+        ! Retrieve the indices of the unit-cell directions
+        ! according to the electrode transport directions.
+        ! We have already calculated the pivoting table for
+        ! the electrodes
+        i = Elecs(1)%pvt(Elecs(1)%t_dir)
+        j = Elecs(2)%pvt(Elecs(2)%t_dir)
+        bool = i == j
+
+        ! For a single transport direction to be true,
+        ! both the projections _has_ to be 1, exactly!
+        rtmp = VEC_PROJ_SCA(cell(:,i), Elecs(1)%cell(:,Elecs(1)%t_dir))
+        rtmp = rtmp / VNORM(Elecs(1)%cell(:,Elecs(1)%t_dir))
+        bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+        rtmp = VEC_PROJ_SCA(cell(:,j), Elecs(2)%cell(:,Elecs(2)%t_dir))
+        rtmp = rtmp / VNORM(Elecs(2)%cell(:,Elecs(2)%t_dir))
+        bool = bool .and. abs(abs(rtmp) - 1._dp) < 1.e-5_dp
+
+        if ( bool ) then
+
           ! The transport direction for the electrodes are the same...
           ! And fully encompassed! We have a single transport
           ! direction.
           ts_tidx = i
-          
-       else
-          
+
+        else
+
           ! In case we have a skewed transport direction
           ! we have some restrictions...
           ts_tidx = - N_Elec
-          
-       end if
 
-    case default
+        end if
 
-       ! N_Elec > 2
-       ! Here we always have these settings
-       ts_tidx = - N_Elec
-       
-    end select
+      case default
+
+        ! N_Elec > 2
+        ! Here we always have these settings
+        ts_tidx = - N_Elec
+
+      end select
+    end if
 
     ! The user can selectively decide how the bias
     ! is applied.
@@ -698,8 +701,9 @@ contains
     end do
 
     if ( na_u <= sum(TotUsedAtoms(Elecs)) ) then
-       write(*,'(a)') 'Please stop this madness. What where you thinking?'
-       call die('Electrodes occupy the entire device!!!')
+      write(*,'(a)') 'Please stop this madness. What where you thinking?'
+      write(*,*) na_u, sum(TotUsedAtoms(Elecs))
+      call die('Electrodes occupy the entire device!!!')
     end if
     
     ! Initialize the electrode regions
@@ -771,11 +775,8 @@ contains
     
     ! Read in options again, at this point we have
     ! the correct ts_tidx
-    call read_ts_hartree_options( )
+    call read_ts_hartree_options(N_Elec, Elecs, cell, na_u, xa)
     
-    ! Find the "biggest" electrode
-    call ts_hartree_elec( N_Elec, Elecs , cell, na_u, xa )
-
     ! read in contour options
     call read_contour_options( N_Elec, Elecs, N_mu, mus, ts_kT, IsVolt, Volt )
 
@@ -1129,11 +1130,17 @@ contains
     err = .false.
 
     write(*,'(3a)') repeat('*',24),' Begin: TS CHECKS AND WARNINGS ',repeat('*',24)
-    if ( FixSpin .and. (TS_HS_save .or. TSmode) ) then
-       write(*,'(a)') 'Fixed spin not possible with TranSiesta!'
-       write(*,'(a)') 'Disable TS.HS.Save or FixSpin'
-       write(*,'(a)') 'Electrodes with fixed spin is not possible with TranSiesta!'
-       call die('Fixing spin is not possible in TranSiesta')
+    if ( FixSpin ) then
+      if ( TSmode ) then
+        write(*,'(a)') 'Fixed spin for transiesta calculations is not implemented!'
+        call die('Fixing spin is not possible in TranSiesta')
+      end if
+      if ( TS_HS_save ) then
+        write(*,'(a)') 'Fixed spin aligns the Fermi-levels in the output TSHS to spin-UP!'
+      end if
+      if ( TS_DE_save ) then
+        write(*,'(a)') 'Fixed spin aligns the Fermi-levels in the output TSDE to spin-UP!'
+      end if
     end if
 
     if ( .not. TSmode ) then

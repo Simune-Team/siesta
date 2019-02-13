@@ -87,6 +87,8 @@ contains
     use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
     use m_ts_contour_neq, only : nEq_E, has_cE_nEq
     use m_ts_contour_neq, only : N_nEq_ID, c2weight_neq
+    use m_ts_contour_eq, only : N_Eq_E
+    use m_ts_contour_neq, only : N_nEq_E
 
     use m_iterator
     use m_mat_invert
@@ -96,7 +98,7 @@ contains
     ! Gf calculation
     use m_ts_trimat_invert
 
-    use m_ts_tri_common, only : GFGGF_needed_worksize
+    use m_ts_tri_common, only : GFGGF_needed_worksize, nnzs_tri
 
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
@@ -149,6 +151,7 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
+    integer :: NE
     real(dp)    :: kw, kpt(3), bkpt(3)
     complex(dp) :: W, ZW
     type(tRgn)  :: pvt
@@ -194,6 +197,10 @@ contains
        padding = 0
        GFGGF_size = 0
     end if
+    ! Now figure out the required worksize for SE expansion
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, idx)
+    io = nnzs_tri(c_Tri%n, c_Tri%r)
+    padding = max(padding, idx - io)
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
     nzwork = elements(zwork_tri,all=.true.)
@@ -294,8 +301,10 @@ contains
     do iel = 1 , n_mu
        print '(a20,tr1,i3)','k  '//trim(mus(iEl)%name),iel
     end do
-#endif 
+#endif
 
+    ! Total number of energy points
+    NE = N_Eq_E() + N_nEq_E()
     
     ! start the itterators
     call itt_init  (SpKp,end1=nspin,end2=ts_kpoint_scf%N)
@@ -305,11 +314,14 @@ contains
     do while ( .not. itt_step(SpKp) )
        
        if ( itt_stepped(SpKp,1) ) then
-          call init_DM(sp_dist,sparse_pattern, &
-               n_nzs, DM(:,ispin), EDM(:,ispin), &
-               tsup_sp_uc, Calc_Forces)
+         call init_DM(sp_dist,sparse_pattern, &
+             n_nzs, DM(:,ispin), EDM(:,ispin), &
+             tsup_sp_uc, Calc_Forces)
+         do iEl = 1, N_Elec
+           call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+         end do
        end if
-
+        
        ! Include spin factor and 1/(2\pi)
        kpt(:) = ts_kpoint_scf%k(:,ikpt)
        ! create the k-point in reciprocal space
@@ -416,6 +428,9 @@ contains
           
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
+          do iEl = 1, N_Elec
+            call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+          end do
 
           cycle
 
@@ -610,7 +625,9 @@ contains
        call timer('TS_weight',2)
 #endif
 
-       ! We don't need to do anything here..
+       do iEl = 1, N_Elec
+         call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+       end do
 
     end do ! spin, k-point
 
@@ -649,6 +666,11 @@ contains
     call clear_mat_inversion()
 
     call rgn_delete(pvt)
+
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
@@ -816,6 +838,12 @@ contains
     
     call init_val(spDM)
     do while ( .not. itt_step(SpKp) )
+      
+      if ( itt_stepped(SpKp,1) ) then
+        do iEl = 1, N_Elec
+          call reread_Gamma_Green(Elecs(iEl), uGF(iEl), 1, ispin)
+        end do
+      end if
 
        kpt(:) = ts_kpoint_scf%k(:,ikpt)
        call kpoint_convert(ucell,kpt,bkpt,1)
@@ -844,7 +872,7 @@ contains
        call init_val(spuDM)
        cE%exist = .true.
        cE%fake  = .true.
-       cE%e = dcmplx(0._dp, 0._dp)
+       cE%e = cmplx(0._dp, 0._dp,dp)
        cE%idx = 1
        cE%idx(1) = 0 ! Signals a fermi-contour
        if ( Node == Nodes - 1 ) cE%fake = .false.
@@ -854,7 +882,10 @@ contains
             nzwork, zwork, .false., forward = .false. )
        do iEl = 1 , N_Elec
           call UC_expansion(cE, Elecs(iEl), nzwork, zwork, &
-               non_Eq = .false. )
+              non_Eq = .false. )
+          ! Since there is only one energy-point, we can simply reread it
+          ! here.
+          call reread_Gamma_Green(Elecs(iEl), uGF(iEl), 1, ispin)
        end do
        
        call prepare_invGF(cE, zwork_tri, r_pvt, pvt, &
@@ -865,7 +896,7 @@ contains
           call invert_TriMat(zwork_tri,GF_tri,calc_parts)
        end if
 
-       W = dcmplx(kw,0._dp)
+       W = cmplx(kw,0._dp,dp)
        call add_DM( spuDM, W, spuEDM, W, &
             GF_tri, r_pvt, pvt, N_Elec, Elecs, DMidx=1)
 
@@ -914,6 +945,11 @@ contains
     call clear_mat_inversion()
 
     call rgn_delete(pvt)
+
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
 
   end subroutine ts_trik_Fermi
   
@@ -1107,7 +1143,7 @@ contains
 
     ! Initialize
 !$OMP workshare
-    GFinv(:) = dcmplx(0._dp,0._dp)
+    GFinv(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region

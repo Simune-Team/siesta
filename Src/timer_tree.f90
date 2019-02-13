@@ -100,7 +100,7 @@ module m_timer_tree
 
   interface
      subroutine die(str)
-       character(len=*), intent(in), optional :: str
+       character(len=*), intent(in) :: str
      end subroutine die
   end interface
 

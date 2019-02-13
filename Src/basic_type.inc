@@ -1,6 +1,7 @@
 !--------------------------------------------------------------
 !
-! Basic functionality for reference-counted data structures
+!! Basic functionality for reference-counted data structures
+!! For some background, see [here](|page|/page/datastructures/1-buds.html))
 !
 !   This file has to be included after the global declarations
 !   for extra functionality, just where a "contains" statement
@@ -61,7 +62,7 @@
   ! Stand-alone routine which must be provided
   interface 
       subroutine die(str)
-      character(len=*), intent(in), optional  :: str
+      character(len=*), intent(in) :: str
       end subroutine die
   end interface
 

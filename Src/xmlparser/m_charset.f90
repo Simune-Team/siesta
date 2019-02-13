@@ -94,8 +94,8 @@ type(charset_t), intent(in)      :: charset
 integer, intent(in)              :: code
 type(charset_t)                  :: sum
 
-if ((code > 255) .or. (code < 0)) return
 sum%mask = charset%mask
+if ((code > 255) .or. (code < 0)) return
 sum%mask(code) = 1
 
 end function add_code_to_charset

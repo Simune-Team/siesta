@@ -97,7 +97,8 @@ CONTAINS
         call mm_multiply (wavef_ms(ik,ispin),'c',wfaux1,'n',wfaux2,        &
                           complx_1,complx_0,m_operation)
         DO io =1, nocc
-          eo(io,ispin,ik) = real(wfaux2%zval(io,io)) + aimag(wfaux2%zval(io,io))
+           eo(io,ispin,ik) = real(wfaux2%zval(io,io),dp) +  &
+                             aimag(wfaux2%zval(io,io))
         END DO
         call m_deallocate(wfaux1)
         call m_deallocate(wfaux2)

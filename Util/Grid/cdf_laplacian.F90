@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -152,7 +152,7 @@ call check( nf90_open(trim(densfile),NF90_NOWRITE,ncid))
 
    nc(1:3) = (n(1:3) - 1) /2
    
-   aa = cmplx(gridfunc,kind=dp)
+   aa(:) = cmplx(gridfunc,kind=dp)
    call fft3d(aa,(/n1, n2, n3/),+1)
    do ip = 1, size(aa)
       i = modulo(ip-1,n1) + 1
@@ -188,7 +188,7 @@ call check( nf90_open(trim(densfile),NF90_NOWRITE,ncid))
    call fft3d(lap_aa,(/n1, n2, n3/),-1)
    ! Normalization !!!
         
-   gridfunc = real(lap_aa,kind=sp)
+   gridfunc(:) = real(lap_aa,kind=sp)
 
    ! Filter values
    ! If flag>0, we will keep the positive values, and so on

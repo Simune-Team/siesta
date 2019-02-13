@@ -212,9 +212,10 @@ contains
 
     info(:) = .false.
 #ifdef TBTRANS
-    ! Tbtrans does not need the equilbrium contour information
+    ! TBtrans does not need the equilbrium contour information
     info(2) = .true.
 #ifdef TBT_PHONON
+    ! PHtrans does not need to specify the chemical potential
     info(1) = .true.
 #endif
 #endif

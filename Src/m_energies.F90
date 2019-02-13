@@ -111,7 +111,9 @@ contains
     Etot = Ena + Ekin + Enl + Eso - Eions + &
          DEna + DUscf + DUext + Exc + &
          Ecorrec + Emad + Emm + Emeta + Eldau
-    Etot = Etot + DE_NEGF
+    ! Commented out the NEGF contribution to the total energy
+    ! We know it is wrong, but we estimate it. See output
+    !    Etot = Etot + DE_NEGF
 
   end subroutine update_Etot
 

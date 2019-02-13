@@ -1157,9 +1157,9 @@ contains
     complex(dp), intent(in) :: vec(:)
     real(dp) :: norm
     integer :: i
-    norm = dconjg(vec(1)) * vec(1)
+    norm = conjg(vec(1)) * vec(1)
     do i = 2 , ubound(vec,dim=1)
-       norm = norm + dconjg(vec(i)) * vec(i)
+       norm = norm + conjg(vec(i)) * vec(i)
     end do
     norm = dsqrt(norm)
   end function VNORM_zp_1
@@ -1603,12 +1603,12 @@ contains
     complex(dp), intent(in), optional :: I
     complex(dp) :: lI
     integer :: j, k
-    lI = dcmplx(1._dp,0._dp)
+    lI = cmplx(1._dp,0._dp,dp)
     if ( present(I) ) lI = I
 !$OMP parallel do default(shared), private(k,j)
     do k = 1 , size
        do j = 1 , size
-          array(j,k) = dcmplx(0._dp,0._dp)
+          array(j,k) = cmplx(0._dp,0._dp,dp)
        end do
        array(k,k) = lI
     end do
@@ -1702,7 +1702,7 @@ contains
     complex(dp), intent(in) :: array(size,size)
     complex(dp) :: T
     integer :: i
-    T = dcmplx(0._dp,0._dp)
+    T = cmplx(0._dp,0._dp,dp)
 !$OMP parallel do default(shared), private(i), reduction(+:T)
     do i = 1 , size
        T = T + array(i,i)
@@ -1805,9 +1805,12 @@ contains
   end function IDX_SPC_PROJ_dp
 
 
-  ! Scalar projection of 'vin=a' onto 'vec=b' (i.e. the fraction of the
-  ! vector along 'vec')
+  ! Scalar projection of 'vin=a' onto 'vec=b'.
   !   a . b / |b|
+  ! I.e. for these vectors:
+  !   vec = [2, 0, 0]
+  !   vin = [3, 1, 1]
+  ! a = [3, 0, 0]
   pure function VEC_PROJ_SCA_sp(vec,vin) result(a)
     real(sp), intent(in) :: vec(:), vin(:)
     real(sp) :: a

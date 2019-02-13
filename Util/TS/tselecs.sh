@@ -469,6 +469,7 @@ for i in `seq 1 $_mus` ; do
     echo "   from $emin $e to -10 kT $e"
     echo "     points 25"
     echo "      method g-legendre"
+    echo "       opt right"
     echo "%endblock TS.Contour.C-$mu"
 
     # Create the contours

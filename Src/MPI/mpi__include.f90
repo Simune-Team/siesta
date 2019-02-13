@@ -17,10 +17,10 @@
 !       (C) 1996  Michael Hennecke, RZ Universitaet Karlsruhe
 !
 !
+
+!        INCLUDE 'mpif.h'
+        use mpi
         IMPLICIT NONE
-
-        INCLUDE 'mpif.h'
-
         public :: mpi_real
         public :: mpi_complex
         public :: mpi_double_complex

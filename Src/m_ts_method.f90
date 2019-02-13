@@ -77,8 +77,8 @@ contains
     character(len=len_trim(prefix)+13) :: bName
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    character(len=50) :: g
-    type(tRgn) :: r_tmp
+    character(len=32) :: g
+    type(tRgn) :: r_tmp, r_diff
 
     no_u_TS = lasto(na_u)
 
@@ -124,25 +124,42 @@ contains
 
       ! read by line and set them to be buffer atoms
       do while ( fdf_bline(bfdf,pline) ) 
+
         ! empty line
         if ( fdf_bnnames(pline) == 0 ) cycle
 
         g = fdf_bnames(pline,1)
         if ( leqi(g,'atom') .or. leqi(g,'position') ) then
 
-          call fdf_brange(pline,r_tmp, 1, na_u)
-          if ( r_aBuf%n == 0 ) then
-            call rgn_copy(r_tmp,r_aBuf)
-          else if ( r_tmp%n > 0 ) then
-            call rgn_union(r_aBuf,r_tmp,r_aBuf)
-          end if
+          call fdf_brange(pline, r_tmp, 1, na_u)
+          if ( r_tmp%n == 0 ) &
+              call die('Could not read in any atoms &
+              &in line of TS.Atoms.Buffer')
+          call rgn_union(r_aBuf,r_tmp,r_aBuf)
 
+        end if
+
+        ! Atoms NOT in the buffer region...
+        if ( leqi(g,'not-atom') .or. leqi(g,'not-position') .or. &
+            leqi(g,'-atom') .or. leqi(g,'-position') ) then
+          call fdf_brange(pline, r_tmp, 1, na_u)
+          if ( r_tmp%n == 0 ) &
+              call die('Could not read in any atoms &
+              &in line of TS.Atoms.Buffer')
+          call rgn_union(r_diff,r_tmp,r_diff)
+          
         end if
 
       end do
 
     end if
 
+    if ( r_diff%n > 0 ) then
+      ! Remove any atoms explicitly forced to not be part of it
+      call rgn_complement(r_diff, r_aBuf, r_aBuf)
+    end if
+    call rgn_delete(r_diff)
+    
     if ( r_aBuf%n > 0 ) then
       ! Remove all 0 entries
       ! This is a "helper" because the user may
@@ -154,6 +171,7 @@ contains
         call set_type(TYP_BUFFER,r_aBuf%r(i),na_u,lasto)
       end do
     end if
+    call rgn_delete(r_tmp)
 
     ! Sort the atoms
     call rgn_sort(r_aBuf)

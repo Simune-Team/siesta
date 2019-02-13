@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -10,14 +10,16 @@
 ! Nick Papior Andersen, 2014, nickpapior@gmail.com
 module m_tbt_GF
 
-  use m_ts_gf, only : read_Green, check_Green, read_next_GS
   use precision, only : dp
+  use m_ts_gf, only : read_Green, check_Green, read_next_GS
+  use m_ts_gf, only : reread_Gamma_Green
 
   implicit none
 
   public :: do_Green
   public :: read_Green
   public :: check_Green
+  public :: reread_Gamma_Green
   public :: read_next_GS
 
   private
@@ -98,44 +100,56 @@ contains
     NEn = N_TBT_E()
     allocate(ce(NEn))
     iE = 0
-    do i = 1 , NEn
-       c = tbt_E(i)
-       ! We ensure to add the complex imaginary value
+    if ( El%Eta > 0._dp ) then
+      do i = 1 , NEn
+        c = tbt_E(i)
+        ! We ensure to add the complex imaginary value
 #ifdef TBT_PHONON
-       ce(i) = dcmplx(real(c%e,dp)**2,El%Eta)
+        ce(i) = cmplx(real(c%e,dp)**2,El%Eta, dp)
 #else
-       ce(i) = dcmplx(real(c%e,dp),El%Eta)
+        ce(i) = cmplx(real(c%e,dp),El%Eta, dp)
 #endif
-    end do
-       
+      end do
+    else
+      do i = 1 , NEn
+        ! We ensure to add the complex imaginary value
+        c = tbt_E(i)
+#ifdef TBT_PHONON
+        ce(i) = cmplx(real(c%e,dp) ** 2, aimag(c%e)**2, dp)
+#else
+        ce(i) = c%e
+#endif
+      end do
+    end if
+    
     ! We return if we should not calculate it
     if ( .not. cReUseGF ) then
 
-       call create_Green(El, &
-            ucell,nkpnt,kpoint,kweight, &
-            NEn,ce)
+      call create_Green(El, &
+          ucell,nkpnt,kpoint,kweight, &
+          NEn,ce)
 
     else
+      
+      ! Check that the Green's functions are correct!
+      ! This is needed as create_Green returns if user requests not to
+      ! overwrite an already existing file.
+      ! This check will read in the number of orbitals and atoms in the
+      ! electrode surface Green's function.
+      ! Check the GF file
+      if ( IONode ) then
+        call io_assign(uGF)
+        open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
 
-       ! Check that the Green's functions are correct!
-       ! This is needed as create_Green returns if user requests not to
-       ! overwrite an already existing file.
-       ! This check will read in the number of orbitals and atoms in the
-       ! electrode surface Green's function.
-       ! Check the GF file
-       if ( IONode ) then
-          call io_assign(uGF)
-          open(file=El%GFfile,unit=uGF,form='UNFORMATTED')
-          
-          call check_Green(uGF,El, &
-               ucell,nkpnt,kpoint,kweight, &
-               NEn, ce, &
-               xa_Eps, errorGF)
-          
-          write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
-          
-          call io_close(uGF)
-       endif
+        call check_Green(uGF,El, &
+            ucell,nkpnt,kpoint,kweight, &
+            NEn, ce, &
+            xa_Eps, errorGF)
+
+        write(*,'(/,4a,/)') "Using GF-file '",trim(El%GFfile),"'"
+
+        call io_close(uGF)
+      endif
 
     end if
 

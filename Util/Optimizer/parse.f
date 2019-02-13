@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -114,7 +114,7 @@
 ! 
 !     if (search(p,'P',index=jp)) then
 !        if (match(p,'i',after=jp) npol = integers(p,1,after=jp)
-!     endif			 
+!     endif                      
 ! 
 ! first checks whether 'P' is found in 'line'. If so, 'match' is used to
 ! check whether it is followed by at least an 'integer'. If so, its
@@ -127,7 +127,7 @@
 ! 
 !     if (search(p,'Q',after=jp,index=jq)) then
 !        if (match(p,'r',after=jq) energy = reals(p,1,after=jq)
-!     endif			 
+!     endif                      
 ! 
 !-----------------------------------------------------------------------
 ! Future enhancements:

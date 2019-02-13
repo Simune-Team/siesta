@@ -11,7 +11,6 @@
 module m_ts_contour_neq
 
   use precision, only : dp
-  use fdf, only : leqi
 
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
@@ -94,9 +93,7 @@ contains
 
   subroutine read_contour_neq_options(N_Elec,Elecs,N_mu,mus,kT,Volt)
 
-    use units, only : eV
     use fdf
-
     use m_ts_electype
 
     ! only to gain access to the chemical shifts
@@ -108,11 +105,12 @@ contains
     real(dp), intent(in) :: kT, Volt
     
     integer :: i, j, k, N, cur_mu
-    real(dp) :: min_E, max_E, rtmp, rtmp2
+    real(dp) :: min_E, max_E, rtmp, rtmp2, Ry2eV
     logical :: err
 
     ! Notify the user of obsolete keys.
     call fdf_obsolete('TS.biasContour.Eta')
+    Ry2eV = fdf_convfac('Ry', 'eV')
 
     ! check that we in-fact have a bias calculation
     if ( N_mu < 2 ) then
@@ -124,7 +122,15 @@ contains
     ! device region as well.
     nEq_Eta = fdf_get('TS.Contours.nEq.Eta',0._dp,'Ry')
     if ( nEq_Eta < 0._dp ) call die('ERROR: nEq_Eta < 0, we do not allow &
-         &for using the advanced Green function, please correct.')
+        &for using the advanced Green function, please correct.')
+    if ( nEq_Eta == 0._dp ) then
+      do i = 1, N_Elec
+        if ( Elecs(i)%Eta <= 0._dp ) then
+          call die('ERROR: A non-equilibrium contour requires a positive finite imaginary &
+              &number to ensure we do not invert an eigenvalue energy, please correct eta values!')
+        end if
+      end do
+    end if
 
     ! Temperature cut-off for the tail integrals
     cutoff_kT = fdf_get('TS.Contours.nEq.Fermi.Cutoff',5._dp)
@@ -140,52 +146,53 @@ contains
     call my_setup('nEq',N_nEq,nEq_c,nEq_io)
     if ( N_nEq < 1 ) then
 
-       if ( N_Elec /= 2 .or. N_mu /= 2 ) then
-          call die('When using other than 2 electrodes and &
-               &chemical potentials you are forced to setup &
-               &the contour input yourself.')
-       end if
-
-       ! Get the lowest chemical potential
-       if ( mus(1)%mu < mus(2)%mu ) then
-          j = 1
-          k = 2
-       else
-          j = 2
-          k = 1
-       end if
-
-       ! We create the default version
-       N_nEq = 1
-       nullify(nEq_io,nEq_c)
-       allocate(nEq_io(N_nEq),nEq_c(N_nEq))
-
-       ! Create the integrals
-       nEq_io(1)%part = 'line'
-       nEq_io(1)%name = 'line'
-       write(nEq_io(1)%ca,'(a,g12.5,a)') &
-            '- ',cutoff_kT * mus(j)%kT / kT ,' kT - |V|/2'
-       ! mus(j)%mu is negative
-       nEq_io(1)%a  = - cutoff_kT * mus(j)%kT + mus(j)%mu
-       write(nEq_io(1)%cb,'(a,g12.5,a)') &
-            '|V|/2 + ',cutoff_kT * mus(k)%kT / kT,' kT'
-       nEq_io(1)%b  = mus(k)%mu + cutoff_kT * mus(k)%kT
-       nEq_io(1)%cd = '0.01 eV'
-       nEq_io(1)%d = 0.01_dp * eV
-       nEq_io(1)%method = 'mid-rule'
-
-       do i = 1 , N_nEq
-          nEq_c(i)%c_io => nEq_io(i)
+      ! Find the minimum integration energy and the maximum
+      j = 1
+      k = 1
+      min_E = mus(j)%mu - mus(j)%kT * cutoff_kT
+      max_E = mus(k)%mu + mus(k)%kT * cutoff_kT
+      do i = 1, N_mu
+        if ( mus(i)%mu - mus(i)%kT * cutoff_kT < min_E ) then
+          min_E = mus(i)%mu - mus(i)%kT * cutoff_kT
+          j = i
+        end if
+        if ( max_E < mus(i)%mu + mus(i)%kT * cutoff_kT ) then
+          max_E = mus(i)%mu + mus(i)%kT * cutoff_kT
+          k = i
+        end if
+      end do
       
-          ! Fix the contours checking for their consistency
-          call ts_fix_contour(nEq_io(i))
+      ! We create the default version
+      N_nEq = 1
+      nullify(nEq_io,nEq_c)
+      allocate(nEq_io(N_nEq),nEq_c(N_nEq))
+      
+      ! Create the integrals
+      nEq_io(1)%part = 'line'
+      nEq_io(1)%name = 'line'
+      write(nEq_io(1)%ca,'(a,g12.5,a)') &
+          '- ',cutoff_kT * mus(j)%kT / kT ,' kT - |V|/2'
+      ! mus(j)%mu is negative
+      nEq_io(1)%a  = - cutoff_kT * mus(j)%kT + mus(j)%mu
+      write(nEq_io(1)%cb,'(a,g12.5,a)') &
+          '|V|/2 + ',cutoff_kT * mus(k)%kT / kT,' kT'
+      nEq_io(1)%b  = mus(k)%mu + cutoff_kT * mus(k)%kT
+      nEq_io(1)%cd = '0.01 eV'
+      nEq_io(1)%d = 0.01_dp / Ry2eV
+      nEq_io(1)%method = 'mid-rule'
 
-          ! setup the contour
-          allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
+      do i = 1 , N_nEq
+        nEq_c(i)%c_io => nEq_io(i)
 
-          call setup_nEq_contour(nEq_c(i), nEq_Eta)
+        ! Fix the contours checking for their consistency
+        call ts_fix_contour(nEq_io(i))
 
-       end do
+        ! setup the contour
+        allocate(nEq_c(i)%c(nEq_c(i)%c_io%N),nEq_c(i)%w(nEq_c(i)%c_io%N,1))
+
+        call setup_nEq_contour(nEq_c(i), nEq_Eta)
+
+      end do
 
     end if
 
@@ -212,8 +219,8 @@ contains
           write(*,'(a)')'transiesta: Lowest energy and chemical potential &
                &'//trim(mus(i)%name)//' does not conform with Fermi-function &
                &cut-off [eV].'
-          write(*,'(a,g12.5)')'Specified cut-off: ',rtmp/eV
-          write(*,'(a,g12.5)')'Minimum energy in bias contour: ',min_E/eV
+          write(*,'(a,g12.5)')'Specified cut-off: ',rtmp * Ry2eV
+          write(*,'(a,g12.5)')'Minimum energy in bias contour: ',min_E * Ry2eV
           write(*,'(a)')'Assert that all contours have at least 2 points to &
                &contain both end-points.'
        end if
@@ -223,8 +230,8 @@ contains
           write(*,'(a)')'transiesta: Highest energy and chemical potential &
                &'//trim(mus(i)%name)//' does not conform with Fermi-function &
                &cut-off [eV].'
-          write(*,'(a,g12.5)')'Specified cut-off: ',rtmp/eV
-          write(*,'(a,g12.5)')'Maximum energy in bias contour: ',max_E/eV
+          write(*,'(a,g12.5)')'Specified cut-off: ',rtmp * Ry2eV
+          write(*,'(a,g12.5)')'Maximum energy in bias contour: ',max_E * Ry2eV
           write(*,'(a)')'Assert that all contours have at least 2 points to &
                &contain both end-points.'
        end if
@@ -292,7 +299,7 @@ contains
 
     ! Update the min/max energies allowed
     ! to contain any contour elements for each ID
-    ! We add an extra 0.00001 eV to account for floating
+    ! We add an extra 0.0000001 eV to account for floating
     ! point accurracy
     do N = 1 , N_nEq_ID
        ! Figure out the actual minimum/maximum 
@@ -303,8 +310,8 @@ contains
        rtmp  = nEq_ID(N)%mu%mu    + cutoff_kT * nEq_ID(N)%mu%kT
        rtmp2 = nEq_ID(N)%El%mu%mu + cutoff_kT * nEq_ID(N)%El%mu%kT
        max_E = max(rtmp,rtmp2)
-       nEq_ID(N)%E(1) = min_E - 0.00001_dp * eV
-       nEq_ID(N)%E(2) = max_E + 0.00001_dp * eV
+       nEq_ID(N)%E(1) = min_E - 0.0000001_dp / Ry2eV
+       nEq_ID(N)%E(2) = max_E + 0.0000001_dp / Ry2eV
     end do
 
   contains 
@@ -446,6 +453,7 @@ contains
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
   subroutine setup_nEq_contour(c, Eta)
+    use fdf, only: leqi
     type(ts_cw), intent(inout) :: c
     real(dp), intent(in) :: Eta
 
@@ -551,6 +559,7 @@ contains
   end function ID2mu
 
   subroutine contour_line(c,Eta)
+    use fdf, only: leqi
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
@@ -621,8 +630,8 @@ contains
 
     end select
 
-    c%c = dcmplx(ce,Eta)
-    c%w(:,1) = dcmplx(cw,0._dp)
+    c%c(:) = cmplx(ce, Eta, dp)
+    c%w(:,1) = cmplx(cw, 0._dp, dp)
 
     deallocate(ce,cw)
     
@@ -684,8 +693,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW, iW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(ne,1) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE, dp) * conv
+        c%w(ne,1) = cmplx(rW,iW, dp) * conv
         cycle
       end if
 
@@ -698,8 +707,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(ne,1) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE, dp) * conv
+        c%w(ne,1) = cmplx(rW,iW, dp) * conv
         cycle
       end if
 
@@ -713,8 +722,8 @@ contains
         read(line, *, iostat=iostat) rE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE * conv,iE)
-        c%w(ne,1) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE * conv,iE, dp)
+        c%w(ne,1) = cmplx(rW,iW, dp) * conv
         cycle
       end if
 
@@ -755,7 +764,7 @@ contains
     integer :: i,j,iE
     c%exist = .false.
     c%fake  = .false.
-    c%e     = dcmplx(0._dp,0._dp)
+    c%e     = cmplx(0._dp,0._dp, dp)
     c%idx   = 0
     if ( id < 1 ) return
 
@@ -810,19 +819,21 @@ contains
   subroutine print_contour_neq_options(prefix)
 
     use parallel, only : IONode
-    use units, only : eV
-
+    use fdf, only : fdf_convfac
     use m_ts_io_contour
 
     character(len=*), intent(in) :: prefix
     character(len=200) :: chars
     integer :: i
     type(ts_c_opt_ll), pointer :: opt
+    real(dp) :: Ry2eV
 
     if ( .not. IONode ) return
+
+    Ry2eV = fdf_convfac('Ry', 'eV')
     
     write(*,opt_n) '        >> non-Equilibrium contour << '
-    write(*,opt_g_u) 'Device Green function imaginary Eta',nEq_Eta/eV,'eV'
+    write(*,opt_g_u) 'Device Green function imaginary Eta',nEq_Eta*Ry2eV,'eV'
     write(*,opt_g_u) 'Fermi-function cut-off',cutoff_kT,'kT'
     do i = 1 , N_nEq
        chars = '  '//trim(nEq_io(i)%part)
@@ -850,20 +861,12 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    character(len=25) :: tmp_suffix
     integer :: i
 
     if ( .not. IONode ) return
 
     do i = 1 , N_nEq_ID
-       
-       if ( present(suffix) ) then
-          write(tmp_suffix,'(a,i0)') trim(suffix)//'-',i
-       else
-          write(tmp_suffix,'(a,i0)') 'TSCCNEQ-',i
-       end if
-       call io_contour_nEq_ID(nEq_ID(i),slabel,tmp_suffix)
-
+       call io_contour_nEq_ID(nEq_ID(i),slabel,suffix)
     end do
 
   end subroutine io_contour_nEq
@@ -871,25 +874,35 @@ contains
 
   subroutine io_contour_nEq_ID(nEq_ID,slabel,suffix)
     use parallel, only : IONode
-    use units, only : eV, Kelvin
+    use units, only : Kelvin
+    use fdf, only: fdf_convfac
     type(ts_nEq_ID), intent(in) :: nEq_ID
     character(len=*), intent(in) :: slabel
-    character(len=*), intent(in) :: suffix
+    character(len=*), intent(in), optional :: suffix
 
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    character(len=200) :: fname
+    character(len=256) :: fname
     integer        :: i, unit
     type(ts_c_idx) :: c
-    real(dp) :: m1, m2
-    character(len=20) :: cm1, cm2, kT1, kT2
-    complex(dp) :: W, ZW
+    real(dp) :: m1, m2, Ry2eV
+    character(len=32) :: cm1, cm2, kT1, kT2
+    complex(dp) :: W, ZW, Z
     integer :: imu
     
     if ( .not. IONode ) return
-    
-    fname = trim(slabel)//'.'//trim(suffix)
+    Ry2eV = fdf_convfac('Ry', 'eV')
+
+    ! format of file is:
+    ! <slabel>.TSCCNEQ-<ID>-<correction chemical potential>_<from electrode>
+    ! The ID is important since it corresponds to the "internal" order of chemical potentials.
+    if ( present(suffix) ) then
+      write(fname,'(a,".",a,"-",a,"_",a)') trim(slabel), trim(suffix), trim(nEq_ID%mu%name), trim(nEq_ID%El%name)
+    else
+      write(fname,'(a,".",a,"-",i0,"-",a,"_",a)') trim(slabel), 'TSCCNEQ', nEq_ID%ID, &
+          trim(nEq_ID%mu%name), trim(nEq_ID%El%name)
+    end if
 
     call io_assign( unit )
     open( unit, file=fname, status='unknown' )
@@ -897,14 +910,14 @@ contains
     write(unit,'(2a)')'# Correction for chemical potential ',trim(nEq_ID%mu%name)
     write(unit,'(2a)')'# Scattering states coming from ',trim(nEq_ID%El%name)
     
-    m1 = nEq_ID%El%mu%mu/eV
+    m1 = nEq_ID%El%mu%mu * Ry2eV
     if ( m1 < 0._dp ) then
        write(cm1,'(a,g10.4)')'+ ',-m1
     else
        write(cm1,'(a,g10.4)')'- ',m1
     end if
     write(kT1,'(g10.4)') nEq_ID%El%mu%kT / Kelvin
-    m2 = nEq_ID%mu%mu/eV
+    m2 = nEq_ID%mu%mu * Ry2eV
     if ( m2 < 0._dp ) then
        write(cm2,'(a,g10.4)')'+ ',-m2
     else
@@ -914,7 +927,7 @@ contains
     write(unit,'(a,/,9a)') '# Approximated Fermi function: ', &
          '#   nF(E ', trim(cm1),' eV, ',trim(kT1),' K) &
          &- nF(E ',trim(cm2),' eV, ',trim(kT2),' K)'
-    write(unit,'(a,a12,2(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','w'
+    write(unit,'(a,a24,2(tr1,a25))') '#','Re(c) [eV]','Im(c) [eV]','w [eV]'
     
     do i = 1 , N_nEq_E()
 
@@ -924,9 +937,19 @@ contains
        ! Check if it exists on this ID
        call c2weight_nEq(c,nEq_ID%ID,1._dp,W,imu,ZW)
        if ( imu < 1 ) cycle
+       
+       Z = nEq_c(c%idx(2))%c(c%idx(3))
+       ! The imaginary part reflects the imaginary part in the
+       ! electrode self-energy.
+       ! Since the energy-points are duplicated for different
+       ! non-equilibrium parts.
+       ! If the electrode eta value is negative it refers to the device
+       ! eta value.
+       if ( nEq_ID%El%Eta > 0._dp ) then
+         Z = cmplx(real(Z, dp), nEq_ID%El%Eta, dp)
+       end if
 
-       write(unit,'(3(e13.6,tr1))') nEq_c(c%idx(2))%c(c%idx(3)) / eV, &
-            real(W,dp) / eV
+       write(unit,'(3(e25.17,tr1))') Z * Ry2eV, real(W, dp) * Ry2eV
        
     end do
 

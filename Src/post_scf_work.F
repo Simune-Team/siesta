@@ -194,8 +194,8 @@
          ! Save (geom,DM) pair to history stack
          write(msg,"(a,i0)") "step: ",istep
          call newGeometry(geom,na_u,ucell,xa,isa,
-     $                    name="Geometry for " // msg)
-         call new(pair,geom,DM_2D,name=" Pair geom,DM for " // msg)
+     $                    name="Geometry for " // trim(msg))
+         call new(pair,geom,DM_2D,name="Geom, DM for "//trim(msg))
          call push(DM_history,pair)
          call delete(pair)
          call delete(geom)

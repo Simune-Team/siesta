@@ -12,7 +12,6 @@
 module m_ts_contour_eq
 
   use precision, only : dp
-  use fdf, only : leqi
 
 ! Use the type associated with the contour
 ! Maybe they should be collected to this module.
@@ -63,7 +62,7 @@ contains
 
   subroutine read_contour_eq_options(N_mu, mus, Volt)
 
-    use units, only : eV, Pi, Kelvin
+    use units, only : Pi, Kelvin
     use fdf
 
     integer, intent(in)        :: N_mu
@@ -77,9 +76,11 @@ contains
     integer :: cur
     integer, allocatable :: idx(:)
     logical :: isStart, isTail
-    real(dp) :: r1, r2
+    real(dp) :: r1, r2, Ry2eV
 
     call fdf_obsolete('TS.ComplexContour.NPoles')
+
+    Ry2eV = fdf_convfac('Ry', 'eV')
 
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
@@ -208,28 +209,30 @@ contains
              write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              if ( tmp_one(4:4) == 'l' ) then ! left
                 Eq_io(i)%ca = '-40. eV + V/2'
-                Eq_io(i)%a  = - 40._dp * eV + Volt * .5_dp
+                Eq_io(i)%a = - 40._dp / Ry2eV + Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT + V/2'
-                Eq_io(i)%b  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
+                Eq_io(i)%b = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
                 Eq_io(i)%ca = '-40. eV - V/2'
-                Eq_io(i)%a  = - 40._dp * eV - Volt * .5_dp
+                Eq_io(i)%a = - 40._dp / Ry2eV - Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT - V/2'
-                Eq_io(i)%b  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
+                Eq_io(i)%b = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%method = 'g-legendre'
+             call c_io_add_opt(Eq_io(i),'right','right')
+
           else
              Eq_io(i)%part = 'tail'
              Eq_io(i)%N = 10
              write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              Eq_io(i)%ca = 'prev'
              if ( tmp_one(4:4) == 'l' ) then ! left
-                Eq_io(i)%a  = -10._dp * mus(c_mu)%kT + Volt * .5_dp
+                Eq_io(i)%a = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
-                Eq_io(i)%a  = -10._dp * mus(c_mu)%kT - Volt * .5_dp
+                Eq_io(i)%a = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
              Eq_io(i)%cb = 'inf'
-             Eq_io(i)%b  = huge(1._dp)
+             Eq_io(i)%b = huge(1._dp)
              Eq_io(i)%method = 'g-fermi'
           end if
        else
@@ -243,18 +246,18 @@ contains
     j = 1
     do i = N - N_mu + 1, N
        if ( Eq_segs(mus(j)) == 1 ) then
-          Eq_io(i)%part   = 'cont-frac'
+          Eq_io(i)%part = 'cont-frac'
           Eq_io(i)%method = 'continued-fraction'
           ! Currently this is just a very high number
-          Eq_io(i)%a = 1.e10_dp * eV ! the continued fraction infinity point
+          Eq_io(i)%a = 1.e10_dp / Ry2eV ! the continued fraction infinity point
        else
-          Eq_io(i)%part   = 'pole'
+          Eq_io(i)%part = 'pole'
           Eq_io(i)%method = 'residual'
           Eq_io(i)%a = mus(j)%mu
        end if
        ! assign name to the Eq_io
-       Eq_io(i)%name   = nContours(i)
-       Eq_io(i)%N      = mus(j)%N_poles
+       Eq_io(i)%name = nContours(i)
+       Eq_io(i)%N = mus(j)%N_poles
        Eq_io(i)%b = mus(j)%kT ! Save kT in the contour
        Eq_io(i)%d = mus(j)%mu ! save the chemical potential here
        j = j + 1
@@ -264,7 +267,7 @@ contains
     ! fix the read-in constants
     do i = 1 , N_mu
 
-       cur      = get_c_io_index(mus(i)%Eq_seg(1))
+       cur = get_c_io_index(mus(i)%Eq_seg(1))
        if ( cur == 0 ) then
           call die('A terrible error has occured, please inform the &
                &developers')
@@ -300,11 +303,11 @@ contains
           ! Check equilibrium settings
           isStart = leqi(Eq_io(cur)%part,'circle') .or. &
                leqi(Eq_io(cur)%part,'square') 
-          isTail  = leqi(Eq_io(cur)%part,'tail')
+          isTail = leqi(Eq_io(cur)%part,'tail')
 
           ! we should not check the pole
           do j = 1 , k
-             cur  = get_c_io_index(mus(i)%Eq_seg(j))
+             cur = get_c_io_index(mus(i)%Eq_seg(j))
              call consecutive_types(Eq_io(cur),isStart,isTail, &
                   mus(i)%mu, mus(i)%kT)
           end do
@@ -419,6 +422,7 @@ contains
   ! This routine assures that we have setup all the 
   ! equilibrium contours for the passed electrode
   subroutine setup_Eq_contour(mu)
+    use fdf, only: leqi
     type(ts_mu), intent(in) :: mu
 
     ! Local variables
@@ -580,6 +584,7 @@ contains
   end subroutine c2weight_eq
 
   subroutine contour_Circle(c,mu,R,cR)
+    use fdf, only: leqi
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
@@ -699,20 +704,20 @@ contains
     call ID2idx(c,mu%ID,idx)
 
     do i = 1 , c%c_io%N
-       ztmp = R * cdexp(dcmplx(0._dp,ce(i)))
+       ztmp = R * exp(cmplx(0._dp,ce(i),dp))
 
        if ( set_c ) then
-          c%c(i) = dcmplx(cR,0._dp) + ztmp
+          c%c(i) = cmplx(cR,0._dp, dp) + ztmp
        else
-          if ( abs(c%c(i) - (dcmplx(cR,0._dp) + ztmp) ) > 1.e-10_dp ) then
-             print *,c%c(i),dcmplx(cR,0._dp) + ztmp
+          if ( abs(c%c(i) - (cmplx(cR,0._dp, dp) + ztmp) ) > 1.e-10_dp ) then
+             print *,c%c(i),cmplx(cR,0._dp,dp) + ztmp
              call die('contours does not match')
           end if
        end if
 
        ! Factor i, comes from Ed\theta=dE=iR e^{i\theta}
-       c%w(idx,i) = cw(i) * nf((dcmplx(cR,0._dp)+ztmp-mu%mu)/mu%kT) &
-            * dcmplx(0._dp,1._dp) * ztmp
+       c%w(idx,i) = cw(i) * nf((cmplx(cR,0._dp,dp)+ztmp-mu%mu)/mu%kT) &
+            * cmplx(0._dp,1._dp,dp) * ztmp
 
     end do
 
@@ -747,6 +752,7 @@ contains
   end subroutine contour_Circle
 
   subroutine contour_Square(c,mu,lift, first, prev, next)
+    use fdf, only: leqi
     use m_integrate
     use m_gauss_quad
     type(ts_cw), intent(inout) :: c
@@ -840,8 +846,8 @@ contains
     call get_abscissas(Ni(1),0._dp,li(1), ce(1), cw(1))
     ! translate to correct contours
     do i = 1 , Ni(1)
-       ztmp(1) = dcmplx( a, im(1) + ce(i) )
-       ztmp(2) = dcmplx( 0._dp , 1._dp ) * cw(i)
+       ztmp(1) = cmplx( a, im(1) + ce(i), dp)
+       ztmp(2) = cmplx( 0._dp , cw(i), dp)
        call set_abscissas(c%c(i),c%w(idx,i), ztmp)
     end do
 
@@ -851,8 +857,8 @@ contains
     j = Ni(1)
     do i = 1 , Ni(2)
        ! Convert to parameterisation
-       ztmp(1) = dcmplx( a + ce(i) , im(2) )
-       ztmp(2) = dcmplx( 1._dp , 0._dp ) * cw(i)
+       ztmp(1) = cmplx( a + ce(i) , im(2), dp)
+       ztmp(2) = cmplx( cw(i) , 0._dp, dp)
        call set_abscissas(c%c(j+i),c%w(idx,j+i), ztmp)
     end do
     
@@ -862,8 +868,8 @@ contains
        ! translate to correct contours
        j = Ni(1) + Ni(2)
        do i = 1 , Ni(3)
-          ztmp(1) = dcmplx( b, im(2) + ce(i) )
-          ztmp(2) = dcmplx( 0._dp , 1._dp ) * cw(i)
+          ztmp(1) = cmplx( b, im(2) + ce(i), dp)
+          ztmp(2) = cmplx( 0._dp , cw(i), dp)
           call set_abscissas(c%c(j+i),c%w(idx,j+i), ztmp)
        end do
     end if
@@ -1027,6 +1033,7 @@ contains
   end subroutine contour_Square
   
   subroutine contour_line(c,mu,Eta)
+    use fdf, only: leqi
     use m_integrate
     use m_gauss_quad
 
@@ -1159,9 +1166,9 @@ contains
 
       do i = 1 , c%c_io%N
         if ( set_c ) then
-          c%c(i) = dcmplx(ce(i),Eta)
+          c%c(i) = cmplx(ce(i),Eta, dp)
         else
-          if ( abs(c%c(i) - dcmplx(ce(i),Eta)) > 1.e-10_dp ) then
+          if ( abs(c%c(i) - cmplx(ce(i),Eta, dp)) > 1.e-10_dp ) then
             call die('contour_line: Error on contour match')
           end if
         end if
@@ -1177,6 +1184,7 @@ contains
   end subroutine contour_line
 
   subroutine contour_tail(c,mu,Eta)
+    use fdf, only: leqi
     use m_gauss_fermi_inf
     use m_gauss_fermi_30
     use m_gauss_fermi_28
@@ -1187,7 +1195,6 @@ contains
     use m_gauss_fermi_19
     use m_gauss_fermi_18
     use m_gauss_fermi_17
-    use units, only : eV
 
     type(ts_cw), intent(inout) :: c
     type(ts_mu), intent(in) :: mu
@@ -1268,7 +1275,7 @@ contains
        call ID2idx(c,mu%ID,idx)
 
        ! move over the weights and the contour values
-       c%c        = dcmplx(ce,Eta)
+       c%c(:) = cmplx(ce,Eta, dp)
        c%w(idx,:) = cw
 
     case default
@@ -1289,8 +1296,6 @@ contains
 
   ! The residuals of the fermi-function at a real-energy
   subroutine contour_poles(c, E, kT)
-    
-    use precision, only : dp
     use units, only : Pi
 
 ! ***********************
@@ -1310,17 +1315,17 @@ contains
     integer :: i
 
     ! all pole-weights have the same weight (negative due to contour method)
-    c%w(:,:) =  - dcmplx(0._dp, Pi * kT * 2._dp)
+    c%w(:,:) =  - cmplx(0._dp, Pi * kT * 2._dp, dp)
     ! Residuals
     do i = 1 , c%c_io%N
-       c%c(i) = dcmplx(E , Pi * kT * (2._dp*(i-1)+1._dp))
+       c%c(i) = cmplx(E , Pi * kT * (2._dp*(i-1)+1._dp), dp)
     end do
 
   end subroutine contour_poles
 
 
   subroutine contour_continued_fraction(c,mu,Eta)
-
+    use fdf, only: leqi
     use units, only: Pi
 
     type(ts_cw), intent(inout) :: c
@@ -1359,7 +1364,7 @@ contains
     do i = 1 , c%c_io%N - 1
        
        ! Calculate current contour point
-       cc = dcmplx(mu%mu, ce(i) * mu%kT)
+       cc = cmplx(mu%mu, ce(i) * mu%kT, dp)
        
        if ( set_c ) then
           c%c(i) = cc
@@ -1372,12 +1377,12 @@ contains
        ! Extra minus in implementation and Im[]
        ! We also divide the weight by Pi in the loop (and it should
        ! not exist in the continued fraction scheme)
-       c%w(idx,i) = dcmplx( 0._dp , 2._dp * cw(i) * mu%kT * Pi)
+       c%w(idx,i) = cmplx( 0._dp , 2._dp * cw(i) * mu%kT * Pi, dp)
 
     end do
 
     ! The zero'th moment lies infinitely far and is from -inf -- inf
-    cc = dcmplx( mu%mu , c%c_io%a )
+    cc = cmplx( mu%mu , c%c_io%a, dp)
     
     if ( set_c ) then
        ! The last pole is set
@@ -1391,7 +1396,7 @@ contains
     ! The zeroth moment (extra minus in implementation and Im[])
     ! w = iR, but from -\Im we get w = R
     ! And remove the loop division by Pi
-    c%w(idx,c%c_io%N) = dcmplx( 0.5_dp * c%c_io%a * Pi, 0._dp)
+    c%w(idx,c%c_io%N) = cmplx( 0.5_dp * c%c_io%a * Pi, 0._dp, dp)
 
     deallocate(ce,cw)
 
@@ -1514,8 +1519,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW, iW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE, dp) * conv
+        c%w(idx,ne) = cmplx(rW,iW, dp) * conv
         cycle
       end if
 
@@ -1528,8 +1533,8 @@ contains
         read(line, *, iostat=iostat) rE, iE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE,iE) * conv
-        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE,iE,dp) * conv
+        c%w(idx,ne) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -1543,8 +1548,8 @@ contains
         read(line, *, iostat=iostat) rE, rW
       end if
       if ( iostat == 0 ) then
-        c%c(ne) = dcmplx(rE * conv,iE)
-        c%w(idx,ne) = dcmplx(rW,iW) * conv
+        c%c(ne) = cmplx(rE * conv,iE,dp)
+        c%w(idx,ne) = cmplx(rW,iW,dp) * conv
         cycle
       end if
 
@@ -1588,7 +1593,7 @@ contains
     integer :: i,j,iE
     c%exist = .false.
     c%fake  = .false.
-    c%e     = dcmplx(0._dp,0._dp)
+    c%e     = cmplx(0._dp,0._dp, dp)
     c%idx   = 0
     if ( id < 1 ) return
 
@@ -1620,6 +1625,7 @@ contains
   end function N_Eq_E
 
   subroutine print_contour_eq_block(prefix)
+    use fdf, only: leqi
     character(len=*), intent(in) :: prefix
     integer :: i
 
@@ -1632,8 +1638,9 @@ contains
 
   subroutine print_contour_eq_options(prefix)
 
+    use fdf, only: leqi
     use parallel, only : IONode
-    use units, only : eV, Pi
+    use units, only : Pi
 
     use m_ts_io_contour
 
@@ -1724,8 +1731,7 @@ contains
 
   subroutine io_contour_eq_mu(mu,slabel,suffix)
     use parallel, only : IONode
-    use fdf, only : leqi
-    use units, only : eV
+    use fdf, only : leqi, fdf_convfac
     type(ts_mu), intent(in) :: mu
     character(len=*), intent(in) :: slabel
     character(len=*), intent(in), optional :: suffix
@@ -1736,8 +1742,11 @@ contains
     character(len=200) :: fname
     integer :: i, unit, idx
     type(ts_c_idx) :: cidx
+    real(dp) :: Ry2eV
     
     if ( .not. IONode ) return
+
+    Ry2eV = fdf_convfac('Ry', 'eV')
     
     if ( present(suffix) ) then
        fname = trim(slabel)//trim(suffix)
@@ -1750,8 +1759,8 @@ contains
     write(unit,'(a)') '# Contour path for the equilibrium contour segment.'
     write(unit,'(a)') '# This segment belongs to the chemical potential: '//trim(Name(mu))
     write(unit,'(a)') '# It has the chemical potential:'
-    write(unit,'(a,tr1,f10.5,tr1,a)') '#',mu%mu/eV,'eV'
-    write(unit,'(a,a12,3(tr1,a13))') '#','Re(c) [eV]','Im(c) [eV]','Re(w)','Im(w)'
+    write(unit,'(a,tr1,f10.5,tr1,a)') '#',mu%mu*Ry2eV,'eV'
+    write(unit,'(a,a24,3(tr1,a25))') '#','Re(c) [eV]','Im(c) [eV]','Re(w) [eV]','Im(w) [eV]'
 
     cidx%idx(1) = CONTOUR_EQ
     do i = 1 , Eq_segs(mu)
@@ -1776,8 +1785,8 @@ contains
 ! Write out the contour to a contour file
   subroutine io_contour_c(unit,cidx,idx)
     use parallel, only : IONode
-    use units, only : eV, Pi
-    use fdf, only: leqi
+    use units, only : Pi
+    use fdf, only: leqi, fdf_convfac
     integer, intent(in) :: unit
     type(ts_c_idx), intent(inout) :: cidx
     integer, intent(in) :: idx
@@ -1789,20 +1798,22 @@ contains
     logical :: is_cont_frac
     type(ts_cw), pointer :: c
     complex(dp) :: W, ZW
+    real(dp) :: Ry2eV
 
     if ( .not. IONode ) return
     c => Eq_c(cidx%idx(2))
 
     is_cont_frac = leqi(c%c_io%part,'cont-frac')
+    Ry2eV = fdf_convfac('Ry', 'eV')
     
     do i = 1 , size(c%c)
-       cidx%e      = c%c(i)
+       cidx%e = c%c(i)
        cidx%idx(3) = i
        call c2weight_eq(cidx,idx,1._dp,W,ZW)
        if ( is_cont_frac ) then
-          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV / Pi
+          write(unit,'(4(e25.17,tr1))') c%c(i)*Ry2eV, W*Ry2eV/ Pi
        else
-          write(unit,'(4(e13.6,tr1))') c%c(i)/eV, W / eV
+          write(unit,'(4(e25.17,tr1))') c%c(i)*Ry2eV, W*Ry2eV
        end if
     end do
     

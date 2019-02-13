@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -389,6 +389,9 @@ contains
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
 
     dic = dic//('info'.kv.'Imaginary part for device')
+#ifdef TBT_PHONON
+    dic = dic//('unit'.kv.'Ry**2')
+#endif
     call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
     call delete(dic)
@@ -463,6 +466,9 @@ contains
       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
       dic = dic//('info'.kv.'Imaginary part of self-energy')
+#ifdef TBT_PHONON
+      dic = dic//('unit'.kv.'Ry**2')
+#endif
       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
       dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
@@ -476,7 +482,11 @@ contains
       call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
 
       dic = dic//('info'.kv.'Downfolded self-energy')
+#ifdef TBT_PHONON
+      dic = dic//('unit'.kv.'Ry**2')
+#else
       dic = dic//('unit'.kv.'Ry')
+#endif
       ! Chunking greatly reduces IO cost
       call ncdf_def_var(grp,'SelfEnergy', prec_Sigma, &
           (/'no_e','no_e','ne  ','nkpt'/), compress_lvl = cmp_lvl, &
@@ -741,25 +751,23 @@ contains
        ! loop over all energy points
        do iE = 1 , NE
 
-          do ikpt = 1 , nkpt
+         ! Loop over k-points to average
+         call ncdf_get_var(grp,'SelfEnergy',Sigma, &
+             start=(/1,1,iE,1/) )
+         
+         c2(:,:) = rwkpt(1) * ( Sigma + transpose(Sigma) )
 
-             ! Loop over k-points to average
-             call ncdf_get_var(grp,'SelfEnergy',Sigma, &
-                  start=(/1,1,iE,ikpt/) )
-             
-             if ( ikpt == 1 ) then
-                c2(:,:) = rwkpt(ikpt) * ( &
-                     Sigma + transpose(Sigma) &
-                     )
-             else
-                c2(:,:) = c2(:,:) + rwkpt(ikpt) * ( &
-                     Sigma + transpose(Sigma) &
-                     )
-             end if
-             
-          end do
+         do ikpt = 2 , nkpt
+           
+           ! Loop over k-points to average
+           call ncdf_get_var(grp,'SelfEnergy',Sigma, &
+               start=(/1,1,iE,ikpt/) )
+           
+           c2(:,:) = c2(:,:) + rwkpt(ikpt) * ( Sigma + transpose(Sigma) )
+           
+         end do
 
-          call ncdf_put_var(grp,'SelfEnergyMean',c2, start=(/1,1,iE/) )
+         call ncdf_put_var(grp,'SelfEnergyMean',c2, start=(/1,1,iE/) )
 
        end do
 
@@ -774,7 +782,7 @@ contains
     call timer('SE-mean', 2)
         
 #ifdef MPI
-    call MPI_Barrier(Mpi_comm_world,MPIerror)
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
   end subroutine state_Sigma2mean

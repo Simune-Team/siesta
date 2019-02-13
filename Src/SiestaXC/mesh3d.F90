@@ -2494,8 +2494,8 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
 ! Find the box limits of all nodes
   allocate( srcBoxes(2,3,0:totNodes-1), dstBoxes(2,3,0:totNodes-1) )
   if (taskDefined) then
-    srcBoxes = task%srcBox
-    dstBoxes = task%dstBox
+    srcBoxes(:,:,:) = task%srcBox
+    dstBoxes(:,:,:) = task%dstBox
   else  ! Gather the boxes from all nodes
     call gatherBoxes( srcBox, srcBoxes )
     call gatherBoxes( dstBox, dstBoxes )
@@ -2526,8 +2526,8 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
   allocate( trsfDir(0:nTrsf), trsfNode(0:nTrsf) )
   if (taskOptimized) then
     nTrsf = task%nTrsf
-    trsfDir = task%trsfDir
-    trsfNode = task%trsfNode
+    trsfDir(:) = task%trsfDir
+    trsfNode(:) = task%trsfNode
   else ! (.not.taskOptimized)
     call all2allTransferOrder( totNodes, myNode, nTrsf, trsfNode, trsfDir )
   end if ! (taskOptimized)
@@ -2926,7 +2926,7 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
   character(len=*),parameter:: errHead = myName//'ERROR: '
   integer,         parameter:: maxFactors = 100  ! Max prime factors in nNodes
   type(distrType),pointer:: distr, newDistr, oldDistr
-  integer,allocatable:: axisBox(:,:,:), nodeBoxes(:,:,:), partBox(:,:,:)
+  integer,allocatable:: axisBox(:,:,:), partBox(:,:,:)
   integer:: axis, axisNodes(3), blockSize, boxSize, &
             factor(maxFactors), groupSize, &
             i1, i2, i3, iAxis, iBox, iDistr, iFac, iID, iNode, iPow, &
@@ -2989,9 +2989,7 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
 ! Handle box argument with priority
   if (present(box)) then
     ! Collect all node boxes and store them
-    allocate( nodeBoxes(2,3,0:totNodes-1) )
-    call gatherBoxes( box, nodeBoxes )
-    distr%box = nodeBoxes
+    call gatherBoxes( box, distr%box )
     goto 999  ! Exit, since no other arguments must be considered in this case
   end if ! (present(box))
 

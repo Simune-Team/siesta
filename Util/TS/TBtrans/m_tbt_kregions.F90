@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -513,9 +513,19 @@ contains
        ! It means that we are dealing with a Fermi
        ! charge correction
        ! If it is different from 1 we do not have an equilibrium contour
-       if ( c%idx(1) /= 1 ) then
-          ! In this case the energy is the eta value of the electrode
-          c%e = dcmplx(real(cE%e,dp),Elecs(i)%Eta)
+       ! In this case the energy is the eta value of the electrode
+       if ( Elecs(i)%Eta > 0._dp ) then
+#ifdef TBT_PHONON
+         c%e = cmplx(real(cE%e,dp)**2,Elecs(i)%Eta, dp)
+#else
+         c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta, dp)
+#endif
+       else
+#ifdef TBT_PHONON
+         c%e = cmplx(real(cE%e,dp)**2,aimag(cE%e)**2, dp)
+#else
+         c%e = cE%e
+#endif
        end if
 
        ! Get k-point

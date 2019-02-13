@@ -75,8 +75,7 @@ contains
 
 #ifdef NCDF_4
     use dictionary
-    use m_ncdf_siesta, only : cdf_init_file, cdf_save_settings
-    use m_ncdf_siesta, only : cdf_save_state, cdf_save_basis
+    use m_ncdf_siesta, only : cdf_save_settings
 #endif
     use m_compute_energies, only: compute_energies
 
@@ -94,9 +93,9 @@ contains
     use m_ts_options, only : N_Elec
     use m_ts_method
     use m_ts_global_vars,      only: TSmode, TSinit, TSrun
-    use siesta_geom,           only: nsc, xa, ucell, isc_off
+    use siesta_geom,           only: nsc, na_u, xa, ucell, isc_off
     use sparse_matrices,       only: sparse_pattern, block_dist
-    use sparse_matrices,       only: S
+    use sparse_matrices,       only: Escf, S, maxnh
     use m_ts_charge, only : ts_get_charges
     use m_ts_charge,           only: TS_RHOCORR_METHOD
     use m_ts_charge,           only: TS_RHOCORR_FERMI
@@ -120,7 +119,6 @@ contains
 
     ! For initwf
     integer :: istpp
-
 #ifdef SIESTA__FLOOK
     ! len=24 from m_mixing.F90
     character(len=1), target :: next_mixer(24)
@@ -221,101 +219,87 @@ contains
 #endif
 
 #ifdef NCDF_4
-    ! Initialize the NC file
-    if ( write_cdf ) then
+      ! Initialize the NC file
+      if ( write_cdf ) then
 
-       ! Initialize the file...
-       call cdf_init_file(trim(slabel)//'.nc',is_MD = .false.)
+!       Save the settings (important to do here since mesh-cutoff may
+!       have changed).
+        call cdf_save_settings(trim(slabel)//'.nc')
 #ifdef MPI
-       call MPI_Barrier(MPI_Comm_World,MPIerror)
+        call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
-       ! Save the settings
-       call cdf_save_settings(trim(slabel)//'.nc')
-#ifdef MPI
-       call MPI_Barrier(MPI_Comm_World,MPIerror)
+      end if
 #endif
-       
-       d_sav = ('sp'.kv.1)//('S'.kv.1)
-       d_sav = d_sav//('nsc'.kv.1)//('xij'.kv.1)
-       d_sav = d_sav//('xa'.kv.1)//('cell'.kv.1)
-       d_sav = d_sav//('isc_off'.kv.1)
-       call cdf_save_state(trim(slabel)//'.nc',d_sav)
-       call delete(d_sav)
 
-       ! Save the basis set
-       call cdf_save_basis(trim(slabel)//'.nc')
+      ! The dHmax variable only has meaning for Hamiltonian
+      ! mixing, or when requiring the Hamiltonian to be converged.
+      dDmax = -1._dp
+      dHmax = -1._dp
+      dEmax = -1._dp
+      drhog = -1._dp
 
-    end if
-#endif
-    
-    ! The dHmax variable only has meaning for Hamiltonian
-    ! mixing, or when requiring the Hamiltonian to be converged.
-    dDmax = -1._dp
-    dHmax = -1._dp
-    dEmax = -1._dp
-    drhog = -1._dp
-
-    ! Setup convergence criteria
-    if ( SIESTA_worker ) then
-       if ( converge_Eharr ) then
+      if ( SIESTA_worker ) then
+        if ( converge_Eharr ) then
           call reset(conv_harris)
           call set_tolerance(conv_harris,tolerance_Eharr)
-       end if
-       if ( converge_FreeE ) then
+        end if
+        if ( converge_FreeE ) then
           call reset(conv_FreeE)
           call set_tolerance(conv_FreeE,tolerance_FreeE)
-       end if
-    end if
+        end if
+      end if
 
-    ! The current structure of the loop tries to reproduce the
-    ! historical Siesta usage. It should be made more clear.
-    ! Two changes: 
-    !
-    ! -- The number of scf iterations performed is exactly
-    !    equal to the number specified (i.e., the "forces"
-    !    phase is not counted as a final scf step)
-    !
-    ! -- At the change to a TranSiesta GF run the variable "first_scf"
-    !    is implicitly reset to "true".
+      ! The current structure of the loop tries to reproduce the
+      ! historical Siesta usage. It should be made more clear.
+      ! Two changes: 
+      !
+      ! -- The number of scf iterations performed is exactly
+      !    equal to the number specified (i.e., the "forces"
+      !    phase is not counted as a final scf step)
+      !
+      ! -- At the change to a TranSiesta GF run the variable "first_scf"
+      !    is implicitly reset to "true".
+      
+      ! Start of SCF loop
+      iscf = 0
+      do while ( iscf < nscf )
 
-    ! Start of SCF loop
-    iscf = 0
-    do while ( iscf < nscf )
+        ! Conditions of exit:
+        !  -- At the top, to catch a non-positive nscf
+        !  -- At the bottom, based on convergence or # of iterations
 
-       ! Conditions of exit:
-       !  -- At the top, to catch a non-positive nscf and # of iterations
-       !  -- At the bottom, based on convergence
-       
-       iscf = iscf + 1
-       
-       ! Note implications for TranSiesta when mixing H
-       ! Now H will be recomputed instead of simply being
-       ! inherited, however, this is required as the 
-       ! if we have bias calculations as the electric
-       ! field across the junction needs to be present.
-       first_scf = (iscf == 1)
-       
-       if ( SIESTA_worker ) then
-          
+        iscf = iscf + 1
+
+        ! Note implications for TranSiesta when mixing H
+        ! Now H will be recomputed instead of simply being
+        ! inherited, however, this is required as the 
+        ! if we have bias calculations as the electric
+        ! field across the junction needs to be present.
+        first_scf = (iscf == 1)
+        
+        if ( SIESTA_worker ) then
+
           ! Check whether we are short of time to continue
           call check_walltime(time_is_up)
-          if ( time_is_up ) then
-             ! Save DM/H if we were not saving it...
-             !   Do any other bookeeping not done by "die"
-             call timer('all',2)
-             call timer('all',3)
-             call message('WARNING', &
-                  'SCF_NOT_CONV: SCF did not converge'// &
+          if (time_is_up) then
+            ! Save DM/H if we were not saving it...
+            !     Do any other bookeeping not done by "die"
+            call timer('all',2)
+            call timer('all',3)
+            if (.not. SCFConverged) then
+              call message('WARNING', &
+                  'SCF_NOT_CONV: SCF did not converge'//&
                   ' before wall time exhaustion')
-             write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
-             call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
-             
-             call barrier() ! A non-root node might get first to the 'die' call
-             call die("OUT_OF_TIME: Time is up.")
-             
+              write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, prevDmax
+              call message(' (info)',"Geom step, scf iteration, dmax:" &
+                  //trim(tmp_str))
+            endif
+            call barrier() ! A non-root node might get first to the 'die' call
+            call die("OUT_OF_TIME: Time is up.")
+
           end if
-        
+
           call timer( 'IterSCF', 1 )
           if (cml_p) &
                call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
@@ -433,9 +417,9 @@ contains
              ! Save for possible restarts
              if ( mixH ) then
                 call write_spmatrix(H,file="H_MIXED",when=writeH)
-                call save_density_matrix(file="DM_OUT",when=writeDM)
+                call save_density_matrix(SCFconverged, file="DM_OUT",when=writeDM)
              else
-                call save_density_matrix(file="DM_MIXED",when=writeDM)
+                call save_density_matrix(SCFconverged, file="DM_MIXED",when=writeDM)
                 call write_spmatrix(H,file="H_DMGEN",when=writeH)
              end if
           end if
@@ -521,7 +505,7 @@ contains
 
     if ( SIESTA_worker ) then
 !===
-    call end_of_cycle_save_operations()
+    call end_of_cycle_save_operations(SCFconverged)
 
     if ( .not. SCFconverged ) then
        if ( SCFMustConverge ) then
@@ -685,8 +669,9 @@ contains
     ! is guaranteed that the DM is "pure out" and that
     ! we can recover the right H if mixing H.
     !
-    subroutine end_of_cycle_save_operations()
+    subroutine end_of_cycle_save_operations(SCFconverged)
 
+      logical, intent(in) :: SCFconverged
       logical :: DM_write, H_write
 
       ! Depending on the option we should overwrite the
@@ -706,14 +691,14 @@ contains
          ! If we have been saving them, there is no point in doing
          ! it one more time
          if ( mixH ) then
-            call save_density_matrix(file="DM_OUT", when=DM_write)
+            call save_density_matrix(SCFconverged, file="DM_OUT", when=DM_write)
             call write_spmatrix(H,file="H_MIXED", when=H_write)
          else
-            call save_density_matrix(file="DM_MIXED", when=DM_write)
+            call save_density_matrix(SCFconverged, file="DM_MIXED", when=DM_write)
             call write_spmatrix(H,file="H_DMGEN", when=H_write)
          end if
       else
-         call save_density_matrix(file="DM_OUT", when=DM_write)
+         call save_density_matrix(SCFconverged, file="DM_OUT", when=DM_write)
          call write_spmatrix(H,file="H_DMGEN", when=H_write)
       end if
 

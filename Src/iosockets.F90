@@ -130,8 +130,8 @@ subroutine coordsFromSocket( na, xa, cell )
     endif
 
     if (IOnode) then
-      print'(/,a,i4,i8,2x,a)', &
-        myName//'opening socket: inet,port,host=',inet,port,trim(host)
+      write(*,'(/,a,i4,i8,2x,a)') &
+          myName//'opening socket: inet,port,host=',inet,port,trim(host)
       call open_socket(socket, inet, port, host)
     endif
 
@@ -226,9 +226,11 @@ subroutine coordsFromSocket( na, xa, cell )
     end if
   endif
 
-! Print coordinates and cell vectors received
-  print '(/,4a,/,(3f12.6))', myName,'cell (',trim(master_xunit),') =', cell
-  print '(  4a,/,(3f12.6))', myName,'coords (',trim(master_xunit),') =', xa
+  if ( IONode ) then
+    ! Print coordinates and cell vectors received
+    write(*,'(/,4a,/,(3f12.6))') myName,'cell (',trim(master_xunit),') =', cell
+    write(*,'(4a,/,(3f12.6))') myName,'coords (',trim(master_xunit),') =', xa
+  end if
 
 ! Convert physical units
   cell = cell * fdf_convfac( master_xunit, siesta_xunit )
@@ -260,18 +262,18 @@ subroutine forcesToSocket( na, energy, forces, stress )
 ! Copy input to local variables
   allocate(f(3*na))
   e = energy
-  f = reshape( forces, (/3*na/) )
-  s = reshape( stress, (/9/) )
+  f(:) = reshape( forces, (/3*na/) )
+  s(:) = reshape( stress, (/9/) )
   
 ! Convert physical units
   e = e * fdf_convfac( siesta_eunit, master_eunit )
-  f = f * fdf_convfac( siesta_eunit, master_eunit ) &
+  f(:) = f(:) * fdf_convfac( siesta_eunit, master_eunit ) &
         / fdf_convfac( siesta_xunit, master_xunit )
-  s = s * fdf_convfac( siesta_eunit, master_eunit ) &
+  s(:) = s(:) * fdf_convfac( siesta_eunit, master_eunit ) &
         / fdf_convfac( siesta_xunit, master_xunit )**3
 
 ! Find virial tensor for i-pi, in master's units
-  vir = -s * cellv * fdf_convfac( siesta_xunit, master_xunit )**3
+  vir(:) = -s * cellv * fdf_convfac( siesta_xunit, master_xunit )**3
 
 ! Write forces to socket
   if (IOnode) then
@@ -316,13 +318,12 @@ subroutine forcesToSocket( na, energy, forces, stress )
     endif ! leqi(master)
   end if ! IOnode
 
-! Print energy, forces, and stress tensor sent to master
-  print '(/,a,f12.6)',      myName// &
-    'energy ('//trim(master_eunit)//') =', e
-  print '(  a,/,(3f12.6))', myName// &
-    'stress ('//trim(master_eunit)//'/'//trim(master_xunit)//'^3) =', s
-  print '(  a,/,(3f12.6))', myName// &
-    'forces ('//trim(master_eunit)//'/'//trim(master_xunit)//') =', f
+  if ( IONode ) then
+    ! Print energy, forces, and stress tensor sent to master
+    write(*,'(/,a,f12.6)') myName// 'energy ('//trim(master_eunit)//') =', e
+    write(*,'(a,/,(3f12.6))') myName//'stress ('//trim(master_eunit)//'/'//trim(master_xunit)//'^3) =', s
+    write(*,'(a,/,(3f12.6))') myName//'forces ('//trim(master_eunit)//'/'//trim(master_xunit)//') =', f
+  end if
   deallocate(f)
 
 end subroutine forcesToSocket

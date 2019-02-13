@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -7,7 +7,12 @@
 ! ---
 
 module class_Sparsity
-  
+  !! Implements a reference-counted derived type ([bud](|page|/datastructures/1-buds.html))
+  !! to hold the [sparsity pattern](|page|/datastructures/2-sparse.html)  of the program's matrices.
+  !! Objects of this type (notably [[sparse_matrices:sparse_pattern]] can be passed around
+  !! and put in container types.
+  !! The legacy indexing arrays can be linked to this bud's data ([[class_Sparsity:attach]])
+  !! when necessary.
   use alloc, only: re_alloc, de_alloc
   
   implicit none
@@ -109,9 +114,9 @@ module class_Sparsity
   subroutine delete_Data(spdata)
     type(Sparsity_) :: spdata
     call de_alloc( spdata%n_col,   &
-         name="n_col " // trim(spdata%name),routine="Sparsity")	
+         name="n_col " // trim(spdata%name),routine="Sparsity") 
     call de_alloc( spdata%list_ptr,   &
-         name="list_ptr " // trim(spdata%name),routine="Sparsity")	
+         name="list_ptr " // trim(spdata%name),routine="Sparsity")      
     call de_alloc( spdata%list_col,   &
          name="list_col " // trim(spdata%name),routine="Sparsity") 
   end subroutine delete_Data
@@ -141,9 +146,9 @@ module class_Sparsity
     sp%data%name = trim(name)
     
     call re_alloc(sp%data%n_col,1,nrows, &
-         name="n_col " // trim(sp%data%name),routine="Sparsity")	
+         name="n_col " // trim(sp%data%name),routine="Sparsity")        
     call re_alloc(sp%data%list_ptr,1,nrows, &
-         name="list_ptr " // trim(sp%data%name),routine="Sparsity")	
+         name="list_ptr " // trim(sp%data%name),routine="Sparsity")     
 
     sp%data%nrows = nrows
     sp%data%nrows_g = nrows_g

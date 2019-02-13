@@ -13,8 +13,26 @@
 % Include settings appropriate for tbtrans
 \input{tex/init.tex}
 
+% Local command for the software version for printing
+% \unskip helps when space/newline chars are present in the
+% version.info file.
+\providecommand\softwareversion{\input{../version.info}\unskip}
+
+% Title (note that \input above will fail in the title, we however
+% don't care since it is only meaningful for final publications where
+% direct text is used.)
+\title{TBtrans manual \softwareversion}
+
 % Set the date
-\date{July 5, 2017}
+\date{\today}
+
+% Specify Authors
+\author{%
+    Nick R. Papior%
+}
+
+% Ensure the information is written in the PDF (see tex/setup.tex)
+\setpdfmetadata
 
 \begin{document}
 
@@ -35,7 +53,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge \textbf{T B t r a n s \, \, 4.1-b4}}
+{\Huge \textbf{T B t r a n s \, \, \softwareversion}}
 
 \vspace{1cm}
 \hrulefill
@@ -55,14 +73,23 @@
 \newpage
 
 \section*{Contributors to \tbtrans}
-\addcontentsline{toc}{section}{Contributors to \siesta}
+\addcontentsline{toc}{section}{Contributors to \tbtrans}
 
-\tbtrans\ is Copyright \copyright\ 2016-2017 by Nick R. Papior. The
+\tbtrans\ is Copyright \copyright\ 2016-2018 by Nick R. Papior. The
 original \tbtrans\ code was implemented by Mads Brandbyge, Jose
 L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
 \tbtrans\ is implemented by the following contributors:
 
-Nick R. Papior.
+\vspace{0.5cm}
+
+\hbox{ \hskip 0.1cm
+\begin{tabular}{ll}
+
+  Nick R\"ubner Papior &
+  \textit{Technical University of Denmark} \\ \\
+
+\end{tabular}
+}
 
 
 \tableofcontents
@@ -769,6 +796,10 @@ calculation has completed.
 
   See \fdf{TBT.Atoms!Device.Connect}.
 
+  In case any of \fdf{TBT.DM!Gf}, \fdf{TBT.COOP!Gf} or
+  \fdf{TBT.COHP!Gf} is \fdftrue\ this flag will be set to \fdftrue\ as
+  well.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DOS!A}
@@ -781,6 +812,10 @@ calculation has completed.
   This generates \sysfile{ADOS\_<>} and \sysfile{AVADOS\_<>}.
 
   See \fdf{TBT.Atoms!Device.Connect}.
+
+  In case any of \fdf{TBT.Current!Orb}, \fdf{TBT.DM!A}, \fdf{TBT.COOP!A} or
+  \fdf{TBT.COHP!A} is \fdftrue\ this flag will be set to \fdftrue\ as
+  well.
 
 \end{fdflogicalF}
 
@@ -804,7 +839,7 @@ region via this simple expression
   \rho_{\mathrm{bound-states}} = \rho_{\mathbf G} - 
   \sum_i \rho_{\mathbf A_i},
 \end{equation}
-where the sum is over all electrodes, $\mathbf G$ and $\mathbf A$ are
+where the sum is over all electrodes, $\mathbf G$ and $\mathbf A_i$ are
 the Green and spectral function, respectively. Note that typically
 $\rho_{\mathrm{bound-states}}=0$.
 
@@ -849,15 +884,12 @@ Population may also be calculated. These are only available if
   The COOP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COOP!A}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A.All}
 
   Calculate COOP from the spectral function in the device region.
 
@@ -869,15 +901,12 @@ Population may also be calculated. These are only available if
   The COOP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COHP!Gf}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!Gf}
+  \fdfdepend{TBT.Atoms!Device}
 
   Calculate COHP from the Green function in the device region.
 
@@ -889,15 +918,12 @@ Population may also be calculated. These are only available if
   The COHP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
 
-  \note \fdf{TBT.DOS!Gf} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
-
   \note Untested!
 
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.COHP!A}
-  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A,TBT.DOS!A.All}
+  \fdfdepend{TBT.Atoms!Device,TBT.DOS!A.All}
 
   Calculate COHP from the spectral function in the device region.
 
@@ -908,9 +934,6 @@ Population may also be calculated. These are only available if
   \end{equation}
   The COHP curves are orbital, energy and $k$-resolved and they may
   thus result in very large output files.
-
-  \note \fdf{TBT.DOS!A} has to be \fdftrue\ for this to be
-  calculated, otherwise a warning will be issued.
 
   \note Untested!
 
@@ -924,13 +947,20 @@ Population may also be calculated. These are only available if
   calculated. 
 
   This generates \sysfile{TEIG\_<1>\_<2>} and
-  \sysfile{AVTEIG\_<1>\_<2>}, however, only for the non-equivalent
-  electrode combinations (\tbtrans\ intrinsically assumes
-  time-reversal symmetry).
-
+  \sysfile{AVTEIG\_<1>\_<2>}, possibly \sysfile{CEIG\_<1>} and
+  \sysfile{AVCEIG\_<1>}. The former is for two different electrodes
+  $i\neq j$, while the latter is for electrode $i=j$.
+  
   \note if you specify a number of eigenvalues above the available
   number of eigenvalues, \tbtrans\ will automatically truncate it to a
   reasonable number.
+
+  \note The transmission eigenvalues for $N>2$ systems is not fully
+  understood and the transmission eigenvalues calculated in \tbtrans\ is
+  done by diagonalizing this sub-matrix:
+  \begin{equation}
+    \mathbf G \boldsymbol \Gamma_i \mathbf G^\dagger \boldsymbol \Gamma_j.
+  \end{equation}
 
 \end{fdfentry}
 
@@ -992,15 +1022,15 @@ Population may also be calculated. These are only available if
   
   Orbital currents are implemented as:
   \begin{equation}
-    J_{\alpha \beta} = i [
-    \mathbf H_{\beta\alpha} \mathbf A_{\alpha\beta}
+    J_{\alpha \beta}(E) = i [
+    (\mathbf H_{\beta\alpha} - E\mathbf S_{\beta\alpha}) \mathbf A_{\alpha\beta}(E)
     - 
-    \mathbf H_{\alpha\beta} \mathbf A_{\beta\alpha}],
+    (\mathbf H_{\alpha\beta} - E\mathbf S_{\alpha\beta}) \mathbf A_{\beta\alpha}(E)],
   \end{equation}
   where we have left out the pre-factor ($e/\hbar$)
   intentionally. \sisl\ may be used to analyze the orbital currents
-  and enables easy transformation of orbital currents to
-  bond currents and activity currents.
+  and enables easy transformation of orbital currents to bond currents
+  and activity currents\cite{Papior2017}.
 
   \note this requires \tbtrans\ to be compiled with NetCDF-4 support,
   see Sec.~\ref{sec:arch-make}.
@@ -1062,11 +1092,15 @@ currents may only be calculated in the selected device region.
     %block TBT.Atoms.Device
        atom [ 10 -- 20 ]
        atom [ 30 -- 40 ]
+       # Atoms removed from the device region
+       # Even though they are specified in other
+       # lines
+       not-atom [ 15, 35]
     % endblock
     # Or equivalently as a list   
-    TBT.Atoms.Device [10 -- 20, 30 -- 40]
+    TBT.Atoms.Device [10 -- 14, 16 -- 20, 30 -- 34, 36 -- 40]
   \end{fdfexample}
-  will limit the device region to atoms [10--20, 30--40].
+  will limit the device region to atoms [10--14, 16--20, 30--34, 36--40].
   
 \end{fdfentry}
 
@@ -1271,7 +1305,7 @@ Brillouin zone.
 
     \end{fdfoptions}
 
-    \option[\fdfvalue{siesta-method}]%
+    \option[\fdfvalue*{siesta-method}]%
 
     One may also use the typical \fdf*{kgrid\_Monkhorst\_Pack} method
     of input as done in \siesta. This is a $3\times3$ block such as:
@@ -1321,7 +1355,7 @@ and transmission.
   This value controls the smearing of the DOS on the energy
   axis. Generally will the electrode $\eta$ value contribute to a
   smearing in the device region, while in certain situations an
-  imaginary $\eta$ is required in the device region. 
+  imaginary $\eta$ is required in the device region.
   
 \end{fdfentry}
 
@@ -1390,6 +1424,9 @@ and transmission.
     not store the energies as complex numbers, thus one cannot
     subsequently extract the $\eta$ value used for the individual
     energy points.
+
+    \note for \phtrans\ the energies will be squared internally to be
+    in correct units, hence the units should still be $\mathrm{eV}$.
 
     \option[method]%
     \fdfindex{TBT.Contour!<>!method}%
@@ -1577,7 +1614,7 @@ is no need to specify the chemical potential
     electrode unit-cell. 
 
     \note this has nothing to do with the scattering region unit cell,
-    \tsiesta\ will figure out the alignment of the electrode unit-cell
+    \tbtrans\ will figure out the alignment of the electrode unit-cell
     and the scattering region unit-cell.
 
     \option[chemical-potential|chem-pot|mu]%
@@ -1624,16 +1661,25 @@ is no need to specify the chemical potential
     
     \option[Eta]%
     \fdfindex*{TBT.Elec.<>!Eta}%
-    Control the imaginary part of the surface Green function for this
-    electrode. See \fdf{TBT.Elecs!Eta}.
+    \fdfdepend{TBT.Elecs!Eta}%
+    Control the imaginary energy ($\eta$) of the surface Green
+    function for this electrode.
+
+    \note if this energy is negative the complex value associated with
+    the contour is used. This is particularly useful when providing a
+    user-defined contour. Ensure that all imaginary values are larger
+    than $0$ as otherwise \tbtrans\ may seg-fault.
+
+    \note for \phtrans\ calculations you are highly encouraged to
+    change this value since the default ($1\,\mathrm{meV}$) is very
+    low.
 
     \option[Accuracy]%
     \fdfindex*{TBT.Elec.<>!Accuracy}%
+    \fdfdepend{TBT.Elecs!Accuracy}%
     Control the convergence accuracy required for the self-energy
     calculation when using the Lopez-Sanchez, Lopez-Sanchez iterative
     scheme.
-    %
-    See \fdf{TBT.Elecs!Accuracy}.
 
     \note advanced use \emph{only}.
 
@@ -1716,13 +1762,14 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
   
 \end{fdflogicalT}
 
-\begin{fdfentry}{TBT.Elecs!Eta}[energy]<$10^{-4}\,\mathrm{eV}$>
+\begin{fdfentry}{TBT.Elecs!Eta}[energy]<$1\,\mathrm{meV}$>
   
-  Globally control the imaginary part used for the surface Green
-  function calculation. This $\eta$ value is \emph{not} used in the
-  device region.
+  Globally control the imaginary energy ($\eta$) used for the surface
+  Green function calculation. This $\eta$ value is \emph{not} used in
+  the device region.
   %
-  See \fdf{TBT.Elec.<>!Eta}.
+  See \fdf{TBT.Elec.<>!Eta} for extended details on the usage of this
+  flag.
   
 \end{fdfentry}
 
@@ -1736,7 +1783,7 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
 
 \begin{fdflogicalF}{TBT.Elecs!Neglect.Principal}
 
-  If this is \fdffalse\ \tsiesta\ dies if there are connections beyond
+  If this is \fdffalse\ \tbtrans\ dies if there are connections beyond
   the principal cell.
 
   \note set this to \fdftrue\ with care, non-physical results may
@@ -1778,7 +1825,7 @@ for the electrodes (with \fdf{TBT.Elec.<>} taking precedence).
   difficulties in obtaining perfectly aligned electrode coordinates.
 
   This parameter controls how strict the criteria for equivalent
-  atomic coordinates is. If \tsiesta\ crashes due to mismatch between
+  atomic coordinates is. If \tbtrans\ crashes due to mismatch between
   the electrode atomic coordinates and the scattering region
   calculation, one may increase this criteria. This should only be
   done if one is sure that the atomic coordinates are almost similar
@@ -1834,6 +1881,53 @@ Secondly there is, currently, no way to determine the most optimal
 block-partitioning of a banded matrix and \tbtrans\ allows several
 algorithms to determine an optimal partitioning scheme. The following
 flag controls the partitioning for the device region.
+
+
+\begin{fdflogicalF}{TBT!Analyze}
+
+  As the pivoting algorithm \emph{highly} influences the performance
+  and throughput of the transport calculation it is crucial to select
+  the best performing algorithm available. This option tells \tbtrans\
+  to analyze the pivoting table for nearly all the implemented
+  algorithms and print-out information about them.
+
+  \note we advice users to \emph{always} run an analyzation step prior
+  to actual calculation and select the \emph{best} BTD format. This
+  analyzing step is very fast and can be performed on small
+  work-station computers, even on systems of $\gg10,000$ orbitals.
+
+  To run the analyzing step you may do:
+  \begin{shellexample}
+    tbtrans -fdf TBT.Analyze RUN.fdf > analyze.out
+  \end{shellexample}
+  note that there is little gain on using MPI and it should complete
+  within a few minutes, no matter the number of orbitals.
+
+  Choosing the best one may be difficult. Generally one should choose
+  the pivoting scheme that uses the least amount of memory. However,
+  one should also choose the method with the largest block-size being
+  as small as possible. As an example:
+  \begin{shellexample}
+TBT.BTD.Pivot.Device atom+GPS
+...
+    BTD partitions (7): 
+     [ 2984, 2776, 192, 192, 1639, 4050, 105 ]
+    BTD matrix block size [max] / [average]: 4050 /   1705.429
+    BTD matrix elements in % of full matrix:   47.88707 %
+
+TBT.BTD.Pivot.Device atom+GGPS
+...
+    BTD partitions (6): 
+     [ 2880, 2916, 174, 174, 2884, 2910 ]
+    BTD matrix block size [max] / [average]: 2916 /   1989.667
+    BTD matrix elements in % of full matrix:   48.62867 %
+
+  \end{shellexample}
+  Although the GPS method uses the least amount of memory, the GGPS
+  will likely perform better as the largest block in GPS is $4050$
+  vs. $2916$ for the GGPS method. 
+
+\end{fdflogicalF}
 
 
 \begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{largest
@@ -1921,52 +2015,17 @@ flag controls the partitioning for the device region.
 
 \end{fdfentry}
 
-\begin{fdflogicalF}{TBT!Analyze}
+\begin{fdfentry}{TBT.BTD!Spectral}[string]<propagation|column>
 
-  As the pivoting algorithm \emph{highly} influences the performance
-  and throughput of the transport calculation it is crucial to select
-  the best performing algorithm available. This option tells \tbtrans\
-  to analyze the pivoting table for nearly all the implemented
-  algorithms and print-out information about them.
+  Method used for calculating the spectral function ($\mathbf A_i$).
+  For 4 or more electrodes the \fdf*{column} option is the default
+  while \fdf*{propagation} is the default for less electrodes.
 
-  \note we advice users to \emph{always} run an analyzation step prior
-  to actual calculation and select the \emph{best} BTD format. This
-  analyzing step is very fast and may be performed on small
-  work-station computers, even on systems of $\gg10,000$ orbitals.
-
-  To run the analyzing step you may do:
-  \begin{shellexample}
-    tbtrans -fdf TBT.Analyze RUN.fdf > analyze.out
-  \end{shellexample}
-  note that there is little gain on using MPI and it should complete
-  within a few minutes, no matter the number of orbitals.
-
-  Choosing the best one may be difficult. Generally one should choose
-  the pivoting scheme that uses the least amount of memory. However,
-  one should also choose the method with the largest block-size being
-  as small as possible. As an example:
-  \begin{shellexample}
-TBT.BTD.Pivot.Device atom+GPS
-...
-    BTD partitions (7): 
-     [ 2984, 2776, 192, 192, 1639, 4050, 105 ]
-    BTD matrix block size [max] / [average]: 4050 /   1705.429
-    BTD matrix elements in % of full matrix:   47.88707 %
-
-TBT.BTD.Pivot.Device atom+GGPS
-...
-    BTD partitions (6): 
-     [ 2880, 2916, 174, 174, 2884, 2910 ]
-    BTD matrix block size [max] / [average]: 2916 /   1989.667
-    BTD matrix elements in % of full matrix:   48.62867 %
-
-  \end{shellexample}
-  Although the GPS method uses the least amount of memory, the GGPS
-  will likely perform better as the largest block in GPS is $4050$
-  vs. $2916$ for the GGPS method. 
-
-\end{fdflogicalF}
-
+  \note this option may heavily influence performance. Test for a
+  single $k$-point and single energy point to figure out the
+  implications of using one over the other.
+  
+\end{fdfentry}
 
 \begin{fdflogicalF}{TBT.BTD!Pivot.Graphviz}
 
@@ -2557,11 +2616,14 @@ the molecule.
 
   Save the spectral density of states for the projections. In case you
   have set \fdf{TBT.DOS!A} this will default to that flag.
-  
+
+  In case any of \fdf{TBT.Projs!Current.Orb}, \fdf{TBT.Projs!DM.A},
+  \fdf{TBT.Projs!COOP.A} or \fdf{TBT.Projs!COHP.A} is \fdftrue\ this
+  flag will be set to \fdftrue\ as well.
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.Projs!Current.Orb}%
-  \fdfdepend{TBT.Projs!DOS.A}
 
   Will calculate and save the orbital current for the device with the
   projections.
@@ -2570,6 +2632,32 @@ the molecule.
   the cut-out device region sparsity pattern. 
   
 \end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!DM.A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate the energy and $k$-resolved density matrix for the
+  projected spectral functions. The density matrix may be used to
+  construct real-space LDOS profiles.
+  
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!COOP.A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate COOP from the projected spectral function in the device
+  region.
+
+\end{fdflogicalF}
+
+\begin{fdflogicalF}{TBT.Projs!COHP.A}
+  \fdfdepend{TBT.Atoms!Device}
+
+  Calculate COHP from the projected spectral function in the device
+  region.
+
+\end{fdflogicalF}
+
 
 \begin{fdflogicalF}{TBT.Projs!T.All}%
 

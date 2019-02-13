@@ -48,7 +48,7 @@ contains
 #endif
 
     ! get the distribution
-    sp  => spar(DM_2D)
+    sp => spar(DM_2D)
     call attach(sp ,n_col=ncol,list_ptr=lptr,nrows=lnr,nrows_g=nr)
     
     S => val(S_1D)
@@ -57,7 +57,8 @@ contains
     ! Initialize the total charge
     Q = 0._dp
 
-!$OMP parallel do default(shared), private(is,ir,ind), collapse(3)
+!$OMP parallel do default(shared), collapse(2), &
+!$OMP& private(is,ir,ind), reduction(+:Q)
     do is = 1, spin%spinor
        do ir = 1, lnr
           do ind = lptr(ir) + 1, lptr(ir) + ncol(ir)
@@ -66,7 +67,7 @@ contains
        end do
     end do
 !$OMP end parallel do
-    
+
 #ifdef MPI
     call globalize_sum(Q, Qr)
     Q = Qr

@@ -90,7 +90,7 @@ contains
     ! Gf calculation
     use m_ts_trimat_invert
 
-    use m_ts_tri_common, only : GFGGF_needed_worksize
+    use m_ts_tri_common, only : GFGGF_needed_worksize, nnzs_tri
     
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
@@ -182,14 +182,18 @@ contains
     ! than, yes, work.
 
     if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
-       ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
-       ! Hence, we will minimum require this...
-       call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
-            N_Elec, Elecs, padding, GFGGF_size)
+      ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
+      ! Hence, we will minimum require this...
+      call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
+          N_Elec, Elecs, padding, GFGGF_size)
     else
-       padding = 0
-       GFGGF_size = 0
+      padding = 0
+      GFGGF_size = 0
     end if
+    ! Now figure out the required worksize for SE expansion
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, idx)
+    io = nnzs_tri(c_Tri%n, c_Tri%r)
+    padding = max(padding, idx - io)
     call newzTriMat(zwork_tri,c_Tri%n,c_Tri%r,'GFinv', &
          padding=padding)
     nzwork = elements(zwork_tri,all=.true.)
@@ -310,7 +314,7 @@ contains
     call itt_attach(Sp,cur=ispin)
     
     do while ( .not. itt_step(Sp) )
-       
+
        call init_DM(sp_dist,sparse_pattern, &
             n_nzs, DM(:,ispin), EDM(:,ispin), &
             tsup_sp_uc, Calc_Forces)
@@ -634,6 +638,11 @@ contains
 
     call rgn_delete(pvt)
 
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
+    
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
@@ -826,7 +835,7 @@ contains
        call init_val(spuDM)
        cE%exist = .true.
        cE%fake  = .true.
-       cE%e = dcmplx(0._dp, 0._dp)
+       cE%e = cmplx(0._dp, 0._dp,dp)
        cE%idx = 1
        cE%idx(1) = 0 ! Signals a fermi-contour
        if ( Node == Nodes - 1 ) cE%fake = .false.
@@ -847,7 +856,7 @@ contains
           call invert_TriMat(zwork_tri,GF_tri,calc_parts)
        end if
           
-       W = dcmplx(kw,0._dp)
+       W = cmplx(kw,0._dp,dp)
        call add_DM( spuDM, W, spuEDM, W, &
             GF_tri, r_pvt, pvt, N_Elec, Elecs, DMidx=1)
 
@@ -965,8 +974,8 @@ contains
 
              idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
              
-             D(ind,i1) = D(ind,i1) - dimag( GF(idx) * DMfact  )
-             E(ind,i2) = E(ind,i2) - dimag( GF(idx) * EDMfact )
+             D(ind,i1) = D(ind,i1) - aimag( GF(idx) * DMfact  )
+             E(ind,i2) = E(ind,i2) - aimag( GF(idx) * EDMfact )
              
           end do
           
@@ -987,7 +996,7 @@ contains
              
              idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
              
-             D(ind,i1) = D(ind,i1) - dimag( GF(idx) * DMfact  )
+             D(ind,i1) = D(ind,i1) - aimag( GF(idx) * DMfact  )
              
           end do
           end if
@@ -1096,7 +1105,7 @@ contains
 
     ! Initialize
 !$OMP workshare
-    GFinv(:) = dcmplx(0._dp,0._dp)
+    GFinv(:) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region

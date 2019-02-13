@@ -64,11 +64,18 @@ module m_ts_hartree
 
 contains
 
-  subroutine read_ts_hartree_options( )
+  subroutine read_ts_hartree_options(N_Elec, Elecs, cell, na_u, xa)
 
     use fdf, only: fdf_get, leqi
 
-    character(len=50) :: c
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(inout), target :: Elecs(N_Elec)
+    real(dp), intent(in) :: cell(3,3)
+    integer, intent(in) :: na_u
+    real(dp), intent(in) :: xa(3,na_u)
+
+    character(len=64) :: c
+    integer :: iEl
 
     if ( ts_tidx > 0 ) then
        
@@ -96,6 +103,22 @@ contains
     Vha_frac = fdf_get('TS.Hartree.Fix.Frac',1._dp)
     Vha_offset = fdf_get('TS.Hartree.Offset',0._dp, 'Ry')
 
+    ! In case the user has not requested a specific electrode plane
+    ! we will find the electrode with the largest plane
+    nullify(El)
+    c = fdf_get('TS.Hartree.Fix.Elec','largest volume/area electrode')
+    do iEl = 1, N_Elec
+      if ( leqi(Elecs(iEl)%name, c) ) then
+        El => Elecs(iEl)
+        exit
+      end if
+    end do
+
+    if ( .not. associated(El) ) then
+      ! Find the "biggest" electrode
+      call ts_hartree_elec( N_Elec, Elecs , cell, na_u, xa )
+    end if
+
   end subroutine read_ts_hartree_options
 
   ! Find the biggest electrode by comparing
@@ -112,7 +135,7 @@ contains
     real(dp), intent(in) :: xa(3,na_u)
 
     integer :: iE
-    real(dp) :: area, tmp, f1, f2
+    real(dp) :: area, tmp, f1, f2, r3(3)
     real(dp), external :: volcel
 
     ! if the electrode has already been
@@ -169,26 +192,65 @@ contains
     area = -1._dp
     do iE = 1 , N_Elec
 
-       ! Scale according to the Bloch expansions
-       tmp = VOLCEL(Elecs(iE)%cell) * product(Elecs(iE)%Bloch)
-       
-       if ( TS_HA == TS_HA_ELEC ) then
-          ! calculate cell area of plane by non-semi-inf vectors
-          tmp = tmp / VNORM(Elecs(iE)%cell(:,Elecs(iE)%t_dir))
-       else if ( TS_HA == TS_HA_ELEC_BOX ) then
-          ! do nothing, volume check
-       end if
-       if ( tmp > area ) then
-          area =  tmp
-          El   => Elecs(iE)
-       end if
+      if ( TS_HA == TS_HA_ELEC ) then
+        
+        ! calculate area of plane by non-semi-inf vectors
+        select case ( Elecs(iE)%t_dir )
+        case ( 1 )
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
+          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+        case ( 2 )
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
+          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+        case ( 3 )
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
+          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+        case ( 4 ) ! B-C
+          ! Here there are two planes possible, the plane for the non-semi-infinite
+          ! direction and B, C, respectively.
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
+        case ( 5 ) ! A-C
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,1), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
+        case ( 6 ) ! A-B
+          call cross(Elecs(iE)%cell(:,3), Elecs(iE)%cell(:,1), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,3), Elecs(iE)%cell(:,2), r3)
+          tmp = max(tmp, VNORM(r3))
+        case ( 7 ) ! A-B-C
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
+          tmp = VNORM(r3)
+          call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
+          call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
+          tmp = max(tmp, VNORM(r3))
+        end select
+        
+      else
+        
+        ! We check with volume of electrode
+        tmp = Elecs(iE)%na_used / real(Elecs(iE)%na_u, dp) * product(Elecs(iE)%Bloch)
+        tmp = VOLCEL(Elecs(iE)%cell) * tmp
+        
+      end if
+
+      ! Select based on area
+      if ( tmp > area ) then
+        area = tmp
+        El => Elecs(iE)
+      end if
     end do
 
   end subroutine ts_hartree_elec
   
   subroutine ts_init_hartree_fix(cell, na_u, xa, nmesh, nmeshl)
 
-    use intrinsic_missing, only: VNORM, VEC_PROJ
+    use intrinsic_missing, only: VNORM, VEC_PROJ, VEC_PROJ_SCA
     use units, only : Ang
     use m_mesh_node, only : offset_r, dMesh, dL
     use parallel, only : IONode
@@ -206,7 +268,7 @@ contains
     integer,    intent(in) :: nmesh(3), nmeshl(3)
 
     integer :: i1, i2, i3, nlp
-    real(dp) :: ll(3), llZ(3), llYZ(3), rcell(3,3)
+    real(dp) :: ll(3), llZ(3), llYZ(3), rcell(3,3), rtmp
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -270,7 +332,8 @@ contains
 
     ! We check that we actually process something...
     nlp = 0
-    if ( TS_HA == TS_HA_ELEC ) then
+    select case ( TS_HA )
+    case ( TS_HA_ELEC )
 !$OMP parallel do default(shared), &
 !$OMP&private(i3,i2,i1,llZ,llYZ,ll), &
 !$OMP&reduction(+:nlp)
@@ -287,7 +350,7 @@ contains
           end do
        end do
 !$OMP end parallel do
-    else if ( TS_HA == TS_HA_ELEC_BOX ) then
+    case ( TS_HA_ELEC_BOX )
 !$OMP parallel do default(shared), &
 !$OMP&private(i3,i2,i1,llZ,llYZ,ll), &
 !$OMP&reduction(+:nlp)
@@ -304,7 +367,7 @@ contains
           end do
        end do
 !$OMP end parallel do
-    end if
+    end select
 
 #ifdef MPI
     call MPI_AllReduce(nlp,i1,1,MPI_integer,MPI_Sum, &
@@ -322,12 +385,28 @@ contains
                &unit cell.'
           write(*,'(a)') 'ts: Please move structure so this point is &
                &inside unit cell (Ang):'
-          write(*,'(a,3(tr1,f13.5))') 'ts: Point (Ang):', &
-              2 * VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
-          write(*,'(a)') 'ts: The following block will most likely be usable (otherwise try different displacements)'
-          write(*,'(/,a)') '%block AtomicCoordinatesOrigin'
-          write(*,'(tr2,3(tr1,f13.5))') -2 * VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
-          write(*,'(a,/)') '%endblock'
+          write(*,'(a,3(tr1,f13.5))') 'ts: Plane, point in plane (Ang):', El%p%c / Ang
+          write(*,'(a,3(tr1,f13.5))') 'ts: Plane, normal vector  (Ang):', El%p%n
+          if ( El%t_dir <= 3 ) then
+            write(*,'(a,3(tr1,f13.5))') 'ts: Projected point onto semi-infinite direction (Ang):', &
+                VEC_PROJ(cell(:,El%pvt(El%t_dir)), El%p%c) / Ang
+            write(*,'(a)') 'ts: The following block will most likely be usable (otherwise try different displacements)'
+            
+            write(*,'(/,a)') '%block AtomicCoordinatesOrigin'
+            rtmp = VEC_PROJ_SCA(cell(:,El%pvt(El%t_dir)), El%p%c) / VNORM(cell(:,El%pvt(El%t_dir)))
+            if ( rtmp > 1._dp ) then
+              rtmp = rtmp - 1._dp
+              write(*,'(tr2,3(tr1,f13.5))') - cell(:,El%pvt(El%t_dir)) * rtmp / Ang
+            else if ( rtmp < 0._dp ) then
+              write(*,'(tr2,3(tr1,f13.5))') cell(:,El%pvt(El%t_dir)) * rtmp / Ang
+            else
+              ! The point is most probably very close to the boundary
+              ! So shift it
+              rtmp = El%dINF_layer * 0.5_dp / VNORM(cell(:,El%pvt(El%t_dir)))
+              write(*,'(tr2,3(tr1,f13.5))') - cell(:,El%pvt(El%t_dir)) * rtmp / Ang
+            end if
+            write(*,'(a,/)') '%endblock'
+          end if
        end if
     end if
 

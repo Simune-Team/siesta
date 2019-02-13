@@ -111,7 +111,9 @@ contains
     use m_ts_contour_eq,  only : Eq_E, ID2idx, c2weight_eq
     use m_ts_contour_neq, only : nEq_E, has_cE_nEq
     use m_ts_contour_neq, only : N_nEq_ID, c2weight_neq
-    
+    use m_ts_contour_eq, only : N_Eq_E
+    use m_ts_contour_neq, only : N_nEq_E
+
     use m_iterator
 
     ! Gf calculation
@@ -161,6 +163,7 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
+    integer :: NE
     real(dp)    :: kw, kpt(3), bkpt(3)
     complex(dp) :: W, ZW
 ! ************************************************************
@@ -201,7 +204,8 @@ contains
 
     ! The zwork is needed to construct the LHS for solving: G^{-1} G = I
     ! Hence, we will minimum require the full matrix...
-    nzwork = no_u_TS ** 2
+    call UC_minimum_worksize(IsVolt, N_Elec, Elecs, no)
+    nzwork = max(no_u_TS ** 2, no)
     allocate(zwork(nzwork),stat=ierr)
     if (ierr/=0) call die('Could not allocate space for zwork')
     call memory('A','Z',nzwork,'transiesta')
@@ -281,6 +285,9 @@ contains
        end if
     end if
 
+    ! Total number of energy points
+    NE = N_Eq_E() + N_nEq_E()
+
     ! start the itterators
     call itt_init  (SpKp,end1=nspin,end2=ts_kpoint_scf%N)
     ! point to the index iterators
@@ -294,9 +301,12 @@ contains
        ! However, the extra computation should be negligible to the gain.
 
        if ( itt_stepped(SpKp,1) ) then ! spin has incremented
-          call init_DM(sp_dist, sparse_pattern, &
-               n_nzs, DM(:,ispin), EDM(:,ispin), &
-               tsup_sp_uc, Calc_Forces)
+         call init_DM(sp_dist, sparse_pattern, &
+             n_nzs, DM(:,ispin), EDM(:,ispin), &
+             tsup_sp_uc, Calc_Forces)
+         do iEl = 1, N_Elec
+           call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+         end do
        end if
 
        ! Include spin factor and 1/(2\pi)
@@ -435,6 +445,9 @@ close(io)
 
           ! The remaining code segment only deals with 
           ! bias integration... So we skip instantly
+          do iEl = 1, N_Elec
+            call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+          end do
 
           cycle
 
@@ -598,7 +611,9 @@ close(io)
        call timer('TS_weight',2)
 #endif
 
-       ! We don't need to do anything here..
+       do iEl = 1, N_Elec
+         call reread_Gamma_Green(Elecs(iEl), uGF(iEl), NE, ispin)
+       end do
 
     end do ! spin
 
@@ -633,6 +648,11 @@ close(io)
     if ( IsVolt ) then
        call de_alloc(GFGGF_work, routine='transiesta')
     end if
+
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
    
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
@@ -840,7 +860,7 @@ integer :: i
 #ifdef TS_DEV    
     if (.not. hasSaved )then
        hasSaved = .true.
-       GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+       GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
        do io = 1, no_u
           if ( l_ncol(io) == 0 ) cycle
           ioff = orb_offset(io) - 1
@@ -853,12 +873,12 @@ integer :: i
        if (ionode) then
           i = 50
           open(i,form='unformatted')
-          write(i) dcmplx(100._dp,100._dp)
+          write(i) cmplx(100._dp,100._dp,dp)
           write(i) no_u
           write(i) no_u
           write(i) GFinv(1:no_u**2)
           write(i) no_u
-          GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+          GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
           do io = 1, no_u
              if ( l_ncol(io) == 0 ) cycle
              ioff = orb_offset(io) - 1
@@ -878,7 +898,7 @@ integer :: i
 
     ! Initialize
 !$OMP workshare
-    GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+    GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
 !$OMP end workshare
 
     ! We will only loop in the central region

@@ -237,14 +237,14 @@ CONTAINS
 
        if (myrank == 0) then
           !           if (old_style) then
-	  if (bck_compat) then
+          if (bck_compat) then
              ptr = 0
              do i = 1, norbs_g
                 nnzsi = numdg(n_g+i)
                 write(lun) (ibuffer(j),j=ptr+1,ptr+nnzsi)
                 ptr = ptr + nnzsi
              enddo
-          else	
+          else  
              write(lun) (ibuffer(j),j=1,nnzs_bg)
           endif
 

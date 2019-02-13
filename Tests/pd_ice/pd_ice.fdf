@@ -62,7 +62,6 @@ LatticeConstant    3.912 Ang
 
 MeshCutoff         300.0 Ry
 
-MaxSCFIterations     100
 DM.MixingWeight      0.035
 DM.NumberPulay       8
 DM.Tolerance         4.d-4

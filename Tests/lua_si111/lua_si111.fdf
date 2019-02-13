@@ -104,7 +104,6 @@ XC.authors		PBE
 
 SpinPolarized		.true.
 MeshCutoff		100. Ry
-MaxSCFIterations	200
 
 %block DM.InitSpin
 	1	+

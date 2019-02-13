@@ -55,8 +55,12 @@ subroutine prversion
 
 ! Use free format in file to make more room for long option strings...
 
+use posix_calls, only: getcwd
 use version_info
 implicit none
+
+character(len=2048) :: cwd
+integer :: stat
 
 write(6,'(2a)') 'Siesta Version  : ', trim(version_str)
 write(6,'(2a)') 'Architecture    : ', trim(siesta_arch)
@@ -64,6 +68,11 @@ write(6,'(2a)') 'Compiler version: ', trim(compiler_version)
 write(6,'(2a)') 'Compiler flags  : ', trim(fflags)
 write(6,'(2a)') 'PP flags        : ', trim(fppflags)
 write(6,'(2a)') 'Libraries       : ', trim(libs)
+
+call getcwd(cwd, stat)
+if ( stat == 0 ) then
+write(6,'(2a)') 'Directory       : ', trim(cwd)
+end if
 
 #ifdef MPI
 write(6,'(a)') 'PARALLEL version'
@@ -94,6 +103,9 @@ write(6,'(a)') 'NetCDF-4 MPI-IO support'
 #endif
 #if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
 write(6,'(a)') 'METIS ordering support'
+#endif
+#ifdef SIESTA__FLOOK
+write(6,'(a)') 'Lua support'
 #endif
 #ifdef TRANSIESTA
 write(6,'(a)') '******************************************************'

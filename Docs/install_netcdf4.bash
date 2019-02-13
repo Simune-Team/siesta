@@ -3,7 +3,7 @@
 # Installation script for zlib, hdf5, netcdf-c and netcdf-fortran
 # with complete CDF-4 support (in serial).
 # This installation script has been written by:
-#  Nick R. Papior, 2016-2017.
+#  Nick R. Papior, 2016-2018.
 #
 # The author takes no responsibility of damage done to your hardware or
 # software. It is up to YOU that the script executes the correct commands.
@@ -13,8 +13,8 @@
 # VERY BASIC installation script of required libraries
 # for installing these packages:
 #   zlib-1.2.11
-#   hdf5-1.8.18
-#   netcdf-c-4.4.1.1
+#   hdf5-1.10.4
+#   netcdf-c-4.6.1
 #   netcdf-fortran-4.4.4
 # If you want to change your compiler version you should define the
 # global variables that are used for the configure scripts to grab the
@@ -23,9 +23,9 @@
 
 # If you have downloaded other versions edit these version strings
 z_v=1.2.11
-h_v=1.8.18
-nc_v=4.4.1.1
-nf_v=4.4.4
+h_v=1.10.4
+nc_v=4.6.2
+nf_v=4.4.5
 
 # Install path, change accordingly
 # You can change this variable to control the installation path
@@ -165,11 +165,11 @@ if [ ! -e $ID/netcdf/${nc_v}/$cdf_lib/libnetcdff.a ]; then
     retval $? "netcdf-fortran configure"
     make
     retval $? "netcdf-fortran make"
-    make check 2>&1 | tee check.serial
+    make check 2>&1 | tee check.fortran.serial
     retval $? "netcdf-fortran make check"
     make install
     retval $? "netcdf-fortran make install"
-    mv check.serial $ID/netcdf/${nc_v}/
+    mv check.fortran.serial $ID/netcdf/${nc_v}/
     cd ../../
     rm -rf netcdf-fortran-${nf_v}
     echo "Completed installing Fortran NetCDF library"

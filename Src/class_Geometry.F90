@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -66,11 +66,11 @@ module class_Geometry
     type(Geometry_) :: g_data
     if (associated(g_data%xa)) then
        call de_alloc( g_data%xa, &
-            name="xa " // trim(g_data%name),routine="Geometry")	
+            name="xa " // trim(g_data%name),routine="Geometry") 
     endif
     if (associated(g_data%isa)) then
        call de_alloc( g_data%isa, &
-            name="isa " // trim(g_data%name),routine="Geometry")	
+            name="isa " // trim(g_data%name),routine="Geometry")        
     endif
   end subroutine delete_Data
 
@@ -98,9 +98,9 @@ module class_Geometry
     endif
 
     call re_alloc(this%data%xa,1,3,1,na, &
-         name="xa " // trim(this%data%name),routine="Geometry")	
+         name="xa " // trim(this%data%name),routine="Geometry") 
     call re_alloc(this%data%isa,1,na, &
-         name="isa " // trim(this%data%name),routine="Geometry")	
+         name="isa " // trim(this%data%name),routine="Geometry")        
 
     this%data%na = na
     this%data%cell(:,:) = cell(:,:)

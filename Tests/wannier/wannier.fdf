@@ -41,7 +41,6 @@ Diag.ParallelOverK	F
 
 MeshCutoff        100 Ry
 
-MaxSCFIterations     20
 DM.MixingWeight      0.20
 DM.NumberPulay       10
 DM.Tolerance         1.d-4

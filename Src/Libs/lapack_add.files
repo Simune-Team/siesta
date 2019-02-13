@@ -71,6 +71,7 @@ iladiag.f
 iladlc.f
 iladlr.f
 ilaenv.f
+ilaenv2stage.f
 ilaprec.f
 ilaslc.f
 ilaslr.f

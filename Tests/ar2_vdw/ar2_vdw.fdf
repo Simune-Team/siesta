@@ -47,7 +47,6 @@ MeshCutoff		100 Ry
 ##### TASK SPECIFIERS #########################################################
 
 SolutionMethod	        diagon
-MaxSCFIterations	50
 DM.UseSaveDM		no
 DM.MixingWeight		0.1
 DM.NumberPulay		5

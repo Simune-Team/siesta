@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -26,8 +26,11 @@
     character(len=36)  :: id = "null_id"
     !----------------------
     character(len=256)   :: name = "null "//STR_TYPE_NAME
+    !> See [[Sparsity(type)]]
     type(Sparsity)            :: sp
+    !> See [[VAR_TYPE(type)]]
     type(VAR_TYPE)            :: a
+    !> See [[OrbitalDistribution(type)]]
     type(OrbitalDistribution) :: dist
   end type TYPE_NAME_
 
@@ -151,7 +154,7 @@
        end if
        if ( sparsity_dim == 1 ) then ! Regular way...
            call VAR_NEW_TYPE(this%data%a, &
- 	        nnzs(sp),dim,"(new from "//STR_TYPE_NAME//")")
+                nnzs(sp),dim,"(new from "//STR_TYPE_NAME//")")
        else ! it must be 2
            call VAR_NEW_TYPE(this%data%a, &
                 dim,nnzs(sp),"(new from "//STR_TYPE_NAME//")")
@@ -284,7 +287,7 @@
         n = 0
       else
         ! we have to use a different variable
-	! name than dim (due to interface problems)
+        ! name than dim (due to interface problems)
         ldim = dim
         n = size(this%data%a%data%val,ldim)
       end if

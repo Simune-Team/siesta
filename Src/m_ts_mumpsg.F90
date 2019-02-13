@@ -178,9 +178,9 @@ contains
 
     ! prepare the LHS of MUMPS-solver.
     ! This is the same no matter the contour type
-    call prep_LHS(mum,N_Elec,Elecs)
-    nzwork = mum%NZ
+    call prep_LHS(IsVolt,mum,N_Elec,Elecs)
     zwork => mum%A(:)
+    nzwork = size(zwork)
 
     ! analyzation step
     call analyze_MUMPS(mum)
@@ -578,6 +578,11 @@ contains
     ! close the file
     call io_close(no)
 
+    ! Nullify external pointers
+    do iEl = 1, N_Elec
+      nullify(Elecs(iEl)%Sigma)
+    end do
+
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS transiesta mem' )
 #endif
@@ -663,8 +668,8 @@ contains
              ! Requires that l_col is sorted
              ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
              if ( ind_H > l_ptr(io) ) then
-                D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
-                E(ind_H,i2) = E(ind_H,i2) - dimag( GF(ind) * EDMfact )
+                D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
+                E(ind_H,i2) = E(ind_H,i2) - aimag( GF(ind) * EDMfact )
              end if
              
           end do
@@ -682,7 +687,7 @@ contains
              ind_H = l_ptr(io)
              ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
              if ( ind_H > l_ptr(io) ) then
-                D(ind_H,i1) = D(ind_H,i1) - dimag( GF(ind) * DMfact  )
+                D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
              end if
           end do
        end do

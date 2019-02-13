@@ -1,3 +1,5 @@
+
+
 ! 
 ! Copyright (C) 1996-2016	The SIESTA group
 !  This file is distributed under the terms of the
@@ -22,10 +24,10 @@
       use basis_types, only: basis_def_t
       use fdf
       use pseudopotential, only: pseudopotential_t
-#ifndef BSC_CELLXC
+
       use siestaXC, only: atomXC  ! XC for a spherical charge
       use siestaXC, only: getXC   ! Returns the XC functional to be used
-#endif /* ! BSC_CELLXC */
+
 
       implicit none      
 
@@ -90,6 +92,13 @@
       character(len=20), save,  allocatable :: label_save(:)
       character(len=10), save,  allocatable :: basistype_save(:)  
 !---------------------------------------------------------------------
+        !! vlocal needs to be passed around to act as radial
+        !! potential for high l's
+        
+        real(dp), target  :: vlocal(nrmax)
+        real(dp), pointer :: Vpot(:) => null()
+        integer           :: lmax_ps ! maximum l in semi-local pseudo
+
 
       CONTAINS !================================================
 
@@ -239,12 +248,14 @@
 
            
 ! Internal variables
- 
+
+        real(dp), target :: vps(nrmax,0:lmaxd)
+
         real(dp)
      .    rofi(nrmax), drdi(nrmax), s(nrmax),
-     .    vps(nrmax,0:lmaxd), rphi(nrmax,0:lmaxd,nsemx),
+     .    rphi(nrmax,0:lmaxd,nsemx),
      .    vps_u(nrmax,0:lmaxd),
-     .    vlocal(nrmax), vxc(nrmax), ve(nrmax),
+     .    vxc(nrmax), ve(nrmax),
      .    rho(nrmax), chcore(nrmax), rho_PAO(nrmax), auxrho(nrmax),
      .    vePAO(nrmax), qPAO(0:lmaxd,nsemx), chlocal(nrmax),
      .    red_vlocal(nrmax)
@@ -302,8 +313,9 @@
      .      ' ( Floating basis ) ' 
 
         elseif(iz.eq.-100) then
-          write(6,'(a,i4,a)')
-     .      'atom: Called for Z=',iz,'( Floating Bessel functions)'  
+          write(6,'(3a,i4,a,a)')
+     .      'atom: Called for ', atm_label, '  (Z =', iz,')',
+     .      ' ( Floating Bessel functions ) ' 
 
         endif
 !
@@ -322,7 +334,7 @@
         call new_specie(iz,lmxkb, nkbl, lmxo,
      .                  nzeta, atm_label,
      .                  npolorb, semic, nsemic, cnfigmx,
-     .                  is, new, no, nkb) 
+     .                  is, new, no, nkb, basp) 
 ! 
         basistype_save(is) = basistype
         spp%mass = smass
@@ -729,7 +741,7 @@ c    .          'atom: The above configuration will be used ',
           spp%self_energy = 0.0d0
 ! Calculate Bessel functions
           call Bessel(is,a,b,rofi,drdi,s,
-     .                lmxo,nzeta,rco,lambda,filtercut,no,spp)
+     .                lmxo,nzeta,rco,lambda,filtercut,no,nsemic,spp)
  
           write(6,'(/a,i3)')
      .      'atom: Total number of floating Bessel orbitals:', no
@@ -2000,20 +2012,20 @@ C
 C Checking the functional used for exchange-correlation energy.
 C Written by D. Sanchez-Portal, Aug. 1998
 
-#ifdef BSC_CELLXC
-        use bsc_xcmod, only : nXCfunc, XCfunc, XCauth
 
-#endif /* BSC_CELLXC */
+
+
+
 C Passed variable
         character(len=2), intent(in) :: icorr
 
 C Local variables
-#ifndef BSC_CELLXC
+
         integer                      :: nf, nXCfunc
         character(len=20)            :: XCauth(10), XCfunc(10)
-#else /* BSC_CELLXC */
-        integer                      :: nf
-#endif /* BSC_CELLXC */
+
+
+
         character(len=40)            :: ps_string
 
         ps_string = "Unknown atomic XC code"
@@ -2026,7 +2038,7 @@ C Local variables
         if (icorr .eq. "wc") ps_string ="GGA WC"
         if (icorr .eq. "bl") ps_string ="GGA BLYP"
         if (icorr .eq. "ps") ps_string ="GGA PBEsol"
-#ifndef BSC_CELLXC
+
         if (icorr .eq. "jo") ps_string ="GGA PBEJsJrLO"
         if (icorr .eq. "jh") ps_string ="GGA PBEJsJrHEG"
         if (icorr .eq. "go") ps_string ="GGA PBEGcGxLO"
@@ -2042,7 +2054,7 @@ C Local variables
 
 C Get functional(s) being used
         call getXC( nXCfunc, XCfunc, XCauth )
-#endif /* ! BSC_CELLXC */
+
 
 C Loop over functionals
         do nf = 1,nXCfunc
@@ -2120,7 +2132,7 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
 
-#ifndef BSC_CELLXC
+
           elseif((XCauth(nf).eq.'PW91').and.(XCfunc(nf).eq.'GGA')) then
 
             write(6,'(a)')
@@ -2240,7 +2252,7 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      .           trim(ps_string), " functional"
 
-#endif /* ! BSC_CELLXC */
+
          else
 
            write(6,'(a)')
@@ -2386,7 +2398,7 @@ C
           call filter(l=0,nr=nrcore,r=rofi(1:nrcore),
      .                f=chcore(1:nrcore),
      .                kc=sqrt(kmax2),
-     .                norm_opt=0,n_eigen=n_eigen)
+     .                norm_opt=0)
 
           !Store chcore*r2
           do ir=2,nrval
@@ -2581,7 +2593,7 @@ C
         subroutine new_specie(iz,lmxkb, nkbl, lmxo,
      .                        nzeta, atm_label,
      .                        npolorb, semic, nsemic, cnfigmx,
-     .                        is, new, no, nkb)
+     .                        is, new, no, nkb, basp)
 
         implicit none
 
@@ -2592,11 +2604,14 @@ C
         character 
      .    atm_label*20 
 
+        type(basis_def_t), intent(in) :: basp
+        
         logical new, semic
 C
 C       Internal and common variables
 C
-        integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max
+        integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max, n_user
+        integer  npols_lm1
 C
 C Adding a new species to the list
 C          
@@ -2651,27 +2666,50 @@ C
             
         cnfigtb(:,:,is) = 0
 
-        if (iz.ne.-100) then  
-          do l=0,lmxo
-            do nsm=1, nsemic(l)+1
-              cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
-            enddo
+        ! Generate the array with 'n' quantum number information
+        if (iz.ne.-100) then  ! Normal case
+           
+          ! Note that cnfigmx and nsemic are now properly extended
+          ! all the way to lmaxd (in basis_types) to give a proper cnfigtb
+
+          do l=0,lmaxd
+             do nsm=1, nsemic(l)+1
+                cnfigtb(l,nsm,is)=cnfigmx(l)-(nsemic(l)+1)+nsm
+             enddo
+
+             if (l==0) cycle
+
+             ! Special case for polarization orbitals with l<lmxo
+             ! Examples:
+             !    Ti: 3s2 3p6 4s2 3d2 4p0* 4p0 is a polarization
+             !                             orbital, with the same l as 3p.
+             !    Fe: 4s-4p*-3d
+             ! (See 'archaeological note' in the header of 'basis_specs.f')
+             ! We assign formally a "shell index" nsm beyond the last one,
+             ! and the appropriate n from the ground state record.
+             ! 
+             npols_lm1 = sum(npolorb(l-1,:))
+             if (npols_lm1 > 0) then
+                nsm = nsemic(l)+2
+                cnfigtb(l,nsm,is)= basp%ground_state%n(l)
+                if (basp%ground_state%occupied(l)) then
+                   call die("Inconsistency in polarization orbital")
+                endif
+             endif
+            
           enddo 
-          do l=min(lmaxd,lmxo+1),lmaxd
-            cnfigtb(l,1,is)=l+1         ! AG*** Why??
-                                           ! To deal with polarization
-                                           ! orbitals beyond lmxo?
-! BUT, what happens to "in-between" polarization orbitals?
-! 
-!
-          enddo
+
         else
 !
-!          Arbitrary "n" for "semicore" bessel states...
-!
-          do l=0,lmaxd
+!          For bessel-function states, the 'n' quantum number
+!          does not follow the heuristics for real 'atomic'
+!          states, but since the user has to specify them in the
+!          PAO.Basis block, we use them.           
+
+           do l=0,lmxo
             do nsm=1,nsemic(l)+1
-              cnfigtb(l,nsm,is)=nsm
+              n_user = cnfigmx(l)-(nsemic(l)+1)+nsm
+              cnfigtb(l,nsm,is) = n_user
             enddo
           enddo 
         endif   ! iz.ne.-100
@@ -2726,7 +2764,6 @@ C
      .    a, b, zval
         integer  nrval, lmxo, lmxkb 
         character nicore*4, irel*3, icorr*2
-        integer :: nup_end
 C
 C Internal variables
 C
@@ -2737,7 +2774,8 @@ C
      .    ea, rpb, chgvps
 
         integer  
-     .    nr, nodd, lmax, linput, npotd, npotu, ndown, l, ir, i, nup
+     .    nr, nodd, linput, npotd, npotu, ndown, l, ir, i, nup
+        integer :: nup_end
 
         character method(6)*10,text*70
 
@@ -2746,6 +2784,9 @@ C
         real(dp) :: so_strength
         
         vp => basp%pseudopotential
+
+        vps(:,:) = 0.0_dp
+        vps_u(:,:) = 0.0_dp
 
         icorr = vp%icorr
         irel = vp%irel
@@ -2760,15 +2801,17 @@ C
         zval = vp%zval
 
         linput=max(lmxo,lmxkb)
-        lmax=min(npotd-1,linput)
+        lmax_ps = npotd-1        ! Sets it for the rest of the module
 
-        if (lmax.lt.linput) then
-          write(6,'(a)') 
-     .      'read_vps: ERROR: You must generate a pseudopotential'
-          write(6,'(a,i4)') 
-     .      'read_vps: ERROR: for each L up to ',linput
-          call die
-        endif
+        ! Note that lmxkb has already been reset in 'basis_specs'
+        ! Here lmxo excludes perturbative polarization orbitals
+        if (lmax_ps.lt.lmxo) then
+          write(6,'(a,i1)')
+     .      'NOTE: ' // trim(basp%label) //
+     .          ' pseudopotential has channels up to l= ', lmax_ps
+          write(6,'(a)')
+     .      'NOTE: PAOs with higher l will be generated with V_local'
+	endif
 
         nrval=nr+1 
         if (rmax_radial_grid /= 0.0_dp) then
@@ -2843,7 +2886,7 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
 
 !       Ionic pseudopotentials (down and up)
 
-        do ndown=1,lmax+1
+        do ndown=1,lmax_ps+1
           l = vp%ldown(ndown) 
           if (l.ne.ndown-1) then
             write(6,'(a)')
@@ -2864,7 +2907,7 @@ C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b]
        ! put 'keep-npotu-bug T' in fdf file
        ! To be removed altogether for releases
        if (fdf_get('keep-npotu-bug',.false.))  then
-          nup_end =  min(lmax,npotu-1)
+          nup_end =  min(lmax_ps,npotu-1)
           write(6,'(a)') 'atom: *** Buggy code in highest-l ' //
      $                   'SO component setup enabled ***'
        else
@@ -3419,8 +3462,9 @@ C
 
         type(basis_def_t), pointer   :: basp
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
@@ -3481,7 +3525,13 @@ C
 !
         do l = 0,lmxo 
               
-          do nsm = 1,nsemic(l)+1 
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+           else
+              Vpot => vps(:,l)
+           endif
+
+           do nsm = 1,nsemic(l)+1 
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
      .          'FILTERET: Orbitals with angular momentum L=',l 
@@ -3506,7 +3556,7 @@ C Atomic eigenvalues
 C
                 nnodes = nsm
                 nprin = l + nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -3522,7 +3572,7 @@ C
                 endif 
                 if (abs(eshift).gt.1.0d-5) then
                   el = eigen(l) + eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                         ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm) = rofi(nrval-2)
@@ -3583,7 +3633,7 @@ C  potential.
 C
               nnodes = nsm
               nprin = l + nsm
-              call schro_eq(Zval,rofi,vps(1,l),vePAOsoft,s,drdi,
+              call schro_eq(Zval,rofi,Vpot,vePAOsoft,s,drdi,
      .                      nrc,l,a,b,nnodes,nprin,
      .                      eorb,rphi(1,l,nsm))
               dnrm = 0.0_dp
@@ -3810,9 +3860,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh = rh/sqrt(lambda(nzeta(l,nsm)+1,l,nsm)**(2*l+3))
                   epot = epot +
-     .              drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .              drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .              drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb = ekin + epot
 C
@@ -3885,8 +3935,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
@@ -3920,7 +3971,6 @@ C
      .    dlt, d, dn, norm(nsemx),
      .    kmax, kmax_tol, etol, paoFilterFactor,
      .    spln_min
-        integer :: n_eigen
         real(dp),allocatable,dimension(:) :: forb !filtered orbital
         logical :: filterOrbitals
         logical :: new_split_code, fix_split_table, split_tail_norm
@@ -3952,6 +4002,12 @@ C
 !
         do l=0,lmxo 
               
+          if (l .gt. lmax_ps) then
+             Vpot => vlocal
+          else
+             Vpot => vps(:,l)
+          endif
+           
           do nsm=1,nsemic(l)+1 
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
@@ -3977,7 +4033,7 @@ C Atomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -3993,7 +4049,7 @@ C
                 endif 
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),ve,nrval,l,el,
+                  call rc_vs_e(a,b,rofi,Vpot,ve,nrval,l,el,
      .                         nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -4074,7 +4130,7 @@ C Generate PAO orbitals for the first shell of the basis set
 C 
                   nnodes=nsm
                   nprin=l+nsm
-                  call schro_eq(Zval,rofi,vps(1,l),vePAOsoft,s,drdi,
+                  call schro_eq(Zval,rofi,Vpot,vePAOsoft,s,drdi,
      .                          nrc,l,a,b,nnodes,nprin,
      .                          eorb,rphi(1,l,nsm)) 
                   dnrm=0.0d0
@@ -4340,9 +4396,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                   epot=epot+
-     .          drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .          drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2=epot2+
-     .          drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .          drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb=ekin+epot
 
@@ -4423,7 +4479,7 @@ C
                   endif
 
                   call filter(l=l,nr=nrc,r=rofi(1:nrc),f=forb(1:nrc),
-     .                           kc=kmax,norm_opt=2,n_eigen=n_eigen)
+     .                           kc=kmax,norm_opt=2)
 
                   filter_cutoff_orbitals = 
      .              max(filter_cutoff_orbitals,kmax**2)
@@ -4477,8 +4533,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -4518,6 +4575,12 @@ C
         indx=0
         do l=0,lmxo
 
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+           else
+              Vpot => vps(:,l)
+           endif
+
           do nsm=1,nsemic(l)+1
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
@@ -4542,7 +4605,7 @@ CAtomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -4559,7 +4622,7 @@ C
  
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                         ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -4597,7 +4660,7 @@ C
                 nnodes=izeta+nsm-1
                 nprin=l+izeta+nsm-1
                 eorb=0.0d0 
-                call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,vePAO,s,drdi,
      .                        nrc,l,a,b,nnodes,nprin,eorb,g)  
 
                 dnrm=0.0d0
@@ -4658,9 +4721,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                   epot=epot+
-     .            drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .            drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2=epot2+
-     .            drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .            drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb=ekin+epot
 
@@ -4713,8 +4776,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -4752,6 +4816,12 @@ C
         indx=0
         do l=0,lmxo
 
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+           else
+              Vpot => vps(:,l)
+           endif
+
           do nsm=1,nsemic(l)+1
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
@@ -4777,7 +4847,7 @@ CAtomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -4794,7 +4864,7 @@ C
  
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                       ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -4841,7 +4911,7 @@ C for the different shells
 C 
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,vePAO,s,drdi,
      .                        nrc,l,a,b,nnodes,nprin,
      .                        eorb,g)  
 
@@ -4904,9 +4974,9 @@ C
                   call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                   rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                   epot=epot+
-     .              drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .              drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                   epot2=epot2+
-     .              drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .              drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                 enddo
                 eorb=ekin+epot
 
@@ -5049,8 +5119,9 @@ C Written by D. Sanchez-Portal, Aug. 1998
 C
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    drdi(nrmax), s(nrmax), ve(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .    lambda(nzetmx, 0:lmaxd,nsemx), Zval,vePAO(nrmax),
@@ -5089,6 +5160,12 @@ C
         indx=0
         do l=0,lmxo
 
+           if (l .gt. lmax_ps) then
+              Vpot => vlocal
+           else
+              Vpot => vps(:,l)
+           endif
+
           do nsm=1,nsemic(l)+1
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
@@ -5116,7 +5193,7 @@ C Atomic eigenvalues
 C
                 nnodes=nsm
                 nprin=l+nsm
-                call schro_eq(Zval,rofi,vps(1,l),ve,s,drdi,
+                call schro_eq(Zval,rofi,Vpot,ve,s,drdi,
      .                        nrval,l,a,b,nnodes,nprin,
      .                        eigen(l),rphi(1,l,nsm))
 C
@@ -5133,7 +5210,7 @@ C
  
                 if (abs(eshift).gt.1.0d-5) then
                   el=eigen(l)+eshift
-                  call rc_vs_e(a,b,rofi,vps(1,l),
+                  call rc_vs_e(a,b,rofi,Vpot,
      .                         ve,nrval,l,el,nnodes,rco(1,l,nsm))
                 else
                   rco(1,l,nsm)=rofi(nrval-2)
@@ -5187,7 +5264,7 @@ C Generate a PAO orbital for the first shell of basis functions
 C 
                   nnodes=nsm
                   nprin=l+nsm
-                  call schro_eq(Zval,rofi,vps(1,l),vePAO,s,drdi,
+                  call schro_eq(Zval,rofi,Vpot,vePAO,s,drdi,
      .                          nrc,l,a,b,nnodes,nprin,
      .                          eorb,rphi(1,l,nsm)) 
                   dnrm=0.0d0
@@ -5268,9 +5345,9 @@ C
                     call polint(rofi(nmin),g(nmin),nn,r2,rh,dy)
                     rh=rh/sqrt(lambda(izeta,l,nsm)**(2*l+3))
                     epot=epot+
-     .                drdi(ir)*(ve(ir)+vps(ir,l))*(rh*r**(l+1))**2
+     .                drdi(ir)*(ve(ir)+Vpot(ir))*(rh*r**(l+1))**2
                     epot2=epot2+
-     .                drdi(ir)*vps(ir,l)*(rh*r**(l+1))**2
+     .                drdi(ir)*Vpot(ir)*(rh*r**(l+1))**2
                   enddo
                   eorb=ekin+epot
         
@@ -5283,9 +5360,9 @@ C
                     r=rofi(ir)
                     phi=g(ir)*r**l
                     epot=epot+
-     .              drdi(ir)*(ve(ir)+vps(ir,l))*(phi*r)**2
+     .              drdi(ir)*(ve(ir)+Vpot(ir))*(phi*r)**2
                     epot2=epot2+
-     .              drdi(ir)*vps(ir,l)*(phi*r)**2
+     .              drdi(ir)*Vpot(ir)*(phi*r)**2
                     dlapl=
      .             -((l*(l+1)-2*gexp*(2*l+3)*r**2+4*(gexp*r**2)**2)*phi)
                     dlapl=(dlapl+l*(l+1)*phi)
@@ -5550,7 +5627,6 @@ C
      .    nrc,ir, l, ncocc
 
         real(dp), allocatable :: ve_backup(:)
-        integer n_eigen
 
         do ir=1,nrval
           rho(ir)=0.0d0
@@ -5685,7 +5761,7 @@ C
      .                             kmax2,' Ry'
           call filter(l=0,nr=nVna,r=rofi(1:nVna),
      .                f=Ve(1:nVna),kc=sqrt(kmax2),
-     .                norm_opt=0,n_eigen=n_eigen)
+     .                norm_opt=0)
 
           deallocate(ve_backup)
         endif
@@ -5832,8 +5908,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    ve(nrmax), drdi(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -5868,7 +5945,6 @@ C
         logical :: fix_split_table
         logical :: old_style_pol
         real(dp):: kmax, kmax_tol, etol, paoFilterFactor, spln_min
-        integer :: n_eigen
         real(dp),allocatable,dimension(:) :: forb !filtered orbital
       
         old_style_pol = fdf_boolean('PAO.OldStylePolorbs',.true.)
@@ -5927,7 +6003,14 @@ C Calculate the soft-confinement potential for the polarization orbitals
                   else
                     lpol = l + 1
                   endif
-                  call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
+
+                  if (lpol .gt. lmax_ps) then
+                     Vpot => vlocal
+                  else
+                     Vpot => vps(:,lpol)
+                  endif
+
+                  call polarization(a,rofi,rphi(1,l,nsm),Vpot,
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
 
                   dnrm = 0.0_dp
@@ -6042,11 +6125,13 @@ C
      .              dr*g(ir)*r**(l+2)*(-d2fdr2) +
      .              dr*(l+1)*(l+2)*(g(ir)*r**(l+1))**2  
 
+                  ! AG: This was another manifestation of the
+                  ! l+1 "bug":  vps(ir,l) --> vps(ir,lpol) (now Vpot)
                   epot = epot +  
-     .              drdi(ir)*(vePAOsoft(ir)+vps(ir,l))*
+     .              drdi(ir)*(vePAOsoft(ir)+Vpot(ir))*
      .              (g(ir)*r**(l+2))**2 
                   epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(g(ir)*r**(l+2))**2
+     .              drdi(ir)*Vpot(ir)*(g(ir)*r**(l+2))**2
                 enddo
                 eorb = ekin + epot
        
@@ -6116,7 +6201,7 @@ C
 
                   call filter(l=l+1,nr=nrc,r=rofi(1:nrc),
      .                        f=forb(1:nrc),
-     .                        kc=kmax,norm_opt=2,n_eigen=n_eigen)
+     .                        kc=kmax,norm_opt=2)
 
                   filter_cutoff_orbitals = max(filter_cutoff_orbitals,
      .                                     kmax**2)
@@ -6148,266 +6233,6 @@ C
         enddo 
       
         end subroutine POLgen
-
-        subroutine POLgen_filteret_old(is,iz,a,b,rofi,drdi,ePAO,rphi,
-     .                             rco,vps,ve,polorb,lmxo,nsemic,
-     .                             norb,rinn,vcte,
-     .                             qcoe, qyuk, qwid, nrval,
-     .                             split_norm,filtercut,atm_label,spp)
-C
-C Calculates the polarization orbitals for the basis set augmentation.
-C This version uses filterets to create the basis functions. In this
-C case it is necessary that the radius be specified. This is the old
-C version in which the filterets are created without an underlying 
-C orbital.
-C
-C Based on POLgen by D. Sanchez-Portal, Aug. 1998.
-C Modified by J.D. Gale, Sept. 2009
-C
-        use atm_types, only: species_info
-        
-        implicit none
-
-        real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
-     .    ve(nrmax), drdi(nrmax),
-     .    rphi(nrmax,0:lmaxd,nsemx), 
-     .    rco(nzetmx,0:lmaxd,nsemx),
-     .    ePAO(0:lmaxd,nsemx),
-     .    rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
-     .    qcoe(0:lmaxd,nsemx), qwid(0:lmaxd,nsemx), 
-     .    qyuk(0:lmaxd,nsemx), 
-     .    split_norm(0:lmaxd,nsemx),
-     .    filtercut(0:lmaxd,nsemx)
-
-        character(len=*) atm_label
-        type(species_info), intent(inout)  :: spp
-
-        integer
-     .    lmxo, is, iz, norb, polorb(0:lmaxd,nsemx), 
-     .    nsemic(0:lmaxd), nrval
-
-C
-C Internal variables
-C
-        integer
-     .    l, nrc, nsp, ir,indx, ipol, nsm, nrcomp
-
-        real(dp)
-     .    rc, rcpol(nzetmx,0:lmaxd,nsemx),
-     .    phipol(nrmax), split_table(nrmax),
-     .    rnrm(nrmax), dnrm, phi,
-     .    g(nrmax), r, ekin, eorbcut,
-     .    r1, r2, dfdi, d2fdi2, d2fdr2, dr,
-     .    epot, epot2, eorb, eps
-
-        integer :: nfilteret, maxfilteret
-        real(dp),allocatable,dimension(:,:) :: filterets !filtered orbitals
-
-        logical :: filterorbitals
-        real(dp):: kmax, kmax_tol, etol, paoFilterFactor, filter_shell
-      
-        eorbcut = 
-     .    fdf_physical('PAO.EnergyPolCutoff',eorbcut_default,'Ry')
-
-        norb = 0 
-        indx = 0
-C
-C Loop over angular momentum to be polarized
-C
-        do l = 0,lmxo
-          do nsm = 1,nsemic(l)+1
-            if (polorb(l,nsm).gt.0) then
-              write(6,'(/A,I2)')
-     .    'POLgen: Filteret polarization orbital with L= ',l+1
-              goto 50
-            endif
-          enddo
-
-50        continue
-
-          do nsm = 1,nsemic(l)+1
-
-            if (polorb(l,nsm).gt.0) then 
-C
-C  Check radius for this zeta
-C
-              if (rco(1,l,nsm) < 0.0_dp) then
-                call die("rc < 0 for polarization orbital")
-              endif
-              rc = rco(1,l,nsm) 
-              nrc = nint(log(rc/b+1.0_dp)/a) + 1
-
-C
-C Construct Filteret polarization functions
-C
-              ! Note that the real angular momentum is l+1... ??
-
-              filter_shell = filtercut(l,nsm)
-              ! Allow re-setting by user
-              if (filter_shell.gt.0.0d0) then
-                paoFilterFactor = fdf_double("PAO.FilterFactor",
-     .            (0.7_dp)**2.0_dp)
-                kmax = sqrt(filter_shell * paoFilterFactor)
-              elseif (filter_cutoff_specified) then
-                paoFilterFactor = fdf_double("PAO.FilterFactor",
-     .            (0.7_dp)**2.0_dp)
-                kmax = sqrt(filter_cutoff * paoFilterFactor)
-                filter_shell = filter_cutoff
-              else
-                call die("cut-off needed for poln filter")
-              endif
-C
-C  Create filteret workspace
-C
-              maxfilteret = nzetmx
-              allocate(filterets(1:nrc,1:maxfilteret))
-C
-C  Generate filterets
-C
-              call gen_pol_filteret(l=l+1,nr=nrc,
-     .                              maxfilteret=maxfilteret,
-     .                              r=rofi(1:nrc),kc=kmax,
-     .                              nfilteret=nfilteret,
-     .                              filteret=filterets)
-C
-C  If number of filterets exceeds limit on number of zetas then stop
-C
-              if (nfilteret.gt.nzetmx) then
-                call die("number of filterets exceeds nzetmx")
-              endif
-C
-              filter_cutoff_orbitals = max(filter_cutoff_orbitals,
-     .                                   kmax**2)
-              filtercut(l,nsm) = filter_shell
-C
-C  Initialise the number of zetas for the polarisation orbitals
-C
-              polorb(l,nsm) = 0
-              npolorbsave(l,nsm,is) = 0
-
-C
-C  Loop over the filterets using them to create new polarization zetas
-C
-              do ipol = 1,nfilteret
-                  
-                ! Copy filteret back to g array
-                if (ipol.eq.1) then
-                  g = 0.0_dp
-                  dnrm = 0.0_dp
-                  do ir = 2,nrc-1
-                    g(ir) = filterets(ir,ipol)
-                    phi = g(ir)  
-                    phipol(ir) = phi
-                    dnrm = dnrm + drdi(ir)*phi*phi
-                    rnrm(ir) = dnrm 
-                    g(ir) = g(ir)/(rofi(ir)**(l+1))
-                  enddo
-                  g(1) = g(2)
-                  g(nrc) = 0.0_dp
-                  phipol(1) = phipol(2)
-                  phipol(nrc) = 0.0_dp
-                else
-                  g = 0.0_dp
-                  dnrm = 0.0_dp
-                  do ir = 2,nrc-1
-                    r = rofi(ir)
-                    phi = filterets(ir,ipol)/(r**(l+1))
-                    dnrm = dnrm + drdi(ir)*(phi*r**(l+1))**2
-                    g(ir) = phi
-                  enddo
-                  g(1) = g(2)
-                  g(nrc) = 0.0_dp
-                endif
-
-C
-C Cut-off radius for the split polarization function
-C
-                rcpol(polorb(l,nsm)+1,l,nsm) = rofi(nrc)
-C
-C Normalization of basis functions
-C
-                eps = 1.0d-4
-                if (abs(dnrm-1.0_dp).gt.eps) then
-                  do ir = 1,nrc
-                    g(ir) = g(ir)/sqrt(dnrm)
-                    if (ipol.eq.1) then
-                      phipol(ir) = phipol(ir)/sqrt(dnrm)
-                      rnrm(ir) = rnrm(ir)/dnrm
-                    endif
-                  enddo
-                endif
-C
-C Calculation of the mean value of kinetic and potential energy
-C Potential and kinetic energy of the orbital
-C
-
-                ekin = 0.0_dp 
-                epot = 0.0_dp
-                epot2 = 0.0_dp
-                do ir = 2,nrc-1
-                  r = rofi(ir)
-                  r1 = rofi(ir-1)
-                  r2 = rofi(ir+1)
-                  d2fdi2 = (g(ir-1)*r1**(l+2)+g(ir+1)*r2**(l+2)
-     .                       -2.0_dp*g(ir)*r**(l+2))
-                  dfdi = 0.5_dp*(g(ir+1)*r2**(l+2)-g(ir-1)*r1**(l+2))
-                  dr = drdi(ir)
-                  d2fdr2 = ((-a)*dfdi +  d2fdi2)/dr**2
-                  ekin = ekin +
-     .              dr*g(ir)*r**(l+2)*(-d2fdr2) +
-     .              dr*(l+1)*(l+2)*(g(ir)*r**(l+1))**2  
-
-                  epot = epot +  
-     .              drdi(ir)*(vps(ir,l))*
-     .              (g(ir)*r**(l+2))**2 
-                  epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(g(ir)*r**(l+2))**2
-                enddo
-                eorb = ekin + epot
-C
-C  Only accept zeta if the energy is below the cutoff or if this is the PAO
-C
-                if (eorb.lt.eorbcut.or.ipol.eq.1) then
-                  polorb(l,nsm) = polorb(l,nsm) + 1
-                  npolorbsave(l,nsm,is) = npolorbsave(l,nsm,is) + 1
-       
-                  write(6,'(/A,I1,A)')
-     .              'POLgen: Polarization orbital for state ',
-     .              cnfigtb(l,nsm,is), sym(l)
-                  if (ipol.eq.1) then  
-                    write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
-     .                'izeta =',ipol,
-     .                'rc =',rcpol(ipol,l,nsm),
-     .                'energy =',eorb 
-                  elseif(ipol.gt.1) then 
-                    write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
-     .                'izeta =',polorb(l,nsm),
-     .                'rmatch =',rcpol(polorb(l,nsm),l,nsm),
-     .                'energy =',eorb 
-                  endif 
-
-                  write(6,'(a25,f12.6)') 'kinetic =',ekin
-                  write(6,'(a25,f12.6)') 'potential(screened) =',epot
-                  write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
-
-                  norb = norb + (2*(l+1)+1)
-                  indx = indx + 1
-
-                  call comPOL(is,a,b,rofi,g,l,nsm,
-     .                        rcpol(polorb(l,nsm),l,nsm),
-     .                        ipol,nrc,indx,spp)
-                endif
-
-              enddo 
-
-              deallocate(filterets)
-
-            endif    
-          enddo  
-        enddo 
-      
-        end subroutine POLgen_filteret_old
 !
         subroutine POLgen_filteret_new(is,iz,a,b,rofi,drdi,ePAO,rphi,
      .                             rco,vps,ve,polorb,lmxo,nsemic,
@@ -6428,8 +6253,9 @@ C
 
         implicit none
 
+        real(dp), intent(in), target :: vps(nrmax,0:lmaxd)
         real(dp)
-     .    a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
+     .    a, b, rofi(nrmax),
      .    ve(nrmax), drdi(nrmax),
      .    rphi(nrmax,0:lmaxd,nsemx), 
      .    rco(nzetmx,0:lmaxd,nsemx),
@@ -6522,7 +6348,13 @@ C
               else
                 lpol = l + 1
               endif
-              call polarization(a,rofi,rphi(1,l,nsm),vps(1,lpol),
+              if (lpol .gt. lmax_ps) then
+                 Vpot => vlocal
+              else
+                 Vpot => vps(:,lpol)
+              endif
+
+              call polarization(a,rofi,rphi(1,l,nsm),Vpot,
      .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
 
               dnrm = 0.0_dp
@@ -6745,10 +6577,10 @@ C
      .              dr*(l+1)*(l+2)*(g(ir)*r**(l+1))**2  
 
                   epot = epot +  
-     .              drdi(ir)*(vps(ir,l))*
+     .              drdi(ir)*(Vpot(ir))*
      .              (g(ir)*r**(l+2))**2 
                   epot2 = epot2 +
-     .              drdi(ir)*vps(ir,l)*(g(ir)*r**(l+2))**2
+     .              drdi(ir)*Vpot(ir)*(g(ir)*r**(l+2))**2
                 enddo
                 eorb = ekin + epot
 C
@@ -6832,10 +6664,17 @@ C
         ntot = spp%norbs        ! Value so far
         spp%n_orbnl = spp%n_orbnl + 1
         n = spp%n_orbnl
-        ! NOTE: the assigned n quantum number is the polarized shell's n!
-        ! For example, for H, the 'p' orbital comes out to be '1p'...
-        ! This is different if the orbital is specified in PAO.Basis explicitly
-        spp%orbnl_n(n) = cnfigtb(l,nsm,is) 
+
+        ! NOTE: the assigned n quantum number used to be the polarized shell's n!
+        ! For example, for H, the 'p' orbital came out to be '1p'...
+        ! This was different if the orbital was specified in PAO.Basis explicitly
+        !spp%orbnl_n(n) = cnfigtb(l,nsm,is)
+
+        ! The proper fix involves taking into account the proper l, and the possibility
+        ! that this polarization orbital has the same l as a 'semicore' state.
+        ! Hence the implicit scan of the 'nsm' dimension to get the highest number.
+        spp%orbnl_n(n) = maxval(cnfigtb(l+1,:,is))
+        
         spp%orbnl_l(n) = l+1   ! NOTE
         spp%orbnl_z(n) = ipol  
         spp%orbnl_ispol(n) = .true.
@@ -6930,7 +6769,7 @@ C
 !
         subroutine BESSEL(is,a,b,rofi,drdi,s,lmxo,
      .                    nzeta,rco,lambda,filtercut,
-     .                    norb,spp) 
+     .                    norb,nsemic,spp) 
 
         use basis_specs, only: restricted_grid
         use atm_types, only: species_info, maxnorbs, maxn_orbnl
@@ -6950,9 +6789,8 @@ C
 
         type(species_info), intent(inout)  :: spp
         integer :: norb_tot, norb_nl, nsm
-
         integer
-     .    lmxo, is, nzeta(0:lmaxd,nsemx), norb
+     .    lmxo, is, nzeta(0:lmaxd,nsemx), norb, nsemic(0:lmaxd)
 C
 C Internal variables
 C
@@ -6996,17 +6834,28 @@ C
         indx=0
         do l=0,lmxo 
 
-          if (nzeta(l,1).gt.0) then
+           do nsm=1,nsemic(l)+1 
+              if (nzeta(l,nsm).gt.0) then
+                 write(6,'(/2A,I2)')
+     .                'Bessel: floating Bessel functions ',
+     .                'with angular momentum L=',l
+                 exit
+              endif
+           enddo 
 
-            write(6,'(/2A,I2)')
-     .        'Bessel: floating Bessel functions ',
-     .        'with angular momentum L=',l
+           do nsm=1,nsemic(l)+1     ! Note extra shell loop
+           
+             if (nzeta(l,nsm).eq.0) CYCLE
 
-            do izeta=1, nzeta(l,1) 
+             write(6,'(/A,I1,A)')
+     .            'Bessel: Basis orbitals for "state" ',
+     .            cnfigtb(l,nsm,is), sym(l)
+
+             do izeta=1, nzeta(l,nsm) 
 C
 C Cut-off radius for Bessel functions must be an explicit input
 C
-              if (rco(izeta,l,1).lt.1.0d-5) then 
+              if (rco(izeta,l,nsm).lt.1.0d-5) then 
                 write(6,'(a)')
      .     'Bessel: ERROR Zero cut-off radius with Z=-100 option'
                 write(6,'(a)')
@@ -7016,15 +6865,15 @@ C
                 call die
               endif
 C
-              if (abs(lambda(izeta,l,1)).lt.1.0d-3) 
-     .          lambda(izeta,l,1)=1.0d0
-              if (abs(lambda(izeta,l,1)-1.0d0).gt.1.0d-3) then
+              if (abs(lambda(izeta,l,nsm)).lt.1.0d-3) 
+     .          lambda(izeta,l,nsm)=1.0d0
+              if (abs(lambda(izeta,l,nsm)-1.0d0).gt.1.0d-3) then
                 write(6,'(/,a)')
      . 'Bessel: WARNING Scale factor is not active with Z=-100 option' 
               endif 
-              lambda(izeta,l,1)=1.0d0
+              lambda(izeta,l,nsm)=1.0d0
 
-              rc=rco(izeta,l,1)
+              rc=rco(izeta,l,nsm)
               nrc=nint(log(rc/b+1.0d0)/a)+1
               if (restricted_grid) then
                 nodd=mod(nrc,2)
@@ -7033,10 +6882,17 @@ C
                 endif
               endif
               rc=b*(exp(a*(nrc-1))-1.0d0)
-              rco(izeta,l,1)=rc
+              rco(izeta,l,nsm)=rc
 
-              nnodes=izeta
-              nprin=l+1
+              ! Instead of generating directly j_l(k*r), where
+              ! k is chosen to have a zero at rc, the effective Schrodinger
+              ! equation is integrated with a zero potential.
+
+              ! Note that the the different zetas here mean successively
+              ! excited states for this l
+
+              nnodes=izeta      ! Including the one at r=rc...
+              nprin=l+1       
               call schro_eq(1.0d0,rofi,v,v,s,drdi,
      .                      nrc,l,a,b,nnodes,nprin,
      .                      eorb,g) 
@@ -7059,19 +6915,17 @@ C
 
               write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
      .          'izeta =',izeta,
-     .          'rc =',rco(izeta,l,1),
+     .          'rc =',rco(izeta,l,nsm),
      .          'energy =',eorb  
 
               norb=norb+(2*l+1)
               indx=indx+1
               call comBasis(is,a,b,rofi,g,l,
-     .           rco(izeta,l,1),lambda(izeta,l,1),
-     .           filtercut(l,1),izeta,1,nrc,indx,spp)
+     .           rco(izeta,l,nsm),lambda(izeta,l,nsm),
+     .           filtercut(l,nsm),izeta,nsm,nrc,indx,spp)
 
             enddo 
-        
-          endif  
-
+           enddo
         enddo 
 
         end subroutine bessel
