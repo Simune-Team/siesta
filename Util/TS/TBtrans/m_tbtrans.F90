@@ -164,7 +164,7 @@ contains
     do iEl = 1 , N_Elec
 
        ! Calculate number of Bloch expansion k-points
-       nq(iEl) = product(Elecs(iEl)%Bloch)
+       nq(iEl) = Elecs(iEl)%Bloch%size()
 
        ! Allocate the electrode quantities
        nullify(Elecs(iEl)%HA,Elecs(iEl)%SA,Elecs(iEl)%Gamma)
@@ -180,6 +180,8 @@ contains
 
        ! If we using bulk electrodes, we need not the Hamiltonian, 
        ! nor the overlap...
+       ! This is because we are downfolding the self-energies and thus the
+       ! Gamma is constructed in the device sub-region.
        if ( .not. Elecs(iEl)%Bulk ) then
           call re_alloc(Elecs(iEl)%HA,1,no_used,1,no_used,1,nq(iEl),routine='tbtrans')
           call re_alloc(Elecs(iEl)%SA,1,no_used,1,no_used,1,nq(iEl),routine='tbtrans')

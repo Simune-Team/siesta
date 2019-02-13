@@ -28,7 +28,7 @@ contains
 
   subroutine do_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
-       xa_EPS, CalcDOS )
+       xa_EPS, CalcDOS)
     
     use parallel  , only : IONode
     use sys ,       only : die
