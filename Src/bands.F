@@ -505,11 +505,10 @@ C Handle parallel over K points option which is not allowed for here
       elseif ( SpOrb ) then
         if (getPSI) then
            if (node==0) then
-              write(6,*) "No WFS for spin-orbit, yet..."
+              write(6,*) "Bands WFS for spin-orbit..."
            endif
-           return
         end if
-        call diag3k(nuo, no_s, maxnh, maxnh, no_u, numh,
+        call diag3k(no_l, no_s, maxnh, maxnh, no_u, numh,
      .              listhptr, listh, numh, listhptr, listh,
      .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .              indxuo, nk, kpoint, wk, ek, qk, Dnew,

@@ -683,7 +683,7 @@ diag2g.o: sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag3g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
 diag3g.o: sys.o
-diag3k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
+diag3k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o intrinsic_missing.o m_spin.o parallel.o
 diagg.o: parallelsubs.o precision.o sys.o writewave.o

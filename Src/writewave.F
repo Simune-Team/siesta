@@ -480,9 +480,11 @@ C Dynamic arrays
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
       logical :: SaveParallelOverK
-
+      integer :: nspin_flag
+      
       h_spin_dim=size(H,dim=2)
-
+      nspin_flag = h_spin_dim
+      if (h_spin_dim == 8) nspin_flag = 4
 
 C Get local number of orbitals
 #ifdef MPI
@@ -505,15 +507,6 @@ C Check parameter maxk
       endif
 
 C Check spin
-      if (h_spin_dim .gt. 2) then
-        if (Node.eq.0) then
-          write(6,'(/,a,/,a)')
-     .       'writewave: WARNING: wavefunctions printed is only '
-          write(6,'(/,a,/,a)')
-     .       '           implemented for nspin = 1 or 2'
-        endif
-        goto 999
-      endif
 
 C Allocate local arrays - only aux is relevant here
       if ( h_spin_dim >= 4 ) then
@@ -543,12 +536,12 @@ C Open file
           write(6,'(a)') 'writewave: Wave Functions Coefficients'
           write(6,*)
           write(6,'(a26,2x,i6)') 'Number of k-points = ', nk
-          write(6,'(a26,2x,i6)') 'Number of Spins = ', maxspn
+          write(6,'(a26,2x,i6)') 'Number of Spins = ', nspin_flag
           write(6,'(a26,2x,i6)') 'Number of basis orbs = ',nuotot
           write(6,*)
         endif
         write(iu) nk, gamma
-        write(iu) maxspn
+        write(iu) nspin_flag   ! This will be 1, 2, or 4
         write(iu) nuotot
         write(iu) (iaorb(j),labelfis(isa(iaorb(j))),
      .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
@@ -628,9 +621,9 @@ C Handle parallel over K points option which is not allowed for here
      .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
         else
-          call diag3k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
+          call diag3k( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
-     .                 H, S, getD, qtot, temp, e1, e2, xij,
+     .                 H, S, getD, getPsi, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
      .                 Enew, ef, Entropy,
      .                 Haux, Saux, psi, Haux, Saux, aux,
@@ -653,15 +646,14 @@ C This is the only exit point
       end subroutine wwave
 
 
-      subroutine writew(nuotot,nuo,ik,k,ispin,eo,psi,gamma)
+      subroutine writew(nuotot,nuo,ik,k,ispin,eo,psi,gamma,noncoll)
 
       use precision
       use sys
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, Blocksize
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use units,        only : eV
       use kpoint_grid,  only : kweight
-
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -673,16 +665,16 @@ C This is the only exit point
 #endif
 
       integer, intent(in)  ::  nuotot, nuo, ispin, ik
-      real(dp), intent(in) ::  eo(*), psi(*), k(3)
+      logical, intent(in)  ::  noncoll, gamma
+      real(dp), intent(in) ::  eo(*), k(3)
+      real(dp), intent(in) ::  psi(:)
 
-      logical gamma
 
 C  Internal variables .............................................
       integer  BNode, iie, iw, indwf, j, ind, iu
-
+      integer  :: blocksize_saved
       integer number_of_wfns
       integer, allocatable  :: ind_wfn(:)
-
       real(dp)  :: kpoint_weight
       real(SP), dimension(:,:), allocatable :: aux   !! NOTE SP
 
@@ -695,6 +687,9 @@ C Allocate auxiliary arrays
       if (gamma) then
          allocate(aux(1,nuotot))
          call memory('A','D',nuotot,'writewave')
+      else if (noncoll) then
+         allocate(aux(4,nuotot))
+         call memory('A','D',4*nuotot,'writewave')
       else
          allocate(aux(2,nuotot))
          call memory('A','D',2*nuotot,'writewave')
@@ -733,7 +728,11 @@ C First print the index and value of k-point
         if (wwf) then
           write(6,*)
           write(6,'(a22,2x,i6,2x,3f10.6)') 'k-point = ',ik, k(1:3)
-          write(6,'(a22,2x,i6)') 'Spin component = ',ispin
+          if (noncoll) then
+             write(6,'(a22,2x,i6)') 'Spin component (non-collinear)= ',0
+          else
+             write(6,'(a22,2x,i6)') 'Spin component = ',ispin
+          endif
           write(6,'(a22,2x,i6)') 'Num. wavefunctions = ',nwflist(ik)
           write(6,'(a)') 'Use readwfsx utility to print '
      $                   // "wavefunction coefficients from WFSX file"
@@ -750,6 +749,14 @@ C First print the index and value of k-point
 
 C Loop over wavefunctions that should be printed
 
+      ! For dealings with block-sizes, we need to be aware that
+      ! non-collinear calculations have an extra effective factor of two.
+
+      if (noncoll) then
+         blocksize_saved = blocksize
+         blocksize = 2*blocksize
+      endif
+      
       if (Node .eq. 0 .and. debug) then
          print *, " -*- Will print ", nwflist(ik), " wfns."
          print *, " -*- ", iwf(ik,1:nwflist(ik))
@@ -783,6 +790,16 @@ C must be handled differently
             do j = 1,nuotot
               ind = j + (iie-1)*nuotot 
               aux(1,j) = real(psi(ind),kind=sp)
+            enddo
+          else if (noncoll) then
+             ! Each 'orbital' coefficient is actually four reals: complex up/down
+             ! (spinor)
+             do j = 1,nuotot
+              ind = 1+(j-1)*4+(iie-1)*4*nuotot
+              aux(1,j) = real(psi(ind),kind=sp)
+              aux(2,j) = real(psi(ind+1),kind=sp)
+              aux(3,j) = real(psi(ind+2),kind=sp)
+              aux(4,j) = real(psi(ind+3),kind=sp)
             enddo
           else
             do j = 1,nuotot
@@ -822,12 +839,17 @@ C eigenvector is now stored in aux in Node 0, and can be printed
 
       enddo
 
+      
 C Close output file
 
       if (Node .eq. 0) then
         call io_close(iu)
       endif
 
+      if (noncoll) then
+         blocksize = blocksize_saved
+      endif
+      
 C Deallocate auxiliary arrays
 
       call memory('D','D',size(aux),'writewave')
