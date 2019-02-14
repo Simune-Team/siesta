@@ -56,42 +56,61 @@ c****************************************************************************
         integer, parameter :: dp = selected_real_kind(10,100)
         integer, parameter :: sp = selected_real_kind(5,10)
 
-        integer io,iu, nk, nspin, ik, iik, ispin, iispin,
-     .          nwflist, iw, indwf, j, nuotot, jj
+        integer io,iu, nk, nspin_blocks, ik, iik, ispin, iispin,
+     .          nwflist, iw, indwf, j, nuotot, jj, nspin_flag
 
         character fname*33, oname*33
         integer, allocatable, dimension(:) :: iaorb,iphorb,cnfigfio
         character(len=20), allocatable, dimension(:) :: symfio,labelfis
 
         real(sp), allocatable, dimension(:,:) :: psi
-        logical gamma
+        logical gamma, non_coll
 
-        real(dp) k(3), energy,thress
+        real(dp) k(3), energy, thress, norm
  
-        read(5,*) fname
-        read(5,*) oname
-        read(5,*) thress
+!        read(5,*) fname
+!        read(5,*) oname
+!        read(5,*) thress
 
+        fname = "WFSX"
+        oname = "FMT_WFSX"
+        thress = 0.0001
         thress = thress**2  ! We use the square later on
 
         iu = 10
         io = 11
 
         open(iu, file=fname, form='unformatted', status='old' )
-        open(io, file=oname, form='formatted', status='new' )
+        open(io, file=oname, form='formatted', status='unknown' )
 
         rewind (iu)
 
         read(iu) nk, gamma
-
-        read(iu) nspin
+        read(iu) nspin_flag
         read(iu) nuotot
 
-        if (gamma) then
-         allocate(psi(1,nuotot))
+        if (nspin_flag == 4) then
+           non_coll = .true.
+           nspin_blocks = 1
         else
-         allocate(psi(2,nuotot))
+           non_coll = .false.
+           nspin_blocks = nspin_flag
         endif
+        
+        if (gamma) then
+           if (non_coll) then
+              allocate(psi(4,nuotot))
+           else
+              allocate(psi(1,nuotot))
+           endif
+        else
+           if (non_coll) then
+              allocate(psi(4,nuotot))
+           else
+              allocate(psi(2,nuotot))
+           endif
+        endif
+
         allocate(iaorb(nuotot), labelfis(nuotot),
      $           iphorb(nuotot), cnfigfio(nuotot),
      $           symfio(nuotot))
@@ -102,26 +121,35 @@ c****************************************************************************
 
         write(io,*)
         write(io,'(a22,2x,i6)') 'Nr of k-points = ',nk
-        write(io,'(a22,2x,i6)') 'Nr of Spins = ',nspin
+        if (non_coll) then
+           write(io,'(a22,2x,i6)') 'Nr of Spins blocks ' //
+     $                             '(non-collinear)  = ', nspin_blocks
+        else
+           write(io,'(a22,2x,i6)') 'Nr of Spins blocks = ',nspin_blocks
+        endif
         write(io,'(a22,2x,i6)') 'Nr of basis orbs = ',nuotot
         write(io,*)
 
 
         do iik = 1,nk
-          do iispin = 1,nspin
+          do iispin = 1,nspin_blocks
 
           read(iu) ik,k(1),k(2),k(3)
           if (ik .ne. iik) stop 'error in index of k-point'
           read(iu) ispin
-          if (ispin .ne. iispin) stop 'error in index of spin'
+          if (.not. non_coll) then
+             if (ispin .ne. iispin) stop 'error in index of spin'
+          endif
           read(iu) nwflist
 
           write(io,*)
           write(io,'(a72)')    ' ***************************************
      .********************************'
           write(io,'(a22,2x,i6,2x,3f10.6)') 'k-point = ',ik,
-     .                                         k(1),k(2),k(3)
-          write(io,'(a22,2x,i6)') 'Spin component = ',ispin
+     .         k(1),k(2),k(3)
+          if (.not. non_coll) then
+             write(io,'(a22,2x,i6)') 'Spin component = ',ispin
+          endif
           write(io,'(a22,2x,i6)') 'Num. wavefunctions = ',nwflist
 
 
@@ -138,18 +166,32 @@ C Loop over wavefunctions
             write(io,'(a22,2x,f10.6)') 'Energy (eV) = ', energy
             write(io,'(a72)')  ' ---------------------------------------
      .--------------------------------'
-            write(io,'(a72)')  '  Atom  Species Orb-global  Orb-in-atom
-     . Orb-type      Re(psi)   Im(psi)'
-
+            if (non_coll) then
+               write(io,'(a72)')
+     $                      ' Atom  Species Orb-global Orb-in-atom '//
+     $                      '  .Orb-type    [Re(psi)  Im(psi)]Up ' //
+     $                      ' [Re(psi)  Im(psi)]Down '
+            else
+               write(io,'(a72)')
+     $              ' Atom  Species Orb-global  Orb-in-atom ' //
+     $              ' .Orb-type      Re(psi)   Im(psi)'
+            endif
+            
             read(iu) (psi(1:,j), j=1,nuotot)
             do jj = 1,nuotot
-              if (dot_product(psi(1:,jj),psi(1:,jj)) .gt. thress)
-     $               then
-              write(io,'(i6,5x,a20,1x,i10,8x,i3,7x,i1,a20,2(f10.6))') 
+               if (non_coll) then
+                  norm = dot_product(psi(1:,jj),psi(1:,jj))  ! same
+               else
+                  norm = dot_product(psi(1:,jj),psi(1:,jj))
+               endif
+               
+              if (norm .lt. thress) CYCLE
+              write(io,
+     $            '(i6,5x,a10,1x,i10,2x,i3,2x,i1,a20,2(2(f10.6),2x))') 
      .          iaorb(jj),labelfis(jj),jj,
      .          iphorb(jj), cnfigfio(jj),
      .          symfio(jj), psi(1:,jj)
-              endif
+
             enddo
 
             write(io,'(a72)')  ' ---------------------------------------
