@@ -117,7 +117,8 @@ C *********************************************************************
       
       complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux, Dk, Ek
       complex(dp), dimension(2,nuotot,2*nuo), target :: psi
-      complex(dp), dimension(2,nuotot) :: caux
+      complex(dp), dimension(2,nuotot), target :: caux
+      real(dp),    pointer :: aux(:)
       logical               getD, getPSI
       
 !     TEMPOS, INTERNAL VARIABLES etc.
@@ -331,7 +332,8 @@ C *********************************************************************
              if (.not. getD) then
                 ! Fill in the missing eigenvalue information
                 ! This is useful if we are requesting WFS in a "bands" setting
-                !!call kludge_copy(nuotot,eo(1,ispin,ik),caux)
+                call c_f_pointer(c_loc(caux),aux,[2*nuotot])
+                call kludge_copy(2*nuotot,eo(1,ik),aux)
              endif
              call c_f_pointer(c_loc(psi),psi_real,[2*size(psi)])
              call writew(nuotot,nuo,ik,kpoint(1,ik),0,
