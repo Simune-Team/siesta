@@ -337,7 +337,7 @@ C *********************************************************************
              endif
              call c_f_pointer(c_loc(psi),psi_real,[2*size(psi)])
              call writew(nuotot,nuo,ik,kpoint(1,ik),0,
-     .                   eo,psi_real,.false.,noncoll=.true.)
+     .                   eo(1,ik),psi_real,.false.,non_coll=.true.)
           endif
 
           if (.not. getD) CYCLE   ! process new k-point

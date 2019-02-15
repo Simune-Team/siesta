@@ -646,7 +646,7 @@ C This is the only exit point
       end subroutine wwave
 
 
-      subroutine writew(nuotot,nuo,ik,k,ispin,eo,psi,gamma,noncoll)
+      subroutine writew(nuotot,nuo,ik,k,ispin,eo,psi,gamma,non_coll)
 
       use precision
       use sys
@@ -665,7 +665,7 @@ C This is the only exit point
 #endif
 
       integer, intent(in)  ::  nuotot, nuo, ispin, ik
-      logical, intent(in)  ::  noncoll, gamma
+      logical, intent(in)  ::  non_coll, gamma
       real(dp), intent(in) ::  eo(*), k(3)
       real(dp), intent(in) ::  psi(:)
 
@@ -687,7 +687,7 @@ C Allocate auxiliary arrays
       if (gamma) then
          allocate(aux(1,nuotot))
          call memory('A','D',nuotot,'writewave')
-      else if (noncoll) then
+      else if (non_coll) then
          allocate(aux(4,nuotot))
          call memory('A','D',4*nuotot,'writewave')
       else
@@ -728,7 +728,7 @@ C First print the index and value of k-point
         if (wwf) then
           write(6,*)
           write(6,'(a22,2x,i6,2x,3f10.6)') 'k-point = ',ik, k(1:3)
-          if (noncoll) then
+          if (non_coll) then
              write(6,'(a22,2x,i6)') 'Spin component (non-collinear)= ',0
           else
              write(6,'(a22,2x,i6)') 'Spin component = ',ispin
@@ -752,7 +752,7 @@ C Loop over wavefunctions that should be printed
       ! For dealings with block-sizes, we need to be aware that
       ! non-collinear calculations have an extra effective factor of two.
 
-      if (noncoll) then
+      if (non_coll) then
          blocksize_saved = blocksize
          blocksize = 2*blocksize
       endif
@@ -762,7 +762,7 @@ C Loop over wavefunctions that should be printed
          print *, " -*- ", iwf(ik,1:nwflist(ik))
       endif
       do iw = 1,nwflist(ik)
-        indwf = iwf(ik,iw)
+         indwf = iwf(ik,iw)
 
         ! Determine which node handles this wavefunction
         ! Note that the distribution is block cyclic,
@@ -786,12 +786,12 @@ C Save wavefunction in aux array
 C psi has different structure in diagk and diagg, so the indexing
 C must be handled differently
 
-          if (gamma) then
+          if (gamma .and. (.not. non_coll)) then
             do j = 1,nuotot
               ind = j + (iie-1)*nuotot 
               aux(1,j) = real(psi(ind),kind=sp)
             enddo
-          else if (noncoll) then
+          else if (non_coll) then
              ! Each 'orbital' coefficient is actually four reals: complex up/down
              ! (spinor)
              do j = 1,nuotot
@@ -832,10 +832,10 @@ C Pass the wf to the master node
 C eigenvector is now stored in aux in Node 0, and can be printed
 
         if (Node .eq. 0) then
-          write(iu) indwf
-          write(iu) eo(indwf)/eV
-          write(iu) (aux(1:,j), j=1,nuotot)
-       endif
+           write(iu) indwf
+           write(iu) eo(indwf)/eV
+           write(iu) (aux(1:,j), j=1,nuotot)
+        endif
 
       enddo
 
@@ -846,7 +846,7 @@ C Close output file
         call io_close(iu)
       endif
 
-      if (noncoll) then
+      if (non_coll) then
          blocksize = blocksize_saved
       endif
       

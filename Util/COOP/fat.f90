@@ -484,6 +484,7 @@ program fatband
                                 !AG: Corrected:  (qcos, qsin) = conjg(C_1)*(C_2)
                                 ! We might want to avoid recomputing this
                                 if (non_coll) then
+                                   ! Take as weight the "complete spinor" product
                                    qcos= wf(1,io1)*wf(1,io2) + &
                                         wf(2,io1)*wf(2,io2) + &
                                         wf(3,io1)*wf(3,io2) + &

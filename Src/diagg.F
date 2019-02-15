@@ -206,7 +206,7 @@ C Repeat diagonalisation with increased memory to handle clustering
      $                     [size(psi,1)*size(psi,2)])
           call writew(nuotot,nuo,1,k,ispin,
      &                eo(1,ispin),psi_real_1d,.true.,
-     $                noncoll=.false.)
+     $                non_coll=.false.)
         endif
 
       enddo
