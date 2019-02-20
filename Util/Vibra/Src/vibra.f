@@ -80,7 +80,7 @@ c Correction terms to satisfy translational modes
       real(dp) zero(3,3,maxa), zeroo(3,3)
 
 c Work space for diagonalization.
-      complex dc(maxd,maxd),phase,IRtrm,vecmw(3)
+      complex(dp) dc(maxd,maxd),phase,IRtrm,vecmw(3)
       real(dp) work(maxd),work2(2,maxd)
       real(dp) dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
 
@@ -471,7 +471,7 @@ c Loop over k points
 
         do ix=1,3*natoms
         do jx=1,3*natoms
-            dc(ix,jx)=(0.0,0.0)
+            dc(ix,jx)= cmplx(0.0_dp,0.0_dp, dp)
         enddo
         enddo
 
@@ -515,7 +515,7 @@ c Loop over k points
             enddo
 c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
             do in = 1,neq
-              phase = cos(qr(in))*(1.0,0.0) + sin(qr(in))*(0.0,1.0)
+              phase = cmplx(cos(qr(in)), sin(qr(in)), dp)
               do ii=1,3
               do ij=1,3
                 ix = (i-1)*3+ii
@@ -541,7 +541,7 @@ c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
         do ix=1,3*natoms
           do jx=ix,3*natoms
             dd(ix,jx)=aimag(dc(jx,ix))
-            dd(jx,ix)=real(dc(jx,ix))
+            dd(jx,ix)=real(dc(jx,ix), dp)
           enddo
         enddo
 
@@ -559,17 +559,17 @@ c Compute the IR intensities if requested
 
 c Loop over modes
         do i = 1,3*natoms
-          IRinten(i) = 0.0d0
+          IRinten(i) = 0._dp
           do ij = 1,3
-            IRtrm = (0.0d0,0.0d0)
+            IRtrm = cmplx(0._dp,0._dp, dp)
             ind = - 3
             do j = 1,natoms
               ind = ind + 3
 
 c Mass weight eigenvectors
-              rmass = 1.0d0/sqrt(xmass(j))
+              rmass = 1._dp/sqrt(xmass(j))
               do ii = 1,3
-                vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i))
+                vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i), dp)
                 vecmw(ii) = vecmw(ii)*rmass
               enddo
 
