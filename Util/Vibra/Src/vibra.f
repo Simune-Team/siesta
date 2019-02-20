@@ -78,7 +78,7 @@ c Correction terms to satisfy translational modes
       real*8 zero(3,3,maxa), zeroo(3,3)
 
 c Work space for diagonalization.
-      complex dc(maxd,maxd),phase,IRtrm,vecmw(3)
+      complex*16 dc(maxd,maxd),phase,IRtrm,vecmw(3)
       real*8 work(maxd),work2(2,maxd)
       real*8 dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
 
@@ -513,7 +513,7 @@ c Loop over k points
             enddo
 c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
             do in = 1,neq
-              phase = cos(qr(in))*(1.0,0.0) + sin(qr(in))*(0.0,1.0)
+              phase = cmplx(cos(qr(in)), sin(qr(in)), 8)
               do ii=1,3
               do ij=1,3
                 ix = (i-1)*3+ii
@@ -538,8 +538,8 @@ c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
 
         do ix=1,3*natoms
           do jx=ix,3*natoms
-            dd(ix,jx)=imag(dc(jx,ix))
-            dd(jx,ix)=real(dc(jx,ix))
+            dd(ix,jx)=aimag(dc(jx,ix))
+            dd(jx,ix)=real(dc(jx,ix), 8)
           enddo
         enddo
 
@@ -567,7 +567,7 @@ c Loop over modes
 c Mass weight eigenvectors
               rmass = 1.0d0/sqrt(xmass(j))
               do ii = 1,3
-                vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i))
+                vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i), 8)
                 vecmw(ii) = vecmw(ii)*rmass
               enddo
 
