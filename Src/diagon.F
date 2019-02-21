@@ -289,7 +289,7 @@ C Call apropriate routine
        endif
       elseif ( spin%SO ) then
         if (gamma) then
-          call diag3g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
+          call diag3g( nuo, no, maxnh, maxnd, maxo, numh,
      .                 listhptr, listh, numd, listdptr, listd,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, eo, qo,
      .                 Dnew, Enew, ef, Entropy, 

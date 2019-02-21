@@ -616,7 +616,7 @@ C Handle parallel over K points option which is not allowed for here
         if (gamma) then
           call diag3g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
-     .                 H, S, getD, qtot, temp, e1, e2, ek, qk,
+     .                 H, S, getD, getPSI, qtot, temp, e1, e2, ek, qk,
      .                 Dnew, Enew, ef, Entropy,
      .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
@@ -684,15 +684,17 @@ C ...................
 
 C Allocate auxiliary arrays
 
-      if (gamma) then
-         allocate(aux(1,nuotot))
-         call memory('A','D',nuotot,'writewave')
-      else if (non_coll) then
+      if (non_coll) then
          allocate(aux(4,nuotot))
          call memory('A','D',4*nuotot,'writewave')
       else
-         allocate(aux(2,nuotot))
-         call memory('A','D',2*nuotot,'writewave')
+         if (gamma) then
+            allocate(aux(1,nuotot))
+            call memory('A','D',nuotot,'writewave')
+         else
+            allocate(aux(2,nuotot))
+            call memory('A','D',2*nuotot,'writewave')
+         endif
       endif
 
 C Find file name, and open for Node 0
@@ -777,40 +779,44 @@ C Loop over wavefunctions that should be printed
 
         if (Node.eq.BNode) then
 
-C Determine the index of the wavefunction in the local node
-
+          ! Determine the index of the wavefunction in the local node
           call GlobalToLocalOrb( indwf, BNode, Nodes, iie)
 
-C Save wavefunction in aux array
+          ! Save wavefunction in aux array
 
-C psi has different structure in diagk and diagg, so the indexing
-C must be handled differently
+          ! Despite being passed as a one-dimensional array, psi has
+          ! different underlying structures for different cases, so the
+          ! indexing must be handled differently
 
-          if (gamma .and. (.not. non_coll)) then
-            do j = 1,nuotot
-              ind = j + (iie-1)*nuotot 
-              aux(1,j) = real(psi(ind),kind=sp)
-            enddo
-          else if (non_coll) then
+          if (.not. non_coll) then
+             if (gamma) then
+                ! Real functions
+                do j = 1,nuotot
+                   ind = j + (iie-1)*nuotot 
+                   aux(1,j) = real(psi(ind),kind=sp)
+                enddo
+             else
+                ! Complex functions: two reals per orbital coefficient
+                do j = 1,nuotot
+                   ind = 1+(j-1)*2+(iie-1)*2*nuotot
+                   aux(1,j) = real(psi(ind),kind=sp)
+                   aux(2,j) = real(psi(ind+1),kind=sp)
+                enddo
+             endif
+          else                  ! non-collinear case, including SOC
              ! Each 'orbital' coefficient is actually four reals: complex up/down
              ! (spinor)
              do j = 1,nuotot
-              ind = 1+(j-1)*4+(iie-1)*4*nuotot
-              aux(1,j) = real(psi(ind),kind=sp)
-              aux(2,j) = real(psi(ind+1),kind=sp)
-              aux(3,j) = real(psi(ind+2),kind=sp)
-              aux(4,j) = real(psi(ind+3),kind=sp)
-            enddo
-          else
-            do j = 1,nuotot
-              ind = 1+(j-1)*2+(iie-1)*2*nuotot
-              aux(1,j) = real(psi(ind),kind=sp)
-              aux(2,j) = real(psi(ind+1),kind=sp)
-            enddo
-          endif
+                ind = 1 + (j-1)*4 + (iie-1)*4*nuotot 
+                aux(1,j) = real(psi(ind),kind=sp)
+                aux(2,j) = real(psi(ind+1),kind=sp)
+                aux(3,j) = real(psi(ind+2),kind=sp)
+                aux(4,j) = real(psi(ind+3),kind=sp)
+             enddo
+          endif  !  non-coll or not
 
-        endif
-
+       endif          ! Node == BNode
+       
 #ifdef MPI
 C Pass the wf to the master node
         if (BNode.ne.0) then

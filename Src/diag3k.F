@@ -336,8 +336,9 @@ C *********************************************************************
                 call kludge_copy(2*nuotot,eo(1,ik),aux)
              endif
              call c_f_pointer(c_loc(psi),psi_real,[2*size(psi)])
-             call writew(nuotot,nuo,ik,kpoint(1,ik),0,
-     .                   eo(1,ik),psi_real,.false.,non_coll=.true.)
+             call writew(nuotot,nuo,ik,kpoint(1,ik),1,     ! last '1' is 'spin-block number'
+     .                   eo(1,ik),                         ! energies
+     .                   psi_real,gamma=.false.,non_coll=.true.)
           endif
 
           if (.not. getD) CYCLE   ! process new k-point
