@@ -29,6 +29,7 @@ module main_vars
 
   real(dp) :: qtot, temp_in_file, dm, alfa, vvv
   real(dp) :: qcos, qsin, w0, want
+  real(dp) :: qcos_H, qsin_H
   real(dp) :: min_energy, max_energy, e_step, energy, weight, efermi
   real(dp) :: low_e, high_e, eigval
   integer  :: intdos_u, number_of_wfns
@@ -66,8 +67,10 @@ module main_vars
   real(dp),    allocatable :: hamilt(:,:), Sover(:), xij(:,:), dij(:)
 
   real(dp),    allocatable :: wk(:)
-  real(SP),  allocatable :: wf(:,:)       ! Note single precision
-
+  real(SP),    allocatable :: wf(:,:)       ! Note single precision
+  complex(SP), dimension(2)    :: conjg_spinor_1, spinor_2, c_c1_H_c2_a
+  complex(DP), dimension(2,2)  :: H
+  complex(SP) :: c_c1_c2, c_c1_H_c2
   ! MPR file
   character :: what*4, tit(ncbmx)*30
   logical   :: dos, coop

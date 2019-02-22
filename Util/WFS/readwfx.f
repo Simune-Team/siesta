@@ -6,7 +6,6 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
 
-
         program readwfx
 
 c****************************************************************************
@@ -25,6 +24,8 @@ c This program reads files generated from SIESTA, with information of
 c the wavefunctions coefficients (NEW STYLE, SystemLabel.WFSX) and writes
 c this information in user-friendly form to an output file.
 c
+!     ** TO BE UPDATED AND MODERNIZED
+        
 c The program needs two input files:
 c
 c 1) Main input file, read by standard input. A sample of input file is:

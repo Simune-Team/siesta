@@ -17,10 +17,10 @@ program mprop
 
   implicit none
 
-  logical :: gamma_wfsx, got_qcos
+  logical :: gamma_wfsx, got_qcos, non_coll
   integer :: ii1, ii2, ind, ind_red, no1, no2, n_int, nnz
-  integer :: imin, imax
-  real(dp) :: factor
+  integer :: imin, imax, nspin_blocks
+  real(dp) :: factor_S, factor_H
 
   ! We use a smearing function of the form f(x) = exp(-(x/smear)**2) / (smear*sqrt(pi))
   ! A weight tolerance of 1.0e-4 corresponds to going about 3*smear on either
@@ -137,11 +137,18 @@ program mprop
   allocate (wk(nkp), pk(3,nkp))
 
   read(wfs_u) nsp
+  non_coll = (nsp == 4)
   read(wfs_u) nao
   read(wfs_u)        !! Symbols, etc
   if (debug) print *, "WFSX read: nkp, nsp, nnao: ", nkp, nsp, nao
 
-  allocate (ados(npts_energy,nsp), ww(npts_energy))
+  if (non_coll) then
+     nspin_blocks = 1
+  else
+     nspin_blocks = nsp
+  endif
+
+  allocate (ados(npts_energy,nspin_blocks), ww(npts_energy))
 
   nwfmx = -huge(1)
   nwfmin = huge(1)
@@ -150,8 +157,9 @@ program mprop
   min_eigval_in_band_set = huge(1.0_dp)
   max_eigval_in_band_set = -huge(1.0_dp)
 
+
   do ik=1,nkp
-     do is=1,nsp
+     do is=1,nspin_blocks
 
         read(wfs_u) idummy, pk(1:3,ik), wk(ik)
         if (idummy /= ik) stop "ik index mismatch in WFS file"
@@ -252,7 +260,7 @@ program mprop
 
 
   e_step = (high_e-low_e)/(npts_energy-1)
-  ados(:,1:nsp) = 0.0_dp
+  ados(:,1:nspin_blocks) = 0.0_dp
 
   ! skip four records
 
@@ -264,7 +272,7 @@ program mprop
   read(wfs_u) 
 
   do ik=1,nkp
-     do is=1,nsp
+     do is=1,nspin_blocks
         read(wfs_u)
         read(wfs_u)
         read(wfs_u)  number_of_wfns
@@ -291,7 +299,7 @@ program mprop
 
   do i = 1, npts_energy
      energy = low_e + e_step*(i-1)
-     write(idos,*) energy, (ados(i,is), is=1,nsp)
+     write(idos,*) energy, (ados(i,is), is=1,nspin_blocks)
   enddo
 
   call io_close(idos)
@@ -324,8 +332,8 @@ program mprop
   write(intdos_u,*) low_e, intdos(1), intebs(1)
   do i = 2, npts_energy
      energy = low_e + e_step*(i-1)
-     intdos(i) = intdos(i-1) + sum(ados(i,:)) * e_step * 2.0_dp /nsp
-     intebs(i) = intebs(i-1) + energy*sum(ados(i,:)) * e_step * 2.0_dp /nsp
+     intdos(i) = intdos(i-1) + sum(ados(i,:)) * e_step * 2.0_dp /nspin_blocks
+     intebs(i) = intebs(i-1) + energy*sum(ados(i,:)) * e_step * 2.0_dp /nspin_blocks
      write(intdos_u,*) energy, intdos(i), intebs(i)
   enddo
   call io_close(intdos_u)
@@ -500,28 +508,31 @@ program mprop
   !=====================
  
  if (coop) then
-    allocate (coop_vals(npts_energy,nsp,ncb))
-    allocate (cohp_vals(npts_energy,nsp,ncb))
-    coop_vals(:,:nsp,:ncb)=0.d0
-    cohp_vals(:,:nsp,:ncb)=0.d0
+    allocate (coop_vals(npts_energy,nspin_blocks,ncb))
+    allocate (cohp_vals(npts_energy,nspin_blocks,ncb))
+    coop_vals(:,:,:)=0.d0
+    cohp_vals(:,:,:)=0.d0
  endif
  if (dos) then
-    allocate (pdos_vals(npts_energy,nsp,ncb))
-    pdos_vals(:,:nsp,:ncb) = 0.0_dp
+    allocate (pdos_vals(npts_energy,nspin_blocks,ncb))
+    pdos_vals(:,:,:) = 0.0_dp
  endif
 
-  ados(:,:nsp) = 0.0_dp
+  ados(:,:) = 0.0_dp
 
   !================================================================
 
   ! * Curves
 
-     if (gamma_wfsx) then
-        allocate(wf(1,1:no_u))
+     if (non_coll) then
+        allocate(wf(4,1:no_u))
      else
-        allocate(wf(2,1:no_u))
+        if (gamma_wfsx) then
+           allocate(wf(1,1:no_u))
+        else
+           allocate(wf(2,1:no_u))
+        endif
      endif
-
      allocate (mask2(1:no_u))
 
      do ic=1,ncb
@@ -613,7 +624,7 @@ program mprop
         if (debug) print *, "Number of k-points, spins: ", nkp, nsp
         do ik=1,nkp
            if (debug) print *, "k-point: ", ik
-           do is=1,nsp
+           do is=1,nspin_blocks
               read(wfs_u)
               read(wfs_u)
               read(wfs_u)  number_of_wfns
@@ -670,41 +681,81 @@ program mprop
                          ind_red = ptr(i1)+i2
                          io2 = list_io2(ind_red)
                          ind = list_ind(ind_red)
-                             
-                                ! (qcos, qsin) = C_1*conjg(C_2)
-                                !AG: Corrected:  (qcos, qsin) = conjg(C_1)*(C_2)
-                                ! We might want to avoid recomputing this
 
-                                if (gamma_wfsx) then
-                                   qcos = wf(1,io1)*wf(1,io2) 
-                                   qsin = 0.0_dp
+                                ! (qcos, qsin) = conjg(C_1) * [S or H] * C_2
+                                ! We might want to avoid recomputing the "S" pure wf parts
+
+                                if (non_coll) then
+
+                                   conjg_spinor_1 = [ cmplx(wf(1,io1),-wf(2,io1)), &
+                                                      cmplx(wf(3,io1),-wf(4,io1)) ]
+                                   spinor_2 = [ cmplx(wf(1,io2),wf(2,io2)), &
+                                                cmplx(wf(3,io2),wf(4,io2)) ]
+
+                                   ! Make sure of signs in 1,2 and 2,1
+                                   if (nsp == 8) then
+                                      H(1,1) = cmplx(Hamilt(ind,1), Hamilt(ind,5), dp)
+                                      H(1,2) = cmplx(Hamilt(ind,3), -Hamilt(ind,4), dp)
+                                      H(2,1) = cmplx(Hamilt(ind,7), Hamilt(ind,8), dp)
+                                      H(2,2) = cmplx(Hamilt(ind,2), Hamilt(ind,6), dp)
+                                   else   ! nsp=4; just non-collinear; no SOC
+                                      H(1,1) = cmplx(Hamilt(ind,1), 0.0_dp, sp)
+                                      H(1,2) = cmplx(Hamilt(ind,3), -Hamilt(ind,4), dp)
+                                      H(2,1) = cmplx(Hamilt(ind,3), Hamilt(ind,4), dp)
+                                      H(2,2) = cmplx(Hamilt(ind,2), 0.0_dp, dp)
+                                   endif
+
+                                   ! For DOS/COOP, take as weight the "complete spinor" product
+                                   ! Does the dot_product include a conjugation for complex arrays?
+                                   ! Should we really promote to double? (or is this classic 'dprod'?)
+                                   c_c1_c2 = dot_product(conjg_spinor_1,spinor_2)
+                                   qcos= real(c_c1_c2)    ! kind?
+                                   qsin= aimag(c_c1_c2)   ! kind?
+                                   
+                                   ! For COHP, insert non-trivial H matrix
+                                   c_c1_H_c2_a = matmul(conjg_spinor_1,H)
+                                   c_c1_H_c2   = dot_product(c_c1_H_c2_a,spinor_2)
+                                   qcos_H= real(c_c1_H_c2)    ! kind?
+                                   qsin_H= aimag(c_c1_H_c2)   ! kind?
+
                                 else
-                                   qcos= (wf(1,io1)*wf(1,io2) + &
-                                        wf(2,io1)*wf(2,io2))
-                                   qsin= (wf(1,io1)*wf(2,io2) - &
-                                        wf(2,io1)*wf(1,io2))
+                                   ! These have explicit spin quantum numbers (is)
+                                   if (gamma_wfsx) then
+                                      qcos = wf(1,io1)*wf(1,io2) 
+                                      qsin = 0.0_dp  ! kind?
+                                      qcos_H = qcos * Hamilt(ind,is)
+                                      qsin_H = 0.0_dp  ! kind?
+                                   else
+                                      qcos = (wf(1,io1)*wf(1,io2) + &
+                                           wf(2,io1)*wf(2,io2))
+                                      qcos_H = qcos * Hamilt(ind,is)
+                                      qsin = (wf(1,io1)*wf(2,io2) - &
+                                           wf(2,io1)*wf(1,io2))
+                                      qsin_H = qsin * Hamilt(ind,is)
+                                   endif
                                 endif
 
-                             ! k*R_12    (r_2-r_1)
-                             alfa=dot_product(pk(1:3,ik),xij(1:3,ind))
+                                ! k*R_12    (r_2-r_1)
+                                alfa=dot_product(pk(1:3,ik),xij(1:3,ind))
 
-                             ! Crb = Real(C_1*conjg(C_2)*exp(-i*alfa)) * S_12
-                             !AG: This one better --  or Real(conjg(C_1)*C_2)*exp(+i*alfa)) * S_12
-                             ! Common factor computed here
-                             factor =  (qcos*cos(alfa)-qsin*sin(alfa)) * wk(ik)
+                                ! Crb = Real(C_1*conjg(C_2)*exp(-i*alfa)) * S_12
+                                ! or    Real(conjg(C_1)*C_2)*exp(+i*alfa)) * S_12
+                                ! Common factor computed here
+                                factor_S =  Sover(ind) * (qcos*cos(alfa)-qsin*sin(alfa)) * wk(ik)
+                                factor_H =  (qcos_H*cos(alfa)-qsin_H*sin(alfa)) * wk(ik)
 
                                 if (dos) then
                                    ! Note that there is no factor of 2
                                    do i = imin, imax
-                                      pdos_vals(i,is,ic)=pdos_vals(i,is,ic)  +  Sover(ind)*factor*ww(i)
+                                      pdos_vals(i,is,ic)=pdos_vals(i,is,ic)  +  factor_S * ww(i)
                                    enddo
                                 endif
 
                                 if (coop) then
                                    !! COOP is basically the off-diagonal DOS, chosen on the basis of particular bonds
                                    do i = imin, imax
-                                      coop_vals(i,is,ic)=coop_vals(i,is,ic)  +  Sover(ind) * factor * ww(i)
-                                      cohp_vals(i,is,ic)=cohp_vals(i,is,ic)  +  hamilt(ind,is) * factor * ww(i)
+                                      coop_vals(i,is,ic)=coop_vals(i,is,ic)  +  factor_S * ww(i)
+                                      cohp_vals(i,is,ic)=cohp_vals(i,is,ic)  +  factor_H * ww(i)
                                    enddo
                                 endif  ! coop
 
@@ -724,11 +775,11 @@ program mprop
      !
            if (dos) then
               open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.pdos')
-              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
+              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nspin_blocks)
               do i=1, npts_energy
                  energy = low_e + e_step*(i-1)
                  write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
-                      energy, (pdos_vals(i,is,ic),is=1,nspin)
+                      energy, (pdos_vals(i,is,ic),is=1,nspin_blocks)
               enddo
               close(tab_u)
            endif
@@ -738,22 +789,22 @@ program mprop
      !      COOP output
      !
               open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.coop')
-              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
+              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nspin_blocks)
               do i=1, npts_energy
                  energy = low_e + e_step*(i-1)
                  write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
-                      energy, (coop_vals(i,is,ic),is=1,nspin)
+                      energy, (coop_vals(i,is,ic),is=1,nspin_blocks)
               enddo
               close(tab_u)
               !
               !      COHP output
               !
               open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.cohp')
-              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
+              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nspin_blocks)
               do i=1, npts_energy
                  energy = low_e + e_step*(i-1)
                  write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
-                      energy, (cohp_vals(i,is,ic),is=1,nspin)
+                      energy, (cohp_vals(i,is,ic),is=1,nspin_blocks)
               enddo
               close(tab_u)
 
@@ -774,7 +825,7 @@ program mprop
      do i = 1, npts_energy
         energy = low_e + e_step*(i-1)
         ! Note division by the number of curves
-        write(idos,*) energy, (ados(i,is)/ncb, is=1,nsp)
+        write(idos,*) energy, (ados(i,is)/ncb, is=1,nspin_blocks)
      enddo
      call io_close(idos)
 
