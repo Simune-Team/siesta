@@ -20,6 +20,10 @@ program mprop
   logical :: gamma_wfsx, got_qcos, non_coll
   integer :: ii1, ii2, ind, ind_red, no1, no2, n_int, nnz
   integer :: imin, imax, nspin_blocks
+  
+  complex(DP), dimension(2)    :: spinor_1, spinor_2, H_c2
+  complex(DP), dimension(2,2)  :: H
+  complex(DP) :: c_c1_c2, c_c1_H_c2
   real(dp) :: factor_S, factor_H
 
   ! We use a smearing function of the form f(x) = exp(-(x/smear)**2) / (smear*sqrt(pi))
@@ -524,12 +528,18 @@ program mprop
 
   ! * Curves
 
+     ! The first dimension is the number of real numbers per orbital
+     ! 1 for real wfs, 2 for complex, and four for the two spinor components
+  
      if (non_coll) then
+        allocate(wf_single(4,1:no_u))
         allocate(wf(4,1:no_u))
      else
         if (gamma_wfsx) then
+           allocate(wf_single(1,1:no_u))
            allocate(wf(1,1:no_u))
         else
+           allocate(wf_single(2,1:no_u))
            allocate(wf(2,1:no_u))
         endif
      endif
@@ -646,8 +656,9 @@ program mprop
                     CYCLE
                  endif
 
-                 read(wfs_u) (wf(:,io), io=1,nao)
-
+                 read(wfs_u) (wf_single(:,io), io=1,no_u)
+                 ! Use a double precision form in what follows
+                 wf(:,:) = real(wf_single(:,:), kind=dp)
 
                  ! This block will be repeated for every curve,
                  ! but we will divide by the number of curves before writing out
@@ -687,44 +698,48 @@ program mprop
 
                                 if (non_coll) then
 
-                                   conjg_spinor_1 = [ cmplx(wf(1,io1),-wf(2,io1)), &
-                                                      cmplx(wf(3,io1),-wf(4,io1)) ]
-                                   spinor_2 = [ cmplx(wf(1,io2),wf(2,io2)), &
-                                                cmplx(wf(3,io2),wf(4,io2)) ]
+                                   ! Use 'dp' to keep the wfs in double precision
+                                   ! (Recall that wf() is now dp; converted right after reading)
+                                   spinor_1 = [ cmplx(wf(1,io1),wf(2,io1), dp), &
+                                                      cmplx(wf(3,io1),wf(4,io1), dp) ]
+                                   spinor_2 = [ cmplx(wf(1,io2),wf(2,io2), dp), &
+                                                cmplx(wf(3,io2),wf(4,io2), dp) ]
 
-                                   ! Make sure of signs in 1,2 and 2,1
+                                   ! We take the signs for 1,2 and 2,1
+                                   ! from the construction of Ebs_Haux in 'compute_energies'
                                    if (nsp == 8) then
                                       H(1,1) = cmplx(Hamilt(ind,1), Hamilt(ind,5), dp)
                                       H(1,2) = cmplx(Hamilt(ind,3), -Hamilt(ind,4), dp)
                                       H(2,1) = cmplx(Hamilt(ind,7), Hamilt(ind,8), dp)
                                       H(2,2) = cmplx(Hamilt(ind,2), Hamilt(ind,6), dp)
                                    else   ! nsp=4; just non-collinear; no SOC
-                                      H(1,1) = cmplx(Hamilt(ind,1), 0.0_dp, sp)
+                                      H(1,1) = cmplx(Hamilt(ind,1), 0.0_dp, dp)
                                       H(1,2) = cmplx(Hamilt(ind,3), -Hamilt(ind,4), dp)
                                       H(2,1) = cmplx(Hamilt(ind,3), Hamilt(ind,4), dp)
                                       H(2,2) = cmplx(Hamilt(ind,2), 0.0_dp, dp)
                                    endif
 
                                    ! For DOS/COOP, take as weight the "complete spinor" product
-                                   ! Does the dot_product include a conjugation for complex arrays?
-                                   ! Should we really promote to double? (or is this classic 'dprod'?)
-                                   c_c1_c2 = dot_product(conjg_spinor_1,spinor_2)
-                                   qcos= real(c_c1_c2)    ! kind?
-                                   qsin= aimag(c_c1_c2)   ! kind?
+                                   ! The dot_product is directly sum(conjg(a1)*a2) for complex arrays
+                                   ! The kind returned is "the highest" of the arguments. In this case,
+                                   ! it will be 'dp' if the 'spinor_X' variables are 'dp'.
+                                   c_c1_c2 = dot_product(spinor_1,spinor_2)
+                                   qcos= real(c_c1_c2, dp) 
+                                   qsin= aimag(c_c1_c2)   
                                    
                                    ! For COHP, insert non-trivial H matrix
-                                   c_c1_H_c2_a = matmul(conjg_spinor_1,H)
-                                   c_c1_H_c2   = dot_product(c_c1_H_c2_a,spinor_2)
-                                   qcos_H= real(c_c1_H_c2)    ! kind?
-                                   qsin_H= aimag(c_c1_H_c2)   ! kind?
+                                   H_c2 = matmul( H, spinor_2 )
+                                   c_c1_H_c2  = dot_product( spinor_1, H_c2 )
+                                   qcos_H= real(c_c1_H_c2, dp) 
+                                   qsin_H= aimag(c_c1_H_c2)
 
                                 else
                                    ! These have explicit spin quantum numbers (is)
                                    if (gamma_wfsx) then
                                       qcos = wf(1,io1)*wf(1,io2) 
-                                      qsin = 0.0_dp  ! kind?
+                                      qsin = 0.0_dp
                                       qcos_H = qcos * Hamilt(ind,is)
-                                      qsin_H = 0.0_dp  ! kind?
+                                      qsin_H = 0.0_dp
                                    else
                                       qcos = (wf(1,io1)*wf(1,io2) + &
                                            wf(2,io1)*wf(2,io2))
@@ -785,9 +800,9 @@ program mprop
            endif
 
            if (coop) then
-     !
-     !      COOP output
-     !
+              !
+              !      COOP output
+              !
               open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.coop')
               write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nspin_blocks)
               do i=1, npts_energy

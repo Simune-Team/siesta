@@ -67,10 +67,8 @@ module main_vars
   real(dp),    allocatable :: hamilt(:,:), Sover(:), xij(:,:), dij(:)
 
   real(dp),    allocatable :: wk(:)
-  real(SP),    allocatable :: wf(:,:)       ! Note single precision
-  complex(SP), dimension(2)    :: conjg_spinor_1, spinor_2, c_c1_H_c2_a
-  complex(DP), dimension(2,2)  :: H
-  complex(SP) :: c_c1_c2, c_c1_H_c2
+  real(SP),    allocatable :: wf_single(:,:)       ! Note single precision
+  real(DP),    allocatable :: wf(:,:)              ! Note double precision
   ! MPR file
   character :: what*4, tit(ncbmx)*30
   logical   :: dos, coop
