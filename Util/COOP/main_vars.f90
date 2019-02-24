@@ -15,6 +15,7 @@ module main_vars
 
   public 
 
+  integer :: h_spin_dim
   integer :: ierr, klb, it, is, k, nw
   integer :: nao, ia, iz, ko, nkp, nsp, nen, mxwf, io, ie
   integer :: nnao, ik, is0, iw, iw0, i1, i2, i3, i4

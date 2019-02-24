@@ -1,25 +1,52 @@
 Units
 
-DOS curves come out in (eV)^(-1). Non-spin cases have an extra factor
+*** WARNING ***
+The support for full-spinor wavefunctions (non-collinear spin,
+spin-orbit coupling) has necessitated a CHANGE in the conventions
+for output of the NON-SPIN-POLARIZED curves.
+*** ----------------
+
+## DOS curves
+
+They come out in (eV)^(-1). Non-spin cases have an extra factor
 of 2. For spin-polarized systems, two curves are output.
+For the full-spinor case, only one curve is output.
 
-COOP curves come out in (eV)^(-1) and *per spin*.  If they are
-integrated up to the Fermi level, (including all the interactions for
-all orbitals, even those on-site (for this, specify a minimum distance
-of 0.0 in the .mpr file and a big enough maximum distance)), the
-result is N/2 (half the number of electrons in the unit cell) when the
-system is not spin-polarized. When there are two spin components, two
-curves are ouput in the .coop file, and the sum of the integrals for
-both would be N.
+(**NOTE that in previous versions of the program the extra factor of
+2 for non-spin cases was NOT really applied, despite statements to the
+contrary in these notes :-( ).
 
-COHP curves come out in Ry * (eV)^(-1) and *per spin* (the Ry part
-comes from the Hamiltonian factor).  If they are integrated up to the
-Fermi level, (including all the interactions for all orbitals, even
-those on-site (for this, specify a minimum distance of 0.0 in the .mpr
-file and a big enough maximum distance)), the result is E_bs/2 (half
-the band-structure energy) when the system is not spin-polarized. When
-there are two spin components, two curves are ouput in the .cohp file,
-and the sum of the integrals for both would be E_bs.
+## COOP curves
+
+They come out in (eV)^(-1).  If they are integrated up to the Fermi
+level, (including all the interactions for all orbitals, even those
+on-site (for this, specify a minimum distance of 0.0 in the .mpr file
+and a big enough maximum distance)), the result is N (the number of
+electrons in the unit cell) when the system is not spin-polarized.
+(** NOTE: This is a change with respect to the previous version: the
+values are DOUBLED now).
+
+When there are two spin components, two curves are ouput in the .coop
+file, and the SUM of the integrals for both would be N.  For the
+full-spinor case, only one curve is output, and the integrated value
+up to the Fermi level is N.
+
+## COHP curves
+
+They come out in Ry * (eV)^(-1) (the Ry part comes from the
+Hamiltonian factor -- THIS SHOULD BE CHANGED).  If they are integrated
+up to the Fermi level, (including all the interactions for all
+orbitals, even those on-site (for this, specify a minimum distance of
+0.0 in the .mpr file and a big enough maximum distance)), the result
+is E_bs (the band-structure energy) when the system is not
+spin-polarized.
+(** NOTE: This is a change with respect to the previous version: the
+values are DOUBLED now).
+
+When there are two spin components, two curves are ouput in the .cohp
+file, and the sum of the integrals for both would be E_bs.  For the
+full-spinor case, only one curve is output, and the integrated value
+up to the Fermi level is E_bs.
 
 It is important to note that E_bs is *not* the Kohn-Sham energy, 
 but the sum of KS eigenvalues up to the Fermi level (with the

@@ -54,8 +54,10 @@ subroutine read_hs_file(fname)
 
   if (debug) print *, "HS read: nh, nsp, nnao: ", nh, nspin, nnao
   if (nnao.ne.nao) STOP " nnao .ne. nao in HS"
+
   if (wfs_x.and.(nspin.ne.nsp)) STOP " nspin .ne. nsp in HS"
   nsp=nspin
+  h_spin_dim = nspin
   allocate (numh(nao), listhptr(nao), listh(nh))
 
        allocate (hamilt(nh,nspin))

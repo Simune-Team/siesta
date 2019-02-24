@@ -19,7 +19,7 @@ program mprop
 
   logical :: gamma_wfsx, got_qcos, non_coll
   integer :: ii1, ii2, ind, ind_red, no1, no2, n_int, nnz
-  integer :: imin, imax, nspin_blocks
+  integer :: imin, imax, wfs_spin_flag, nspin_blocks
   
   complex(DP), dimension(2)    :: spinor_1, spinor_2, H_c2
   complex(DP), dimension(2,2)  :: H
@@ -140,17 +140,18 @@ program mprop
   read(wfs_u) nkp, gamma_wfsx
   allocate (wk(nkp), pk(3,nkp))
 
-  read(wfs_u) nsp
-  non_coll = (nsp == 4)
+  read(wfs_u) wfs_spin_flag   !  1, 2, or 4 
+  non_coll = (wfs_spin_flag == 4)
   read(wfs_u) nao
   read(wfs_u)        !! Symbols, etc
-  if (debug) print *, "WFSX read: nkp, nsp, nnao: ", nkp, nsp, nao
+  if (debug) print *, "WFSX read: nkp, nspin_flag, nnao: ", nkp, wfs_spin_flag, nao
 
   if (non_coll) then
      nspin_blocks = 1
   else
-     nspin_blocks = nsp
+     nspin_blocks = wfs_spin_flag
   endif
+  print *, "NSPIN BLOCKS: ", nspin_blocks
 
   allocate (ados(npts_energy,nspin_blocks), ww(npts_energy))
 
@@ -296,6 +297,12 @@ program mprop
      enddo
   enddo
 
+  ! NOTE CHANGE OF CONVENTION FOR OUTPUT LATER ON
+  ! For the non-spin-polarized case, double the DOS
+  if (wfs_spin_flag == 1) then
+       ados(:,1) = 2*ados(:,1)
+  endif
+
   call io_assign(idos)
   open(idos,file=trim(sflnm)//".alldos",form="formatted", &
        status="unknown",action="write",position="rewind")
@@ -324,8 +331,6 @@ program mprop
 
   !
   !       Compute integrated total DOS
-  !       Here we double the DOS for the case of nspin=1,
-  !       to get the correct number of states.
 
   allocate(intdos(npts_energy), intebs(npts_energy))
   call io_assign(intdos_u)
@@ -336,8 +341,8 @@ program mprop
   write(intdos_u,*) low_e, intdos(1), intebs(1)
   do i = 2, npts_energy
      energy = low_e + e_step*(i-1)
-     intdos(i) = intdos(i-1) + sum(ados(i,:)) * e_step * 2.0_dp /nspin_blocks
-     intebs(i) = intebs(i-1) + energy*sum(ados(i,:)) * e_step * 2.0_dp /nspin_blocks
+     intdos(i) = intdos(i-1) + sum(ados(i,:)) * e_step 
+     intebs(i) = intebs(i-1) + energy*sum(ados(i,:)) * e_step 
      write(intdos_u,*) energy, intdos(i), intebs(i)
   enddo
   call io_close(intdos_u)
@@ -707,7 +712,7 @@ program mprop
 
                                    ! We take the signs for 1,2 and 2,1
                                    ! from the construction of Ebs_Haux in 'compute_energies'
-                                   if (nsp == 8) then
+                                   if (h_spin_dim == 8) then
                                       H(1,1) = cmplx(Hamilt(ind,1), Hamilt(ind,5), dp)
                                       H(1,2) = cmplx(Hamilt(ind,3), -Hamilt(ind,4), dp)
                                       H(2,1) = cmplx(Hamilt(ind,7), Hamilt(ind,8), dp)
@@ -786,6 +791,19 @@ program mprop
            deallocate (list_io2)
            deallocate (list_ind)
 
+           ! NOTE CHANGE OF CONVENTION FOR OUTPUT LATER ON
+           ! For the non-spin-polarized case, double everything
+
+           if (wfs_spin_flag == 1) then
+              if (dos) then
+                 pdos_vals(:,1,ic) = 2 * pdos_vals(:,1,ic)
+              endif
+              if (coop) then
+                 coop_vals(:,1,ic) = 2 * coop_vals(:,1,ic)
+                 cohp_vals(:,1,ic) = 2 * cohp_vals(:,1,ic)
+              endif
+           endif
+           
      !      PDOS output
      !
            if (dos) then
@@ -828,7 +846,10 @@ program mprop
         enddo    ! ic
 
 !--------------------------------------------------------
-
+        ! This has to be done here, since we were accumulating earlier
+        if (wfs_spin_flag == 1) then
+           ados(:,1) = 2 * ados(:,1)
+        endif
      !
      !      Simple DOS output
      !
