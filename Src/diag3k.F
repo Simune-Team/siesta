@@ -118,11 +118,10 @@ C *********************************************************************
       complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux, Dk, Ek
       complex(dp), dimension(2,nuotot,2*nuo), target :: psi
       complex(dp), dimension(2,nuotot), target :: caux
-      real(dp),    pointer :: aux(:)
-      logical               getD, getPSI
+      logical, intent(in) ::               getD, getPSI
       
-!     TEMPOS, INTERNAL VARIABLES etc.
 
+      real(dp),    pointer :: aux(:)
       real(dp), pointer  :: psi_real(:)
 
       integer  BNode, BTest, ie, ierror, iie, ik, ind, io, iio
@@ -222,7 +221,11 @@ C *********************************************************************
           call die('Terminating due to failed diagonalisation')
         endif
       enddo
-      
+
+      ! Check if we are done (i.e.: pure bands only)
+      if (.not.getD .and. .not. getPSI) then
+         RETURN
+      end if
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
@@ -245,15 +248,12 @@ C *********************************************************************
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp
 
- 10   continue   ! ---- Start here for getPsi and not getDM
+ 10   continue   ! ---- Start here for (getPsi and (not getDM))
       
       do ik = 1,nk
-         !  Find maximum eigenvector that is required for this k point 
+         !  Find maximum eigenvector index that is required for this k point 
          if (getPSI) then
              ! We do not have info about occupation
-             ! In the current implementation, neigneeded
-             ! is ALWAYS nuotot.
-             ! This is because writewave expects the full spectrum
              neigneeded = neigwanted
          else
              neigneeded = 0

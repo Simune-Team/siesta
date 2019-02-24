@@ -485,15 +485,9 @@ C Handle parallel over K points option which is not allowed for here
         if ( ParallelOverK ) Serial = .true.
 
       elseif ( NonCol ) then
-         if (getPSI) then
-            if (node==0) then
-               write(6,*) "No WFS for non-colinear spin, yet..."
-            endif
-            RETURN
-         endif
         call diag2k(no_l, no_s, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr,
-     .              listh, H, S, getD, qtot, temp, e1, e2,
+     .              listh, H, S, getD, getPSI, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,

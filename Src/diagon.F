@@ -281,7 +281,7 @@ C Call apropriate routine
        else
         call diag2k( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
-     .               H, S, getD, qtot, temp, e1, e2, xij,
+     .               H, S, getD, getPsi, qtot, temp, e1, e2, xij,
      .               indxuo, nk, kpoint, wk, eo, qo, Dnew,
      .               Enew, ef, Entropy, 
      .               Haux, Saux, psi, Haux, Saux, aux,

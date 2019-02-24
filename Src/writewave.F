@@ -604,7 +604,7 @@ C Handle parallel over K points option which is not allowed for here
      .                 Haux, Saux, psi, aux,
      .                 nuotot, occtol, 1, nuotot )
         else
-          call diag2k( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
+          call diag2k( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .                 indxuo, nk, kpoint, wk, ek, qk, Dnew,
