@@ -266,7 +266,7 @@ C Call apropriate routine
        if (gamma) then
         call diag2g( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
-     .               H, S, getD, qtot, temp, e1, e2, eo, qo, 
+     .               H, S, getD, getPSI, qtot, temp, e1, e2, eo, qo, 
      .               Dnew, Enew, ef, Entropy,
      .               Haux, Saux, psi, aux,
      .               nuotot, occtol, iscf, neigwanted )

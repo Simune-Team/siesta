@@ -679,7 +679,7 @@ dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o sys.o units.o
 dhscf.o: vmat.o
 diag.o: alloc.o diag_option.o parallel.o precision.o sys.o
 diag2g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
-diag2g.o: sys.o
+diag2g.o: sys.o writewave.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
 diag3g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
 diag3g.o: sys.o writewave.o

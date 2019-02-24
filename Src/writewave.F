@@ -597,7 +597,7 @@ C Handle parallel over K points option which is not allowed for here
 
       elseif (NonCol) then
         if (gamma) then
-          call diag2g( nuo, no, maxuo, maxnh, maxnh, maxo, numh,
+          call diag2g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, ek, qk,
      .                 Dnew, Enew, ef, Entropy,

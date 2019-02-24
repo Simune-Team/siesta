@@ -71,6 +71,9 @@ CONTAINS
       character(len=len(txt)) ::  atx, ntx
       integer :: i_, i0, lng, il
 
+      logical :: non_nl_string
+      integer :: stat, nprin
+      
       atx=txt
       ntx=txt
       lng=len_trim(txt)
@@ -86,9 +89,39 @@ CONTAINS
       l=-1
       k=-1
 
-      i_=index(txt,'_')
+      i_=index(txt,'_',back=.true.)
       if (i_.eq.1) return  ! Error
 
+      ! The use of 'back' above will account for specs of
+      ! the form:
+      ! Si_surf_3s
+      ! 
+      ! Now we need to account for specs of the form:
+      ! Si_surf
+      ! We check that 'surf' is not a valid 'nl' spec
+
+      non_nl_string = .true.
+      if (i_ > 1) then
+         if ((i_+2) <= lng) then
+            read(txt(i_+1:i_+1),fmt='(i1)',iostat=stat) nprin
+            if (stat == 0) then
+               ! A valid integer
+               if ((nprin <= 8) .and. (nprin>0)) then
+                  select case (txt(i_+2:i_+2))
+                  case ( 's', 'p', 'd', 'f', 'g', 'h' )
+                     non_nl_string = .false.
+                  end select
+               endif
+            endif
+         endif
+      endif
+
+      if (non_nl_string) then
+         ! The whole spec looks like a bona-fide species name.
+         ! Behave as if we did not find any '_'
+         i_ = 0
+      endif
+      
       i0=i_-1
       if (i_.eq.0) i0=lng
       ntx=txt(1:i0)//repeat(' ',20-i0)
