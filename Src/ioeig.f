@@ -19,10 +19,10 @@ c Emilio Artacho, Feb. 1999
 
       implicit          none
 
-      integer,  intent(in) :: no
-      integer,  intent(in) :: nspin
+      integer,  intent(in) :: no     ! no_u: number of orbitals in unit cell
+      integer,  intent(in) :: nspin  ! 'nspin_grid': 1, 2, or 4
       integer,  intent(in) :: nk
-      integer,  intent(in) :: maxo
+      integer,  intent(in) :: maxo   ! no_u again
       integer,  intent(in) :: nspinor
       integer,  intent(in) :: maxk
       real(dp), intent(in) :: ef
@@ -45,11 +45,17 @@ c -------------------------------------------------------------------
 
       write(iu,"(e17.9)") ef/eV
       if ( nspin > nspinor ) then
-        write(iu,"(tr1,i10,i2,tr1,i10)")   no*2, 1, nk
+        ! NC/SOC case: a single block of wavefunctions (without spin tag)
+        ! nspin (4) will be used here to signal NC/SOC to utilities such as 
+        ! Eig2DOS
+        write(iu,"(tr1,i10,i2,tr1,i10)")   no*2, nspin, nk
       else
         write(iu,"(tr1,i10,i2,tr1,i10)")   no, min(nspin,2), nk
       end if
       do ik = 1,nk
+        ! This statement will correctly print eo in the NC/SOC case,
+        ! as the eigenvalues take up two complete 'io' columns,
+        ! and nspinor = 2. 
         write(iu,"(i10,10(tr1,e17.9),/,(tr10,10(tr1,e17.9)))")
      .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,nspinor)
       enddo
@@ -83,7 +89,7 @@ c -------------------------------------------------------------------
             if ( is == 1 .and. nspinor > 1 ) then
                call cmlAddProperty(xf=mainXML, value="up", 
      .              dictRef="siesta:spin")
-            else if ( nspinor > 1 ) then
+            else if ( nspinor > 1) then
                call cmlAddProperty(xf=mainXML, value="down", 
      .              dictRef="siesta:spin")
             end if

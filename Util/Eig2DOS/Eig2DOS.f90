@@ -26,9 +26,6 @@ program Eig2DOS
 !  -e/-m, -E/-M - energy window: Emin and Emax
 !  -F/-f  - shift E_F to zero
 !
-! Density of states in standard output, for both spins.
-! If nspin = 1, the first spin component is multiplied by 2.
-!
 !   NOT printed in this version:
 !   the number of electrons (states) in the energy window, 
 !   with and without broadening (number of eigenvalues and 
@@ -44,7 +41,7 @@ program Eig2DOS
   integer :: nargs, iostat, n_opts, nlabels
 
   integer :: nk, nspin, nband, ne, ie, ik, ika, is, ib, nel
-  integer :: nk_kpoints, ik_read
+  integer :: nk_kpoints, ik_read, nspin_blocks
 
   real(dp) :: e, eincr, ef, pi, x, sta, norm
   real(dp) :: emin_file, emax_file
@@ -64,6 +61,7 @@ program Eig2DOS
   logical  :: emax_given  = .false.
   logical  :: using_weights = .false.
   logical  :: shift_efermi = .false.
+  logical  :: non_coll
   integer  :: min_band = 0
   integer  :: max_band = 0
 
@@ -157,6 +155,14 @@ program Eig2DOS
        action="read")
   read(1,*) Ef
   read(1,*) nband, nspin, nk
+  non_coll = (nspin == 4)
+
+  if (non_coll) then
+     nspin_blocks = 1
+  else
+     nspin_blocks = nspin
+  endif
+  
   write(*,"(a)") "# Eigenvalues read from " // trim(eig_file)
   if ( debug ) print *, "Ef, nband, nspin, nk:", Ef, nband, nspin, nk
 
@@ -171,8 +177,8 @@ program Eig2DOS
      write(*,"(a)") "# Kpoint weights read from " // trim(kpoint_file)
   endif
 
-  allocate(eig(nband,nspin))
-  allocate(DOS(npts_energy,nspin))
+  allocate(eig(nband,nspin_blocks))
+  allocate(DOS(npts_energy,nspin_blocks))
 
   ! Sanity checks
 
@@ -198,9 +204,9 @@ program Eig2DOS
   emin_file = huge(1.0_dp)
   emax_file = -huge(1.0_dp)
   do ik = 1, nk
-     read(1,*) ika, ((eig(ib,is), ib = 1, nband), is = 1, nspin)
-     emin_file = min(emin_file,minval(eig(min_band:max_band,1:nspin)))
-     emax_file = max(emax_file,maxval(eig(min_band:max_band,1:nspin)))
+     read(1,*) ika, ((eig(ib,is), ib = 1, nband), is = 1, nspin_blocks)
+     emin_file = min(emin_file,minval(eig(min_band:max_band,1:nspin_blocks)))
+     emax_file = max(emax_file,maxval(eig(min_band:max_band,1:nspin_blocks)))
   end do
 
   write(*,"(a,2f15.7)") "# Emin, Emax in file for selected band(s):", emin_file, emax_file
@@ -222,7 +228,7 @@ program Eig2DOS
   if (.not. emax_given) emax = emax_file + 6._dp*smear
 
   if (npts_energy .lt. 2) npts_energy = 2
-  eincr = (emax - emin) / dfloat(npts_energy - 1)
+  eincr = (emax - emin) / real( npts_energy - 1, dp)
 
   nel = 0
   DOS(:,:) = 0.0_dp
@@ -231,7 +237,7 @@ program Eig2DOS
 
   do ik = 1, nk
 
-     read(1,*) ika, ((eig(ib,is), ib = 1, nband), is = 1, nspin)
+     read(1,*) ika, ((eig(ib,is), ib = 1, nband), is = 1, nspin_blocks)
      if ( using_weights ) then
         read(2,*) ik_read, k(:), weight
         if (ik_read /= ik) STOP "ik mismatch"
@@ -239,7 +245,7 @@ program Eig2DOS
         weight = 1.0_dp / nk
      end if
 
-     do is = 1, nspin
+     do is = 1, nspin_blocks
         do ib = min_band, max_band
            e = eig(ib,is)
            if (shift_efermi) e = e - ef
@@ -262,7 +268,7 @@ program Eig2DOS
      norm = sqrt(pi) * smear
   end if
 
-  do is = 1, nspin
+  do is = 1, nspin_blocks
      do ie = 1, npts_energy
         DOS(ie,is) = DOS(ie,is)/norm
      end do
@@ -270,7 +276,7 @@ program Eig2DOS
 
 ! integral, extremely sophisticated -----------------------------------
 
-  do is = 1, nspin
+  do is = 1, nspin_blocks
      integral(is) = 0.0_dp
      do ie = 1, npts_energy
         integral(is) = integral(is) + dos(ie,is)*eincr
@@ -282,9 +288,17 @@ program Eig2DOS
   if ( nspin == 1 ) then
      nel = nel * 2
   end if
-  sta = nel / dfloat(nk)
+  sta = nel / real(nk, dp)
 
 ! output, prepared for gnuplot ----------------------------------------
+
+! Density of states in standard output:
+  
+! -- If nspin = 2, the first two columns correspond to the two spin components.
+!                  A third column contains their sum.
+! -- If nspin = 1, two identical columns are printed, plus their sum.
+! -- If nspin = 4 (NC/SOC case), a single column is printed with the complete DOS.
+!
 
   write(*,"(a,3i6)") '# Nbands, Nspin, Nk   = ', nband, nspin, nk
   if (shift_efermi) then
@@ -302,10 +316,15 @@ program Eig2DOS
      do ie = 1, npts_energy
         write(*,"(4f14.6)") emin + (ie-1)*eincr, DOS(ie,1), DOS(ie,1), 2._dp*DOS(ie,1)
      end do
-  else
+  else if ( nspin == 2 ) then
      write(*,"(a)") '#        E            N(up)        N(down)         Ntot'
      do ie = 1, npts_energy
         write(*,"(4f14.6)") emin + (ie-1)*eincr, DOS(ie,:), sum(DOS(ie,:))
+     end do
+  else  ! nspin == 4   !!  Single column with complete DOS
+     write(*,"(a)") '#        E            Ntot  (complete DOS for NC/SOC case)'
+     do ie = 1, npts_energy
+        write(*,"(4f14.6)") emin + (ie-1)*eincr, DOS(ie,:)
      end do
   end if
 
