@@ -282,8 +282,6 @@ CONTAINS
       write(6,*) "Options:"
       write(6,*) "           -h:  print manual                    "
       write(6,*) "           -d:  debug                    "
-      write(6,*) "           -l:  print summary of energy information         "
-      write(6,*) "   -s SMEAR  :  set value of smearing parameter (default 0.5 eV)"
       write(6,*) "   -m Min_e  :  set lower bound of energy range                    "
       write(6,*) "   -M Max_e  :  set upper bound of energy range                    "
       write(6,*)
@@ -293,8 +291,6 @@ CONTAINS
       write(6,*)
       write(6,"('* OUTPUT FORMAT')")
       write(6,*) 
-      write(6,*) " SLabel.alldos  :  full-range approximate DOS curve"
-      write(6,*) " SLabel.intdos  :  full-range integrated-DOS curve"
       write(6,*) " DMOUT    :  Partial DM"
       write(6,*) " DM.nc (optional)  :  Partial DM in netcdf form"
       write(6,"('    [A control .stt file will always be generated]')")
