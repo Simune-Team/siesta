@@ -24,7 +24,7 @@ program mprop
   complex(DP), dimension(2)    :: spinor_1, spinor_2, H_c2
   complex(DP), dimension(2,2)  :: H
   complex(DP) :: c_c1_c2, c_c1_H_c2
-  real(dp) :: factor_S, factor_H
+  real(dp) :: factor_S, factor_H, dos_value
 
   ! We use a smearing function of the form f(x) = exp(-(x/smear)**2) / (smear*sqrt(pi))
   ! A weight tolerance of 1.0e-4 corresponds to going about 3*smear on either
@@ -297,23 +297,8 @@ program mprop
      enddo
   enddo
 
-  ! NOTE CHANGE OF CONVENTION FOR OUTPUT LATER ON
-  ! For the non-spin-polarized case, double the DOS
-  if (wfs_spin_flag == 1) then
-       ados(:,1) = 2*ados(:,1)
-  endif
-
-  call io_assign(idos)
-  open(idos,file=trim(sflnm)//".alldos",form="formatted", &
-       status="unknown",action="write",position="rewind")
-  write(idos,*) "#  Energy   LARGE-SCALE DOS"
-
-  do i = 1, npts_energy
-     energy = low_e + e_step*(i-1)
-     write(idos,*) energy, (ados(i,is), is=1,nspin_blocks)
-  enddo
-
-  call io_close(idos)
+  ! Write "LARGE-SCALE DOS"  
+  call write_curve_to_file(trim(sflnm)//".alldos",ados)
 
   ! Read HSX file
   ! Will pick up atoms, zval, and thus the nominal number of electrons,
@@ -341,8 +326,13 @@ program mprop
   write(intdos_u,*) low_e, intdos(1), intebs(1)
   do i = 2, npts_energy
      energy = low_e + e_step*(i-1)
-     intdos(i) = intdos(i-1) + sum(ados(i,:)) * e_step 
-     intebs(i) = intebs(i-1) + energy*sum(ados(i,:)) * e_step 
+
+     ! For the spinless case, we need a factor of two for proper normalization here
+     dos_value = sum(ados(i,:))
+     if (wfs_spin_flag == 1) dos_value = 2*dos_value
+
+     intdos(i) = intdos(i-1) + dos_value * e_step 
+     intebs(i) = intebs(i-1) + energy*dos_value * e_step 
      write(intdos_u,*) energy, intdos(i), intebs(i)
   enddo
   call io_close(intdos_u)
@@ -791,84 +781,79 @@ program mprop
            deallocate (list_io2)
            deallocate (list_ind)
 
-           ! NOTE CHANGE OF CONVENTION FOR OUTPUT LATER ON
-           ! For the non-spin-polarized case, double everything
-
-           if (wfs_spin_flag == 1) then
-              if (dos) then
-                 pdos_vals(:,1,ic) = 2 * pdos_vals(:,1,ic)
-              endif
-              if (coop) then
-                 coop_vals(:,1,ic) = 2 * coop_vals(:,1,ic)
-                 cohp_vals(:,1,ic) = 2 * cohp_vals(:,1,ic)
-              endif
-           endif
-           
-     !      PDOS output
+     !     Output curves
      !
            if (dos) then
-              open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.pdos')
-              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nspin_blocks)
-              do i=1, npts_energy
-                 energy = low_e + e_step*(i-1)
-                 write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
-                      energy, (pdos_vals(i,is,ic),is=1,nspin_blocks)
-              enddo
-              close(tab_u)
+              call write_curve_to_file(trim(mflnm)// "." // trim(tit(ic)) // '.pdos', &
+                                       pdos_vals(:,:,ic))
            endif
-
            if (coop) then
-              !
-              !      COOP output
-              !
-              open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.coop')
-              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nspin_blocks)
-              do i=1, npts_energy
-                 energy = low_e + e_step*(i-1)
-                 write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
-                      energy, (coop_vals(i,is,ic),is=1,nspin_blocks)
-              enddo
-              close(tab_u)
-              !
-              !      COHP output
-              !
-              open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.cohp')
-              write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nspin_blocks)
-              do i=1, npts_energy
-                 energy = low_e + e_step*(i-1)
-                 write(tab_u,"(f20.8,10(2f13.8,5x))")  &           ! Spin in loop
-                      energy, (cohp_vals(i,is,ic),is=1,nspin_blocks)
-              enddo
-              close(tab_u)
-
-           endif  ! coop
-
+              call write_curve_to_file(trim(mflnm)// "." // trim(tit(ic)) // '.coop', &
+                                       coop_vals(:,:,ic))
+              call write_curve_to_file(trim(mflnm)// "." // trim(tit(ic)) // '.cohp', &
+                                       cohp_vals(:,:,ic))
+           endif
+           
         enddo    ! ic
 
 !--------------------------------------------------------
-        ! This has to be done here, since we were accumulating earlier
-        if (wfs_spin_flag == 1) then
-           ados(:,1) = 2 * ados(:,1)
-        endif
+
      !
      !      Simple DOS output
      !
-     call io_assign(idos)
-     open(idos,file=trim(sflnm)//".ados",form="formatted", &
-          status="unknown",action="write",position="rewind")
-     write(idos,*) "#  Energy   SIMPLE DOS"
-     e_step = (high_e-low_e)/(npts_energy-1)
-     do i = 1, npts_energy
-        energy = low_e + e_step*(i-1)
-        ! Note division by the number of curves
-        write(idos,*) energy, (ados(i,is)/ncb, is=1,nspin_blocks)
-     enddo
-     call io_close(idos)
-
+     ! Divide by the number of curves        
+     call write_curve_to_file(trim(sflnm)//".ados",ados/ncb)
 
 
 CONTAINS
 
+  subroutine write_curve_to_file(filename,array)
+    character(len=*), intent(in) :: filename
+    real(dp), intent(in) :: array(:,:)
+
+    integer  :: i
+    real(dp) :: energy
+    
+    ! tab_u, low_e, e_step, npts_energy by host association
+    
+    open(tab_u,file=trim(filename))
+    !
+    ! Header
+    !
+    select case ( wfs_spin_flag)
+    case ( 1 )
+       ! Two identical 'spin' columns, and the sum (complete value) in the third column
+       write(tab_u,"(a1,12x,'ENERGY',3(14x,a))") '#', 's1', 's2=s1', 'total'
+    case ( 2 )
+       ! Two 'spin' columns, and the sum (complete value) in the third column
+       write(tab_u,"(a1,12x,'ENERGY',3(14x,a))") '#', 's1', 's2', 'total'
+    case ( 4 )
+       ! A single column with  the complete value
+       write(tab_u,"(a1,12x,'ENERGY',14x,a)") '#', 'total'
+    end select
+    !
+    ! Values   
+    !
+    do i=1, npts_energy
+       energy = low_e + e_step*(i-1)
+       select case ( wfs_spin_flag)
+       case ( 1 )
+          ! Two identical 'spin' columns, and the sum (complete value) in the third column
+          write(tab_u,"(f20.8,3(5x,f13.8))")  &   
+               energy, array(i,1), array(i,1), 2*array(i,1)
+       case ( 2 )
+          ! Two 'spin' columns, and the sum (complete value) in the third column
+          write(tab_u,"(f20.8,3(5x,f13.8))")  &      
+               energy, (array(i,is),is=1,nspin_blocks), sum(array(i,:))
+       case ( 4 )
+          ! A single column with  the complete value
+          write(tab_u,"(f20.8,5x,f13.8)") energy, array(i,1)
+       end select
+    enddo
+    close(tab_u)
+
+  end subroutine write_curve_to_file
+  
   function delta(x) result(res)
     real(dp), intent(in) :: x
     real(dp)             :: res
