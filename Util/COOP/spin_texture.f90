@@ -24,7 +24,7 @@ program spin_texture
   real(dp) :: factor, qsol
   character(len=256) :: file_prefix
 
-  real(dp) :: st(4)
+  real(dp) :: st(0:3)
   complex(DP), dimension(2)    :: spinor_1, spinor_2
   complex(DP) :: d11, d12, d21, d22, kphs
   
@@ -310,19 +310,23 @@ program spin_texture
                        d21 = spinor_1(2) * conjg(spinor_2(1)) * kphs
                        d22 = spinor_1(2) * conjg(spinor_2(2)) * kphs
 
-                             ! taken from Roberto's code -- check
+                       ! Recall: dm(:,3) = real(d12);  dm(:,4) = -aimag(d12),
+                       ! so this matches with the convention in 'spnvec'
+                       ! st(0) is the "charge";  x:1, y:2, z:3: spin components
+                       ! (this is shifted with respect to the original code by R. Robles)
+                       ! Units: Bohr magnetons
                        D12 = 0.5_dp * (D12 + dconjg(D21))
-                       st(1) = st(1) + Sover(ind) * (real(D11,dp) + real(D22,dp))
-                       st(2) = st(2) + Sover(ind) * 2.0_dp * real(D12,dp)
-                       st(3) = st(3) - Sover(ind) * 2.0_dp * aimag(D12)
-                       st(4) = st(4) + Sover(ind) * (real(D11,dp) - real(D22,dp))
+                       st(0) = st(0) + Sover(ind) * (real(D11,dp) + real(D22,dp))
+                       st(1) = st(1) + Sover(ind) * 2.0_dp * real(D12,dp)
+                       st(2) = st(2) - Sover(ind) * 2.0_dp * aimag(D12)
+                       st(3) = st(3) + Sover(ind) * (real(D11,dp) - real(D22,dp))
                           
                     enddo   ! i2
                  enddo  ! i1
                  !
                  ! Write spin texture to standard output
                  !
-                 write(6,'(i7,f12.5,3f8.4)') iw, eigval, (st(j),j=2,4)
+                 write(6,'(i7,f12.5,3f8.4)') iw, eigval, (st(j),j=1,3)
 
               enddo   ! iwf
            enddo      ! is
