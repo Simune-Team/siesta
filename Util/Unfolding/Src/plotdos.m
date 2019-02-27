@@ -4,7 +4,7 @@
 
 clear
 wdir = './path_to_file/';   
-syslabel = 'si_fcc';           
+syslabel = 'systemLabel';           
 fnameA = [wdir,syslabel,'.unfoldedBands'];  % .path, .spin    
 fnameB = [wdir,syslabel,'.refoldedBands'];     
  

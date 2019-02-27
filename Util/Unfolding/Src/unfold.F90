@@ -8,7 +8,7 @@
 
 program unfold
 
-! Reads the .fdf, .ion, .out, .psf and .HSX files of a SIESTA calculation and 
+! Reads the .fdf, .ion, .HSX, .out and .psf files of a SIESTA calculation and 
 ! generates unfolded and refolded bands. See Util/Unfolding/README for details.
 ! Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Dic.2018
 !       arXiv:1812.03925          ( https://arxiv.org/abs/1812.03925 )
@@ -529,6 +529,7 @@ program unfold
         enddo ! ig
       endif ! (myNode==iqNode)
     enddo ! iq
+
 #ifdef MPI
     ntmp = (iq2-iq1+1)*(ne+1)*nspin
     call re_alloc( tmp1, 1,ntmp, myName//'tmp1', copy=.false., shrink=.true. )
@@ -558,6 +559,7 @@ program unfold
       read(dumm(ic+1:),*) efermi
       print*,'unfold: Fermi = ',efermi
       call system('rm fermi')
+      close(8181)
     endif
 
     if (myNode==0) then
@@ -589,7 +591,7 @@ program unfold
         enddo ! iq
         call io_close(iu)
 
-        if (refolding) then
+        if (refolding) then 
           fname = trim(slabel)//'.refoldedBands'
           if (nspin==2 .and. ispin==1) then
             fname = trim(fname)//'.spinUp'

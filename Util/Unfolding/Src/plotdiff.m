@@ -10,9 +10,9 @@
 % SGM & JMS, Oct.2018
 
 clear
-wdir = './WU_OUTPUTS/';    %si_slab_100
-syslabelA = 'si_sc64';               % System A : non-defective
-syslabelB = 'si_v63';                % System B : defective
+wdir = './WU_OUTPUTS/';    
+syslabelA = 'systemA';              % System A : non-defective
+syslabelB = 'systemB';              % System B : defective
 fnameA = [wdir,syslabelA,'.refoldedBands'];          % '.refoldedBands' or
 fnameB = [wdir,syslabelB,'.refoldedBands']; %.path1  %   '.unfoldedBands'.
 

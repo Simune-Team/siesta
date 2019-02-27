@@ -32,7 +32,7 @@ BandLinesScale  pi/a       # used in BandLines and UnfoldedBandLines blocks
    0.000  0.000  1.000
 %endblock LatticeVectors
 
-COOP.Write   true          # make siesta write the .HSX file used by unfold
+COOP.Write   true          # makes siesta write the .HSX file used by unfold
 
 %block UnfoldedBandLines
   320  -20.0  60 eV        # numEnergies, Emin, Emax, Eunit
@@ -53,7 +53,7 @@ RefoldingGcutoff   25 Ry   # Cutoff for (the square of) refolding G vectors
 The UnfoldedBandLines block has the same format as BandLines, except for the first
 line, which specifies the energy mesh for the density of states in q space (qDOS).
 Also, it allows several q paths to be specified consecutively, each beginning with a 
-single point. This allows a q-line not begin at the end of previous one, e.g.
+single point. This allows a q-line to not begin at the end of previous one, e.g.
 
 %block UnfoldedBandLines
   320  -20.0  60 eV          # numEnergyIntervals, Emin, Emax, Eunit
@@ -79,7 +79,7 @@ qDOS(2,1)
 ...
 qDOS(ne,1)
   qVector(1:3,2), iLine, label
-qDOS(1,2)
+qDOS(1,2)						              
 ...
 qDOS(ne,2)
   ...
