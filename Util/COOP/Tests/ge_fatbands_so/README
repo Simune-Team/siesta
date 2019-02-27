@@ -5,7 +5,8 @@ A. Fatbands
 Get the data from Tests/ge_fatbands_so, i.e., copy the ge_fatbands_so.HSX
 and the ge_fatbands_so.bands.WFSX files, and process them:
 
-/path/to/fat [options] fatbands
+  ln -sf ge_fatbands_so.bands.WFSX ge_fatbands_so.WFSX
+  /path/to/fat [options] fatbands
 
 Then, a number of .EIGFAT files will be produced. These files contain
 *both* the eigenvalues and the projection weight for each orbital set
@@ -41,14 +42,14 @@ replot "4p.dat" using 1:2:(4*$3) with points pt 6 ps variable
 
 B. PDOS and COOP/COHP
 
-You can use the pdos.mpr and coo.mpr files, and proceed as in other examples,
-noting that it is the ge_fatbands_so.fullBZ.WFSX that should be renamed or linked
-to ge_fatbands_so.WFSX before executing the 'mprop' program.
+You can use the pdos.mpr and coo.mpr files, and proceed as in other
+examples, noting that it is the ge_fatbands_so.fullBZ.WFSX that should
+be renamed or linked to ge_fatbands_so.WFSX before executing the
+'mprop' program.
 
 In all these spin-orbit enabled tests, pending a further review of
-what consitutes useful functionality, the orbital weight assigned to
-each band, and the PDOS or COOP/COHP weights are computed on a
-full-spinor basis. No filtering of up/down components, or
-re-weighting on the basis of any other spin-related quantity is
-yet possible.
+what constitutes useful functionality, the orbital weight assigned to
+each band, and the PDOS or COOP/COHP weights, are computed on a
+full-spinor basis. No filtering of up/down components, or re-weighting
+on the basis of any other spin-related quantity is yet possible.
 
