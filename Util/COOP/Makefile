@@ -26,7 +26,7 @@ OBJDIR=Obj
 
 default: mprop fat
 
-all: mprop dm_creator fat
+all: mprop dm_creator fat spin_texture
 
 include ../../$(OBJDIR)/arch.make
 
@@ -48,6 +48,7 @@ DEF_OBJS += main_vars.o
 MPROP_OBJS = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o
 FAT_OBJS   = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o
 DM_OBJS    = $(SIESTA_OBJS) $(DEF_OBJS) iodm_netcdf.o write_dm.o
+TEXTURE_OBJS  = $(SIESTA_OBJS) $(DEF_OBJS)
 
 dep: 
 	sfmakedepend --depend=obj --modext=o \
@@ -64,9 +65,11 @@ fat: $(FAT_OBJS) fat.o
 	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) fat.o
 dm_creator: $(DM_OBJS) dm_creator.o
 	$(FC) -o $@ $(LDFLAGS) $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
+spin_texture: $(TEXTURE_OBJS) spin_texture.o
+	$(FC) -o $@ $(LDFLAGS) $(TEXTURE_OBJS) spin_texture.o
 
 clean:
-	rm -f *.o *.mod mprop dm_creator fat
+	rm -f *.o *.mod mprop dm_creator fat spin_texture
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: local_sys.o m_io.o parallel.o precision.o

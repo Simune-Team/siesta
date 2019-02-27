@@ -10,6 +10,7 @@ module subs
 use precision
 
 public :: ival, manual, manual_dm_creator, orbital, txt2wrd
+public :: manual_spin_texture
 
 private
 
@@ -298,6 +299,35 @@ CONTAINS
       stop
 
       end subroutine manual_dm_creator
+
+      subroutine manual_spin_texture
+
+      write(6,"('* SPIN_TEXTURE PROGRAM')")
+      write(6,"('  Alberto Garcia, ICMAB-CSIC, 2019')")
+      write(6,"('  Roberto Robles, ICN2, 2018')")
+      write(6,*)
+      write(6,"('    Computes the spin texture from')")
+      write(6,"('    a set of spinor wavefunctions obtained with SIESTA.')")
+      write(6,"('  ')")
+      write(6,*) "Usage: spin_texture [ options ] SIESTA_SYSTEM_LABEL"
+      write(6,*) "Options:"
+      write(6,*) "           -h:  print manual                    "
+      write(6,*) "           -d:  debug                    "
+      write(6,*) "   -m Min_e  :  set lower bound of energy range                    "
+      write(6,*) "   -M Max_e  :  set upper bound of energy range                    "
+      write(6,*)
+      write(6,"('* INPUT FILES')")
+      write(6,"('    [output files from SIESTA >=  2.4.1]')")
+      write(6,"('    SLabel.WFSX and SLabel.HSX (new format)')")
+      write(6,*)
+      write(6,"('* OUTPUT FORMAT')")
+      write(6,*) 
+      write(6,"(a)") 'spin-texture information in standard output'
+      write(6,"('    [A .stt file with basis and k-point info will also be generated]')")
+      write(6,*)
+      stop
+
+    end subroutine manual_spin_texture
 
 
 end module subs

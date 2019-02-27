@@ -32,3 +32,25 @@ DM_CREATOR selects the states in a given energy interval to prepare a
 "fake" density matrix that can be later used, for example, to plot the
 charge density associated to those states. 
 
+----------------------------------------------------------------------
+
+SPIN_TEXTURE computes the "spin texture" of the nk spinor states stored in a WFSX
+file. The selection of states is at the moment only on the basis of an energy interval
+(the whole range of energies in the file by default).
+
+The WFSX file can be created during a Siesta calculation in several ways
+
+-- Using the 'COOP.Write T' option: a wave-function set using the
+   k-point sampling of the BZ used in the scf cycle will be written (see manual).
+
+-- Using the 'BandPoints' or 'BandLines' blocks (see manual), *together* with the options
+
+   	 SaveHS T
+	 Wfs.Write.For.Bands T
+
+-- Using the WaveFuncKpoints block, *together* with the option
+   	 SaveHS T
+
+The 'SaveHS T' option is needed to generate information about the overlap matrix, which is
+needed by the program.
+

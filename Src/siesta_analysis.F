@@ -76,7 +76,7 @@
       real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
       integer           :: j, ix, ind, ik, io, ispin
-      integer           :: wfs_band_min, wfs_band_max
+      integer           :: wfs_band_min, wfs_band_max, max_n_states
       real(dp)          :: g2max, current_ef
       type(filesOut_t)  :: filesOut  ! blank output file names
 
@@ -282,9 +282,13 @@
         ! Output the wavefunctions for the kpoints in the SCF set
         ! Note that we allow both a band number and an energy range
         ! The user is responsible for using appropriate values.
+         max_n_states = no_u
+         if (h_spin_dim >= 4) max_n_states = 2*no_u
+         
         wfs_band_min = fdf_get("WFS.BandMin",1)
-        wfs_band_max = fdf_get("WFS.BandMax",no_u)
-        call setup_wfs_list(nkpnt,no_u,wfs_band_min,wfs_band_max,
+        wfs_band_max = fdf_get("WFS.BandMax",max_n_states)
+        call setup_wfs_list(nkpnt,max_n_states,
+     $                      wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
      $                      use_energy_window=.true.)
          wfs_filename = trim(slabel)//".fullBZ.WFSX"
@@ -309,9 +313,12 @@
            wfs_filename = trim(slabel)//".bands.WFSX"
          if (IONode) print "(a)", "Writing WFSX for bands in "
      $                           // trim(wfs_filename)
+         max_n_states = no_u
+         if (h_spin_dim >= 4) max_n_states = 2*no_u
            wfs_band_min = fdf_get("WFS.BandMin",1)
-           wfs_band_max = fdf_get("WFS.BandMax",no_u)
-           call setup_wfs_list(nbk,no_u,wfs_band_min,wfs_band_max,
+           wfs_band_max = fdf_get("WFS.BandMax",max_n_states)
+           call setup_wfs_list(nbk,max_n_states,
+     $          wfs_band_min,wfs_band_max,
      $          use_scf_weights=.false.,
      $          use_energy_window=.false.)
         endif

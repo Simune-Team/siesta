@@ -40,15 +40,23 @@
       USE alloc, only: re_alloc
       USE sys, only: die
       USE atomlist, only: no_u
+      USE m_spin, only: h_spin_dim
 
       implicit none
 
+      integer :: max_n_states
+      
       ! Find number of k-points for wavefunction printout
 
       nullify(wfk)
 
       nwk = 0
-      call initwave( no_u, nwk, wfk )
+      if (h_spin_dim < 4) then
+         max_n_states = no_u
+      else
+         max_n_states = 2*no_u
+      endif
+      call initwave( max_n_states, nwk, wfk )
 
       if (nwk .eq. 0) then
          gamma_wavefunctions = .true.
@@ -96,7 +104,7 @@
          call die("WFS.BandMin < 1")
       endif
       if (wfs_band_max > norb) then
-         call die("WFS.BandMax > number of orbitals")
+         call die("WFS.BandMax > maximum number of states")
       endif
       if (wfs_band_max < wfs_band_min) then
          call message("WARNING","WFS.BandMax < WFS.BandMin." //
@@ -126,7 +134,7 @@ C Finds k-points for wavefunction printout
 C Based on initband routine by J.Soler
 C Written by P. Ordejon, June 2003
 C **************************** INPUT **********************************
-C integer norb           : Number of orbitals
+C integer norb           : Number of orbitals (actually max number of bands)
 C *************************** OUTPUT **********************************
 C integer nk             : Number k points to compute wavefunctions
 C real*8  kpoint(3,maxk) : k point vectors
