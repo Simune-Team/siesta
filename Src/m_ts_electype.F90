@@ -12,6 +12,7 @@ module m_ts_electype
 
   use m_geom_box, only: geo_box_delta
   use m_geom_box, only: in_Elec => voxel_in_box_delta
+  use bloch_unfold_m, only: bloch_unfold_t
 
   use m_ts_chem_pot, only : ts_mu, name
 
@@ -39,11 +40,6 @@ module m_ts_electype
   public :: TotUsedAtoms, TotUsedOrbs
   public :: AtomInElec, OrbInElec
   public :: q_exp, Elec_kpt
-
-  interface q_exp
-    module procedure q_exp_
-    module procedure q_exp_all
-  end interface q_exp
 
   public :: fdf_nElec, fdf_elec
 
@@ -82,7 +78,7 @@ module m_ts_electype
      ! Old behaviour is repeated, but tiling is more efficient
      logical :: repeat = .true.
      ! Bloch expansions (repetitions)
-     integer :: Bloch(3) = 1
+     type(bloch_unfold_t) :: bloch
      ! Pre-expand before saving Gf
      !   == 0 do no pre-expansion
      !   == 1 pre-expand only the surface Green function
@@ -293,7 +289,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     logical :: info(5)
-    integer :: i, j
+    integer :: i, j, Bloch(3)
     integer :: cidx_a 
     real(dp) :: rcell(3,3), fmin, fmax, rc
 
@@ -311,9 +307,11 @@ contains
     end if
 
     do i = 1 , 3
-       write(name,'(2a,i0)') trim(bName),'.Bloch.A',i
-       this%Bloch(i) = fdf_get(trim(name), 1)
+      write(name,'(2a,i0)') trim(bName),'.Bloch.A',i
+      Bloch(i) = fdf_get(trim(name), 1)
     end do
+    ! Initialize the Bloch stuff
+    call this%bloch%initialize(Bloch)
     name = trim(bName)//'.GF'
     if ( fdf_defined(trim(name)) ) this%GFfile = trim(fdf_get(trim(name),''))
 
@@ -362,7 +360,11 @@ contains
           this%GFfile = trim(slabel)//'.'//trim(prefix)//trim(name)
        end if
     end if
-    this%na_used = -1
+
+    ! Read from the input how many atoms are to be used
+    name = trim(bName) // '.UsedAtoms'
+    ! Default to -1 to signal *all*
+    this%na_used = fdf_get(trim(name), -1)
 
 #ifdef TBTRANS
     ! Whether or not we are in TBtrans options
@@ -578,24 +580,24 @@ contains
        else if ( leqi(ln,'bloch') ) then
           if ( fdf_bnintegers(pline) < 3 ) &
                call die('Bloch expansion for all directions are not supplied <A1> <A2> <A3>')
-          this%Bloch(1) = fdf_bintegers(pline,1)
-          this%Bloch(2) = fdf_bintegers(pline,2)
-          this%Bloch(3) = fdf_bintegers(pline,3)
+          Bloch(1) = fdf_bintegers(pline,1)
+          Bloch(2) = fdf_bintegers(pline,2)
+          Bloch(3) = fdf_bintegers(pline,3)
           
        else if ( leqi(ln,'bloch-a') .or. leqi(ln,'bloch-a1') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A1 is not supplied')
-          this%Bloch(1) = fdf_bintegers(pline,1)
+          Bloch(1) = fdf_bintegers(pline,1)
           
        else if ( leqi(ln,'bloch-b') .or. leqi(ln,'bloch-a2') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A2 is not supplied')
-          this%Bloch(2) = fdf_bintegers(pline,1)
+          Bloch(2) = fdf_bintegers(pline,1)
           
        else if ( leqi(ln,'bloch-c') .or. leqi(ln,'bloch-a3') ) then
           if ( fdf_bnintegers(pline) < 1 ) &
                call die('Bloch expansion of A3 is not supplied')
-          this%Bloch(3) = fdf_bintegers(pline,1)
+          Bloch(3) = fdf_bintegers(pline,1)
 
        else if ( leqi(ln,'out-of-core') ) then
 
@@ -646,10 +648,9 @@ contains
        end if
 
     end do
-    
-    if ( any(this%Bloch(:) < 1) ) then
-      call die("Bloch expansion in "//trim(this%name)//" electrode must be >= 1.")
-    end if      
+
+    ! Initialize bloch expansion
+    call this%bloch%initialize(Bloch)
 
     if ( .not. all(info(1:4)) ) then
        write(*,*)'You need to supply at least:'
@@ -802,7 +803,7 @@ contains
 
     ! Check that the Bloch expansion is not in the transport-direction
     if ( this%t_dir > 3 ) then
-      if ( any(this%Bloch /= 1) ) then
+      if ( any(this%Bloch%B /= 1) ) then
         call die('Bloch expansion for real-space self-energies &
             &is not allowed.')
       end if
@@ -810,7 +811,7 @@ contains
         call die('Real-space self-energies requires using the full electrode!')
       end if
     else
-      if ( this%Bloch(this%t_dir) /= 1 ) then
+      if ( this%Bloch%B(this%t_dir) /= 1 ) then
         call die('Bloch expansion in the transport direction &
             &is not allowed.')
       end if
@@ -1010,7 +1011,7 @@ contains
     do i = 1 , 3
 
       ! Calculate the Cartesian ith contribution
-      contrib = sum(this%cell(i,:) * this%Bloch) * 0.5_dp
+      contrib = sum(this%cell(i,:) * this%Bloch%B) * 0.5_dp
 
       ! Calculate average position
       ! and find the lower left corner of the electrode
@@ -1021,7 +1022,7 @@ contains
 
       ! The box is the same as the electrode cell multiplied
       ! by the Bloch-expansion
-      this%box%v(:,i) = this%cell(:,i) * this%Bloch(i)
+      this%box%v(:,i) = this%cell(:,i) * this%Bloch%B(i)
 
     end do
     
@@ -1078,7 +1079,7 @@ contains
     ! Local variables
     integer :: this_kcell(3,3), this_nsc(3)
     real(dp) :: xa_o(3), this_xa_o(3), cell(3,3), this_kdispl(3)
-    real(dp) :: max_xa(3), cur_xa(3), p
+    real(dp) :: max_xa(3,2), cur_xa(3), p
     real(dp), pointer :: this_xa(:,:)
     integer :: i, j, k, ia, na, pvt(3), iaa, idir(3)
     logical :: ldie, er, Gamma, orbs
@@ -1095,6 +1096,7 @@ contains
     this_xa_o(:) = this_xa(:,1)
 
     ! Check repeat
+    max_xa(:,:) = 0._dp
     call check_tile()
     if ( er ) then
       call check_repeat()
@@ -1113,36 +1115,46 @@ contains
        !    AtomicCoordinatesFormat    Ang
        ! then it is direct copy paste ! :)
        xa_o(:) = -this_xa(:,1) + xa(:,iaa)
+       this%repeat = VNORM(max_xa(:,2)) > VNORM(max_xa(:,1))
+
+       call print_settings(this, prefix='error-ELEC', plane=.true., box=.true.)
+       write(*,*)
 
        i = iaa
        j = iaa + TotUsedAtoms(this) - 1
        write(*,'(a,e10.5,a)') 'The electrode coordinates does not overlap within the &
             &required accuracy: ',xa_EPS/Ang,' Ang'
-       write(*,'(a,3(tr1,g10.4))') 'The maximal offset vector is (Ang):',max_xa/Ang
+       write(*,'(a,3(tr1,g10.4))') 'The maximal offset repeating vector is [Ang]:',max_xa(:,1)/Ang
+       write(*,'(a,3(tr1,g10.4))') 'The maximal offset tiling vector is    [Ang]:',max_xa(:,2)/Ang
        write(*,'(2(a,i0),2a)') 'The system coordinates of atoms ',i,' to ',j,  &
             ' does not coincide with the electrode coordinates found in: ',trim(this%HSfile)
        write(*,'(a)') 'This is a requirement to place the self-energy terms correctly.'
        write(*,'(a,/,2(a,i0),a)') 'To ensure the electrode coordinates conform with &
             &the system coordinates you can take the following list of coordinates','and &
             &replace atoms ',i,' to ',j,' in your system AtomicCoordinatesAndAtomicSpecies block'
+       write(*,'(a)') 'NOTICE: The below listed coordinates are tiled as that provides the best performance'
        write(*,'(a,i0,a)') 'NOTICE: The listed coordinates are already arranged &
             &with respect to atom ',i,' in your system AtomicCoordinatesAndAtomicSpecies block'
        write(*,'(a)') 'NOTICE: You have to add the correct species label for the atoms'
        write(*,'(a)') 'NOTICE: You can possibly do this by using this awk-command on this output:'
-       write(*,'(a,/)') "        awk '{print $1,$2,$3,1}' <OUT-file>"
-       
-       write(*,'(t3,3a20)') 'X (Ang)','Y (Ang)','Z (Ang)'
-       do ia = 1 , this%na_used
-          do k = 0 , this%Bloch(3)-1
-          do j = 0 , this%Bloch(2)-1
-          do i = 0 , this%Bloch(1)-1
-             write(*,'(t2,3(tr1,f20.10))') &
-                  (this_xa(1,ia)+xa_o(1)+sum(cell(1,:)*(/i,j,k/)))/Ang, &
-                  (this_xa(2,ia)+xa_o(2)+sum(cell(2,:)*(/i,j,k/)))/Ang, &
-                  (this_xa(3,ia)+xa_o(3)+sum(cell(3,:)*(/i,j,k/)))/Ang
-          end do
-          end do
-          end do
+       write(*,'(a,/)') "        awk '{print $5,$6,$7,1}' <OUT-file>"
+
+       write(*,'(tr2,a63,tr18,tr2,a63)') 'DEVICE', 'EXPANDED ELECTRODE (expected DEVICE atomic coordinates)'
+       write(*,'(tr2,3(tr1,a20),tr3,a15,tr2,3(tr1,a20))') 'X [Ang]','Y [Ang]','Z [Ang]', &
+           '|dXA| [Ang]', 'X [Ang]','Y [Ang]','Z [Ang]'
+
+       do k = 0 , this%Bloch%B(3)-1
+       do j = 0 , this%Bloch%B(2)-1
+       do i = 0 , this%Bloch%B(1)-1
+         cur_xa(:) = cell(:, 1) * i + cell(:, 2) * j + cell(:, 3) * k + xa_o(:)
+         do ia = 1 , this%na_used
+           write(*,'(tr2,3(tr1,f20.10),tr3,f15.6,tr2,3(tr1,f20.10))') &
+               xa(:,iaa) / Ang, VNORM(xa(:,iaa) - this_xa(:,ia) - cur_xa(:)) / Ang, &
+               (this_xa(:,ia) + cur_xa(:)) / Ang
+           iaa = iaa + 1
+         end do
+       end do
+       end do
        end do
 
     end if
@@ -1212,7 +1224,7 @@ contains
           ! not be either (the Bloch expansion will only increase the number of
           ! k-points, hence the above)
           do j = 1 , 3
-            k = this%Bloch(j)
+            k = this%Bloch%B(j)
             ! The displacements are not allowed non-equivalent.
             er = er .or. ( abs(this_kdispl(j) - kdispl(pvt(j))) > 1.e-7_dp )
             if ( j == this%t_dir ) cycle
@@ -1249,7 +1261,7 @@ contains
                 this_kcell(j,j) = 50
               end if
             else
-              this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch(j)
+              this_kcell(:,j) = kcell(:,pvt(j)) * this%Bloch%B(j)
             end if
             write(*,'(3(i4,tr1),f8.4)') this_kcell(:,j), kdispl(pvt(j))
           end do
@@ -1283,16 +1295,15 @@ contains
 
       er = .false.
       orbs = .true.
-      max_xa = 0._dp
       
       iaa = this%idx_a
       do ia = 1 , this%na_used
        
-       do k = 1 , this%Bloch(3)
+       do k = 1 , this%Bloch%B(3)
        idir(3) = k - 1
-       do j = 1 , this%Bloch(2)
+       do j = 1 , this%Bloch%B(2)
        idir(2) = j - 1
-       do i = 1 , this%Bloch(1)
+       do i = 1 , this%Bloch%B(1)
        idir(1) = i - 1
 
           ! Calculate repetition vector
@@ -1305,8 +1316,8 @@ contains
           
           ! Subtract the SYSTEM position
           cur_xa(:) = cur_xa(:) - xa(:,iaa) + xa_o(:)
-          if ( VNORM(cur_xa) > VNORM(max_xa) ) then
-            max_xa = cur_xa
+          if ( VNORM(cur_xa) > VNORM(max_xa(:,1)) ) then
+            max_xa(:,1) = cur_xa
           end if
 
           orbs = orbs .and. lasto(iaa) - lasto(iaa-1) /= this%lasto_used(ia) - this%lasto_used(ia-1)
@@ -1317,7 +1328,7 @@ contains
        end do
       end do
 
-      er = any( abs(max_xa) > xa_EPS )
+      er = any( abs(max_xa(:,1)) > xa_EPS )
 
       if ( .not. er ) then
         this%repeat = .true.
@@ -1331,15 +1342,14 @@ contains
 
       er = .false.
       orbs = .true.
-      max_xa = 0._dp
       
       iaa = this%idx_a
 
-      do k = 1 , this%Bloch(3)
+      do k = 1 , this%Bloch%B(3)
       idir(3) = k - 1
-      do j = 1 , this%Bloch(2)
+      do j = 1 , this%Bloch%B(2)
       idir(2) = j - 1
-      do i = 1 , this%Bloch(1)
+      do i = 1 , this%Bloch%B(1)
       idir(1) = i - 1
 
         ! Calculate repetition vector
@@ -1354,8 +1364,8 @@ contains
           
           ! Subtract the SYSTEM position
           cur_xa(:) = cur_xa(:) - xa(:,iaa) + xa_o(:)
-          if ( VNORM(cur_xa) > VNORM(max_xa) ) then
-             max_xa = cur_xa
+          if ( VNORM(cur_xa) > VNORM(max_xa(:,2)) ) then
+             max_xa(:,2) = cur_xa
           end if
 
           orbs = orbs .and. lasto(iaa) - lasto(iaa-1) /= this%lasto_used(ia) - this%lasto_used(ia-1)
@@ -1366,7 +1376,7 @@ contains
        end do
       end do
       
-      er = any( abs(max_xa) > xa_EPS )
+      er = any( abs(max_xa(:,2)) > xa_EPS )
 
       if ( .not. er ) then
         this%repeat = .false.
@@ -1405,14 +1415,10 @@ contains
   elemental function TotUsedAtoms(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
-    val = this%na_used * product(this%Bloch)
+    val = this%na_used * this%Bloch%size()
   end function TotUsedAtoms
 
-  pure function q_exp_all(this,i,j,k) result(q)
-    type(Elec), intent(in) :: this
-    integer, intent(in) :: i,j,k
-    real(dp) :: q(3)
-    
+  pure function q_exp(this, idx) result(q)
     ! TODO, the current implementation assumes k-symmetry
     ! of the electrode electronic structure.
     ! Using Bloch expansion with non-symmetry will, likely, produce
@@ -1420,27 +1426,20 @@ contains
     ! Luckily this is not a problem currently.
     ! Perhaps one should consider this in tbtrans
 
-    q(1) = 1._dp*(i-1) / real(this%Bloch(1),dp)
-    q(2) = 1._dp*(j-1) / real(this%Bloch(2),dp)
-    q(3) = 1._dp*(k-1) / real(this%Bloch(3),dp)
-    
-  end function q_exp_all
-
-  pure function q_exp_(this,idx) result(q)
     type(Elec), intent(in) :: this
     integer, intent(in) :: idx
     real(dp) :: q(3)
     integer :: i,j,k,ii
-    i =     this%Bloch(1)
-    j = i * this%Bloch(2)
-    k = j * this%Bloch(3)
+    i =     this%Bloch%B(1)
+    j = i * this%Bloch%B(2)
+    k = j * this%Bloch%B(3)
     if ( idx <= i ) then
-       q = q_exp_all(this,idx,1,1)
+       q(:) = this%bloch%get_k(idx,1,1)
     else if ( idx <= j ) then
        j = idx / i
        if ( MOD(idx,i) /= 0 ) j = j + 1
        i = idx - (j-1) * i
-       q = q_exp_all(this,i,j,1)
+       q(:) = this%bloch%get_k(i,j,1)
     else if ( idx <= k ) then
        ! this seems to work well!
        k = idx / j
@@ -1449,11 +1448,11 @@ contains
        j = ii / i
        if ( MOD(ii,i) /= 0 ) j = j + 1
        i = ii - (j-1) * i
-       q = q_exp_all(this,i,j,k)
+       q(:) = this%bloch%get_k(i,j,k)
     else
-       q = 0._dp
+       q(:) = 0._dp
     end if
-  end function q_exp_
+  end function q_exp
 
   subroutine Elec_kpt(this,cell,k1,k2,opt)
     type(Elec), intent(in) :: this
@@ -1483,9 +1482,9 @@ contains
        ! Convert system-unit-cell kpoint to reciprocal units
        call kpoint_convert(cell,k1,k2,1)
        ! Scale with Bloch expansion
-       tmp(1) = k2(this%pvt(1)) / this%Bloch(1)
-       tmp(2) = k2(this%pvt(2)) / this%Bloch(2)
-       tmp(3) = k2(this%pvt(3)) / this%Bloch(3)
+       tmp(1) = k2(this%pvt(1)) / this%Bloch%B(1)
+       tmp(2) = k2(this%pvt(2)) / this%Bloch%B(2)
+       tmp(3) = k2(this%pvt(3)) / this%Bloch%B(3)
        ! Remove semi-infinite direction
        select case ( this%t_dir )
        case ( 4 )
@@ -1516,9 +1515,9 @@ contains
        ! Convert system-unit-cell kpoint to reciprocal units
        call kpoint_convert(this%cell,k1,k2,1)
        ! Scale with Bloch expansion
-       tmp(this%pvt(1)) = k2(1) * this%Bloch(1)
-       tmp(this%pvt(2)) = k2(2) * this%Bloch(2)
-       tmp(this%pvt(3)) = k2(3) * this%Bloch(3)
+       tmp(this%pvt(1)) = k2(1) * this%Bloch%B(1)
+       tmp(this%pvt(2)) = k2(2) * this%Bloch%B(2)
+       tmp(this%pvt(3)) = k2(3) * this%Bloch%B(3)
 
        if ( iop == -1 ) then
           ! Convert back to 1 / Bohr
@@ -1534,7 +1533,7 @@ contains
   elemental function TotUsedOrbs(this) result(val)
     type(Elec), intent(in) :: this
     integer :: val
-    val = this%no_used * product(this%Bloch)
+    val = this%no_used * this%Bloch%size()
   end function TotUsedOrbs
 
   elemental function OrbInElec(this,io) result(in)
@@ -1569,7 +1568,7 @@ contains
     imin = huge(1)
     imax = -huge(1)
 
-    B = this%Bloch
+    B = this%Bloch%B
     cell = this%cell
     ! Along the semi-infinite direction we need to limit the length
     ! Scale semi-infinite direction
@@ -2201,9 +2200,9 @@ contains
 
     if ( this%repeat ) then
       Tile(:) = 1
-      Reps(:) = this%Bloch
+      Reps(:) = this%Bloch%B
     else
-      Tile(:) = this%Bloch
+      Tile(:) = this%Bloch%B
       Reps(:) = 1
     end if
 
@@ -2276,15 +2275,15 @@ contains
     end if
     write(*,f10) '  Electrode TSHS file', trim(this%HSfile)
     write(*,f5)  '  # atoms used in electrode', this%na_used
-    nq = product(this%Bloch)
+    nq = this%Bloch%size()
     if ( nq > 1 ) then
       if ( this%repeat ) then
-        write(*,f15) '  Electrode Bloch repeating [E1 x E2 x E3]', this%Bloch(:)
+        write(*,f15) '  Electrode Bloch repeating [E1 x E2 x E3]', this%Bloch%B(:)
       else
-        write(*,f15) '  Electrode Bloch tiling [E1 x E2 x E3]', this%Bloch(:)
+        write(*,f15) '  Electrode Bloch tiling [E1 x E2 x E3]', this%Bloch%B(:)
       end if
     else
-      write(*,f15) '  Electrode Bloch unity [E1 x E2 x E3]', this%Bloch(:)
+      write(*,f15) '  Electrode Bloch unity [E1 x E2 x E3]', this%Bloch%B(:)
     end if
     write(*,f20) '  Position in geometry', this%idx_a, &
         this%idx_a + TotUsedAtoms(this) - 1
@@ -2316,7 +2315,7 @@ contains
     write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
     write(*,f1)  '  Gamma-only electrode', this%is_gamma
     write(*,f1)  '  Bulk H, S in electrode region', this%Bulk
-    if ( product(this%Bloch) > 1 .and. this%out_of_core ) then
+    if ( this%Bloch%size() > 1 .and. this%out_of_core ) then
        if ( this%pre_expand == 0 ) then
           chars = 'none'
        else if ( this%pre_expand == 1 ) then

@@ -198,13 +198,13 @@ contains
         select case ( Elecs(iE)%t_dir )
         case ( 1 )
           call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
-          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+          tmp = VNORM(r3) * Elecs(iE)%Bloch%size()
         case ( 2 )
           call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
-          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+          tmp = VNORM(r3) * Elecs(iE)%Bloch%size()
         case ( 3 )
           call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
-          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+          tmp = VNORM(r3) * Elecs(iE)%Bloch%size()
         case ( 4 ) ! B-C
           ! Here there are two planes possible, the plane for the non-semi-infinite
           ! direction and B, C, respectively.
@@ -234,7 +234,7 @@ contains
       else
         
         ! We check with volume of electrode
-        tmp = Elecs(iE)%na_used / real(Elecs(iE)%na_u, dp) * product(Elecs(iE)%Bloch)
+        tmp = Elecs(iE)%na_used / real(Elecs(iE)%na_u, dp) * Elecs(iE)%Bloch%size()
         tmp = VOLCEL(Elecs(iE)%cell) * tmp
         
       end if
