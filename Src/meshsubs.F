@@ -286,7 +286,7 @@ C     Create extended mesh arrays for the first data distribution
       integer, intent(out)  :: ntm(3)
       
       real(dp)  :: rcell(3,3), vecmod
-      integer   :: i
+      integer   :: i, itmp
       real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
 
       type(block_fdf)            :: bfdf
@@ -330,28 +330,67 @@ C     Create extended mesh arrays for the first data distribution
 
       end do impose_cutoff
 
-      if (fdf_block('MeshSizes',bfdf)) then
-        if (fdf_bline(bfdf, pline)) then
+
+!     Let the user manually decide the mesh-box size
+!     This option may be useful when testing Mesh.SubDivisions
+!     for performance.
+!     NOTE/TODO: manual specification is not checked with respect
+!                to nfft (allowed integers). I don't know if this should
+!                forced or not?
+      if ( fdf_block('Mesh.Sizes',bfdf) ) then
+        
+        if ( fdf_bline(bfdf, pline) ) then
            ntm(1) = fdf_bintegers(pline,1)
            ntm(2) = fdf_bintegers(pline,2)
            ntm(3) = fdf_bintegers(pline,3)
         else
-           call die('initmesh: ERROR in MeshSizes block')
+           call die('initmesh: ERROR in Mesh.Sizes block')
         endif
         call fdf_bclose(bfdf)
+        
+        ! Calculate the actual meshcutoff from the grid
         RealCutoff = huge(1.0_dp)
         call chkgmx( k0, rcell, ntm, RealCutoff )
+
+      else if ( fdf_islist('Mesh.Sizes') ) then
+
+        i = -1
+        call fdf_list('Mesh.Sizes', i, ntm)
+        if ( i /= 3 )
+     &      call die('initmesh: ERROR in Mesh.Sizes list')
+        ! Do the actual read of the mesh sizes
+        call fdf_list('Mesh.Sizes', i, ntm)
+
+        ! Calculate the actual meshcutoff from the grid
+        RealCutoff = huge(1.0_dp)
+        call chkgmx( k0, rcell, ntm, RealCutoff )
+        
+      end if
+
+!     Issue a warning if the mesh sizes are smaller than
+!     the requested mesh cutoff
         if (RealCutoff<G2max .and. fdf_defined('MeshCutoff')) then
            if (IOnode) print'(/,a,/)',"meshsubs WARNING: "
      $          //"Input MeshSizes too small for requested MeshCutoff"
            call message("WARNING","Read mesh sizes give a smaller"
      $                   // " cutoff than requested")
         endif
-        if (any(mod(ntm,nsm) /= 0)) then
-           call die("meshsubs ERROR: "
-     $          //"Input MeshSizes not multiples of MeshSubDivisions")
-        endif
-      endif
+
+!     Check whether the resulting mesh sizes are multiples
+!     of nsm.
+      if ( any(mod(ntm,nsm) /= 0) ) then
+        call die("initmesh: Read mesh sizes are not multiples of nsm")
+      end if
+
+!     Check that the numbers are divisible with the FFT algorithms
+      do i = 1, 3
+        itmp = ntm(i)
+        call nfft( itmp )
+        if ( itmp /= ntm(i) ) then
+          call die("initmesh: Read mesh sizes are not compatible "
+     &        // "with the FFT algorithm: % [2, 3, 5] == 0")
+        end if
+      end do
 
       end subroutine get_mesh_sizes
 
@@ -1290,7 +1329,8 @@ C     Functions
 
 !------------------------------------------------------------------
       subroutine distriPhiOnMesh( nm, nmpl, norb, iaorb,
-     &                            iphorb, isa, numphi )
+     &                            iphorb, isa, numphi,
+     &                            need_gradients_in_xc )
 
 C Computes the number of orbitals that intersects every mesh point
 C and calls initMeshDistr in order to compute a new data distribution
@@ -1304,7 +1344,7 @@ C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
 C integer isa(na)       : Species index of all atoms in supercell
-C
+C logical need_gradients_in_xc : 
 C OUTPUT:
 C The output values are in the module moreMeshSubs (New limits of the mesh
 C and the information needed to transfer data between data
@@ -1344,13 +1384,14 @@ C ==================================================================
       use moreMeshSubs, only: initMeshDistr
       use moreMeshSubs, only: allocASynBuffer
       use moreMeshSubs, only: UNIFORM, QUADRATIC, LINEAR
-      use cellxc_mod,   only: GGA, setGGA
       use alloc,        only: re_alloc, de_alloc
+      
       implicit none
 C     Passed arguments
       integer, intent(in)  :: nm(3), nmpl, norb, iaorb(norb),
      &                        iphorb(norb), isa(*)
       integer, intent(out) :: numphi(nmpl)
+      logical, intent(in)  :: need_gradients_in_xc
 C     Local variables
       integer              :: ii, io, ia, iphi, is, iop, ip0, isp
       real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
@@ -1409,7 +1450,7 @@ C           If within range, add one to number of point orbitals
           endif
         enddo
         call initMeshDistr( UNIFORM, LINEAR, nm, wload )
-        if (GGA) call initMeshExtencil( LINEAR, nm )
+        if (need_gradients_in_xc) call initMeshExtencil( LINEAR, nm )
 
 C       Free local memory
         call de_alloc( wload, 'wload', 'distriPhiOnMesh' )

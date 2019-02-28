@@ -40,6 +40,7 @@ module m_ts_GF
 
 contains
 
+  ! This method should only be called from transiesta (not tbtrans)
   subroutine do_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
        xa_EPS, CalcDOS )
@@ -119,11 +120,19 @@ contains
       ce(i) = c%e
     end do
     iE = N_Eq_E()
-    do i = 1 , N_nEq_E()
-      c = nEq_E(i)
-      ! We utilize the eta value for the electrode
-      ce(iE+i) = cmplx(real(c%e,dp),El%Eta,dp)
-    end do
+    if ( El%Eta > 0._dp ) then
+      do i = 1 , N_nEq_E()
+        c = nEq_E(i)
+        ! We utilize the eta value for the electrode
+        ce(iE+i) = cmplx(real(c%e,dp),El%Eta, dp)
+      end do
+    else
+      ! Specified to use the device eta (ensure it is larger than 0)
+      do i = 1 , N_nEq_E()
+        c = nEq_E(i)
+        ce(iE+i) = c%e
+      end do
+    end if
 
     ! We return if we should not calculate it
     if ( cReUseGF ) then
@@ -168,6 +177,7 @@ contains
 
   end subroutine do_Green
 
+  ! This method should only be called from transiesta (not tbtrans)
   subroutine do_Green_Fermi(El, &
        ucell,nkpnt,kpoint,kweight, &
        xa_EPS, CalcDOS )
@@ -182,6 +192,7 @@ contains
     use m_os, only : file_exist
     use m_ts_electype
     use m_ts_electrode, only : create_Green
+    use m_ts_contour_neq, only: nEq_Eta
 
     implicit none
     
@@ -239,8 +250,11 @@ contains
 
     errorGF = .false.
 
-    ! We use the "first" pole of the 
-    ce(1) = cmplx(0._dp, El%Eta,dp)
+    if ( El%Eta > 0._dp ) then
+      ce(1) = cmplx(0._dp, El%Eta, dp)
+    else
+      ce(1) = cmplx(0._dp, nEq_Eta, dp)
+    end if
 
     ! We return if we should not calculate it
     if ( cReUseGF ) then
@@ -363,17 +377,17 @@ contains
     end if
 
     ! Initial size of minimal size with expansion
-    read_Size_HS = El%no_used ** 2 * product(El%Bloch) ! no_GS * no_GS * nq
+    read_Size_HS = El%no_used ** 2 * El%Bloch%size() ! no_GS * no_GS * nq
     select case ( El%pre_expand )
     case ( 0 )
        ! Nothing is pre-expanded
        read_Size = read_Size_HS
     case ( 1 )
        ! Only the Green function is pre-expanded
-       read_Size = read_Size_HS * product(El%Bloch)
+       read_Size = read_Size_HS * El%Bloch%size()
     case ( 2 )
        ! Everything is pre-expanded
-       read_Size = read_Size_HS * product(El%Bloch)
+       read_Size = read_Size_HS * El%Bloch%size()
        read_Size_HS = read_Size
     end select
 
@@ -546,35 +560,19 @@ contains
     ! Furthermore we include the weight of the k-point
 
     ! the number of points we wish to read in this segment
-    NEReqs = 1
 #ifdef MPI
-    i = 0
-    if ( cE%exist .and. .not. cE%fake) i = 1
-    call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
-         MPI_Comm_World, MPIerror)
-#endif
-
-    if ( present(reread) ) then
-       if ( IONode .and. reread ) then
-          do j = 1 , N_Elec
-             if ( .not. Elecs(j)%out_of_core ) cycle
-             do i = 1 , NEReqs * 2
-                backspace(unit=uGF(j))
-             end do
-          end do
-! Currently the equilibrium energy points are just after
-! the k-point, hence we will never need to backspace behind the
-! HAA and SAA reads
-! however, when we add kpoints for the bias contour, then it might be
-! necessary!
-!           if ( new_kpt ) then
-!             do i = 1 , 2
-!                backspace(unit=uGFL)
-!                backspace(unit=uGFR)
-!             end do
-!          end if
-       end if
+    if ( any(Elecs(:)%out_of_core) ) then
+      if ( cE%exist .and. .not. cE%fake) then
+        i = 1
+      else
+        i = 0
+      end if
+      call MPI_AllReduce(i,NEReqs,1,MPI_Integer, MPI_Sum, &
+          MPI_Comm_World, MPIerror)
     end if
+#else
+    NEReqs = 1
+#endif
 
     ! TODO Move reading of the energy points
     ! directly into the subroutines which need them
@@ -585,9 +583,9 @@ contains
     do i = 1 , N_Elec
 
        ! Transfer the k-point to the expanded supercell
-       kpt(1) = bkpt(Elecs(i)%pvt(1)) / Elecs(i)%Bloch(1)
-       kpt(2) = bkpt(Elecs(i)%pvt(2)) / Elecs(i)%Bloch(2)
-       kpt(3) = bkpt(Elecs(i)%pvt(3)) / Elecs(i)%Bloch(3)
+       kpt(1) = bkpt(Elecs(i)%pvt(1)) / Elecs(i)%Bloch%B(1)
+       kpt(2) = bkpt(Elecs(i)%pvt(2)) / Elecs(i)%Bloch%B(2)
+       kpt(3) = bkpt(Elecs(i)%pvt(3)) / Elecs(i)%Bloch%B(3)
 
        ! Ensure zero in the semi-infinite direction
        select case ( Elecs(i)%t_dir )
@@ -600,6 +598,8 @@ contains
        case ( 6 )
          kpt(1) = 0._dp
          kpt(2) = 0._dp
+       case ( 7 )
+         kpt(:) = 0._dp
        case default
          kpt(Elecs(i)%t_dir) = 0._dp
        end select
@@ -609,16 +609,46 @@ contains
        ! charge correction
        ! If it is different from 1 we do not have an equilibrium contour
        if ( c%idx(1) /= 1 ) then
-          ! In this case the energy is the eta value of the electrode
+         ! In this case the energy is the eta value of the electrode
+         if ( Elecs(i)%Eta > 0._dp ) then
 #ifdef TBT_PHONON
-          c%e = cmplx(real(cE%e,dp)**2,Elecs(i)%Eta,dp)
+           c%e = cmplx(real(cE%e,dp)**2,Elecs(i)%Eta, dp)
 #else
-          c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta,dp)
+           c%e = cmplx(real(cE%e,dp),Elecs(i)%Eta, dp)
 #endif
+         else
+#ifdef TBT_PHONON
+           c%e = cmplx(real(cE%e,dp)**2,aimag(cE%e)**2, dp)
+#else
+           c%e = cE%e
+#endif
+         end if
        end if
        if ( Elecs(i)%out_of_core ) then
+
+          ! Backspace the file if needed
+          if ( present(reread) ) then
+            ! Currently the equilibrium energy points are just after
+            ! the k-point, hence we will never need to backspace behind the
+            ! HAA and SAA reads
+            ! however, when we add kpoints for the bias contour, then it might be
+            ! necessary!
+            if ( IONode .and. reread ) then
+              do j = 1 , NEReqs * 2
+                backspace(unit=uGF(j))
+              end do
+              ! if ( new_kpt ) then
+              !  do j = 1 , 2
+              !   backspace(unit=uGFL)
+              !   backspace(unit=uGFR)
+              !  end do
+              ! end if
+            end if
+          end if
+
           ! Set k-point for calculating expansion
           Elecs(i)%bkpt_cur = kpt
+          
           call read_next_GS_Elec(uGF(i), NEReqs, &
                ikpt, Elecs(i), c, &
                nzwork, zwork, forward = forward)
@@ -744,7 +774,7 @@ contains
        end if
 
        ! Check # of Bloch k-points
-       if ( any(El%Bloch /= Bloch) ) then
+       if ( any(El%Bloch%B /= Bloch) ) then
           write(*,*)"ERROR: Green function file: "//trim(curGFfile)
           write(*,*) 'read_Green: ERROR: unexpected no. Bloch expansion k-points'
           errorGF = .true.
@@ -785,7 +815,7 @@ contains
           errorGF = .true.
        end if
 
-       if ( product(El%Bloch) > 1 ) then
+       if ( El%Bloch%size() > 1 ) then
           if ( pre_expand /= El%pre_expand ) then
              write(*,*)"ERROR: Green function file: "//trim(curGFfile)
              write(*,*) 'read_Green: ERROR: Bloch pre-expansion not consistent'
@@ -884,7 +914,8 @@ contains
       c_NEn,c_ce, &
       xa_Eps, errorGF)
 
-    use units, only: Ang, eV
+    use fdf, only: fdf_convfac
+    use units, only: Ang
     use m_ts_cctype
     use m_ts_electype
 
@@ -933,6 +964,7 @@ contains
     real(dp) :: kpt(3)
     logical :: localErrorGf, eXa, repeat
     logical :: showed_warn
+    real(dp) :: Ry2eV
 
     ! we should only read if the GF-should exist
     errorGF = .false.
@@ -941,6 +973,9 @@ contains
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE check_Green' )
 #endif
+
+    ! Conversion
+    Ry2eV = fdf_convfac('Ry', 'eV')
 
     ! Initialize it to be an error unless the entire routine is runned through.
     ! Upon normal exit it will be changed to .FALSE.
@@ -1033,12 +1068,12 @@ contains
     end if
     deallocate(lasto)
 
-    if ( any(El%Bloch(:)/=Bloch(:)) ) then
+    if ( any(El%Bloch%B(:)/=Bloch(:)) ) then
       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
       write(*,*)"Number of Bloch expansions is wrong!"
-      write(*,'(2(a,i3))') "Found Bloch-A1: ",Bloch(1),", expected: ",El%Bloch(1)
-      write(*,'(2(a,i3))') "Found Bloch-A2: ",Bloch(2),", expected: ",El%Bloch(2)
-      write(*,'(2(a,i3))') "Found Bloch-A3: ",Bloch(3),", expected: ",El%Bloch(3)
+      write(*,'(2(a,i3))') "Found Bloch-A1: ",Bloch(1),", expected: ",El%Bloch%B(1)
+      write(*,'(2(a,i3))') "Found Bloch-A2: ",Bloch(2),", expected: ",El%Bloch%B(2)
+      write(*,'(2(a,i3))') "Found Bloch-A3: ",Bloch(3),", expected: ",El%Bloch%B(3)
       localErrorGf = .true.
     end if
     if ( El%repeat .neqv. repeat ) then
@@ -1046,7 +1081,7 @@ contains
       write(*,*) 'Ordering of Bloch repetitions is not the same (repeat or tile)'
       localErrorGf = .true.
     end if
-    if ( product(El%Bloch) > 1 ) then
+    if ( El%Bloch%size() > 1 ) then
       if ( pre_expand /= El%pre_expand ) then
         write(*,*)"ERROR: Green function file: "//trim(curGFfile)
         write(*,*)"Expecting a pre-expanded self-energy!"
@@ -1057,7 +1092,7 @@ contains
       write(*,*)"ERROR: Green function file: "//trim(curGFfile)
       write(*,*)"The chemical shift in the electrode does not match the &
           &required shift! [eV]"
-      write(*,'(2(a,f12.6))')"Found: ",mu / eV,", expected: ",El%mu%mu / eV
+      write(*,'(2(a,f12.6))')"Found: ",mu * Ry2eV,", expected: ",El%mu%mu * Ry2eV
       localErrorGf = .true.
     end if
 
@@ -1138,10 +1173,10 @@ contains
     end do
     if ( eXa ) then
       localErrorGf = .true.
-      write(*,'(2(2(tr1,a20),tr1))') 'TS E.real [eV]', 'TS E.imag [eV]', &
+      write(*,'(2(2(tr1,a25),tr1))') 'TS E.real [eV]', 'TS E.imag [eV]', &
           'File E.real [eV]', 'File E.imag [eV]'
       do iEn = 1 , min(c_NEn, NEn)
-        write(*,'(2(2(tr1,e20.13)))') c_ce(iEn) / eV, ce(iEn) / eV
+        write(*,'(2(2(tr1,e25.17),tr1))') c_ce(iEn) * Ry2eV, ce(iEn) * Ry2eV
       end do
     end if
     deallocate(ce)

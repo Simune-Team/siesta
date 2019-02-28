@@ -628,6 +628,9 @@ contains
     mem = mem + calc_mem(NF90_DOUBLE, NE)
 
     dic = dic//('info'.kv.'Imaginary part for device')
+#ifdef TBT_PHONON
+    dic = dic//('unit'.kv.'Ry**2')
+#endif
     call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
     ! Clean-up dictionary
@@ -751,7 +754,7 @@ contains
        ! Save generic information about electrode
        dic = dic//('info'.kv.'Bloch expansion')
        call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), atts = dic)
-       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+       call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch%B)
 
        dic = dic//('info'.kv.'Downfolding region orbital pivot table')
        call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_down'/), atts = dic)

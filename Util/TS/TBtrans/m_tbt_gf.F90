@@ -28,7 +28,7 @@ contains
 
   subroutine do_Green(El, &
        ucell,nkpnt,kpoint,kweight, &
-       xa_EPS, CalcDOS )
+       xa_EPS, CalcDOS)
     
     use parallel  , only : IONode
     use sys ,       only : die
@@ -100,16 +100,28 @@ contains
     NEn = N_TBT_E()
     allocate(ce(NEn))
     iE = 0
-    do i = 1 , NEn
-       c = tbt_E(i)
-       ! We ensure to add the complex imaginary value
+    if ( El%Eta > 0._dp ) then
+      do i = 1 , NEn
+        c = tbt_E(i)
+        ! We ensure to add the complex imaginary value
 #ifdef TBT_PHONON
-       ce(i) = cmplx(real(c%e,dp)**2,El%Eta,kind=dp)
+        ce(i) = cmplx(real(c%e,dp)**2,El%Eta, dp)
 #else
-       ce(i) = cmplx(real(c%e,dp),El%Eta,kind=dp)
+        ce(i) = cmplx(real(c%e,dp),El%Eta, dp)
 #endif
-    end do
-       
+      end do
+    else
+      do i = 1 , NEn
+        ! We ensure to add the complex imaginary value
+        c = tbt_E(i)
+#ifdef TBT_PHONON
+        ce(i) = cmplx(real(c%e,dp) ** 2, aimag(c%e)**2, dp)
+#else
+        ce(i) = c%e
+#endif
+      end do
+    end if
+    
     ! We return if we should not calculate it
     if ( .not. cReUseGF ) then
 

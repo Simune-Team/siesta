@@ -66,6 +66,7 @@
       integer norbs, norbs_id, orbnl_l_id, orbnl_n_id, orbnl_z_id,
      $     cutoff_id, delta_id, orb_id, orbnl_pop_id, orbnl_ispol_id
       integer vna_id, chlocal_id, core_id
+      logical :: has_vna, has_chlocal, has_core
 
       integer aux(maxnorbs)
       logical :: has_pjnl_j
@@ -218,32 +219,42 @@
          
 !        Local potential
          iret = nf90_inq_varid(ncid,'vna',vna_id)
-         iret = nf90_get_att(ncid,vna_id,
-     $        'Vna_cutoff',spp%vna%cutoff)
-         iret = nf90_get_att(ncid,vna_id,
-     $        'Vna_delta',spp%vna%delta)
+         has_vna = iret == nf90_noerr
+         if ( has_vna ) then
+           iret = nf90_get_att(ncid,vna_id,
+     $         'Vna_cutoff',spp%vna%cutoff)
+           iret = nf90_get_att(ncid,vna_id,
+     $         'Vna_delta',spp%vna%delta)
+         end if
 
 !        Local potential charge density
          iret = nf90_inq_varid(ncid,'chlocal',chlocal_id)
-         iret = nf90_get_att(ncid,chlocal_id,
-     $        'Chlocal_cutoff',spp%chlocal%cutoff)
-         iret = nf90_get_att(ncid,chlocal_id,
-     $        'Chlocal_delta',spp%chlocal%delta)
+         has_chlocal = iret == nf90_noerr
+         if ( has_chlocal ) then
+           iret = nf90_get_att(ncid,chlocal_id,
+     $         'Chlocal_cutoff',spp%chlocal%cutoff)
+           iret = nf90_get_att(ncid,chlocal_id,
+     $         'Chlocal_delta',spp%chlocal%delta)
+         end if
          
 !        Core charge
          iret = nf90_get_att(ncid,nf90_global,'Core_flag',core_flag)
-         spp%there_is_core = (core_flag .eq. 1)
-
-         if (spp%there_is_core) then
-            iret = nf90_inq_varid(ncid,'core',core_id)
-            iret = nf90_get_att(ncid,core_id,
-     $           'Core_cutoff',spp%core%cutoff)
-            iret = nf90_get_att(ncid,core_id,
-     $           'Core_delta',spp%core%delta)
+         has_core = iret == nf90_noerr
+         if ( has_core ) then
+           spp%there_is_core = (core_flag .eq. 1)
          else
-            call rad_zero(spp%core)
-         endif
-         call check(iret)
+           spp%there_is_core = .false.
+         end if
+         if (spp%there_is_core) then
+           iret = nf90_inq_varid(ncid,'core',core_id)
+           iret = nf90_get_att(ncid,core_id,
+     $         'Core_cutoff',spp%core%cutoff)
+           iret = nf90_get_att(ncid,core_id,
+     $         'Core_delta',spp%core%delta)
+           call check(iret)
+         else
+           call rad_zero(spp%core)
+         end if
 
          iret = nf90_inq_varid(ncid,'proj',proj_id)
          call check(iret)
@@ -291,18 +302,22 @@
          spp%nprojs = nk
          
 !        Local potential
-         call rad_alloc(spp%vna,NTBMAX)
-         iret = nf90_get_var(ncid,vna_id,spp%vna%f(1:),
-     $        start=(/1/),count=(/NTBMAX/))
-         call check(iret)
-         call rad_setup_d2(spp%vna,yp1=0.0_dp,ypn=huge(1.0_dp))
+         if ( has_vna ) then
+           call rad_alloc(spp%vna,NTBMAX)
+           iret = nf90_get_var(ncid,vna_id,spp%vna%f(1:),
+     $         start=(/1/),count=(/NTBMAX/))
+           call check(iret)
+           call rad_setup_d2(spp%vna,yp1=0.0_dp,ypn=huge(1.0_dp))
+         end if
 
 !        Local potential charge density
-         call rad_alloc(spp%chlocal,NTBMAX)
-         iret = nf90_get_var(ncid,chlocal_id,spp%chlocal%f(1:),
-     $        start=(/1/),count=(/NTBMAX/))
-         call check(iret)
-         call rad_setup_d2(spp%chlocal,yp1=0.0_dp,ypn=huge(1.0_dp))
+         if ( has_chlocal ) then
+           call rad_alloc(spp%chlocal,NTBMAX)
+           iret = nf90_get_var(ncid,chlocal_id,spp%chlocal%f(1:),
+     $         start=(/1/),count=(/NTBMAX/))
+           call check(iret)
+           call rad_setup_d2(spp%chlocal,yp1=0.0_dp,ypn=huge(1.0_dp))
+         end if
 
 !        Core charge
          if (spp%there_is_core) then
@@ -648,6 +663,9 @@
 
       subroutine def_non_floating()
 
+      ! For floating orbitals we do not save anything
+      if ( spp%z < 0 ) return
+
       if ( nkbs > 0 ) then
          !! Projectors
          iret = nf90_def_var(ncid,'pjnl_l',nf90_int,nkbs_id,pjnl_l_id)
@@ -661,6 +679,9 @@
      $        nkbs_id,kbcutoff_id)
          iret = nf90_def_var(ncid,'kbdelta',nf90_double,
      $        nkbs_id,kbdelta_id)
+         call check(iret)
+         iret = nf90_def_var(ncid,'proj',nf90_double,
+     $        (/ntb_id,nkbs_id/),proj_id)
          call check(iret)
       end if
 
@@ -709,15 +730,13 @@
       endif
       call check(iret)
 
-      if ( nkbs > 0 ) then
-         iret = nf90_def_var(ncid,'proj',nf90_double,
-     $        (/ntb_id,nkbs_id/),proj_id)
-         call check(iret)
-      end if
-
       end subroutine def_non_floating
 
       subroutine put_non_floating
+
+      ! For floating orbitals we do not put anything
+      if ( spp%z < 0 ) return
+      
       if ( nkbs > 0 ) then
          iret = nf90_put_var(ncid,pjnl_l_id,spp%pjnl_l,count=(/nkbs/))
          call check(iret)
@@ -1012,8 +1031,8 @@
 
       integer, intent(in)      :: is
 
-      type(species_info), pointer  ::   spp
-      character*40 filename
+      type(species_info), pointer :: spp
+      character(len=64) :: filename
       integer i, ispol, lun
 
       spp => species(is)
@@ -1059,6 +1078,10 @@
             write(lun,'(a)') "</orbital>"
          enddo
       write(lun,'(a)') "</paos>"
+
+
+      ! only write projectors and core stuff to the xml file
+      is_float: if ( spp%z > 0 ) then
          
       write(lun,'(a)') "<kbs>"
       do i=1,spp%n_pjnl
@@ -1090,7 +1113,9 @@
           call radial_dump_xml(spp%core,lun)
           write(lun,'(a)') "</core>"
        endif
-
+        
+       endif is_float
+       
        write(lun,'(a)') "</ion>"
 
        call io_close(lun)

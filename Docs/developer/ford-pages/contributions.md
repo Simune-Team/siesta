@@ -109,9 +109,10 @@ Casting should *always* have a precision specifier (if the interface allows)
 	d_var2 = real(s_var2, dp)
 
 Do *not* use any of these:
-- `dcmplx`, use `cmplx(.., .., dp)`
-- `dimag`, use `aimag`
-- `dreal`, use `real(.., dp)`
+
+* `dcmplx`, use `cmplx(.., .., dp)`
+* `dimag`, use `aimag`
+* `dreal`, use `real(.., dp)`
 
 
 ### Logical operators
@@ -132,7 +133,7 @@ Implementation of optional dependencies are done via preprocessor statements.
 
 Preprocessor names *must* be of the form:
 
-    SIESTA__MRRR
+    SIESTA__MRRR ! NOTE: two underscores
     SIESTA__ELPA
 
 where the suffix is unique and has meaning for the intent of the optional dependency.

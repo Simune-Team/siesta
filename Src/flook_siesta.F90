@@ -144,7 +144,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        
        return
     end if
-    
+
+    call timer('LUA', 1)
+    call timer('LUA-init', 1)
+
     ! Initialize the Lua state
     call lua_init(LUA)
 
@@ -185,10 +188,15 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     err_msg = " "
     call lua_run(LUA, slua_file, error = err, message=err_msg)
     if ( err /= 0 ) then
-       write(*,'(a)') trim(err_msg)
-       call die('LUA initialization failed, please check your Lua script!!!')
+      write(*,'(a)') trim(err_msg)
+      call die('LUA initialization failed, please check your Lua script!!!')
+    else if ( IONode ) then
+      write(*,'(/2a/)') 'LUA successfully initialized: ',trim(slua_file)
     end if
-    
+
+    call timer('LUA-init', 2)
+    call timer('LUA', 2)
+
   end subroutine slua_init
 
   subroutine slua_call(LUA, state)
@@ -211,6 +219,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     
     ! Return immediately if we should not run
     if ( .not. (slua_run .or. slua_interactive) ) return
+
+    call timer('LUA', 1)
+    call timer('LUA-call', 1)
 
     ! Transfer the state to the lua interpreter such
     ! that decisions can be made as to which steps
@@ -271,6 +282,9 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
            &check your Lua script')
      end if
    end if
+
+   call timer('LUA-call', 2)
+   call timer('LUA', 2)
    
  contains
 

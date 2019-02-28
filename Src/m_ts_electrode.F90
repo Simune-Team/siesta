@@ -789,7 +789,7 @@ contains
 
     if ( .not. IONode ) return
 
-    nq = product(El%Bloch)
+    nq = El%Bloch%size()
     pre_expand = El%pre_expand > 0 .and. nq > 1
 
     write(*,'(/,2a)') 'Calculating all surface Green functions for: ',trim(name(El))
@@ -806,18 +806,18 @@ contains
 
     ! We show them in units of reciprocal lattice vectors
     do i = 1 , 3
-       if ( El%Bloch(i) > 1 ) then
+       if ( El%Bloch%B(i) > 1 ) then
           write(*,'(3(a,i0),a)') ' Bloch expansion k-points in A_',i, &
                ' direction [b_',i,'] (w=1/',nq,'):'
-          if ( El%Bloch(i) <= 3 ) then
+          if ( El%Bloch%B(i) <= 3 ) then
              write(*,'(5x)',advance='no')
-             do j = 1 , El%Bloch(i) - 1
-                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Bloch(i),', '
+             do j = 1 , El%Bloch%B(i) - 1
+                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Bloch%B(i),', '
              end do
-             write(*,'(i0,a,i0)') El%Bloch(i)-1,'/',El%Bloch(i)
+             write(*,'(i0,a,i0)') El%Bloch%B(i)-1,'/',El%Bloch%B(i)
           else
-             write(*,'(5x,6(i0,a))') 0,'/',El%Bloch(i),', ',1,'/',El%Bloch(i),', ... , ', &
-                  El%Bloch(i)-1,'/',El%Bloch(i)
+             write(*,'(5x,6(i0,a))') 0,'/',El%Bloch%B(i),', ',1,'/',El%Bloch%B(i),', ... , ', &
+                  El%Bloch%B(i)-1,'/',El%Bloch%B(i)
           end if
        end if
     end do
@@ -980,7 +980,7 @@ contains
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion k-points (weight of q-points)
-    nq     = product(El%Bloch)
+    nq     = El%Bloch%size()
     wq     = 1._dp / real(nq,dp)
     ! We also need to invert to get the contribution in the
     reduce_size = nuo_E /= nuou_E
@@ -1428,7 +1428,7 @@ contains
       write(uGF) El%na_u, El%no_u
       write(uGF) El%na_used, El%no_used
       write(uGF) El%xa_used, El%lasto_used
-      write(uGF) El%repeat, El%Bloch(:), El%pre_expand
+      write(uGF) El%repeat, El%Bloch%B(:), El%pre_expand
       write(uGF) El%mu%mu
       
       ! Write out explicit information about this content
@@ -1818,7 +1818,7 @@ contains
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion k-points
-    nq     = product(El%Bloch)
+    nq     = El%Bloch%size()
     ! We also need to invert to get the contribution in the
     ! reduced region
     reduce_size = nuo_E /= nuou_E
@@ -1842,10 +1842,11 @@ contains
     same_k = same_k .and. abs( bkpt(2) - El%bkpt_cur(2) ) < 1.e-8_dp
     same_k = same_k .and. abs( bkpt(3) - El%bkpt_cur(3) ) < 1.e-8_dp
     if ( .not. same_k ) then
-       El%bkpt_cur = bkpt
-       ! In case we do not need the hamiltonian
-       ! This will be the case for non-bias points and when using bulk electrode
-       same_k = .not. associated(El%HA)
+      El%bkpt_cur(:) = bkpt
+
+      ! In case we do not need the hamiltonian
+      ! This will be the case for non-bias points and when using bulk electrode
+      same_k = .not. associated(El%HA)
     end if
 
     ! determine whether there is room enough
@@ -1943,6 +1944,7 @@ contains
 
        ! init qpoint in reciprocal lattice vectors
        kpt(:) = bkpt(:) + q_exp(El,iq)
+      
        ! Convert to 1/Bohr
        call kpoint_convert(El%cell,kpt,kq,-1)
 

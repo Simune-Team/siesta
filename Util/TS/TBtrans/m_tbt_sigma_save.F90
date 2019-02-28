@@ -451,7 +451,7 @@ contains
       ! Save generic information about electrode
       dic = dic//('info'.kv.'Bloch expansion')
       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), atts = dic)
-      call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+      call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch%B)
 
       dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
       call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), atts = dic)
@@ -466,6 +466,9 @@ contains
       call ncdf_put_var(grp,'kT',Elecs(iEl)%mu%kT)
 
       dic = dic//('info'.kv.'Imaginary part of self-energy')
+#ifdef TBT_PHONON
+      dic = dic//('unit'.kv.'Ry**2')
+#endif
       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
 
       dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
@@ -748,25 +751,23 @@ contains
        ! loop over all energy points
        do iE = 1 , NE
 
-          do ikpt = 1 , nkpt
+         ! Loop over k-points to average
+         call ncdf_get_var(grp,'SelfEnergy',Sigma, &
+             start=(/1,1,iE,1/) )
+         
+         c2(:,:) = rwkpt(1) * ( Sigma + transpose(Sigma) )
 
-             ! Loop over k-points to average
-             call ncdf_get_var(grp,'SelfEnergy',Sigma, &
-                  start=(/1,1,iE,ikpt/) )
-             
-             if ( ikpt == 1 ) then
-                c2(:,:) = rwkpt(ikpt) * ( &
-                     Sigma + transpose(Sigma) &
-                     )
-             else
-                c2(:,:) = c2(:,:) + rwkpt(ikpt) * ( &
-                     Sigma + transpose(Sigma) &
-                     )
-             end if
-             
-          end do
+         do ikpt = 2 , nkpt
+           
+           ! Loop over k-points to average
+           call ncdf_get_var(grp,'SelfEnergy',Sigma, &
+               start=(/1,1,iE,ikpt/) )
+           
+           c2(:,:) = c2(:,:) + rwkpt(ikpt) * ( Sigma + transpose(Sigma) )
+           
+         end do
 
-          call ncdf_put_var(grp,'SelfEnergyMean',c2, start=(/1,1,iE/) )
+         call ncdf_put_var(grp,'SelfEnergyMean',c2, start=(/1,1,iE/) )
 
        end do
 
@@ -781,7 +782,7 @@ contains
     call timer('SE-mean', 2)
         
 #ifdef MPI
-    call MPI_Barrier(Mpi_comm_world,MPIerror)
+    call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
 
   end subroutine state_Sigma2mean

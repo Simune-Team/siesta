@@ -338,6 +338,12 @@ contains
          i = Elecs(iEl)%pvt(1)
          call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
          i = Elecs(iEl)%pvt(2)
+       case ( 7 ) ! A-B-C
+         i = Elecs(iEl)%pvt(1)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(2)
+         call Sp_remove_crossterms(dit,ts_sp,product(nsc),isc_off, i, ts_sp, r = r_tmp2)
+         i = Elecs(iEl)%pvt(3)
        case default
          i = Elecs(iEl)%pvt(Elecs(iEl)%t_dir)
        end select
@@ -501,18 +507,13 @@ contains
           jct = orb_type(jo)
           if ( jct == TYP_BUFFER ) cycle
 
-          if ( ict > 0 ) then
-             ! In order to allow to have the update sparsity pattern
-             ! as a subset, we require that the Hamiltonian also
-             ! has the electrode interconnects
-             UseBulk = Elecs(ict)%Bulk
-          else if ( jct > 0 ) then
-             UseBulk = Elecs(jct)%Bulk
-          else
-             ! we are definitely not in an electrode
-             ! hence, this will *most* likely get updated
-             UseBulk = .false.
-          end if
+          UseBulk = .false.
+          ! Specify bulk according to electrode
+          ! In order to allow to have the update sparsity pattern
+          ! as a subset, we require that the Hamiltonian also
+          ! has the electrode interconnects
+          if ( ict > TYP_DEVICE ) UseBulk = Elecs(ict)%Bulk
+          if ( jct > TYP_DEVICE ) UseBulk = UseBulk .or. Elecs(jct)%Bulk
 
           if ( UseBulk ) then
              ! here we create the Hamiltonian matrix on these criterias:
@@ -526,7 +527,7 @@ contains
              
              ! If not bulk we only want to save the Hamiltonian elements
              ! for the same electrode, otherwise everything is needed
-             if ( ict > 0 .and. jct > 0 ) then
+             if ( ict > TYP_DEVICE .and. jct > TYP_DEVICE ) then
                 l_HS(ind) = ict == jct
              else
                 l_HS(ind) = .true.
@@ -655,13 +656,13 @@ contains
           !   DM_update == 1 (cross-terms)
           !   DM_update == 2 (all)
 
-          if ( ict > 0 ) then
+          if ( ict > TYP_DEVICE ) then
              ! Assign that the density matrix, should not be updated
              DM_bulk = Elecs(ict)%DM_update < 2
              ! If DM_cross is different from 0, the entire
              ! electrode region is updated
              DM_cross = Elecs(ict)%DM_update /= 0
-          else if ( jct > 0 ) then
+          else if ( jct > TYP_DEVICE ) then
              DM_bulk = Elecs(jct)%DM_update < 2
              DM_cross = Elecs(jct)%DM_update /= 0
           else
@@ -672,7 +673,7 @@ contains
 
           ! We check whether it is electrode-connections. 
           ! If, so, they are not used in transiesta:
-          if      ( ict > 0 .and. jct > 0 ) then
+          if      ( ict > TYP_DEVICE .and. jct > TYP_DEVICE ) then
 
              ! Remove connections between electrodes
              ! but maintain same electrode updates if not bulk dm

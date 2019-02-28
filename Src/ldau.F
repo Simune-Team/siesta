@@ -197,14 +197,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       type(rad_func),      pointer :: pp
 C ......................
 
-#ifdef BSC_CELLXC
-      ! The only reason is that the XC functional 
-      ! is not calculated exactly equivalent.
-      ! As such, one may delete this below line to make them accessible 
-      ! in conjunction with each other...
-      call die('LDA+U and BSC_CELLXC is not compatible')
-#endif
-      
 !     Start time counter
       call timer( 'hubbard_term', 1 )
 
