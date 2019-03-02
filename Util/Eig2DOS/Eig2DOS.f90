@@ -53,8 +53,8 @@ program Eig2DOS
   character(len=256) :: eig_file, kpoint_file
 
   integer  :: npts_energy = 200
-  real(dp) :: emin        = huge(1.0_dp)
-  real(dp) :: emax        = -huge(1.0_dp)
+  real(dp) :: emin        = -huge(1.0_dp)
+  real(dp) :: emax        =  huge(1.0_dp)
   real(dp) :: smear       = 0.2_dp
   logical  :: loren       = .false.
   logical  :: emin_given  = .false.
