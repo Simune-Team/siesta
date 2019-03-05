@@ -4,6 +4,821 @@
 
 
 ** CHANGES ALONG trunk
+-----------------------------------------------------------------------
+2017-11-10                                                    trunk-644
+Fix lp:1729863 
+A small bug fixed in compilation while using -DDEBUG flag.
+
+*Src/m_initwf.F90
+
+-----------------------------------------------------------------------
+2017-02-04                                                    trunk-603
+Fix lp:1659577 
+The DM calculation in evlog, chgbasis, and siesta_tddft is now condensed
+into a subroutine compute_tddm. 
+
+*Src/Makefile
+*Src/changebasis.F90
+*Src/evolg.F90
+*Src/m_evolve.F90
+*Src/siesta_tddft.F90
+*Src/wavefunctions.F90
+
+-----------------------------------------------------------------------
+2016-06-23                                                    trunk-525
+Merged 4.0-500
+
+* Update list of contributors.
+* Electric-field/slab-dipole-correction fix.
+* Fix to avoid ps reparametrization in bessel case
+* Remove Util/pseudo-xml
+* Other minor changes in README files
+
+
+-----------------------------------------------------------------------
+...
+...
+-----------------------------------------------------------------------
+2016-05-29                                                    trunk-504
+Update makefile in Util/Gen-basis after ldau inclusion
+
+Some extra modules are needed in Gen-basis
+
+modified:
+  Util/Gen-basis/Makefile
+
+-----------------------------------------------------------------------
+2016-05-18                                                    trunk-503
+Merged fix lp:1582978 (from rel-4.0)
+
+-----------------------------------------------------------------------
+2016-05-10                                                    trunk-502
+Revise mentions to now-standalone ATOM program. Revert Tests/test.mk.
+
+* The ATOM program is not bundled with Siesta due to licensing
+  differences.  Mentions to it throughout the documentation and
+  example files have been updated accordingly.
+
+* The file Tests/test.mk has been reverted to the revno 488 version.
+  Note that the proper way to run the tests for a given version is
+  to descend into the 'Tests' directory directly below the compilation
+  directory ('Obj' or other) rather than going to the top-level 'Tests'.
+
+* Syntax changes for compiler complaints reported by Mariella Ippolito
+  from CINECA.
+
+* Completion of changes to licensing headers.
+
+modified:
+  Docs/siesta.tex
+  Examples/README
+  Examples/Vps/README
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/fsiesta_mpi.F90
+  Src/write_inp_wannier.F90
+  Src/ldau.F
+  Src/ldau_specs.f
+  Tests/test.mk
+  + Header changes in a number of files
+  
+-----------------------------------------------------------------------
+2016-05-05                                                    trunk-501
+Fix in 'fat' utility. Write spin info in 'eigfat2plot'
+
+The 'fat' program in Util/COOP computes the projections of specific
+band states onto sets of orbitals. Due to an error, the program did
+not function correctly when a subset of upper bands was selected with
+the '-b' and '-B' flags.
+
+The 'eigfat2plot' utility in Util/Bands now prints an extra field giving
+the spin of the state.
+
+modified:
+  Util/Bands/eigfat2plot.f90
+  Util/COOP/fat.f90
+  Util/COOP/main_vars.f90
+
+-----------------------------------------------------------------------
+2016-05-03                                                    trunk-500
+Fix for handling of geometry info in bands/wfns calculation
+
+The computation of bands and/or wavefunctions in 'siesta_analysis'
+requires an initial setup of the k-point sets involved.  These are
+input in ad-hoc fdf blocks with two possible options for the scaling:
+'pi/a' and 'ReciprocalLatticeVectors'.
+
+The 'pi/a' option needs a lattice constant, which is determined by
+issuing an 'fdf_get' call, whereas the reciprocal lattice vector
+option triggers a call to 'redcel' to determine the unit cell.
+
+An immediate problem is the absence of lattice constant or unit-cell
+information in the fdf file. This may happen, for example, when the
+'use-struct-file' or 'use-save-xv' options are in effect. The program
+would either stop when not finding the lattice constant, or, worse,
+would implicitly compute a zero unit cell and crash later with
+linear-algebra related errors such as faulty Cholesky
+decompositions. (The zero-unit-cell case is an unfortunate consequence
+of the implicit convention that an absent unit cell means that the
+user wants an automatic one.)
+
+A second problem is that, even if the required geometry information is
+given in the fdf file, the band/wfn calculation might be happening at
+the end of a cell relaxation or MD run, so the actual unit cell is not
+that in the fdf file. This should be considered bad practice, but it
+might happen.
+
+The minimal solution adopted (encoded in routine get_kpoints_scale)
+consists of attempting to read the lattice constant for the 'pi/a'
+case, as before, but to use the unit-cell information in the
+'siesta_geom' module for the reciprocal-lattice-vectors case.  This
+information is not enough for the 'pi/a' option, since no record is
+kept of any centering options for cubic systems, so 'a' cannot be
+directly determined from the volume of the unit cell.  Note that the
+setup information is handled at the beginning of the run (during the
+initialization in 'siesta_init'.
+
+A message is printed to warn the user about possible inconsistencies
+if the unit-cell changes by the end of the run. In any case, the
+practice of computing bands or wavefunctions at the end of a
+geometry-changing run should be discouraged.
+
+added:
+  Src/get_kpoints_scale.f90
+modified:
+  Src/Makefile
+  Src/bands.F
+  Src/writewave.F
+	
+-----------------------------------------------------------------------
+2016-05-02                                                    trunk-499
+Allowed neglecting KB projectors with LDA+U
+
+- The LDA+U projectors are now not dependent
+  on the NeglNonOverlapInt option which only
+  deals with KB projectors.
+
+- Streamlined calculation of rmaxo/rmaxkb in
+  hsparse, ldau, nlefsm,
+
+  Basically they looped over the entire structure
+  to find only the species orbital/projector
+  ranges.
+  Thus it is more efficient in those routines.
+
+modified:
+  Src/Makefile
+  Src/hsparse.F
+  Src/ldau.F
+  Src/nlefsm.f
+  Src/siesta_init.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2016-05-02                                                    trunk-498
+Fixed imports
+
+modified:
+  Src/ldau_specs.f
+  Src/m_cite.F90
+
+-----------------------------------------------------------------------
+2016-05-01                                                    trunk-497
+Added LDA+U citation of the implementation paper
+
+modified:
+  Src/ldau_specs.f
+  Src/m_cite.F90
+
+-----------------------------------------------------------------------
+2016-04-29                                                    trunk-495
+Fixed rmaxh for correct range of Hamiltonian elements
+
+- The rmaxh was too short in case of LDAU projectors
+  bigger than the KB projectors.
+
+  This fixes the calculation of the correct rmaxh
+  when the LDAU projectors are used.
+
+modified:
+  Src/atomlist.f
+  Src/siesta_init.F
+
+-----------------------------------------------------------------------
+2016-04-29                                                    trunk-494
+Cleaned LDA+U
+
+- Moved H_ldau to sparse_matrices.
+  This makes the global memory of "standard" matrix
+  elements common in the common module.
+  This requires that it is passed on every call to
+  Hubbard_term.
+  
+- Moved several saved variables in the hubbard_term
+  to the module level.
+  This makes it easier to distinguish global variables.
+
+- Removed all commented out debugging statements.
+
+- Improved the logic of the options in the LDA+U implementation
+
+  REMARK: The logic is exactly the same but clearer from the
+          input options point of view.
+
+  1. ldau_init is now forced to .true. if ldau_shift is true.
+  2. There is no need to store the current geometry setup
+     Now the H_ldau is reset when state_init is called.
+
+- Removed a print-out of:
+
+  "Adding Hamiltonian contribution."
+
+  This is implicit in each SCF cycle (from after the
+  initial occupations have been calculated).
+
+  I have tested this on an MD run as well.
+
+modified:
+  Src/Makefile
+  Src/final_H_f_stress.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/sparse_matrices.F
+  Src/state_init.F
+
+-----------------------------------------------------------------------
+2016-04-29                                                    ldau-499
+Cleaned up the ldau modules by moving variables
+
+- The ldau_specs module had several variables defined
+  as module variables while they where only needed
+  in one subroutine.
+  They have been moved there.
+
+  Now also the projector arrays are deallocated after
+  having created the actual projectors used.
+
+  Thus saving additional memory.
+
+modified:
+  Src/ldau.F
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-498
+Removed _tmp/tmp_ in ldau shells, removed double references
+
+- Removed all double references in the code of ldaushells
+  from the derived type.
+
+- Changed tmp names to standard conforming names.
+  This is more intuitive to grasp.
+
+modified:
+  Src/Makefile
+  Src/basis_types.f
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-497
+Die if requesting non-existing PAO LDAU projectors
+
+- If the requested quantum number LDAU is not found
+  in the list of PAO objects then siesta will die.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-496
+Cosmetic update of ldau code
+
+- Easier logistic in the loops in ldau
+
+- Cosmetic changes for the interface of hubbard_term which
+  now passes the local number of orbitals.
+
+- Beautification of the DEBUG_PAO print-out.
+
+modified:
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/register_rfs.F90
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-495
+Fix possible double counting of Hldau
+
+- If recompute_H_after_scf it is required that
+  we use H_tmp in final_H_f_stress.
+
+  This is now fixed.
+
+modified:
+  Src/final_H_f_stress.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-494
+Almost fixed parallel version
+
+- Implemented Alberto's fixes for the basis specifications
+  in parallel with some minor corrections.
+  
+  This is because the basis_specs are only on Node == 0.
+  However, the specifications should be broadcasted
+  to the other nodes.
+
+  This is now performed by dublicating the LDAU radial
+  functions to the other nodes and retaining the
+  data on all nodes.
+
+  I have added the remaining Bcast which where required.
+
+- Added bcast of the LDAU variables in broadcast_basis.
+  Several variables are required Bcasted.
+
+- Reduced memory requirements slightly
+
+- Reverted globalization of DEldau as entered by
+  Nick in r488.
+  This is not needed as the DEldau is calculated
+  from globalized occupations.
+
+- Removed un-needed ldaushell in the basis_species.
+  Only the *_tmp is used so we do not need the second.
+
+- Fix for "SpinPolarized false" regarding occupations
+
+- TODO move Hldau to sparse_matrices such that it may
+  be calculated "one time" and stored in a generic place.
+
+modified:
+  Src/Makefile
+  Src/atm_types.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/final_H_f_stress.F
+  Src/hsparse.F
+  Src/ldau.F
+  Src/ldau_specs.f
+  Src/setup_hamiltonian.F
+
+-----------------------------------------------------------------------
+2016-04-28                                                    ldau-493
+Fixed r491 with rofi array size
+
+- Correspondance with Javier brought this
+  fix.
+
+modified:
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-27                                                    ldau-492
+Added die when user reads basis + LDAU
+
+- Reading the basis from NetCDF or ascii files
+  is not allowed when using LDA+U.
+
+  This feature is simply not implemented yet.
+  (but could be)
+
+modified:
+  Src/initatom.f
+
+-----------------------------------------------------------------------
+2016-04-27                                                    ldau-491
+Fixes for pointers and possible seg-fault
+
+- Pointers in ldau.F where only nullified in
+  the first run. However, they should be
+  in each SCF.
+  Fixed.
+
+- Print-out of LDAU parameters in the basis-specification
+  This makes easy identification of the used LDA+U
+  basis.
+
+- A possible seg-fault for accessing array elements beyond
+  dimension was found in the ldau_specs.f.
+
+  A possible fix has been added.
+
+  TODO: Check validity for other systems.
+  For Javier's initial test MnO the results are identical.
+
+modified:
+  Src/basis_types.f
+  Src/ldau.F
+  Src/ldau_specs.f
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-490
+Second patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- hsparse.F:             Call to basis_parameters only if switch_ldau
+- matel_registry.F90:    Cosmetic changes on show_pool
+- register_rfs.F90:      Writing of part of the output only done if
+                         the directive DEBUG_PAO is switched
+- siesta_init.F:         Remove the call to test_register 
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-488
+First patches by Nick Andersen
+
+* The files that have been added or modified are:
+
+- final_H_f_stress.F:    Globalization of the sum of DEldau added
+- ldau.F:                Writing on some of the output only on Node 0,
+                         globalization of dnmax
+- siesta_init.F:         Initialization of Eldau and DEldau
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-487
+Corrected version in the CHANGES file
+
+-----------------------------------------------------------------------
+2016-04-25                                                    ldau-486
+Calculation of the Hubbard-like matrix elements, and their contribution
+to forces and stresses
+
+* The files that have been added or modified are: 
+
+- atmfuncs.f:       New function ldau_gindex added
+- basis_io.F:       The information of the LDA+U projectors is dumped into 
+                    the corresponding files
+- compute_energies.F90:  The Hubbard energy is added to the total energy
+- compute_max_diff.F:    The maximum difference between the input and the 
+                         output density matrices is saved in the public
+                         variable dDmax_current, that is required within
+                         the hubbard_term subroutine in order to know
+                         whether the population of the LDA+U projector is 
+                         updated or not.
+- final_H_f_stress.F:    Last call to hubbard_term in order to compute the
+                         forces and stresses once the self-consistency is 
+                         achieved
+- hsparse.F:        The eventual overlap with the LDA+U projectors is 
+                    considered, as it was done with the KB projectors
+- initatom.f:       Call to the subroutine ldau_proj_gen to generate the
+                    LDA+U projectors
+- m_energies.F90:   The Hubbard energies are included in the variables
+- scfconvergence_test.F: The criterion on the convergence of the population of
+                         the LDA+U is added to the requirements to determine
+                         whether the SCF is achieved
+- setup_hamiltonian.F:   Call to hubbard_term to add the contribution of the
+                         Hubbard-like terms to the Hamiltonian
+- write_subs.F:     The information of the Hubbard like energies is dumped
+- ldau.F:           New subroutine that computes the Hubbard-like 
+                    contribution to matrix elements, forces, and stresses
+- Makefile:         Customaty changes to include the new files and dependencies
+- Docs/siesta.tex:  A new section on the LDA+U calculations has been written
+
+-----------------------------------------------------------------------
+2016-02-22                                                    ldau-485
+Generation of the LDA+U projections compatible with new matel
+
+* The files that have been added or modified are: 
+- ldau_specs.f:     Module ldau_specs to read the input file,
+                    generate the projectors and populate the derived types.
+- atm_transfer.f:   Call to populate_species_info_ldau to populate the 
+                    variables in the species derived type related with the 
+                    LDA+U projectors.
+- atm_types.f:      New variables related with the LDA+U projectors 
+                    defined in the derived type species. 
+                    Essentially, they are a copy of the corresponding variables
+                    for the KB projector
+- atom.F:           The following subroutines declared public: 
+                    schro_eq, rc_vs_e, build_vsoft
+- basis_specs.f:    The subroutine label2species is declared public.
+                    It will be used afterwards in read_ldau_specs.
+- basis_types.f:    New derived type ldaushell_t defined, and the 
+                    corresponding subroutines for initialization, print, etc 
+                    are introduced.
+- broadcast_basis.F:The broadcast of the species derived type has been 
+                    generalized to include also the corresponding variables 
+                    related with the LDA+U projectors
+- initatom.f:       Here we read the info related with the LDA+U projs 
+                    in the fdf file (calling the subroutine read_ldau_specs) 
+                    and we call the subroutine in charge of generating them
+                    (ldau_proj_gen)
+- register_rfs.F90: Subroutine modified to include the LDA+U projectors 
+                    in the pool
+- Makefile:         Customaty changes to include the new files and dependencies
+
+
+added:
+  Src/ldau_specs.f
+modified:
+  Src/Makefile
+  Src/atm_transfer.f
+  Src/atm_types.f
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/broadcast_basis.F
+  Src/initatom.f
+  Src/register_rfs.F90
+
+
+-----------------------------------------------------------------------
+2016-03-21                                                    trunk-493
+Merged Ramon SO changes + fixes
+
+- Merged Ramon's SO changes.
+
+- Changed alot of interfaces from Ramon initial
+  commit.
+  This is to better conform with the transiesta merge
+  to happen shortly.
+
+- Clarified a lot of output for the user when performing
+  SO / non-collinear calculations.
+
+- Reduce memory usage from Ramon's version considerably in
+  terms of the sparsity pattern.
+  In Ramon's implementation the H_kin/H_vkb/H_so where
+  full spin-matrices.
+  However, this is not needed.
+  H_kin/H_vkb == same for all spin
+  H_so == only has 6 components
+
+- Fixed calculation of total energy if one requests mixing charge
+
+- Fixed potential memory overflow in dfscf where V was
+  allocated on the stack.
+
+- Moved spin-spiral options to m_spin module
+
+- Enabled one flag for controlling the spin-configuration
+
+    Magnetization non-polarized/polarized/non-collinear/spin-orbit
+
+  with some variations of short-hands.
+  These are merely added for consistency
+
+    Magnetization NP/P/NC/SO
+
+  This removes the obscure choice of several options for _one_
+  selection of computational type.
+
+  For backwards compatibility the old flags still exist and are
+  the basis for the initial option for Magnetization.
+
+- Diagonalization options moved to a common module
+  TODO extend this to streamline r/c-diag.
+  TODO externalize the diagonalization modules for easier
+       abstraction.
+
+removed:
+  Src/m_diagon.F
+added:
+  Src/diag3g.F
+  Src/diag3k.F
+  Src/m_diagon_opt.F90
+  Src/moments.F
+  Src/pdos2g.F
+  Src/pdos2k.F
+  Src/pdos3g.F
+  Src/pdos3k.F
+  Src/spinorbit.f
+  Tests/SpinOrbit/
+  Tests/SpinOrbit/FePt-L1_0-so/
+  Tests/SpinOrbit/FePt-L1_0-so/README
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/x-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/y-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/X-alignment/z-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/x-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/y-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/Fe.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/fept.fdf
+  Tests/SpinOrbit/FePt-L1_0-so/Z-alignment/z-axis/fept.out
+  Tests/SpinOrbit/FePt-L1_0-so/config
+  Tests/SpinOrbit/FePt-L1_0-so/makefile
+  Tests/SpinOrbit/FePt-L1_0-so/script-fept.sh
+  Tests/SpinOrbit/Pt2-so-bis/
+  Tests/SpinOrbit/Pt2-so-bis/README
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/x-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/y-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/X-alignment/z-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/x-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/y-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/Pt.psf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/pt2.fdf
+  Tests/SpinOrbit/Pt2-so-bis/Z-alignment/z-axis/pt2.out
+  Tests/SpinOrbit/Pt2-so-bis/config
+  Tests/SpinOrbit/Pt2-so-bis/makefile
+  Tests/SpinOrbit/Pt2-so-bis/script-pt2.sh
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/bands.F
+  Src/born_charge.F
+  Src/cdiag.F
+  Src/compute_dm.F
+  Src/compute_energies.F90
+  Src/compute_norm.F
+  Src/compute_rhog.F
+  Src/dfscf.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagg.F
+  Src/diagk.F
+  Src/diagon.F
+  Src/final_H_f_stress.F
+  Src/grdsam.F
+  Src/initatom.f
+  Src/iodm_netcdf.F90
+  Src/ioeig.f
+  Src/local_DOS.F
+  Src/m_broyden_mixing.f
+  Src/m_energies.F90
+  Src/m_fire_mixing.f
+  Src/m_pulay.F90
+  Src/m_spin.F90
+  Src/mixer.F
+  Src/new_dm.F
+  Src/pdos.F
+  Src/periodic_table.f
+  Src/post_scf_work.F
+  Src/projected_DOS.F
+  Src/rdiag.F
+  Src/reoptical.F
+  Src/rhoofd.F
+  Src/save_density_matrix.F
+  Src/scfconvergence_test.F
+  Src/setup_H0.F
+  Src/setup_hamiltonian.F
+  Src/siesta_analysis.F
+  Src/siesta_init.F
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/vmat.F
+  Src/write_subs.F
+  Src/writewave.F
+  Src/xc.f
+
+-----------------------------------------------------------------------
+2016-03-07                                                    trunk-492
+Initial k-displacements are now 0
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-07                                                    trunk-491
+Fixed k-grid displacement reading
+
+- There was no need for not reading 0 as a displacement
+  in the kgrid_monkhorst_pack block.
+
+  Previously siesta would error when:
+   %block kgrid_monkhorst_pack
+    1 0 0 0
+    0 1 0 0
+    0 0 1 0
+   %endblock
+  while now this will works
+
+modified:
+  Src/kgridinit.F
+  Src/kpoint_grid.F90
+  Src/kpoint_pdos.F90
+  Src/m_ts_kpoints.F90
+  Src/setup_kscell.F
+
+-----------------------------------------------------------------------
+2016-03-05                                                    trunk-490
+Automatic reading of #atoms, and species without denoting count
+
+- The NumberOfSpecies flag is now not needed any more.
+
+  This reflects an easier usage as it first reads the lines
+  in the ChemicalSpeciesLabel block and counts the number
+  of species from this block.
+
+  A small bug has also been fixed in that the first
+  number is now correctly inserted in the slot
+  that it intents.
+
+  The NumberOfSpecies flag still has precedence in case
+  you want a reduced number of elements.
+
+  +manual
+
+- The NumberOfAtoms is now not needed any more.
+
+  Similar to the NumberOfSpecies flag we now count the
+  number of atoms from the block by default.
+
+  The NumberOfAtoms flag still has precedence in case
+  you want a reduced number of atoms.
+
+  +manual
+
+- Output of chemical species is now more concise and aligned.
+  This is just a visual change.
+
+modified:
+  Docs/siesta.tex
+  Src/chemical.f
+  Src/coor.F
+
+-----------------------------------------------------------------------
+2016-03-03                                                    trunk-489
+[merge] Tests fix, REFERENCE_DIR and SIESTA
+
+- After having build siesta in the Obj directory
+  a natural procedure would be to go to Tests
+  and run the tests:
+      make
+  However, the default SIESTA is not pointing to
+  the Obj.
+  Further the REFERENCE_DIR is not pointing to the
+  correct reference directory when in the top Tests
+  directory.
+
+  Hence the procedure is:
+  1. cd Obj
+  2. ../Src/obj_setup.sh
+  3. <create arch.make>
+  4. make
+  5. cd ../Tests/
+  6. make
+
+modified:
+  Tests/test.mk
+
+2016-02-26                                                    trunk-488
+Add generic citation helper
+
+- It was previously difficult to figure
+  out which papers where of significance when
+  using SIESTA.
+  This addition adds the capability of on-the-fly
+  creation of .bib files for users to easier find
+  the papers that are being used in their corresponding
+  run.
+
+added:
+  Src/m_cite.F90
+modified:
+  Src/Makefile
+  Src/m_efield.F
+  Src/siesta_init.F
+  Src/ts_init.F90
 
 -----------------------------------------------------------------------
 2016-02-17                                                    trunk-486

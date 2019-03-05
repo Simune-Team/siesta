@@ -1,7 +1,12 @@
 SystemName          Water molecule layer with dipole -- automatic correction
-SystemLabel         h2o
+SystemLabel         dipole_correction
 NumberOfAtoms       3
 NumberOfSpecies     2
+
+
+SCF.Mix DM
+DM.NumberPulay 6
+DM.MixingWeight 0.02
 
 #
 # Comment out the following line to remove the automatic correction for

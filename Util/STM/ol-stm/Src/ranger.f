@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -796,9 +796,12 @@ C  THEIR PRODUCT WITH DIRECT LATTICE VECTORS A IS 1 (IF IOPT=0) OR
 C  2*PI (IF IOPT=1). N IS THE SPACE DIMENSION.
 C  WRITTEN BY J.M.SOLER.
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer  :: n, iopt
       DOUBLE PRECISION A(N,N),B(N,N)
 
+      double precision c, ci
+      integer i
+      
       C=1.D0
       IF (IOPT.EQ.1) C=2.D0*ACOS(-1.D0)
 
@@ -859,7 +862,7 @@ C   mesh with periodic boundary conditions. This modulus operation is
 C   also done with J, so that the output I() are always within range.
 C If IOPT=0, nothing is done.
 C *********** USAGE **************************************************
-C 	Sample usage to find the Laplacian of a function defined in a mesh 
+C       Sample usage to find the Laplacian of a function defined in a mesh 
 C with periodic boundary conditions in a space of variable dimension
 C    SUBROUTINE LAPLACIAN( ND, N, DX, F, FLAPL )
 C    PARAMETER (MAXD = 3)

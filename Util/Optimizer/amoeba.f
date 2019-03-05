@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -60,9 +60,9 @@
 
       ! Arguments
       implicit none
+      integer, intent(in)   :: ndim           ! number of coordinates
       real(dp),intent(inout):: x(ndim+1,ndim) ! simplex values x(ipoint,icoord)
       real(dp),intent(inout):: y(ndim+1)      ! function values at x
-      integer, intent(in)   :: ndim           ! number of coordinates
       interface
         function funk(x) result(value)        ! function to be minimized
           use precision, only: dp

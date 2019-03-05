@@ -156,13 +156,13 @@ PRIVATE ! nothing is declared public beyond this point
 ! Derived type to hold spline info of a function
 type spline_t
   private
-  character(len=3):: mesh              ! mesh type ('lin'|'log'|'gen')
-  real(dp)        :: xmin              ! x(1)-xtol
-  real(dp)        :: xmax              ! x(n)+xtol
-  real(dp)        :: x1                ! x(1)
-  real(dp)        :: dx                ! linear mesh interval
-  real(dp)        :: a,b      ! log-mesh parameters x(k)=b*[exp(a*(k-1))-1]
-  integer         :: n                 ! number of points
+  character(len=3):: mesh          ! mesh type ('lin'|'log'|'gen')
+  real(dp)        :: xmin          ! x(1)-xtol
+  real(dp)        :: xmax          ! x(n)+xtol
+  real(dp)        :: x1            ! x(1)
+  real(dp)        :: dx            ! linear mesh interval
+  real(dp)        :: a,b           ! log-mesh parameters x(k)=b*[exp(a*(k-1))-1]
+  integer         :: n             ! number of points
   real(dp),allocatable:: x(:)      ! mesh points
   real(dp),allocatable:: y(:)      ! function value at mesh points
   real(dp),allocatable:: d2ydx2(:) ! 2nd derivative at mesh points
@@ -170,7 +170,7 @@ end type
 
 ! Overloaded spline generators and evaluators
 interface generate_spline
-  module procedure generate_spline    ! new interface
+  module procedure generate_spline_master    ! new interface
   module procedure generate_spline_x  ! Numerical Recipes interface
   module procedure generate_spline_dx ! older interface
 end interface generate_spline
@@ -197,7 +197,7 @@ CONTAINS
 
 !-------------------------------------------------------------------------------
 
-SUBROUTINE generate_spline( dat, x, y, n, dydx1, dydxn, d2ydx2, stat )
+SUBROUTINE generate_spline_master( dat, x, y, n, dydx1, dydxn, d2ydx2, store, stat )
 
 ! Generate data for cubic spline interpolation of a function
 
@@ -209,13 +209,13 @@ real(dp),         intent(in) :: y(n)   ! function value at mesh points
 real(dp),optional,intent(in) :: dydx1  ! dy/dx at x(1)
 real(dp),optional,intent(in) :: dydxn  ! dy/dx at x(n)
 real(dp),optional,intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
+logical, optional, intent(in):: store  ! Store data in the spline object
 integer, optional,intent(out):: stat   ! error status:
                                        !  (-1 if nonmonotonic mesh)
                                        !  (-2 if n < 2)
 
 ! Internal variables and arrays
-character(len=*),parameter:: myName = 'generate_spline '
-real(dp):: a, b, dx, dx1, dx2, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
+real(dp):: a, b, dx, dx1, dxn, dxm, dxp, dy1, dyn, dym, dyp, &
            p, s, u(n), v(n), xtol, ypp(n)
 integer :: flag, k
 character(len=3):: meshType
@@ -244,7 +244,7 @@ else
       dx = x(2)-x(1)
     else  ! try x(k) = x(1) + b*[exp(a*(k-1))-1]
       meshType = 'log'
-      b = (x(2)-x(1)) / (exp(a)-1)
+      b = (x(2)-x(1)) / (exp(a)-1._dp)
     endif
   else
     meshType = 'gen'
@@ -258,8 +258,8 @@ if (present(dydx1)) then
     v(1) = -0.5_dp
     u(1) = (3.0_dp/dx1)*(dy1/dx1-dydx1)
 else
-    v(1) = 0
-    u(1) = 0
+    v(1) = 0._dp
+    u(1) = 0._dp
 endif
 if (present(dydxn)) then
     dxn = x(n)-x(n-1)
@@ -289,6 +289,13 @@ do k = n-1,1,-1
   ypp(k) = v(k)*ypp(k+1) + u(k)
 enddo
 
+! Store output, if requested
+if (present(d2ydx2)) d2ydx2 = ypp
+
+if ( present(store) ) then
+  if ( .not. store ) return
+end if
+
 ! Store spline info in output variable
 allocate(dat%x(n), dat%y(n), dat%d2ydx2(n))
 
@@ -302,12 +309,11 @@ dat%dx = dx
 dat%a = a
 if (dat%mesh == 'log') dat%b = b
 dat%n = n
-dat%x = x
-dat%y = y
-dat%d2ydx2 = ypp
-if (present(d2ydx2)) d2ydx2 = ypp
+dat%x(:) = x(:)
+dat%y(:) = y(:)
+dat%d2ydx2(:) = ypp(:)
 
-end subroutine generate_spline
+end subroutine generate_spline_master
 
 !-------------------------------------------------------------------------------
 
@@ -349,7 +355,7 @@ real(dp),         intent(out):: xh    ! higher interval mesh point
 
 ! Internal variables
 character(len=*),parameter:: myName = 'evaluate_spline/find_interval '
-real(dp)::  a, b, dx, h, x1, xmin, xmax, xtol
+real(dp)::  a, b, dx, x1, xmin, xmax
 integer ::  k, n
 
 ! Get some parameters
@@ -427,10 +433,10 @@ y = A*yl + B*yh + ( (A**3-A)*d2ydx2l + (B**3-B)*d2ydx2h ) * (dx**2)/6.0_dp
 
 ! Find interpolated derivative
 if (present(dydx)) then
-  dAdx = -1/dx
-  dBdx = +1/dx
-  dydx = dAdx*yl + dBdx*yh + ( dAdx*(3*A**2-1)*d2ydx2l + & 
-                               dBdx*(3*B**2-1)*d2ydx2h ) * (dx**2)/6.0_dp
+  dAdx = -1._dp/dx
+  dBdx = +1._dp/dx
+  dydx = dAdx*yl + dBdx*yh + ( dAdx*(3*A**2-1._dp)*d2ydx2l + & 
+                               dBdx*(3*B**2-1._dp)*d2ydx2h ) * (dx**2)/6.0_dp
 endif
 
 END SUBROUTINE interpolate_interval
@@ -463,29 +469,35 @@ SUBROUTINE generate_spline_x( x, y, n, dydx1, dydxn, d2ydx2 )
 ! Included for compatibility with an older interface
 
 implicit none
+integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: x(n)      ! mesh of independent variable
 real(dp),intent(in) :: y(n)      ! function value at mesh points
-integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: dydx1     ! dy/dx at x(1)
 real(dp),intent(in) :: dydxn     ! dy/dx at x(n)
 real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
 
 ! Internal variables
+integer :: stat
 type(spline_t):: dat
 
 ! Generate spline dat
 if (dydx1>dydxMax .and. dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n )
+  call generate_spline_master( dat, x, y, n, d2ydx2=d2ydx2, store=.false., stat=stat)
 elseif (dydxn>dydxMax) then
-  call generate_spline( dat, x, y, n, dydx1=dydx1 )
+  call generate_spline_master( dat, x, y, n, dydx1=dydx1, d2ydx2=d2ydx2, store=.false., stat=stat)
 elseif (dydx1>dydxMax) then
-  call generate_spline( dat, x, y, n, dydxn=dydxn )
+  call generate_spline_master( dat, x, y, n, dydxn=dydxn, d2ydx2=d2ydx2, store=.false., stat=stat)
 else
-  call generate_spline( dat, x, y, n, dydx1, dydxn )
+  call generate_spline_master( dat, x, y, n, dydx1, dydxn, d2ydx2=d2ydx2, store=.false., stat=stat)
 endif
 
-! Copy d2y/dx2 to output array
-d2ydx2 = dat%d2ydx2
+! If the status is faulty the resulting d2y/dx2 will be
+! forcefully set to 0
+! Then the user has to do something differently
+if ( stat /= 0 ) d2ydx2(:) = 0._dp
+
+! Deallocate arrays in the spline data-structure
+call clean_spline(dat)
 
 END SUBROUTINE generate_spline_x
 
@@ -496,9 +508,9 @@ SUBROUTINE generate_spline_dx( dx, y, n, dydx1, dydxn, d2ydx2 )
 ! Included for compatibility with an older interface
 
 implicit none
+integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: dx        ! mesh interval
 real(dp),intent(in) :: y(n)      ! function value at mesh points
-integer, intent(in) :: n         ! number of mesh points
 real(dp),intent(in) :: dydx1     ! dy/dx at x(1)
 real(dp),intent(in) :: dydxn     ! dy/dx at x(n)
 real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
@@ -506,7 +518,6 @@ real(dp),intent(out):: d2ydx2(n) ! d2y/dx2 at mesh points
 ! Internal variables
 integer :: ix
 real(dp):: x(n)
-type(spline_t):: dat
 
 ! Generate spline data
 x = (/( (ix-1)*dx, ix=1,n )/)
@@ -521,10 +532,10 @@ SUBROUTINE evaluate_spline_x( xi, yi, d2ydx2, n, x, y, dydx )
 ! Included for compatibility with an older interface
 
 implicit none
+integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: xi(n)     ! mesh of independent variable
 real(dp),         intent(in) :: yi(n)     ! function value at mesh points
 real(dp),         intent(in) :: d2ydx2(n) ! function value at point x
-integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: x         ! point at which function is needed
 real(dp),         intent(out):: y         ! function value at point x
 real(dp),optional,intent(out):: dydx      ! function derivative at point x
@@ -555,10 +566,10 @@ SUBROUTINE evaluate_spline_dx( dx, yi, d2ydx2, n, x, y, dydx )
 ! Included for compatibility with an older interface
 
 implicit none
+integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: dx        ! mesh interval
 real(dp),         intent(in) :: yi(n)     ! function value at mesh points
 real(dp),         intent(in) :: d2ydx2(n) ! function value at point x
-integer,          intent(in) :: n         ! number of mesh points
 real(dp),         intent(in) :: x         ! point at which function is needed
 real(dp),         intent(out):: y         ! function value at point x
 real(dp),optional,intent(out):: dydx      ! function derivative at point x
@@ -568,7 +579,7 @@ real(dp):: xh, xl, xmax, xtol
 
 ! Check that point is within interpolation range
 xmax = (n-1)*dx
-xtol = dx*tol;
+xtol = dx*tol
 if (x<-xtol .or. x>xmax+xtol) &
   call die('evaluate_spline ERROR: x out of range')
 
@@ -590,9 +601,9 @@ END SUBROUTINE evaluate_spline_dx
 SUBROUTINE polint( xi, yi, n, x, y, dydx )  ! Lagrange interpolation
 
   implicit none
+  integer, intent(in) :: n     ! number of mesh points
   real(dp),intent(in) :: xi(*) ! mesh points
   real(dp),intent(in) :: yi(*) ! function values at mesh points
-  integer, intent(in) :: n     ! number of mesh points
   real(dp),intent(in) :: x     ! point at which function is required
   real(dp),intent(out):: y     ! function value at point x
   real(dp),intent(out):: dydx  ! function derivative at point x
@@ -603,8 +614,9 @@ SUBROUTINE polint( xi, yi, n, x, y, dydx )  ! Lagrange interpolation
 ! Neville's algorithm, as described in NR
   c = yi(1:n)
   d = yi(1:n)
-  dcdx = 0
-  dddx = 0
+  dcdx = 0._dp
+  dddx = 0._dp
+  dydx = 0._dp
   i0 = n/2
   y = yi(i0)
   do m = 1,n-1               ! loop on increasing polynomial order

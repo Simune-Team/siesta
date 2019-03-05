@@ -14,8 +14,7 @@ Examples and other tutorial material in Tests/, Tutorials/, and Examples/
 
 Utilities under Util/
 
-The pseudopotential generation code and related materials can be found
-under Pseudo/.
+Pseudopotential-related information can be found under Pseudo/.
 
 Please see the manual for compilation and other instructions.
 

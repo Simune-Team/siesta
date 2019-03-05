@@ -15,6 +15,7 @@
       USE siesta_options
       use units, only: Ang
       use m_ioxv
+      use m_iotdxv
       USE alloc,          only: re_alloc, de_alloc
 
       use siesta_geom
@@ -28,6 +29,12 @@
       use files,          only : slabel
       use zmatrix,        only : lUseZmatrix
       use parallel,       only : IOnode
+#ifdef NCDF_4
+      use m_steps, only : inicoor, fincoor
+      use m_exp_coord, only : read_exp_coord_options
+      use m_exp_coord, only : exp_coord_init
+      use m_exp_coord, only : exp_coord_next
+#endif
       use siesta_master,  only: coordsFromMaster  ! Get coords from master prog
       use siesta_master,  only: setPropertyForMaster  ! Set a property to be
                                                       ! sent to master program
@@ -72,9 +79,8 @@
       call re_alloc( va, 1, 3, 1, na_u, 'va', 'struct_init' )
 
       ! Options read here instead of in siesta_options
-      default   = fdf_get('UseSaveData', .false.)
-      usesavexv = fdf_get('MD.UseSaveXV', default)
-      usesavezm = fdf_get('MD.UseSaveZM', default)
+      usesavexv = fdf_get('MD.UseSaveXV', usesaveddata)
+      usesavezm = fdf_get('MD.UseSaveZM', usesaveddata)
       writic    = fdf_get('WriteCoorInitial', .true.)
 
       ! Read Z-matrix coordinates and forces from file
@@ -94,8 +100,32 @@
       endif
 
 ! Read cell shape and atomic positions from a former run ..............
+#ifdef NCDF_4
+      dummy_str = fdf_get('MD.TypeOfRun','none')
+      if ( leqi(dummy_str,'explicit') ) then
+         ! Read in file name
+         call read_exp_coord_options( )
+         call exp_coord_init(slabel,na_u,inicoor,fincoor)
+         if ( inicoor > 0 ) then
+            call exp_coord_next(inicoor,na_u,xa)
+         end if
+      end if
+#endif
+! For TDDFT start or restart, structure must be read from TDXV.
       foundxv = .false.
-      if (usesavexv) then
+      dyntyp = fdf_get('MD.TypeOfRun','CG')
+      if (leqi(dyntyp,'TDED')) then
+      call iotdxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
+           if (.not.foundxv) then
+              call die( 'ERROR: TDXV file not found' )
+           else
+             xv_file_read = tdxv_file_read
+            if (IOnode) then
+            write(6,"(a)")
+     $      "! Info in TDXV file prevails over previous structure input"
+            endif
+           endif
+      else if (usesavexv) then
         call ioxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
         if (IOnode) then
            if (.not.foundxv) then
@@ -112,7 +142,6 @@
         istart = fdf_get('MD.InitialTimeStep',1)
         ifinal = fdf_get('MD.FinalTimeStep',1)
         if (foundxv .and. (ifinal-istart>0)) then
-           dyntyp = fdf_get('MD.TypeOfRun','CG')
            step_back=.true.
            if (leqi(dyntyp,'verlet')) then
              restart_file = trim(slabel) // '.VERLET_RESTART'

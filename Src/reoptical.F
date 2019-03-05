@@ -59,7 +59,8 @@ C *******************************************************************
       use parallel,    only : Node, Nodes
       use fdf
       use sys,         only : die
-
+      use m_spin, only: NonCol, SpOrb
+      
       implicit          none
 
 C Passed variables 
@@ -90,6 +91,15 @@ C Initialise outputs to defaults
 
 C Read flag for optical calculation
       DoOptical = fdf_boolean('OpticalCalculation',.false.)
+      if ( NonCol .or. SpOrb ) then
+         if ( DoOptical ) then
+            if (Node.eq.0) then
+               write(6,'(/2a)') 'reoptical: Not possible ',
+     + 'with non-collinear spin configuration.'
+            end if
+         end if
+         DoOptical = .false.
+      end if
 
       if (DoOptical) then
 C Read energy range
@@ -128,6 +138,7 @@ C Read BZ sampling grid
           nmeshk(1) = fdf_bintegers(pline,1)
           nmeshk(2) = fdf_bintegers(pline,2)
           nmeshk(3) = fdf_bintegers(pline,3)
+          call fdf_bclose(bfdf)
         endif
 
 C Read whether this is a polarised, unpolarised or polycrystal calc

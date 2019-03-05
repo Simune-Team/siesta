@@ -48,11 +48,23 @@ C real*8 qa(na)             : Neutral atom charge of each atom
       integer, pointer, save, public  :: lastkb(:)
       real(dp), pointer, save, public :: amass(:), qa(:)
       integer, pointer, save, public  :: indxua(:)
+      !
+      ! This array depends on the actual geometry, so
+      ! it does not properly belong here. It is used only
+      ! for communication between nlefsm and hsparse.
+      ! For safety, it is initialized in each invokation
+      ! of hsparse.
+      logical, pointer, save, public  :: in_kb_orb_u_range(:)
+      
 !     Index of equivalent atom in "u" cell
-      real(dp), save, public          :: rmaxv  ! Max cutoff for Vna
-      real(dp), save, public          :: rmaxo  ! Max cuoff for at. orb.
-      real(dp), save, public          :: rmaxkb ! Max cuoff for KB proj.
-      real(dp), save, public          :: qtot   ! Total number of elect.
+      real(dp), save, public          :: rmaxv    ! Max cutoff for Vna
+      real(dp), save, public          :: rmaxo    ! Max cuoff for at. orb.
+      real(dp), save, public          :: rmaxkb   ! Max cuoff for KB proj.
+      real(dp), save, public          :: rmaxldau ! Max cuoff for LDAU proj.
+
+      real(dp), save, public          :: qtot ! Total number of elect.
+      real(dp), save, public          :: qtots(2) ! Total number of electrons per spin
+
       real(dp), save, public          :: zvaltot
                                          ! Total number of pseudoprotons
                                          ! (excluding those of ghost atoms)
@@ -84,18 +96,25 @@ C real*8 qa(na)             : Neutral atom charge of each atom
 !=======================================================
       subroutine initatomlists()
 
+      use atm_types, only: species_info
+      use radial, only: rad_func
+      use ldau_specs, only: switch_ldau
+      
 C Routine to initialize the atomic lists.
 C
       integer  ia, io, is, nkba, noa, nol, nokbl, ioa, ikb
+      type(species_info), pointer :: spp
+      type(rad_func), pointer :: pp
 
       nullify(indxua,lastkb,lasto,qa,amass,xa_last)
+      nullify(in_kb_orb_u_range)
       call re_alloc( indxua, 1, na_u, 'indxua', 'atomlist' )
       call re_alloc( lastkb, 0, na_u, 'lastkb', 'atomlist' )
       call re_alloc( lasto, 0, na_u, 'lasto', 'atomlist' )
       call re_alloc( qa, 1, na_u, 'qa', 'atomlist' )
       call re_alloc(xa_last,1,3,1,na_u,'xa_last','atomlist')
       call re_alloc( amass, 1, na_u, 'amass', 'atomlist' )
-
+      call re_alloc( in_kb_orb_u_range, 1, na_u, 'in_kb', 'atomlist' )
 !
 !     Find number of orbitals and KB projectors in cell
 !
@@ -132,6 +151,7 @@ c Initialize atomic lists
       rmaxv  = 0._dp
       rmaxo  = 0._dp
       rmaxkb = 0._dp
+      rmaxldau = 0._dp
       lasto(0) = 0
       lastkb(0) = 0
       zvaltot = 0.0_dp
@@ -163,6 +183,13 @@ c Initialize atomic lists
           iaKB(nokbl) = ia
           iphKB(nokbl) = -io
         enddo
+        if( switch_ldau ) then
+           spp => species(is)
+           do io = 1, spp%n_pjldaunl
+              pp => spp%pjldau(io)
+              rmaxldau = max( rmaxldau, pp%cutoff )
+           enddo
+        endif
       enddo
 
 ! Find rco and rckb .............................
@@ -219,6 +246,8 @@ C Internal variables
         call re_alloc( iza, 1, na, 'iza', 'atomlist', .true. )
         call re_alloc( lastkb, 0, na, 'lastkb', 'atomlist', .true. )
         call re_alloc( lasto, 0, na, 'lasto', 'atomlist', .true. )
+        call re_alloc( in_kb_orb_u_range, 1, na,
+     $                 'in_kb', 'atomlist', .true. )
         call re_alloc( qa, 1, na, 'qa', 'atomlist', .true. )
         call re_alloc( xa, 1, 3, 1, na, 'xa', 'atomlist', .true. )
         call re_alloc(xa_last, 1,3, 1,na, 'xa_last', 'superc',

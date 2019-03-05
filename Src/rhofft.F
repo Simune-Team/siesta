@@ -49,6 +49,10 @@ C     Local variables
       integer               :: ispin, ng
       real(dp)              :: VOLUME, b(3,3)
 
+#ifdef DEBUG
+      call write_debug( '    PRE rhofft' )
+#endif
+
 C     Start time counter
       call timer( 'rhofft', 1 )
 
@@ -61,19 +65,25 @@ C     Find reciprocal lattice vectors
       NG = mesh(1) * mesh(2) * mesh(3)
 
       if (direction == FORWARD) then
+!$OMP parallel workshare default(shared)
          rhog(1,:,:) = RHO(:,:)
          rhog(2,:,:) = 0.0_grid_p
+!$OMP end parallel workshare
 
          do ispin = 1, nspin
             call fft( rhog(1,1,ispin), Mesh, -1 )
          enddo
          ! Units: electrons per unit cell
+!$OMP parallel workshare default(shared)
          rhog(:,:,:) = rhog(:,:,:) * volume / dble(ng)
+!$OMP end parallel workshare
       else if (direction == BACKWARD) then
          do ispin = 1, nspin
             call fft( rhog(1,1,ispin), Mesh, +1 )
          enddo
+!$OMP parallel workshare default(shared)
          rho(:,:) = rhog(1,:,:) * ng / volume
+!$OMP end parallel workshare
          !  print *, "sum(rho)*dvol", sum(rho)*volume/dble(ng)
       else
          call die("wrong fft direction")
@@ -81,6 +91,10 @@ C     Find reciprocal lattice vectors
 
 C     Stop time counter
       call timer( 'rhofft', 2 )
+
+#ifdef DEBUG
+      call write_debug( '    POS rhofft' )
+#endif
 
       end subroutine rhofft
 

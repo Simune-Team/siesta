@@ -53,7 +53,8 @@ C WRITTEN BY J.M.SOLER. MAY/95.
 ! Modified by A. Garcia, May 2015
 
       integer :: np, nmax, nmin, nrem, ip
-      parameter (NP = 3, NMAX = huge(N))  ! no limits with huge
+      ! no limits with huge, but subtract 2 to avoid 'overflow' warning
+      parameter (NP = 3, NMAX = huge(N)-2)  
       integer :: IPRIME(NP)
       data IPRIME / 2, 3, 5 /
 
@@ -77,8 +78,8 @@ C WRITTEN BY J.M.SOLER. MAY/95.
 
       ! packed complex array in a real array twice as long
 
-      real(dp), intent(inout) :: data(2*n)
       integer, intent(in)     :: n
+      real(dp), intent(inout) :: data(2*n)
       integer, intent(in)     :: isign
 
 !        ISIGN = +1 FOR FORWARD TRANSFORM
@@ -162,8 +163,8 @@ C WRITTEN BY J.M.SOLER. MAY/95.
 !
       SUBROUTINE SETGPFA_check(TRIGS,maxtrigs,ntrigs,N)
 *
-      REAL(dp)  TRIGS(maxtrigs)
       integer, intent(in)  :: maxtrigs  ! The current size of trigs
+      REAL(dp)  TRIGS(maxtrigs)
       integer, intent(out) :: ntrigs    ! The needed size for trigs
       integer, intent(in)  :: N
 

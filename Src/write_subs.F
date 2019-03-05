@@ -13,7 +13,7 @@
 !
       Module write_subs_positions
 
-      use m_steps
+      use m_steps, only: final
 
       private
       public :: siesta_write_positions
@@ -64,7 +64,7 @@
       END MODULE write_subs_positions
       Module write_subs_pressure
 
-      use m_steps
+      use m_steps, only: final
 
       private
       public :: siesta_write_stress_pressure
@@ -81,6 +81,7 @@
       use m_iostruct,   only: write_struct
       use siesta_cml
       use units
+      use m_spin
       use m_energies, only: FreeE
       use m_stress, only: stress, kin_stress, mstress, cstress, tstress
 
@@ -130,9 +131,17 @@
             write(6,"(a,f14.4)") "Target enthalpy (eV/cell)",
      $           (FreeE + tp*volume_of_some_cell)/eV
 
+      ! Write stress to CML file always
+        if (cml_p) then
+           call cmlAddProperty(xf=mainXML, value=stress*Ang**3, 
+     .             dictref='siesta:stress', title='Stress',
+     .             units='siestaUnits:evpa3')
+        endif         !cml_p
+        
       ! Output depends on dynamics option
         select case (idyn)
-        case(0:5,8)
+        case(0:5,8,9)
+           
           if (idyn==0 .and. (.not.varcel)) then
             continue
           else
@@ -142,15 +151,19 @@
             Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
             write(6,'(/,a,f20.8,a)')
      .           'siesta: Pressure (static):', Psol/kBar, '  kBar'
+!            write(6,'(/,a,3(/,a,3f12.6))')
+!     .       'siesta: Stress tensor (static-constrained) (eV/Ang**3):',
+!     .           ('     ',(cstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+!            write(6,'(a,f20.8,a)')
+!     .       'siesta: Pressure (static-constrained):',
+!     .       - ((cstress(1,1)+cstress(2,2)+cstress(3,3))/3.0_dp)/kBar,
+!     .       '  kBar'
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=stress*Ang**3, 
-     .             dictref='siesta:stress', title='Stress',
-     .             units='siestaUnits:evpa3')
+              ! stress written above
               call cmlAddProperty(xf=mainXML, value=Psol, 
      .             dictref='siesta:psol', title='Pressure (Static)',
      .             units='siestaUnits:kBar')
-            endif !cml_p
-!
+            endif                !cml_p
             write(6,'(/,a,3(/,a,3f12.6))')
      .           'siesta: Stress tensor (total) (eV/Ang**3):',
      .           ('     ',(tstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
@@ -271,43 +284,63 @@
 
       Module write_subs_energies
 
-      use m_steps
+      use m_steps, only: final, istp
 
       private
       public :: siesta_write_energies
       CONTAINS
       
-      subroutine siesta_write_energies( first, iscf, dDmax )
+      subroutine siesta_write_energies( iscf, dDmax, dHmax )
       USE siesta_options
       use siesta_cml
       use units
       use m_energies 
       use m_spin
-#ifdef TRANSIESTA
-      use m_ts_global_vars, only: TSinit, TSrun, TSiscf 
-#endif /* TRANSIESTA */
+      use m_ts_global_vars, only: TSinit, TSrun
       implicit none
 
-      logical              :: first
-      integer              :: iscf
+      integer, intent(in) :: iscf
       real(dp), intent(in) :: dDmax ! Max. change in dens. matrix elem.
-      integer              :: i 
-#ifdef TRANSIESTA
-      character(11) :: tmpname
-#endif /* TRANSIESTA */
+      real(dp), intent(in) :: dHmax ! Max. change in H elements
 
+      character(len=64) :: fmt
+      character(len=6)  :: scf_name
+      character(len=17) :: enl_str, eso_str
+
+      logical              :: first_scf_step
+      integer              :: i
+
+      scf_name = 'scf'
+      if ( TSrun ) then
+         scf_name = 'ts-scf'
+      end if
+
+      if (spin%SO .and. (.not. split_sr_so)) then
+         Enl = Enl + Eso 
+         Eso = 0.0_dp
+         enl_str = 'siesta: Enl(+so)='
+         eso_str = 'siesta: Eso(nil)='
+      else
+         enl_str = 'siesta: Enl     ='
+         eso_str = 'siesta: Eso     ='
+      endif
+      
+      first_scf_step = (iscf == 1)
       ! Only print out full decomposition at very beginning and end.
-      if ((istp==1.and.first).or.final) then
+      if ((istp==1.and.first_scf_step).or.final) then
         write(6,'(/,a,/,(a,f17.6))')
      .     'siesta: Program''s energy decomposition (eV):',
      .     'siesta: Ebs     =', Ebs/eV, 
      .     'siesta: Eions   =', Eions/eV,
      .     'siesta: Ena     =', Ena/eV,
      .     'siesta: Ekin    =', Ekin/eV,
-     .     'siesta: Enl     =', Enl/eV,
+     .      enl_str, Enl/eV,
+     .      eso_str, Eso/eV,
+     .     'siesta: Eldau   =', Eldau/eV,
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
      .     'siesta: DUext   =', DUext/eV,
+     .     'siesta: Enegf   =', DE_NEGF/eV,
      .     'siesta: Exc     =', Exc/eV,
      .     'siesta: eta*DQ  =', Ecorrec/eV,
      .     'siesta: Emadel  =', Emad/eV,
@@ -335,15 +368,24 @@
           call cmlAddProperty(xf=mainXML, value=Enl/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Enl', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=Eldau/eV,
+     .         units='siestaUnits:eV',
+     .         dictref='siesta:Eldau', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=DEna/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DEna', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=Eso/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Eso', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=DUscf/eV, 
      .         units='siestaUnits:eV',
      .         dictref='siesta:DUscf', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Enegf', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=Exc/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r6')
@@ -383,142 +425,81 @@
           call cmlAddProperty(xf=mainXML, value=Eharrs/eV, 
      .         units="siestaUnits:eV", 
      .         dictRef="siesta:Eharrs", fmt="r7")
+          if ( .not. harrisfun ) then
+             ! store dDmax and dHmax
+             call cmlAddProperty(xf=mainXML, value=dDmax, 
+     .            units="siestaUnits:none", 
+     .            dictRef="siesta:dDmax", fmt="r7")
+             call cmlAddProperty(xf=mainXML, value=dHmax/eV,
+     .            units="siestaUnits:eV", 
+     .            dictRef="siesta:dHmax", fmt="r7")
+          end if
         endif
+       
 !       Determines which properties are output.
         if (harrisfun) then 
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
 !         No need for further cml output
-        elseif (isolve==SOLVE_DIAGON) then
-          if (cml_p) 
-     .         call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
-     .         units="siestaUnits:eV", 
-     .         dictRef="siesta:FreeE", fmt="r7")
-          if (fixspin) then
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=Etot/eV, 
+        elseif ((isolve==SOLVE_DIAGON) .or. (isolve==SOLVE_PEXSI)
+     .                              .or. (isolve==SOLVE_CHESS)
+     .                              .or. (isolve==SOLVE_TRANSI)) then
+          if (cml_p) then
+             call cmlAddProperty(xf=mainXML, value=Etot/eV, 
      .             units="siestaUnits:eV", 
      .             dictRef="siesta:Etot", fmt="r7")
-              call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
+             call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
      .             units="siestaUnits:eV", 
      .             dictRef="siesta:FreeE", fmt="r7")
-              call cmlAddProperty(xf=mainXML, value=dDmax/eV, 
-     .             units="siestaUnits:eV", 
-     .             dictRef="siesta:dDmax",  fmt="r7")
-            endif
-            if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,a8,a8,a11)')
-     .           'scf: iscf', '   Eharris(eV)', 
-     .           '      E_KS(eV)', '   FreeEng(eV)', 
-     .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
-            write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
-     .           'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
-     .           (Efs(i)/eV,i=1,2)
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=Efs(1)/eV, 
-     .             units="siestaUnits:eV", 
-     .             dictRef="siesta:Efs", fmt="r7")
-              call cmlAddProperty(xf=mainXML, value=Efs(2)/eV, 
-     .             units="siestaUnits:eV", 
-     .             dictRef="siesta:Efs", fmt="r7")
-            endif
-          else !fixspin
-            if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,a9,a8)')
-     .           'scf: iscf', '   Eharris(eV)', 
-     .           '      E_KS(eV)', '   FreeEng(eV)', 
-     .           '    dDmax', '  Ef(eV)'
-            write(6,'(a8,i4,3f14.4,f9.5,f8.4)')
-     .           'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
-     .           dDmax, Ef/eV
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML,value=Ef/eV, 
-     .             units="siestaUnits:eV", 
-     .             dictRef="siesta:Ef", fmt="r7")
-            endif !cml_p
-          endif !fixspin
-        elseif ((isolve==SOLVE_ORDERN) .or. (isolve==SOLVE_MINIM)) then
+             if ( fixspin ) then
+                call cmlAddProperty(xf=mainXML, value=Efs(1)/eV, 
+     .               units="siestaUnits:eV", 
+     .               dictRef="siesta:Ef_UP", fmt="r7")
+                call cmlAddProperty(xf=mainXML, value=Efs(2)/eV, 
+     .               units="siestaUnits:eV", 
+     .               dictRef="siesta:Ef_DN", fmt="r7")
+                call cmlAddProperty(xf=mainXML, value=Efs(:)/eV, 
+     .               units="siestaUnits:eV", 
+     .               dictRef="siesta:Efs")
+             else
+                call cmlAddProperty(xf=mainXML,value=Ef/eV, 
+     .               units="siestaUnits:eV", 
+     .               dictRef="siesta:Ef", fmt="r7")
+             end if
+          endif
+
+          if ( fixspin ) then
+             if ( (iscf == 1) .or. muldeb ) then
+                write(6,'(/,a12,3a16,4a10)')
+     .           'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
+     .           'dDmax', 'Ef_up', 'Ef_dn(eV)','dHmax(eV)'
+             end if
+             write(6,'(a8,i4,3f16.6,4f10.6)')
+     .  trim(scf_name)//': ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
+     .           dDmax, Efs(1:2)/eV, dHmax/eV
+          else                  ! fixspin
+             if ( (iscf == 1) .or. muldeb ) then
+                write(6,'(/,a12,3a16,3a10)')
+     .           'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
+     .           'dDmax','Ef(eV)','dHmax(eV)'
+             end if
+             write(6,'(a8,i4,3f16.6,3f10.6)')
+     .  trim(scf_name)//': ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
+     .           dDmax, Ef      /eV, dHmax/eV
+          end if                ! fixspin
+          
+       elseif ((isolve==SOLVE_ORDERN) .or. (isolve==SOLVE_MINIM)) then
+          
           write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
-          write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
+          write(6,'(a14,f15.4,a13,f15.4,a10,f10.6/)') 
      .         'Eharris(eV) = ',Eharrs/eV,
-     .         '  E_KS(eV) = ',Etot/eV,'  dDmax = ',dDmax
+     .         'E_KS(eV) = ',Etot/eV,'dDmax = ',dDmax
           if (cml_p) then
             call cmlAddProperty(xf=mainXML, value=Etot/eV, 
      .           units="siestaUnits:eV", 
      .           dictRef="siesta:Etot", fmt="r7")
-            call cmlAddProperty(xf=mainXML, value=dDmax/eV, 
-     .           units="siestaUnits:eV", 
-     .           dictRef="siesta:dDmax", fmt="r7")
-          endif
-        endif !harrisfun/isolve
-
-#ifdef TRANSIESTA
-! TSS Begin
-        if (TSinit) then     !TSS
-         if (cml_p)
-     .         call cmlAddProperty(xf=mainXML, value=FreeE/eV,
-     .         units="siestaUnits:eV",
-     .         dictRef="siesta:FreeE",  fmt="r7")
-         if (fixspin) then
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=Etot/eV,
-     .             units="siestaUnits:eV",
-     .             dictRef="siesta:Etot",   fmt="r7")
-              call cmlAddProperty(xf=mainXML, value=FreeE/eV,
-     .             units="siestaUnits:eV",
-     .             dictRef="siesta:FreeE", fmt="r7")
-              call cmlAddProperty(xf=mainXML, value=dDmax/eV,
-     .             units="siestaUnits:eV",
-     .             dictRef="siesta:dDmax",  fmt="r7")
-            endif
-            if ((iscf .eq. 1).or.muldeb)
-     .           write(6,'(/,a12,3a14,a9,a7,a11)')
-     .           'siesta: iscf', '   Eharris(eV)',
-     .           '      E_KS(eV)', '   FreeEng(eV)',
-     .           '    dDmax', '  Ef_up', '  Ef_dn(eV)'
-            write(6,'(a8,i4,3f14.4,f9.5,2f9.4)')
-     .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax,
-     .           (Efs(i)/eV,i=1,2)
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=Efs(1)/eV,
-     .             units="siestaUnits:eV",
-     .             dictRef="siesta:Efs",    fmt="r7")
-              call cmlAddProperty(xf=mainXML, value=Efs(2)/eV,
-     .             units="siestaUnits:eV",
-     .             dictRef="siesta:Efs",    fmt="r7")
-            endif
-         else
-          if (iscf .eq. 1) write(6,'(/,a12,3a14,a9,a8)')
-     .             'scf: iscf', '   Eharris(eV)',
-     .             '      E_KS(eV)', '   FreeEng(eV)',
-     .             '    dDmax', '  Ef(eV)'
-          write(6,'(a8,i4,3f14.4,f9.5,f8.4)')
-     .             'scf: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
-     .             dDmax, Ef/eV
-         end if !fixspin
-        endif                !TSinit
-        if (TSrun) then      !TSS
-              tmpname = 'transiesta:'
-              if (fixspin) then
-                 if (TSiscf .eq. 1)
-     .                write(6,'(/,a11,a5,3a14,a9,a7,a11)')
-     .                tmpname,' iscf', '   Eharris(eV)',
-     .                '      E_KS(eV)', '   FreeEng(eV)',
-     .                '    dDmax', '  Ef_up', '  Ef_dn(eV)'
-                 write(6,'(a11,1x,i4,3f14.4,f9.5,2f8.4)')
-     .                tmpname,TSiscf, Eharrs/eV, Etot/eV, FreeE/eV,
-     .                dDmax, (Efs(i)/eV,i=1,2)
-              else
-                 if (TSiscf .eq. 1) write(6,'(/,a11,a5,3a14,a9,a8)')
-     .                tmpname,' iscf', '   Eharris(eV)',
-     .                '      E_KS(eV)', '   FreeEng(eV)',
-     .                '    dDmax', '  Ef(eV)'
-                 write(6,'(a11,1x,i4,3f14.4,f9.5,f8.4)')
-     .                tmpname,TSiscf, Eharrs/eV, Etot/eV,
-     .                FreeE/eV, dDmax, Ef/eV
-              endif             !fixspin
-        endif                !TSrun
-! TSS End
-#endif /* TRANSIESTA */
+         endif
+         
+       endif                     !harrisfun/isolve
 
         if (cml_p) then
           call cmlEndPropertyList(mainXML)
@@ -526,17 +507,35 @@
         
       else !final
 !       Print out additional information in finalization.
+
+        if (spin%SO .and. (.not. split_sr_so)) then
+           eso_str = '     Eso(nil) ='
+        else
+           eso_str = '      Eso     ='
+        endif
+
         write(6,'(/,a)') 'siesta: Final energy (eV):'
         write(6,'(a,a15,f15.6)')
      .    'siesta: ', 'Band Struct. =', Ebs/eV,
      .    'siesta: ',      'Kinetic =', Ekin/eV,
      .    'siesta: ',      'Hartree =', Uscf/eV,
+     .    'siesta: ',      'Eldau   =', Eldau/eV,
+     .    'siesta: ',      eso_str    , Eso/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
+     .    'siesta: ',      'Enegf   =', DE_NEGF/eV,
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
      .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
      .    'siesta: ',      'Ion-ion =', (Ena+Uatm-Enaatm-Eions)/eV,
      .    'siesta: ',      'Ekinion =', Ekinion/eV,
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
+        if ( fixspin ) then
+           write(6,'(a,a15,f15.6)')
+     .          'siesta: ', 'Fermi_up =', Efs(1)/eV,
+     .          'siesta: ', 'Fermi_dn =', Efs(2)/eV
+        else
+           write(6,'(a,a15,f15.6)')
+     .          'siesta: ', 'Fermi =', Ef/eV
+        end if
         if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title='Final Energy')
           call cmlAddProperty(xf=mainXML, value=Ebs/eV,  
@@ -548,9 +547,18 @@
           call cmlAddProperty(xf=mainXML, value=Uscf/eV,  
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Uscf', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=Eldau/eV,  
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Eldau', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=Eso/eV,
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Eso', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Enegf', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=Exc/eV,   
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r7')
@@ -580,7 +588,6 @@
 !
       Module write_subs
 
-      use m_steps
       use write_subs_pressure,  only : siesta_write_stress_pressure
       use write_subs_energies,  only : siesta_write_energies
       use write_subs_positions, only : siesta_write_positions
@@ -597,6 +604,7 @@
       use siesta_cml
       use units,      only : Ang, eV
       use m_forces
+      use m_steps, only: final, inicoor
       use alloc,      only : re_alloc, de_alloc
       implicit none
       integer, intent(in) :: istep
@@ -607,11 +615,11 @@
 #ifdef DEBUG
       call write_debug( '    PRE siesta_write_forces' )
 #endif
-        fmax = maxval(abs(fa))
-        ftot = sum(fa, dim=2)
-        cfmax = maxval(abs(cfa))
-        cftot = sum(cfa, dim=2)
-        fres = sqrt( sum(fa**2) / (na_u*3.0_dp))
+      fmax = maxval(abs(fa))
+      ftot = sum(fa, dim=2)
+      cfmax = maxval(abs(cfa))
+      cftot = sum(cfa, dim=2)
+      fres = sqrt( sum(fa**2) / (na_u*3.0_dp))
 
       ! Almost the same forces output whether during simulation
       ! or at the end. Unfortunately not quite, therefore slightly
@@ -622,6 +630,7 @@
         ! output forces to stdout depending on writef
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='Forces')
+          call cmlAddComment(mainXML,"Output: matrix fa(1:3,1:na_u)") 
           call cmlAddProperty(xf=mainXML, value=fa*Ang/eV,
      .         dictref='siesta:forces', units='siestaUnits:evpa')
           call cmlAddProperty(xf=mainXML, value=ftot*Ang/eV,
@@ -680,6 +689,7 @@
      .         'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
           if (cml_p) then
             call cmlStartPropertyList(mainXML, title='Force Summary')
+            call cmlAddComment(mainXML,"Output: matrix fa(1:3,1:na_u)") 
             call cmlAddProperty(xf=mainXML, value=fa*Ang/eV,
      .           dictref='siesta:forces', units='siestaUnits:evpa')
             call cmlAddProperty(xf=mainXML, value=ftot*Ang/eV, 
@@ -697,6 +707,8 @@
             if (cml_p) then
               call cmlStartPropertyList(mainXML,
      .             title='Constrained Force Summary')
+              call cmlAddComment(mainXML,
+     $             "Output: matrix cfa(1:3,1:na_u)") 
               call cmlAddProperty(xf=mainXML, value=cfa*Ang/eV, 
      .             dictref='siesta:cforces', units='siestaUnits:evpa')
               call cmlAddProperty(xf=mainXML, value=cftot*Ang/eV, 

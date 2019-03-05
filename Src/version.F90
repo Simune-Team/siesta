@@ -29,16 +29,21 @@ implicit none
 integer, dimension(3), save  :: num_version = (/0,0,0/)
 character(len=*), parameter :: version_str =  &
 "SIESTA_VERSION"
+character(len=*), parameter :: compiler_version = &
+"COMPILER_VERSION"
 character(len=*), parameter :: siesta_arch= &
 "SIESTA_ARCH"
 character(len=*), parameter :: fflags= &
 "FFLAGS"
 character(len=*), parameter :: fppflags= &
 "FPPFLAGS"
+character(len=*), parameter :: libs= &
+"LIBS"
 
 private
 public :: num_version, version_str
-public :: siesta_arch, fflags, fppflags
+public :: siesta_arch, fflags, fppflags, libs
+public :: compiler_version
 
 end module version_info
 !================================================================
@@ -50,13 +55,24 @@ subroutine prversion
 
 ! Use free format in file to make more room for long option strings...
 
+use posix_calls, only: getcwd
 use version_info
 implicit none
 
-write(6,'(2a)') "Siesta Version: ", trim(version_str)
-write(6,'(2a)') 'Architecture  : ', siesta_arch
-write(6,'(2a)') 'Compiler flags: ', fflags
-write(6,'(2a)') 'PP flags      : ', fppflags
+character(len=2048) :: cwd
+integer :: stat
+
+write(6,'(2a)') 'Siesta Version  : ', trim(version_str)
+write(6,'(2a)') 'Architecture    : ', trim(siesta_arch)
+write(6,'(2a)') 'Compiler version: ', trim(compiler_version)
+write(6,'(2a)') 'Compiler flags  : ', trim(fflags)
+write(6,'(2a)') 'PP flags        : ', trim(fppflags)
+write(6,'(2a)') 'Libraries       : ', trim(libs)
+
+call getcwd(cwd, stat)
+if ( stat == 0 ) then
+write(6,'(2a)') 'Directory       : ', trim(cwd)
+end if
 
 #ifdef MPI
 write(6,'(a)') 'PARALLEL version'
@@ -64,11 +80,37 @@ write(6,'(a)') 'PARALLEL version'
 write(6,'(a)') 'SERIAL version'
 #endif
 
-#ifdef TRANSIESTA
-write(6,'(a)') 'TRANSIESTA support'
+!$OMP parallel
+!$OMP master
+!$write(*,'(a)') 'THREADED version'
+#ifdef _OPENMP
+!$write(*,'(a,i0)') '* OpenMP version ', _OPENMP
+#endif
+!$OMP end master
+!$OMP end parallel
+
+#ifdef USE_GEMM3M
+write(6,'(a)') 'GEMM3M support'
 #endif
 #ifdef CDF
 write(6,'(a)') 'NetCDF support'
+#endif
+#ifdef NCDF_4
+write(6,'(a)') 'NetCDF-4 support'
+#ifdef NCDF_PARALLEL
+write(6,'(a)') 'NetCDF-4 MPI-IO support'
+#endif
+#endif
+#if defined(ON_DOMAIN_DECOMP) || defined(SIESTA__METIS)
+write(6,'(a)') 'METIS ordering support'
+#endif
+#ifdef SIESTA__FLOOK
+write(6,'(a)') 'Lua support'
+#endif
+#ifdef TRANSIESTA
+write(6,'(a)') '******************************************************'
+write(6,'(a)') 'transiesta executable is deprecated, please use siesta'
+write(6,'(a)') '******************************************************'
 #endif
 
 end subroutine prversion

@@ -320,11 +320,11 @@ C Drude term we do not have the energy denominator
       enddo 
 
 C Free workspace array
-      call de_alloc( psibandj,  name='psibandj' )
-      call de_alloc( psibandi,  name='psibandi' )
-      call de_alloc( AuxLocal,  name='AuxLocal' )
+      call de_alloc( psibandj, 'psibandj', 'transition_rate')
+      call de_alloc( psibandi, 'psibandi', 'transition_rate')
+      call de_alloc( AuxLocal, 'AuxLocal', 'transition_rate')
 #ifdef MPI
-      call de_alloc( AuxLocal2,  name='AuxLocal2' )
+      call de_alloc( AuxLocal2, 'AuxLocal2', 'transition_rate')
 #endif
          
 C Stop timer

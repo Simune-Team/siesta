@@ -31,7 +31,7 @@
      &                     nm, nml, ntm, ntml, ntpl, dvol)
 
 !  Modules
-      use precision,     only : dp
+      use precision,     only : dp, i8b
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
       use moreMeshSubs,  only : initMeshDistr, setMeshDistr
@@ -111,7 +111,7 @@ C
 C     Local variables
       integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
      &                           ity, j, nep, j1, j2, j3, indi
-      integer*8               :: ntp
+      integer(i8b)            :: ntp
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           volume
       logical                 :: within
@@ -140,7 +140,7 @@ C     Functions
 ! Note needed integer*8 !
 !!AG** Check proper kind name
 
-      ntp = product(INT(ntm,kind=8))
+      ntp = product(INT(ntm,kind=i8b))
 
 C     Create the first mesh distribution
       call initMeshDistr( oDistr=UNIFORM, nm=nm )
@@ -204,8 +204,11 @@ C     Find reciprocal mesh-cell vectors (not multiplied by 2*pi)
       ne(:) = ne(:) + 1
 
 C     Find sub-points
-      isp = 0
+!$OMP parallel default(shared), private(i1,i2,i3,i,isp)
+
+!$OMP do
       do i3 = 0, nsm-1
+        isp = i3 * nsm ** 2
         do i2 = 0, nsm-1
           do i1 = 0, nsm-1
             isp = isp + 1
@@ -217,9 +220,13 @@ C     Find sub-points
           enddo
         enddo
       enddo
+!$OMP end do
 
 ! Find number of points within rmax (orbital points)
+!$OMP single ! Only used for OpenMP
       mop = 0
+!$OMP end single 
+!$OMP do private(dxp,within,dx,r), reduction(+:mop)
       do i3 = -ne(3), ne(3)    ! Loop over neighbor (super) points
         do i2 = -ne(2), ne(2)
           do i1 = -ne(1), ne(1)
@@ -242,6 +249,9 @@ C     Find sub-points
           enddo ! i1
         enddo ! i2
       enddo ! i3
+!$OMP end do nowait
+
+!$OMP end parallel
 
 C     Create extended mesh arrays for the first data distribution
       call setupExtMesh( UNIFORM, rmax )
@@ -272,7 +282,7 @@ C     Create extended mesh arrays for the first data distribution
       integer, intent(out)  :: ntm(3)
       
       real(dp)  :: rcell(3,3), vecmod
-      integer   :: i
+      integer   :: i, itmp
       real(dp), parameter     :: k0(3) = (/ 0.0, 0.0, 0.0 /)
 
       type(block_fdf)            :: bfdf
@@ -316,24 +326,65 @@ C     Create extended mesh arrays for the first data distribution
 
       end do impose_cutoff
 
-      if (fdf_block('MeshSizes',bfdf)) then
-        if (fdf_bline(bfdf, pline)) then
+
+!     Let the user manually decide the mesh-box size
+!     This option may be useful when testing Mesh.SubDivisions
+!     for performance.
+!     NOTE/TODO: manual specification is not checked with respect
+!                to nfft (allowed integers). I don't know if this should
+!                forced or not?
+      if ( fdf_block('Mesh.Sizes',bfdf) ) then
+        
+        if ( fdf_bline(bfdf, pline) ) then
            ntm(1) = fdf_bintegers(pline,1)
            ntm(2) = fdf_bintegers(pline,2)
            ntm(3) = fdf_bintegers(pline,3)
         else
-           call die('initmesh: ERROR in MeshSizes block')
+           call die('initmesh: ERROR in Mesh.Sizes block')
         endif
+        call fdf_bclose(bfdf)
+        
+        ! Calculate the actual meshcutoff from the grid
         RealCutoff = huge(1.0_dp)
         call chkgmx( k0, rcell, ntm, RealCutoff )
-        if (RealCutoff < G2max) then
-           call message("Read mesh sizes give a smaller"
-     $                   // " cutoff than requested")
-        endif
-        if (any(mod(ntm,nsm) /= 0)) then
-           call die("Read mesh sizes are not multiples of nsm")
-        endif
-      endif
+
+      else if ( fdf_islist('Mesh.Sizes') ) then
+
+        i = -1
+        call fdf_list('Mesh.Sizes', i, ntm)
+        if ( i /= 3 )
+     &      call die('initmesh: ERROR in Mesh.Sizes list')
+        ! Do the actual read of the mesh sizes
+        call fdf_list('Mesh.Sizes', i, ntm)
+
+        ! Calculate the actual meshcutoff from the grid
+        RealCutoff = huge(1.0_dp)
+        call chkgmx( k0, rcell, ntm, RealCutoff )
+        
+      end if
+
+!     Issue a warning if the mesh sizes are smaller than
+!     the requested mesh cutoff
+      if ( RealCutoff < G2max ) then
+        call message("WARNING","Read mesh sizes give a smaller"
+     $      // " cutoff than requested")
+      end if
+
+!     Check whether the resulting mesh sizes are multiples
+!     of nsm.
+      if ( any(mod(ntm,nsm) /= 0) ) then
+        call die("initmesh: Read mesh sizes are not multiples of nsm")
+      end if
+
+!     Check that the numbers are divisible with the FFT algorithms
+      do i = 1, 3
+        itmp = ntm(i)
+        call nfft( itmp )
+        if ( itmp /= ntm(i) ) then
+          call die("initmesh: Read mesh sizes are not compatible "
+     &        // "with the FFT algorithm: % [2, 3, 5] == 0")
+        end if
+      end do
 
       end subroutine get_mesh_sizes
 
@@ -842,8 +893,7 @@ C           Loop over sub-points
       subroutine ModelCoreChargeOnMesh( na, isa, ntpl,
      $                                  ModelCore, indxua )
 C
-C     Uses the "local charge" information to construct a model total
-C     core charge, useful for Bader analysis
+C     Constructs a model total core charge, useful for Bader analysis
 C
 C ----------------------------------------------------------------------
 C Input :
@@ -860,10 +910,11 @@ C real    ModelCore(ntpl)     : Sum of model core charge densities
 C ----------------------------------------------------------------------
 
       use precision,     only : dp, grid_p
-      use atmfuncs, only: rcut, psch, izofis, zvalfis
+      use atmfuncs, only: izofis, zvalfis
       use atm_types, only : species
-      use radial, only : rad_func
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+      use fdf
+      use parallel, only: ionode
 
       implicit none
 
@@ -880,50 +931,59 @@ C
       integer
      .  ia, iop, ip, ip0, is, isp, iua
 
-      real(dp) dx(3), grpsch(3), r, ra, charge_ratio
-      real(dp) core_charge, beta, pschloc
+      real(dp) dx(3), ra, charge_ratio, r
+      real(dp) core_charge
+      real(dp), parameter :: pi = 3.141592653589793_dp
 
-      type(rad_func), pointer            :: func
+        ! We want a total core charge of (Z-Zval), localized in a
+        ! region of around 1.0 bohr.
+        ! Note that we put 1 electron (extra!) for Hydrogen atoms,
+        ! to provide the necessary "cuspy" behavior for the reference
+        ! file for Bader analysis. For H, the radius is 0.6 bohr
+       real(dp) :: radius_standard, radius_h
 
-C Initialise array to zero
-      ModelCore(1:ntpl) = 0.0_grid_p
+        ! The model function is N*f(r/ra), where 
+        !  f(x) = exp( - (sinh(2.0_dp*x)/sinh(1.0_dp))**2 )
+        !  f(1) is zero to within 10^-5
+        ! For normalization, we need \int_{0,1} { x*x*f(x) }, which is:
+        real(dp), parameter :: Integral = 0.0411548_dp
 
-      do ia = 1,na
-        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
-        iua = indxua(ia)
-        is = isa(ia)
-        func => species(is)%chlocal
-        ra = func%cutoff
-
-        ! We will take advantage of the existing "local charge"
-        ! by rescaling.
-
-        ! The total local charge is Z_val
-        ! We want a total extra core charge of (Z-Zval),
-        ! and with the opposite sign, localized in a
-        ! region of around 1.0 bohr for "normal" atoms and
-        ! 0.4 bohr (= 0.21 Ang) for Hydrogen.
+        ! so that N above is Q/(4*pi*Integral*ra**3)
+        
         ! Note that this is quite a small confinement region, so
         ! you might need a high cutoff (of the order of 300-500 Ry)
         ! to represent it on the grid. It might be better to use
         ! Denchar for this, rather than performing a Siesta calculation
         ! (even if it reads the converged DM)
 
-        ! --- For Hydrogen, add an artificial core with 1 electron
-        ! Else choose the normal core charge
-        !
-        ! The cutoff for chlocal is divided by beta to obtain the
-        ! tighter localization radius. Note the factor of beta^3
-        ! for normalization of the new function.
 
+      ! Initialise array to zero
+      ModelCore(1:ntpl) = 0.0_grid_p
+        
+      radius_standard = fdf_get("bader-core-radius-standard",
+     $                      1.0_dp,"Bohr")
+      radius_h = fdf_get("bader-core-radius-hydrogen",
+     $                      0.6_dp,"Bohr")
+      
+      if (ionode) then
+         write(6,"(a,2f6.3)") "Bader Analysis core-charge setup. " //
+     $                        "Radii (standard, H): ",
+     $                        radius_standard, radius_h
+      endif
+      
+      do ia = 1,na
+        if (ipa(ia)==0) cycle ! Atomic sphere does not intersect my Box
+        is = isa(ia)
         if (izofis(is) == 1) then
-           beta = ra / 0.4_dp
-           charge_ratio = -1.0_dp * beta**3
+           ra = radius_h
+           charge_ratio =  1.0_dp /
+     $             (4.0_dp*pi*Integral*ra**3.0_dp)
         else
-           beta = ra / 1.0_dp
-           charge_ratio = - beta**3 *
-     $              (izofis(is)-zvalfis(is))/zvalfis(is)
+           ra = radius_standard
+           charge_ratio =  (izofis(is)-zvalfis(is)) /
+     $             (4.0_dp*pi*Integral*ra**3.0_dp)
         endif
+
 
 C Loop over mesh points inside rmax
         do iop = 1,mop
@@ -936,9 +996,7 @@ C Loop over sub-points
               r = sqrt(dot_product(dx,dx))
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
-                dx = beta*dx
-                call psch( is, dx, pschloc, grpsch )
-                core_charge = charge_ratio*pschloc
+                core_charge = charge_ratio*model(r/ra)
                 ModelCore(ip) = ModelCore(ip) + core_charge
               endif
             enddo
@@ -948,6 +1006,15 @@ C Loop over sub-points
 
       enddo
 
+      CONTAINS
+
+      function model(x)
+      real(dp), intent(in) :: x
+      real(dp)             :: model
+      
+      model = exp( - (sinh(2.0_dp*x)/sinh(1.0_dp))**2 )
+      end function model
+      
       end subroutine ModelCoreChargeOnMesh
 !
       subroutine PhiOnMesh( nmpl, norb, iaorb, iphorb, isa, numphi )
@@ -1256,7 +1323,8 @@ C     Functions
 
 !------------------------------------------------------------------
       subroutine distriPhiOnMesh( nm, nmpl, norb, iaorb,
-     &                            iphorb, isa, numphi )
+     &                            iphorb, isa, numphi,
+     &                            need_gradients_in_xc )
 
 C Computes the number of orbitals that intersects every mesh point
 C and calls initMeshDistr in order to compute a new data distribution
@@ -1270,7 +1338,7 @@ C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
 C integer isa(na)       : Species index of all atoms in supercell
-C
+C logical need_gradients_in_xc : 
 C OUTPUT:
 C The output values are in the module moreMeshSubs (New limits of the mesh
 C and the information needed to transfer data between data
@@ -1310,13 +1378,14 @@ C ==================================================================
       use moreMeshSubs, only: initMeshDistr
       use moreMeshSubs, only: allocASynBuffer
       use moreMeshSubs, only: UNIFORM, QUADRATIC, LINEAR
-      use cellxc_mod,   only: GGA, setGGA
       use alloc,        only: re_alloc, de_alloc
+      
       implicit none
 C     Passed arguments
       integer, intent(in)  :: nm(3), nmpl, norb, iaorb(norb),
      &                        iphorb(norb), isa(*)
       integer, intent(out) :: numphi(nmpl)
+      logical, intent(in)  :: need_gradients_in_xc
 C     Local variables
       integer              :: ii, io, ia, iphi, is, iop, ip0, isp
       real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
@@ -1375,7 +1444,7 @@ C           If within range, add one to number of point orbitals
           endif
         enddo
         call initMeshDistr( UNIFORM, LINEAR, nm, wload )
-        if (GGA) call initMeshExtencil( LINEAR, nm )
+        if (need_gradients_in_xc) call initMeshExtencil( LINEAR, nm )
 
 C       Free local memory
         call de_alloc( wload, 'wload', 'distriPhiOnMesh' )

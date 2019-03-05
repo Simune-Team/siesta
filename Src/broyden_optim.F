@@ -187,6 +187,8 @@ C Look for target stress and read it if found, otherwise generate it --------
             sxy = fdf_bvalues(pline,4)
             sxz = fdf_bvalues(pline,5)
             syz = fdf_bvalues(pline,6)
+            call fdf_bclose(bfdf)
+
             tstres(1,1) = - sxx * tp
             tstres(2,2) = - syy * tp
             tstres(3,3) = - szz * tp

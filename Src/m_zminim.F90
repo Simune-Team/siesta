@@ -718,7 +718,6 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       else
         read(i) c(ik,ispin)%mtrx
       end if
-      close(i)
       call io_close(i)
     else
       if (ik==1) then
@@ -735,7 +734,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
           end do
           c(ik,ispin)%mtrx=1.0d-2*c(ik,ispin)%mtrx/sqrt(real(h_dim,dp))
         else
-          c(ik,2)%mtrx=c(ik,1)%mtrx
+          c(ik,2)%mtrx(:,:)=c(ik,1)%mtrx
         end if
       else
         rn2=999999.9_dp
@@ -748,7 +747,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
             j=i
           end if
         end do
-        c(ik,ispin)%mtrx=c(j,ispin)%mtrx
+        c(ik,ispin)%mtrx(:,:)=c(j,ispin)%mtrx
       end if
     end if
 
@@ -776,7 +775,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       end do
     end do
 #endif
-    H(ik,ispin)%mtrx=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
+    H(ik,ispin)%mtrx(:,:)=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
     allocate(work1(1:N_occ_loc(1,ispin),1:h_dim_loc(2)))
     if (UseCholesky) then
 #ifdef MPI
@@ -841,7 +840,6 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       else
         write(i) c(ik,ispin)%mtrx
       end if
-      close(i)
       call io_close(i)
     end if
 
@@ -878,10 +876,10 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       if (Use2D) then
         call pzgemr2d(h_dim,h_dim,s_dense1D,1,1,desc1_1D,s_dense(ik)%mtrx,1,1,desc1,ictxt)
       else
-        s_dense(ik)%mtrx=s_dense1D
+        s_dense(ik)%mtrx(:,:)=s_dense1D
       end if
 #else
-      s_dense(ik)%mtrx=s_dense1D
+      s_dense(ik)%mtrx(:,:)=s_dense1D
 #endif
       if (UseCholesky) then
 #ifdef MPI
@@ -906,7 +904,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if ((new_s .and. (.not. FirstCall(ik,ispin))) .or. &
         PreviousCallDiagon .or. &
         (ReadCoeffs .and. FirstCall(ik,ispin))) then
-      if (.not. PreviousCallDiagon) c(ik,ispin)%mtrx=c_orig(ik,ispin)%mtrx
+      if (.not. PreviousCallDiagon) c(ik,ispin)%mtrx(:,:)=c_orig(ik,ispin)%mtrx
 #ifdef MPI
       call pztrmm('R','U','C','N',N_occ,h_dim,cmplx_1,s_dense(ik)%mtrx,1,1,desc1,c(ik,ispin)%mtrx,1,1,desc3(1:9,ispin))
 #else
@@ -921,13 +919,13 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (Use2D) then
       call pzgemr2d(h_dim,h_dim,h_dense1D,1,1,desc1_1D,h_dense,1,1,desc1,ictxt)
     else
-      h_dense=h_dense1D
+      h_dense(:,:)=h_dense1D
     end if
   end if
 #else
   if (UseCholesky) then
     allocate(h_dense(1:h_dim_loc(1),1:h_dim_loc(2)))
-    h_dense=h_dense1D
+    h_dense(:,:)=h_dense1D
   end if
 #endif
   if (UseCholesky) then
@@ -942,7 +940,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     call pzlaset('U',h_dim,h_dim,cmplx_1,cmplx_half,work2,1,1,desc1)
     work3=cmplx_0
     call pzlaset('L',h_dim,h_dim,cmplx_1,cmplx_half,work3,1,1,desc1)
-    h_dense=work2*h_dense+work3*work1
+    h_dense(:,:)=work2*h_dense+work3*work1
     deallocate(work3)
     deallocate(work2)
     deallocate(work1)
@@ -964,12 +962,12 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (Use2D) then
       call pzgemr2d(h_dim,h_dim,t_dense1D,1,1,desc1_1D,p_dense(ik)%mtrx,1,1,desc1,ictxt)
     else
-      p_dense(ik)%mtrx=t_dense1D
+      p_dense(ik)%mtrx(:,:)=t_dense1D
     end if
 #else
-    p_dense(ik)%mtrx=t_dense1D
+    p_dense(ik)%mtrx(:,:)=t_dense1D
 #endif
-    p_dense(ik)%mtrx=s_dense(ik)%mtrx+p_dense(ik)%mtrx/t_precon_scale
+    p_dense(ik)%mtrx(:,:)=s_dense(ik)%mtrx+p_dense(ik)%mtrx/t_precon_scale
 #ifdef MPI
     allocate(ipiv(1:h_dim_loc(1)+BlockSize))
     call pzgetrf(h_dim,h_dim,p_dense(ik)%mtrx,1,1,desc1,ipiv,info)
@@ -1043,7 +1041,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (new_s .or. PreviousCallDiagon) then
       call calc_A(h_dim,N_occ,ispin,s_dense(ik)%mtrx,c(ik,ispin)%mtrx,S(ik,ispin)%mtrx,sc(ik,ispin)%mtrx)
     else
-      sc(ik,ispin)%mtrx=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
+      sc(ik,ispin)%mtrx(:,:)=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
     end if
   end if
   ! -calculate the gradient: g=2*(2*h*c-s*c*H-h*c*S)
@@ -1132,28 +1130,28 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
   ! gradient g at each new step being modified to obtain the search direction d
   if (Node==0) then
     if ((ik==1) .and. (ispin==1)) then
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
       if (UseCholesky) then
-        print('(a)'), '| OMM (Cholesky factorization)                |'
+        print'(a)', '| OMM (Cholesky factorization)                |'
       else if (UsePrecon) then
-        print('(a)'), '| OMM (preconditioning)                       |'
+        print'(a)', '| OMM (preconditioning)                       |'
       else
-        print('(a)'), '| OMM                                         |'
+        print'(a)', '| OMM                                         |'
       end if
-      print('(a)'),      '+---------------------------------------------+'
+      print'(a)',      '+---------------------------------------------+'
     end if
     if (nk>1) then
-      print('(a,i6,a,i6,a)'), '| k point ', ik, ' of ', nk, '                    |'
+      print'(a,i6,a,i6,a)', '| k point ', ik, ' of ', nk, '                    |'
     end if
     if (nspin==2) then
       if (ispin==1) then
-        print('(a)'), '| up spin                                     |'
+        print'(a)', '| up spin                                     |'
       else
-        print('(a)'), '| down spin                                   |'
+        print'(a)', '| down spin                                   |'
       end if
     end if
-    if ((nk>1) .or. (nspin==2)) print('(a)'), '+---------------------------------------------+'
-    if (LongOut) print('(a)'), '|             E_OMM            E_diff         |'
+    if ((nk>1) .or. (nspin==2)) print'(a)', '+---------------------------------------------+'
+    if (LongOut) print'(a)', '|             E_OMM            E_diff         |'
   end if
   conv=.false.
   d=cmplx_0
@@ -1162,12 +1160,12 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     lambda=0.0_dp
     do j=1,2*h_dim*N_occ-1
       if (UsePrecon) then
-        d=pg+cmplx(lambda,0.0_dp,dp)*d
+        d(:,:)=pg+cmplx(lambda,0.0_dp,dp)*d
       else
-        d=g+cmplx(lambda,0.0_dp,dp)*d
+        d(:,:)=g+cmplx(lambda,0.0_dp,dp)*d
       end if
-      g_p=g
-      if (UsePrecon) pg_p=pg
+      g_p(:,:)=g
+      if (UsePrecon) pg_p(:,:)=pg
       E_OMM_old=E_OMM
       ! if this is not the first CG step, we have to recalculate Hd, Sd, Hdd, Sdd, and the coeffs.
       if (icg>0) then
@@ -1217,7 +1215,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
       ! matrix; the only known cure, unfortunately, is to scale down the entire matrix, thus returning to
       ! a  safe region of the coeffs. space.
       if (ls_fail) then
-        if (Node==0) print('(a)'), '| WARNING: Rescaling coefficients!            |'
+        if (Node==0) print'(a)', '| WARNING: Rescaling coefficients!            |'
         E_OMM=3.0*E_OMM
         c(ik,ispin)%mtrx=cmplx(0.5_dp,0.0_dp,dp)*c(ik,ispin)%mtrx
         ls_conv=.false.
@@ -1228,7 +1226,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
               coeff(2)*x_min(ik,ispin)**2+&
               coeff(1)*x_min(ik,ispin)+&
               coeff(0)
-        c(ik,ispin)%mtrx=c(ik,ispin)%mtrx+x_min(ik,ispin)*d
+        c(ik,ispin)%mtrx(:,:)=c(ik,ispin)%mtrx+x_min(ik,ispin)*d
         ls_conv=.true.
       end if
       ! recalculate S at the minimum (or for the rescaled coeffs.)
@@ -1245,10 +1243,10 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
           end do
         end do
 #endif
-        S(ik,ispin)%mtrx=S(ik,ispin)%mtrx+x_min(ik,ispin)*Sd+x_min(ik,ispin)**2*Sdd
+        S(ik,ispin)%mtrx(:,:)=S(ik,ispin)%mtrx+x_min(ik,ispin)*Sd+x_min(ik,ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
-      if ((Node==0) .and. LongOut) print('(a,2(1x,i5),2(1x,es15.7e3),1x,a)'), '|', i, j, E_OMM, E_diff, '|'
+      if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
       icg=icg+1
       if (E_diff<=cg_tol) then
         conv=.true.
@@ -1268,19 +1266,19 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
           end do
         end do
 #endif
-        H(ik,ispin)%mtrx=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
+        H(ik,ispin)%mtrx(:,:)=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
       end if
       ! recalculate g at the minimum (or for the rescaled coeffs.)
       if (ls_fail) then
         hc=cmplx(0.5_dp,0.0_dp,dp)*hc
         if (.not. UseCholesky) sc(ik,ispin)%mtrx=cmplx(0.5_dp,0.0_dp,dp)*sc(ik,ispin)%mtrx
-        g=g_p+cmplx(1.5_dp,0.0_dp,dp)*hc
+        g(:,:)=g_p+cmplx(1.5_dp,0.0_dp,dp)*hc
       else
-        hc=hc+x_min(ik,ispin)*hg
+        hc(:,:)=hc+x_min(ik,ispin)*hg
         if (UseCholesky) then
           call calc_grad(h_dim,N_occ,ispin,H(ik,ispin)%mtrx,S(ik,ispin)%mtrx,g,hc,c(ik,ispin)%mtrx)
         else
-          sc(ik,ispin)%mtrx=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
+          sc(ik,ispin)%mtrx(:,:)=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
           call calc_grad(h_dim,N_occ,ispin,H(ik,ispin)%mtrx,S(ik,ispin)%mtrx,g,hc,sc(ik,ispin)%mtrx)
         end if
       end if
@@ -1338,9 +1336,9 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
     if (conv) exit
   end do
   if (i>n_step_max) then
-    if (Node==0) print('(a)'), '| WARNING: OMM failed to converge!            |'
+    if (Node==0) print'(a)', '| WARNING: OMM failed to converge!            |'
   end if
-  if ((Node==0) .and. LongOut) print('(a)'), '+---------------------------------------------+'
+  if ((Node==0) .and. LongOut) print'(a)', '+---------------------------------------------+'
 
   deallocate(work1)
   deallocate(hg)
@@ -1370,7 +1368,7 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
   end if
   if (.not. allocated(cd(ik,ispin)%mtrx)) allocate(cd(ik,ispin)%mtrx(1:N_occ_loc(1,ispin),1:h_dim_loc(2)))
   if (UseCholesky) then
-    c_orig(ik,ispin)%mtrx=c(ik,ispin)%mtrx
+    c_orig(ik,ispin)%mtrx(:,:)=c(ik,ispin)%mtrx
 #ifdef MPI
     call pztrsm('R','U','C','N',N_occ,h_dim,cmplx_1,s_dense(ik)%mtrx,1,1,desc1,c_orig(ik,ispin)%mtrx,1,1,desc3(1:9,ispin))
     if (Use2D) then
@@ -1423,13 +1421,13 @@ subroutine minim_cg(CalcE,PreviousCallDiagon,iscf,h_dim,N_occ,eta,nspin,ispin,Up
 #endif
   if (Node==0) then
     if (nspin==1) then
-      print('(a,i5,a)'),    '| minim: icg             = ', icg, '              |'
-      print('(a,f13.7,a)'), '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
+      print'(a,i5,a)',    '| minim: icg             = ', icg, '              |'
+      print'(a,f13.7,a)', '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
     else
-      print('(a,i5,a)'),    '| minim: icg           = ', icg, '                |'
-      print('(a,f13.7,a)'), '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
+      print'(a,i5,a)',    '| minim: icg           = ', icg, '                |'
+      print'(a,f13.7,a)', '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
     end if
-    print('(a)'),       '+---------------------------------------------+'
+    print'(a)',       '+---------------------------------------------+'
   end if
 
   if (FirstCall(ik,ispin)) FirstCall(ik,ispin)=.false.
@@ -1685,7 +1683,6 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
       call io_assign(i)
       open(i,file=trim(WF_COEFFS_filename),form='unformatted',status='old',action='read')
       read(i) c(ik,ispin)%mtrx
-      close(i)
       call io_close(i)
     else
       if (ik==1) then
@@ -1702,7 +1699,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
           end do
           c(ik,ispin)%mtrx=1.0d-2*c(ik,ispin)%mtrx/sqrt(real(h_dim,dp))
         else
-          c(ik,2)%mtrx=c(ik,1)%mtrx
+          c(ik,2)%mtrx(:,:)=c(ik,1)%mtrx
         end if
       else
         rn2=999999.9_dp
@@ -1715,7 +1712,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
             j=i
           end if
         end do
-        c(ik,ispin)%mtrx=c(j,ispin)%mtrx
+        c(ik,ispin)%mtrx(:,:)=c(j,ispin)%mtrx
       end if
     end if
 
@@ -1761,7 +1758,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
       end do
     end do
 #endif
-    H(ik,ispin)%mtrx=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
+    H(ik,ispin)%mtrx(:,:)=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
     allocate(work1(1:N_occ_loc(1,ispin),1:h_dim_loc(2)))
     call calc_densmat_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,H(ik,ispin)%mtrx+cmplx(eta,0.0_dp,dp)*S(ik,ispin)%mtrx,&
                              c(ik,ispin)%mtrx,d_sparse,work1,cd(ik,ispin)%mtrx)
@@ -1794,7 +1791,6 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 #endif
       open(i,file=trim(WF_COEFFS_filename),form='unformatted',status='replace',action='write')
       write(i) c(ik,ispin)%mtrx
-      close(i)
       call io_close(i)
     end if
 
@@ -1837,7 +1833,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   ! calculate the preconditioning matrix (s+t/tau)^-1
   if (UpdatePrecon .and. (ispin==1)) then
     if (.not. allocated(p_dense1D(ik)%mtrx)) allocate(p_dense1D(ik)%mtrx(1:h_dim_loc(1),1:h_dim_loc(2)))
-    p_dense1D(ik)%mtrx=s_dense1D+t_dense1D/t_precon_scale
+    p_dense1D(ik)%mtrx(:,:)=s_dense1D+t_dense1D/t_precon_scale
 #ifdef MPI
     allocate(ipiv(1:h_dim_loc(1)+BlockSize))
     call pzgetrf(h_dim,h_dim,p_dense1D(ik)%mtrx,1,1,desc1,ipiv,info)
@@ -1897,7 +1893,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   if (new_s .or. PreviousCallDiagon) then
     call calc_A_sparse(h_dim,N_occ,ispin,nhmax,numh,listhptr,listh,s_sparse,c(ik,ispin)%mtrx,S(ik,ispin)%mtrx,sc(ik,ispin)%mtrx)
   else
-    sc(ik,ispin)%mtrx=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
+    sc(ik,ispin)%mtrx(:,:)=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
   end if
   ! -calculate the gradient: g=2*(2*h*c-s*c*H-h*c*S)
   !  (note that we *reuse* h*c and s*c contained in hc and sc from the previous call to calc_A)
@@ -1957,26 +1953,26 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
   ! gradient g at each new step being modified to obtain the search direction d
   if (Node==0) then
     if ((ik==1) .and. (ispin==1)) then
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
       if (UsePrecon) then
-        print('(a)'), '| OMM (sparse algebra+preconditioning)        |'
+        print'(a)', '| OMM (sparse algebra+preconditioning)        |'
       else
-        print('(a)'), '| OMM (sparse algebra)                        |'
+        print'(a)', '| OMM (sparse algebra)                        |'
       end if
-      print('(a)'), '+---------------------------------------------+'
+      print'(a)', '+---------------------------------------------+'
     end if
     if (nk>1) then
-      print('(a,i6,a,i6,a)'), '| k point ', ik, ' of ', nk, '                    |'
+      print'(a,i6,a,i6,a)', '| k point ', ik, ' of ', nk, '                    |'
     end if
     if (nspin==2) then
       if (ispin==1) then
-        print('(a)'), '| up spin                                     |'
+        print'(a)', '| up spin                                     |'
       else
-        print('(a)'), '| down spin                                   |'
+        print'(a)', '| down spin                                   |'
       end if
     end if
-    if ((nk>1) .or. (nspin==2)) print('(a)'), '+---------------------------------------------+'
-    if (LongOut) print('(a)'), '|             E_OMM            E_diff         |'
+    if ((nk>1) .or. (nspin==2)) print'(a)', '+---------------------------------------------+'
+    if (LongOut) print'(a)', '|             E_OMM            E_diff         |'
   end if
   conv=.false.
   d=cmplx_0
@@ -1985,12 +1981,12 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     lambda=0.0_dp
     do j=1,2*h_dim*N_occ-1
       if (UsePrecon) then
-        d=pg+cmplx(lambda,0.0_dp,dp)*d
+        d(:,:)=pg+cmplx(lambda,0.0_dp,dp)*d
       else
-        d=g+cmplx(lambda,0.0_dp,dp)*d
+        d(:,:)=g+cmplx(lambda,0.0_dp,dp)*d
       end if
-      g_p=g
-      if (UsePrecon) pg_p=pg
+      g_p(:,:)=g
+      if (UsePrecon) pg_p(:,:)=pg
       E_OMM_old=E_OMM
       ! if this is not the first CG step, we have to recalculate Hd, Sd, Hdd, Sdd, and the coeffs.
       if (icg>0) then
@@ -2015,7 +2011,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
       ! matrix; the only known cure, unfortunately, is to scale down the entire matrix, thus returning to
       ! a  safe region of the coeffs. space.
       if (ls_fail) then
-        if (Node==0) print('(a)'), '| WARNING: Rescaling coefficients!            |'
+        if (Node==0) print'(a)', '| WARNING: Rescaling coefficients!            |'
         E_OMM=3.0*E_OMM
         c(ik,ispin)%mtrx=cmplx(0.5_dp,0.0_dp,dp)*c(ik,ispin)%mtrx
         ls_conv=.false.
@@ -2026,7 +2022,7 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
               coeff(2)*x_min(ik,ispin)**2+&
               coeff(1)*x_min(ik,ispin)+&
               coeff(0)
-        c(ik,ispin)%mtrx=c(ik,ispin)%mtrx+x_min(ik,ispin)*d
+        c(ik,ispin)%mtrx(:,:)=c(ik,ispin)%mtrx+x_min(ik,ispin)*d
         ls_conv=.true.
       end if
       ! recalculate S at the minimum (or for the rescaled coeffs.)
@@ -2043,10 +2039,10 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
           end do
         end do
 #endif
-        S(ik,ispin)%mtrx=S(ik,ispin)%mtrx+x_min(ik,ispin)*Sd+x_min(ik,ispin)**2*Sdd
+        S(ik,ispin)%mtrx(:,:)=S(ik,ispin)%mtrx+x_min(ik,ispin)*Sd+x_min(ik,ispin)**2*Sdd
       end if
       E_diff=2.0_dp*abs((E_OMM-E_OMM_old)/(E_OMM+E_OMM_old))
-      if ((Node==0) .and. LongOut) print('(a,2(1x,i5),2(1x,es15.7e3),1x,a)'), '|', i, j, E_OMM, E_diff, '|'
+      if ((Node==0) .and. LongOut) print'(a,2(1x,i5),2(1x,es15.7e3),1x,a)', '|', i, j, E_OMM, E_diff, '|'
       icg=icg+1
       if (E_diff<=cg_tol) then
         conv=.true.
@@ -2066,16 +2062,16 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
           end do
         end do
 #endif
-        H(ik,ispin)%mtrx=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
+        H(ik,ispin)%mtrx(:,:)=H(ik,ispin)%mtrx+x_min(ik,ispin)*Hd(ik,ispin)%mtrx+x_min(ik,ispin)**2*Hdd(ik,ispin)%mtrx
       end if
       ! recalculate g at the minimum (or for the rescaled coeffs.)
       if (ls_fail) then
         hc=cmplx(0.5_dp,0.0_dp,dp)*hc
         sc(ik,ispin)%mtrx=cmplx(0.5_dp,0.0_dp,dp)*sc(ik,ispin)%mtrx
-        g=g_p+cmplx(1.5_dp,0.0_dp,dp)*hc
+        g(:,:)=g_p+cmplx(1.5_dp,0.0_dp,dp)*hc
       else
-        hc=hc+x_min(ik,ispin)*hg
-        sc(ik,ispin)%mtrx=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
+        hc(:,:)=hc+x_min(ik,ispin)*hg
+        sc(ik,ispin)%mtrx(:,:)=sc(ik,ispin)%mtrx+x_min(ik,ispin)*sg(ik,ispin)%mtrx
         call calc_grad(h_dim,N_occ,ispin,H(ik,ispin)%mtrx,S(ik,ispin)%mtrx,g,hc,sc(ik,ispin)%mtrx)
       end if
       if (UsePrecon) then
@@ -2132,9 +2128,9 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
     if (conv) exit
   end do
   if (i>n_step_max) then
-    if (Node==0) print('(a)'), '| WARNING: OMM failed to converge!            |'
+    if (Node==0) print'(a)', '| WARNING: OMM failed to converge!            |'
   end if
-  if (Node==0 .and. LongOut) print('(a)'), '+---------------------------------------------+'
+  if (Node==0 .and. LongOut) print'(a)', '+---------------------------------------------+'
 
   deallocate(work1)
   deallocate(hg)
@@ -2196,13 +2192,13 @@ subroutine minim_cg_sparse(nhmax,numh,listhptr,listh,CalcE,PreviousCallDiagon,is
 #endif
   if (Node==0) then
     if (nspin==1) then
-      print('(a,i5,a)'),    '| minim: icg             = ', icg, '              |'
-      print('(a,f13.7,a)'), '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
+      print'(a,i5,a)',    '| minim: icg             = ', icg, '              |'
+      print'(a,f13.7,a)', '| minim: 2*Tr[(2*I-S)*S] = ', 2.0_dp*TrQS, '      |'
     else
-      print('(a,i5,a)'),    '| minim: icg           = ', icg, '                |'
-      print('(a,f13.7,a)'), '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
+      print'(a,i5,a)',    '| minim: icg           = ', icg, '                |'
+      print'(a,f13.7,a)', '| minim: Tr[(2*I-S)*S] = ', TrQS, '        |'
     end if
-    print('(a)'),       '+---------------------------------------------+'
+    print'(a)',       '+---------------------------------------------+'
   end if
 
   if (FirstCall(ik,ispin)) FirstCall(ik,ispin)=.false.

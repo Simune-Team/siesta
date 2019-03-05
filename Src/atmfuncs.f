@@ -20,6 +20,8 @@ C     different chemical species in the calculation:
       use atm_types
       use radial, only: rad_get, rad_func
       use spher_harm, only: rlylm
+ 
+
 
       implicit none 
 !
@@ -45,7 +47,7 @@ C     different chemical species in the calculation:
       public  :: phiatm, all_phi
       public  :: pol   ! Added JMS Dec.2009
 
-      public  :: orb_gindex, kbproj_gindex, vna_gindex
+      public  :: orb_gindex, kbproj_gindex, vna_gindex, ldau_gindex
       private
                           !
       contains
@@ -213,6 +215,20 @@ C Returns the global index of a KB projector
 
       kbproj_gindex = species(is)%pj_gindex(ko)
       end function kbproj_gindex
+
+      FUNCTION ldau_gindex (IS,IO)
+      integer ldau_gindex
+      integer, intent(in) :: is    ! Species index
+      integer, intent(in) :: io    ! Orbital index (within atom)
+
+C Returns the global index of a LDA+U projector
+
+      call chk('ldau_gindex',is)
+      if ( (io .gt. species(is)%nprojsldau) .or.
+     $     (io .lt. 1))   call die("ldau_gindex: Wrong io")
+
+      ldau_gindex = species(is)%pjldau_gindex(io)
+      end function ldau_gindex
 
       FUNCTION vna_gindex (IS)
       integer vna_gindex

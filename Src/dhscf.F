@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -32,18 +32,23 @@
 !     Some others are scratch, such as nmpl, ntpl, etc
 
       use precision,      only : dp, grid_p
-
+      use m_dfscf,        only : dfscf
       implicit none
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
-      logical                 :: IsDiag, IsEfld, spiral
+      logical                 :: IsDiag, spiral
       character(len=10)       :: shape
       integer                 :: nml(3), ntml(3), npcc,
      &                           nmpl, ntpl
-      real(dp)                :: qspiral(3), bcell(3,3), cell(3,3),
+      real(dp)                :: bcell(3,3), cell(3,3),
      &                           dvol, field(3), rmax, scell(3,3)
       real(dp)                :: G2mesh =  0.0_dp
+      logical :: debug_dhscf = .false.
+      logical :: use_bsc_cellxc
+      
+      character(len=*), parameter :: debug_fmt =
+     &     '('' -- dhscf : Node '',i3,tr1,a,4(tr1,e20.7))'
 
       public :: dhscf_init, dhscf
 
@@ -61,13 +66,9 @@
       use atmfuncs,       only : rcut, rcore
       use fdf
       use sys,            only : die
-      use mesh,           only : xdsp, nsm, nsp
+      use mesh,           only : xdsp, nsm, nsp, meshLim
       use parsing
-#ifndef BSC_CELLXC
-      use siestaXC, only : getXC        ! Returns the XC functional used
-#else /* BSC_CELLXC */
-      use bsc_xcmod,          only : nXCfunc, XCauth
-#endif /* BSC_CELLXC */
+
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
       use meshsubs,       only : PartialCoreOnMesh
@@ -85,10 +86,15 @@
       use meshdscf,       only : createLocalDscfPointers
 
       use iogrid_netcdf, only: set_box_limits
-#ifdef BSC_CELLXC
-      use cellxc_mod,     only : setGGA
-#endif /* BSC_CELLXC */
+#ifdef NCDF_4
+      use files,         only  : slabel
+      use m_ncdf_siesta, only : cdf_init_grid
+      use m_ncdf_io, only : cdf_init_mesh
+#endif
       use m_efield,       only : initialize_efield, acting_efield
+      use m_efield,       only : get_field_from_dipole
+      use m_efield,       only : dipole_correction
+      use m_efield,       only : user_specified_field
 
       use m_doping_uniform,       only: initialize_doping_uniform
       use m_doping_uniform,       only: compute_doping_structs_uniform,
@@ -96,15 +102,22 @@
       use m_rhog,                 only: rhog, rhog_in
       use m_rhog,                 only: order_rhog
       use siesta_options,         only: mix_charge
+#ifdef NCDF_4
+      use siesta_options,         only: write_cdf
+#endif
 #ifdef MPI
       use mpi_siesta
 #endif
-#ifdef TRANSIESTA
-!     TSS Begin
-      use m_ts_options,   only : TSmode, isVolt
-      use m_ts_voltage,   only : print_ts_voltage
-!     TSS End
-#endif /* TRANSIESTA */
+
+      use m_mesh_node,   only: init_mesh_node
+      use m_charge_add,  only: init_charge_add
+      use m_hartree_add, only: init_hartree_add
+
+      use m_ts_global_vars,only: TSmode
+      use m_ts_options,   only : IsVolt, N_Elec, Elecs
+      use m_ts_voltage,   only : ts_init_voltage
+      use m_ts_hartree,   only : ts_init_hartree_fix
+
       implicit none
       integer, intent(in)     :: nspin, norb, iaorb(norb), iphorb(norb),
      &                           nuo, nuotot, nua, na, isa(na),
@@ -127,11 +140,11 @@
       integer,        pointer :: numphi(:), numphi_par(:)
 
       integer                 :: nm(3)   ! For call to initMesh
-#ifndef BSC_CELLXC
-      integer                 :: nXCfunc
-      character(len=20)       :: XCauth(10), XCfunc(10)
-#endif /* ! BSC_CELLXC */
-
+      logical                 :: need_gradients_in_xc, is_vdw
+      
+      ! Transport direction (unit-cell aligned)
+      integer                 :: iE
+      real(dp)                :: ortho, field(3), field2(3)
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '    PRE dhscf_init' )
@@ -146,6 +159,8 @@ C     Start time counter
       nullify(Vscf,rhoatm_par)
 
       if (frstme) then
+        debug_dhscf = fdf_get('Debug.DHSCF', .false.)
+         
         nullify( xdsp, rhopcc, Vna, rhoatm )
 C       nsm lives in module m_dhscf now    !! AG**
         nsm = fdf_integer( 'MeshSubDivisions', 2 )
@@ -155,24 +170,11 @@ C       Set mesh sub-division variables & perform one off allocation
         nsp = nsm*nsm*nsm
         call re_alloc( xdsp, 1, 3, 1, nsp, 'xdsp', 'dhscf_init' )
 
-C       Read spin-spiral wavevector (if defined)
-        call readsp( qspiral, spiral )
+C       Check spin-spiral wavevector (if defined)
         if (spiral .and. nspin.lt.4)
      &    call die('dhscf: ERROR: spiral defined but nspin < 4')
       endif   ! First time
 
-#ifndef BSC_CELLXC
-C Get functional(s) being used
-      call getXC( nXCfunc, XCfunc, XCauth )
-#endif /* ! BSC_CELLXC */
-
-      if (harrisfun) then
-        do n = 1,nXCfunc
-          if (.not.(leqi(XCauth(n),'PZ').or.leqi(XCauth(n),'CA'))) then
-            call die("** Harris forces not implemented for non-LDA XC")
-          endif
-        enddo
-      endif
 
 C ----------------------------------------------------------------------
 C     Orbital initialisation : part 1
@@ -220,6 +222,23 @@ C ----------------------------------------------------------------------
 !     held in module iogrid_netcdf
       call set_box_limits( ntm, nsm )
 
+      ! Initialize information on local mesh for each node
+      call init_mesh_node( cell, ntm , meshLim , nsm )
+
+      ! Setup charge additions in the mesh
+      call init_charge_add(cell, ntm)
+
+      ! Setup Hartree additions in the mesh
+      call init_hartree_add(cell, ntm)
+
+#ifdef NCDF_4
+      ! Initialize the box for each node...
+      call cdf_init_mesh( ntm, nsm )
+      if ( write_cdf ) then
+        call cdf_init_grid( trim(slabel)//'.nc', ntm)
+      end if
+#endif
+
 C     Stop time counter for mesh initialization
       call timer( 'DHSCF1', 2 )
 C ----------------------------------------------------------------------
@@ -240,22 +259,36 @@ C     Start time counter for atomic initializations
 C     Initialise quantities relating to the atom-mesh positioning
       call InitAtomMesh( UNIFORM, na, xa )
 
-#ifdef BSC_CELLXC
-C     Check if we need extencils in cellxc
-      call setGGA( )
+!     Check if we need stencils in cellxc, and detect incompatibility
+!     with Harris forces 
+      call xc_setup(need_gradients_in_xc, is_vdw)
 
-#endif /* BSC_CELLXC */
+      if (need_gradients_in_xc .and. harrisfun) then
+         call die("** Harris forces not implemented for non-LDA XC")
+      endif
+
+      ! Give the opportunity to use BSC's version,
+      ! unless we have a vdw functional
+      use_bsc_cellxc = fdf_get("XC.Use.BSC.CellXC", .false.)
+      if (is_vdw .and. use_bsc_cellxc) then
+         call message("INFO",
+     $        "BSC's cellxc cannot be used with vdW functionals")
+         use_bsc_cellxc = .false.
+      endif
+      
 C     Compute the number of orbitals on the mesh and recompute the
 C     partions for every processor in order to have a similar load
 C     in each of them.
       nullify( numphi )
       call re_alloc( numphi, 1, nmpl, 'numphi', 'dhscf_init' )
+!$OMP parallel do default(shared), private(i)
       do i= 1, nmpl
         numphi(i) = 0
       enddo
+!$OMP end parallel do
 
       call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
-     &                      isa, numphi )
+     &                      isa, numphi, need_gradients_in_xc )
 
 C     Find if there are partial-core-corrections for any atom
       npcc = 0
@@ -271,6 +304,9 @@ C     Vscf and Vaux are not used here
      &    nsd, dvol, volume, dummy_Vscf, dummy_Vaux, Fal, stressl,
      &    .false., .false. )
         call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
+        if ( debug_dhscf ) then
+           write(*,debug_fmt) Node,'rhopcc',sqrt(sum(rhopcc**2))
+        end if
       endif
 
 C     Find neutral-atom potential
@@ -280,6 +316,9 @@ C     Drho is not used here
      &                        volume, dummy_DRho, Fal, stressl, 
      &                        .false., .false. )
       call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'Vna',sqrt(sum(Vna**2))
+      end if
 
       if (nodes.gt.1) then
         if (node .eq. 0) then
@@ -343,7 +382,12 @@ C     Routine Poison should use the uniform data distribution
 C     Create Rhoatm using UNIFORM distr, in sequential form
       call re_alloc( rhoatm, 1, ntpl, 'rhoatm', 'dhscf_init' )
       call distMeshData( QUADRATIC, rhoatm_par,
-     &                   UNIFORM, rhoatm, TO_SEQUENTIAL )
+     &     UNIFORM, rhoatm, TO_SEQUENTIAL )
+
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'rhoatm', sqrt(sum(rhoatm**2))
+      end if
+
 !
 !  AG: The initialization of doping structs could be done here now,
 !      in the uniform distribution, and with a simple loop over
@@ -388,26 +432,83 @@ C     At the end of initializations:
 C ----------------------------------------------------------------------
       if (frstme) then
          call initialize_efield()
-      endif
+      end if
 
-#ifdef TRANSIESTA
-      if (frstme) then
-!        Check if we need to add the potential 
-!        corresponding to the voltage-drop.
-        if (TSmode) then
-           if ( isVolt ) then
-              call print_ts_voltage(cell)
+      ! Check if we need to add the potential 
+      ! corresponding to the voltage-drop.
+      if ( TSmode ) then
+        ! These routines are important if there are cell-changes
+        call ts_init_hartree_fix( cell, nua, xa, ntm, ntml)
+        if ( IsVolt ) then
+           call ts_init_voltage( cell, nua, xa, ntm)
+        end if
+
+        if ( acting_efield ) then
+         ! We do not allow the electric field for 
+         ! transiesta runs with V = 0, either.
+         ! It does not make sense, only for fields perpendicular
+         ! to the applied bias.
+           
+         ! We need to check that the e-field is perpendicular
+         ! to the transport direction, and that the system is
+         ! either a chain, or a slab.
+         ! However, due to the allowance of a dipole correction
+         ! along the transport direction for buffer calculations
+         ! we have to allow all shapes. (atom is not transiesta
+         ! compatible anyway)
+            
+         ! check that we do not violate the periodicity
+         if ( Node .eq. 0 ) then
+            write(*,'(/,2(2a,/))') 'ts-WARNING: ',
+     &           'E-field/dipole-correction! ',
+     &           'ts-WARNING: ',
+     &           'I hope you know what you are doing!'
+         end if
+
+         ! This is either dipole or user, or both
+         field(:) = user_specified_field(:)
+         ortho = 0._dp
+         do iE = 1 , N_Elec
+           select case ( Elecs(iE)%t_dir )
+           case ( 4 )           ! B-C
+             field2 = Elecs(iE)%cell(:,2)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,3)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 5 )           ! A-C
+             field2 = Elecs(iE)%cell(:,1)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,3)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 6 )           ! A-B
+             field2 = Elecs(iE)%cell(:,1)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,2)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 7 )           ! A-B-C
+             call die('dhscf: cannot use dipole correction when
+     &having all directions semi-infinite.')
+           case default
+             field2 = Elecs(iE)%cell(:,Elecs(iE)%t_dir)
+             ortho = ddot(3,field2,1,field,1)
+           end select
+           if ( abs(ortho) > 1.e-9_dp ) then
+             call die('User defined E-field must be
+     &perpendicular to semi-infinite directions')
            end if
-           if(isVolt .and. acting_efield) then
-              isvolt = .false.
-              if(Node.eq.0) then
-                 write(6,*) 'WARNING: both ext. voltage and field !!'
-                 write(6,*) 'WARNING: will neglect voltage !!       '
-              end if
-           end if
-        endif
-      endif
-#endif /* TRANSIESTA */
+         end do
+        end if ! acting_efield
+         
+        ! We know that we currently allow people to do more than
+        ! they probably should be allowed. However, there are many
+        ! corner cases that may require dipole corrections, or 
+        ! electric fields to "correct" an intrinsic dipole.
+        ! For instance, what should we do with a dipole in a transiesta
+        ! calculation?
+        ! Should we apply a field to counter act it in a device
+        ! calculation?
+         
+      end if
 
       frstme = .false.
 
@@ -418,7 +519,7 @@ C ----------------------------------------------------------------------
 !------------------------------------------------------------------------- END
       end subroutine dhscf_init
 
-      subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
+      subroutine dhscf( nspin, norb, iaorb, iphorb, nuo, 
      &                  nuotot, nua, na, isa, xa, indxua,
      &                  ntm, ifa, istr, iHmat,
      &                  filesOut, maxnd, numd,
@@ -438,7 +539,7 @@ C Input :
 C ----------------------------------------------------------------------
 C integer nspin         : Number of different spin polarisations
 C                         nspin=1 => Unpolarized, nspin=2 => polarized
-C                         nspin=4 => Noncollinear spin
+C                         nspin=4 => Noncollinear spin or spin-orbit
 C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
@@ -462,11 +563,11 @@ C                             elements for each matrix row
 C integer listdptr(nuo)     : Pointer to start of rows of density-matrix
 C integer listd(maxnd)      : Nonzero-density-matrix-element column
 C                             indexes for each matrix row
-C real*8  Dscf(maxnd,nspin): SCF density-matrix elements
+C real*8  Dscf(maxnd,h_spin_dim): SCF density-matrix elements
 C real*8  datm(norb)        : Harris density-matrix diagonal elements
 C                             (atomic occupation charges of orbitals)
 C integer maxnh             : First dimension of listh and Hmat
-C real*8  Hmat(maxnh,nspin) : Hamiltonian matrix in sparse form,
+C real*8  Hmat(maxnh,h_spin_dim) : Hamiltonian matrix in sparse form,
 C                             to which are added the matrix elements
 C                                 <ORB_I | DeltaV | ORB_J>, where
 C                             DeltaV = Vna + Vxc(SCF) + 
@@ -515,19 +616,13 @@ C Distances in Bohr
 C ----------------------------------------------------------------------
 C     Modules
       use precision,     only  : dp, grid_p
-#ifndef BSC_CELLXC
-      use parallel, only : ProcessorY
-#endif /* ! BSC_CELLXC */
 
-!     Number of Mesh divisions of each cell vector (global)
-!     The status of this variable is confusing
-      use mesh,          only  : nm => nmeshg
       use parallel,      only  : Node, Nodes
       use atmfuncs,      only  : rcut, rcore
-      use units,         only  : Debye, eV
+      use units,         only  : Debye, eV, Ang
       use fdf
       use sys,           only  : die, bye
-      use mesh,          only  : xdsp, nsm, nsp
+      use mesh,          only  : nsm, nsp, meshLim
       use parsing
       use m_iorho,       only  : write_rho
       use m_forhar,      only  : forhar
@@ -535,6 +630,7 @@ C     Modules
       use files,         only  : slabel
       use files,         only  : filesOut_t ! derived type for output file names
       use siesta_options, only : harrisfun, save_initial_charge_density
+      use siesta_options, only : analyze_charge_density_only
       use meshsubs,       only : LocalChargeOnMesh
       use meshsubs,       only : PartialCoreOnMesh
       use meshsubs,       only : NeutralAtomOnMesh
@@ -544,22 +640,21 @@ C     Modules
       use moreMeshSubs,   only : TO_SEQUENTIAL, TO_CLUSTER, KEEP
       use m_partial_charges, only: compute_partial_charges
       use m_partial_charges, only: want_partial_charges
-#ifndef BSC_CELLXC
 
-      use siestaXC, only : cellXC       ! Finds xc energy and potential
+      use siestaXC, only : cellXC ! Finds xc energy and potential
       use siestaXC, only : myMeshBox    ! Returns my processor mesh box
       use siestaXC, only : jms_setMeshDistr => setMeshDistr
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
-#endif /* BSC_CELLXC */
       use m_vmat,  only  : vmat
+      use m_rhoofd, only: rhoofd
 #ifdef MPI
       use mpi_siesta
 #endif
       use iogrid_netcdf, only: write_grid_netcdf
       use iogrid_netcdf, only: read_grid_netcdf
       use siesta_options, only: read_charge_cdf
-      use siesta_options, only: savevna, savebader
+      use siesta_options, only: savebader
       use siesta_options, only: read_deformation_charge_cdf
       use siesta_options, only: mix_charge
 
@@ -567,31 +662,39 @@ C     Modules
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
+      
+      use m_charge_add,   only: charge_add
+      use m_hartree_add,  only: hartree_add
 
+#ifdef NCDF_4
+      use siesta_options, only: write_cdf
+      use m_ncdf_siesta, only: cdf_save_grid
+#endif
       use m_rhofft,       only: rhofft, FORWARD, BACKWARD
       use m_rhog,         only: rhog_in, rhog
+      use m_spin,         only: spin
+      use m_spin,         only: Spiral, qSpiral
+      use m_iotddft,      only: write_tdrho
+      use m_ts_global_vars,only: TSmode, TSrun
+      use m_ts_options, only: IsVolt, Elecs, N_elec
+      use m_ts_voltage, only: ts_voltage
+      use m_ts_hartree, only: ts_hartree_fix
 
-#ifdef TRANSIESTA
-      use m_ts_options, only: UseVFix, TSmode, isVolt
-      use m_ts_voltage, only : ts_voltage
-      use m_ts_in_siesta, only: TSVHFix
-      use m_ts_global_vars, only: TSrun
-#endif /* TRANSIESTA */
       implicit none
+
       integer
-     &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
+     &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot, 
      &  iaorb(norb), ifa, iHmat,
      &  indxua(na), iphorb(norb), isa(na), 
      &  istr, listd(*), listdptr(nuo), ntm(3), numd(nuo)
 
       real(dp)
-     &  datm(norb), dipol(3), Dscf(maxnd,nspin),
+     &  datm(norb), dipol(3), Dscf(:,:),
      &  DUext, DUscf, Dxc, Enaatm, Enascf, Exc,
-     &  Hmat(maxnh,nspin), Uatm, Uscf, xa(3,na),
+     &  Hmat(:,:), Uatm, Uscf, xa(3,na),
      &  stress(3,3), Fal(3,nua), stressl(3,3)
 
-      type(filesOut_t)
-     &  filesOut
+      type(filesOut_t) filesOut
 
       logical, intent(in), optional :: use_rhog_in
       logical, intent(in), optional :: charge_density_only
@@ -635,13 +738,11 @@ C integer io            : Orbital index
 C integer ip            : Point index
 C integer is            : Species index
 C logical IsDiag        : Is supercell diagonal?
-C logical IsEfld        : Is there an external electric field?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
-#ifndef BSC_CELLXC
-C integer JDGdistr      : J.D.Gale's parallel distribution of mesh points
-C integer myBox(2,3)    : My processor's mesh box
-#endif /* ! BSC_CELLXC */
+
+C integer myBox(2,3)    : My processor's mesh box 
+
 C integer nbcell        : Number of independent bulk lattice vectors
 C integer npcc          : Partial core corrections? (0=no, 1=yes)
 C integer nsd           : Number of diagonal spin values (1 or 2)
@@ -664,34 +765,30 @@ C ----------------------------------------------------------------------
 
 C     Local variables
       integer  :: i, ia, ip, ispin, nsd, np_vac
-#ifndef BSC_CELLXC
-!     Interface to JMS's SiestaXC
-      integer       :: iNode, myBox(2,3)
-      integer, save :: JDGdistr=-1
-      real(dp) :: stressXC(3,3)
-#endif /* ! BSC_CELLXC */
       real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
      &            Ec, Ex, rhotot, x0(3), volume, Vmax_vac, Vmean_vac
-#ifdef BSC_CELLXC
-!     Dummy arrays for cellxc call
-      real(grid_p) :: aux3(3,1)
-      real(grid_p) :: dummy_DVxcdn(1,1,1)
-#endif /* BSC_CELLXC */
 
       logical :: use_rhog
-
+      
       real(dp), external :: volcel, ddot
 
       external
      &  cross,
-     &  dfscf,  dipole, 
+     &  dipole, 
      &  poison, 
-     &  reord, rhooda, rhoofd, rhoofdsp, 
+     &  reord, rhooda, rhoofdsp, 
      &  timer, vmatsp, 
      &  readsp
-#ifdef BSC_CELLXC
+
+!     Dummy arrays for bsc_cellxc call
+      real(grid_p) :: aux3(3,1)
+      real(grid_p) :: dummy_DVxcdn(1,1,1)
+      real(grid_p), pointer :: Vscf_gga(:,:), DRho_gga(:,:)
       external bsc_cellxc
-#endif /* BSC_CELLXC */
+
+!     Interface to JMS's SiestaXC
+      integer       :: myBox(2,3)
+      real(dp) :: stressXC(3,3)
 
 C     Work arrays
       real(grid_p), pointer :: Vscf(:,:), Vscf_par(:,:),
@@ -700,9 +797,9 @@ C     Work arrays
      &                         Totchar(:), fsrc(:), fdst(:),
      &                         rhoatm_quad(:) => null(),
      &                         DRho_quad(:,:) => null()
-#ifdef BSC_CELLXC
-      real(grid_p), pointer :: Vscf_gga(:,:), DRho_gga(:,:)
-#endif /* BSC_CELLXC */
+      ! Temporary reciprocal spin quantity
+      real(grid_p) :: rnsd
+
 #ifdef MPI
       integer  :: MPIerror
       real(dp) :: sbuffer(7), rbuffer(7)
@@ -711,6 +808,18 @@ C     Work arrays
 #ifdef DEBUG
       call write_debug( '    PRE DHSCF' )
 #endif
+
+      if ( spin%H /= size(Dscf,dim=2) ) then
+         call die('Spin components is not equal to options.')
+      end if
+
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'DM',
+     &        (sqrt(sum(Dscf(:,ispin)**2)),ispin=1,spin%H)
+         write(*,debug_fmt) Node,'H',
+     &        (sqrt(sum(Hmat(:,ispin)**2)),ispin=1,spin%H)
+      end if
+      
 !-------------------------------------------------------------------- BEGIN
 C ----------------------------------------------------------------------
 C Start of SCF iteration part
@@ -732,25 +841,45 @@ C ----------------------------------------------------------------------
 
       nullify( Vscf, Vscf_par, DRho, DRho_par,
      &         Vaux, Vaux_par, Chlocal, Totchar )
-#ifdef BSC_CELLXC
       nullify( Vscf_gga, DRho_gga)
-#endif /* BSC_CELLXC */
 
       volume = volcel(cell)
 
 C-------------------------------------------------------------------------
+      
+      if (analyze_charge_density_only) then
+         !! Use the functionality in the first block
+         !! of the routine to get charge files and partial charges
+         call setup_analysis_options()
+      endif
+      
       if (filesOut%vna .ne. ' ') then
         ! Uniform dist, sequential form
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid(trim(slabel)//'.nc','Vna',1,ntml,Vna)
+        else
+           call write_rho( filesOut%vna, 
+     &          cell, ntm, nsm, ntpl, 1, Vna)
+           call write_grid_netcdf( cell, ntm, 1, ntpl, Vna, "Vna")
+        end if
+#else
         call write_rho( filesOut%vna,
-     &                  cell, ntm, nsm, ntpl, 1, Vna )
+     &       cell, ntm, nsm, ntpl, 1, Vna )
         call write_grid_netcdf( cell, ntm, 1, ntpl, Vna, "Vna")
+#endif
       endif
 
 C     Allocate memory for DRho using the UNIFORM data distribution
       call re_alloc( DRho, 1, ntpl, 1, nspin, 'DRho','dhscf' )
 
 C Find number of diagonal spin values
-      nsd = min( nspin, 2 )
+      nsd  = min( nspin, 2 )
+      if ( nsd == 1 ) then
+         rnsd = 1._grid_p
+      else
+         rnsd = 1._grid_p / nsd
+      end if
 
 C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
@@ -774,10 +903,11 @@ C ----------------------------------------------------------------------
          read_charge_cdf = .false.
       else if (read_deformation_charge_cdf) then
          call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
-         do ispin = 1,nspin
+         ! Add to diagonal components only
+         do ispin = 1,nsd
             do ip= 1, ntpl
 C             rhoatm and Drho are in sequential mode
-              DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip)/nsd
+              DRho(ip,ispin) = DRho(ip,ispin) + rhoatm(ip) * rnsd
             enddo
          enddo
          read_deformation_charge_cdf = .false.
@@ -791,14 +921,14 @@ C             rhoatm and Drho are in sequential mode
         endif
         call re_alloc( DRho_par, 1, ntpl, 1, nspin,
      &                 'DRho_par','dhscf' )       
-        if (spiral) then
+        if (Spiral) then
           call rhoofdsp( norb, nmpl, maxnd, numd, listdptr, listd,
      &                   nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                   iphorb, isa, qspiral )
         else
           call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
-     &                 nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
-     &                 iphorb, isa )
+     &                 nspin, Dscf, DRho_par, 
+     &                 nuo, nuotot, iaorb, iphorb, isa )
         endif
         ! DRHO_par is here in QUADRATIC, clustered form
 
@@ -806,8 +936,7 @@ C       Set the UNIFORM distribution again and copy DRho to it
         if (nodes.gt.1) then
            call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
         endif
-        !AG** NOTE: Clarify nsd vs. nspin 
-        !           What happens for non-collinear spin calculations?
+
         do ispin = 1, nspin
           fsrc => DRho_par(:,ispin)
           fdst => DRho(:,ispin)
@@ -817,15 +946,35 @@ C       Set the UNIFORM distribution again and copy DRho to it
      &                       UNIFORM, fdst, TO_SEQUENTIAL )
         enddo
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
-!
-        if (save_initial_charge_density) then 
-           call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
-     $              nspin, DRho)
-           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
-     $               "RhoInit")
-            call timer('DHSCF3',2)
-            call timer('DHSCF',2)
-           call bye("STOP after producing RHO_INIT from input DM")
+
+        if ( debug_dhscf ) then
+           write(*,debug_fmt) Node,'DRho',
+     &          (sqrt(sum(DRho(:,ispin)**2)),ispin=1,nspin)
+        end if
+
+        if (save_initial_charge_density) then
+           ! This section is to be deprecated in favor
+           ! of "analyze_charge_density_only"
+           ! (except for the special name for the .nc file)
+#ifdef NCDF_4
+          if ( write_cdf ) then
+             call cdf_save_grid(trim(slabel)//'.nc','RhoInit',nspin,
+     &            ntml,DRho)
+          else
+             call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
+     $            nspin, DRho)
+             call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
+     $            "RhoInit")
+          end if
+#else
+          call write_rho( "RHO_INIT", cell, ntm, nsm, ntpl,
+     $         nspin, DRho)
+          call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho,
+     $         "RhoInit")
+#endif
+          call timer('DHSCF3',2)
+          call timer('DHSCF',2)
+          call bye("STOP after producing RHO_INIT from input DM")
         endif
 
       endif
@@ -849,7 +998,8 @@ C       Set the UNIFORM distribution again and copy DRho to it
         call re_alloc( DRho_quad, 1, ntpl, 1, nspin,
      &                 'DRho_quad','dhscf' )       
         call re_alloc( rhoatm_quad, 1, ntpl,
-     &                 'rhoatm_quad','dhscf' )       
+     &                 'rhoatm_quad','dhscf' )
+        ! Redistribute grid-density
         do ispin = 1, nspin
           fsrc => DRho(:,ispin)
           fdst => DRho_quad(:,ispin)
@@ -877,9 +1027,30 @@ C Save electron density
 C ----------------------------------------------------------------------
       if (filesOut%rho .ne. ' ') then
         !  DRho is already using a uniform, sequential form
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid(trim(slabel)//'.nc','Rho',nspin,ntml,
+     &          DRho)
+        else
+           call write_rho( filesOut%rho, cell, ntm, nsm, ntpl, nspin,
+     &          DRho )
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
+        end if
+#else
         call write_rho( filesOut%rho, cell, ntm, nsm, ntpl, nspin,
-     &                  DRho )
+     &       DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
+#endif
+      endif
+C-----------------------------------------------------------------------
+C Save TD-electron density after every given number of steps- Rafi, Jan 2016
+C-----------------------------------------------------------------------
+      call write_tdrho(filesOut)
+      if (filesOut%tdrho .ne. ' ') then
+        !  DRho is already using a uniform, sequential form
+        call write_rho( filesOut%tdrho, cell, ntm, nsm, ntpl, nspin,
+     &                  DRho )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "TDRho")
       endif
 C ----------------------------------------------------------------------
 C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
@@ -893,42 +1064,77 @@ C       Find diffuse ionic charge on mesh
         call LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
         ! Chlocal comes out in clustered form, so we convert it
         call reord( Chlocal, Chlocal, nml, nsm, TO_SEQUENTIAL )
-      
+
+        if ( debug_dhscf ) then
+           write(*,debug_fmt) Node,'Chlocal',sqrt(sum(Chlocal**2))
+        end if
+
 C       Save diffuse ionic charge 
         if (filesOut%psch .ne. ' ') then
-          call write_rho( filesOut%psch, cell, ntm, nsm, ntpl, 1, 
-     &                    Chlocal)
+#ifdef NCDF_4
+          if ( write_cdf ) then
+             call cdf_save_grid(trim(slabel)//'.nc','Chlocal',1,ntml,
+     &            Chlocal)
+          else
+             call write_rho( filesOut%psch, cell, ntm, nsm, ntpl, 1,
+     &            Chlocal)
+             call write_grid_netcdf( cell, ntm, 1, ntpl, Chlocal,
+     &            'Chlocal' )
+          end if
+#else
+          call write_rho( filesOut%psch, cell, ntm, nsm, ntpl, 1,
+     &         Chlocal)
           call write_grid_netcdf( cell, ntm, 1, ntpl,
-     &                            Chlocal, 'Chlocal' )
+     &         Chlocal, 'Chlocal' )
+#endif
         endif
 
 C       Save total (ionic+electronic) charge 
         if ( filesOut%toch .ne. ' ') then
-           call re_alloc( Totchar, 1, ntpl, 'Totchar', 'dhscf' )
-        
-          do ip= 1, ntpl
-            Totchar(ip) = 0.0_grid_p
-          enddo
-          do ispin = 1,nsd
-            do ip= 1, ntpl
-              Totchar(ip) = Totchar(ip) +  Chlocal(ip)/nsd +
-     &                      DRho(ip,ispin)
-            enddo
-          enddo
+           ! *****************
+           ! **  IMPORTANT  **
+           ! The Chlocal array is re-used to minimize memory
+           ! usage. In the this small snippet the Chlocal
+           ! array will contain the total charge, and
+           ! if the logic should change, (i.e. should Chlocal
+           ! be retained) is the Totchar needed to be re-instantiated.
+           ! *****************
 
-          call write_rho( filesOut%toch, cell, ntm, nsm, ntpl, 1, 
-     &                    Totchar )
-          call write_grid_netcdf( cell, ntm, 1, ntpl,
-     &                            Totchar, "TotalCharge")
-          call de_alloc( Totchar, 'Totchar', 'dhscf' )
-        endif 
+!$OMP parallel default(shared), private(ispin,ip)
+           do ispin = 1, nsd
+!$OMP do 
+           do ip = 1, ntpl
+              Chlocal(ip) = Chlocal(ip) + DRho(ip,ispin)
+           end do
+!$OMP end do 
+           end do
+!$OMP end parallel
+
+          ! See note above
+#ifdef NCDF_4
+           if ( write_cdf ) then
+              call cdf_save_grid(trim(slabel)//'.nc','RhoTot',1,ntml,
+     &             Chlocal)
+           else
+              call write_rho(filesOut%toch,cell,ntm,nsm,ntpl,1,Chlocal)
+              call write_grid_netcdf( cell, ntm, 1, ntpl, Chlocal, 
+     &             "TotalCharge")
+           end if
+#else
+           call write_rho( filesOut%toch, cell, ntm, nsm, ntpl, 1,
+     &          Chlocal )
+           call write_grid_netcdf( cell, ntm, 1, ntpl,
+     &          Chlocal, "TotalCharge")
+#endif
+        end if 
         call de_alloc( Chlocal, 'Chlocal', 'dhscf' )
       endif
 
 C ----------------------------------------------------------------------
 C Save the total charge (model core + valence) for Bader analysis
 C ----------------------------------------------------------------------
-
+      
+      ! The test for toch guarantees that we are in "analysis mode"
       if (filesOut%toch .ne. ' ' .and. savebader) then
         call save_bader_charge()
       endif
@@ -936,20 +1142,35 @@ C ----------------------------------------------------------------------
 C Find difference between selfconsistent and atomic densities
 
       !Both DRho and rhoatm are using a UNIFORM, sequential form
+!$OMP parallel do default(shared), private(ispin,ip),
+!$OMP&collapse(2)
       do ispin = 1,nsd
         do ip = 1,ntpl
-          DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip)/nsd
+          DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) * rnsd
         enddo
       enddo
+!$OMP end parallel do
 
 C ----------------------------------------------------------------------
 C Save electron density difference
 C ----------------------------------------------------------------------
       if (filesOut%drho .ne. ' ') then
-        call write_rho( filesOut%drho, cell, ntm, nsm, ntpl, nspin, 
-     &                  DRho )
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid(trim(slabel)//'.nc','RhoDelta',nspin,ntml,
+     &          DRho)
+        else
+           call write_rho( filesOut%drho, cell, ntm, nsm, ntpl, nspin,
+     &          DRho )
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, 
+     &          "DeltaRho")
+        end if
+#else
+        call write_rho( filesOut%drho, cell, ntm, nsm, ntpl, nspin,
+     &       DRho )
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
-     &                          DRho, "DeltaRho")
+     &       DRho, "DeltaRho")
+#endif
       endif
 
       if (present(charge_density_only)) then 
@@ -961,22 +1182,40 @@ C ----------------------------------------------------------------------
          endif
       endif
 
-C Transform spin density into sum and difference
+! End of analysis section
+! Can exit now, if requested
+      
+        if (analyze_charge_density_only) then 
+            call timer('DHSCF3',2)
+            call timer('DHSCF',2)
+           call bye("STOP after analyzing charge from input DM")
+        endif
+
+!-------------------------------------------------------------
+C     Transform spin density into sum and difference
+
+      ! TODO Check for NC/SO:
+      ! Should we diagonalize locally at every point first?
       if (nsd .eq. 2) then
+!$OMP parallel do default(shared), private(rhotot,ip)
         do ip = 1,ntpl
           rhotot     = DRho(ip,1) + DRho(ip,2)
           DRho(ip,2) = DRho(ip,2) - DRho(ip,1)
           DRho(ip,1) = rhotot
         enddo
+!$OMP end parallel do
       endif
 
 C Add a background charge to neutralize the net charge, to
 C model doped systems. It only adds the charge at points
 C where there are atoms (i.e., not in vacuum).          
 C First, call with 'task=0' to add background charge    
-
-        if (doping_active) call doping_uniform(cell,ntpl,0,
-     $                                         DRho(:,1),rhoatm)
+      if (doping_active) call doping_uniform(cell,ntpl,0,
+     $     DRho(:,1),rhoatm)
+      
+      ! Add doping in cell (from ChargeGeometries/Geometry.Charge)
+      ! Note that this routine will return immediately if no dopant is present
+      call charge_add('+',cell, ntpl, DRho(:,1) )
 
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
@@ -996,33 +1235,90 @@ C Find dipole
         call dipole( cell, ntm, ntml(1), ntml(2), ntml(3), nsm,
      &               DRho, x0, dipol )
 
-C Orthogonalize dipole to bulk directions
+        ! Orthogonalize dipole to bulk directions
         if (shape .eq. 'chain') then
           const = ddot(3,dipol,1,bcell,1) / ddot(3,bcell,1,bcell,1)
           dipol(1:3) = dipol(1:3) - const * bcell(1:3,1)
-        elseif (shape .eq. 'slab') then
+        else if (shape .eq. 'slab') then
           call cross( bcell(1,1), bcell(1,2), b1Xb2 )
           const = ddot(3,dipol,1,b1Xb2,1) / ddot(3,b1Xb2,1,b1Xb2,1)
           dipol(1:3) = const * b1Xb2(1:3)
-        endif
+       end if
+
+       if ( TSmode ) then
+         if ( N_elec > 1 ) then
+           ! Orthogonalize dipole to electrode transport directions
+           do ia = 1 , N_Elec
+             select case ( Elecs(ia)%t_dir )
+             case ( 4 )         ! B-C
+               x0 = Elecs(ia)%cell(:,2)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+               x0 = Elecs(ia)%cell(:,3)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             case ( 5 )         ! A-C
+               x0 = Elecs(ia)%cell(:,1)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+               x0 = Elecs(ia)%cell(:,3)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             case ( 6 )         ! A-B
+               x0 = Elecs(ia)%cell(:,1)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+               x0 = Elecs(ia)%cell(:,2)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             case ( 7 )         ! A-B-C
+               call die('dhscf: no dipole moment in infinite systems')
+             case default
+               x0 = Elecs(ia)%cell(:,Elecs(ia)%t_dir)
+               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+               dipol(1:3) = dipol(1:3) - const * x0
+             end select
+           end do
+         else if ( (shape == 'molecule') .or. (shape == 'chain') ) then
+           ! Only allow dipole correction for chains and molecules
+           ! along the semi-infinite direciton.
+           ! Note this is *only* for 1-electrode setups
+           ! Note that since the above removes the periodic directions
+           ! this should not do anything for 'chain' with the same semi-infinite
+           ! direction
+           if ( Elecs(1)%t_dir > 3 ) then
+             call die('A real-space self-energy requires some &
+     &kind of periodicity')
+           end if
+           x0 = Elecs(1)%cell(:,Elecs(1)%t_dir)
+           const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
+           dipol(1:3) = const * x0
+         end if
+       end if
+          
       endif
 
 C ----------------------------------------------------------------------
-C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
+C     Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vaux
 C ----------------------------------------------------------------------
 !     Solve Poisson's equation
-      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
+      call re_alloc( Vaux, 1, ntpl, 'Vaux', 'dhscf' )
 
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho,
-     &             DUscf, Vscf, DStres, nsm )
+     &             DUscf, Vaux, DStres, nsm )
+
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'Poisson',sqrt(sum(Vaux(:)**2))
+      end if
 
       ! Vscf is in the UNIFORM, sequential form, and only using
       ! the first spin index
 
-#ifdef TRANSIESTA
-      if (TSmode .and. UseVFix) call TSVHFix( ntm, nsm, Vscf )
-#endif /* TRANSIESTA */
-
+      ! We require that even the SIESTA potential is "fixed"
+      ! NOTE, this will only do something if
+      !   TS.Hartree.Fix is set
+      call ts_hartree_fix( ntm, ntml, Vaux)
+      
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
         stressl(1:3,1:3) = stressl(1:3,1:3) + DStres(1:3,1:3)
@@ -1033,200 +1329,307 @@ C     Find electrostatic (Hartree) energy of full SCF electron density
 C     using the original data distribution 
 C ----------------------------------------------------------------------
       Uatm = Uharrs
-      Uscf = Uatm + DUscf
+      Uscf = 0._dp
+!$OMP parallel do default(shared), private(ip), 
+!$OMP&reduction(+:Uscf)
       do ip = 1, ntpl
-        Uscf = Uscf + dvol * Vscf(ip,1) * rhoatm(ip)
+        Uscf = Uscf + Vaux(ip) * rhoatm(ip)
       enddo
+!$OMP end parallel do
+      Uscf = Uscf * dVol + Uatm + DUscf
 
 C Call doping with 'task=1' to remove background charge added previously
 C The extra charge thus only affects the Hartree energy and potential,
 C but not the contribution to Enascf ( = \Int_{Vna*\rho})
+      if (doping_active) call doping_uniform(cell,ntpl,1,
+     $     DRho(:,1),rhoatm)
 
-        if (doping_active) call doping_uniform(cell,ntpl,1,
-     $                                         DRho(:,1),rhoatm)
+      ! Remove doping in cell (from ChargeGeometries/Geometry.Charge)
+      ! Note that this routine will return immediately if no dopant is present
+      call charge_add('-',cell, ntpl, DRho(:,1) )
 
 C ----------------------------------------------------------------------
-C Add neutral-atom potential to Vscf
+C Add neutral-atom potential to Vaux
 C ----------------------------------------------------------------------
       Enaatm = 0.0_dp
       Enascf = 0.0_dp
+!$OMP parallel do default(shared), private(ip),
+!$OMP&reduction(+:Enaatm,Enascf)
       do ip = 1, ntpl
-        Enaatm     = Enaatm + dvol*Vna(ip)*rhoatm(ip)
-        Enascf     = Enascf + dvol*Vna(ip)*
-     &               (rhoatm(ip) + DRho(ip,1))
-        Vscf(ip,1) = Vscf(ip,1) + Vna(ip)
+        Enaatm   = Enaatm + Vna(ip) * rhoatm(ip)
+        Enascf   = Enascf + Vna(ip) * DRho(ip,1)
+        Vaux(ip) = Vaux(ip) + Vna(ip)
       enddo
+!$OMP end parallel do
+      Enaatm = Enaatm * dVol
+      Enascf = Enaatm + Enascf * dVol
 
 C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
-
-      if (acting_efield) then
-         if (dipole_correction) then
+      if ( acting_efield ) then
+         if ( dipole_correction ) then
             field = get_field_from_dipole(dipol,cell)
             if (Node == 0) then
-	       write(6,'(a,3f12.4,a)')
+               write(6,'(a,3f12.4,a)')
      $              'Dipole moment in unit cell   =', dipol/Debye, ' D'
-	       write(6,'(a,3f12.6,a)')
+               write(6,'(a,3f12.6,a)')
      $              'Electric field for dipole correction =',
-     $              field, ' Ry/Bohr/e'
-            endif
+     $              field/eV*Ang, ' eV/Ang/e'
+            end if
+            ! The dipole correction energy has an extra factor
+            ! of one half because the field involved is internal.
+            ! See the paper by Bengtsson DOI:10.1103/PhysRevB.59.12301
+            ! Hence we compute this part separately
+            DUext = -0.5_dp * ddot(3,field,1,dipol,1)
          else
-            field = user_specified_field
-         endif
+            field = 0._dp
+            DUext = 0._dp
+         end if
+         ! Add the external electric field
+         field = field + user_specified_field
          ! This routine expects a sequential array,
          ! but it is distribution-blind
          call add_potential_from_field( field, cell, nua, isa, xa,
-     &                                  ntm, nsm, Vscf )
-         DUext = - ddot(3,field,1,dipol,1)
+     &                                  ntm, nsm, Vaux )
+         ! Add energy of external electric field
+         DUext = DUext - ddot(3,user_specified_field,1,dipol,1)
       endif
 
-#ifdef TRANSIESTA
-!     TSS Begin
 ! ---------------------------------------------------------------------
-!     transiesta:
+!     Transiesta:
 !     add the potential corresponding to the (possible) voltage-drop.
-!     note that tsvoltage is not sharing the reord wih efield since
+!     note that ts_voltage is not sharing the reord wih efield since
 !     we should not encounter both at the same time.
 ! ---------------------------------------------------------------------
       if (TSmode.and.IsVolt.and.TSrun) then
-        ! This routine expects a sequential array,
-        ! in whatever distribution
-        !FDN** The comment above should be clarified
-        call ts_voltage(cell, ntm, nsm, Vscf )
+         ! This routine expects a sequential array,
+         ! in whatever distribution
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+!$OMP parallel workshare default(shared)
+         Vaux(:) = 0._dp
+!$OMP end parallel workshare
+#endif
+         call ts_voltage(cell, ntm, ntml, Vaux)
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+         call write_grid_netcdf( cell, ntm, 1, ntpl, Vaux, 
+     &        "TransiestaHartreePotential")
+         call timer('ts_volt', 3)
+         call bye('transiesta debug for Hartree potential')
+#endif
       endif
-!    TSS End
-#endif /* TRANSIESTA */
+
+! ----------------------------------------------------------------------
+! Add potential from user defined geometries (if present)
+! ----------------------------------------------------------------------
+      call hartree_add( cell, ntpl, Vaux )
 
 C ----------------------------------------------------------------------
 C     Save electrostatic potential
 C ----------------------------------------------------------------------
       if (filesOut%vh .ne. ' ') then
         ! Note that only the first spin component is used
-        call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vscf )
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid(trim(slabel)//'.nc','Vh',1,ntml,
+     &          Vaux)
+        else
+           call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vaux )
+           call write_grid_netcdf( cell, ntm, 1, ntpl, Vaux, 
+     &          "ElectrostaticPotential")
+        end if
+#else
+        call write_rho( filesOut%vh, cell, ntm, nsm, ntpl, 1, Vaux )
         call write_grid_netcdf( cell, ntm, 1, ntpl,
-     &                          Vscf, "ElectrostaticPotential")
+     &       Vaux, "ElectrostaticPotential")
+#endif
       endif
 
-C Get back spin density from sum and difference
+C     Get back spin density from sum and difference
+      ! TODO Check for NC/SO:
+      ! Should we diagonalize locally at every point first?
       if (nsd .eq. 2) then
+!$OMP parallel do default(shared), private(ip,rhotot)
         do ip = 1, ntpl
           rhotot     = DRho(ip,1)
-          DRho(ip,1) = 0.5_dp*(rhotot - DRho(ip,2))
-          DRho(ip,2) = 0.5_dp*(rhotot + DRho(ip,2))
+          DRho(ip,1) = 0.5_dp * (rhotot - DRho(ip,2))
+          DRho(ip,2) = 0.5_dp * (rhotot + DRho(ip,2))
         enddo
+!$OMP end parallel do
       endif
 
-C ----------------------------------------------------------------------
-#ifndef BSC_CELLXC
-C Set uniform distribution of mesh points and find my processor mesh box
-C This is the interface to JM Soler's own cellxc routine, which sets
-C up the right distribution internally.
-C ----------------------------------------------------------------------
-
-      call jms_setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
-     .                   nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
-      call myMeshBox( ntm, JDGdistr, myBox )
-
-C ----------------------------------------------------------------------
-#endif /* ! BSC_CELLXC */
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
-      call re_alloc( Vaux, 1, ntpl, 'Vaux', 'dhscf' )
-      do ip= 1, ntpl
-        Vaux(ip) = Vscf(ip,1)
-      enddo
+      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf' )
 
-      do ispin = 1,nsd
-        do ip= 1, ntpl
-          DRho(ip,ispin) = DRho(ip,ispin) +
-     &                     rhoatm(ip)/nsd
-        enddo
-        if (npcc .eq. 1) then
+      if (npcc .eq. 1) then
+         
+!$OMP parallel do default(shared), private(ip,ispin), collapse(2)
+       do ispin = 1,nsd
           do ip= 1, ntpl
-            DRho(ip,ispin) = DRho(ip,ispin) +
-     &                       rhopcc(ip)/nsd
+             DRho(ip,ispin) = DRho(ip,ispin) +
+     &            (rhopcc(ip)+rhoatm(ip)) * rnsd
           enddo
-        endif
-      enddo
+       enddo
+!$OMP end parallel do
+
+      else
+
+!$OMP parallel do default(shared), private(ip,ispin), collapse(2)
+       do ispin = 1,nsd
+          do ip= 1, ntpl
+             DRho(ip,ispin) = DRho(ip,ispin) +
+     &            rhoatm(ip) * rnsd
+          enddo
+       enddo
+!$OMP end parallel do
+
+      end if
 
       ! Write the electron density used by cellxc
       if (filesOut%rhoxc .ne. ' ') then
-        call write_rho( filesOut%rhoxc, cell, ntm, nsm, ntpl, nspin, 
-     &                  Drho )
-        call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "RhoXC")
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid(trim(slabel)//'.nc','RhoXC',nspin,ntml,
+     &          DRho )
+        else
+           call write_rho( filesOut%rhoxc, cell, ntm, nsm, ntpl, nspin,
+     &          DRho )
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, 
+     &          "RhoXC")
+        end if
+#else
+        call write_rho( filesOut%rhoxc, cell, ntm, nsm, ntpl, nspin,
+     &       DRho )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, 
+     &       "RhoXC")
+#endif
       endif
 
 !     Everything now is in UNIFORM, sequential form
-#ifdef BSC_CELLXC
-      if (nodes.gt.1) then
-         call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
-      endif
 
-      call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga', 'dhscf' )
-      call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga', 'dhscf' )
+         call timer("XC",1)
 
-      do ispin = 1, nsd
-        fsrc => DRho(:,ispin)
-        fdst => DRho_gga(:,ispin)
-        call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
-      enddo
+         ! Switch to "zero/not-zero rho" distribution (miscalled 'LINEAR')
+         if (nodes.gt.1) then
+            call setMeshDistr( LINEAR, nsm, nsp, nml, nmpl, ntml, ntpl )
+         endif
 
-      call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
-     &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
-     &             dummy_DVxcdn, stressl )
-#endif /* BSC_CELLXC */
+         call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, 'Vscf_gga','dhscf')
+         call re_alloc( DRho_gga, 1, ntpl, 1, nspin, 'DRho_gga','dhscf')
 
-#ifndef BSC_CELLXC
-      call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
-     .                           myBox(1,2), myBox(2,2),
-     .                           myBox(1,3), myBox(2,3), nspin,
-     .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
-#else /* BSC_CELLXC */
-      if (nodes.gt.1) then
-         call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl )
-      endif
+         ! Redistribute all spin densities
+         do ispin = 1, nspin
+            fsrc => DRho(:,ispin)
+            fdst => DRho_gga(:,ispin)
+            call distMeshData( UNIFORM, fsrc, LINEAR, fdst, KEEP )
+         enddo
 
-      do ispin = 1,nsd
-        fsrc => Vscf_gga(:,ispin)
-        fdst => Vscf(:,ispin)
-        call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
-      enddo
-#endif /* BSC_CELLXC */
+      if (use_bsc_cellxc) then
 
-#ifndef BSC_CELLXC
-!     Vscf is still sequential after the call to JMS's cellxc
-#else /* BSC_CELLXC */
-      call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
-      call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
-#endif /* BSC_CELLXC */
+         call timer("BSC-CellXC",1)
+         call bsc_cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
+     &                    DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
+     &                    dummy_DVxcdn, stressl )
 
-      Exc = Ex + Ec
+         call timer("BSC-CellXC",2)
+
+      else
+         
+         call timer("GXC-CellXC",1)
+
+         ! Note that RG's meshLim is in blocks of nsm points, and 1-based
+         ! Example.
+         ! 1:16 17:32  (base 1)
+         ! 0:15 16:31  (base 0)
+         ! Times nsm=2:
+         ! 0:30 32:62
+         ! Add 1 to lb, and nsm to ub:
+         ! 1:32 33:64  (base 1, in units of small-points)
+
+         myBox(1,:) = (meshLim(1,:)-1)*nsm + 1
+         myBox(2,:) = (meshLim(2,:)-1)*nsm + nsm
+         
+         call cellXC( 0, cell, ntm, myBox(1,1), myBox(2,1),
+     &                myBox(1,2), myBox(2,2),
+     &                myBox(1,3), myBox(2,3), nspin,
+     &                DRho_gga, Ex, Ec, DEx, DEc, stressXC, Vscf_gga,
+     &                keep_input_distribution = .true. )
+   !     Vscf is still sequential after the call to JMS's cellxc
+         stress = stress + stressXC
+         call timer("GXC-CellXC",2)
+         
+      endif  ! use_bsc_cellxc
+      
+         ! Go back to uniform distribution
+         if (nodes.gt.1) then
+            call setMeshDistr( UNIFORM, nsm, nsp, nml, nmpl, ntml, ntpl)
+         endif
+
+         ! Redistribute to the Vxc array
+         do ispin = 1,nspin
+            fsrc => Vscf_gga(:,ispin)
+            fdst => Vscf(:,ispin)
+            call distMeshData( LINEAR, fsrc, UNIFORM, fdst, KEEP )
+         enddo
+         call de_alloc( DRho_gga, 'DRho_gga', 'dhscf' )
+         call de_alloc( Vscf_gga, 'Vscf_gga', 'dhscf' )
+
+         call timer("XC",2)
+
+      if ( debug_dhscf ) then
+         write(*,debug_fmt) Node,'XC',
+     &        (sqrt(sum(Vscf(:,ispin)**2)),ispin=1,nspin)
+      end if
+      
+      Exc =  Ex +  Ec
       Dxc = DEx + DEc
 
 !     Vscf contains only Vxc, and is UNIFORM and sequential
 !     Now we add up the other contributions to it, at 
 !     the same time that we get DRho back to true DeltaRho form
+!$OMP parallel default(shared), private(ip,ispin)
+
+      ! Hartree potential only has diagonal components
       do ispin = 1,nsd
-        do ip = 1,ntpl
-          DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) / nsd
-          if (npcc .eq. 1) then
-            DRho(ip,ispin) = DRho(ip,ispin) - rhopcc(ip)/nsd
-          endif
-          Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
-        enddo
+        if (npcc .eq. 1) then
+!$OMP do
+           do ip = 1,ntpl
+              DRho(ip,ispin) = DRho(ip,ispin) - 
+     &             (rhoatm(ip)+rhopcc(ip)) * rnsd
+              Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
+           enddo
+!$OMP end do
+        else
+!$OMP do
+           do ip = 1,ntpl
+              DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) * rnsd
+              Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
+           enddo
+!$OMP end do
+        endif
       enddo
-#ifndef BSC_CELLXC
-      stress = stress + stressXC
-#endif /* ! BSC_CELLXC */
+!$OMP end parallel
 
 C ----------------------------------------------------------------------
 C     Save total potential
 C ----------------------------------------------------------------------
       if (filesOut%vt .ne. ' ') then
+#ifdef NCDF_4
+        if ( write_cdf ) then
+           call cdf_save_grid(trim(slabel)//'.nc','Vt',nspin,ntml,
+     &          Vscf)
+        else 
+           call write_rho( filesOut%vt, cell, ntm, nsm, ntpl, nspin,
+     &          Vscf )
+           call write_grid_netcdf( cell, ntm, nspin, ntpl, Vscf, 
+     &          "TotalPotential")
+        end if
+#else
         call write_rho( filesOut%vt, cell, ntm, nsm, ntpl, nspin, Vscf)
         call write_grid_netcdf( cell, ntm, nspin, ntpl,
-     &                          Vscf, "TotalPotential")
+     &       Vscf, "TotalPotential")
+#endif
       endif
 
 C ----------------------------------------------------------------------
@@ -1235,11 +1638,11 @@ C ----------------------------------------------------------------------
 
       if (filesOut%vt/=' ' .or. filesOut%vh/=' ') then
         forall(ispin=1:nsd) 
-     .    DRho(:,ispin) = DRho(:,ispin) + rhoatm(:) / nsd
+     .    DRho(:,ispin) = DRho(:,ispin) + rhoatm(:) * rnsd
         call vacuum_level( ntpl, nspin, DRho, Vscf, 
      .                     np_vac, Vmax_vac, Vmean_vac )
         forall(ispin=1:nsd) 
-     .    DRho(:,ispin) = DRho(:,ispin) - rhoatm(:) / nsd
+     .    DRho(:,ispin) = DRho(:,ispin) - rhoatm(:) * rnsd
         if (np_vac>0 .and. Node==0) print'(/,a,2f12.6,a)', 
      .    'dhscf: Vacuum level (max, mean) =', 
      .    Vmax_vac/eV, Vmean_vac/eV, ' eV'
@@ -1265,12 +1668,12 @@ C ----------------------------------------------------------------------
      &                        QUADRATIC, fdst, TO_CLUSTER )
          enddo
 
-         if (spiral) then
+         if (Spiral) then
             call vmatsp( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
          else
-            call vmat( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
+            call vmat( norb, nmpl, dvol, spin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa )
          endif
@@ -1286,18 +1689,16 @@ C ----------------------------------------------------------------------
 
 #ifdef MPI
 C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
-#ifndef BSC_CELLXC
-!     Note that Exc and Dxc are already reduced in the new cellxc
-#endif /* ! BSC_CELLXC */
       sbuffer(1) = Uscf
       sbuffer(2) = DUscf
       sbuffer(3) = Uatm
       sbuffer(4) = Enaatm
       sbuffer(5) = Enascf
-#ifdef BSC_CELLXC
-      sbuffer(6) = Exc
-      sbuffer(7) = Dxc
-#endif /* BSC_CELLXC */
+      if (use_bsc_cellxc) then
+         sbuffer(6) = Exc
+         sbuffer(7) = Dxc
+      endif
+
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
       Uscf   = rbuffer(1)
@@ -1305,10 +1706,10 @@ C     Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       Uatm   = rbuffer(3)
       Enaatm = rbuffer(4)
       Enascf = rbuffer(5)
-#ifdef BSC_CELLXC
-      Exc    = rbuffer(6)
-      Dxc    = rbuffer(7)
-#endif /* BSC_CELLXC */
+      if (use_bsc_cellxc) then
+         Exc    = rbuffer(6)
+         Dxc    = rbuffer(7)
+      endif
 #endif /* MPI */
 
 C     Add contribution to stress from the derivative of the Jacobian of ---
@@ -1337,7 +1738,10 @@ C       Find contribution of partial-core-correction
         if (npcc .eq. 1) then
           call reord( rhopcc, rhopcc, nml, nsm, TO_CLUSTER )
           call reord( Vaux, Vaux, nml, nsm, TO_CLUSTER )
-          do ispin = 1,nsd
+          ! The partial core calculation only acts on
+          ! the diagonal spin-components (no need to
+          ! redistribute un-used elements)
+          do ispin = 1, nsd
             call reord( Vscf(:,ispin), Vscf(:,ispin),
      &                  nml, nsm, TO_CLUSTER )
           enddo
@@ -1348,31 +1752,38 @@ C       Find contribution of partial-core-correction
    
           call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
           call reord( Vaux, Vaux, nml, nsm, TO_SEQUENTIAL )
-          do ispin = 1,nsd
+          ! ** see above
+          do ispin = 1, nsd
             call reord( Vscf(:,ispin), Vscf(:,ispin),
      &                  nml, nsm, TO_SEQUENTIAL )
           enddo
+
+          if ( debug_dhscf ) then
+             write(*,debug_fmt) Node,'PartialCore',
+     &            (sqrt(sum(Vscf(:,ispin)**2)),ispin=1,nsd)
+          end if
         endif
 
         if ( harrisfun) then
 !         Forhar deals internally with its own needs
 !         for distribution changes
-#ifndef BSC_CELLXC
+!         Upon entry, everything is UNIFORM, sequential form
           call forhar( ntpl, nspin, nml, ntml, ntm, npcc, cell, 
-#else /* BSC_CELLXC */
-          call forhar( ntpl, nspin, nml, ntml, npcc, cell, 
-#endif /* BSC_CELLXC */
      &                 rhoatm, rhopcc, Vna, DRho, Vscf, Vaux )
 !         Upon return, everything is UNIFORM, sequential form
         endif
 
-C       Transform spin density into sum and difference
+C     Transform spin density into sum and difference
+        ! TODO NC/SO
+        ! Should we perform local diagonalization?
         if (nsd .eq. 2) then
+!$OMP parallel do default(shared), private(rhotot,ip)
           do ip = 1,ntpl
             rhotot     = DRho(ip,1) + DRho(ip,2)
             DRho(ip,2) = DRho(ip,2) - DRho(ip,1)
             DRho(ip,1) = rhotot
           enddo
+!$OMP end parallel do
         endif
 
 C       Find contribution of neutral-atom potential
@@ -1383,11 +1794,6 @@ C       Find contribution of neutral-atom potential
      &                          ifa.ne.0, istr.ne.0 )
         call reord( DRho, DRho, nml, nsm, TO_SEQUENTIAL )
         call reord( Vna, Vna, nml, nsm, TO_SEQUENTIAL )
-
-C       Vaux is (minus) the potential which multiplies rhoatm
-*         if (nsd .eq. 2) then
-*           Vaux(1:ntpl) = 0.5_grid_p * Vaux(1:ntpl)
-*         endif
 
         if (nodes.gt.1) then
            call setMeshDistr( QUADRATIC, nsm, nsp,
@@ -1409,7 +1815,7 @@ C       Vaux is (minus) the potential which multiplies rhoatm
      &                     QUADRATIC, Vaux_par, TO_CLUSTER )
 
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
-     &              indxua, isa, iaorb, iphorb,
+     &              indxua, isa, iaorb, iphorb, 
      &              maxnd, numd, listdptr, listd, Dscf, datm,
      &              Vscf_par, Vaux_par, dvol, volume, Fal, stressl )
 
@@ -1450,6 +1856,10 @@ C ----------------------------------------------------------------------
 
       subroutine save_bader_charge()
       use meshsubs, only: ModelCoreChargeOnMesh
+#ifdef NCDF_4
+      use siesta_options, only: write_cdf
+      use m_ncdf_siesta, only: cdf_save_grid
+#endif
       ! Auxiliary routine to output the Bader Charge
       !
       real(grid_p), pointer :: BaderCharge(:) => null()
@@ -1464,14 +1874,48 @@ C ----------------------------------------------------------------------
       do ispin = 1,nsd
          BaderCharge(1:ntpl) = BaderCharge(1:ntpl) + DRho(1:ntpl,ispin)
       enddo
+#ifdef NCDF_4
+      if ( write_cdf ) then
+         call cdf_save_grid(trim(slabel)//'.nc','RhoBader',1,ntml,
+     &        BaderCharge)
+      else
+         call write_rho( trim(slabel)// ".BADER", cell,
+     $        ntm, nsm, ntpl, 1, BaderCharge )
+         call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $        BaderCharge, "BaderCharge")
+      end if
+#else
       call write_rho( trim(slabel)// ".BADER", cell,
      $     ntm, nsm, ntpl, 1, BaderCharge )
       call write_grid_netcdf( cell, ntm, 1, ntpl,
      $     BaderCharge, "BaderCharge")
+#endif
 
       call de_alloc( BaderCharge, name='BaderCharge' )
       end subroutine save_bader_charge
 
+      subroutine setup_analysis_options()
+      !! For the analyze-charge-density-only case,
+      !! avoiding any diagonalization
+      
+      use siesta_options, only: hirshpop, voropop
+      use siesta_options, only: saverho, savedrho, saverhoxc
+      use siesta_options, only: savevh, savevt, savevna
+      use siesta_options, only: savepsch, savetoch
+      
+      want_partial_charges = (hirshpop .or. voropop) 
+
+      if (saverho)   filesOut%rho   = trim(slabel)//'.RHO' 
+      if (savedrho)  filesOut%drho  = trim(slabel)//'.DRHO'
+      if (saverhoxc) filesOut%rhoxc = trim(slabel)//'.RHOXC'
+      if (savevh)    filesOut%vh    = trim(slabel)//'.VH'  
+      if (savevt)    filesOut%vt    = trim(slabel)//'.VT'  
+      if (savevna)   filesOut%vna   = trim(slabel)//'.VNA' 
+      if (savepsch)  filesOut%psch  = trim(slabel)//'.IOCH'
+      if (savetoch)  filesOut%toch  = trim(slabel)//'.TOCH'
+      
+      end subroutine setup_analysis_options
+      
       end subroutine dhscf
 
       subroutine delk_wrapper(isigneikr, norb, maxnd,
@@ -1482,7 +1926,7 @@ C ----------------------------------------------------------------------
 
       use moreMeshSubs,   only : setMeshDistr
       use moreMeshSubs,   only : UNIFORM, QUADRATIC
-      use parallel,       only : Nodes, Node
+      use parallel,       only : Nodes
       use mesh,           only : nsm, nsp
 
 !
@@ -1531,4 +1975,30 @@ C ----------------------------------------------------------------------
         endif
       end subroutine delk_wrapper
 
+      !> Chech whether we need to initialize stencils for
+      !> BSC's version of cellxc, and whether we have a vdw
+      !> functional
+      subroutine xc_setup(need_grads,is_vdw)
+      use siestaxc, only: getxc
+
+      logical, intent(out) :: need_grads
+      logical, intent(out) :: is_vdw
+
+      integer         :: nf, nXCfunc
+      character(len=20):: XCauth(10), XCfunc(10)
+
+      need_grads = .false.
+      is_vdw = .false.
+      call getXC( nXCfunc, XCfunc, XCauth )
+      do nf = 1,nXCfunc
+        if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
+           need_grads = .true.
+        endif
+        if ( XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
+           need_grads = .true.
+           is_vdw = .true.
+        endif
+      enddo
+      end subroutine xc_setup
+      
       end module m_dhscf

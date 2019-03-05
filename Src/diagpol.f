@@ -49,6 +49,7 @@ C eo H.
 C *********************************************************************
 
       use precision
+      use parallel,      only : BlockSize
       use sys
 
       implicit          none
@@ -61,7 +62,7 @@ C *********************************************************************
      .  eo(nuotot), H(maxnh,nspin), kpoint(3), S(maxnh), 
      .  xij(3,*), psi(ng,nuotot,nuo), Haux(ng,nuotot,nuo),
      .  Saux(ng,nuotot,nuo)
-      external          cdiag
+      external          rdiag, cdiag
 
 C  Internal variables .............................................
       integer
@@ -95,10 +96,10 @@ C Solve eigenvalue problem .........................................
       enddo
       if(ng.eq.2) then 
        call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       else
        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       endif
 C Check error flag and take appropriate action
       if (ierror.gt.0) then
@@ -130,10 +131,10 @@ C Repeat diagonalisation with increased memory to handle clustering
       enddo
       if(ng.eq.2) then
        call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       else
        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .            nuotot, 1, ierror)
+     .            nuotot, 1, ierror, BlockSize)
       endif
 
       endif

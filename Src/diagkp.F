@@ -18,7 +18,7 @@ c
      &                   fixspin, qtot, qs, temp, e1, e2, xij, indxuo,
      &                   nk, kpoint, wk, eo, qo, Dnew, Enew, ef, efs,
      &                   Entropy, Haux, Saux, psi, Dk, Ek, aux, nuotot,
-     &                   occtol, iscf )
+     &                   occtol, iscf, neigwanted)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -63,6 +63,7 @@ C real*8  wk(nk)              : k point weights (must sum one)
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
+C integer neigwanted          : maximum number of eigenvalues wanted
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,maxspn,nk)   : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
@@ -106,7 +107,7 @@ C
      &  MPIerror
 
       integer           maxnd, maxnh, maxspn, maxo, nk, no,
-     &                  nspin, nuo, nuotot, iscf
+     &                  nspin, nuo, nuotot, iscf, neigwanted
       integer           indxuo(no), listh(maxnh), numh(nuo),
      &                  listhptr(nuo)
       real(dp)          Dnew(maxnd,nspin), 
@@ -135,6 +136,10 @@ C  Internal variables .............................................
      $                     Dnewloc(:,:) => null(),
      $                     Enewloc(:,:) => null(),
      $                     xijloc(:,:) => null()
+
+#ifdef DEBUG
+      call write_debug( '    PRE diagkp' )
+#endif
 
 C Globalise list arrays - assumes listh and listd are the same
 
@@ -228,6 +233,9 @@ C     Create new distribution of H and S
 C Find eigenvalues .........................................
       do ik = 1+Node,nk,Nodes
         do ispin = 1,nspin
+!$OMP parallel default(shared), 
+!$OMP&private(iuo,juo,io,j,ind,jo,kxij,ckxij,skxij)
+!$OMP do collapse(2)
           do iuo = 1,nuog
             do juo = 1,nuotot
               Saux(1,juo,iuo) = 0.0d0
@@ -236,6 +244,8 @@ C Find eigenvalues .........................................
               Haux(2,juo,iuo) = 0.0d0
             enddo
           enddo
+!$OMP end do
+!$OMP do
           do io = 1,nuog
             do j = 1,numhg(io)
               ind = listhptrg(io) + j
@@ -254,8 +264,10 @@ C Note : sign of complex part changed to match change in order of iuo/juo
               Haux(2,juo,iuo) = Haux(2,juo,iuo) - Hnew(ind,ispin)*skxij
             enddo
           enddo
+!$OMP end do nowait
+!$OMP end parallel
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,eo(1,ispin,ik),psi,
-     &               0,iscf,ierror)
+     &               -neigwanted,iscf,ierror, -1) ! dummy blocksize
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -283,18 +295,21 @@ C Allocate local copies of Dk and Ek for building matrices
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( nspin, nspin, nk, wk, maxo, nuotot, eo,
-     &               temp, qs, qo, efs, Entropy )
+         call fermispin( nspin, nspin, nk, wk, maxo,
+     &        neigwanted, eo, temp, qs, qo, efs, Entropy )
       else
-        call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
-     &             temp, qtot, qo, ef, Entropy )
+         call fermid( nspin, maxspn, nk, wk, maxo,
+     &        neigwanted, eo, temp, qtot, qo, ef, Entropy )
       endif
+
+!$OMP parallel default(shared), private(t,ik,ispin,io)
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
+!$OMP do collapse(3)
         do ik = 1,nk
           do ispin = 1,nspin
             do io = 1,nuotot
@@ -304,11 +319,16 @@ C Find weights for local density of states ............................
             enddo
           enddo
         enddo
+!$OMP end do nowait
       endif
       
 C New density and energy-density matrices of unit-cell orbitals .......
+!$OMP workshare
       Dnewloc(1:maxnhg,1:nspin) = 0.0d0
       Enewloc(1:maxnhg,1:nspin) = 0.0d0
+!$OMP end workshare
+
+!$OMP end parallel
 
       do ik = 1+Node,nk,Nodes
         do ispin = 1,nspin
@@ -323,8 +343,14 @@ C Find maximum eigenvector that is required for this k point and spin
           enddo
 
 C Find eigenvectors 
+!$OMP parallel default(shared), 
+!$OMP&private(io,j,ind,jo,iuo,juo,kxij,ckxij,skxij)
+
+!$OMP workshare
           Saux = 0.0d0
           Haux = 0.0d0
+!$OMP end workshare
+!$OMP do
           do io = 1,nuog
             do j = 1,numhg(io)
               ind = listhptrg(io) + j
@@ -342,16 +368,24 @@ C Find eigenvectors
               Haux(2,juo,iuo) = Haux(2,juo,iuo) - Hnew(ind,ispin)*skxij
             enddo
           enddo
+!$OMP end do nowait
+!$OMP end parallel 
           call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     &               neigneeded,iscf,ierror)
+     &               neigneeded,iscf,ierror, -1) !dummy blocksize
 
 C Check error flag and take appropriate action
           if (ierror.gt.0) then
             call die('Terminating due to failed diagonalisation')
           elseif (ierror.lt.0) then
 C Repeat diagonalisation with increased memory to handle clustering
+!$OMP parallel default(shared), 
+!$OMP&private(io,j,ind,jo,iuo,juo,kxij,ckxij,skxij)
+
+!$OMP workshare
             Saux = 0.0d0
             Haux = 0.0d0
+!$OMP end workshare
+!$OMP do
             do io = 1,nuog
               do j = 1,numhg(io)
                 ind = listhptrg(io) + j
@@ -369,8 +403,10 @@ C Repeat diagonalisation with increased memory to handle clustering
                 Haux(2,juo,iuo) = Haux(2,juo,iuo) -Hnew(ind,ispin)*skxij
               enddo
             enddo
+!$OMP end do nowait
+!$OMP end parallel
             call cdiag(Haux,Saux,nuotot,nuotot,nuog,aux,psi,
-     &                 neigneeded,iscf,ierror)
+     &                 neigneeded,iscf,ierror, -1) ! dummy blocksize
           endif
 !
 !         Here we could write the wavefunctions, taking care to
@@ -382,19 +418,28 @@ C Repeat diagonalisation with increased memory to handle clustering
 !     .                 aux,psi,.false.)
 !          endif
 
+!$OMP parallel default(shared), 
+!$OMP&private(ie,qe,j,ee,iuo,juo,io,ind,jo,kxij,ckxij,skxij),
+!$OMP&private(pipj1,pipj2)
+
 C Add contribution to density matrices of unit-cell orbitals
+!$OMP workshare
           Dk = 0.0d0
           Ek = 0.0d0
+!$OMP end workshare
 
 C Global operation to form new density matrix
           do ie = 1,nuotot
             qe = qo(ie,ispin,ik)
             if (abs(qe).gt.occtol) then
+!$OMP do
               do j = 1,nuotot
                 aux(1,j) = psi(1,j,ie)
                 aux(2,j) = psi(2,j,ie)
               enddo
+!$OMP end do
               ee = qo(ie,ispin,ik) * eo(ie,ispin,ik)
+!$OMP do collapse(2)
               do iuo = 1,nuog
                 do juo = 1,nuotot
                   pipj1 = aux(1,iuo) * aux(1,juo) +
@@ -407,8 +452,10 @@ C Global operation to form new density matrix
                   Ek(2,juo,iuo) = Ek(2,juo,iuo) + ee * pipj2
                 enddo
               enddo
+!$OMP end do
             endif
           enddo
+!$OMP do
           do io = 1,nuog
             iuo = indxuo(io)
             do j = 1,numhg(io)
@@ -426,9 +473,13 @@ C Global operation to form new density matrix
      &          Ek(1,juo,iuo)*ckxij - Ek(2,juo,iuo)*skxij
             enddo
           enddo
+!$OMP end do
+
+!$OMP end parallel
 
         enddo
       enddo
+
 
       do io = 1,nuog
         call WhichNodeOrb(io,Nodes,BNode)
@@ -468,6 +519,10 @@ C Free local memory
       call de_alloc( listhg, name='listhg', routine= 'diagkp' )
       call de_alloc( listhptrg, name='listhptrg', routine= 'diagkp' )
       call de_alloc( numhg, name='numhg', routine= 'diagkp' )
+
+#ifdef DEBUG
+      call write_debug( '    POS diagkp' )
+#endif
 
       end subroutine diagkp
 #endif

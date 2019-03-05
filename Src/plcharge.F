@@ -21,7 +21,6 @@ C Modified by J. Junquera 2/02
 C **********************************************************************
 
       use precision
-      use old_atmfuncs
       use files,         only : slabel, label_length
       use parallel,      only : Node, Nodes
 #ifdef MPI
@@ -66,7 +65,6 @@ C Internal variables ---------------------------------------------------
 
       character(len=label_length+4) :: fname1
       character(len=label_length+4) :: fname2
-      character(len=label_length+4) :: paste
 
       integer
      .  UNIT1, UNIT2, IL, IA, J
@@ -76,7 +74,7 @@ C Internal variables ---------------------------------------------------
 #endif
 
       external
-     .  IO_ASSIGN, IO_CLOSE, PASTE
+     .  IO_ASSIGN, IO_CLOSE
 
 #ifdef MPI
       call MPI_AllReduce(MAXNH,MAXNHG,1,MPI_integer,MPI_sum,
@@ -86,8 +84,8 @@ C Internal variables ---------------------------------------------------
 C Write only if we are in the node 0 -----------------------------------
       if (Node .eq. 0) then
 C Assign the name of the output file -----------------------------------
-        FNAME1 = paste(slabel,'.DIM')
-        FNAME2 = paste(slabel,'.PLD')
+        FNAME1 = trim(slabel)//'.DIM'
+        FNAME2 = trim(slabel)//'.PLD'
 
         call IO_ASSIGN(UNIT1)
         open( UNIT = UNIT1, FILE = FNAME1, FORM = 'UNFORMATTED',

@@ -1,28 +1,10 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
-! 
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2003
-! 
-! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-! A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT
-! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-!
-c $Id: grid1d.f,v 1.2 2003/11/05 18:50:53 wdpgaara Exp $
 
       program grid1d
 
@@ -225,14 +207,14 @@ c lattice-vector moduli and size of sides of grid cell (small 'cube') -------
          do i = 1, 3
             celmod(n) = celmod(n) + cell(i,n)*cell(i,n)
          enddo
-         sid(n) = celmod(n)/dfloat( mesh(n) )
+         sid(n) = celmod(n)/real( mesh(n), kind=kind(1.d0) )
       enddo
 
 
 c scan the segment in fractional coordinates of av --------------------------
 
       xincr = 0.d0
-      if (nx .gt. 1) xincr = 1.d0 / dfloat(nx -1)
+      if (nx .gt. 1) xincr = 1.d0 / real((nx -1),kind=kind(1.d0))
 
 c loop in 1D grid -----------------------------------------------------------
 
@@ -270,7 +252,7 @@ c the cube is between m1, m1+1, m2, m2+1, m3, and m+1, unless m.lt.1 --------
 
 c fractional coordinates of the point within the small 'cube' ---------------
 
-            alp(n) =  rn(n)*mesh(n) - dfloat(m(n)-1) 
+            alp(n) =  rn(n)*mesh(n) - real((m(n)-1),kind=kind(1.d0))
 
 c bring the points to the unit cell (using the traslational symmetry) -------
 

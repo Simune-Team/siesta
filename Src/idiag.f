@@ -77,7 +77,7 @@ C Written by J.Moreno and J.M.Soler
    50   CONTINUE
           if (IOnode)
      $       WRITE(6,*)'IDIAG: ERROR. ITERATION HAS NOT CONVERGED. N=',N
-          call die()
+          call die('error in idiag')
    60 CONTINUE
       END
 

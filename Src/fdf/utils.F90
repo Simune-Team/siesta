@@ -245,7 +245,7 @@ MODULE utils
       read(string, fmt=*, iostat=ierr) s2i
       if (ierr .ne. 0) then
         call die('UTILS module: s2i', 'Integer conversion error',       &
-                 __FILE__, __LINE__, ERROR_UNIT)
+                 "fdf/utils.F90", __LINE__, ERROR_UNIT)
       endif
 
       RETURN
@@ -270,7 +270,7 @@ MODULE utils
       read(string, fmt=*, iostat=ierr) s2r
       if (ierr .ne. 0) then
         call die('UTILS module: s2r', 'Real conversion error',          &
-                 __FILE__, __LINE__, ERROR_UNIT)
+                 "fdf/utils.F90", __LINE__, ERROR_UNIT)
       endif
 
       RETURN
@@ -374,7 +374,7 @@ MODULE utils
 !------------------------------------------------------------------------- BEGIN
       if (num > 99999 .OR. num < 0) then
         call die('UTILS module: i2s', 'Number is out of range',         &
-                 __FILE__, __LINE__, ERROR_UNIT)
+                 "fdf/utils.F90", __LINE__, ERROR_UNIT)
       endif
 
       zero = ICHAR('0')  ! 48 is the ascii code of zero
@@ -408,14 +408,14 @@ MODULE utils
 !   Die routine (Abort/Terminate program)
 !   MPI-awareness (MPI_Abort)
 !
-    SUBROUTINE die(routine, msg, file, line, unit, rc)
+    SUBROUTINE die(routine, msg, file, line, unit, rc, cline)
 #if defined(CLUSTER) || defined(BLOCKING)
       use mpi_siesta
 #endif
       implicit none
 !--------------------------------------------------------------- Input Variables
       character(len=*), intent(in)           :: routine, msg
-      character(len=*), intent(in), optional :: file
+      character(len=*), intent(in), optional :: file, cline
       integer(ip), intent(in), optional      :: line, unit, rc
 
 !--------------------------------------------------------------- Local Variables
@@ -436,7 +436,8 @@ MODULE utils
       write(die_unit,'(a)') ' '
       write(die_unit,'(3a)') TRIM(routine), ': ', TRIM(msg)
       write(die_unit,'(a)') ' '
-      if (PRESENT(file)) write(die_unit,'(5x,2a)') 'File: ', file
+      if (PRESENT(cline)) write(die_unit,'(5x,2a)') 'Input line: ', trim(cline)
+      if (PRESENT(file)) write(die_unit,'(5x,2a)') 'File: ', trim(file)
       if (PRESENT(line)) write(die_unit,'(5x,a,i5)') 'Line: ', line
       write(die_unit,'(a)') '*************************************************************'
 

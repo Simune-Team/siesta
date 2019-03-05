@@ -117,6 +117,8 @@ C call to constrains routine)
       ! as stress and fa in the call to fixed. Quick 
       ! workaround is to make the use of a temporary
       ! variable thus:
+      ! The "forces" are already mass-scaled,
+      ! so regardless of the dynamics the call is correct.
       call fixed( cell, stress, nat, isa, mass, xa, fa,
      .                  tmpstress, tmpfa, ntcon )
       stress = tmpstress
@@ -149,7 +151,7 @@ C Correct velocity to exact temperature .....................
 
 
 
-      real*8 function velo(iseed,temp,mass)
+      function velo(iseed,temp,mass) 
 C *************************************************************************
 C This function assigns velocities to atoms according to the 
 C Maxwell-Boltzman distribution.
@@ -170,17 +172,21 @@ C ************************* OUTPUT ****************************************
 C real*8  velo             : Velocity component 
 C *************************************************************************
 
+      use precision
+
       implicit none
 
       integer 
      . iseed
 
-      real*8
+      real(dp)
      . mass,temp
+
+      real(dp) :: velo
 
 C Internal variables .................
 
-      real*8
+      real(dp)
      .  arg1, arg2, gauss, med, pi, randomg, var
       
       external

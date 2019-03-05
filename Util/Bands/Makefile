@@ -17,41 +17,42 @@
 #  If your main Siesta build used an mpi compiler, you might need to
 #  define an FC_SERIAL symbol in your top arch.make, to avoid linking
 #  in the mpi libraries even if we explicitly undefine MPI below.
-#  
+
 .SUFFIXES:
 .SUFFIXES: .f .f90 .F .F90 .o
-#
+
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
-#
-all: eigfat2plot new.gnubands
-#
+
+all: eigfat2plot gnubands
+
 include ../../$(OBJDIR)/arch.make
-#
-#
+
+
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
-#
+
 DEFS:=$(DEFS) $(DEFS_PREFIX)-UMPI 
 FPPFLAGS:=$(FPPFLAGS) $(DEFS_PREFIX)-UMPI 
 INCFLAGS:=$(INCFLAGS) $(NETCDF_INCFLAGS)
-#
+
 FAT_OBJS=m_getopts.o f2kcli.o 
-#
-new.gnubands: $(OBJS) new.gnubands.o
-	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) new.gnubands.o
-#
+
+gnubands: $(OBJS) gnubands.o
+	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) gnubands.o
+
 eigfat2plot: $(OBJS) eigfat2plot.o
 	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) eigfat2plot.o
-#
-gnubands: gnubands.o
-	$(FC) -o $@ $(LDFLAGS)  gnubands.o
-#
+
 clean:
-	rm -f *.o *.mod new.gnubands eigfat2plot gnubands
+	rm -f *.o *.mod eigfat2plot gnubands
+
+dep:
+	-sfmakedepend --depend=obj --modext=o \
+		*.f90 *.F90 *.f *.F
 
 # DO NOT DELETE THIS LINE - used by make depend
+eigfat2plot.o: f2kcli.o m_getopts.o
+gnubands.o: f2kcli.o m_getopts.o
 m_getopts.o: f2kcli.o
-new.gnubands.o: m_getopts.o f2kcli.o
-eigfat2plot.o: m_getopts.o f2kcli.o

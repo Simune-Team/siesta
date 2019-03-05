@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -15,6 +15,9 @@
 !
         implicit none
 
+        integer, parameter :: dp = selected_real_kind(10,100)
+        integer, parameter :: sp = selected_real_kind(5,10)
+
         integer io,iu, nk, nspin, ik, iik, ispin, iispin,
      .          nwflist, iw, indwf, j, nuotot, jj
 
@@ -22,10 +25,10 @@
         integer, allocatable, dimension(:) :: iaorb,iphorb,cnfigfio
         character(len=20), allocatable, dimension(:) :: symfio,labelfis
 
-        real*4, allocatable, dimension(:,:) :: psi
+        real(sp), allocatable, dimension(:,:) :: psi
         logical gamma
 
-        real*8 k(3), energy
+        real(dp) k(3), energy
  
         iu = 10
         io = 11

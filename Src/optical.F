@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -66,6 +66,7 @@ C *********************************************************************
 
       use precision,    only : dp
       use atomlist,     only : qtot
+      use densematrix,  only : allocDenseMatrix, resetDenseMatrix
       use densematrix,  only : Haux, Saux, psi
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
@@ -75,9 +76,7 @@ C *********************************************************************
       use files,        only : slabel, label_length
       use units,        only : pi
 #ifdef MPI
-      use mpi_siesta,   only : mpi_reduce, mpi_comm_world,
-     &                         mpi_sum
-      use mpi_siesta,   only : mpi_double_precision
+      use mpi_siesta
 #endif
       implicit          none
 C     Passed variables
@@ -127,13 +126,11 @@ C     Internal variables
      &  wmin, wmax, wi, wf, escissor, omega_p2(2),aux_p2(2)
 
       character(len=label_length+7) :: filename
-      character(len=label_length+7) :: paste
       character(len=10)             :: shape
       character(len=12)             :: option
       character(len=1)              :: matrix
 
-      external          io_assign, io_close,
-     &                  paste, volcel
+      external          io_assign, io_close, volcel
 
 #ifdef DEBUG
       call write_debug( '  PRE optical' )
@@ -169,7 +166,7 @@ C     unless otherwise requested
           nmeshk(ix)=1
         enddo 
         nk=1
-	dsp=0.0d0
+        dsp=0.0d0
        endif
 
 C     If nk.ne.0
@@ -408,10 +405,8 @@ C     Allocate Haux/Saux/psi arrays to required size
         maxhs = 2*nuotot*nuo
         maxpsi = 2*nuotot*nuo
       endif
-    
-      call re_alloc( Haux, 1, maxhs,  'Haux', 'densematrix')
-      call re_alloc( Saux, 1, maxhs,  'Saux', 'densematrix')
-      call re_alloc( psi,  1, maxpsi, 'psi',  'densematrix')
+
+      call allocDenseMatrix(maxhs, maxhs, maxpsi)
 
       ! Allocate auxiliary array for calculating phirphi
       call re_alloc( aux,  1, maxnh, 1, 3, 'aux', 'optical')
@@ -495,7 +490,7 @@ C         Find Wavefunctions
             call die('Optical: ERROR: incorrect value of nspin')
           endif
 
-C         Copy eigenvalues to an auxiliar array
+C         Copy eigenvalues to an auxiliary array
           efermiloc = efermi
           do iuo = 1,nuotot
             ekloc(iuo)=ek(iuo)
@@ -600,7 +595,7 @@ C       Closing loop on k_points
 C Output results
       if (Node.eq.0) then
         call io_assign(iu)
-        filename = paste( slabel, '.EPSIMG' )
+        filename = trim(slabel) // '.EPSIMG'
         open(iu,file=filename, status='unknown')
         nwf = int((wmax-wmin)/dw) + 1
         do ispin = 1,nspin
@@ -664,7 +659,8 @@ C     Deallocate internal arrays
       call de_alloc( kopt,      'kopt',      'optical' )
       call de_alloc( wgthopt,   'wgthopt',   'optical' )
       call de_alloc( aux,       'aux',       'optical' )
-
+      call resetDenseMatrix()
+      
       call timer( 'optical', 2 )
 
 #ifdef DEBUG

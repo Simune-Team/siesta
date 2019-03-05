@@ -22,6 +22,7 @@
 !       do while(fdf_bline(bfdf, pline))
 !         (process line 'integers|reals|values|names ...')
 !       enddo
+!       call fdf_bclose(bfdf)
 !     endif
 !
 ! The subroutine 'fdf_block' returns in 'bfdf' a structure used
@@ -30,6 +31,9 @@
 ! Routine fdf_bline returns in 'pline' the next non-blank parsed
 ! line, non-comment line from the block, unless there are no more
 ! lines, in which case it returns .FALSE. and 'pline' is undefined.
+!
+! Routine fdf_bclose runs the remaining lines in the block and ensures
+! the log may be used as input in subsequent entries.
 !
 ! Routine 'backspace' moves the internal pointer of 'block_fdf'
 ! structure to the previous line returned.
@@ -145,15 +149,20 @@ MODULE fdf
   public :: fdf_getline
 
 ! Test if label is defined
-  public :: fdf_defined
+  public :: fdf_defined, fdf_isphysical, fdf_isblock
+
+! Allow to overwrite things in the FDF
+  public :: fdf_overwrite, fdf_removelabel, fdf_addline
 
 ! Test if a label is used in obsolete or a deprecated state
   public :: fdf_deprecated, fdf_obsolete
 
 ! %block reading (processing each line)
-  public :: fdf_block, fdf_bline, fdf_bbackspace, fdf_brewind
+  public :: fdf_block, fdf_block_linecount
+  public :: fdf_bline, fdf_bbackspace, fdf_brewind, fdf_bclose
   public :: fdf_bnintegers, fdf_bnreals, fdf_bnvalues, fdf_bnnames, fdf_bntokens
   public :: fdf_bintegers, fdf_breals, fdf_bvalues, fdf_bnames, fdf_btokens
+  public :: fdf_bboolean, fdf_bphysical
   public :: fdf_bnlists, fdf_blists
 
 ! Match, search over blocks, and destroy block structure
@@ -269,7 +278,7 @@ MODULE fdf
                                      fdf_started = .FALSE.,             &
                                      fdf_output  = .FALSE.
 
-  integer(ip), parameter, private :: maxdepth   = 5
+  integer(ip), parameter, private :: maxdepth   = 7
   integer(ip), parameter, private :: maxFileNameLength = 300
   integer(ip), private            :: ndepth
   integer(ip), private            :: fdf_in(maxdepth)
@@ -284,26 +293,26 @@ MODULE fdf
 ! Structure for searching inside fdf blocks
   type, public :: block_fdf
     character(len=MAX_LENGTH) :: label
-    type(line_dlist), pointer :: mark
+    type(line_dlist), pointer :: mark => null()
   end type block_fdf
 
 ! Dynamic list for parsed_line structures
   type, public :: line_dlist
     character(len=MAX_LENGTH)  :: str
-    type(parsed_line), pointer :: pline
-    type(line_dlist), pointer  :: next
-    type(line_dlist), pointer  :: prev
+    type(parsed_line), pointer :: pline => null()
+    type(line_dlist), pointer  :: next => null()
+    type(line_dlist), pointer  :: prev => null()
   end type line_dlist
 
 ! FDF data structure (first and last lines)
   type, private :: fdf_file
     integer(ip)               :: nlines
-    type(line_dlist), pointer :: first
-    type(line_dlist), pointer :: last
+    type(line_dlist), pointer :: first => null()
+    type(line_dlist), pointer :: last => null()
   end type fdf_file
 
 ! Input FDF file
-  type(fdf_file), pointer, private :: file_in
+  type(fdf_file), pointer, private :: file_in => null()
 
 
 
@@ -408,7 +417,7 @@ MODULE fdf
 
       integer:: count, ierr, iostat, iu, iuIn
       logical:: named, opened
-      character(len=300) line
+      character(len=MAX_LENGTH*2) line
       character(len=maxFileNameLength) fileName
 
 !------------------------------------------------------------------------- BEGIN
@@ -712,7 +721,7 @@ MODULE fdf
       if (rank == reading_node) then
          call fdf_read(filein)
       endif
-      call broadcast_fdf_struct(reading_node)		
+      call broadcast_fdf_struct(reading_node)
 
       RETURN
 !--------------------------------------------------------------------------- END
@@ -827,7 +836,8 @@ MODULE fdf
       logical                    :: dump
       logical, allocatable       :: found(:)
       character(80)              :: msg
-      character(len=MAX_LENGTH)  :: line, label, inc_file
+      character(len=MAX_LENGTH)  :: label, inc_file
+      character(len=MAX_LENGTH*2):: line
       integer(ip)                :: i, ierr, ntok, ind_less, nlstart
       type(parsed_line), pointer :: pline
 
@@ -882,6 +892,7 @@ MODULE fdf
                 call setmorphol(1, 'b', pline)
                 call setmorphol(2, 'l', pline)
                 call fdf_addtoken(line, pline)
+                nullify(pline) ! it is stored in line
 
                 nlstart = file_in%nlines
                 call fdf_read(inc_file, label)
@@ -898,6 +909,7 @@ MODULE fdf
                 call setmorphol(1, 'e', pline)
                 call setmorphol(2, 'l', pline)
                 call fdf_addtoken(line, pline)
+                nullify(pline) ! it is stored in line
 
 !               Dump included file to fileout
                 if (dump) call fdf_dump(label)
@@ -916,6 +928,7 @@ MODULE fdf
               call setmorphol(1, 'b', pline)
               call setmorphol(2, 'l', pline)
               call fdf_addtoken(line, pline)
+              nullify(pline) ! it is stored in line
               nlstart = file_in%nlines
 
 !           Bad format in %block directive
@@ -946,6 +959,7 @@ MODULE fdf
               call setmorphol(1, 'e', pline)
               call setmorphol(2, 'l', pline)
               call fdf_addtoken(line, pline)
+              nullify(pline) ! it is stored in line
               label = ' '
             endif
 
@@ -961,6 +975,9 @@ MODULE fdf
               call fdf_read(inc_file)
             endif
 
+            ! Clean pline (we simply insert the next file)
+            call destroy(pline)
+            
 !         Label1 Label2 ... < Filename directive
           elseif (ind_less .ne. -1) then
 !           Check if '<' is in a valid position
@@ -1006,6 +1023,7 @@ MODULE fdf
           else
             if (label .eq. ' ') call setmorphol(1, 'l', pline)
             call fdf_addtoken(line, pline)
+            nullify(pline) ! it is stored in line
           endif
         else
 !         Destroy parsed_line structure if no elements
@@ -1044,7 +1062,8 @@ MODULE fdf
       logical                    :: dump, found_elem
       logical, pointer           :: found_loc(:)
       character(80)              :: msg
-      character(len=MAX_LENGTH)  :: line, inc_file, label
+      character(len=MAX_LENGTH*2):: line
+      character(len=MAX_LENGTH)  :: label, inc_file
       integer(ip)                :: i, ierr, ntok, ind_less, nlstart
       integer(ip)                :: elem, nelem_loc
       integer(ip), pointer       :: found_index(:)
@@ -1415,6 +1434,105 @@ MODULE fdf
     END SUBROUTINE fdf_initdata
 
 !
+!   Add a line individually to the dynamic list of parsed lines
+!   This can not include block's and is restricted to key values
+!
+    SUBROUTINE fdf_addline(line)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)  :: line
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                :: ntok
+      type(parsed_line), pointer :: pline
+      
+!------------------------------------------------------------------------- BEGIN
+
+!     Check if valid data (tokens, non-blank)
+      pline => digest(line)
+        
+      call setmorphol(1, 'l', pline)
+      call fdf_addtoken(line, pline)
+
+      if (fdf_debug2) then
+         write(fdf_log,*) '***FDF_ADDLINE********************************'
+         write(fdf_log,*) 'Line:', TRIM(line)
+         write(fdf_log,*) '**********************************************'
+      endif
+
+    END SUBROUTINE fdf_addline
+
+!
+!   Remove a line from the dynamic list of parsed lines
+!   This can not include block's and is restricted to key values
+!
+    SUBROUTINE fdf_removelabel(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)  :: label
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer  :: mark
+      
+!------------------------------------------------------------------------- BEGIN
+
+      do while ( fdf_locate(label,mark) ) 
+
+         if (fdf_debug2) then
+            write(fdf_log,*) '***FDF_REMOVELABEL*******************************'
+            write(fdf_log,*) 'Line:', TRIM(mark%str)
+            write(fdf_log,*) 'Label:', trim(label)
+            write(fdf_log,*) '**********************************************'
+         endif
+
+         ! To circumvent the first/last line in the fdf-file
+         ! we have to check for the existance of the 
+         ! first/last mark being the one removed.
+         ! That special case *must* correct the first/last
+         ! tokens.
+         if ( associated(mark,target=file_in%first) ) then
+            file_in%first => mark%next
+         end if
+         if ( associated(mark,target=file_in%last) ) then
+            file_in%last => mark%prev
+         end if
+
+         ! Remove the label from the dynamic list
+         call destroy(mark%pline)
+         if ( associated(mark%prev) ) then
+            mark%prev%next => mark%next
+         end if
+         if ( associated(mark%next) ) then
+            mark%next%prev => mark%prev
+         end if
+         DEALLOCATE(mark)
+
+         NULLIFY(mark)
+      end do
+      
+    END SUBROUTINE fdf_removelabel
+
+!   
+!   Overwrite label line in dynamic list of parsed lines
+!
+    SUBROUTINE fdf_overwrite(line)
+!--------------------------------------------------------------- Input Variables
+      character(len=MAX_LENGTH)   :: line
+
+!--------------------------------------------------------------- Local Variables
+      type(parsed_line), pointer  :: pline
+      character(len=MAX_LENGTH)   :: label
+
+      pline => digest(line)
+      label = tokens(pline,1)
+      call destroy(pline)
+
+      call fdf_removelabel(label)
+      call fdf_addline(line)
+      
+    END SUBROUTINE fdf_overwrite
+
+!
 !   Add a token to the dynamic list of parsed lines
 !
     SUBROUTINE fdf_addtoken(line, pline)
@@ -1424,7 +1542,7 @@ MODULE fdf
       type(parsed_line), pointer :: pline
 
 !--------------------------------------------------------------- Local Variables
-      integer                    :: i, ierr
+      integer(ip)                :: i, ierr
       type(line_dlist), pointer  :: mark
 
 !------------------------------------------------------------------------- BEGIN
@@ -1785,6 +1903,41 @@ MODULE fdf
 
 !
 !   Returns true or false whether or not the label 'label' is
+!   a value with units or not.
+!   I.e. it returns true if the line has the form lvn, if not found, or not lvn,
+!   it returns false.
+!
+    FUNCTION fdf_isphysical(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_isphysical
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_isphysical', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (fdf_locate(label, mark)) then
+         fdf_isphysical = match(mark%pline, 'lvn')
+      else
+         fdf_isphysical = .false.
+      endif
+      if (fdf_output) write(fdf_out,'(a,5x,l10)') "#:physical? " // label, fdf_isphysical
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_isphysical
+    
+!
+!   Returns true or false whether or not the label 'label' is
 !   a list or not, you cannot get the line out from this routine
 !
     FUNCTION fdf_islist(label)
@@ -1808,11 +1961,10 @@ MODULE fdf
       if (fdf_locate(label, mark)) then
          ! if it is a list:
          fdf_islist = match(mark%pline, 'la')
-         if (fdf_output) write(fdf_out,'(a,5x,l10)') label, fdf_islist
       else
          fdf_islist = .false.
-         if (fdf_output) write(fdf_out,'(a,5x,a)') label, '# not found as list'
       endif
+      if (fdf_output) write(fdf_out,'(a,5x,l10)') "#:list? " // label, fdf_islist
 
       RETURN
 !--------------------------------------------------------------------------- END
@@ -1859,13 +2011,16 @@ MODULE fdf
          else
             ! the list is not long enough
             if ( ni < lni ) then
-               call die('FDF module: fdf_list', 'List container too small', &
+               write(msg, '(2a,2(a,i0))')'List ', trim(label), &
+                    ' container too small: ', ni, ' versus ', lni
+               call die('FDF module: fdf_list', trim(msg), &
                     THIS_FILE, __LINE__, fdf_err)
             end if
             call lists(mark%pline,1,ni,list)
          end if
-         
-         if (fdf_output) write(fdf_out,'(a,5x,i10)') label, lni
+
+         ! find a way to write out the list anyway
+         !if (fdf_output) write(fdf_out,'(a,5x,i10)') label, lni
       else
          write(msg,*) 'no list value for ', label
          call die('FDF module: fdf_list', msg, THIS_FILE, __LINE__, fdf_err)
@@ -2011,6 +2166,84 @@ MODULE fdf
 
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_boolean
+
+!
+!   Returns true if label 'label' appears by itself or in the form
+!   label {yes,true,.true.,t,y} (case insensitive).
+!
+!   Returns false if label 'label' appears in the form
+!   label {no,false,.false.,f,n} (case insensitive).
+!
+!   If label is not found in the fdf file, fdf_boolean returns the 
+!   LOGICAL variable default.
+!
+!   Optionally can return a pointer to the line found.
+!
+    FUNCTION fdf_bboolean(pline,ind,after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_bboolean
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                       :: msg, valstr
+      type(line_dlist), pointer           :: mark
+
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_bboolean', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      if (ind <= nnames(pline,after=after)) then
+
+        valstr = names(pline,ind,after=after)
+
+        if (is_true(valstr)) then
+           fdf_bboolean = .TRUE.
+           if (fdf_output) write(fdf_out,'(a,5x,l10)') valstr, fdf_bboolean
+           
+        elseif (is_false(valstr)) then
+           fdf_bboolean = .FALSE.
+           if (fdf_output) write(fdf_out,'(a,5x,l10)') valstr, fdf_bboolean
+           
+        else
+           write(msg,*) 'unexpected logical value ', valstr
+           call die('FDF module: fdf_bboolean', msg,                    &
+                THIS_FILE, __LINE__, fdf_err)
+        endif
+      else
+         fdf_bboolean = .TRUE.
+         if (fdf_output) write(fdf_out,'(l10,5x,a)') fdf_bboolean, &
+                                       '# block designation by itself'
+      endif
+
+      RETURN
+
+    CONTAINS
+
+      logical function is_true(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'yes')    .or. leqi(valstr, 'true') .or. &
+          leqi(valstr, '.true.') .or. leqi(valstr, 't')    .or. &
+          leqi(valstr, 'y')
+      end function is_true
+
+      logical function is_false(valstr)  result(a)
+      character(len=*), intent(in) :: valstr
+      a = leqi(valstr, 'no')      .or. leqi(valstr, 'false') .or. &
+          leqi(valstr, '.false.') .or. leqi(valstr, 'f')     .or. &
+          leqi(valstr, 'n')
+      end function is_false
+
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_bboolean
 
 !
 !   Returns a single precision value associated with label 'label', 
@@ -2168,9 +2401,70 @@ MODULE fdf
     END FUNCTION fdf_physical
 
 !
+!   Returns a double precision value from a block-line after a certain input value
+!   or the default value if label is not found in the fdf file.
+!   Converts the units to defunit.
+!
+    FUNCTION fdf_bphysical(pline, default, defunit, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(parsed_line), pointer        :: pline
+      real(dp)                          :: default
+      character(*)                      :: defunit
+      integer(ip), intent(in), optional :: after
+
+!-------------------------------------------------------------- Output Variables
+      real(dp)                            :: fdf_bphysical
+
+!--------------------------------------------------------------- Local Variables
+      character(10)                       :: unitstr
+      character(80)                       :: msg
+      real(dp)                            :: value
+      type(line_dlist), pointer           :: mark
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_bphysical', 'FDF subsystem not initialized', &
+              THIS_FILE, __LINE__, fdf_err)
+      endif
+      
+      if (.not. match(pline, 'vn', after)) then
+         write(msg,*) 'no real value for line: '//pline%line
+         call die('FDF module: fdf_bphysical', msg, THIS_FILE, &
+              __LINE__, fdf_err)
+      endif
+      
+      ! get value in block-line
+      value = values(pline, 1, after)
+
+      ! get unit in block-line
+      unitstr = names(pline, 1, after)
+      if ( leqi(unitstr, defunit) ) then
+         fdf_bphysical = value
+      else
+         fdf_bphysical = value * fdf_convfac(unitstr, defunit)
+      end if
+
+      if ( fdf_output ) then
+         if ( present(after) ) then
+            write(fdf_out,'(5x,g20.10,1x,a10,1x,i0)') fdf_bphysical, &
+                 defunit, after
+         else
+            write(fdf_out,'(5x,g20.10,1x,a10)') fdf_bphysical, defunit
+         end if
+         write(fdf_out,'(a,a,5x,g20.10,1x,a10)') &
+              '# above item on line: ', pline%line
+      end if
+
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_bphysical
+
+!
 !   Returns conversion factor between a subset of physical units
 !   Written by j.m.soler. dec'96.
 !   Modified by alberto garcia, jan'97.
+!   Added more units by Nick Papior, Aug'17.
 !
     FUNCTION fdf_convfac(from, to)
       implicit none
@@ -2181,11 +2475,8 @@ MODULE fdf
       real(dp)               :: fdf_convfac
 
 !--------------------------------------------------------------- Local Variables
-      integer(ip), parameter :: nu = 68
-      character(10)          :: dimm(nu), name(nu)
       character(80)          :: msg
       integer(ip)            :: iu, ifrom, ito
-      real(dp)               :: unit(nu)
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -2194,86 +2485,112 @@ MODULE fdf
 !     (meV --> MeV!!) in real life, but not in this restricted 
 !     field.
 !     
-      data (dimm(iu), name(iu), unit(iu), iu=1, 10) /  &
-           'mass  ', 'kg      ', 1.d0,                 &
-           'mass  ', 'g       ', 1.d-3,                &
-           'mass  ', 'amu     ', 1.66054d-27,          &
-           'length', 'm       ', 1.d0,                 &
-           'length', 'nm      ', 1.d-9,                &
-           'length', 'ang     ', 1.d-10,               &
-           'length', 'bohr    ', 0.529177d-10,         &
-           'time  ', 's       ', 1.d0,                 &
-           'time  ', 'fs      ', 1.d-15,               &
-           'energy', 'j       ', 1.d0/
+      integer(ip), parameter :: nu = 78
+      character(8) :: dimm(nu)
+      character(10) :: name(nu)
+      real(dp) :: unit(nu)
+      data (dimm(iu), name(iu), unit(iu), iu=1, 3) / &
+          'mass    ', 'g         ', 1.d-3, &
+          'mass    ', 'kg        ', 1.d0, &
+          'mass    ', 'amu       ', 1.66054d-27 /
 
-      data (dimm(iu), name(iu), unit(iu), iu=11, 20) / &
-           'energy', 'erg     ', 1.d-7,                &
-           'energy', 'ev      ', 1.60219d-19,          &
-           'energy', 'mev     ', 1.60219d-22,          &
-           'energy', 'ry      ', 2.17991d-18,          &
-           'energy', 'mry     ', 2.17991d-21,          &
-           'energy', 'hartree ', 4.35982d-18,          &
-           'energy', 'k       ', 1.38066d-23,          &
-           'energy', 'kcal/mol', 6.94780d-21,          &
-           'force ', 'n       ', 1.d0,                 &
-           'force ', 'ev/ang  ', 1.60219d-9/
+      data (dimm(iu), name(iu), unit(iu), iu=4, 9) / &
+          'length  ', 'm         ', 1.d0, &
+          'length  ', 'cm        ', 1.d-2, &
+          'length  ', 'nm        ', 1.d-9, &
+          'length  ', 'pm        ', 1.d-12, &
+          'length  ', 'ang       ', 1.d-10, &
+          'length  ', 'bohr      ', 0.529177d-10 /
 
-      data (dimm(iu), name(iu), unit(iu), iu=21, 30) / &
-           'force ', 'ry/bohr ', 4.11943d-8,           &
-           'length  ', 'cm      ', 1.d-2,              &
-           'time    ', 'ps      ', 1.d-12,             &
-           'time    ', 'ns      ', 1.d-9,              &
-           'energy  ', 'mhartree', 4.35982d-21,        &
-           'energy  ', 'kj/mol  ', 1.6606d-21,         &
-           'energy  ', 'hz      ', 6.6262d-34,         &
-           'energy  ', 'thz     ', 6.6262d-22,         &
-           'energy  ', 'cm-1    ', 1.986d-23,          &
-           'energy  ', 'cm^-1   ', 1.986d-23/
+      data (dimm(iu), name(iu), unit(iu), iu=10, 19) / &
+          'energy  ', 'j         ', 1.d0, &
+          'energy  ', 'kj        ', 1.d3, &
+          'energy  ', 'erg       ', 1.d-7, &
+          'energy  ', 'mev       ', 1.60219d-22, &
+          'energy  ', 'ev        ', 1.60219d-19, &
+          'energy  ', 'mry       ', 2.17991d-21, &
+          'energy  ', 'ry        ', 2.17991d-18, &
+          'energy  ', 'mha       ', 4.35982d-21, &
+          'energy  ', 'mhartree  ', 4.35982d-21, &
+          'energy  ', 'ha        ', 4.35982d-18 /
+      data (dimm(iu), name(iu), unit(iu), iu=20, 29) / &
+          'energy  ', 'hartree   ', 4.35982d-18, &
+          'energy  ', 'k         ', 1.38066d-23, &
+          'energy  ', 'kelvin    ', 1.38066d-23, &
+          'energy  ', 'kcal/mol  ', 6.94780d-21, &
+          'energy  ', 'kj/mol    ', 1.6606d-21, &
+          'energy  ', 'hz        ', 6.6262d-34, &
+          'energy  ', 'thz       ', 6.6262d-22, &
+          'energy  ', 'cm-1      ', 1.986d-23, &
+          'energy  ', 'cm^-1     ', 1.986d-23, &
+          'energy  ', 'cm**-1    ', 1.986d-23 /
 
-      data (dimm(iu), name(iu), unit(iu), iu=31,40) /  &
-           'pressure', 'pa      ', 1.d0,               &
-           'pressure', 'mpa     ', 1.d6,               &
-           'pressure', 'gpa     ', 1.d9,               &
-           'pressure', 'atm     ', 1.01325d5,          &
-           'pressure', 'bar     ', 1.d5,               &
-           'pressure', 'mbar    ', 1.d11,              &
-           'charge  ', 'c       ', 1.d0,               &
-           'charge  ', 'e       ', 1.602177d-19,       &
-           'dipole  ', 'c*m     ', 1.d0,               &
-           'dipole  ', 'd       ', 3.33564d-30/
+      data (dimm(iu), name(iu), unit(iu), iu=30, 39) / &
+          'time    ', 's         ', 1.d0, &
+          'time    ', 'ns        ', 1.d-9, &
+          'time    ', 'ps        ', 1.d-12, &
+          'time    ', 'fs        ', 1.d-15, &
+          'time    ', 'min       ', 60.d0, &
+          'time    ', 'mins      ', 60.d0, &
+          'time    ', 'hour      ', 3600.d0, &
+          'time    ', 'hours     ', 3600.d0, &
+          'time    ', 'day       ', 86400.d0, &
+          'time    ', 'days      ', 86400.d0 /
 
-      data (dimm(iu), name(iu), unit(iu), iu=41,50) /  &
-           'dipole  ', 'debye   ', 3.33564d-30,        &
-           'dipole  ', 'e*bohr  ', 8.47835d-30,        &
-           'dipole  ', 'e*ang   ', 1.602177d-29,       &
-           'energy  ', 'cm**-1    ', 1.986d-23,        &
-           'pressure', 'ry/bohr**3', 1.47108d13,       &
-           'pressure', 'ev/ang**3 ', 1.60219d11,       &
-           'mominert', 'kg*m**2   ', 1.d0,             &
-           'mominert', 'ry*fs**2  ', 2.17991d-48,      &
-           'efield  ', 'v/m       ', 1.d0,             &
-           'efield  ', 'v/nm      ', 1.d9 /
+      data (dimm(iu), name(iu), unit(iu), iu=40, 43) / &
+          'force   ', 'n         ', 1.d0, &
+          'force   ', 'ev/ang    ', 1.60219d-9, &
+          'force   ', 'ry/bohr   ', 4.11943d-8, &
+          'force   ', 'ha/bohr   ', 2.059715d-08 /
 
-      data (dimm(iu), name(iu), unit(iu), iu=51,60) /  &
-           'efield  ', 'v/ang     ', 1.d10,            &
-           'efield  ', 'v/bohr    ', 1.8897268d10,     &
-           'efield  ', 'ry/bohr/e ', 2.5711273d11,     &
-           'efield  ', 'har/bohr/e', 5.1422546d11,     &
-           'angle   ', 'deg       ', 1.d0,             &
-           'angle   ', 'rad       ', 5.72957795d1,     &
-           'torque  ', 'eV/deg    ', 1.0d0,            &
-           'torque  ', 'eV/rad    ', 1.745533d-2,      &
-           'torque  ', 'Ry/deg    ', 13.6058d0,        &
-           'torque  ', 'Ry/rad    ', 0.237466d0 /
-      data (dimm(iu), name(iu), unit(iu), iu=61,68) /  &
-          'torque  ', 'meV/deg   ', 1.0d-3,            &
-          'torque  ', 'meV/rad   ', 1.745533d-5,       &
-          'torque  ', 'mRy/deg   ', 13.6058d-3,        &
-          'torque  ', 'mRy/rad   ', 0.237466d-3,       &
-          'time    ', 'mins    ', 60.d0,               &
-          'time    ', 'hours   ', 3600.d0,             &
-          'time    ', 'days    ', 86400.d0,            &
-          'time    ', 'ps        ', 1.d-12  /       
+      data (dimm(iu), name(iu), unit(iu), iu=44, 52) / &
+          'pressure', 'pa        ', 1.d0, &
+          'pressure', 'gpa       ', 1.d9, &
+          'pressure', 'atm       ', 1.01325d5, &
+          'pressure', 'bar       ', 1.d5, &
+          'pressure', 'mbar      ', 1.d11, &
+          'pressure', 'ev/ang**3 ', 1.60219d11, &
+          'pressure', 'ev/ang^3  ', 1.60219d11, &
+          'pressure', 'ry/bohr**3', 1.47108d13, &
+          'pressure', 'ry/bohr^3 ', 1.47108d13 /
+
+      data (dimm(iu), name(iu), unit(iu), iu=53, 54) / &
+          'charge  ', 'c         ', 1.d0, &
+          'charge  ', 'e         ', 1.602177d-19 /
+
+      data (dimm(iu), name(iu), unit(iu), iu=55, 59) / &
+          'dipole  ', 'c*m       ', 1.d0, &
+          'dipole  ', 'd         ', 3.33564d-30, &
+          'dipole  ', 'debye     ', 3.33564d-30, &
+          'dipole  ', 'e*bohr    ', 8.47835d-30, &
+          'dipole  ', 'e*ang     ', 1.602177d-29 /
+
+      data (dimm(iu), name(iu), unit(iu), iu=60, 61) / &
+          'mominert', 'kg*m**2   ', 1.d0, &
+          'mominert', 'ry*fs**2  ', 2.17991d-48 /
+
+      data (dimm(iu), name(iu), unit(iu), iu=62, 68) / &
+          'efield  ', 'v/m       ', 1.d0, &
+          'efield  ', 'v/nm      ', 1.d9, &
+          'efield  ', 'v/ang     ', 1.d10, &
+          'efield  ', 'v/bohr    ', 1.8897268d10, &
+          'efield  ', 'ry/bohr/e ', 2.5711273d11, &
+          'efield  ', 'ha/bohr/e ', 5.1422546d11, &
+          'efield  ', 'har/bohr/e', 5.1422546d11 /
+
+      data (dimm(iu), name(iu), unit(iu), iu=69, 70) / &
+          'angle   ', 'deg       ', 1.d0, &
+          'angle   ', 'rad       ', 5.72957795d1 /
+
+      data (dimm(iu), name(iu), unit(iu), iu=71, 78) / &
+          'torque  ', 'mev/deg   ', 1.0d-3, &
+          'torque  ', 'mev/rad   ', 1.745533d-5, &
+          'torque  ', 'ev/deg    ', 1.0d0, &
+          'torque  ', 'ev/rad    ', 1.745533d-2, &
+          'torque  ', 'mry/deg   ', 13.6058d-3, &
+          'torque  ', 'mry/rad   ', 0.237466d-3, &
+          'torque  ', 'ry/deg    ', 13.6058d0, &
+          'torque  ', 'ry/rad    ', 0.237466d0 /
 
 !
       ifrom = 0
@@ -2347,6 +2664,68 @@ MODULE fdf
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_locate
 
+!
+!   Returns true or false whether or not the label 'label' is
+!   a block.
+!   I.e. it returns true if the line has the form bl, if not found, or not bl
+!   it returns false.
+!
+    FUNCTION fdf_isblock(label)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*)                        :: label
+
+!-------------------------------------------------------------- Output Variables
+      logical                             :: fdf_isblock
+
+!--------------------------------------------------------------- Local Variables
+      type(line_dlist), pointer :: mark
+      character(80) :: strlabel
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+         call die('FDF module: fdf_isblock', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      fdf_isblock = .false.
+      
+      mark => file_in%first
+      do while ( associated(mark) )
+
+!!$        if ( match(mark%pline, 'l') ) then
+!!$          strlabel = labels(mark%pline)
+!!$
+!!$          if ( labeleq(strlabel, label, fdf_log) ) then
+!!$            ! fdf has first-encounter acceptance.
+!!$            ! I.e. for an input
+!!$            !   Label_Name 1
+!!$            !   %block Label_Name
+!!$            !     1
+!!$            !   %endblock Label_Name
+!!$            ! the former will be accepted first.
+!!$            exit
+!!$          end if
+
+        if ( match(mark%pline, 'bl') ) then
+          strlabel = blocks(mark%pline)
+          
+          if ( labeleq(strlabel, label, fdf_log) ) then
+            fdf_isblock = .true.
+            exit
+          end if
+        end if
+
+        mark => mark%next
+      end do
+      
+      if (fdf_output) write(fdf_out,'(a,5x,l10)') "#:block? " // label, fdf_isblock
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_isblock
+    
 !
 !   Searches for block label in the fdf hierarchy. If it appears returns
 !   .TRUE. and leaves block mark pointer positioned at the first line.
@@ -2459,6 +2838,8 @@ MODULE fdf
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_bline
 
+
+    
 !
 !   Backspace to the previous physical line in the block
 !   returning .TRUE. while more lines exist in the block bfdf.
@@ -2498,7 +2879,7 @@ MODULE fdf
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           bfdf%mark => bfdf%mark%prev
 
-          if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+          if (fdf_output) write(fdf_out,'(1x,a)') "#:(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
         endif
 
@@ -2509,14 +2890,14 @@ MODULE fdf
 
         if (labeleq(strlabel, bfdf%label, fdf_log)) then
           fdf_bbackspace = .FALSE.
-          if (fdf_output) write(fdf_out,'(1x,a)') "(Cannot backspace) " // "|" //  &
+          if (fdf_output) write(fdf_out,'(1x,a)') "#:(Cannot backspace) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
         endif
 
       else
 
         bfdf%mark => bfdf%mark%prev
-        if (fdf_output) write(fdf_out,'(1x,a)') "(Backspace to) " // "|" //  &
+        if (fdf_output) write(fdf_out,'(1x,a)') "#:(Backspace to) " // "|" //  &
                                 TRIM(bfdf%mark%str) // "|"
       endif
 
@@ -2561,6 +2942,108 @@ MODULE fdf
     END SUBROUTINE fdf_brewind
 
 !
+!   Closes the opened block by looping the remaining lines of the working line.
+!   This is only needed to complete the fdf-*.log files output for direct
+!   usage later. It does nothing internally.
+!
+    SUBROUTINE fdf_bclose(bfdf)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      type(block_fdf) :: bfdf
+
+!--------------------------------------------------------------- Local Variables
+      type(parsed_line), pointer :: pline
+      integer(ip) :: i
+      character(80) :: msg
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_bclose', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      ! Quick return (no need for errors)
+      if ( .not. associated(bfdf%mark) ) return
+
+      ! This should hopefully discourage compilers to optimize the loop away...
+      i = 0
+      do while ( fdf_bline(bfdf, pline) )
+        i = i + fdf_bnvalues(pline)
+      end do
+      write(msg,'(a,i10)') 'Block ', i
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE fdf_bclose
+
+    
+!
+!   Count number of lines with an optional specification.
+!   I.e. this will read through the block and return the number of lines in the
+!   block which matches the morphology (morph)
+!   This may be used to easily digest number of non-empty lines in the block.
+!   Note that a match on the morphology only compares the number of ID's in
+!   morph. I.e. a line with 'vvvil' will match 'vvvi'.
+!
+    FUNCTION fdf_block_linecount(label, morph)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=*) :: label
+      character(len=*), optional :: morph
+!-------------------------------------------------------------- Output Variables
+      integer(ip) :: fdf_block_linecount
+      
+!--------------------------------------------------------------- Local Variables
+      type(block_fdf) :: bfdf
+      type(parsed_line), pointer :: pline
+      logical :: orig_fdf_output
+
+!------------------------------------------------------------------------- BEGIN
+!     Prevents using FDF routines without initialize
+      if (.not. fdf_started) then
+        call die('FDF module: fdf_block_linecount', 'FDF subsystem not initialized', &
+                 THIS_FILE, __LINE__, fdf_err)
+      endif
+
+      ! Store the fdf_output variable (suppress writing to log)
+      orig_fdf_output = fdf_output
+      fdf_output = .false.
+
+      ! Find the block and search for morhp
+      fdf_block_linecount = 0
+      if ( fdf_block(label, bfdf) ) then
+
+        do while ( fdf_bline(bfdf, pline) )
+          if ( present(morph) ) then
+            if ( fdf_bmatch(pline, morph) ) then
+              fdf_block_linecount = fdf_block_linecount + 1
+            end if
+          else
+            fdf_block_linecount = fdf_block_linecount + 1
+          end if
+        end do
+
+      end if
+
+      ! Restore output
+      fdf_output = orig_fdf_output
+
+      if ( fdf_output ) then
+        if ( present(morph) ) then
+          write(fdf_out,'(3a,3x,i0)') "#:block-line-count? ", &
+              trim(label), ' ('//trim(morph)//')', fdf_block_linecount
+        else
+          write(fdf_out,'(2a,3x,i0)') "#:block-line-count? ", &
+              trim(label), fdf_block_linecount
+        end if
+      end if
+      
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION fdf_block_linecount
+
+!
 !   Check if label is defined
 !     
     logical FUNCTION fdf_defined(label)
@@ -2570,18 +3053,16 @@ MODULE fdf
 
 !--------------------------------------------------------------- Local Variables
       type(line_dlist), pointer :: mark
-      type(block_fdf)           :: bfdf
-
 
 !--------------------------------------------------------------------- BEGIN
       ! First, check whether a single label exists:
       fdf_defined = fdf_locate(label, mark)
       if (.not. fdf_defined) then
          ! Check whether there is a block with that label
-         fdf_defined = fdf_block(label,bfdf)
+         fdf_defined = fdf_isblock(label)
       endif
-      if (fdf_defined) then
-         if (fdf_output) write(fdf_out,'(a)') label
+      if ( fdf_output ) then
+        write(fdf_out,'(a,5x,l10)') '#:defined? ' // label, fdf_defined
       endif
 
       RETURN
@@ -2695,13 +3176,13 @@ MODULE fdf
       
 !------------------------------------------------------------------------- BEGIN
       if ( fdf_defined(label) ) then
-         if (fdf_output) write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+         if (fdf_output) write(fdf_out,'(a)') "#**Warning: FDF symbol '"//trim(label)// &
               "' is deprecated."
          if ( fdf_defined(newlabel) ) then
-            if (fdf_output) write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+            if (fdf_output) write(fdf_out,'(a)') "#           FDF symbol '"//trim(newlabel)// &
                  "' will be used instead."
          else
-            if (fdf_output) write(fdf_out,'(a)') "           FDF symbol '"//trim(newlabel)// &
+            if (fdf_output) write(fdf_out,'(a)') "#           FDF symbol '"//trim(newlabel)// &
                  "' replaces '"//trim(label)//"'."
          end if
       end if
@@ -2719,7 +3200,7 @@ MODULE fdf
       
 !------------------------------------------------------------------------- BEGIN
       if ( fdf_defined(label) ) then
-         if (fdf_output) write(fdf_out,'(a)') "**Warning: FDF symbol '"//trim(label)// &
+         if (fdf_output) write(fdf_out,'(a)') "#**Warning: FDF symbol '"//trim(label)// &
               "' is obsolete."
       end if
 
@@ -2732,7 +3213,7 @@ MODULE fdf
 
     character(len=SERIALIZED_LENGTH)  bufline
     type(line_dlist), pointer :: mark
-    integer :: i, length, init, final
+    integer(ip) :: i, length, init, final
 
     mark => file_in%first
     do i= 1, file_in%nlines
@@ -2750,7 +3231,7 @@ MODULE fdf
 
     character(len=SERIALIZED_LENGTH)  bufline
     type(parsed_line), pointer    :: pline
-    integer :: i, init, final
+    integer(ip) :: i, init, final
 
     do i= 1, nlines
        init  = (i-1)*SERIALIZED_LENGTH+1

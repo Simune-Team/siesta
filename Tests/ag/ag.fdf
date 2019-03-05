@@ -16,6 +16,8 @@ XC.authors       PBE
 
 Meshcutoff 100 Ry
 
+DM.MixingWeight 0.1
+
 %block ChemicalSpeciesLabel
 1  47 Ag
 %endblock ChemicalSpeciesLabel

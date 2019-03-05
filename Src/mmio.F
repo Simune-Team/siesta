@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -20,7 +20,7 @@ c 30-Oct-96   Bug fixes in mmio.f:
 c                  -looping for comment lines
 c                  -fixed non-ansi zero stringlength
 c                  -incorrect size calculation for skew-symmetric arrays
-c 	      Other changes in mmio.f:
+c             Other changes in mmio.f:
 c                  -added integer value parameter to calling sequences  
 c                  -enforced proper count in size info line
 c                  -added routine to count words in string (countwd)
@@ -206,7 +206,7 @@ c
         elseif ( field .eq. 'complex' ) then
           do 40 i=1,nnz
             read (iunit,fmt=*,end=4000) indx(i),jndx(i),rpart,ipart
-            cval(i) = cmplx(rpart,ipart)
+            cval(i) = cmplx(rpart,ipart,kind=kind(1.0))  ! Note that cval is single-prec complex
  40       continue
         elseif ( field .eq. 'pattern' ) then
           do 50 i=1,nnz
@@ -258,7 +258,7 @@ c
         elseif ( field .eq. 'complex' ) then
           do 70 i=1,nnzreq
             read (iunit,fmt=*,end=4000) rpart,ipart
-            cval(i) = cmplx(rpart,ipart)
+            cval(i) = cmplx(rpart,ipart,kind=kind(1.0))  ! Note that cval is single-prec complex
  70      continue
         else
            print *,'''pattern'' data not consistant with type ''array'''
@@ -345,7 +345,7 @@ c 30-Oct-96   Bug fixes in mmio.f:
 c                  -looping for comment lines
 c                  -fixed non-ansi zero stringlength
 c                  -incorrect size calculation for skew-symmetric arrays
-c 	      Other changes in mmio.f:
+c             Other changes in mmio.f:
 c                  -added integer value parameter to calling sequences  
 c                  -enforced proper count in size info line
 c                  -added routine to count words in string (countwd)
@@ -583,7 +583,7 @@ c 30-Oct-96   Bug fixes in mmio.f:
 c                  -looping for comment lines
 c                  -fixed non-ansi zero stringlength
 c                  -incorrect size calculation for skew-symmetric arrays
-c 	      Other changes in mmio.f:
+c             Other changes in mmio.f:
 c                  -added integer value parameter to calling sequences  
 c                  -enforced proper count in size info line
 c                  -added routine to count words in string (countwd)

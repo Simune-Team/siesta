@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -7,6 +7,8 @@
 ! ---
 module jobList
 
+  use posix_calls, only: system, chdir, getcwd
+  
   implicit none
 
 PUBLIC:: &
@@ -353,7 +355,7 @@ subroutine runOneJob( dir, queue, files, jobLine )
 
   character(len=1),parameter:: separator(1) = (/';'/)
   logical:: jobEnded
-  integer:: ic, iLine, iWord, jc, jWord, nc, nLines, nWords
+  integer:: ic, iLine, iWord, jc, nc, nLines, nWords
   character(len=wl):: fileName, jobDir, jobName, line(maxWords), &
                       myLine, queueJob, word, words(maxWords)
 
@@ -549,7 +551,7 @@ subroutine readResult( dir, request, name, result, results )
   type(resultsType),optional,intent(out):: result      ! job-results structure
   real(dp),         optional,intent(out):: results(:)  ! requested job results
 
-  integer :: ia, ic, is, iostat, iResult, nAtoms, nResults, za
+  integer :: ia, ic, is, iostat, iResult, nAtoms, nResults
   real(dp):: c(3,3)
   character(len=wl):: fileName
   type(resultsType) :: res

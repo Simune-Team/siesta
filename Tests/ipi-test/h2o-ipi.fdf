@@ -1,5 +1,5 @@
 SystemName          Water molecule -- driven by i-Pi
-SystemLabel         h2o
+SystemLabel         h2o-ipi
 NumberOfAtoms       3
 NumberOfSpecies     2
 
@@ -19,8 +19,6 @@ XC.functional           GGA         # Exchange-correlation functional type
 XC.authors              PBE         # Particular parametrization of xc func
 SpinPolarized           .false.     # Spin unpolarized calculation
 MeshCutoff              150. Ry     # Equivalent planewave cutoff for the grid
-MaxSCFIterations        100         # Maximum number of SCF iterations per step
-
 
 AtomicCoordinatesFormat  Ang
 %block AtomicCoordinatesAndAtomicSpecies

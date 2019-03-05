@@ -143,7 +143,7 @@ C     of the output box.
      .       ' till (not exceeding) MDlast',/,' from the list above.',
      .       ' Specify three numbers MDfirst, MDlast, MDstep -',/,
      .       ' or 0 for any of them as default : ')
-  711 format(" OK, I'll keep steps Nr.",i6,','i6,', etc. till',i6,
+  711 format(" OK, I'll keep steps Nr.",i6,',',i6,', etc. till',i6,
      .       ' ( total',i6,' )')   
   712 format(" Do you want to define output box (Y or N): ")
 

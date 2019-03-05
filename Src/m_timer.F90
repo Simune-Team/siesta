@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -195,15 +195,7 @@ MODULE m_timer
   use moreParallelSubs, only: copyFile  ! Copies a file across nodes
   use parallel,   only: parallel_init   ! Initialize parallel variables
 #ifdef MPI
-  use mpi_siesta, only: MPI_AllGather
-  use mpi_siesta, only: MPI_Bcast
-  use mpi_siesta, only: MPI_Recv
-  use mpi_siesta, only: MPI_Send
-  use mpi_siesta, only: MPI_Integer
-  use mpi_siesta, only: MPI_Double_Precision
-  use mpi_siesta, only: MPI_Character
-  use mpi_siesta, only: MPI_COMM_WORLD
-  use mpi_siesta, only: MPI_STATUS_SIZE
+  use mpi_siesta
 #endif
 
 ! Used module parameters and variables
@@ -260,7 +252,9 @@ CONTAINS
 !===============================================================================
 
 subroutine print_report( prog )   ! Write a report of counted times 
-
+#ifdef _OPENMP
+  use omp_lib
+#endif
 ! Arguments
   implicit none
   character(len=*),intent(in):: prog   ! Name of program or code section
@@ -271,13 +265,15 @@ subroutine print_report( prog )   ! Write a report of counted times
   character(len=maxLength):: progsWriterNode(maxProgs)=' ' ! Prog. names in
                                                            ! writer node
   character(len=maxLength):: progName
+#ifndef _OPENMP
   real    :: treal                 ! Single precision to call cpu_time
-  real(dp):: dtime, myCalTime, progCalTime, progComTime, progTotTime
+#endif
+  real(dp):: myCalTime, progCalTime, progComTime, progTotTime
   real(dp):: timeNow, totalCalTime, totalComTime, totalTime
-  real(dp):: wallTime, wallTime1
+  real(dp):: wallTime
   integer :: busyNode, totalComCalls, iProg, iu, jProg
-  integer :: node, nodes, nProgsWriterNode, progCalls, rootNode, writerNode
-  logical :: found, opened, withinMPI
+  integer :: node, nProgsWriterNode, progCalls, writerNode
+  logical :: found, opened
 #ifdef MPI
   integer:: MPIerror, MPIstatus(MPI_STATUS_SIZE), MPItag
 #endif
@@ -287,8 +283,12 @@ subroutine print_report( prog )   ! Write a report of counted times
   writingTimes = .true.
 
 ! Find present CPU time and convert it to double precision
+#ifdef _OPENMP
+  timeNow = omp_get_wtime( )
+#else
   call cpu_time( treal )
   timeNow = treal
+#endif
   totalTime = timeNow - time0
   call wall_time( wallTime )
   wallTime = wallTime - wallTime0
@@ -384,12 +384,12 @@ subroutine print_report( prog )   ! Write a report of counted times
 !      end if
 ! END DEBUG
 
-      ! Open local report file
-      call io_assign( iu )
-      open( unit=iu, file=myReportFile, form='formatted', status='unknown' )
-
       ! Write header
       if (myNode==writerNode) then
+        ! Open local report file
+        call io_assign( iu )
+        open( unit=iu, file=myReportFile, form='formatted', status='unknown' )
+         
         write(iu,'(/,a,i6)') &
          'timer: Number of nodes = ', nNodes
         write(iu,'(a,i6)') &
@@ -410,8 +410,8 @@ subroutine print_report( prog )   ! Write a report of counted times
           sum(nodeComTime), sum(nodeComTime)/nNodes, totalComTime, &
           sum(nodeComTime)/nNodes / maxval(nodeComTime)
 #else
-	totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
-	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+        totalComTime = huge(1.0_dp) ! Avoid division by zero in prog table output
+        write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
 #endif
         write(iu,'(a,3f12.3,f8.3)') &
           'Tot:  Sum, Avge, myNode, Avg/Max =', &
@@ -476,7 +476,7 @@ subroutine print_report( prog )   ! Write a report of counted times
          'MPI total      ', totalComCalls, &
           totalComTime, 1., totalComTime, totalComTime/totalTime
 #else
-	write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
+        write(iu,'(a)') 'No communications time available. Compile with -DMPI_TIMING'
 #endif
       endif ! (myNode==writerNode)
 
@@ -503,10 +503,12 @@ subroutine print_report( prog )   ! Write a report of counted times
           'Nod.avg: average calculation time in one program across nodes',  &
           'Nod.max: maximum calculation time in one program across nodes',  &
           'Calculation time: CPU time excluding communications', ' '
+
+        ! Copy report file to the file system of root node
+        call io_close( iu )
+        
       endif ! (myNode==writerNode)
 
-      ! Copy report file to the file system of root node
-      call io_close( iu )
       if (reportUnit>0) then ! Append report to file already open
 #ifdef MPI
         ! Find report file name in node 0 and send it to writer node
@@ -649,13 +651,20 @@ end subroutine timer_get
 !===============================================================================
 
 subroutine timer_init()   ! Initialize timing
-
+#ifdef _OPENMP
+  use omp_lib
+#else
 ! Internal variables
   real    :: treal
+#endif
 
   call wall_time( wallTime0 )
+#ifdef _OPENMP
+  time0 = omp_get_wtime( )
+#else
   call cpu_time( treal )       ! Notice single precision
   time0 = treal
+#endif
   nProgs = 0
 
 ! (Re)initialize data array
@@ -705,21 +714,30 @@ END SUBROUTINE timer_report
 ! ==================================================================
 
 subroutine timer_start( prog )   ! Start counting time for a program
+#ifdef _OPENMP
+  use omp_lib
+#endif
 
   implicit none
   character(len=*),intent(in):: prog  ! Name of program of code section
 
 ! Internal variables
   integer :: iProg
+#ifndef _OPENMP
   real    :: treal
+#endif
   real(dp):: timeNow
 
 ! Do not change data if writing a report
   if (writingTimes) return
 
 ! Find present CPU time and convert it to double precision
-  call cpu_time( treal )         ! Standard Fortran95
+#ifdef _OPENMP
+  timeNow = omp_get_wtime( )
+#else
+  call cpu_time( treal )       ! Notice single precision
   timeNow = treal
+#endif
 
 ! Find program index
   iProg = prog_index( prog )
@@ -739,13 +757,18 @@ end subroutine timer_start
 !===============================================================================
 
 subroutine timer_stop( prog )   ! Stop counting time for a program
+#ifdef _OPENMP
+  use omp_lib
+#endif
 
   implicit none
   character(len=*),intent(in):: prog     ! Name of program of code section
 
 ! Internal variables
   integer :: iProg, jProg
+#ifndef _OPENMP
   real    :: treal
+#endif
   real(dp):: deltaTime, timeNow
   logical :: found
 
@@ -758,8 +781,12 @@ subroutine timer_stop( prog )   ! Stop counting time for a program
   if (writingTimes) return
 
 ! Find present CPU time and convert it to double precision
-  call cpu_time( treal )         ! Standard Fortran95
+#ifdef _OPENMP
+  timeNow = omp_get_wtime( )
+#else
+  call cpu_time( treal )       ! Notice single precision
   timeNow = treal
+#endif
 
 ! Find program index
   iProg = prog_index( prog, found )

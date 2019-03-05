@@ -24,15 +24,18 @@ module m_rhog
   ! point. It also computes and stores rhog by default.
   !
   ! - compute_energies: Apart from correcting EKS when mixing the charge,
-  ! it generates rhog from DM_out. 
+  ! it generates rhog from DM_out.
+  !
+  ! - siesta_forces: In transiesta runs the history is reset upon starting
+  !   transiesta
   !
   ! - setup_hamiltonian: it saves rhog_in.
   !
 
   use precision
-  use class_Vector
-  use class_Pair_Vectors
-  use class_Fstack_Pair_Vectors
+  use class_dData1D
+  use class_Pair_dData1D
+  use class_Fstack_Pair_dData1D
 
   use m_spin, only: nspin
 
@@ -69,7 +72,7 @@ module m_rhog
   real(dp)               :: q0sq    !  Thomas-Fermi K2 for damping
   real(dp)               :: q1sq    !  For scalar product
 
-  type(Fstack_Pair_Vectors) :: rhog_stack
+  type(Fstack_Pair_dData1D), save :: rhog_stack
 
   integer :: jg0   ! Index of G=0 vector
 
@@ -152,8 +155,8 @@ CONTAINS
     ! Store rho_in(G) and rho_diff(G) as single vectors
     ! in a circular stack of the appropriate size
 
-    type(Vector)       :: vin, vdiff
-    type(Pair_Vectors) :: pair
+    type(dData1D)      :: vin, vdiff
+    type(Pair_dData1D) :: pair
     integer :: ip, i, j, ispin
     character(len=20) :: msg
 
@@ -171,8 +174,8 @@ CONTAINS
     enddo
 
     write(msg,"(a,i3)") "scf step: ",iscf
-    call newVector(vin,rg_in,"(rhog_in -- " // trim(msg) //")")
-    call newVector(vdiff,rg_diff,"(rhog_diff -- " // trim(msg) //")")
+    call newdData1D(vin,rg_in,name="(rhog_in -- " // trim(msg) //")")
+    call newdData1D(vdiff,rg_diff,name="(rhog_diff -- " // trim(msg) //")")
     call new(pair,vin,vdiff,"(pair in-diff -- " // trim(msg) //")")
 
     call push(rhog_stack,pair)    ! Store in stack
@@ -188,9 +191,9 @@ CONTAINS
     ! Synthesize the DIIS-optimal rho_in(G) and rho_out(G)
     ! from the DIIS coefficients.
 
-    real(dp), dimension(:), pointer   :: vin, vdiff
-    type(Pair_Vectors), pointer       :: pairp
-    type(Vector),  pointer            :: vp
+    real(dp), dimension(:), pointer :: vin, vdiff
+    type(Pair_dData1D), pointer     :: pairp
+    type(dData1D),  pointer         :: vp
     integer :: ip, i, j, ispin, k
 
     ! zero-out the components treated with DIIS
@@ -581,44 +584,56 @@ CONTAINS
  end subroutine order_rhog
 
 !---
- subroutine resetRhog()
+ subroutine resetRhog(continuation)
    use alloc, only: de_alloc
-   call delete(rhog_stack)
-   call de_alloc(rhog_in)
-   call de_alloc(rhog)
-   call de_alloc(g2)
-   call de_alloc(g2mask)
-   call de_alloc(gindex)
-   call de_alloc(star_index)
-   call de_alloc(g2_diis)
-   call de_alloc(rg_in)
-   call de_alloc(rg_diff)
+   !< If .true. we don't de-allocate anything, we only reset the history
+   logical, intent(in), optional :: continuation
+   logical :: lcontinuation
+   
+   lcontinuation = .false.
+   if ( present(continuation) ) lcontinuation = continuation
+   
+   if ( lcontinuation ) then
+     call reset(rhog_stack)
+   else
+     call de_alloc(rhog_in)
+     call de_alloc(rhog)
+     call de_alloc(g2)
+     call de_alloc(g2mask)
+     call de_alloc(gindex)
+     call de_alloc(star_index)
+     call de_alloc(g2_diis)
+     call de_alloc(rg_in)
+     call de_alloc(rg_diff)
+     call delete(rhog_stack)
+   end if
+   
  end subroutine resetRhog
+ 
+ ! Auxiliary function to perform the scalar product of residual
+ ! vectors in the DIIS method
+ function scalar_product(a,b) result (sp)
+   real(dp), intent(in) :: a(:), b(:)
+   real(dp) :: sp
 
-  ! Auxiliary function to perform the scalar product of residual
-  ! vectors in the DIIS method
-  function scalar_product(a,b) result (sp)
-    real(dp), intent(in)  :: a(:), b(:)
-    real(dp)              :: sp
+   integer :: ip, ispin, j
+   real(dp):: weight
 
-    integer :: ip, ispin, j
-    real(dp):: weight
-
-    sp = 0
-    ip = 1
-    ! Use standard definition of the scalar product as conjg(A)*B,
-    ! but take the real part, as per DIIS equations
-    ! If q1sq is not zero, g2_diis(ip) determines the weight, as in KF
-    do ispin = 1, nspin
-       do j = 1, ng_diis
-          weight = (g2_diis(ip) + q1sq) / g2_diis(ip)
-          sp = sp + (a(ip)*b(ip) + a(ip+1)*b(ip+1)) * weight
-          ip = ip + 2
-       enddo
-    enddo
-    ! Note: This is a "local scalar product"
-    ! For efficiency reasons, the All_reduce call is done
-    ! on the whole matrix in m_diis
-  end function scalar_product
+   sp = 0
+   ip = 1
+   ! Use standard definition of the scalar product as conjg(A)*B,
+   ! but take the real part, as per DIIS equations
+   ! If q1sq is not zero, g2_diis(ip) determines the weight, as in KF
+   do ispin = 1, nspin
+     do j = 1, ng_diis
+       weight = (g2_diis(ip) + q1sq) / g2_diis(ip)
+       sp = sp + (a(ip)*b(ip) + a(ip+1)*b(ip+1)) * weight
+       ip = ip + 2
+     enddo
+   enddo
+   ! Note: This is a "local scalar product"
+   ! For efficiency reasons, the All_reduce call is done
+   ! on the whole matrix in m_diis
+ end function scalar_product
 
 end module m_rhog

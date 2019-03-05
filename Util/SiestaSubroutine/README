@@ -28,6 +28,11 @@ run in parallel using MPI. Both versions use the same calling interfaces,
 so that the same user's code can be used with any of them (although the
 MPI version has some extra functionalities).
 
+**NOTE**: The MPI version does NOT yet work with the PEXSI library, as
+the interface assumes that all processes in the default world communicator
+are available for each instance of Siesta.
+**
+
 To use the package, you must:
 1) Write a normal fdf data file for the siesta program (see the siesta
    manual for instructions) with the following characteristics:

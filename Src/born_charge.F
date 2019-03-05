@@ -13,14 +13,15 @@
       CONTAINS
       
       subroutine born_charge()
+      use precision
       use siesta_options, only:dx
       use sparse_matrices
-      use parallel,       only: Node, Nodes, IOnode, ParallelOverK
+      use parallel,       only: Node, Nodes, IOnode
       USE m_ksvinit,      only: nkpol, kpol, wgthpol
       use siesta_geom,    only: na_u, na_s, xa, scell, ucell, isa
       use atomlist,       only: no_u, indxuo, iphorb, iaorb, lasto
       use atomlist,       only: rmaxo, no_s, no_l
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, SPpol, NonCol, SpOrb ! CC RC Added
       use m_ksv,          only: KSV_pol
       use siesta_geom,    only: shape
 #ifdef MPI
@@ -44,6 +45,18 @@
 !     It is called only for those steps (even) in which the dx
 !     is positive.
 !
+      if (NonCol .or. SpOrb) then
+       if ( IONode ) then
+          write(*,'(/,a)')
+     .         'born_charge: implemented only for spin-polarized '
+          write(*,'(a)')
+     .         'born_charge: or paramagnetic calculations'
+       end if
+       
+       return
+       
+      endif
+
       if (nkpol.lt.1) then
          if (IOnode) write(6,'(/,a,f12.6)')
      .        'siesta: specify polarization grid for BC calculation'

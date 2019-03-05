@@ -16,7 +16,6 @@
       use m_mpi_utils, only : broadcast
       use files,       only : slabel
       use alloc,       only : re_alloc, de_alloc
-
       implicit none
 
 
@@ -2239,6 +2238,7 @@ C Instantaneous temperature (Kelvin)
 !       Save (now old) forces to VERLET_RESTART
 !
       if (Node .eq. 0) then
+
          call io_assign(iacc)
          open(unit=iacc,file=restart_file, form='formatted',
      $        status='unknown', action= 'write', position='rewind')

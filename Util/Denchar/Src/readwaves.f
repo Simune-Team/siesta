@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -52,18 +52,16 @@ C INTERNAL VARIABLES .............
       INTEGER IDUMB, NUMBERWF, NUMK, IK, IIK
       real(dp) REPSI,IMPSI
 
-      CHARACTER PASTE*33
       CHARACTER, SAVE :: SNAME*30, FNAME*33
       CHARACTER CHDUMB*20
 
       SAVE UNIT
-      EXTERNAL PASTE
 C ..................
 
 
       IF (IFLAG .EQ. 0) THEN
         SNAME = FDF_STRING('SystemLabel','siesta')
-        FNAME = PASTE(SNAME,'.WFS')
+        FNAME = TRIM(SNAME)//'.WFS'
 
         CALL IO_ASSIGN(UNIT)
         OPEN (UNIT, FILE=FNAME, FORM='unformatted', STATUS='unknown')

@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -14,14 +14,14 @@ C  Julian Gale, NRI, Curtin Uni, March 2004
 C
       use precision
       use fdf
-      use m_fdf_global, only: fdf_global_get
       use siesta_options, only: want_domain_decomposition
       use siesta_options, only: want_spatial_decomposition
-      use siesta_options, only: isolve, SOLVE_ORDERN
+      use siesta_options, only: isolve, SOLVE_ORDERN, SOLVE_PEXSI
       use siesta_options, only: rcoor
       use parallel,     only : Node, Nodes, BlockSize, ProcessorY
       use parallelsubs, only : WhichNodeOrb, GetNodeOrbs
       use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
+      use parallelsubs, only : pexsi_dist, pexsi_bs
       use spatial
       use sys
       use alloc,        only : re_alloc
@@ -29,7 +29,11 @@ C
       use parallelsubs, only : set_processorY, set_processorYdefault
 #ifdef MPI
       use parallelsubs, only : set_BlockSizeDefault
+      use mpi_siesta,   only: MPI_Comm_World, MPI_Comm_Self
 #endif
+      use class_OrbitalDistribution
+      use sparse_matrices,     only : block_dist, single_dist
+
       implicit none
 
 #ifdef MPI
@@ -193,13 +197,25 @@ C Check that cut-off is less than cell parameter
       if (.not. lspatial) then
 C Set BlockSize
 #ifdef MPI
+        pexsi_dist = .false.
         call set_blocksizedefault(Nodes,no_u,blocksizedefault)
         BlockSize = fdf_integer('blocksize',blocksizedefault)
-
+        call newDistribution(blocksize,MPI_Comm_World,block_dist)
 #else
         BlockSize = 8
+        call newDistribution(blocksize,-1,block_dist)
 #endif
       endif
+
+      ! Create single communicator
+#ifdef MPI
+      call newDistribution(no_u,MPI_Comm_Self,single_dist,
+     &     name='Single-dist')
+#else
+      call newDistribution(no_u,-1           ,single_dist,
+     &     name='Singledist')
+#endif
+
 
 #ifdef MPI
 C Output indication of parallel parameters
@@ -265,15 +281,15 @@ C
             call io_assign(iu)
             open(unit=iu,file="BLOCK_INDEXES",form="formatted")
             write(iu,*) "nl2g"
-            do Lorb = 1, no_u	
+            do Lorb = 1, no_u   
                write(iu, "(i6,8i9)") Lorb, (nL2G(Lorb,j),j=1,Nodes)
             enddo
             write(iu,*) "nNode"
-            do Gorb = 1, no_u	
+            do Gorb = 1, no_u   
                write(iu, "(i6,i5)") Gorb, nNode(Gorb)
             enddo
             write(iu,*) "nG2L (node 0)"
-            do Gorb = 1, no_u	
+            do Gorb = 1, no_u   
                write(iu, "(i6,i5)") Gorb, nG2L(Gorb)
             enddo
             write(iu,*) "nOrbPerNode"

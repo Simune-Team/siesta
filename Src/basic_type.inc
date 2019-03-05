@@ -1,6 +1,7 @@
 !--------------------------------------------------------------
 !
-! Basic functionality for reference-counted data structures
+!! Basic functionality for reference-counted data structures
+!! For some background, see [here](|page|/page/datastructures/1-buds.html))
 !
 !   This file has to be included after the global declarations
 !   for extra functionality, just where a "contains" statement
@@ -21,6 +22,9 @@
 
   public  :: TYPE_NAME
   public  :: init, delete, assignment(=), refcount, id
+  public  :: name
+  public  :: same ! same %data address (i.e. if: this1 = this2)
+  public  :: initialized ! is allocated
 
   interface assignment(=)
     module procedure assign_
@@ -42,10 +46,23 @@
     module procedure id_
   end interface
 
+  interface name
+    module procedure name_
+  end interface
+
+  interface initialized
+    module procedure initialized_
+  end interface
+
+  interface same
+    module procedure same_
+  end interface
+
+
   ! Stand-alone routine which must be provided
   interface 
       subroutine die(str)
-      character(len=*), intent(in), optional  :: str
+      character(len=*), intent(in) :: str
       end subroutine die
   end interface
 
@@ -85,7 +102,7 @@ CONTAINS
     integer :: error
 !    logical, external  :: print_debug_object_info
 
-    if (.not. associated(this%data)) return
+    if (.not. initialized(this) ) return
 
     this%data%refCount = this%data%refCount - 1
 
@@ -109,7 +126,8 @@ CONTAINS
       endif
     endif
 
-    this%data => null()
+    ! This is important to use the correct initialized functions
+    nullify(this%data)
 
   end subroutine delete_
 
@@ -129,7 +147,7 @@ CONTAINS
     type (TYPE_NAME), intent(inout) :: this
     type (TYPE_NAME), intent(in) :: other
 
-    if (.not. associated(other%data)) then
+    if (.not. initialized(other) ) then
      call die("Assignment of non-initialized object in " // trim(mod_name))
     endif
 
@@ -144,6 +162,22 @@ CONTAINS
 
   end subroutine assign_
 
+  pure function initialized_(this) result(init)
+    type(TYPE_NAME), intent(in) :: this
+    logical :: init
+    ! If it is not associated, it can not contain any data
+    init = associated(this%data)
+  end function initialized_
+
+  pure function same_(this1,this2) result(same)
+    type(TYPE_NAME), intent(in) :: this1, this2
+    logical :: same
+    ! If they are not both initialized they can not be the same
+    same = initialized(this1) .and. initialized(this2)
+    if ( .not. same ) return
+    same = associated(this1%data, target=this2%data)
+  end function same_
+
   function refcount_(this) result(count)
    type(TYPE_NAME), intent(in)  :: this
    integer  :: count
@@ -157,6 +191,12 @@ CONTAINS
    character(len=36)            :: str
    str = this%data%id
   end function id_
+
+  function name_(this) result(str)
+   type(TYPE_NAME), intent(in) :: this
+   character(len=len_trim(this%data%name)) :: str
+   str = trim(this%data%name)
+  end function name_
 
   subroutine tag_new_object(this)
    type(TYPE_NAME), intent(inout)  :: this

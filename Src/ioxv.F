@@ -46,8 +46,7 @@ C
       use parallel,   only : Node
       use precision,  only : dp
 #ifdef MPI
-      use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, 
-     . MPI_Integer, MPI_Double_Precision, MPI_Logical 
+      use mpi_siesta
 #endif
 
       implicit          none
@@ -57,26 +56,21 @@ C
       real(dp)          cell(3,3), va(3,na), vcell(3,3), xa(3,na)
       character(len=*) ::         task
 
-      character(len=label_length+3) :: paste
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
-      character(len=label_length+3), save ::   fname
-      logical, save :: frstme = .true.
+      character(len=label_length+3) ::   fname
 
       integer    ia, iu, iv, ix
 #ifdef MPI
       integer    MPIerror
 #endif
 
+C     Find name of file
+      fname = trim(slabel) // '.XV'
+      
 C Only do reading and writing for IOnode
       if (Node.eq.0) then
-
-C Find name of file
-        if (frstme) then
-          fname = paste( slabel, '.XV')
-          frstme = .false.
-        endif
 
 C Choose between read or write
         if (task.eq.'read' .or. task.eq.'READ') then

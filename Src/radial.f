@@ -14,19 +14,21 @@
 
       implicit none
 
-      private
-
       public :: rad_alloc, rad_get, rad_setup_d2, rad_zero
       public :: radial_read_ascii, radial_dump_ascii
       public :: radial_dump_xml, reset_rad_func
 
-      type, public :: rad_func
+      public :: rad_func
+
+      type   :: rad_func
          integer          n
-         double precision cutoff         
-         double precision delta
-         double precision, pointer :: f(:)=>null()   ! Actual data
-         double precision, pointer :: d2(:)=>null()  ! 2nd derivative
+         real(dp) cutoff         
+         real(dp) delta
+         real(dp), pointer :: f(:)=>null()   ! Actual data
+         real(dp), pointer :: d2(:)=>null()  ! 2nd derivative
       end type rad_func
+
+      private
 
       CONTAINS
 
@@ -139,11 +141,11 @@
       endif
 !
       if (print_header) then
-         write(lun,'(i4,2g22.12,a)') op%n,
+         write(lun,'(i4,2g26.16,a)') op%n,
      $        op%delta, op%cutoff, " # npts, delta, cutoff"
       endif
       do j=1,op%n
-         write(lun,'(2g22.12)') (j-1)*op%delta, op%f(j)
+         write(lun,'(2g26.16)') (j-1)*op%delta, op%f(j)
       enddo
 
       end subroutine radial_dump_ascii

@@ -41,29 +41,24 @@ C
       implicit          none
 
       character(len=*)                    :: task
-      character(len=label_length+3)       :: paste
       logical                             :: found
       real(dp)                            :: cell(3,3)
       real(dp)                            :: vcell(3,3)
       real(dp)                            :: xa(3,na_u)
-      external          io_assign, io_close, paste
+      external          io_assign, io_close
 
 c Internal variables and arrays
-      character(len=label_length+3), save :: fname
-      logical,                       save :: frstme = .true.
+      character(len=label_length+3) :: fname
       integer    ia, iu, iv, ix, k
 #ifdef MPI
       integer    MPIerror
 #endif
 
+C Find name of file
+      fname = trim(slabel) // '.ZM'
+
 C Only do reading and writing for IOnode
       if (Node.eq.0) then
-
-C Find name of file
-        if (frstme) then
-          fname = paste( slabel, '.ZM' )
-          frstme = .false.
-        endif
 
 C Choose between read or write
         if (task.eq.'read' .or. task.eq.'READ') then

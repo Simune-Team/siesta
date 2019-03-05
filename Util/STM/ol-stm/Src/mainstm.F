@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -24,6 +24,7 @@ C
       USE BASIS_IO
       USE LISTSC_MODULE, ONLY: LISTSC_INIT
       USE FDF
+      use m_wfsx
 
       IMPLICIT NONE
 
@@ -61,11 +62,14 @@ C
      .   DATM, DSCFNA
 
       CHARACTER
-     .  FILEIN*20, FILEOUT*20
-
+     .  FILEIN*20, FILEOUT*20,
+     .  SNAME*40, FNAME*50
       LOGICAL 
      .  FOUND
 
+      INTEGER :: wf_unit
+      logical :: gamma
+      
       EXTERNAL
      .  IODM, REDATA, REINITSTM, VOLCEL
 
@@ -192,42 +196,19 @@ C Calculate unit cell vectors
 
 C Allocate variables
 
-
-
 C call readwaves just to find out number of wavefunctions to print
 C allocate temporary space for eigenvalues and eigenfunctions
-        NUMWF = 1
-        NK = 1
+      
+      SNAME = FDF_STRING('SystemLabel','siesta')
+      FNAME = trim(SNAME) //'.WFSX'
 
-        ALLOCATE(NWF(NK))
-        CALL MEMORY('A','I',NK,'mainstm')
-        ALLOCATE(INDW(NK,NUMWF))
-        CALL MEMORY('A','I',NUMWF*NK,'mainstm')
-        ALLOCATE(K(NK,3))
-        CALL MEMORY('A','D',NK*3,'mainstm')
-        ALLOCATE(E(NK,NUMWF,NSPIN))
-        CALL MEMORY('A','D',NUMWF*NSPIN*NK,'mainstm')
-        ALLOCATE(RPSI(NO_U,NK,NUMWF,NSPIN))
-        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'mainstm')
-        ALLOCATE(IPSI(NO_U,NK,NUMWF,NSPIN))
-        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'mainstm')
+      CALL IO_ASSIGN(wf_unit)
+      OPEN (wf_unit, FILE=FNAME, FORM='unformatted',
+     $       STATUS='unknown',position='rewind')
 
-        CALL READWAVES(NSPIN,NO_U,0,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
-
-C deallocate temporary space 
-        CALL MEMORY('D','I',SIZE(NWF),'mainstm')
-        DEALLOCATE(NWF)
-        CALL MEMORY('D','I',SIZE(INDW),'mainstm')
-        DEALLOCATE(INDW)
-        CALL MEMORY('D','D',SIZE(K),'mainstm')
-        DEALLOCATE(K)
-        CALL MEMORY('D','D',SIZE(E),'mainstm')
-        DEALLOCATE(E)
-        CALL MEMORY('D','D',SIZE(RPSI),'mainstm')
-        DEALLOCATE(RPSI)
-        CALL MEMORY('D','D',SIZE(IPSI),'mainstm')
-        DEALLOCATE(IPSI)
-
+      CALL wfsx_get_info(wf_unit,NSPIN,NO_U,NUMWF,NK,gamma)
+      print *, "NK, NUMWF, gamma: ", NK, NUMWF, gamma
+      
 C allocate space for eigenenergies and (complex) eigenfunctions 
         ALLOCATE(NWF(NK))
         CALL MEMORY('A','I',NK,'mainstm')
@@ -242,8 +223,14 @@ C allocate space for eigenenergies and (complex) eigenfunctions
         ALLOCATE(IPSI(NO_U,NK,NUMWF,NSPIN))
         CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'mainstm')
 
-C call readwaves again to actually read wavefunctions
-        CALL READWAVES(NSPIN,NO_U,1,NWF,NUMWF,NK,RPSI,IPSI,E,K,INDW)
+!     call readwaves again to actually read wavefunctions
+! This could be inlined in routine stm below to
+! save memory
+        
+        rewind(wf_unit)
+        CALL read_wfsx(wf_unit,NSPIN,NO_U,NWF,NUMWF,NK,
+     $       RPSI,IPSI,E,K,INDW)
+        call io_close(wf_unit)
 
 C Read option for STM 
       CALL READSTM( VOLUME, 

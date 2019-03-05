@@ -47,9 +47,11 @@
 ! 
 !          rc_1  rc_2 .... rc_nzeta  
 ! 
-!   are the cutoff radii in bohrs. This line is mandatory and there must
-!   be at least nzeta values (the extra ones are discarded)
-! 
+!   are the cutoff radii in bohrs. This line is mandatory
+!   If the number of rc's for a given shell is less than the number of
+!   'zetas', the program will assign the last rc value to the remaining
+!   zetas, rather than stopping with an error. This is particularly
+!   useful for Bessel suites of orbitals.
 !   A line containing contraction (scale) factors is optional, but if it
 !   appears, the values *must be* real numbers, and there must be at
 !   least nzeta of them.
@@ -76,7 +78,7 @@
 !   There are no 'per l-shell' polarization orbitals, except if the
 !   third character of 'basis_size' is 'p' (as in 'dzp'), in which
 !   case polarization orbitals are defined so they have the minimum      
-!   angular momentum l such that there are not occupied orbitals 
+!   angular momentum l such that there are no occupied orbitals 
 !   with the same l in the valence shell of the ground-state 
 !   atomic configuration. They polarize the corresponding l-1 shell.
 ! 
@@ -86,7 +88,7 @@
 ! 
 !   rc(1:nzeta) is set to 0.0
 !   lambda(1:nzeta) is set to 1.0  (this is a change from old practice)
-! 
+!
 !  ----------------------------------
 !  
 !   Next come the blocks associated to the KB projectors:
@@ -110,12 +112,37 @@
 !           Set it to lmxo+1, or to lpol+1, where lpol is the angular
 !           momentum of the highest-l polarization orbital.
 !       endif
-! 
+!
+!       There is a hard limit for lmxkb: if the pseudopotential file
+!       contains semilocal pseudopotentials up to lmax_pseudo, then
+!       lmxkb <= lmax_pseudo.
+!     
 !       The  number of KB projectors per l is set to the number of
 !       n-shells in the corresponding PAO shell with the same l. For l
 !       greater than lmxo, it is set to 1. The reference energies are
 !       in all cases set to huge(1.d0) to mark the default.
-!       
+!
+!       Archaeological note: The first implementation of the basis-set generation
+!       module had only non-polarization orbitals. Polarization orbitals were added
+!       later as "second-class" companions. This shows in details like "lmxo" (the
+!       maximum l of the basis set) not taking into account polarization orbitals.
+!       Polarization orbitals were tagged at the end, without maintaining l-shell
+!       ordering.
+!       Even later, support for "semicore" orbitals was added. A new ('nsm') index was
+!       used to distinguish the different orbitals in a l-shell. Polarization orbitals
+!       were not brought into this classification. 
+!       The code is strained when semicore and polarization orbitals coexist for the same l,
+!       as in Ti, whose electronic structure is []3s2 3p6 3d2 4s2 (4p0*)  with 4p as the
+!       polarization orbital.  
+!       Here 'nsemic' (the number of semicore states) is kept at zero for l=1 
+!       (the polarization orbital is not counted), with the side-effect that only one KB
+!       projector is generated for l=1.
+!       Special checks have been implemented to cover these cases.
+! 
+!       Future work should probably remove the separate treatment of polarization orbitals.
+!       (Note that if *all* orbitals are specified in a PAO.Basis block, in effect turning
+!       perturbative polarization orbitals into 'normal' orbitals, this problem is not present.)
+!     
 ! =======================================================================
 !
       use precision
@@ -123,6 +150,7 @@
       use basis_types, only: nsp, basis_parameters, ground_state_t
       use basis_types, only: destroy, copy_shell, initialize
       use pseudopotential, only: pseudo_read, pseudo_reparametrize
+      use pseudopotential, only: pseudo_init_constant
       use periodic_table, only: qvlofz, lmxofz, cnfig, atmass
       use chemical
       use sys
@@ -130,15 +158,11 @@
 
       Implicit None
 
-      type(basis_def_t), pointer::   basp
-      type(shell_t), pointer::  s
-      type(lshell_t), pointer::  ls
-      type(kbshell_t), pointer:: k
+      type(basis_def_t), pointer :: basp => null()
+      type(shell_t), pointer :: s => null()
+      type(lshell_t), pointer :: ls => null()
+      type(kbshell_t), pointer :: k => null()
 
-      type(block_fdf)            :: bfdf
-      type(parsed_line), pointer :: pline
-
-      character(len=*), parameter   :: defunit='Ry'
       character(len=1), parameter   ::
      $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
@@ -162,6 +186,7 @@
       real(dp), save, public    :: rmax_radial_grid
       
       public :: read_basis_specs
+      public :: label2species
 
       private
 
@@ -176,7 +201,9 @@
       character(len=15) :: basis_size
       character(len=10) :: basistype_generic
 
-      
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       type(ground_state_t), pointer :: gs
 
       integer nns, noccs, i, ns_read, l
@@ -249,13 +276,7 @@ C Sanity checks on values
 !     Use standard routine in chemical module to process the
 !     chemical species
 !
-      call read_chemical_types()
-      nsp = number_of_species()
-
-      allocate(basis_parameters(nsp))
-      do isp=1,nsp
-        call initialize(basis_parameters(isp))
-      enddo
+      nsp = size(basis_parameters)
 
       synthetic_atoms = .false.
 
@@ -279,7 +300,8 @@ C Sanity checks on values
           basp%mass = atmass(abs(int(basp%z)))
         endif
         if (basp%bessel) then
-          ! do nothing here
+          ! Initialize a constant pseudo
+          call pseudo_init_constant(basp%pseudopotential)
         else if (basp%synthetic) then
           synthetic_atoms = .true.
           ! Will set gs later
@@ -288,7 +310,7 @@ C Sanity checks on values
           call ground_state(abs(int(basp%z)),basp%ground_state)
           call pseudo_read(basp%label,basp%pseudopotential)
         endif
-        if (reparametrize_pseudos)
+        if (reparametrize_pseudos.and. .not. basp%bessel)
      .    call pseudo_reparametrize(p=basp%pseudopotential,
      .                             a=new_a, b=new_b,label=basp%label)
       enddo
@@ -426,6 +448,11 @@ C Sanity checks on values
       integer lpol, isp, ish, i, l
       character(len=20) unitstr
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
+      integer :: lmax_pseudo
+      
       lpol = 0
 
       if (fdf_block('PS.KBprojectors',bfdf) ) then
@@ -451,17 +478,21 @@ C Sanity checks on values
             l = fdf_bintegers(pline,1)
             if (l .gt. basp%lmxkb) basp%lmxkb = l
             if (.not. fdf_bline(bfdf, pline)) then
-              if (ish .ne. basp%nkbshells)
-     .          call die("Not enough shells for this species...")
+               if (ish .ne. basp%nkbshells)
+     .          call die("Not enough kb shells for this species...")
               ! There is no line with ref energies
-            else 
-              if (fdf_bmatch(pline,'ni')) then
+            else  if (fdf_bmatch(pline,'ni')) then
                 ! We are seeing the next species' section
-                if (ish .ne. basp%nkbshells)
+               if (ish .ne. basp%nkbshells)
      .            call die("Not enough shells for this species...")
-                if (.not. fdf_bbackspace(bfdf))
+               if (.not. fdf_bbackspace(bfdf))
+     .               call die('readkb: ERROR in PS.KBprojectors block')
+            else if (fdf_bmatch(pline,'ii')) then
+                ! We are seeing the next shell's section
+               if (ish .gt. basp%nkbshells)
+     .            call die("Too many kb shells for this species...")
+               if (.not. fdf_bbackspace(bfdf))
      .            call die('readkb: ERROR in PS.KBprojectors block')
-              endif
             endif
           enddo       ! end of loop over shells for species isp
 
@@ -486,8 +517,21 @@ C Sanity checks on values
             k%l = l
             if (l.gt.basp%lmxo) then
               k%nkbl = 1
-            else           ! Set equal to the number of PAO shells
-              k%nkbl = basp%lshell(l)%nn
+            else
+              ! Set equal to the number of PAO shells with this l
+              k%nkbl = basp%lshell(l)%nn     
+              ! Should include polarization orbs (as in Ti case: 3p..4p*)
+              ! (See 'archaeological note' in the header of this file)
+              if (l>0) then
+                 do i = 1, basp%lshell(l-1)%nn
+                    if (basp%lshell(l-1)%shell(i)%polarized) then
+                       k%nkbl = k%nkbl + 1
+                       write(6,"(a,i1,a)") trim(basp%label) //
+     $                  ': nkbl increased for l=',l,
+     $                  ' due to the presence of a polarization orbital'
+                    endif
+                 enddo
+              endif
               if (k%nkbl.eq.0) then
                 write(6,*) 'Warning: Empty PAO shell. l =', l
                 write(6,*) 'Will have a KB projector anyway...'
@@ -500,7 +544,8 @@ C Sanity checks on values
         else          ! Set in KBprojectors
           if (basp%lmxkb_requested.ne.-1) then ! set in PS.lmax
             if (basp%lmxkb.ne.basp%lmxkb_requested) then
-              call die("LmaxKB conflict")
+              call die("LmaxKB conflict between " //
+     $                 "PS.Lmax and PS.KBprojectors blocks")
             endif
           endif
           !! OK, we have a genuine lmxkb
@@ -539,6 +584,12 @@ C Sanity checks on values
             k => basp%kbshell(l)
             k%l = l
             k%nkbl = fdf_bintegers(pline,2)
+            if (k%nkbl < 0) then
+               call die("nkbl < 0 in PS.KBprojectors")
+            endif
+            if (k%nkbl == 0) then
+               call message("WARNING","nkbl=0 in PS.KBprojectors")
+            endif
             allocate(k%erefkb(k%nkbl))
             if (.not. fdf_bline(bfdf,pline)) then
               if (ish .ne. basp%nkbshells)
@@ -546,28 +597,34 @@ C Sanity checks on values
               ! There is no line with ref energies
               ! Use default values
               k%erefKB(1:k%nkbl) = huge(1.d0)
-            else 
-              if (fdf_bmatch(pline,'ni')) then
+            else if (fdf_bmatch(pline,'ni')) then
                 ! We are seeing the next species' section
-                if (ish .ne. basp%nkbshells)
-     .            call die("Not enough shells for this species...")
+               if (ish .ne. basp%nkbshells)
+     .            call die("Not enough kb shells for this species...")
+                ! Use default values for ref energies
+               k%erefKB(1:k%nkbl) = huge(1.d0)
+               if (.not. fdf_bbackspace(bfdf))
+     .            call die('readkb: ERROR in PS.KBprojectors block')
+            else if (fdf_bmatch(pline,'ii')) then
+                ! We are seeing the next shell's section
+                if (ish .gt. basp%nkbshells)
+     .            call die("Too many kb shells for this species...")
                 ! Use default values for ref energies
                 k%erefKB(1:k%nkbl) = huge(1.d0)
                 if (.not. fdf_bbackspace(bfdf))
      .            call die('readkb: ERROR in PS.KBprojectors block')
-              else
-                if (fdf_bnvalues(pline) .ne. k%nkbl)
+             else
+                if (fdf_bnreals(pline) .ne. k%nkbl)
      .            call die("Wrong number of energies")
-                unitstr = defunit
+                unitstr = 'Ry'
                 if (fdf_bnnames(pline) .eq. 1)
      .            unitstr = fdf_bnames(pline,1)
                 ! Insert ref energies in erefkb
                 do i= 1, k%nkbl
                   k%erefKB(i) =
-     .                 fdf_bvalues(pline,i)*fdf_convfac(unitstr,defunit)
+     .                 fdf_breals(pline,i)*fdf_convfac(unitstr,'Ry')
                 enddo
-              endif
-            endif
+             endif
           enddo            ! end of loop over shells for species isp
 
           ! For those l's not specified in block, use default values
@@ -583,12 +640,31 @@ C Sanity checks on values
         enddo   !! Over species
       endif
 
+      do isp=1,nsp
+!
+!      Check that we have enough semilocal components...
+!
+         basp=>basis_parameters(isp)
+         lmax_pseudo = basp%pseudopotential%npotd - 1 
+         if (basp%lmxkb > lmax_pseudo) then
+            write(6,'(a,i1,a)')
+     .           trim(basp%label) //
+     .           " pseudopotential only contains V_ls up to l=",
+     .           lmax_pseudo, " -- lmxkb reset."
+            basp%lmxkb = lmax_pseudo
+         endif
+      enddo
+
       end subroutine readkb
 !---------------------------------------------------------------
 
       subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
+      integer nrcs_zetas
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       if (.not. fdf_block('PAO.Basis',bfdf)) RETURN
 
@@ -736,11 +812,21 @@ C Sanity checks on values
           s%rc(:) = 0.d0
           s%lambda(:) = 1.d0
           if (.not. fdf_bline(bfdf,pline)) call die("No rc's")
-          if (fdf_bnvalues(pline) .ne. s%nzeta)
-     .      call die("Wrong number of rc's")
+          
+          ! Use the last rc entered for the successive zetas
+          ! if there are not enough values (useful for Bessel)
+          nrcs_zetas = fdf_bnvalues(pline)
+          if (nrcs_zetas < 1) then
+           call die("Need at least one rc per shell in PAO.Basis block")
+          endif
           do i= 1, s%nzeta
-            s%rc(i) = fdf_bvalues(pline,i)
+             if (i <= nrcs_zetas) then
+                s%rc(i) = fdf_bvalues(pline,i)
+             else
+                s%rc(i) = s%rc(nrcs_zetas)
+             endif
           enddo
+
           if (s%split_norm_specified) then
             do i = 2,s%nzeta
               if (s%rc(i) /= 0.0_dp) then
@@ -764,11 +850,20 @@ C Sanity checks on values
      .          call die('repaobasis: ERROR in PAO.Basis block')
               cycle shells
             else
-              if (fdf_bnreals(pline) .ne. s%nzeta)
-     .          call die("Wrong number of lambda's")
-              do i=1,s%nzeta
-                s%lambda(i) = fdf_breals(pline,i)
-              enddo
+              ! Read scale factors
+              ! Use the last scale factor entered for the successive zetas
+              ! if there are not enough values 
+               nrcs_zetas = fdf_bnreals(pline)
+               if (nrcs_zetas < 1) then
+                 call die("Need at least one scale factor in PAO.Basis")
+               endif
+               do i= 1, s%nzeta
+                  if (i <= nrcs_zetas) then
+                     s%lambda(i) = fdf_breals(pline,i)
+                  else
+                     s%lambda(i) = s%lambda(nrcs_zetas)
+                  endif
+               enddo
             endif
           endif
 
@@ -1066,9 +1161,9 @@ c (according to atmass subroutine).
       subroutine semicore_check(is)
       integer, intent(in)  :: is
 
-      real*8, parameter :: tiny = 1.d-5
+      real(dp), parameter :: tiny = 1.d-5
       integer ndiff
-      real*8 zval, zval_vps, charge_loc
+      real(dp) zval, zval_vps, charge_loc
 
       basp => basis_parameters(is)
 

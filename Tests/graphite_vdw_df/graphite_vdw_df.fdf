@@ -45,8 +45,6 @@ KgridCutoff       5. Ang
 
 DM.UseSaveDM       no
 
-MaxSCFiterations   10
-
 ##### OUTPUT OPTIONS ##########################################################
 
 alloc_report_level      2

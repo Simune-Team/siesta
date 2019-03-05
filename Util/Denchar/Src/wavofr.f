@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -133,11 +133,11 @@ C **********************************************************************
      .  FNAMEWFURE*60, FNAMEWFUIM*60, FNAMEWFDRE*60, FNAMEWFDIM*60, 
      .  FNAMEWFMO*60, FNAMEWFPH*60,
      .  FNAMEWFUMO*60, FNAMEWFUPH*60, FNAMEWFDMO*60, FNAMEWFDPH*60,
-     .  PASTE*60, CHAR1*10, CHAR2*10, ITOCHAR*10, 
+     .  CHAR1*10, CHAR2*10, ITOCHAR*10, 
      .  EXT*20, EXT2*25
 
       EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE,
+     .  IO_ASSIGN, IO_CLOSE,
      .  NEIGHB, WROUT, ITOCHAR
 
 C **********************************************************************
@@ -249,27 +249,27 @@ C Open files to store wave functions -----------------------------------
 
         IF (NSPIN .EQ. 1) THEN
           IF (IDIMEN .EQ. 2) THEN
-            FNAMEWFRE = PASTE(SNAME,'.CON.K')
-            FNAMEWFRE = PASTE(FNAMEWFRE,CHAR2)
-            FNAMEWFRE = PASTE(FNAMEWFRE,'.WF')
-            FNAMEWFRE = PASTE(FNAMEWFRE,CHAR1)
-            FNAMEWFPH = PASTE(FNAMEWFRE,'.PHASE')
-            FNAMEWFMO = PASTE(FNAMEWFRE,'.MOD')
-            FNAMEWFIM = PASTE(FNAMEWFRE,'.IMAG')
-            FNAMEWFRE = PASTE(FNAMEWFRE,'.REAL')
+            FNAMEWFRE = TRIM(SNAME)//'.CON.K'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR2
+            FNAMEWFRE = TRIM(FNAMEWFRE)//'.WF'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR1
+            FNAMEWFPH = TRIM(FNAMEWFRE)//'.PHASE'
+            FNAMEWFMO = TRIM(FNAMEWFRE)//'.MOD'
+            FNAMEWFIM = TRIM(FNAMEWFRE)//'.IMAG'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//'.REAL'
           ELSEIF (IDIMEN .EQ. 3) THEN
-            FNAMEWFRE = PASTE(SNAME,'.K')
-            FNAMEWFRE = PASTE(FNAMEWFRE,CHAR2)
-            FNAMEWFRE = PASTE(FNAMEWFRE,'.WF')
-            FNAMEWFRE = PASTE(FNAMEWFRE,CHAR1)
-            FNAMEWFPH = PASTE(FNAMEWFRE,'.PHASE')
-            FNAMEWFPH = PASTE(FNAMEWFPH,'.cube')
-            FNAMEWFMO = PASTE(FNAMEWFRE,'.MOD')
-            FNAMEWFMO = PASTE(FNAMEWFMO,'.cube')
-            FNAMEWFIM = PASTE(FNAMEWFRE,'.IMAG')
-            FNAMEWFIM = PASTE(FNAMEWFIM,'.cube')
-            FNAMEWFRE = PASTE(FNAMEWFRE,'.REAL')
-            FNAMEWFRE = PASTE(FNAMEWFRE,'.cube')
+            FNAMEWFRE = TRIM(SNAME)//'.K'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR2
+            FNAMEWFRE = TRIM(FNAMEWFRE)//'.WF'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR1
+            FNAMEWFPH = TRIM(FNAMEWFRE)//'.PHASE'
+            FNAMEWFPH = TRIM(FNAMEWFPH)//'.cube'
+            FNAMEWFMO = TRIM(FNAMEWFRE)//'.MOD'
+            FNAMEWFMO = TRIM(FNAMEWFMO)//'.cube'
+            FNAMEWFIM = TRIM(FNAMEWFRE)//'.IMAG'
+            FNAMEWFIM = TRIM(FNAMEWFIM)//'.cube'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//'.REAL'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//'.cube'
           ENDIF
           CALL IO_ASSIGN(UNITRE1)
           OPEN(UNIT = UNITRE1, FILE = FNAMEWFRE, STATUS = 'UNKNOWN',
@@ -289,41 +289,41 @@ C Open files to store wave functions -----------------------------------
           REWIND(UNITPH1)
         ELSEIF (NSPIN .EQ. 2) THEN
           IF (IDIMEN .EQ. 2) THEN
-            FNAMEWFURE = PASTE(SNAME,'.CON.K')
-            FNAMEWFURE = PASTE(FNAMEWFURE,CHAR2)
-            FNAMEWFURE = PASTE(FNAMEWFURE,'.WF')
-            FNAMEWFURE = PASTE(FNAMEWFURE,CHAR1)
-            FNAMEWFDRE = PASTE(FNAMEWFURE,'.DOWN')
-            FNAMEWFDPH = PASTE(FNAMEWFDRE,'.PHASE')
-            FNAMEWFDMO = PASTE(FNAMEWFDRE,'.MOD')
-            FNAMEWFDIM = PASTE(FNAMEWFDRE,'.IMAG')
-            FNAMEWFDRE = PASTE(FNAMEWFDRE,'.REAL')
-            FNAMEWFURE = PASTE(FNAMEWFURE,'.UP')
-            FNAMEWFUPH = PASTE(FNAMEWFURE,'.PHASE')
-            FNAMEWFUMO = PASTE(FNAMEWFURE,'.MOD')
-            FNAMEWFUIM = PASTE(FNAMEWFURE,'.IMAG')
-            FNAMEWFURE = PASTE(FNAMEWFURE,'.REAL')
+            FNAMEWFURE = TRIM(SNAME)//'.CON.K'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR2
+            FNAMEWFURE = TRIM(FNAMEWFURE)//'.WF'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR1
+            FNAMEWFDRE = TRIM(FNAMEWFURE)//'.DOWN'
+            FNAMEWFDPH = TRIM(FNAMEWFDRE)//'.PHASE'
+            FNAMEWFDMO = TRIM(FNAMEWFDRE)//'.MOD'
+            FNAMEWFDIM = TRIM(FNAMEWFDRE)//'.IMAG'
+            FNAMEWFDRE = TRIM(FNAMEWFDRE)//'.REAL'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP'
+            FNAMEWFUPH = TRIM(FNAMEWFURE)//'.PHASE'
+            FNAMEWFUMO = TRIM(FNAMEWFURE)//'.MOD'
+            FNAMEWFUIM = TRIM(FNAMEWFURE)//'.IMAG'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//'.REAL'
           ELSE IF (IDIMEN .EQ. 3) THEN
-            FNAMEWFURE = PASTE(SNAME,'.K')
-            FNAMEWFURE = PASTE(FNAMEWFURE,CHAR2)
-            FNAMEWFURE = PASTE(FNAMEWFURE,'.WF')
-            FNAMEWFURE = PASTE(FNAMEWFURE,CHAR1)
-            FNAMEWFDPH = PASTE(FNAMEWFURE,'.DOWN.PHASE')
-            FNAMEWFDPH = PASTE(FNAMEWFDPH,'.cube')
-            FNAMEWFDMO = PASTE(FNAMEWFURE,'.DOWN.MOD')
-            FNAMEWFDMO = PASTE(FNAMEWFDMO,'.cube')
-            FNAMEWFDIM = PASTE(FNAMEWFURE,'.DOWN.IMAG')
-            FNAMEWFDIM = PASTE(FNAMEWFDIM,'.cube')
-            FNAMEWFDRE = PASTE(FNAMEWFURE,'.DOWN.REAL')
-            FNAMEWFDRE = PASTE(FNAMEWFDRE,'.cube')
-            FNAMEWFUPH = PASTE(FNAMEWFURE,'.UP.PHASE')
-            FNAMEWFUPH = PASTE(FNAMEWFUPH,'.cube')
-            FNAMEWFUMO = PASTE(FNAMEWFURE,'.UP.MOD')
-            FNAMEWFUMO = PASTE(FNAMEWFUMO,'.cube')
-            FNAMEWFUIM = PASTE(FNAMEWFURE,'.UP.IMAG')
-            FNAMEWFUIM = PASTE(FNAMEWFUIM,'.cube')
-            FNAMEWFURE = PASTE(FNAMEWFURE,'.UP.REAL')
-            FNAMEWFURE = PASTE(FNAMEWFURE,'.cube')
+            FNAMEWFURE = TRIM(SNAME)//'.K'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR2
+            FNAMEWFURE = TRIM(FNAMEWFURE)//'.WF'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR1
+            FNAMEWFDPH = TRIM(FNAMEWFURE)//'.DOWN.PHASE'
+            FNAMEWFDPH = TRIM(FNAMEWFDPH)//'.cube'
+            FNAMEWFDMO = TRIM(FNAMEWFURE)//'.DOWN.MOD'
+            FNAMEWFDMO = TRIM(FNAMEWFDMO)//'.cube'
+            FNAMEWFDIM = TRIM(FNAMEWFURE)//'.DOWN.IMAG'
+            FNAMEWFDIM = TRIM(FNAMEWFDIM)//'.cube'
+            FNAMEWFDRE = TRIM(FNAMEWFURE)//'.DOWN.REAL'
+            FNAMEWFDRE = TRIM(FNAMEWFDRE)//'.cube'
+            FNAMEWFUPH = TRIM(FNAMEWFURE)//'.UP.PHASE'
+            FNAMEWFUPH = TRIM(FNAMEWFUPH)//'.cube'
+            FNAMEWFUMO = TRIM(FNAMEWFURE)//'.UP.MOD'
+            FNAMEWFUMO = TRIM(FNAMEWFUMO)//'.cube'
+            FNAMEWFUIM = TRIM(FNAMEWFURE)//'.UP.IMAG'
+            FNAMEWFUIM = TRIM(FNAMEWFUIM)//'.cube'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP.REAL'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//'.cube'
           ENDIF
 
           CALL IO_ASSIGN(UNITRE1)

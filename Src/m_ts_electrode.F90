@@ -10,481 +10,944 @@ module m_ts_electrode
 ! Routines that are used for Electrodes GFs calculations
 ! Heavily updated by Nick Papior Andersen, 2012
 !
-!=============================================================================
-! CONTAINS:
-!          1) surface_Green
-!          2) create_Green
-!          3) init_electrode_HS
-!          4) set_electrode_HS_Transfer
 
-! TODO
-! Remove all references to Gamma for the electrode.
-! The TranSIESTA routine can at the moment not create the surface Green's
-! function without having a transfer matrix.
-! Thus we ENFORCE Gamma == .false. and the program should die if
-! the electrode calculation was a Gamma calculation!
+  use precision, only : dp
 
   implicit none
 
   public :: create_Green
+  public :: init_Electrode_HS
+  public :: calc_next_GS_Elec
 
-  private !
+  private
 
+  ! BLAS parameters
+  complex(dp), parameter :: z_1  = cmplx(1._dp,0._dp,dp)
+  complex(dp), parameter :: z_m1 = cmplx(-1._dp,0._dp,dp)
+  complex(dp), parameter :: z_0  = cmplx(0._dp,0._dp,dp)
 
-  ! This is the integer telling which direction is the propagation direction
-  ! DO NOT CHANGE THIS! 
-  ! At the moment all code is enforced to use PropDir == 3
-  ! TODO move this to an option in the m_ts_options module.
-  ! It should be user specific (however, it requires a lot of
-  ! recoding)
-  integer, parameter :: PropDir = 3
+  interface set_HS_transfer
+     module procedure set_HS_Transfer_1d
+     module procedure set_HS_Transfer_2d
+  end interface set_HS_transfer
 
 contains
 
-  ! Calculates the surface Green's function for the electrodes
+
+  ! Calculates the surface Green function for the electrodes
   ! Handles both the left and right one
-  subroutine surface_Green(tjob,nv,Zenergy,h00,s00,h01,s01, &
-       gs,zdos)
+  ! this is the Sancho, Sancho and Rubio algorithm
+  subroutine SSR_sGreen_DOS(no,ZE,H00,S00,H01,S01,accu, GS, &
+       DOS, T, &
+       nwork, zwork, &
+       iterations, final_invert)
+       
 ! ***************** INPUT **********************************************
-! character   tjob    : Specifies the left or the right electrode
-! integer     nv      : Number of orbitals in the electrode
-! complex(dp) Zenergy : The energy of the Green's function evaluation
-! complex(dp) H00     : Hamiltonian within the first unit cell
-! complex(dp) S00     : Overlap matrix within the first unit cell
-! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell
-! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell
+! integer     no      : Number of orbitals in the electrode
+! complex(dp) ZE      : The energy of the Green function evaluation
+! complex(dp) H00     : Hamiltonian within the first unit cell (discarding T-direction)
+! complex(dp) S00     : Overlap matrix within the first unit cell (discarding T-direction)
+! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in T-direction)
+! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
+! real(dp) accu       : Define the accuracy needed for convergence.
 ! ***************** OUTPUT *********************************************
-! complex(dp) gs      : Surface Green's function of the electrode
-! complex(dp) zdos    : Density of energy point
+! complex(dp) GS      : Surface Green function of the electrode
+! real(dp) DOS        : DOS of bulk electrode (additive)
+! real(dp) T          : transmission of bulk electrode (additive)
 ! **********************************************************************
-    use precision, only : dp
+    use m_pivot_array, only : ipiv
+    use m_mat_invert
+    use precision, only: dp
     use units, only : Pi
-    use fdf, only : leqi
-    use m_ts_aux_rout, only : csolveg
+    use intrinsic_missing, only: transpose
 
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    character(len=1) :: tjob
-    integer :: nv
-    complex(dp) :: ZEnergy 
-    complex(dp) :: h00(0:nv*nv-1),s00(0:nv*nv-1)
-    complex(dp) :: h01(0:nv*nv-1),s01(0:nv*nv-1)
+    integer,     intent(in) :: no
+    complex(dp), intent(in) :: ZE 
+    complex(dp), intent(in) :: H00(no*no),S00(no*no)
+    complex(dp), intent(in) :: H01(no*no),S01(no*no)
+    real(dp), intent(in) :: accu
+
+    integer, intent(in) :: nwork
+
+    logical, intent(in), optional :: final_invert
+
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp) :: gs(0:nv*nv-1)
-    complex(dp) :: zdos
+    complex(dp), intent(out), target :: GS(no*no)
+    complex(dp), intent(inout), target :: zwork(nwork)
+    real(dp), intent(inout) :: DOS(no)
+    real(dp), intent(inout) :: T
+
+    integer, intent(out), optional :: iterations
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    integer :: nv2,iter
+    integer :: nom1, no2, nosq
     integer :: ierr             !error in inversion
     integer :: i,j,ic,ic2
+    logical :: as_first
 
-    complex(dp) :: a,b
-    real(dp)    :: ro
-    real(dp), parameter :: accur=1.d-15
+    real(dp) :: ro
+    complex(dp) :: zij, zji
 
-    integer, dimension(:), allocatable :: ipvt
-    complex(dp), dimension(:), allocatable :: &
-         rh,rh1,rh3,alpha,beta,ab,ba,gb,gs2
+    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,gb
+    complex(dp), dimension(:), pointer :: gsL,gsR
+    
+    complex(dp), external :: zdotu, zdotc
 
 #ifdef TRANSIESTA_DEBUG
-      call write_debug( 'PRE surface_Green' )
+    call write_debug( 'PRE SSR_sGreen_DOS' )
 #endif
 
+    ! Initialize counter
+    if ( present(iterations) ) iterations = 0
 
-    allocate(ipvt(nv))
-    allocate(rh(0:2*nv*nv))
-    allocate(rh1(0:2*nv*nv))
-    allocate(rh3(0:4*nv*nv))
-    allocate(alpha(0:nv*nv-1))
-    allocate(beta(0:nv*nv-1))
-    allocate(ba(0:nv*nv-1))
-    allocate(ab(0:nv*nv-1))
-    allocate(gb(0:nv*nv-1))
-    allocate(gs2(0:nv*nv-1))
-    call memory('A','I',nv,'calc_green')
-    call memory('A','Z',14*nv*nv+3,'calc_green')
+!    call timer('ts_GS',1)
 
-    a=(1.d0,0.d0)
-    b=(0.d0,0.d0)
-    nv2 =2*nv
+    nom1 = no - 1
+    no2  = no * 2
+    nosq = no * no
 
-! FDN
-! gb = Z*S00-H00
-! alpha = -(Z*S01-H01)        
-    do i=0,nv*nv-1
-       gb(i) = zenergy*s00(i)-h00(i)
-       alpha(i) = h01(i)-zenergy*s01(i)
+    if ( nwork < 9 * nosq ) call die('SSR_sGreen_DOS: &
+         &Not enough work space')
+    i = 0
+    rh  => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    rh1 => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    alpha => zwork(i+1:i+nosq) 
+    i = i + nosq
+    beta => zwork(i+1:i+nosq) 
+    i = i + nosq
+    w => zwork(i+1:i+nosq)
+    i = i + nosq
+    GB => zwork(i+1:i+nosq) 
+    i = i + nosq
+
+    gsL => zwork(i+1:i+nosq) 
+    gsR => GS
+
+!$OMP parallel default(shared), private(i,j,ic,ic2)
+
+! gb    =   Z*S00-H00
+!$OMP do
+    do i = 1 , nosq
+       GB(i)    = ZE * S00(i) - H00(i)
     end do
-
-! FDN
-! gs = Z*S00-H00
-! gs2 = Z*S00-H00
-    do i=0,nv*nv-1
-       gs(i) = gb(i)
-       gs2(i) = gb(i)
+!$OMP end do nowait
+! alpha = -(Z*S01-H01)
+!$OMP do
+    do i = 1 , nosq
+       alpha(i) = H01(i) - ZE * S01(i)
     end do
+!$OMP end do nowait
+    ! zero arrays
+    ! We do not start with H00 as we then
+    ! will still need to re-adjust when
+    ! calculating the scattering matrices.
+!$OMP do
+    do i = 1 , nosq
+       gsL(i) = z_0
+    end do
+!$OMP end do nowait
+!$OMP do
+    do i = 1 , nosq
+       gsR(i) = z_0
+    end do
+!$OMP end do nowait
 
-! FDN
 ! beta = -(Z*S10-H10)
-    do j=0,nv-1
-       do i=0,nv-1
-          ic = i + nv*j
-          ic2 = j + nv*i
-          beta(ic) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
+!$OMP do
+    do j = 1 , no
+       ic = no * (j-1)
+       do i = 1 , no
+          ic2 = no*(i-1) + j
+          beta(ic+i) = conjg(H01(ic2)) - ZE * conjg(S01(ic2))
        end do
     end do
+!$OMP end do nowait
 
+!$OMP end parallel
 
-    iter=0
-1000 continue
-    iter=iter+1
+    ! Initialize loop
+    ro = accu + 1._dp
+    as_first = .false.
+    do while ( ro > accu ) 
 
+       ! Increment iterations
+       if ( present(iterations) ) &
+            iterations = iterations + 1
 
-! FDN
-! nv2=2*nv
-! rh = -(Z*S01-H01) ,j<nv
-! rh = -(Z*S10-H10) ,j>nv
-    do j=0,nv2-1
-       do i=0,nv-1
-          ic =i + j*nv
-          ic2=i + (j - nv)*nv
-          if(j.lt.nv)then
-             rh(ic) = alpha(ic)
-          else
-             rh(ic) = beta(ic2)
-          endif
+! rh = -(Z*S01-H01) ,j<no
+! rh = -(Z*S10-H10) ,j>no
+!$OMP parallel default(shared), private(i)
+       
+!$OMP do
+       do i = 1, nosq
+          rh(i)      = alpha(i)
        end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1, nosq
+          rh(nosq+i) = beta(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1, nosq
+          ! w = Z*S00-H00
+          w(i) = GB(i)
+       end do
+!$OMP end do nowait
+       
+!$OMP end parallel
+
+! rh =  rh1^(-1)*rh
+! rh =  t0
+       call zgesv(no, no2, w, no, ipiv, rh, no, ierr)
+       if ( ierr /= 0 ) then
+          write(*,*) 'ERROR: SSR_sGreen_DOS 1 MATRIX INVERSION FAILED'
+          write(*,*) 'ERROR: LAPACK INFO = ',ierr
+       end if
+
+       ! switch pointers instead of copying elements
+       call switch_alpha_beta_rh1(as_first)
+
+! alpha = -(Z*S01-H01)*t0
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
+! beta  = -(Z*S10-H10)*t0 ??
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
+
+! ba    = (Z*S10-H10)*t0b
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_0,w,no)
+!$OMP parallel default(shared), private(i)
+
+!$OMP do
+       do i = 1 , nosq
+          GB(i)  = GB(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do 
+       do i = 1 , nosq
+          gsL(i) = gsL(i) + w(i)
+       end do
+!$OMP end do nowait
+       
+!$OMP end parallel
+
+! ab    = (Z*S01-H01)*t0
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
+
+       ro = -1._dp
+!$OMP parallel default(shared), private(i)
+!$OMP do
+       do i = 1 , nosq
+          GB(i)  = GB(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1 , nosq
+          gsR(i) = gsR(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do reduction(max:ro)
+       do i = 1 , nosq
+          ! update the criteria
+          ro = max(ro,abs(w(i)))
+       end do
+!$OMP end do nowait
+!$OMP end parallel
+       
     end do
 
-! FDN
-! rh3 = Z*S00-H00
-    do i=0,nv*nv-1
-       rh3(i) = gb(i)
-    end do
-
-! FDN
-! rh =  rh3^(-1)*rh
-! rh = t0
-    call csolveg(nv,nv2,rh3,rh,ipvt,ierr) 
-
-    if(IERR.ne.0) then
-       write(*,*) 'ERROR: calc_green 1 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
+    ! *** Initiate DOS and bulk transmission calculation...
+    
+    ! Invert to obtain the bulk Green function
+    call mat_invert(GB,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: SSR_sGreen_DOS GB MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
+    ! Calculate scattering matrices for left-right self-energy
+    ! and correct the self-energy with the bulk Hamiltonian
+    ! to get the correct self-energy
+!$OMP parallel do default(shared), private(i,j,ic,ic2,zij,zji)
+    do j = 1 , no
+       do i = 1 , j - 1
+          ic  = (j-1)*no+i
+          ic2 = (i-1)*no+j
+          
+          ! Calculate bulk Hamiltonian and overlap
+          zij = ZE*S00(ic ) - H00(ic )
+          zji = ZE*S00(ic2) - H00(ic2)
+          
+          ! left scattering states
+          alpha(ic)  = gsL(ic ) - conjg(gsL(ic2))
+          alpha(ic2) = gsL(ic2) - conjg(gsL(ic ))
+          
+          ! Correct for bulk self-energy + bulk Hamiltonian
+          gsL(ic ) = zij + gsL(ic )
+          gsL(ic2) = zji + gsL(ic2)
 
-! FDN
-! nv2=2*nv
-! rh1 = -(Z*S01-H01) ,j<nv
-! rh1 = -(Z*S10-H10) ,j>nv
-! a = 1
-! b = 0
-    do j=0,nv-1
-       do i=0,nv2-1
-          ic =i + j*nv
-          ic2 =i-nv + j*nv
-          if(i.lt.nv)then
-             rh1(i + nv2*j) = alpha(ic)
-          else
-             rh1(i + nv2*j) = beta(ic2)
-          end if
+          ! right scattering states (transposed)
+          beta(ic2) = gsR(ic ) - conjg(gsR(ic2))
+          beta(ic ) = gsR(ic2) - conjg(gsR(ic ))
+
+          ! Correct for bulk self-energy + bulk Hamiltonian
+          gsR(ic ) = zij + gsR(ic )
+          gsR(ic2) = zji + gsR(ic2)
+          
        end do
+       ic = (j-1)*no+j
+       
+       ! Add bulk Hamiltonian and overlap
+       zij = ZE*S00(ic) - H00(ic)
+       
+       ! left scattering state
+       alpha(ic) = gsL(ic) - conjg(gsL(ic))
+       
+       ! Correct for bulk self-energy + bulk Hamiltonian
+       gsL(ic) = zij + gsL(ic)
+       
+       ! right scattering state (transposed)
+       beta(ic) = gsR(ic) - conjg(gsR(ic))
+       
+       ! Correct for bulk self-energy + bulk Hamiltonian
+       gsR(ic) = zij + gsR(ic)
+       
     end do
-! FDN
-! rh3 = 1*rh1*rh + 0*rh3                   
-! rh3 = -(Z*S01-H01)*t0
-    call zgemm('N','N',nv2,nv2,nv,a,rh1,nv2,rh,nv,b,rh3,nv2)
+!$OMP end parallel do
 
-! FDN
-! aplha = -(Z*S01-H01)*t0
-! ba = -(Z*S10-H10)*t0b
-    do j=0,nv-1
-       do i=0,nv2-1
-          ic =i + j*nv
-          ic2 =i-nv + j*nv
-          if(i.lt.nv)then
-             alpha(ic) = rh3(i + nv2*j) 
-          else
-             ba(ic2) = -rh3(i + nv2*j) 
-          end if
-       end do
-    end do
-    do j=nv,nv2-1
-       do i=0,nv2-1
-          ic=i + (j - nv)*nv
-          ic2=i - nv + (j - nv)*nv
-          if(i.lt.nv)then
-             ab(ic)= -rh3(i + nv2*j) 
-          else
-             beta(ic2)= rh3(i + nv2*j) 
-          end if
-       end do
-    end do
+    
+    ! gsR and GS are the same array
+    ! Hence it we should not return the
+    ! inverted matrix, copy gsR to other
+    ! work-array
+    if ( present(final_invert) ) then
+       if ( .not. final_invert ) then
 
-    do i=0,nv*nv-1
-       gb(i) =  gb(i) + ba(i) + ab(i)
-       gs(i) =  gs(i) + ab(i) 
-       gs2(i) =  gs2(i) + ba(i) 
-    end do
+          ! we return a non-inverted matrix
+          ! hence prohibit the inversion of the matrix
+          ! by moving data to another work-array
+!$OMP parallel do default(shared), private(i)
+          do i = 1 , nosq
+             rh1(i) = gsR(i)
+          end do
+!$OMP end parallel do
+          gsR => rh1(1:nosq)
 
-    ro =-1.0d0
-    do j =0,nv*nv-1
-       ro =max(ro,dreal(ab(j))**2+dimag(ab(j))**2)
-    end do
-    ro =dsqrt(ro)
+       end if
+    end if
+    
 
-    if(ro.gt.accur) go to 1000
-
-
-    do i=0,nv*nv-1
-       rh3(i) = gs(i)
-       rh(i) = 0.0d0
-    end do
-
-    do j=0,nv-1
-       rh(j*(nv+1)) = 1.d0
-    end do
-
-    call csolveg(nv,nv,rh3,rh,ipvt,ierr)
-
-    if(IERR.ne.0) then
-       write(*,*) 'ERROR: calc_green 2 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
+    ! Invert to get the Surface Green function (Left)
+    call mat_invert(gsL,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: SSR_sGreen_DOS GSL MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
 
-    do i=0,nv*nv-1
-       gs(i) = rh(i)
-    end do
-
-
-
-    do i=0,nv*nv-1
-       rh3(i) = gs2(i)
-       rh(i) = 0.0d0
-    end do
-
-    do j=0,nv-1
-       rh(j*(nv+1)) = 1.d0
-    end do
-
-    call csolveg(nv,nv,rh3,rh,ipvt,ierr)
-
-
-    if(IERR.ne.0) then
-       write(*,*) 'ERROR: calc_green 3 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
+    ! Invert to get the Surface Green function (Right)
+    call mat_invert(gsR,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: SSR_sGreen_DOS GSR MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
     end if
+    
 
-    do i=0,nv*nv-1
-       gs2(i) = rh(i)
+    ! Calculate bulk transmision
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,GB   ,no,alpha,no,z_0,w    ,no)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','C',no,no,no,z_1,w   ,no,GB    ,no,z_0,alpha,no)
+
+    ! Calculate bulk-transmission (same as matrix product + trace)
+    T = T - real(zdotu(nosq,alpha,1,beta,1),dp)
+
+
+    ! We now calculate the density of states...
+!$OMP parallel default(shared), private(i) 
+!$OMP do
+    do i = 1 , nosq
+       alpha(i) = H01(i) -        ZE  * S01(i)
+    end do
+!$OMP end do nowait
+!$OMP do
+    do i = 1 , nosq
+       ! notice, we utilize the relation (H10-z*S10) = (H01-conjg(z)*S01)^H
+       beta(i)  = H01(i) - conjg(ZE) * S01(i)
+    end do
+!$OMP end do nowait
+!$OMP end parallel
+
+    ! Transpose GB to make the latter dot product easier
+    call transpose(no,GB)
+    i = 1
+    j = nosq + 1 
+    ! DOS = diag{ G_b * S00 + 
+    !             G_l * (H01 - E * S01 ) * G_b * S10 +
+    !             G_r * (H10 - E * S10 ) * G_b * S01   }
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','N',no,no,no,z_1,gsL  ,no,alpha,no,z_0,w    ,no)
+    ! Note that GB is transposed, (so transpose back here)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'N','T',no,no,no,z_1,w    ,no,GB   ,no,z_0,rh(i),no)
+    ! Note that GB is transposed, (so transpose back here)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'C','T',no,no,no,z_1,beta ,no,GB   ,no,z_0,rh(j),no)
+    ! Transpose the matrix product to align the following
+    ! dot product (reduces the need to calculate the total
+    ! matrix before we take the trace)
+#ifdef USE_GEMM3M
+    call zgemm3m( &
+#else
+    call zgemm( &
+#endif
+         'T','T',no,no,no,z_1,rh(j),no,gsR  ,no,z_0,w    ,no)
+
+    ! We resort to use the zdotu/zdotc to not calculate
+    ! unnessary elements (for large systems this should
+    ! speed it up!) For small systems this has little
+    ! overhead
+    i = 1
+    do j = 1 , no
+       
+       ! Calculate for the bulk
+       ro =    aimag(zdotu(no,GB(i),1,S00(i),1))
+       ! For the left self-energy
+       ro = ro+aimag(zdotc(no,S01(i),1,rh(i),1))
+       ! For the right self-energy
+       ro = ro+aimag(zdotu(no,w(i),1,S01(i),1))
+
+       ! Calculate the total DOS
+       DOS(j) = DOS(j) - ro / Pi
+       
+       i = i + no
+       
     end do
 
-
-    do i=0,nv*nv-1
-       rh3(i) = gb(i)
-       rh(i) = 0.0d0
-    end do
-
-    do j=0,nv-1
-       rh(j*(nv+1)) = 1.d0
-    end do
-
-    call csolveg(nv,nv,rh3,rh,ipvt,ierr)
-
-    if(IERR.ne.0) then
-       write(*,*) 'ERROR: calc_green 4 MATRIX INVERSION FAILED'
-       write(*,*) 'ERROR: LAPACK INFO = ',IERR
-    end if
-
-    do i=0,nv*nv-1
-       gb(i) = rh(i)
-    end do
-
-
-!      ----      DOS     -----
-
-    do i=0,nv*nv-1
-       alpha(i) = h01(i)-zenergy*s01(i)
-    end do
-    call zgemm('N','N',nv,nv,nv,a,gs2,nv,alpha,nv,b,ab,nv)
-    do i=0,nv*nv-1
-       alpha(i) = ab(i)
-    end do
-    call zgemm('N','N',nv,nv,nv,a,alpha,nv,gb,nv,b,ab,nv)
-
-
-    do j=0,nv-1
-       do i=0,nv-1
-          ic = i + nv*j
-          ic2 = j + nv*i
-          beta(ic) = dconjg(h01(ic2))-zenergy*dconjg(s01(ic2))
-       end do
-    end do
-    call zgemm('N','N',nv,nv,nv,a,gs,nv,beta,nv,b,ba,nv)
-    do i=0,nv*nv-1
-       beta(i) = ba(i)
-    end do
-    call zgemm('N','N',nv,nv,nv,a,beta,nv,gb,nv,b,ba,nv)
-
-
-    do i=0,nv*nv-1
-       rh3(i) = 0.0d0
-    end do
-
-    call zgemm('N','N',nv,nv,nv,a,gb,nv,s00,nv,b,rh3,nv)
-    call zgemm('N','C',nv,nv,nv,a,ab,nv,s01,nv,a,rh3,nv)
-    call zgemm('N','N',nv,nv,nv,a,ba,nv,s01,nv,a,rh3,nv)
-
-
-    zdos = 0.0d0
-
-    do j=0,nv-1
-       zdos = zdos + (rh3(j*(nv+1)))
-    end do
-
-
-
-    if( leqi(tjob,'L') ) then
-       do i=0,nv*nv-1
-          gs(i) =  gs2(i) 
-       end do
-    endif
-
-    call memory('D','Z',14*nv*nv+3,'calc_green')
-    call memory('D','I',nv,'calc_green')
-    deallocate(ipvt)
-    deallocate(rh,rh1,rh3)
-    deallocate(alpha,beta)
-    deallocate(ba,ab)
-    deallocate(gb,gs2)
+!    call timer('ts_GS',2)
 
 #ifdef TRANSIESTA_DEBUG
-      call write_debug( 'POS surface_Green' )
+    call write_debug( 'POS SSR_sGreen_DOS' )
 #endif
 
-  end subroutine surface_Green
+  contains
 
-!------------------------------------------------------------------------
-!************************************************************************
-!------------------------------------------------------------------------
+    ! We supply a routine to switch the pointer position of alpha,beta / rh1
+    subroutine switch_alpha_beta_rh1(as_first)
+      logical, intent(inout) :: as_first
+      integer :: i 
+      ! start
+      i = 2 * nosq
 
+      if ( as_first ) then
+         rh1 => zwork(i+1:i+2*nosq) 
+         i = i + 2*nosq
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+      else
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+         i = i + nosq
+         rh1 => zwork(i+1:i+2*nosq) 
+      end if
+      as_first = .not. as_first
+
+    end subroutine switch_alpha_beta_rh1
+
+  end subroutine SSR_sGreen_DOS
+
+  ! Calculates the surface Green function for the electrodes
+  ! Handles both the left and right one
+  ! this is the Sancho, Sancho and Rubio algorithm
+  subroutine SSR_sGreen_NoDOS(no,ZE,H00,S00,H01,S01,accu, GS, &
+       nwork, zwork, &
+       iterations, final_invert)
+       
+! ***************** INPUT **********************************************
+! integer     no      : Number of orbitals in the electrode
+! complex(dp) ZE      : The energy of the Green function evaluation
+! complex(dp) H00     : Hamiltonian within the first unit cell (discarding T-direction)
+! complex(dp) S00     : Overlap matrix within the first unit cell (discarding T-direction)
+! complex(dp) H01     : Transfer matrix from H00 to the neighbouring cell (in T-direction)
+! complex(dp) S01     : Transfer matrix from S00 to the neighbouring cell (in T-direction)
+! ***************** OUTPUT *********************************************
+! complex(dp) GS      : Surface Green function of the electrode
+! **********************************************************************
+    use m_pivot_array, only : ipiv
+    use m_mat_invert
+    use precision, only: dp
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer,     intent(in) :: no
+    complex(dp), intent(in) :: ZE 
+    complex(dp), intent(in) :: H00(no*no),S00(no*no)
+    complex(dp), intent(in) :: H01(no*no),S01(no*no)
+    real(dp), intent(in) :: accu
+
+    integer,     intent(in) :: nwork
+
+    logical, intent(in), optional :: final_invert
+
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    complex(dp), intent(out), target :: GS(no*no)
+    complex(dp), intent(inout), target :: zwork(nwork)
+
+    integer, intent(out), optional :: iterations
+
+! ***********************
+! * LOCAL variables     *
+! ***********************
+    integer :: nom1, no2, nosq
+    integer :: ierr             !error in inversion
+    integer :: i,j,ic,ic2
+    logical :: as_first
+
+    real(dp) :: ro
+
+    complex(dp), dimension(:), pointer :: rh,rh1,w,alpha,beta,GB
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'PRE SSR_sGreen_NoDOS' )
+#endif
+
+    ! Initialize counter
+    if ( present(iterations) ) iterations = 0
+
+!    call timer('ts_GS',1)
+
+    nom1 = no - 1
+    no2  = 2 * no
+    nosq = no * no
+
+    if ( nwork < 8 * nosq ) call die('SSR_sGreen_NoDOS: &
+         &Not enough work space')
+    i = 0
+    rh  => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    rh1 => zwork(i+1:i+2*nosq) 
+    i = i + 2*nosq
+    alpha => zwork(i+1:i+nosq) 
+    i = i + nosq
+    beta => zwork(i+1:i+nosq) 
+    i = i + nosq
+    w => zwork(i+1:i+nosq)
+    i = i + nosq
+    GB => zwork(i+1:i+nosq) 
+
+!$OMP parallel default(shared), private(i,j,ic,ic2)
+
+! gb    =   Z*S00-H00
+!$OMP do 
+    do i = 1 , nosq
+       GB(i)    = ZE * S00(i) - H00(i)
+    end do
+!$OMP end do nowait
+! gs  = gb
+!$OMP do 
+    do i = 1 , nosq
+       GS(i)    = GB(i)
+    end do
+!$OMP end do nowait
+! alpha = -(Z*S01-H01)
+!$OMP do 
+    do i = 1 , nosq
+       alpha(i) = H01(i) - ZE * S01(i)
+    end do
+!$OMP end do nowait
+! beta = -(Z*S10-H10)
+!$OMP do
+    do j = 1 , no
+       ic = no * (j-1) + 1
+       do i = 0 , nom1
+          ic2 = j + no*i
+          beta(ic+i) = conjg(H01(ic2)) - ZE * conjg(S01(ic2))
+       end do
+    end do
+!$OMP end do nowait
+
+!$OMP end parallel
+
+    ! Initialize loop
+    ro = accu + 1._dp
+    as_first = .false.
+    do while ( ro > accu ) 
+
+       ! Increment iterations
+       if ( present(iterations) ) &
+            iterations = iterations + 1
+
+
+!$OMP parallel default(shared), private(i)
+! rh = -(Z*S01-H01) ,j<no
+!$OMP do
+       do i = 1, nosq
+          rh(i)      = alpha(i)
+       end do
+!$OMP end do nowait
+! rh = -(Z*S10-H10) ,j>no
+!$OMP do
+       do i = 1, nosq
+          rh(nosq+i) = beta(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1, nosq
+          ! w = Z*S00-H00
+          w(i)       = GB(i)
+       end do
+!$OMP end do nowait
+!$OMP end parallel
+
+! rh =  rh1^(-1)*rh
+! rh =  t0
+       call zgesv(no, no2, w, no, ipiv, rh, no, ierr)
+
+       if ( ierr /= 0 ) then
+          write(*,*) 'ERROR: SSR_sGreen_NoDOS 1 MATRIX INVERSION FAILED'
+          write(*,*) 'ERROR: LAPACK INFO = ',ierr
+       end if
+
+       ! switch pointers instead of copying elements
+       call switch_alpha_beta_rh1(as_first)
+
+! alpha = -(Z*S01-H01)*t0
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(1),no,rh(1),no,z_0,alpha,no)
+! beta  = -(Z*S10-H10)*t0 ??
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_1,rh1(nosq+1),no,rh(nosq+1),no,z_0,beta,no)
+
+! gb = gb + [ba    = (Z*S10-H10)*t0b]
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(nosq+1),no,rh(1),no,z_1,GB,no)
+
+! ab    = (Z*S01-H01)*t0
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',no,no,no,z_m1,rh1(1),no,rh(nosq+1),no,z_0,w,no)
+
+       ro = -1._dp
+!$OMP parallel default(shared), private(i)
+!$OMP do
+       do i = 1 , nosq
+          GB(i) = GB(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do
+       do i = 1 , nosq
+          GS(i) = GS(i) + w(i)
+       end do
+!$OMP end do nowait
+!$OMP do reduction(max:ro)
+       do i = 1 , nosq
+          ! update the criteria
+          ro = max(ro,abs(w(i)))
+       end do
+!$OMP end do nowait
+!$OMP end parallel
+
+    end do
+
+    if ( present(final_invert) ) then
+       if ( final_invert ) then
+          ! Invert to get the Surface Green function
+          call mat_invert(GS,w,no,MI_IN_PLACE_LAPACK, ierr=ierr)
+       end if
+    end if
+
+    if ( ierr /= 0 ) then
+       write(*,*) 'ERROR: SSR_sGreen_NoDOS GS MATRIX INVERSION FAILED'
+       write(*,*) 'ERROR: LAPACK INFO = ',ierr
+    end if
+
+!    call timer('ts_GS',2)
+
+#ifdef TRANSIESTA_DEBUG
+    call write_debug( 'POS SSR_sGreen_NoDOS' )
+#endif
+
+  contains
+
+    ! We supply a routine to switch the pointer position of alpha,beta / rh1
+    subroutine switch_alpha_beta_rh1(as_first)
+      logical, intent(inout) :: as_first
+      integer :: i 
+      ! start
+      i = 2 * nosq
+
+      if ( as_first ) then
+         rh1 => zwork(i+1:i+2*nosq) 
+         i = i + 2*nosq
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+      else
+         alpha => zwork(i+1:i+nosq) 
+         i = i + nosq
+         beta => zwork(i+1:i+nosq) 
+         i = i + nosq
+         rh1 => zwork(i+1:i+2*nosq) 
+      end if
+      as_first = .not. as_first
+
+    end subroutine switch_alpha_beta_rh1
+
+  end subroutine SSR_sGreen_NoDOS
+
+  ! Print information regarding the Green function file
+  ! In particular the size of the corresponding Green function
+  ! file.
+  subroutine print_Elec_Green(El, NE, nkpt)
+    
+    use precision,  only : dp
+    use parallel, only: IONode
+    use units,      only : eV
+
+    use m_ts_electype
+
+    ! Input variables
+    type(Elec), intent(in) :: El
+    ! Number of energy-points
+    integer :: NE
+    ! Number of k-points
+    integer :: nkpt
+
+    ! Local variables
+    integer :: i, j
+    real(dp) :: b
+    ! Whether the electrode is pre-expanded...
+    integer :: nq
+    logical :: pre_expand
+
+    if ( .not. IONode ) return
+
+    nq = El%Bloch%size()
+    pre_expand = El%pre_expand > 0 .and. nq > 1
+
+    write(*,'(/,2a)') 'Calculating all surface Green functions for: ',trim(name(El))
+    write(*,'(a,f14.5,1x,a)') &
+         ' Fermi level shift in electrode (chemical potential) : ',El%mu%mu/eV,' eV'
+
+    ! Show the number of used atoms and orbitals
+    write(*,'(a,i6,'' / '',i6)') ' Atoms available    / used atoms   : ', &
+         El%na_u,El%na_used
+    write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
+         El%no_u,El%no_used
+
+    write(*,'(1x,a,i0)') 'Total self-energy calculations: ',nq*NE*nkpt
+
+    ! We show them in units of reciprocal lattice vectors
+    do i = 1 , 3
+       if ( El%Bloch%B(i) > 1 ) then
+          write(*,'(3(a,i0),a)') ' Bloch expansion k-points in A_',i, &
+               ' direction [b_',i,'] (w=1/',nq,'):'
+          if ( El%Bloch%B(i) <= 3 ) then
+             write(*,'(5x)',advance='no')
+             do j = 1 , El%Bloch%B(i) - 1
+                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Bloch%B(i),', '
+             end do
+             write(*,'(i0,a,i0)') El%Bloch%B(i)-1,'/',El%Bloch%B(i)
+          else
+             write(*,'(5x,6(i0,a))') 0,'/',El%Bloch%B(i),', ',1,'/',El%Bloch%B(i),', ... , ', &
+                  El%Bloch%B(i)-1,'/',El%Bloch%B(i)
+          end if
+       end if
+    end do
+
+    write(*,'(2a)') ' Saving surface Green functions in: ',trim(El%GFfile)
+
+    if ( pre_expand .and. El%pre_expand == 1 ) then
+       ! only the SSG is expanded
+       b = El%nspin * nkpt * ( 2 + NE * nq )
+    else
+       b = El%nspin * nkpt * ( 2 + NE ) * nq
+    end if
+
+    ! Correct estimated file-size for fully expanded
+    if ( pre_expand ) b = b * nq
+
+    ! to complex double precision
+    b = b * El%no_used ** 2 * 16._dp
+
+    ! to MB
+    b = b / 1024._dp ** 2
+
+    if ( b > 2001._dp ) then
+       b = b / 1024._dp
+       write(*,'(a,f10.3,a)') ' Estimated file size: ',b,' GB'
+    else
+       write(*,'(a,f10.3,a)') ' Estimated file size: ',b,' MB'
+    end if
+
+  end subroutine print_Elec_Green
 
 
 ! ##################################################################
 ! ## Driver subroutine for calculating the (ideal)                ##
-! ## Handles both Left and Right surface Greens function.         ## 
 ! ##                            By                                ##
 ! ##              Mads Brandbyge, mbr@mic.dtu.dk                  ##
 ! ##                 Updated by : Nick Papior Andersen            ##
 ! ## It has now been parallelized to speed up electrode           ##
-! ## surface Green's function generation.                         ##
-! ## It generates the surface Green's function by handling        ##
+! ## surface Green function generation.                           ##
+! ## It generates the surface Green function by handling          ##
 ! ## repetition as well.                                          ##
 ! ##################################################################
-
-  subroutine create_Green(tElec, HSFile, GFFile, GFTitle, &
-       ElecValenceBandBot, &
-       nkpnt,kpoint,kweight, &
-       NBufAt,NUsedAtoms,NA1,NA2, RemUCellDistance, &
-       ucell,xa,nua,NEn,contour,chem_shift,ZBulkDOS,nspin)
+  subroutine create_Green(El, &
+       ucell,nkpnt,kpoint,kweight, &
+       NEn,ce, &
+       DOS,T)
 
     use precision,  only : dp
-    use fdf,        only : leqi
     use parallel  , only : Node, Nodes, IONode
-    use units,      only : eV
     use sys ,       only : die
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World
-    use mpi_siesta, only : MPI_Bcast,MPI_ISend,MPI_IRecv
-    use mpi_siesta, only : MPI_Sum
+    use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_integer
     use mpi_siesta, only : MPI_Wait,MPI_Status_Size
-    use mpi_siesta, only : DAT_dcomplex => MPI_double_complex, &
-                           DAT_double => MPI_double_precision
+    use mpi_siesta, only : MPI_double_complex
+    use mpi_siesta, only : MPI_double_precision
 #endif
-    use m_hs_matrix,only : set_HS_matrix, matrix_symmetrize
-    use m_ts_cctype
+    use m_ts_electype
+    use m_mat_invert
+
+    use m_ts_elec_se, only : update_UC_expansion_A
+
+    use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
+
+    use m_iterator
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    character(len=1), intent(in) :: tElec   ! 'L' for Left electrode, 'R' for right
-    character(len=*), intent(in) :: HSFile  ! The electrode TSHS file
-    character(len=*), intent(in) :: GFFile  ! The electrode GF file to be saved to
-    character(len=*), intent(in) :: GFTitle ! The title to be written in the GF file
-    logical, intent(in)          :: ElecValenceBandBot ! Whether or not to calculate electrodes valence bandbottom
-    integer, intent(in)            :: nkpnt ! Number of k-points
-    real(dp),dimension(3,nkpnt),intent(in) :: kpoint ! k-points
-    real(dp),dimension(nkpnt),intent(in) :: kweight ! weights of kpoints
-    integer, intent(in)            :: NBufAt,NA1,NA2 ! Buffer/Rep a1/Rep a2
-    logical, intent(in)            :: RemUCellDistance ! Whether to remove the unit cell distance in the Hamiltonian.
-    integer, intent(in)            :: NUsedAtoms ! Needs update here
-    integer, intent(in)            :: nua ! Full system count of atoms in unit cell
-    real(dp), dimension(3,3)       :: ucell ! The unit cell of the CONTACT
-    real(dp), intent(in)           :: xa(3,nua) ! Coordinates in the system for the TranSIESTA routine
-    integer, intent(in)            :: nspin ! spin in system
-    integer, intent(in)            :: NEn ! Number of energy points
-    type(ts_ccontour), intent(in)  :: contour(NEn) ! contours path for GF
-    real(dp), intent(in)           :: chem_shift ! the Fermi-energy we REQUIRE the electrode
+    type(Elec), intent(inout) :: El  ! The electrode 
+    integer,  intent(in)      :: nkpnt ! Number of k-points
+    real(dp), intent(in)      :: kpoint(3,nkpnt) ! k-points
+    real(dp), intent(in)      :: kweight(nkpnt) ! weights of kpoints
+    real(dp), dimension(3,3)  :: ucell ! The unit cell of the CONTACT
+    integer, intent(in)       :: NEn ! Number of energy points
+    complex(dp), intent(in)   :: ce(NEn) ! the energy points
+
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out)       :: ZBulkDOS(NEn,nspin) 
+    real(dp), intent(out), optional :: DOS(El%no_u,NEn,El%nspin)
+    real(dp), intent(out), optional :: T(NEn,El%nspin) 
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    logical :: Gamma
-    character(len=5)   :: GFjob ! Contains either 'Left' or 'Right'
-    logical :: exist ! Checking for file existance
+    ! Array for holding converted k-points
+    real(dp) :: bkpt(3), kpt(3), kq(3), wq
+    real(dp), allocatable :: lDOS(:)
     
-! >>>>>>>>>> Electrode TSHS variables
-! We suffix with _E to distinguish from CONTACT
-    integer                           :: nua_E,nuo_E,maxnh_E ! Unit cell atoms / orbitals / Hamiltonian size
-    integer                           :: nuou_E ! # used orbitals from electrode (if NUsedAtoms < nua_E)
-    integer                           :: notot_E ! Total number of orbitals
-    real(dp), dimension(:,:), pointer :: H_E,xij_E,xijo_E ! Hamiltonian, differences with unitcell, differences without unitcell
-    real(dp), dimension(:,:), pointer :: xa_E ! atomic coordinats
-    real(dp), dimension(:),   pointer :: S_E ! Overlap
-    integer,  dimension(:),   pointer :: zconnect_E ! Has 0 values for indices where there are no z-connection.
-    integer,  dimension(:),   pointer :: numh_E,listhptr_E,listh_E,indxuo_E,lasto_E
-    real(dp)                          :: Ef_E ! Efermi
-    real(dp), dimension(3,3)          :: ucell_E ! The unit cell of the electrode
+    ! Dimensions
+    integer :: nq, nspin, n_s
+    integer :: nuo_E, nS, nuou_E, nuS, no_X, n_X
 
-    ! Array for holding eigen values
-    real(dp), dimension(:), allocatable :: eig
-! <<<<<<<<<< Electrode TSHS variables
-
-    integer :: nq ! number of q-points, set 'ts_mkqgrid'
-    real(dp), dimension(:,:), pointer :: qb => null() 
-                                            ! q points for repetition, in units
-                                            ! of reciprocal lattice vectors (hence the b)
-    real(dp), dimension(:), pointer   :: wq => null() 
-                                            ! weights for q points for repetition
-    real(dp) :: kpt(3), qpt(3), ktmp(3)
-    
     ! Electrode transfer and hamiltonian matrix
-    complex(dp), dimension(:), pointer :: H00 => null()
-    complex(dp), dimension(:), pointer :: S00 => null()
-    complex(dp), dimension(:), pointer :: H01 => null()
-    complex(dp), dimension(:), pointer :: S01 => null()
+    complex(dp), pointer :: H00(:) => null()
+    complex(dp), pointer :: S00(:) => null()
+    complex(dp), pointer :: H01(:) => null()
+    complex(dp), pointer :: S01(:) => null()
+    complex(dp), pointer :: zwork(:) => null()
+    complex(dp), pointer :: zHS(:) => null()
+    real(dp), allocatable :: sc_off(:,:)
 
-    ! Green's function variables
-    complex(dp), dimension(:), allocatable :: GS
-    complex(dp), dimension(:,:), allocatable :: Hq,Sq,Gq
-    complex(dp) :: ZEnergy, ZSEnergy, zdos
+    ! Expanded arrays
+    complex(dp), pointer :: X(:) => null()
 
-    integer :: ierror,uGF
+    ! Green function variables
+    complex(dp), pointer :: GS(:)
+    complex(dp), pointer :: Hq(:), Sq(:), Gq(:)
+    complex(dp) :: ZEnergy
+
+    ! In order to print information about the recursize algorithm
+    integer, allocatable :: iters(:,:,:,:)
+    real(dp) :: i_mean, i_std
+
+    integer :: uGF
     ! Big loop counters
-    integer :: iEn,ispin, iqpt,ikpt
+    type(itt2) :: it2
+    integer, pointer :: ispin, ikpt
+    integer :: iEn, iqpt
     ! Counters
-    integer :: i,j,ia,ja,io,jo
+    integer :: i, j, io, jo, off
+
+    logical :: CalcDOS, CalcT, pre_expand
+    logical :: is_left, Gq_allocated, reduce_size
 
 #ifdef MPI
-    integer :: MPIerror,curNode
+    integer :: MPIerror, curNode
     integer :: req, status(MPI_Status_Size)
     integer, allocatable :: reqs(:)
 #endif
@@ -493,201 +956,106 @@ contains
     call write_debug( 'PRE create_Green' )
 #endif
 
-    ! Should we read Gamma in TSHS file?
-    ! Must be .false., otherwise we cannot access Transfer matrix
-    ! This Gamma is to be used for the remaining part of the tests
-    ! We cannot use the ts_gamma in case of Gamma point in kxy direction
-    Gamma = .false.
+    call timer('TS_SE',1)
+
+    CalcDOS = present(DOS)
+    CalcT = present(T)
 
     ! Check input for what to do
-    if( leqi(tElec,'L') ) then
-       GFjob = 'left '
-    else if ( leqi(tElec,'R') ) then
-       GFjob = 'right'
+    if( El%inf_dir == INF_NEGATIVE ) then
+       is_left = .true.
+    else if( El%inf_dir == INF_POSITIVE ) then
+       is_left = .false.
     else
-       call die("init electrode has received wrong job ID [L,R]: "//tElec)
+       call die("init electrode has received wrong job ID [L,R].")
     endif
+
+    ! Initialize TSGF-file
+    call init_TSGF()
+
+    ! capture information from the electrode
+    nspin  = El%nspin
+    nuo_E  = El%no_u
+    nS     = nuo_E ** 2
+    nuou_E = El%no_used
+    nuS    = nuou_E ** 2
+    ! create expansion k-points (weight of q-points)
+    nq     = El%Bloch%size()
+    wq     = 1._dp / real(nq,dp)
+    ! We also need to invert to get the contribution in the
+    reduce_size = nuo_E /= nuou_E
+    no_X = nuou_E * nq
+    n_X  = no_X ** 2
+    pre_expand = El%pre_expand > 0 .and. nq > 1
+
+    ! Calculate offsets
+    n_s = size(El%isc_off,dim=2)
+    allocate(sc_off(3,n_s))
+    sc_off(:,:) = matmul(El%cell,El%isc_off)
+
+    ! Print information on file-size and electrode type.
+    call print_Elec_Green(El, NEn, nkpnt)
     
-    call timer('genGreen',1)
-
-    if (IONode) then
-       write(*,'(/,2a)') &
-            "Creating Green's function file for: ",GFjob
+    ! Initialize Green function and Hamiltonian arrays
+    nullify(GS)
+    if ( nS /= nuS ) then
+       allocate(GS(nS))
+       call memory('A','Z',nS,'create_green')
+    !else
+    !  the regions are of same size, so we can just point
+    !  to the correct memory segment
     end if
-    
-    ! Read in all variables from the TSHS electrode file.
-    ! Broadcasting within the routine is performed in MPI run
-    call init_electrode_HS(tElec,NUsedAtoms,Gamma,xa,nua,nspin, &
-         NBufAt, NA1, NA2, HSFile, &
-         nua_E,nuo_E,maxnh_E,notot_E,xa_E,H_E,S_E,xij_E, &
-         xijo_E,zconnect_E,numh_E,listhptr_E,listh_E,indxuo_E,  &
-         lasto_E, &
-         Ef_E,ucell_E)
 
-    ! Calculate the k-points used in the electrode
-    if (IONode) &
-         write(*,*) "Electrodes with transport k-points &
-         & (Bohr**-1) and weights:"
-    do i = 1 , nkpnt
-       ! From CONTACT to electrode k-point
-       ! First convert to units of reciprocal vectors
-       ! Then convert to 1/Bohr in the electrode unit cell coordinates
-       call kpoint_convert(ucell,kpoint(:,i),ktmp,1)
-       if ( NA1 > 1 ) ktmp(1) = ktmp(1)/real(NA1,dp)
-       if ( NA2 > 1 ) ktmp(2) = ktmp(2)/real(NA2,dp)
-       call kpoint_convert(ucell_E,ktmp,kpt,-1)
-       if (IONode) write(*,'(i4,2x,3(E14.5))') i,&
-            kpt(1),kpt(2),kweight(i)
-    end do
-
-! >>>>>>>>>>>>>>>>>>> Valence Band bottom Calculation <<<<<<<<<<<<<<<<< 
-    if ( ElecValenceBandBot ) then
-       ! Calculate the Valence Band Bottom for the electrode
-       allocate(H00(nuo_E*nuo_E),S00(nuo_E*nuo_E))
-       call memory('A','Z',nuo_E*nuo_E*2,'create_green')
-       kpt = 0.0_dp
-       call set_HS_matrix(Gamma,ucell_E,nua_E,nuo_E,notot_E,maxnh_E, &
-            xij_E,numh_E,listhptr_E,listh_E,indxuo_E,H_E(:,1),S_E, &
-            kpt,H00,S00)
-       call matrix_symmetrize(nuo_E,H00,S00,Ef_E)
-       
-       ! We "reuse" H01 here. No need to create a temporary array.
-       ! H01 is not used until later
-       ! H01 => eigenvectors
-       ! eig => eigenvalues
-       allocate(H01(nuo_E*nuo_E))
-       call memory('A','Z',nuo_E*nuo_E,'create_green')
-       allocate(eig(nuo_E))
-       call memory('A','D',nuo_E,'create_green')
-       call cdiag(H00,S00,nuo_E,nuo_E,nuo_E,eig,H01,nuo_E,10,ierror)
-       if ( IONode ) then
-          if ( ierror == 0 ) then
-             write(*,'(a,f10.4,a)')' Valence Band Bottom: ',eig(1)/eV,' eV'
-          else
-             write(*,'(a,i6)')' Error in calculating the Band Bottom: ',ierror
-          end if
-       end if
-       call memory('D','Z',nuo_E*nuo_E*3,'create_green')
-       deallocate(H00,S00,H01)
-       nullify(H00,S00,H01)
-       call memory('D','D',nuo_E,'create_green')
-       deallocate(eig)
+    ! Allocate work array
+    i = max(nS*9,nuS*nq*2)
+    if ( pre_expand ) then
+       i = max(i,n_X)
     end if
-! >>>>>>>>>>>>>>>>>>>>> End of Valence band bottom calculation <<<<<<<
+    allocate(zwork(i))
+    call memory('A','Z',i,'create_green')
 
-
-    ! Count number of used orbitals in the electrode
-    ! Here we count the orbitals by using the option variable:
-    ! TS.NumUsedAtoms[Left|Right]
-    nuou_E = 0
-    if( leqi(tElec,'L') ) then
-       ! Left, we use the last atoms in the list
-       do ia = nua_E - NUsedAtoms + 1, nua_E
-          nuou_E = nuou_E + lasto_E(ia) - lasto_E(ia-1)
-       end do
+    ! Point the hamiltonian and the overlap to the work array
+    ! The work-array is only used for calculation the surface
+    ! Green function and
+    Hq => zwork(1:nuS*nq)
+    Sq => zwork(nuS*nq+1:nuS*nq*2)
+    if ( size(zwork) >= nS * 9 + nuS*nq ) then
+       Gq => zwork(nS*9+1:nS*9+nuS*nq)
+       Gq_allocated = .false.
     else
-       ! Right, the first atoms in the list
-       do ia = 1 , NUsedAtoms
-          nuou_E = nuou_E + lasto_E(ia) - lasto_E(ia-1)
-       end do
+       nullify(Gq)
+       allocate(Gq(nuS*nq))
+       call memory('A','Z',size(Gq),'create_green')
+       Gq_allocated = .true.
     end if
 
-    ! Show the number of used atoms and orbitals
-    if ( IONode ) then
-       write(*,'(a,i6,'' / '',i6)') ' Atoms available    / used atoms   : ', &
-            nua_E,NUsedAtoms
-       write(*,'(a,i6,'' / '',i6)') ' Orbitals available / used orbitals: ', &
-            lasto_E(nua_E),nuou_E
-    end if
-    ! Clean up what can be cleaned up
-    call memory('D','I',nua_E+1,'create_green')
-    deallocate(lasto_E)
-
-! FDN cell,kscell,kdispl added as dummys
-! q,wq:
-!  this is WHERE the initial q and wq points are generated.
-!  they are read in by 'read_green' later on.
-! They are in units of the reciprocal lattice vectors (hence suffix b)
-    call mkqgrid(NA1,NA2,nq,qb,wq)
-
-    if ( IONode ) then
-! We show them in units of Bohr**-1
-       write(*,'(a)') &
-            ' q-points for expanding electrode (Bohr**-1):'
-       do i=1,nq
-          call kpoint_convert(ucell_E,qb(:,i),qpt,-1)
-          write(*,'(i4,2x,3(E14.5))') i,qpt(1),qpt(2),wq(i)
-       end do
-       write(*,'(a,f14.5,1x,a)') &
-            " Fermi level shift in electrode : ",chem_shift/eV,' eV'
+    if ( pre_expand ) then
+       ! We allocate space for pre-expansion of the arrays
+       allocate(X(n_X))
     end if
 
-    ! Initialize Green's function and Hamiltonian arrays
-    allocate(GS(nuo_E*nuo_E))
-    call memory('A','Z',nuo_E*nuo_E,'create_green')
-    allocate(Hq(nuou_E*nuou_E,nq))
-    allocate(Sq(nuou_E*nuou_E,nq))
-    allocate(Gq(nuou_E*nuou_E,nq))
-    call memory('A','Z',nuou_E*nuou_E*nq*3,'create_green')
+    ! all the Hamiltonian and overlaps
+    allocate(zHS(nS * nq * 4))
+    call memory('A','Z',nS * nq * 4,'create_green')
 
-    ! Allocate all H00,S00,H01 and S01 arrays
-    allocate(H00(nuo_E*nuo_E),S00(nuo_E*nuo_E))
-    allocate(H01(nuo_E*nuo_E),S01(nuo_E*nuo_E))
-    call memory('A','Z',4*nuo_E*nuo_E,'create_Green')
+    ! Prepare for the inversion
+    i = max(no_X,nuo_E)
+    call init_mat_inversion(i)
 
     ! Reset bulk DOS
-    do ispin = 1 , nspin
-       do iEn = 1 , NEn
-          ZBulkDOS(iEn,ispin) = dcmplx(0.d0,0.d0)
-       end do
-    end do
-
-!******************************************************************
-!           Start Green's function calculation
-!******************************************************************
-    
-    if (IONode) then
-       call io_assign(uGF)
-       open(FILE=GFfile,UNIT=uGF,FORM='UNFORMATTED')
-
-       ! Initial header for file
-       write(uGF) GFTitle
-       write(uGF) chem_shift,NEn
-       write(uGF) RemUCellDistance
-       write(uGF) NUsedAtoms,NA1,NA2,nkpnt,nq
-       ! Write spin, ELECTRODE unit-cell
-       write(uGF) nspin, ucell_E
-       ! Write out the atomic coordinates of the used electrode
-       if( leqi(tElec,'L') ) then
-          ! Left, we use the last atoms in the list
-          write(uGF) xa_E(:,nua_E-NUsedAtoms+1:nua_E)
-       else
-          ! Right, the first atoms in the list
-          write(uGF) xa_E(:,1:NUsedAtoms)
-       end if
-       ! Notice that we write the k-points for the ELECTRODE
-       ! Do a conversion here
-       allocate(eig(nkpnt*3))
-       call memory('A','D',nkpnt*3,'create_green')
-       i = 0
-       do ikpt = 1 , nkpnt
-          ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-          call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
-          ktmp(1) = ktmp(1)/real(NA1,dp)
-          ktmp(2) = ktmp(2)/real(NA2,dp)
-          ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(ucell_E,ktmp,kpt,-1)
-          do j = 1 , 3
-             i = i + 1
-             eig(i) = kpt(j)
-          end do
-       end do
-       write(uGF) contour(:)%c,contour(:)%w,eig,kweight,qb,wq
-       call memory('D','D',nkpnt*3,'create_green')
-       deallocate(eig)
-       ! Write the number of USED orbitals for the calculation
-       write(uGF) nuou_E
+    if ( CalcDOS ) then
+       allocate(lDOS(nuo_E))
+!$OMP parallel workshare default(shared)
+       DOS(:,:,:) = 0._dp
+!$OMP end parallel workshare
     end if
+    if ( CalcT ) then
+       T = 0._dp
+    end if
+
+!******************************************************************
+!           Start Green function calculation
+!******************************************************************
     
 #ifdef MPI
     if ( IONode ) then
@@ -699,145 +1067,197 @@ contains
        ! contour points. Say NEn > 1000
        ! Look in the loop for MPI_Start(...) for where this is used
        do i = 1 , Nodes - 1
-          call MPI_Recv_Init(Gq(1,1),nuou_E*nuou_E*nq,DAT_dcomplex, &
-               i,i,MPI_Comm_World,reqs(i),MPIerror)
+          if ( pre_expand ) then
+             call MPI_Recv_Init(X(1),n_X,MPI_double_complex, &
+                  i,i,MPI_Comm_World,reqs(i),MPIerror)
+          else
+             call MPI_Recv_Init(Gq(1),nuS*nq,MPI_double_complex, &
+                  i,i,MPI_Comm_World,reqs(i),MPIerror)
+          end if
        end do
     else
        ! Create request handles for communication
-       call MPI_Send_Init(Gq(1,1),nuou_E*nuou_E*nq,DAT_dcomplex, &
-            0,Node,MPI_Comm_World,req,MPIerror)
+       if ( pre_expand ) then
+          call MPI_Send_Init(X(1),n_X,MPI_double_complex, &
+               0,Node,MPI_Comm_World,req,MPIerror)
+       else
+          call MPI_Send_Init(Gq(1),nuS*nq,MPI_double_complex, &
+               0,Node,MPI_Comm_World,req,MPIerror)
+       end if
     end if
 #endif
 
+    ! prepare the iteration counter
+    allocate(iters(nq,NEn,nkpnt,2))
+    if ( IONode ) then
+       ! TODO when adding new surface-Green functions schemes, please update here
+       write(*,'(1x,a)') 'Lopez Sancho, Lopez Sancho & Rubio recursive &
+            &surface self-energy calculation...'
+    end if
 
-! Spin loop .............................................. Spin loop
-    spin_loop: do ispin = 1 , nspin
+    ! start up the iterators
+    call itt_init  (it2,end1=nspin,end2=nkpnt)
+    call itt_attach(it2,cur1=ispin,cur2=ikpt)
+
+    ! do spin and k-point loop in one go...
+    do while ( .not. itt_step(it2) )
        
-! TS k-point loop ........................................ k-point loop
-       kpoint_loop: do ikpt = 1 , nkpnt
-            
-          ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
-          call kpoint_convert(ucell,kpoint(:,ikpt),ktmp,1)
-          ktmp(1) = ktmp(1)/real(NA1,dp)
-          ktmp(2) = ktmp(2)/real(NA2,dp)
-          ! Convert back to reciprocal units (to electrode ucell_E)
-          call kpoint_convert(ucell_E,ktmp,kpt,-1)
-          
-          ! No need for reseting computational arrays
-          ! They are completely overwritten
+       if ( itt_stepped(it2,1) ) then
+          ! Number of iterations
+!$OMP parallel workshare default(shared)
+          iters(:,:,:,:) = 0
+!$OMP end parallel workshare
+       end if
+       
+       ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
+       call Elec_kpt(El,ucell,kpoint(:,ikpt),bkpt, opt = 2)
+       ! We need to save the k-point for the "expanded" super-cell
+       El%bkpt_cur = bkpt
+       
+       ! loop over the repeated cell...
+       HSq_loop: do iqpt = 1 , nq
+             
+          ! point to the correct segment of memory
+          H00 => zHS((     iqpt-1)*nS+1:      iqpt *nS)
+          S00 => zHS((  nq+iqpt-1)*nS+1:(  nq+iqpt)*nS)
+          H01 => zHS((2*nq+iqpt-1)*nS+1:(2*nq+iqpt)*nS)
+          S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
 
-! Energy contour loop .................................... Energy loop
-          Econtour_loop: do iEn = 1, NEn
-             
+          ! init qpoint in reciprocal lattice vectors
+          kpt = bkpt(:) + q_exp(El,iqpt)
+          ! Convert to 1/Bohr
+          call kpoint_convert(El%cell,kpt,kq,-1)
+
+          ! Setup the transfer matrix and the intra cell at the k-point and q-point
+          ! Calculate transfer matrices @Ef (including the chemical potential)
+          call set_HS_Transfer(ispin, El, n_s,sc_off, kq, &
+               nuo_E, H00,S00,H01,S01)
+
+          i = (iqpt-1)*nuS
+          if ( reduce_size ) then
+             if( is_left ) then
+                ! Left, we use the last orbitals
+                off = nuo_E - nuou_E + 1
+                do jo = off - 1 , nuo_E - 1
+                   do io = off , nuo_E
+                      i = i + 1
+                      Hq(i) = H00(nuo_E*jo+io)
+                      Sq(i) = S00(nuo_E*jo+io)
+                   end do
+                end do
+             else
+                ! Right, the first orbitals
+                do jo = 0 , nuou_E - 1
+                   do io = 1 , nuou_E
+                      i = i + 1
+                      Hq(i) = H00(nuo_E*jo+io)
+                      Sq(i) = S00(nuo_E*jo+io)
+                   end do   ! io
+                end do      ! jo
+             end if
+          end if
+          
+       end do HSq_loop
+
+       ! Save Hamiltonian and overlap
+       call store_HS()
+       
+       Econtour_loop: do iEn = 1, NEn
+
 #ifdef MPI
-             ! Every node takes one energy point
-             ! This asserts that IONode = Node == 0 will have iEn == 1
-             ! Important !
-             curNode = MOD(iEn-1,Nodes)
-             E_Nodes: if ( curNode == Node ) then
+          ! Every node takes one energy point
+          ! This asserts that IONode = Node == 0 will have iEn == 1
+          ! Important !
+          curNode = MOD(iEn-1,Nodes)
+          E_Nodes: if ( curNode == Node ) then
 #endif
-             ZEnergy  = contour(iEn)%c
-             ZSEnergy = ZEnergy-dcmplx(chem_shift,0.0_dp)
+             ! as we already have shifted H,S to Ef + mu, and ZEnergy is
+             ! wrt. mu, we don't need to subtract mu again
+             ZEnergy = ce(iEn)
+             i_mean = 0._dp
              
-! loop over the repeated cell...
+             ! loop over the repeated cell...
              q_loop: do iqpt = 1 , nq
 
-                ! init qpoint in reciprocal lattice vectors
-                call kpoint_convert(ucell_E,qb(:,iqpt),qpt,-1)
-
-                ! Setup the transfer matrix and the intra cell at the k-point and q-point
-                if ( RemUCellDistance ) then
-                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
-                        notot_E,nspin,H_E,S_E,xijo_E,xijo_E,zconnect_E,numh_E, &
-                        listhptr_E,listh_E,indxuo_E,Ef_E, &
-                        ispin, kpt, qpt, &
-                        H00,S00,H01,S01)
-                else
-                   call set_electrode_HS_Transfer(Gamma,nuo_E,maxnh_E, &
-                        notot_E,nspin,H_E,S_E,xij_E,xijo_E,zconnect_E,numh_E, &
-                        listhptr_E,listh_E,indxuo_E,Ef_E, &
-                        ispin, kpt, qpt, &
-                        H00,S00,H01,S01)
+                H00 => zHS((     iqpt-1)*nS+1:      iqpt *nS)
+                S00 => zHS((  nq+iqpt-1)*nS+1:(  nq+iqpt)*nS)
+                H01 => zHS((2*nq+iqpt-1)*nS+1:(2*nq+iqpt)*nS)
+                S01 => zHS((3*nq+iqpt-1)*nS+1:(3*nq+iqpt)*nS)
+                if ( nS == nuS ) then
+                   ! instead of doing a copy afterward, we can
+                   ! put it the correct place immediately
+                   GS => Gq((    iqpt-1)*nS+1:      iqpt *nS)
                 end if
+
+                ! Calculate the surface Green function
+                ! Zenergy is wrt. to the system Fermi-level
+                if ( CalcDOS ) then
+                   lDOS = 0._dp
+                   call SSR_sGreen_DOS(nuo_E,ZEnergy,H00,S00,H01,S01, &
+                        El%accu, GS, &
+                        lDOS,i_mean,9*nS,zwork, &
+                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = reduce_size)
                    
-                
-                ! This requires IONode = Node == 0 !
-                if ( iEn .eq. 1 ) then
-                   ! Copy over the Hamiltonian and overlap
-                   if( leqi(tElec,'L') ) then
+                   ! We also average the k-points.
+                   DOS(:,iEn,ispin) = DOS(:,iEn,ispin) + lDOS * wq * kweight(ikpt)
+                   if ( CalcT ) T(iEn,ispin) = T(iEn,ispin) + i_mean
+
+                else
+                   call SSR_sGreen_NoDos(nuo_E,ZEnergy,H00,S00,H01,S01, &
+                        El%accu, GS, &
+                        8*nS,zwork, &
+                        iterations=iters(iqpt,iEn,ikpt,1), final_invert = reduce_size)
+                   
+                end if
+                  
+                ! Copy over surface Green function
+                i = (iqpt-1)*nuS
+                if ( reduce_size ) then
+                   if ( is_left ) then
                       ! Left, we use the last orbitals
-                      i = 0
-                      do jo = 1 , nuou_E
-                         do io = 1 , nuou_E
+                      off = nuo_E - nuou_E + 1
+                      do jo = off - 1 , nuo_E - 1
+                         do io = off , nuo_E
                             i = i + 1
-                            Sq(i,iqpt) = S00(io+(nuo_E-nuou_E)+&
-                                 nuo_E*(jo+(nuo_E-nuou_E)-1))
-                            Hq(i,iqpt) = H00(io+(nuo_E-nuou_E)+&
-                                 nuo_E*(jo+(nuo_E-nuou_E)-1)) +&
-                                 chem_shift * Sq(i,iqpt)
-                         end do  ! io
-                      end do     ! jo
+                            Gq(i) = GS(nuo_E*jo+io)
+                         end do           ! io
+                      end do              ! jo
                    else
                       ! Right, the first orbitals
-                      i=0
-                      do jo = 1 , nuou_E
+                      do jo = 0 , nuou_E-1
                          do io = 1 , nuou_E
                             i = i + 1
-                            Sq(i,iqpt) = S00(io+nuo_E*(jo-1))
-                            Hq(i,iqpt) = H00(io+nuo_E*(jo-1)) +&
-                                 chem_shift * Sq(i,iqpt)
-                         end do   ! io
-                      end do      ! jo
+                            Gq(i) = GS(nuo_E*jo+io)
+                         end do           ! io
+                      end do              ! jo
                    end if
-                   
-                end if
-                  
-                ! Calculate the surface Green's function
-                ! ZSenergy is Zenergy together with the chemical shift
-                call surface_Green(tElec,nuo_E,ZSEnergy,H00,S00,H01,S01, &
-                     GS,zdos)
 
-                ! We also average the k-points.
-                ZBulkDOS(iEn,ispin) = ZBulkDOS(iEn,ispin) + &
-                     wq(iqpt)*zdos * kweight(ikpt)
-                  
-                ! Copy over surface Green's function
-                if( leqi(tElec,'L') ) then
-                   ! Left, we use the last orbitals
-                   i = 0
-                   do jo = 1 , nuou_E
-                      do io = 1 , nuou_E
-                         i = i + 1
-                         Gq(i,iqpt) = GS(io+(nuo_E-nuou_E)+ &
-                              nuo_E*(jo+(nuo_E-nuou_E)-1) )
-                      end do           ! io
-                   end do              ! jo
-                else
-                   ! Right, the first orbitals
-                   i = 0
-                   do jo = 1,nuou_E
-                      do io = 1,nuou_E
-                         i = i + 1
-                         Gq(i,iqpt) = GS(io+nuo_E*(jo-1))
-                      end do           ! io
-                   end do              ! jo
+                   if ( nq == 1 ) then
+                      ! We invert back here, instead of in
+                      ! the SCF (this is important as the
+                      ! decreased size of the surface-Green function
+                      ! would otherwise yield a different result)
+                      call mat_invert(Gq(1:nuS),zwork(1:nuS),&
+                           nuou_E, &
+                           MI_IN_PLACE_LAPACK)
+
+                   end if
+
                 end if
                 
              end do q_loop
-             
-             if (IONode) then
-                ! Write out calculated information at E point
 
-                write(uGF) iEn,contour(iEn)%c,contour(iEn)%w,ikpt
-                
-                if(iEn .eq. 1) then ! This will only occur
-                   write(uGF) Hq
-                   write(uGF) Sq
+             if ( pre_expand ) then
+                ! Expand this energy-point
+                call update_UC_expansion_A(nuou_E,no_X,El,nq, &
+                     El%na_used,El%lasto_used,Gq,X)
+                if ( reduce_size ) then
+                   call mat_invert(X(1:n_X),zwork(1:n_X),&
+                        no_X, &
+                        MI_IN_PLACE_LAPACK)
                 end if
-                
-                write(uGF) Gq
              end if
-
+                
 #ifdef MPI
              ! If not IONode we should send message
              ! This message parsing is directly connected to 
@@ -848,29 +1268,58 @@ contains
                 call MPI_Start(req,MPIerror)
                 call MPI_Wait(req,status,MPIerror)
              end if
-
+             
           end if E_Nodes
 
-          ! If IONode, we should receive in each energy point
-          ! There is no need to create a buffer array for the Gq
-          ! We will not use it until we are in the loop again
-          if ( IONode .and. curNode /= Node ) then
-             write(uGF) iEn,contour(iEn)%c,contour(iEn)%w,ikpt
-             call MPI_Start(reqs(curNode),MPIerror)
-             call MPI_Wait(reqs(curNode),status,MPIerror)
-             write(uGF) Gq
-          end if
-#endif             
+#endif
 
-          end do Econtour_loop
+          ! Save the surface Green function file
+          call store_GS()
+
+       end do Econtour_loop
           
-       end do kpoint_loop
-       
-    end do spin_loop
+
+       if ( itt_last(it2,2) ) then
+#ifdef MPI
+          call MPI_Reduce(iters(1,1,1,1), iters(1,1,1,2), nq*NEn*nkpnt, &
+               MPI_Integer, MPI_Sum, 0, MPI_Comm_World, MPIerror)
+#else
+!$OMP parallel workshare
+          iters(:,:,:,2) = iters(:,:,:,1)
+!$OMP end parallel workshare
+#endif
+          if ( IONode ) then
+!$OMP parallel workshare default(shared)
+             i_mean = sum(iters(:,:,:,2)) / real(nq*NEn*nkpnt,dp)
+!$OMP end parallel workshare
+             i_std = 0._dp
+!$OMP parallel do default(shared), &
+!$OMP&private(j,i,iqpt), collapse(3), &
+!$OMP&reduction(+:i_std)
+             do j = 1 , nkpnt
+             do i = 1 , NEn
+             do iqpt = 1 , nq
+                i_std = i_std + ( iters(iqpt,i,j,2) - i_mean ) ** 2
+             end do
+             end do
+             end do
+!$OMP end parallel do
+             i_std = sqrt(i_std/real(NEn*nq*nkpnt,dp))
+             ! TODO if new surface-Green function scheme is implemented, fix here
+             write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
+                  &Mean/std iterations: ', i_mean             , i_std
+             write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
+                  &Min/Max iterations : ', minval(iters(:,:,:,2)) , maxval(iters(:,:,:,2))
+             
+          end if
+       end if
+
+    end do
 !*******************************************************************
-!         Green's function calculation is done
+!         Green function calculation is done
 !*******************************************************************
 
+    deallocate(iters)
 
 #ifdef MPI
     ! Free requests made for the communications
@@ -885,619 +1334,719 @@ contains
     end if
 #endif
 
-    ! Close file
-    if ( IONode ) then
-       call io_close(uGF)
-       write(*,'(a)') "Done creating '"//trim(GFFile)//"'."  
-    end if
+    ! Close and finish
+    call finish_TSGF()
     
     ! Clean up computational arrays
-    call memory('D','Z',nuou_E*nuou_E*nq*3+nuo_E*nuo_E,'create_green')
-    deallocate(GS,Hq,Sq,Gq)
-
-    ! Hamiltonians
-    call memory('D','Z',4*nuo_E*nuo_E,'create_green')
-    deallocate(H00,S00,H01,S01)
-
-    if ( .not. Gamma ) then
-       call memory('D','I',notot_E,'create_green')
-       deallocate(indxuo_E)
-       call memory('D','D',3*maxnh_E,'create_green')
-       deallocate(xij_E)
-       call memory('D','D',3*maxnh_E,'create_green')
-       deallocate(xijo_E)
-       call memory('D','I',maxnh_E,'create_green')
-       deallocate(zconnect_E)
+    if ( nS /= nuS ) then
+       call memory('D','Z',size(GS),'create_green')
+       deallocate(GS)
     end if
 
-    call memory('D','I',nuo_E,'create_green')
-    deallocate(numh_E)
-    call memory('D','I',nuo_E,'create_green')
-    deallocate(listhptr_E)
-    call memory('D','I',maxnh_E,'create_green')    
-    deallocate(listh_E)
-    call memory('D','D',maxnh_E*nspin,'create_green')
-    deallocate(H_E)
-    call memory('D','D',maxnh_E,'create_green')
-    deallocate(S_E)
+    if ( Gq_allocated ) then
+       call memory('D','Z',size(Gq),'create_green')
+       deallocate(Gq)
+    end if
+
+    ! Work-arrays
+    call memory('D','Z',size(zwork),'create_green')
+    deallocate(zwork)
+    call memory('D','Z',size(zHS),'create_green')
+    deallocate(zHS)
+
+    if ( CalcDOS ) deallocate(lDOS)
+
+    if ( pre_expand ) deallocate(X)
+
+    call itt_destroy(it2)
+
+    call clear_mat_inversion()
 
 #ifdef MPI
-    ! Sum the bulkdensity of states
-    ! Here we can safely use the array as temporary (Gq)
-    allocate(Gq(NEn,nspin))
-    call memory('A','Z',NEn*nspin,'create_green')
-    Gq = 0.0_dp
-    call MPI_AllReduce(ZBulkDOS(1,1),Gq(1,1),NEn*nspin, DAT_dComplex, MPI_Sum, &
-         MPI_Comm_World,MPIerror)
-    ZBulkDOS = Gq
-    call memory('D','Z',NEn*nspin,'create_green')
-    deallocate(Gq)
+    if ( CalcDOS ) then
+       ! Sum the bulkdensity of states
+       ! Here we can safely use the array as temporary (Gq)
+       allocate(lDOS(nuo_E*NEn*nspin))
+    else if ( CalcT ) then
+       allocate(lDOS(NEn*nspin))
+    end if
+    if ( allocated(lDOS) ) then
+       call memory('A','D',size(lDOS),'create_green')
+    end if
+    
+    if ( CalcDOS ) then
+       call MPI_AllReduce(DOS(1,1,1),lDOS(1),nuo_E*NEn*nspin, &
+            MPI_double_precision, &
+            MPI_Sum,MPI_Comm_World,MPIerror)
+       i = 0
+       do jo = 1 , nspin
+          do io = 1 , NEn
+             DOS(1:nuo_E,io,jo) = lDOS(i+1:i+nuo_E)
+             i = i + nuo_E
+          end do
+       end do
+       
+    end if
+    if ( CalcT ) then
+       call MPI_AllReduce(T(1,1),lDOS(1),NEn*nspin, &
+            MPI_double_precision, &
+            MPI_Sum,MPI_Comm_World,MPIerror)
+       i = 0
+       do jo = 1 , nspin
+          T(1:NEn,jo) = lDOS(i+1:i+NEn)
+          i = i + NEn
+       end do
+       
+    end if
+
+    if ( allocated(lDOS) ) then
+       call memory('D','D',size(lDOS),'create_green')
+       deallocate(lDOS)
+    end if
 #endif
 
-    call timer('genGreen',2)
+    call timer('TS_SE',2)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS create_Green' )
 #endif
+
+  contains
+
+
+    subroutine init_TSGF()
+      
+      real(dp), allocatable :: kE(:,:)
+
+      if ( .not. IONode ) return
+      
+      call io_assign(uGF)
+      open(FILE=El%GFfile,UNIT=uGF,FORM='UNFORMATTED')
+      
+      ! Electrode information
+      write(uGF) El%nspin, El%cell
+      write(uGF) El%na_u, El%no_u
+      write(uGF) El%na_used, El%no_used
+      write(uGF) El%xa_used, El%lasto_used
+      write(uGF) El%repeat, El%Bloch%B(:), El%pre_expand
+      write(uGF) El%mu%mu
+      
+      ! Write out explicit information about this content
+      write(uGF) nkpnt
+      ! Notice that we write the k-points for the ELECTRODE
+      ! They will be stored in units of the reciprocal lattice vector
+      !   1/b 
+      allocate(kE(3,nkpnt))
+      do i = 1 , nkpnt
+         ! Store the k-points in units of reciprocal lattice
+         call Elec_kpt(El,ucell,kpoint(:,i),kE(:,i), opt = 2)
+      end do
+      write(uGF) kE, kweight
+      deallocate(kE)
+      
+      ! write out the contour information
+      write(uGF) NEn
+      write(uGF) ce ! energy points
+      
+    end subroutine init_TSGF
+
+    subroutine store_HS()
+      
+      if ( .not. IONode ) return
+      ! k-point and energy-point is in front of Hamiltonian
+
+      write(uGF) ikpt, 1, ce(1) ! k-point and energy point
+      if ( reduce_size ) then
+         if ( pre_expand .and. El%pre_expand > 1 ) then
+            call update_UC_expansion_A(nuou_E,no_X,El,nq,&
+                 El%na_used,El%lasto_used,Hq,X)
+            write(uGF) X
+            call update_UC_expansion_A(nuou_E,no_X,El,nq,&
+                 El%na_used,El%lasto_used,Sq,X)
+            write(uGF) X
+         else
+            write(uGF) Hq
+            write(uGF) Sq
+         end if
+      else
+         H00 => zHS(      1:nq*nS  )
+         S00 => zHS(nq*nS+1:nq*nS*2)
+         if ( pre_expand .and. El%pre_expand > 1 ) then
+            call update_UC_expansion_A(nuo_E,no_X,El,nq, &
+                 El%na_used,El%lasto_used,H00,X)
+            write(uGF) X
+            call update_UC_expansion_A(nuo_E,no_X,El,nq,&
+                 El%na_used,El%lasto_used,S00,X)
+            write(uGF) X
+         else
+            write(uGF) H00
+            write(uGF) S00
+         end if
+      end if
+
+    end subroutine store_HS
+
+    subroutine store_GS()
+      
+      ! Save Surface Green function
+      if ( .not. IONode ) return
+
+#ifdef MPI
+      if ( curNode /= Node ) then
+         call MPI_Start(reqs(curNode),MPIerror)
+         call MPI_Wait(reqs(curNode),status,MPIerror)
+      end if
+#endif
+         
+      ! Write out calculated information at E point
+      if ( iEn /= 1 ) write(uGF) ikpt, iEn, ce(iEn)
+      if ( pre_expand ) then
+         write(uGF) X
+      else
+         write(uGF) Gq
+      end if
+      
+    end subroutine store_GS
+
+    subroutine finish_TSGF()
+      
+      ! Close file
+      if ( .not. IONode ) return
+      
+      call io_close(uGF)
+      write(*,'(a,/)') "Done creating '"//trim(El%GFfile)//"'."  
+
+    end subroutine finish_TSGF
     
   end subroutine create_Green
 
 
-!------------------------------------------------------------------------
-!************************************************************************
-!------------------------------------------------------------------------
-  subroutine init_electrode_HS(tElec,NUsedAtoms,Gamma,xa_sys,nua_sys,nspin_sys, &
-       NBufAt,NA1,NA2, &
-       HSfile,nua,nuo,maxnh,notot,xa,H,S,xij,xijo,zconnect, &
-       numh,listhptr,listh,indxuo,lasto, &
-       Ef,ucell)
-
-    use precision, only: dp
-    use fdf, only : leqi
-    use sys, only : die
-    use units, only : Ang
-    use parallel, only : IONode, Node,Nodes
-    use m_ts_io, only  : ts_iohs
-    use files, only: label_length
+  subroutine init_Electrode_HS(El)
+    use fdf, only: fdf_get
 #ifdef MPI
-    use mpi_siesta, only: MPI_Comm_World, MPI_LOR
-    use mpi_siesta, only: MPI_Bcast,MPI_Barrier
-    use mpi_siesta, only: DAT_double => MPI_double_precision
-    use mpi_siesta, only: MPI_Logical,MPI_Integer
-    use mpi_siesta, only: MPI_Reduce
+    use mpi_siesta
 #endif
-#ifdef TBTRANS
-    use m_tbt_kpoints, only : ts_kscell => kscell
-    use m_tbt_kpoints, only : ts_kdispl => kdispl
-    use m_tbt_kpoints, only : ts_gamma_scf => Gamma
-#else
-    use m_ts_kpoints, only : ts_gamma_scf, ts_kscell, ts_kdispl
-#endif
+    use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
+    use m_ts_electype
 
-
-! ***********************
-! * INPUT variables     *
-! ***********************
-    character(len=1)     :: tElec   ! 'L' for Left electrode, 'R' for right
-    integer, intent(in)  :: NUsedAtoms ! The number of atoms used...
-    integer, intent(in)  :: nua_sys ! Full system count of atoms in unit cell
-    real(dp), intent(in) :: xa_sys(3,nua_sys) ! Coordinates in the system for the TranSIESTA routine
-    integer, intent(in)  :: nspin_sys ! spin in system
-    character(len=label_length+5),intent(in) :: HSfile !H,S parameter file 
-    integer, intent(in)  :: NBufAt,NA1,NA2 ! Buffer atoms, and repetitions 
-! ***********************
-! * OUTPUT variables    *
-! ***********************
-    logical                           :: Gamma
-    integer                           :: nua,nuo,maxnh ! Unit cell atoms / orbitals / Hamiltonian size
-    real(dp), dimension(:,:), pointer :: xa ! The atomic coordinates
-    real(dp), dimension(:,:), pointer :: H,xij,xijo ! Hamiltonian, differences with unitcell, differences without unitcell
-    real(dp), dimension(:),   pointer :: S ! Overlap
-    integer,  dimension(:),   pointer :: zconnect ! Has 0 values for indices where there are no z-connection.
-    integer,  dimension(:),   pointer :: numh,listhptr,listh,indxuo,lasto
-    real(dp) :: Ef ! Efermi
-    real(dp), intent(inout)           :: ucell(3,3) ! The unit cell
-
-! ***********************
-! * LOCAL variables     *
-! ***********************
-! >>>> Related to the Electrode TSHS
-    character(len=5) :: GFjob
-    integer :: notot  ! Total orbitals in all supercells
-    integer :: nspin  ! The spin polarization
-    integer,  dimension(:),   pointer :: isa ! atomic species
-    logical :: ts_gamma ! Read gamma from file
-    real(dp) :: kdispl(3)
-    integer  :: kscell(3,3)
-    real(dp) :: qtot,Temp ! total charges, electronic temperature
-    integer :: dummy1,dummy2 ! dummy variables
-
-
-    logical :: eXa ! Errors when testing for position of electrodes
-    real(dp),dimension(3) :: xa_o,xa_sys_o ! Origo coordinates of the electrodes
-    real(dp) :: zc
-    real(dp), dimension(:,:), allocatable :: xo
-    real(dp), dimension(3,3) :: recell ! Reciprocal cell without 2Pi, used for zconnect
-    integer :: sysElec ! the first atom of the electrode in the SYSTEM setup
-    integer :: elecElec ! The first atom in the electrode in the ELECTRODE setup
-    integer :: i,j,ia,iuo,juo,ind,iaa !Loop counters
-    character(8) :: iotask
-
+    type(Elec), intent(inout) :: El
 #ifdef MPI
-    logical :: eXa_buff
-    integer :: MPIerror
+    integer :: error
 #endif
-!=======================================================================
-    real(dp), parameter :: EPS = 1.0d-4
-!=======================================================================
+    logical :: neglect_conn
+    
+    ! Read-in and create the corresponding transfer-matrices
+    call delete(El) ! ensure clean electrode
+    call read_Elec(El,Bcast=.true.)
 
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'PRE init_elec_HS' )
-#endif
-
-    nullify(H,S)
-    nullify(xij,xijo,xa,isa)
-    nullify(numh,listhptr,listh,indxuo)
-    nullify(lasto)
-    nullify(zconnect)
-
-    if ( IONode ) then
-       iotask = 'READ'
-       call ts_iohs(iotask,Gamma, .false., nuo, notot, nspin, &
-            indxuo, maxnh, numh, listhptr, listh, H, S, qtot, Temp, &
-            xij, label_length+5, HSfile, nua, lasto, isa, Ef, &
-            ucell, kscell, kdispl, ts_gamma, xa, dummy1,dummy2, &
-            check_kcell=.false.) 
-       ! Checking the electrode k-grid against the system k-grid...
-       ! This will also check for the repetition...
-       ! This check is not advisable in the TBtrans utility.
-       ! This is because the k-grid is often more fine when calculating
-       ! the transmission function.
-       ! Perhaps this should only check that the electrode k-sampling
-       ! is AT LEAST as good as the system k-grid for a TranSiesta run?
-#ifndef TBTRANS
-       eXa = .false.
-       do j = 1 , 3
-          do i = 1 , 3
-             if ( j == 1 ) then
-                eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA1 )
-             else if ( j == 2 ) then
-                eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j)*NA2 )
-             else
-                eXa = eXa .or. ( kscell(i,j) /= ts_kscell(i,j) )
-             end if
-          end do
-          eXa = eXa .or. ( kdispl(j) /= ts_kdispl(j) )
-       end do
-       if ( eXa ) then
-          write(*,'(a)') 'Incompatible k-grids...'
-          write(*,'(a)') 'Electrode file k-grid:'
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),kdispl(j)
-          end do
-          write(*,'(a)') 'System k-grid:'
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (ts_kscell(i,j),i=1,3),ts_kdispl(j)
-          end do
-          write(*,'(a)') 'Electrode file k-grid should be:'
-          kscell(:,1) = ts_kscell(:,1) * NA1
-          kscell(:,2) = ts_kscell(:,2) * NA2
-          kscell(:,3) = ts_kscell(:,3)
-          do j = 1 , 3
-             write(*,'(3(i4,tr1),f8.4)') (kscell(i,j),i=1,3),ts_kdispl(j)
-          end do
-          call die('Incompatible electrode k-grids') 
-       end if
-#endif
-
-       ! Deallocate isa, not needed anymore
-       call memory('D','I',nua,'elec_HS')
-       deallocate(isa)
-
-       if( nspin_sys /= nspin ) then
-          write(*,*) "Spin of electrode '"//trim(HSfile) &
-               //"' is different."
-          write(*,*) "Spin electrode / Spin system",nspin,nspin_sys
-          call die('Wrong spin! Check system and electrode!')
-       end if
+    if ( .not. associated(El%isc_off) ) then
+       call die('An electrode file needs to be a non-Gamma calculation. &
+            &Ensure good periodicity in the T-direction.')
     end if
 
-! Do communication of variables
-#ifdef MPI
-    call MPI_Bcast(nua,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(nuo,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(notot,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(nspin,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(maxnh,1,MPI_Integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(Ef,1,DAT_double,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(ucell(1,1),3*3,DAT_double,0, &
-         MPI_Comm_World,MPIerror)
-    if ( .not. IONode ) then
-       if ( .not. Gamma ) then 
-! they behave as dummy arrays in case of Gamma == .true.
-! However, the electrode must be Gamma == .false. as we need the transfer matrix
-! TODO in options start-up check that the electrode is in fact a Gamma == .false. calculation
-! This can be done together with retrieving the nua_E variable.
-          allocate(indxuo(notot))
-          call memory('A','I',notot,'elec_HS')
-          allocate(xij(3,maxnh))
-          call memory('A','D',maxnh*3,'elec_HS')
-       end if
-       allocate(xa(3,nua))
-       call memory('A','D',3*nua,'elec_HS')
-       allocate(lasto(0:nua))
-       call memory('A','I',1+nua,'elec_HS')
-       allocate(numh(nuo))
-       call memory('A','I',nuo,'elec_HS')
-       allocate(listhptr(nuo))
-       call memory('A','I',nuo,'elec_HS')
-       allocate(listh(maxnh))
-       call memory('A','I',maxnh,'elec_HS')
-       allocate(H(maxnh,nspin))
-       call memory('A','D',maxnh*nspin,'elec_HS')
-       allocate(S(maxnh))
-       call memory('A','D',maxnh,'elec_HS')
-    end if
-    call MPI_Bcast(xa(1,1),3*nua,DAT_Double,0, &
-         MPI_Comm_World,MPIerror)
-    if ( .not. Gamma ) then
-       call MPI_Bcast(indxuo,notot,MPI_Integer,0, MPI_Comm_World,MPIerror)
-       call MPI_Bcast(xij(1,1),3*maxnh,DAT_Double,0, &
-            MPI_Comm_World,MPIerror)
-    end if
-    call MPI_Bcast(lasto(0),1+nua,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(numh,nuo,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(listhptr,nuo,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(listh,maxnh,MPI_Integer,0, MPI_Comm_World,MPIerror)
-    call MPI_Bcast(H(1,1),maxnh*nspin,DAT_Double,0, &
-         MPI_Comm_World,MPIerror)
-    call MPI_Bcast(S,maxnh,DAT_Double,0, MPI_Comm_World,MPIerror)
-#endif
+    ! Create the default sparsity patterns in the sub-spaces needed
+    ! for the self-energy calculations
+    ! This is also important to create before running
+    ! check_connectivity because of used-atoms possibly being set.
+    call create_sp2sp01(El)
 
-
-    ! Do a recheck if the electrode file has been overwritted or??
-    if ( NUsedAtoms > nua ) then
-       write(*,*) "# of requested atoms is larger than available."
-       write(*,*) "Requested: ",NUsedAtoms
-       write(*,*) "Available: ",nua
-       call die("Error on requested atoms.")
-    end if
-
-
-! Create reciprocal cell, without 2Pi
-    call reclat(ucell,recell,0)
-
-    if( leqi(tElec,'L') ) then
-       GFjob = 'Left'
-       sysElec = NbufAt + 1
-       elecElec = nua - NUsedAtoms + 1
-    else if ( leqi(tElec,'R') ) then
-       GFjob = 'Right'
-       sysElec = nua_sys - NbufAt - NUsedAtoms * NA1 * NA2 + 1
-       elecElec = 1
+    ! print out the precision of the electrode (whether it extends
+    ! beyond first principal layer)
+    if ( check_connectivity(El) ) then
+       neglect_conn = .true.
     else
-       call die("init electrode has received wrong job ID [L,R]: "//tElec)
-    endif
-
-! Print out structural information of the system versus the electrode
-    struct_info: if ( IONode ) then
-       write(*,*) trim(GFjob)//' unit cell (Ang):'
-       do j=1,3
-          write(*,'(3F8.4)') (ucell(i,j)/Ang,i=1,3)
-       end do
-
-       write(*,'(a,t35,a)') &
-            " Structure of the "//trim(GFjob)//" electrode","| System electrode:"
-       write(*,'(t3,3a10,''  |'',3a10)') &
-            "X (Ang)","Y (Ang)","Z (Ang)", &
-            "X (Ang)","Y (Ang)","Z (Ang)"
-
-       ! Save origo of System electrode
-       xa_sys_o(:) = xa_sys(:,sysElec)
-       ! Save origo of electrode 
-       xa_o(:) = xa(:,elecElec)
-
-       ! Initialize error parameter
-       eXa = .false.
-       iaa = sysElec
-       do ia = elecElec , elecElec + NUsedAtoms - 1
-          do j=0,NA2-1
-             do i=0,NA1-1
-                write(*,'(t3,3f10.5,''  |'',3f10.5)') &
-                     (xa(1,ia)-xa_o(1)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
-                     (xa(2,ia)-xa_o(2)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
-                     (xa(3,ia)-xa_o(3))/Ang, &
-                     (xa_sys(1,iaa)-xa_sys_o(1))/Ang, &
-                     (xa_sys(2,iaa)-xa_sys_o(2))/Ang, &
-                     (xa_sys(3,iaa)-xa_sys_o(3))/Ang
-                eXa=eXa.or.abs(xa(1,ia)-xa_o(1) + &
-                     ucell(1,1)*i+ucell(1,2)*j - &
-                     xa_sys(1,iaa)+xa_sys_o(1)) > EPS
-                eXa=eXa.or.abs(xa(2,ia)-xa_o(2) + &
-                     ucell(2,1)*i+ucell(2,2)*j - &
-                     xa_sys(2,iaa)+xa_sys_o(2)) > EPS
-                eXa=eXa.or.abs(xa(3,ia)-xa_o(3) - &
-                     xa_sys(3,iaa)+xa_sys_o(3)) > EPS
-                iaa = iaa + 1
-             end do
-          end do
-       end do
-       if ( eXa ) then
-          write(*,'(a)') "Coordinates from the electrode repeated out to an FDF file"
-          write(*,'(t3,3a20)') &
-               "X (Ang)","Y (Ang)","Z (Ang)"
-          iaa = sysElec
-          do ia = elecElec , elecElec + NUsedAtoms - 1
-             do j=0,NA2-1
-                do i=0,NA1-1
-                   write(*,'(t2,3(tr1,f20.12))') &
-                        (xa(1,ia)+ucell(1,1)*i+ucell(1,2)*j)/Ang, &
-                        (xa(2,ia)+ucell(2,1)*i+ucell(2,2)*j)/Ang, &
-                        (xa(3,ia))/Ang
-                end do
-             end do
-          end do
-          call die("The electrodes are not situated in the same coordinates. Please correct.")
-       end if
-
-    end if struct_info
-
-! Create them for passing to other routines 
-! in such case, they are dummy arrays (this occurs only if Gamma .eq. .true.
-    allocate(xijo(3,maxnh))
-    call memory('A','D',3*maxnh,'elec_HS')
-    allocate(zconnect(maxnh))
-    call memory('A','I',maxnh,'elec_HS')
-    
-    ! Initialize the error parameter
-    eXa = .false.
-
-    ! Create the z-connect array
-    zconnect_gamma: if ( .not. Gamma ) then
-
-       ! temporary array in this part
-       allocate(xo(3,nuo))
-       call memory('A','D',3*nuo,'elec_HS')
-
-! We now create zconnect to contain 0 for interconnects without
-! z-direction
-! This needs to be the full electrode, no matter NUsedAtoms!
-
-! Create xo array (orbital coordinates)
-       do ia = 1 , nua
-          do i = lasto(ia-1)+1 , lasto(ia)
-             xo(1,i) = xa(1,ia)
-             xo(2,i) = xa(2,ia)
-             xo(3,i) = xa(3,ia)
-          end do           !i
-       end do              !ia in uc
-
-       do iuo = 1 , nuo
-          do j = 1 , numh(iuo)
-             ind = listhptr(iuo) + j
-             juo = indxuo(listh(ind))
-             xijo(:,ind) = xij(:,ind)-(xo(:,juo)-xo(:,iuo))
-             zc = 0.0_dp
-             do i = 1 , 3
-! recell is already without 2*Pi
-                zc = zc + xijo(i,ind) * recell(i,PropDir)
-             end do
-             zconnect(ind) = nint(zc)
-
-             if ( abs(zconnect(ind)) > 1 ) then
-                eXa = .true.
-             end if
-          end do
-       end do
-       call memory('D','D',3*nuo,'elec_HS')
-       deallocate(xo)
-    end if zconnect_gamma
+       neglect_conn = fdf_get('TS.Elecs.Neglect.Principal', .false.)
+#ifdef TBTRANS
+       neglect_conn = fdf_get('TBT.Elecs.Neglect.Principal', neglect_conn)
+#endif
+    end if
     
 #ifdef MPI
-    eXa_buff = eXa
-    call MPI_Reduce(eXa_buff,eXa,1, MPI_LOGICAL,MPI_LOR, &
-         0,MPI_Comm_World,MPIerror)
+    call MPI_Barrier(MPI_Comm_World,error)
 #endif
-
-    if ( IONode .and. eXa ) then
-       write(0,*) "WARNING: Connections across 2 unit cells or more &
-            &in the transport direction."
-       write(0,*) "WARNING: This is inadvisable."
-       write(0,*) "WARNING: Please increase the electrode size &
-            &in the transport direction."
-       write(0,*) "WARNING: Will proceed without further notice."
-       write(*,*) "WARNING: Connections across 2 unit cells or more &
-            &in the transport direction."
-       write(*,*) "WARNING: This is inadvisable."
-       write(*,*) "WARNING: Please increase the electrode size &
-            &in the transport direction."
-       write(*,*) "WARNING: Will proceed without further notice."
+    if ( .not. neglect_conn ) then
+       call die('Electrode connectivity is not perfect, &
+            &refer to the manual for achieving a perfect electrode.')
+    end if
+    
+    ! Clean-up, we will not need these!
+    ! we should not be very memory hungry now, but just in case...
+    call delete(El%H)
+    call delete(El%S)
+   
+    ! We do not accept onlyS files
+    if ( .not. initialized(El%H00) ) then
+       call die('An electrode file must contain the Hamiltonian')
     end if
 
-#ifdef TRANSIESTA_DEBUG
-    call write_debug( 'POS init_elec_HS' )
-#endif
+    call delete(El%sp)
 
-  end subroutine init_electrode_HS
+  end subroutine init_Electrode_HS
 
 
 !**********
 ! Create the Hamiltonian for the electrode as well
 ! as creating the transfer matrix.
 !**********
-  subroutine set_electrode_HS_Transfer(Gamma,nuo,maxnh,notot,nspin, &
-       H,S,xij,xijo,zconnect,numh, &
-       listhptr,listh,indxuo,Ef, &
-       ispin,k,q,Hk,Sk,Hk_T,Sk_T)
+  subroutine set_HS_Transfer_1d(ispin,El,n_s,sc_off,kq, &
+       no,Hk,Sk,Hk_T,Sk_T)
     use sys, only : die
     use precision, only : dp
+    use m_ts_electype
+    use geom_helper, only : ucorb
+    use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
+
 ! ***********************
 ! * INPUT variables     *
 ! ***********************
-    logical                           :: Gamma ! Is it a Gamma Calculation?
-    integer                           :: nuo ! Unit cell orbitals
-    integer                           :: maxnh,notot,nspin ! Hamiltonian size / total orbitals / spins
-    real(dp)                          :: H(maxnh,nspin) ! Hamiltonian
-    real(dp)                          :: S(maxnh) ! Overlap
-    real(dp)                          :: xij(3,maxnh) ! differences with unitcell, differences with unitcell
-    real(dp)                          :: xijo(3,maxnh) ! differences with unitcell, differences without unitcell
-    integer                           :: zconnect(maxnh) ! 0 for no connection in z-direction
-    integer                           :: numh(nuo),listhptr(nuo)
-    integer                           :: listh(maxnh),indxuo(notot)
-    real(dp)                          :: Ef ! Efermi
-    integer                           :: ispin
-    real(dp), dimension(3)            :: k   ! k-point in [1/Bohr]
-    real(dp), dimension(3)            :: q   ! expansion k-point in [1/Bohr]
+    integer, intent(in)    :: ispin, no
+    type(Elec), intent(inout) :: El
+    integer, intent(in) :: n_s
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
+    real(dp), intent(in) :: kq(3)   ! k + q-point in [1/Bohr]
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), dimension(nuo*nuo)   :: Hk,Sk,Hk_T,Sk_T
+    complex(dp), dimension(no**2) :: Hk,Sk,Hk_T,Sk_T
+
+    call set_HS_Transfer_2d(ispin,El,n_s,sc_off,kq, &
+         no,Hk,Sk,Hk_T,Sk_T)
+    
+  end subroutine set_HS_Transfer_1d
+  
+  subroutine set_HS_Transfer_2d(ispin,El,n_s,sc_off,kq, &
+       no,Hk,Sk,Hk_T,Sk_T)
+    use sys, only : die
+    use precision, only : dp
+    use m_ts_electype
+    use geom_helper, only : ucorb
+    use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
+
+! ***********************
+! * INPUT variables     *
+! ***********************
+    integer, intent(in) :: ispin, no
+    type(Elec), intent(inout) :: El
+    integer, intent(in) :: n_s
+    real(dp), intent(in) :: sc_off(3,0:n_s-1)
+    real(dp), intent(in) :: kq(3)   ! k + q-point in [1/Bohr]
+! ***********************
+! * OUTPUT variables    *
+! ***********************
+    complex(dp), dimension(no,no) :: Hk, Sk, Hk_T, Sk_T
 
 ! ***********************
 ! * LOCAL variables     *
 ! ***********************
-    real(dp) :: kqxij
-    complex(dp) :: cphase
-    integer :: i,j,iuo,juo,ind
+    real(dp) :: Ef
+    complex(dp) :: ph(0:n_s-1)
+    integer :: i, j, io, jo, ind, is
+    integer, pointer :: ncol00(:), l_ptr00(:), l_col00(:)
+    integer, pointer :: ncol01(:), l_ptr01(:), l_col01(:)
+    real(dp), pointer :: H00(:,:) , S00(:), H01(:,:), S01(:)
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'PRE elec_HS_Transfer' )
 #endif
 
-    if ( Gamma ) then
-       write(*,*) 'Transfer matrix not possible with Gamma-calculation.'
-       call die("Transfer matrix not possible with Gamma-calculation")
-    end if
-    
-! Initialize arrays
-    do i = 1,nuo*nuo
-       Hk(i) = dcmplx(0.d0,0.d0)
-       Sk(i) = dcmplx(0.d0,0.d0)
-       Hk_T(i) = dcmplx(0.d0,0.d0)
-       Sk_T(i) = dcmplx(0.d0,0.d0)
-    enddo
+    ! we need to subtract as the below code shifts to Ef
+    Ef = El%Ef - El%mu%mu
 
-    do iuo = 1 , nuo
-       do j = 1 , numh(iuo)
-          ind = listhptr(iuo) + j
-          juo = indxuo(listh(ind))
-          kqxij = &
-               k(1)       * xij(1,ind) + &
-               k(2)       * xij(2,ind) + &
-               k(3)       * xij(3,ind) - &
-               k(PropDir) * xij(PropDir,ind) + &
-               q(1)       * xijo(1,ind) + &
-               q(2)       * xijo(2,ind) + &
-               q(3)       * xijo(3,ind) - &
-               q(PropDir) * xijo(PropDir,ind)
+    if ( El%no_u /= no ) call die('Wrong size of the electrode array')
 
-          cphase = cdexp(dcmplx(0d0,1d0)*kqxij )
+    ! retrieve values
+    call attach(El%sp00,n_col=ncol00,list_ptr=l_ptr00,list_col=l_col00)
+    call attach(El%sp01,n_col=ncol01,list_ptr=l_ptr01,list_col=l_col01)
+    ! point to the data-segments...
+    H00 => val(El%H00)
+    H01 => val(El%H01)
+    S00 => val(El%S00)
+    S01 => val(El%S01)
+
+    ! The algorithm outside should take care of the
+    ! nullification of the k-point in the semi-infinite direction
+    do i = 0 , n_s - 1
+       ph(i) = exp(cmplx(0._dp, sum(kq*sc_off(:,i)),kind=dp) )
+    end do
+
+!$OMP parallel default(shared), private(i,j,io,jo,ind,is)
+
+    ! Initialize arrays
+!$OMP workshare
+    Hk = z_0
+    Sk = z_0
+    Hk_T = z_0
+    Sk_T = z_0
+!$OMP end workshare
+
+    ! We will not have any data-race condition here
+!$OMP do 
+    do io = 1 , no
+
+       ! Create 00
+       do j = 1 , ncol00(io)
+          ind = l_ptr00(io) + j
+          jo = ucorb(l_col00(ind),no)
+          is = (l_col00(ind)-1) / no
           
-          i = iuo+(juo-1)*nuo
-          if (zconnect(ind).eq.0) then
-             Hk(i) = Hk(i)+H(ind,ispin)*cphase
-             Sk(i) = Sk(i)+S(ind)*cphase
-          else if (zconnect(ind).eq.1) then
-             Hk_T(i) = Hk_T(i)+H(ind,ispin)*cphase
-             Sk_T(i) = Sk_T(i)+S(ind)*cphase
-          endif
+          Hk(io,jo) = Hk(io,jo) + H00(ind,ispin) * ph(is)
+          Sk(io,jo) = Sk(io,jo) + S00(ind)       * ph(is)
+       enddo
+
+       ! Create 01
+       do j = 1 , ncol01(io)
+          ind = l_ptr01(io) + j
+          jo = ucorb(l_col01(ind),no)
+          is = (l_col01(ind)-1) / no
+
+          Hk_T(io,jo) = Hk_T(io,jo) + H01(ind,ispin) * ph(is)
+          Sk_T(io,jo) = Sk_T(io,jo) + S01(ind)       * ph(is)
           
-       enddo
-    enddo
+       end do
 
-!
-!     Symmetrize and make EF the energy-zero*!!!
-!
-    do iuo = 1,nuo
-       do juo = 1,iuo-1
-          i = iuo+(juo-1)*nuo
-          j = juo+(iuo-1)*nuo
+    end do
+!$OMP end do
 
-          Sk(j) = 0.5d0*( Sk(j) + dconjg(Sk(i)) )
-          Sk(i) = dconjg(Sk(j))
+    ! Symmetrize 00 and make EF the energy-zero
+    ! We will not have any data-race condition here
+!$OMP do
+    do io = 1 , no
+       do jo = 1 , io - 1
 
-          Hk(j) = 0.5d0*( Hk(j) + dconjg(Hk(i)) ) &
-               - Ef*Sk(j)
-          Hk(i) = dconjg(Hk(j))
+          Sk(io,jo) = 0.5_dp*( Sk(io,jo) + conjg(Sk(jo,io)) )
+          Sk(jo,io) = conjg(Sk(io,jo))
 
-          ! Transfer matrix
-          Hk_T(i) = Hk_T(i) - Ef*Sk_T(i)
-          Hk_T(j) = Hk_T(j) - Ef*Sk_T(j)
+          Hk(io,jo) = 0.5_dp*( Hk(io,jo) + conjg(Hk(jo,io)) ) - &
+               Ef * Sk(io,jo)
+          Hk(jo,io) = conjg(Hk(io,jo))
 
-       enddo
+          ! Transfer matrix is not symmetric, so do not symmetrize
+          Hk_T(jo,io) = Hk_T(jo,io) - Ef * Sk_T(jo,io)
+          Hk_T(io,jo) = Hk_T(io,jo) - Ef * Sk_T(io,jo)
+
+       end do
        
-       i = iuo+(iuo-1)*nuo
-       Sk(i) = Sk(i) - dcmplx(0d0,1d0)*dimag(Sk(i))
-       
-       Hk(i) = Hk(i) - dcmplx(0d0,1d0)*dimag(Hk(i)) &
-            - Ef*Sk(i)
+       Sk(io,io) = real(Sk(io,io),dp)
+       Hk(io,io) = real(Hk(io,io),dp) - Ef * Sk(io,io)
        
        ! Transfer matrix
-       Hk_T(i) = Hk_T(i) - Ef*Sk_T(i)
-    enddo
+       Hk_T(io,io) = Hk_T(io,io) - Ef * Sk_T(io,io)
+       
+    end do
+!$OMP end do nowait
+
+!$OMP end parallel
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS elec_HS_Transfer' )
 #endif
 
-!-----------------------------------------------------------------
-  end subroutine set_electrode_HS_Transfer
+  end subroutine set_HS_Transfer_2d
 
+  subroutine calc_next_GS_Elec(El,ispin,bkpt,Z,nzwork,in_zwork,DOS,T)
+    use precision,  only : dp
 
-! ******************************************************
-! * ts_mkqgrid creates a q-point grid which is used    *
-! * for expanding a smaller unit cell into a larger    *
-! * coinciding one.                                    *
-! *                                                    *
-! * Example:                                           *
-! *   Electrode of 1 atom, can be repeated 3x3 times   *
-! *   to form a 3x3 atom layer in the TranSIESTA       *
-! *   calculation.                                     *
-! *                                                    *
-! * (Re-)Introduced by Nick Papior Andersen            *
-! ******************************************************
-  subroutine mkqgrid(NA1,NA2,nq,q,wq)
-    use precision, only : dp
+    use m_ts_electype
+    use m_mat_invert
 
-! ***********************
-! * INPUT variables     *
-! ***********************
-    integer , intent(in)     :: NA1,NA2  ! no. repetitions of simple unitcell in A1,A2 directions   
+    use class_Sparsity
+    use class_dSpData1D
+    use class_dSpData2D
 
-! ***********************
-! * OUTPUT variables    *
-! ***********************
-    integer , intent(out)          :: nq      ! no. q-points (<= NA1*NA2 for gamma)
-    real(dp), pointer              :: q(:,:)  ! q-points
-    real(dp), pointer              :: wq(:)   ! weight of q-points (k_||)
+    use alloc, only : re_alloc, de_alloc
 
-! ***********************
-! * LOCAL variables     *
-! ***********************
-    integer                  :: i,j,iq
+    ! ***********************
+    ! * INPUT variables     *
+    ! ***********************
+    type(Elec), intent(inout) :: El
+    integer, intent(in) :: ispin
+    ! the k-point in reciprocal units of the electrode
+    ! also with / Rep
+    real(dp), intent(in) :: bkpt(3)
+    complex(dp), intent(in) :: Z
+    integer, intent(in) :: nzwork
+    complex(dp), intent(inout), target :: in_zwork(nzwork)
+    ! Possibly the bulk density of states from the electrode
+    ! If the DOS, also BULK transmission
+    real(dp), intent(out), optional :: DOS(:), T
 
-    nq = NA1*NA2                !initial value
-
-! To comply with new standard 3-dimension regime
-    allocate(q(3,nq))
-    call memory('A','D',3*nq,'mkqgrid')
-    allocate(wq(nq))
-    call memory('A','D',nq,'mkqgrid')
-    ! Initialize to 0.0
-    q(:,:)  = 0.0_dp
-    wq(:)   = 0.0_dp
-    iq = 0
-    do i=1,NA1
-       do j=1,NA2
-          iq = iq+1
-          q(1,iq)= 1.0_dp*(i-1)/real(NA1,dp)
-          q(2,iq)= 1.0_dp*(j-1)/real(NA2,dp)
-          q(3,iq)= 0.0_dp
-          wq(iq) = 1.0_dp/real(NA1*NA2,dp)
-       end do
-    end do
+    ! ***********************
+    ! * LOCAL variables     *
+    ! ***********************
+    integer  :: iq
+    real(dp) :: kpt(3), kq(3)
     
-  end subroutine mkqgrid
+    ! Dimensions
+    integer :: nq, nw
+    integer :: nuo_E, nS, nuou_E, nuS, nuouT_E
 
+    ! Electrode transfer and hamiltonian matrix
+    complex(dp), pointer :: H00(:), H01(:), S00(:), S01(:)
+    complex(dp), pointer :: zwork(:)
+    complex(dp), pointer :: zHS(:) => null()
+    real(dp), allocatable :: sc_off(:,:)
+
+    ! Green function variables
+    complex(dp), pointer :: GS(:)
+
+    ! size requirement
+    integer :: size_req(2)
+    ! Counters
+    integer :: i, ios, ioe, off, n_s
+    logical :: is_left, reduce_size
+    logical :: zHS_allocated
+    logical :: same_k, calc_DOS
+
+    ! Check input for what to do
+    is_left = El%inf_dir == INF_NEGATIVE
+    calc_DOS = present(DOS)
+    if ( calc_DOS .and. .not. present(T) ) then
+       call die('Need both DOS and T')
+    end if
+
+    zHS_allocated = .false.
+
+    ! constants for this electrode
+    nuo_E  = El%no_u
+    nS     = nuo_E ** 2
+    nuou_E = El%no_used
+    nuS    = nuou_E ** 2
+    ! create expansion k-points
+    nq     = El%Bloch%size()
+    ! We also need to invert to get the contribution in the
+    ! reduced region
+    reduce_size = nuo_E /= nuou_E
+    nuouT_E = TotUsedOrbs(El)
+
+    if ( calc_DOS ) then
+       if ( nuo_E > size(DOS) ) &
+            call die('Error in DOS size for calculation bulk DOS')
+       ! Initialize density of states
+       DOS(1:nuo_E) = 0._dp
+       T = 0._dp
+    end if
+
+    n_s = size(El%isc_off,dim=2)
+    allocate(sc_off(3,n_s))
+    sc_off(:,:) = matmul(El%cell,El%isc_off)
+    
+    ! whether we already have the H and S set correctly, 
+    ! update accordingly, it will save a bit of time, but not much
+    same_k = abs( bkpt(1) - El%bkpt_cur(1) ) < 1.e-8_dp
+    same_k = same_k .and. abs( bkpt(2) - El%bkpt_cur(2) ) < 1.e-8_dp
+    same_k = same_k .and. abs( bkpt(3) - El%bkpt_cur(3) ) < 1.e-8_dp
+    if ( .not. same_k ) then
+      El%bkpt_cur(:) = bkpt
+
+      ! In case we do not need the hamiltonian
+      ! This will be the case for non-bias points and when using bulk electrode
+      same_k = .not. associated(El%HA)
+    end if
+
+    ! determine whether there is room enough
+    if ( reduce_size ) then
+       size_req(1) = 5 * nS
+    else
+       size_req(1) = 4 * nS
+    end if
+    if ( calc_DOS ) then
+       size_req(2) = 9 * nS
+    else
+       size_req(2) = 8 * nS
+    end if
+    if ( size_req(1) + size_req(2) <= nzwork ) then
+
+       ! we have enough room in the regular work-array for everything
+       i = 0
+       H00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       H01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       if ( reduce_size ) then
+          GS => in_zwork(i+1:i+nS)
+          i = i + nS
+       end if
+       zwork => in_zwork(i+1:nzwork)
+
+    else if ( size_req(2) <= nzwork ) then
+
+       ! we will allocate H00,H01,S00,S01,GS arrays
+       call re_alloc(zHS,1,size_req(1),routine='next_GS')
+       zHS_allocated = .true.
+
+       i = 0
+       H00 => zHS(i+1:i+nS)
+       i = i + nS
+       S00 => zHS(i+1:i+nS)
+       i = i + nS
+       H01 => zHS(i+1:i+nS)
+       i = i + nS
+       S01 => zHS(i+1:i+nS)
+       i = i + nS
+       if ( reduce_size ) then
+          GS => zHS(i+1:i+nS)
+       end if
+       
+       ! the work-array fits the input work-array
+       zwork => in_zwork(1:nzwork)
+
+    else if ( size_req(1) <= nzwork ) then
+       ! we will allocate 8*nS work array
+
+       i = 0
+       H00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S00 => in_zwork(i+1:i+nS)
+       i = i + nS
+       H01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       S01 => in_zwork(i+1:i+nS)
+       i = i + nS
+       if ( reduce_size ) then
+          GS => in_zwork(i+1:i+nS)
+       end if
+
+       call re_alloc(zHS,1,size_req(2),routine='next_GS')
+       zHS_allocated = .true.
+       zwork => zHS(:)
+
+    else
+
+       call die('Your electrode is too large compared &
+            &to your system in order to utilize the in-core &
+            &calculation of the self-energies.')
+
+    end if
+    ! Get actual size of work-array
+    nw = size(zwork)
+
+    call init_mat_inversion(nuo_E)
+
+    ! prepare the indices for the Gamma array
+    ios = 1
+    ioe = nuS 
+
+    ! create the offset to be used for copying over elements
+    off = nuo_E - nuou_E + 1
+
+    ! loop over the repeated cell...
+    q_loop: do iq = 1 , nq
+
+       ! init qpoint in reciprocal lattice vectors
+       kpt(:) = bkpt(:) + q_exp(El,iq)
+      
+       ! Convert to 1/Bohr
+       call kpoint_convert(El%cell,kpt,kq,-1)
+
+       ! Calculate transfer matrices @Ef (including the chemical potential)
+       call set_HS_Transfer(ispin, El, n_s,sc_off, kq, &
+            nuo_E, H00,S00,H01,S01)
+       
+       if ( .not. same_k ) then
+          ! we only need to copy over the data if we don't already have it calculated
+!$OMP parallel default(shared)
+          call copy_over(is_left,nuo_E,H00,nuou_E,El%HA(:,:,iq),off)
+          call copy_over(is_left,nuo_E,S00,nuou_E,El%SA(:,:,iq),off)
+!$OMP end parallel
+       end if
+
+       if ( .not. reduce_size ) then
+          ! Instead of doing a copy, we store it directly
+          GS => El%GA(ios:ioe)
+       end if
+
+       ! calculate the contribution for this q-point
+       if ( calc_DOS ) then
+          call SSR_sGreen_DOS(nuo_E,Z,H00,S00,H01,S01, &
+               El%accu, GS, &
+               DOS(1:nuo_E), T, &
+               nw, zwork, &
+               final_invert = reduce_size)
+       else
+          call SSR_sGreen_NoDOS(nuo_E,Z,H00,S00,H01,S01, &
+               El%accu, GS, &
+               nw, zwork, &
+               final_invert = reduce_size)
+       end if
+
+       if ( reduce_size ) then
+          ! Copy over surface Green function
+          ! first we need to determine the correct placement
+!$OMP parallel default(shared)
+          call copy_over(is_left,nuo_E,GS,nuou_E,El%GA(ios:ioe),off)
+!$OMP end parallel
+
+          ! we need to invert back as we don't need to
+          ! expand. And the algorithm expects it to be in correct format
+          if ( nq == 1 ) then
+             call mat_invert(El%GA(ios:ioe),zwork(1:nuS),&
+                  nuou_E, &
+                  MI_IN_PLACE_LAPACK)
+          end if
+       end if
+
+       ! correct indices of Gamma-array
+       ios = ios + nuS
+       ioe = ioe + nuS
+
+    end do q_loop
+
+    ! We normalize DOS as this will be comparable to a bulk
+    ! calculation.
+    if ( calc_DOS .and. nq > 1 ) then
+       DOS(1:nuo_E) = DOS(1:nuo_E) / nq
+    end if
+       
+    if ( zHS_allocated ) then
+       call de_alloc(zHS, routine='next_GS')
+    end if
+
+    deallocate(sc_off)
+    call clear_mat_inversion()
+
+  contains
+    
+    subroutine copy_over(is_left,fS,from,tS,to,off)
+      logical, intent(in) :: is_left
+      integer, intent(in) :: fS, tS, off
+      complex(dp), intent(in) :: from(fS,fS)
+      complex(dp), intent(out) :: to(tS,tS)
+
+      integer :: i, j, ioff
+
+      if ( is_left ) then
+         ! Left, we use the last orbitals
+         ioff = 1 - off ! ioff is private in OMP orphaned routines
+!$OMP do private(j,i), collapse(2)
+         do j = off , fS
+            do i = off , fS
+               to(ioff+i,ioff+j) = from(i,j)
+            end do
+         end do
+!$OMP end do nowait
+      else
+         ! Right, the first orbitals
+!$OMP do private(j,i), collapse(2)
+         do j = 1 , tS
+            do i = 1 , tS
+               to(i,j) = from(i,j)
+            end do
+         end do
+!$OMP end do nowait
+      end if
+
+    end subroutine copy_over
+
+  end subroutine calc_next_GS_Elec
 
 end module m_ts_electrode

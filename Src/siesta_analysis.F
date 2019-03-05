@@ -15,52 +15,56 @@
 
       subroutine siesta_analysis( relaxd )
       USE band, only: nbk, bk, maxbk, bands
-      USE writewave, only: nwk, wfk, wwave
+      USE writewave, only: nwk, wfk, wwave, gamma_wavefunctions
       USE writewave, only: setup_wfs_list, wfs_filename
       USE m_ksvinit, only: nkpol, kpol, wgthpol
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
+#ifdef SIESTA__PEXSI
+      USE m_pexsi_local_DOS, only: pexsi_local_DOS
+      USE m_pexsi_dos, only: pexsi_dos
+#endif      
       USE siesta_options
       use units, only: Debye, eV
       use sparse_matrices, only: maxnh, listh, listhptr, numh
-      use sparse_matrices, only: H, S, Dscf, Dold, Eold, xijo
+      use sparse_matrices, only: H, S, Dscf, xijo
       use siesta_geom
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
      &                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
+      use atomlist, only: qtot
       use fdf
-      use writewave,    only: wwave
       use siesta_cml
       use files,        only : slabel
       use files,        only : filesOut_t   ! derived type for output file names
       use zmatrix,      only: lUseZmatrix, write_zmatrix
-      use Kpoint_grid
+      use kpoint_scf_m, only: kpoint_scf, gamma_scf
       use parallel, only: IOnode
+      use parallel, only: SIESTA_worker
       use files,       only : label_length
       use m_energies
-      use m_steps
+      use m_steps, only: final
       use m_ntm
-      use m_spin,         only: nspin
+      use m_spin,         only: nspin, spinor_dim, h_spin_dim
+      use m_spin,         only: SpOrb, NonCol, SPpol, NoMagn
       use m_dipol
       use m_eo
       use m_forces,          only: fa
-      use m_gamma 
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
       use m_partial_charges, only: want_partial_charges
+      use m_iodm_old,        only: read_spmatrix
       use m_siesta2wannier90, only: siesta2wannier90
-      use siesta_options,     only: w90_processing
 
-#ifdef MPI
-      use m_mpi_utils, only: globalize_sum
+      use m_mpi_utils, only: barrier
+#ifdef SIESTA__FLOOK
+      use flook_siesta, only : slua_call, LUA_ANALYSIS
 #endif
 
       implicit none
 
-      character(len=label_length+6), external :: paste
-
-      logical :: relaxd, getPSI, quenched_MD
+      logical :: relaxd, getPSI, quenched_MD, found
 
       real(dp)          :: dummy_str(3,3)
       real(dp)          :: dummy_strl(3,3)
@@ -69,19 +73,36 @@
       real(dp)          :: polxyz(3,nspin)  ! Autom., small
       real(dp)          :: polR(3,nspin)    ! Autom., small
       real(dp)          :: qaux
-      real(dp)          :: stot             ! Total spin polar.
-      real(dp)          :: svec(3)          ! Total spin vector
       real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
       integer           :: j, ix, ind, ik, io, ispin
       integer           :: wfs_band_min, wfs_band_max
-      real(dp)          :: g2max
-#ifdef MPI
-      real(dp)          :: qtmp(4)
-#endif
+      real(dp)          :: g2max, current_ef
       type(filesOut_t)  :: filesOut  ! blank output file names
 
-!----------------------------------------------------------------------- BEGIN
+!-----------------------------------------------------------------------BEGIN
+
+      if (SIESTA_worker) call timer("Analysis",1)
+
+      ! Check that we are converged in geometry,
+      ! if strictly required,
+      ! before carrying out any analysis
+      
+      quenched_MD =  ( (iquench > 0) .and.
+     $     ((idyn .eq. 1) .or. (idyn .eq. 3)) )
+
+      if ((nmove .ne. 0) .or. quenched_MD) then
+         if (SIESTA_worker) then  ! For timing ops and associated barrier
+          if (GeometryMustConverge .and. (.not. relaxd)) then
+            call message("FATAL",
+     $           "GEOM_NOT_CONV: Geometry relaxation not converged")
+            call timer('all',2)
+            call timer('all',3)
+            call barrier()
+            call die("ABNORMAL_TERMINATION")
+          endif
+         endif
+      endif
 
 !     All the comments below assume that this compatibility option
 !     is not used.
@@ -94,18 +115,47 @@
 !     in the last computation of the electronic structure.
 !     See the comments below for explanation
 
+!$OMP parallel workshare default(shared)
          xa(1:3,1:na_s) = xa_last(1:3,1:na_s)
          ucell(1:3,1:3) = ucell_last(1:3,1:3)
          scell(1:3,1:3) = scell_last(1:3,1:3)
+!$OMP end parallel workshare
 
       endif
 
       !** zmatrix info reset??
 
+      if (fdf_get("Read-H-from-file",.false.)) then
+         if (SIESTA_worker) then
+            call read_spmatrix(maxnh, no_l, h_spin_dim, numh,
+     .           listhptr, listh, H, found, userfile="H_IN")
+            if (.not. found) call die("Could not find H_IN")
+            current_ef = ef
+            ef = fdf_get("Manual-Fermi-Level",current_ef,"Ry") 
+         endif
+      endif
+
+#ifdef SIESTA__PEXSI
+      if (fdf_get("PEXSI.DOS",.false.)) then
+         call pexsi_dos(no_u, no_l, spinor_dim,
+     $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
+         
+      endif
+#endif
+      ! section done by Siesta subset of nodes
+      if (SIESTA_worker) then
+
       final = .true.
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Finalization')
       endif
+
+#ifdef SIESTA__FLOOK
+      ! Call lua right before doing the analysis,
+      ! possibly changing some of the variables
+      call slua_call(LUA,LUA_ANALYSIS)
+#endif
+
 !
 !     NOTE that the geometry output by the following sections
 !     used to be that "predicted" for the next MD or relaxation step.
@@ -118,10 +168,7 @@
         ! This covers CG and MD-quench (verlet, pr), instances in which 
         ! "relaxd" is meaningful
 
-        quenched_MD =  ( (iquench > 0) .and.
-     $                   ((idyn .eq. 1) .or. (idyn .eq. 3)) )
-
-        if ((nmove .ne. 0) .or. quenched_MD) then
+        if ((nmove .ne. 0) .or. quenched_MD ) then
 
           if (relaxd) then  ! xa = xa_last
              ! The "relaxation" routines do not update
@@ -223,9 +270,10 @@
         if (IONode) print "(a)",
      $              "Writing WFSX for selected k-points in "
      $                           // trim(wfs_filename)
-        call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, nwk,
+        call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+     &              nwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     &              nwk, wfk, no_u, gamma, occtol )
+     &              gamma_wavefunctions, nwk, wfk, no_u, occtol )
       endif
 
 
@@ -236,21 +284,23 @@
         ! The user is responsible for using appropriate values.
         wfs_band_min = fdf_get("WFS.BandMin",1)
         wfs_band_max = fdf_get("WFS.BandMax",no_u)
-        call setup_wfs_list(nkpnt,no_u,wfs_band_min,wfs_band_max,
+        call setup_wfs_list(kpoint_scf%N,no_u,
+     &                      wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
      $                      use_energy_window=.true.)
          wfs_filename = trim(slabel)//".fullBZ.WFSX"
          if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
      $                           // trim(wfs_filename)
-         call wwave( no_s, nspin, nspin, no_u, no_l, maxnh, maxk,
+         call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+     .        kpoint_scf%N,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     .        nkpnt, kpoint, no_u, gamma, occtol)
+     .        gamma_scf, kpoint_scf%N, kpoint_scf%k, no_u, occtol)
       endif
 
 !     Compute bands
 !**   This uses H,S, and xa
       nullify( ebk )
-      call re_alloc( ebk, 1, no_u, 1, nspin, 1, maxbk,
+      call re_alloc( ebk, 1, no_u, 1, spinor_dim, 1, maxbk,
      &               'ebk', 'siesta_analysis' )
 
       if (nbk.gt.0) then
@@ -266,7 +316,8 @@
      $          use_scf_weights=.false.,
      $          use_energy_window=.false.)
         endif
-        call bands( no_s, nspin, nspin, no_u, no_l, maxnh, maxbk,
+        call bands( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+     .              maxbk,
      .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .              .true., nbk, bk, ebk, occtol, getPSI )
         if (IOnode) then
@@ -281,7 +332,7 @@
           if ( writb ) then
             write(6,'(/,a,/,a4,a3,a7)')
      &       'siesta: Band energies (eV):', 'ik', 'is', 'eps'
-            do ispin = 1,min(nspin,2)
+            do ispin = 1, spinor_dim
               do ik = 1,nbk
                 write(6,'(i4,i3,10f7.2)')
      &            ik, ispin, (ebk(io,ispin,ik)/eV,io=1,min(10,no_u))
@@ -298,11 +349,11 @@
         if ((isolve.eq.SOLVE_DIAGON .or.
      &       ((isolve.eq.SOLVE_MINIM) .and. minim_calc_eigenvalues))
      &      .and. no_l.lt.1000) then
-          if (nspin .le. 2) then
+          if ( h_spin_dim <= 2 ) then
             write(6,'(/,a,/,a4,a3,a7)')
      &       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
-            do ik = 1,nkpnt
-              do ispin = 1,nspin
+            do ik = 1,kpoint_scf%N
+              do ispin = 1,spinor_dim
                 write(6,'(i4,i3,10f7.2)')
      &            ik,ispin,(eo(io,ispin,ik)/eV,io=1,min(10,neigwanted))
                 if (no_u.gt.10) write(6,'(7x,10f7.2)')
@@ -311,7 +362,7 @@
             enddo
           else
             write(6,'(/,a)') 'siesta: Eigenvalues (eV):'
-            do ik = 1,nkpnt
+            do ik = 1,kpoint_scf%N
               write(6,'(a,i6)') 'ik =', ik
               write(6,'(10f7.2)')
      &          ((eo(io,ispin,ik)/eV,io=1,neigwanted),ispin=1,2)
@@ -323,9 +374,10 @@
 
       if (((isolve.eq.SOLVE_DIAGON).or.
      &     ((isolve.eq.SOLVE_MINIM).and.minim_calc_eigenvalues))
-     &    .and.IOnode)
-     &     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
-     &                kpoint, kweight)
+     &     .and.IOnode)
+     &    call ioeig(eo,ef,neigwanted,nspin,kpoint_scf%N,
+     &     no_u,spinor_dim,
+     &     kpoint_scf%N, kpoint_scf%k, kpoint_scf%w)
 
 
 !**   This uses H,S, and xa, as it diagonalizes them again
@@ -333,7 +385,7 @@
 
 !     Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( first=.false., iscf=0, dDmax=0.0_dp)
+        call siesta_write_energies( iscf=0, dDmax=0._dp, dHmax=0._dp)
         ! final == .true. which makes the step counter irrelevant
         call siesta_write_forces(-1)
         call siesta_write_stress_pressure()
@@ -345,49 +397,7 @@
 !       DMs of the SCF run for the last geometry considered.
 !       This can be considered a feature or a bug.
 
-!     Print spin polarization
-      if (nspin .ge. 2) then
-        do ispin = 1,nspin
-          qspin(ispin) = 0.0_dp
-          do io = 1,no_l
-            do j = 1,numh(io)
-              ind = listhptr(io)+j
-              qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
-            enddo
-          enddo
-        enddo
-
-#ifdef MPI
-!       Global reduction of spin components
-        call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
-        qspin(1:nspin) = qtmp(1:nspin)
-#endif
-        if (nspin .eq. 2) then
-          if (IOnode) then
-            write(6,'(/,a,f12.6)')
-     &       'siesta: Total spin polarization (Qup-Qdown) =', 
-     &       qspin(1) - qspin(2)
-          endif
-          if (cml_p) call cmlAddProperty(xf=mainXML,
-     .         value=qspin(1)-qspin(2), dictref='siesta:qspin',
-     .         units='siestaUnits:spin')
-        elseif (nspin .eq. 4) then
-          call spnvec( nspin, qspin, qaux, stot, svec )
-          if (IOnode) then
-            write(6,'(/,a,f12.6)')
-     &       'siesta: Total spin polarization (Qup-Qdown) =', stot
-            write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
-            if (cml_p) then
-              call cmlAddProperty(xf=mainXML, value=stot,
-     .             dictref='siesta:stot',
-     .             units='siestaUnits:spin')
-              call cmlAddProperty(xf=mainXML, value=svec,
-     .             dictref='siesta:svec',
-     .             units='siestaUnits:spin')
-            endif !cml_p
-          endif
-        endif
-      endif
+      call print_spin(qspin)  ! qspin returned for use below
 
 !**   This uses the last computed dipole in dhscf during the scf cycle,
 !     which is in fact derived from the "in" DM.
@@ -422,12 +432,21 @@
 !     Calculation of the bulk polarization using the Berry phase
 !     formulas by King-Smith and Vanderbilt
       if (nkpol.gt.0 .and. .not.bornz) then
-        call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, ucell_last,
-     &               no_u, no_l, no_s, nspin, qspin, 
+        if (NonCol .or. SpOrb) then
+          if (IOnode) then
+            write(6,'(/a)')
+     .       'siesta_analysis: bulk polarization implemented only for'
+            write(6,'(/a)')
+     .       'siesta_analysis: paramagnetic or collinear spin runs'
+          endif
+        else
+         call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, 
+     &               ucell_last,no_u, no_l, no_s, nspin, qspin, 
      &               maxnh, nkpol, numh, listhptr, listh, 
      &               H, S, xijo, indxuo, isa, iphorb, 
      &               iaorb, lasto, shape,
      &               nkpol,kpol,wgthpol, polR, polxyz ) 
+       endif
       endif
 
 !     Calculation of the optical conductivity
@@ -451,14 +470,14 @@
      &    savevh .or. savevt .or. savevna .or.
      &    savepsch .or. savetoch .or. 
      &    want_partial_charges) then
-        if (saverho)   filesOut%rho   = paste( slabel, '.RHO' )
-        if (savedrho)  filesOut%drho  = paste( slabel, '.DRHO' )
-        if (saverhoxc) filesOut%rhoxc = paste( slabel, '.RHOXC' )
-        if (savevh)    filesOut%vh    = paste( slabel, '.VH'  )
-        if (savevt)    filesOut%vt    = paste( slabel, '.VT'  )
-        if (savevna)   filesOut%vna   = paste( slabel, '.VNA'  )
-        if (savepsch)  filesOut%psch  = paste( slabel, '.IOCH'  )
-        if (savetoch)  filesOut%toch  = paste( slabel, '.TOCH'  )
+        if (saverho)   filesOut%rho   = trim(slabel) // '.RHO'
+        if (savedrho)  filesOut%drho  = trim(slabel) // '.DRHO'
+        if (saverhoxc) filesOut%rhoxc = trim(slabel) // '.RHOXC'
+        if (savevh)    filesOut%vh    = trim(slabel) // '.VH'
+        if (savevt)    filesOut%vt    = trim(slabel) // '.VT'
+        if (savevna)   filesOut%vna   = trim(slabel) // '.VNA'
+        if (savepsch)  filesOut%psch  = trim(slabel) // '.IOCH'
+        if (savetoch)  filesOut%toch  = trim(slabel) // '.TOCH'
         g2max = g2cut
         dummy_str  = 0.0
         dummy_strl = 0.0
@@ -475,7 +494,7 @@
 C    
 C     Call the wannier90 interface here, as local_DOS destroys the DM...
 C
-      if( w90_processing) call siesta2wannier90()
+      if( w90_processing ) call siesta2wannier90()
 
 C     Find local density of states
 !  It needs H,S, and xa, as it diagonalizes them again
@@ -490,6 +509,14 @@ C     Find local density of states
 !   -- Set xa to xa_last at the top of this file. Write any "next iter" coordinate file
 !      in 'siesta_move'
 
-!--------------------------------------------------------------------------- END
+      endif ! SIESTA_worker
+#ifdef SIESTA__PEXSI
+      if (fdf_get("PEXSI.LDOS",.false.)) then
+         call pexsi_local_DOS()
+      endif
+#endif
+      if (SIESTA_worker) call timer("Analysis",2)
+
+!------------------------------------------------------------------------- END
       END subroutine siesta_analysis
       END module m_siesta_analysis

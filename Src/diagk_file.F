@@ -148,6 +148,9 @@ C  Internal variables .............................................
 C  ....................
 
 C Find eigenvalues and eigenvectors
+#ifdef DEBUG
+      call write_debug( '    PRE diagk_file' )
+#endif
 
       ! Setup netCDF file
       !
@@ -161,7 +164,7 @@ C Find eigenvalues and eigenvectors
           call build_dense_HS(ik,ispin)
           ! Compute all eigenvectors for now
           call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .      nuotot,iscf,ierror)
+     .      nuotot,iscf,ierror, BlockSize)
 
           if (ierror.gt.0) then
             call die('Terminating due to failed diagonalisation')
@@ -171,7 +174,7 @@ C Find eigenvalues and eigenvectors
              call build_dense_HS(ik,ispin)
 
              call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .            nuotot,iscf,ierror)
+     .            nuotot,iscf,ierror, BlockSize)
           endif
           call timer( 'c-eigval', 2 )
 !
@@ -311,6 +314,10 @@ C Global operation to form new density matrix
 
       deallocate(psi_block)
       call close_wfs_netcdf_file()
+
+#ifdef DEBUG
+      call write_debug( '    POS diagk_file' )
+#endif
 
       CONTAINS
 

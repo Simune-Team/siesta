@@ -202,31 +202,88 @@ WriteEigenvalues                yes
 
 ==================================================
 ==================================================
-# Transmission 
-TS.TBT.NPoints      101
-TS.TBT.Emin        -0.5 eV
-TS.TBT.Emax         0.5 eV
-
-TS.TBT.NEigen              9
 
 # Bias voltage
 TS.Voltage 0.25 eV
-TS.biasContour.NumPoints       20
+%block TS.ChemPots
+  Left
+  Right
+%endblock TS.ChemPots
 
-# Transiesta: electrode definition:
-# LEFT ELECTRODE
-TS.HSFileLeft ./elec_au_100.TSHS
-TS.ReplicateA1Left    1
-TS.ReplicateA2Left    1
-TS.NumUsedAtomsLeft   36
-TS.BufferAtomsLeft    0
-# RIGHT ELECTRODE
-TS.HSFileRight ./elec_au_100.TSHS
-TS.ReplicateA1Right   1
-TS.ReplicateA2Right   1
-TS.NumUsedAtomsRight  36
-TS.BufferAtomsRight   0
+%block TS.ChemPot.Left
+  mu V/2
+  contour.eq
+    begin
+      c-Left
+      t-Left
+    end
+%endblock TS.ChemPot.Left
+%block TS.ChemPot.Right
+  mu -V/2
+  contour.eq
+    begin
+      c-Right
+      t-Right
+    end
+%endblock TS.ChemPot.Right
 
-# SPECIES AND ATOMS
-# DYNAMICS
-TS.UseBulkInElectrodes  T
+TS.Elecs.Bulk true
+TS.Elecs.DM.Update none
+TS.Elecs.GF.ReUse false
+%block TS.Elecs
+  Left
+  Right
+%endblock TS.Elecs
+
+%block TS.Elec.Left
+  TSHS ./elec_au_100.TSHS
+  chem-pot Left
+  semi-inf-dir -a3
+  elec-pos begin 1
+  used-atoms 36
+%endblock TS.Elec.Left
+
+%block TS.Elec.Right
+  TSHS ./elec_au_100.TSHS
+  chem-pot Right
+  semi-inf-dir +a3
+  elec-pos end -1
+  used-atoms 36
+%endblock TS.Elec.Right
+
+TS.Contours.Eq.Pole 2.5 eV
+%block TS.Contour.c-Left
+  part circle
+   from   -40.0000 eV + V/2 to -10. kT + V/2
+    points 30
+     method g-legendre
+%endblock TS.Contour.c-Left
+%block TS.Contour.t-Left
+  part tail
+   from prev to inf
+    points 10
+     method g-fermi
+%endblock TS.Contour.t-Left
+%block TS.Contour.c-Right
+  part circle
+   from   -40.00000 eV - V/2 to -10. kT - V/2
+    points 30
+     method g-legendre
+%endblock TS.Contour.c-Right
+%block TS.Contour.t-Right
+  part tail
+   from prev to inf
+    points 10
+     method g-fermi
+%endblock TS.Contour.t-Right
+
+TS.Contours.nEq.Eta    0.0001 eV
+%block TS.Contours.nEq
+  neq
+%endblock TS.Contours.nEq
+%block TS.Contour.nEq.neq
+  part line
+   from -|V|/2 - 5 kT to |V|/2 + 5 kT
+    delta    0.01 eV
+     method mid-rule
+%endblock TS.Contour.nEq.neq

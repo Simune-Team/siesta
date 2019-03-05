@@ -20,7 +20,6 @@
 ! use precision,    only: dp
 ! use parallel,     only: IOnode
 ! use fdf
-! use m_fdf_global, only: fdf_global_get
 ! use f90sockets,   only: open_socket, writebuffer, readbuffer
 ! use sys,          only: die, bye
 ! use m_mpi_utils,  only: broadcast
@@ -56,7 +55,6 @@ module iosockets
   use precision,    only: dp
   use parallel,     only: IOnode
   use fdf
-  use m_fdf_global, only: fdf_global_get
   use f90sockets,   only: open_socket, writebuffer, readbuffer, close_socket
   use sys,          only: die, bye
   use m_mpi_utils,  only: broadcast
@@ -118,10 +116,10 @@ subroutine coordsFromSocket( na, xa, cell )
 
 ! Open the socket, shared by the receive and send sides of communication
   if (firstTime) then
-    call fdf_global_get(master, "Master.code", "fsiesta")
-    call fdf_global_get(host,   "Master.address", "localhost")
-    call fdf_global_get(port,   "Master.port", 10001)
-    call fdf_global_get(stype,  "Master.socketType", "inet")
+    master = fdf_get( "Master.code",  "fsiesta")
+    host = fdf_get(   "Master.address",  "localhost")
+    port = fdf_get(   "Master.port",  10001)
+    stype = fdf_get(  "Master.socketType",  "inet")
 
     if (leqi(stype,'unix')) then
       inet = 0
@@ -132,8 +130,8 @@ subroutine coordsFromSocket( na, xa, cell )
     endif
 
     if (IOnode) then
-      print'(/,a,i4,i8,2x,a)', &
-        myName//'opening socket: inet,port,host=',inet,port,trim(host)
+      write(*,'(/,a,i4,i8,2x,a)') &
+          myName//'opening socket: inet,port,host=',inet,port,trim(host)
       call open_socket(socket, inet, port, host)
     endif
 
@@ -146,11 +144,20 @@ subroutine coordsFromSocket( na, xa, cell )
     do
       if (leqi(master,'i-pi')) then
         call readbuffer(socket, header, IPI_MSGLEN)
+
+        ! Immediately stop if requested
+        if (trim(header)=='EXIT') then ! we are done!
+          call close_socket(socket)
+          call bye(myName//'STOP requested by driver')
+        end if
+        
         if (trim(header)/='STATUS') exit ! do loop
-        message = "READY"
+        message = 'READY'
         call writebuffer(socket, message, IPI_MSGLEN)
       elseif (leqi(master,'fsiesta')) then
         call readbuffer(socket, header)
+
+        ! Immediately stop if requested
         if (trim(header)=='quit') then
           call writebuffer(socket,'quitting')
           call close_socket(socket)
@@ -219,9 +226,11 @@ subroutine coordsFromSocket( na, xa, cell )
     end if
   endif
 
-! Print coordinates and cell vectors received
-  print '(/,4a,/,(3f12.6))', myName,'cell (',trim(master_xunit),') =', cell
-  print '(  4a,/,(3f12.6))', myName,'coords (',trim(master_xunit),') =', xa
+  if ( IONode ) then
+    ! Print coordinates and cell vectors received
+    write(*,'(/,4a,/,(3f12.6))') myName,'cell (',trim(master_xunit),') =', cell
+    write(*,'(4a,/,(3f12.6))') myName,'coords (',trim(master_xunit),') =', xa
+  end if
 
 ! Convert physical units
   cell = cell * fdf_convfac( master_xunit, siesta_xunit )
@@ -253,18 +262,18 @@ subroutine forcesToSocket( na, energy, forces, stress )
 ! Copy input to local variables
   allocate(f(3*na))
   e = energy
-  f = reshape( forces, (/3*na/) )
-  s = reshape( stress, (/9/) )
+  f(:) = reshape( forces, (/3*na/) )
+  s(:) = reshape( stress, (/9/) )
   
 ! Convert physical units
   e = e * fdf_convfac( siesta_eunit, master_eunit )
-  f = f * fdf_convfac( siesta_eunit, master_eunit ) &
+  f(:) = f(:) * fdf_convfac( siesta_eunit, master_eunit ) &
         / fdf_convfac( siesta_xunit, master_xunit )
-  s = s * fdf_convfac( siesta_eunit, master_eunit ) &
+  s(:) = s(:) * fdf_convfac( siesta_eunit, master_eunit ) &
         / fdf_convfac( siesta_xunit, master_xunit )**3
 
 ! Find virial tensor for i-pi, in master's units
-  vir = -s * cellv * fdf_convfac( siesta_xunit, master_xunit )**3
+  vir(:) = -s * cellv * fdf_convfac( siesta_xunit, master_xunit )**3
 
 ! Write forces to socket
   if (IOnode) then
@@ -309,13 +318,12 @@ subroutine forcesToSocket( na, energy, forces, stress )
     endif ! leqi(master)
   end if ! IOnode
 
-! Print energy, forces, and stress tensor sent to master
-  print '(/,a,f12.6)',      myName// &
-    'energy ('//trim(master_eunit)//') =', e
-  print '(  a,/,(3f12.6))', myName// &
-    'stress ('//trim(master_eunit)//'/'//trim(master_xunit)//'^3) =', s
-  print '(  a,/,(3f12.6))', myName// &
-    'forces ('//trim(master_eunit)//'/'//trim(master_xunit)//') =', f
+  if ( IONode ) then
+    ! Print energy, forces, and stress tensor sent to master
+    write(*,'(/,a,f12.6)') myName// 'energy ('//trim(master_eunit)//') =', e
+    write(*,'(a,/,(3f12.6))') myName//'stress ('//trim(master_eunit)//'/'//trim(master_xunit)//'^3) =', s
+    write(*,'(a,/,(3f12.6))') myName//'forces ('//trim(master_eunit)//'/'//trim(master_xunit)//') =', f
+  end if
   deallocate(f)
 
 end subroutine forcesToSocket

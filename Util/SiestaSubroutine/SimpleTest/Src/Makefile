@@ -30,10 +30,11 @@ VPATH=$(SRC_DIR)
 #
 # default: simple_pipes_serial simple_sockets_serial clean
 
+all: default
 default: simple_pipes_serial simple_pipes_parallel \
 	simple_sockets_serial simple_sockets_parallel \
-	simple_mpi_serial simple_mpi_parallel clean 
-#
+	simple_mpi_serial simple_mpi_parallel
+
 ARCH_MAKE=$(OBJ_DIR)/arch.make
 include $(ARCH_MAKE)
 #
@@ -43,18 +44,19 @@ include $(ARCH_MAKE)
 #
 # Routines used by pipes and sockets versions (VPATH knows where they are)
 #
-FSIESTA_PIPES= fsiesta_pipes.o pxf.o
-FSIESTA_SOCKETS= fsockets.o sockets.o fsiesta_sockets.o 
+FSIESTA_PIPES= posix_calls.o fsiesta_pipes.o pxf.o 
+FSIESTA_SOCKETS= posix_calls.o fsockets.o sockets.o fsiesta_sockets.o 
 #
 # Siesta libraries used by MPI version
 #
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
 XMLPARSER=libxmlparser.a
+WXML=libwxml.a
 XC=libSiestaXC.a
-FoX_LIBS=`$(OBJ_DIR)/FoX/FoX-config --libs --wcml`
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
-	$(MPI_INTERFACE) $(COMP_LIBS) $(FoX_LIBS) $(LIBS)
+MS=MatrixSwitch.a
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(MS) $(XC) \
+	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
 	(cd $(OBJ_DIR) ; \
@@ -93,12 +95,13 @@ simple_mpi_parallel: libs_collected simple_mpi_parallel.o
 	$(FC) $(LDFLAGS) -o simple_mpi_parallel \
 	      simple_mpi_parallel.o $(ALL_LIBS)
 #
-clean: 
+intermediate: 
 	@echo "==> Cleaning intermediate files ONLY"
-	@echo "==> Use make pristine to remove executable files"
+	@echo "==> Use make clean to remove executable files"
 	rm -f *.a *.o *.mod libs_collected
 #
-pristine: 
+pristine: clean
+clean: 
 	@echo "==> Cleaning all intermediate and executable files"
 	rm -f simple_pipes_serial simple_pipes_parallel 
 	rm -f simple_sockets_serial simple_sockets_parallel 

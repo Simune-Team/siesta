@@ -35,6 +35,7 @@ c *******************************************************************
 
       use precision,  only : dp
       use files,      only : slabel, label_length
+      use units, only: eV
 
       implicit          none
 
@@ -42,57 +43,49 @@ c *******************************************************************
       integer           istep, istep0
       logical           varcel
       real(dp)          cell(3,3), xa(3,na), va(3,na), vcell(3,3),
-     .                  temp, eks, getot, volume, Psol, eV
+     .                  temp, eks, getot, volume, Psol
 
 c Internal variables and arrays
-      logical, save ::     formtt = .false.
-      character(len=label_length+4)       :: paste
-      character(len=label_length+4), save :: fncel
-      character(len=label_length+4), save :: fnene
-      character(len=label_length+4), save :: fnpos
+      logical, parameter :: IS_FORMATTED = .false.
+      character(len=label_length+4) :: fncel
+      character(len=label_length+4) :: fnene
+      character(len=label_length+4) :: fnpos
 
-      integer    ia, iupos, iuene, iucel, iv, ix
-      logical    formt
-      save       formt, iupos, iuene, iucel, eV
-      logical, save :: frstme = .true.
+      integer :: ia, iv, ix
+      integer :: iucel, iuene, iupos
+      
+      external          io_assign, io_close
 
-      external          io_assign, io_close, paste
-
-c Find name of file
-      if (frstme) then
-        eV = 13.60580d0
-        formt = formtt
-        fnene = paste( slabel, '.MDE' )
-        if (formt) then
-          fnpos = paste( slabel, '.MDX' )
-          if (varcel) fncel = paste( slabel, '.MDC' )
-        else
-          fnpos = paste( slabel, '.MD' )
-        endif
-        frstme = .false.
-      endif
+      ! Find name of file
+      fnene = trim(slabel) // '.MDE'
+      if ( IS_FORMATTED ) then
+         fnpos = trim(slabel) // '.MDX'
+         if (varcel) fncel = trim(slabel) // '.MDC'
+      else
+         fnpos = trim(slabel) // '.MD'
+      end if
 
 c Open file 
 
       call io_assign( iuene )
       open(iuene, file=fnene, form='formatted', position='append', 
-     .  status='unknown')
-      if ( formt ) then
-        call io_assign( iupos )
-        open(iupos, file=fnpos, form='formatted', position='append',
-     .    status='unknown')
-        if ( varcel ) then 
-          call io_assign( iucel )
-          open(iucel,file=fncel,form='formatted',position='append',
-     .      status='unknown' )
-        endif
+     .     status='unknown')
+      if ( IS_FORMATTED ) then
+         call io_assign( iupos )
+         open(iupos, file=fnpos, form='formatted', position='append',
+     .        status='unknown')
+         if ( varcel ) then 
+            call io_assign( iucel )
+            open(iucel,file=fncel,form='formatted',position='append',
+     .           status='unknown' )
+         end if
       else
-        call io_assign( iupos )
-        open(iupos,file=fnpos,form='unformatted',status='unknown',
-     $       position="append")
-      endif
+         call io_assign( iupos )
+         open(iupos,file=fnpos,form='unformatted',status='unknown',
+     $        position="append")
+      end if
 
-      if(istep . eq . istep0) then
+      if(istep .eq. istep0) then
         write(iuene,"(6a)") '# Step','     T (K)','     E_KS (eV)',
      .     '    E_tot (eV)','   Vol (A^3)','    P (kBar)' 
       endif
@@ -100,8 +93,8 @@ c Open file
 C Write data on files
 
       write(iuene,'(i6,1x,f9.2,2(1x,f13.5),1x,f11.3,1x,f11.3)') 
-     .            istep, temp, eks*eV, getot*eV, volume, Psol
-      if ( formt ) then
+     .            istep, temp, eks/eV, getot/eV, volume, Psol
+      if ( IS_FORMATTED ) then
         write(iupos,*) istep
         do ia = 1,na
           write(iupos,'(i3,i6,3f13.6,3x,3f13.6)')
@@ -117,11 +110,10 @@ C Write data on files
         if ( varcel ) write(iupos) cell, vcell
       endif
 
-C Close file
+C Close files
 
       call io_close( iuene )
       call io_close( iupos )
-      if ( formt .and. varcel ) call io_close( iucel )
+      if ( IS_FORMATTED .and. varcel ) call io_close( iucel )
 
-      return
       end

@@ -232,7 +232,8 @@ MODULE m_cellXC
 CONTAINS ! nothing else but public routine cellXC
 
 SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
-                   nSpin, dens, Ex, Ec, Dx, Dc, stress, Vxc, dVxcdD )
+                   nSpin, dens, Ex, Ec, Dx, Dc, stress, Vxc, dVxcdD, &
+                   keep_input_distribution )
 
   ! Module routines
   use mesh3D,  only: addMeshData   ! Accumulates a mesh array
@@ -303,6 +304,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
                                      ! (spin) xc potential
   real(gp),intent(out),optional:: &  ! dVxc/dDens (LDA only)
                          dVxcdD(0:ub1-lb1,0:ub2-lb2,0:ub3-lb3,1:nSpin**2) 
+  logical, intent(in),optional::  keep_input_distribution
 
   ! Fix the order of the numerical derivatives
   ! nn is the number of points used in each coordinate and direction,
@@ -404,6 +406,8 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   type(allocDefaults):: &
      prevAllocDefaults
 
+  logical :: keep_input_distr
+
 #ifdef DEBUG_XC
   ! Variables for debugging
   real(dp):: GDtot(3), q, dqdD, dqdGD(3)
@@ -415,6 +419,11 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Start time counter
   call timer_start( myName )
 
+  keep_input_distr = .false.
+  if (present(keep_input_distribution)) then
+     keep_input_distr =   keep_input_distribution
+  endif
+     
 #ifdef DEBUG_XC
   ! Initialize udebug variable
   call setDebugOutputUnit()
@@ -469,6 +478,12 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Get ID of the I/O distribution of mesh points
   call setMeshDistr( ioDistr, nMesh, ioBox )
 
+  if (keep_input_distr) then
+
+     myDistr = ioDistr
+
+  else
+
   ! If nMesh has changed, use input distribution also initially as myDistr
   if (any(nMesh/=oldMesh)) call setMeshDistr( myDistr, nMesh, ioBox )
   oldMesh = nMesh
@@ -491,12 +506,15 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !    call copyMeshData( nMesh, ioDistr, dens(:,:,:,1:ndSpin), &
 !                              myBox, myDens(:,:,:,1:ndSpin) )
     ! Find initial expected workload (zero if dens=0, one otherwise)
-    workload = 0
     do i3 = myBox(1,3),myBox(2,3)
     do i2 = myBox(1,2),myBox(2,2)
     do i1 = myBox(1,1),myBox(2,1)
       Dtot = sum( myDens(i1,i2,i3,1:ndSpin) )
-      if (Dtot>Dmin) workload(i1,i2,i3) = 1
+      if (Dtot>Dmin) then
+         workload(i1,i2,i3) = 1
+      else
+         workload(i1,i2,i3) = 0
+      end if
     end do
     end do
     end do
@@ -516,6 +534,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 #endif /* DEBUG_XC */
   end if ! (nodes>1 .and. timeDisp/timeAvge>maxUnbalance)
 
+  endif
 #ifdef DEBUG_XC
   ! Keep input distribution for the time being
 !  myDistr = ioDistr
@@ -532,6 +551,7 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! - The parallel mesh distribution is changed internally (even with LDA)
   ! - We need finite differences (GGA) and have a distributed mesh
   if (.not.sameMeshDistr(myDistr,ioDistr) .or. (GGA .and. myDistr/=0)) then
+
     m11=myBox(1,1); m12=myBox(1,2); m13=myBox(1,3)
     m21=myBox(2,1); m22=myBox(2,2); m23=myBox(2,3)
     ns = nSpin  ! Just a shorter name
@@ -646,9 +666,31 @@ SUBROUTINE cellXC( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     call re_alloc( nonempty, 0,myMesh(1)-1, 0,myMesh(2)-1, 0,myMesh(3)-1, &
                    myName//'nonempty' )
     if (associated(myDens)) then
-      nonempty = (sum(myDens(:,:,:,1:ndSpin),dim=4) >= Dmin)
+      do i3 = myBox(1,3),myBox(2,3)
+      do i2 = myBox(1,2),myBox(2,2)
+      do i1 = myBox(1,1),myBox(2,1)
+        Dtot = sum( myDens(i1,i2,i3,1:ndSpin) )
+        if ( Dtot >= Dmin ) then
+          nonempty(i1-myBox(1,1),i2-myBox(1,2),i3-myBox(1,3)) = .true.
+        else
+          nonempty(i1-myBox(1,1),i2-myBox(1,2),i3-myBox(1,3)) = .false.
+        end if
+      end do
+      end do
+      end do
     else
-      nonempty = (sum(dens(:,:,:,1:ndSpin),dim=4) >= Dmin)
+      do i3 = 0, myMesh(3)-1
+      do i2 = 0, myMesh(2)-1
+      do i1 = 0, myMesh(1)-1
+        Dtot = sum( dens(i1,i2,i3,1:ndSpin) )
+        if ( Dtot >= Dmin ) then
+          nonempty(i1,i2,i3) = .true.
+        else
+          nonempty(i1,i2,i3) = .false.
+        end if
+      end do
+      end do
+      end do
     end if
     nonemptyPoints = count( nonempty )
 

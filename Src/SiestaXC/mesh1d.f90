@@ -543,7 +543,7 @@ subroutine set_mesh( n, x, xmin, xmax, a, dxndx1 )
 
 ! Set the mesh points and the derivatives of x(i)
   if (mesh_type=='numerical') then
-    xi = x
+    xi(:) = x
 
 !   Centered 5-point derivatives for all but first/last two points
     do i = 3,n-2
@@ -597,10 +597,10 @@ subroutine set_mesh( n, x, xmin, xmax, a, dxndx1 )
   if (present(xmax)) xi(n) = xmax
 
 ! Find auxiliary functions associated to the mesh
-  sqrxp = abs(xp1)**0.5_dp
-  s0 = abs(xp1)**1.5_dp
-  s1 = xp1**2
-  s2 = (3._dp*xp2**2 - 2._dp*xp1*xp3) / 4._dp / xp1**2
+  sqrxp(:) = abs(xp1)**0.5_dp
+  s0(:) = abs(xp1)**1.5_dp
+  s1(:) = xp1**2
+  s2(:) = (3._dp*xp2**2 - 2._dp*xp1*xp3) / 4._dp / xp1**2
 
   defined_mesh = .true.
 

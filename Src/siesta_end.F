@@ -12,6 +12,7 @@
       CONTAINS
 
       subroutine siesta_end( )
+      use fdf,             only : fdf_shutdown
       use alloc,           only : alloc_report
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
@@ -20,12 +21,11 @@
       USE siestaXC,        only : closeDebugOutputFile
 #endif /* DEBUG_XC */
       use m_timestamp,     only : timestamp
-      use m_wallclock,     only : wallclock
-      use parallel,        only : IOnode
+      use m_wallclock,     only : wallclock, wallclock_shutdown
+      use parallel,        only : IOnode, SIESTA_worker, Node
 #ifdef MPI
-      use mpi_siesta,      only : MPI_Finalize
+      use mpi_siesta
 #endif
-      use m_pulay,         only : resetPulayArrays
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
       use sparse_matrices, only : resetSparseMatrices
@@ -35,19 +35,48 @@
       use meshdscf,        only : resetDscfPointers
       use m_dscfcomm,      only : resetdscfComm
       use m_rhog,          only : resetRhog
+      ! NP, new mixing
+      use m_mixing_scf,    only : mixers_scf_reset
+      USE siesta_options,  only : isolve, SOLVE_CHESS
+
+      use kpoint_scf_m, only: reset_kpoint_scf
+      use kpoint_dos_m, only: reset_kpoint_dos
+      use kpoint_pdos_m, only: reset_kpoint_pdos
+      use kpoint_ldos_m, only: reset_kpoint_ldos
+      use ts_kpoint_scf_m, only: reset_ts_kpoint_scf
+
+#ifdef SIESTA__CHESS
+      use m_chess, only: CheSS_finalize
+#endif
+
+#ifdef SIESTA__FLOOK
+      use flook_siesta,    only : slua_close
+      use siesta_options,  only : LUA
+#endif
+
+      use m_diag, only: diag_exit
+
+#ifdef TRACING
+      use extrae_eventllist, only : writeList, deleteList, eventlist
+#endif
+      use m_io,            only : io_assign, io_close
 
       implicit none
 
+      integer :: iu
 #ifdef MPI
       integer MPIerror
 #endif
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-      call write_debug( 'PRE SIESTA_END' )
+      if (SIESTA_worker) then
+
+#ifdef SIESTA__FLOOK
+      ! Clean up the lua environment
+      call slua_close(LUA)
 #endif
+
 !     Free allocated memory
       call resetSparseMatrices( )
-      call resetPulayArrays( )
       call resetMeshDistr( )
       call resetdscfComm( )
       call resetDenseMatrix( )
@@ -56,12 +85,32 @@
       call resetMeshPhi( )
       call resetDscfPointers( )
       call resetRhog()
+      call mixers_scf_reset()
 
+      call reset_kpoint_ldos()
+      call reset_kpoint_pdos()
+      ! This *must* be called after LDOS+PDOS since
+      ! they may be associated with DOS
+      call reset_kpoint_dos()
+      ! This *must* be called before SCF since
+      ! they may be associated with SCF
+      call reset_ts_kpoint_scf()
+      call reset_kpoint_scf()
+
+      ! Clean diagonalization
+      call diag_exit()
+
+#ifdef SIESTA__CHESS
+      if (isolve == SOLVE_CHESS) then
+          call CheSS_finalize()
+      end if
+#endif
+      
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )
 
 !     Print allocation report
-      call alloc_report( printNow=.true. )
+      call alloc_report( printNow=.true. , shutdown=.true.)
 
 #ifdef DEBUG_XC
 ! Close debug outup file
@@ -72,27 +121,54 @@
       call timer( 'siesta', 2 )
       call timer( 'all', 3 )
 
+#ifdef TRACING
+!     Write extrae user function list
+      if (IOnode) then
+        call writeList(eventlist)
+      end if
+      call deleteList(eventlist)
+#endif /* TRACING */
+
+
 !     Print final date and time
       if (IOnode) then
+        write(*,*) ! Newline
         call timestamp('End of run')
         call wallclock('End of run')
+        ! Ensure clock file is closed
+        call wallclock_shutdown()
       endif
 
       if (cml_p) then
         call cmlEndModule(mainXML)
         call siesta_cml_exit()
       endif      
+      endif  ! SIESTA_worker
 
 ! Finalize MPI, unless siesta is running as a subroutine
-#ifdef DEBUG
-      call write_debug( 'POS SIESTA_END' )
-#endif
+      !
+      ! Add stamp to MESSAGES file
+      call message('INFO','Job completed')
+
+      ! Clean the fdf-files
+      call fdf_shutdown()
+
 #ifdef MPI
+      call MPI_Barrier(MPI_Comm_World, MPIerror)
+      MPIerror = MPI_SUCCESS
       if (.not.siesta_subroutine) call MPI_Finalize( MPIerror )
 #endif
 
       if (IOnode) then
-         call system("touch 0_NORMAL_EXIT")
+         call io_assign(iu)
+         open(iu, file='0_NORMAL_EXIT', form='FORMATTED')
+#ifdef MPI
+         write(iu,'(a,i0)') 'SIESTA completed, MPI exit: ',
+     &        MPIerror
+#else
+         write(iu,'(a)') 'SIESTA completed successfully'
+#endif
+         call io_close(iu)
       endif
 !--------------------------------------------------------------------------- END
       END subroutine siesta_end

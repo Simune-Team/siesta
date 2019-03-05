@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -25,6 +25,8 @@ c **********************************************************************
 
       implicit none
 
+      integer, parameter :: dp = selected_real_kind(10,100)
+
       include 'vibra.h'
 
 c Internal variables ...
@@ -32,7 +34,7 @@ c Internal variables ...
       logical overflow, eigen, intensity
 
       character(len=150)::
-     .  filein, fileout, fname, paste,
+     .  filein, fileout, fname, 
      .  slabel, sname, slabel_defect, sname_defect
 
       integer 
@@ -54,41 +56,37 @@ c Internal variables ...
 
       character label(maxlin)*8
 
-      real*8 kpoint(3,maxk), ek(maxd,maxk)
+      real(dp) kpoint(3,maxk), ek(maxd,maxk)
 
-      real*8 
+      real(dp) 
      .  dx, alat, alp, blp, clp, alplp, betlp, gamlp, pi, xxx
 
-      real*8
+      real(dp)
      .  zpe, planck
 
-      real*8 phi0(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
+      real(dp) phi0(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
      .        phi(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
-      real*8 pp(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
+      real(dp) pp(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
      .       pn(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
-      real*8 IRinten(3*maxa), BornQ(3,3,maxa)
+      real(dp) IRinten(3*maxa), BornQ(3,3,maxa)
 
-      real*8
+      real(dp)
      .  b(3,maxa), cell(3,3), r(3), scell(3,3), xa(3,maxasc),xmass(maxa)
 
-      real*8
+      real(dp)
      .  correct, dmin, q(3), qr(maxnq), r2, rl(3), rmass
 
 c Correction terms to satisfy translational modes
-      real*8 zero(3,3,maxa), zeroo(3,3)
+      real(dp) zero(3,3,maxa), zeroo(3,3)
 
 c Work space for diagonalization.
-      complex dc(maxd,maxd),phase,IRtrm,vecmw(3)
-      real*8 work(maxd),work2(2,maxd)
-      real*8 dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
+      complex(dp) dc(maxd,maxd),phase,IRtrm,vecmw(3)
+      real(dp) work(maxd),work2(2,maxd)
+      real(dp) dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
 
-c Conversion factor from dsqrt(K/M) in eV and Ang to cm**-1 is 519.6
-      real*8 xmagic
+c Conversion factor from sqrt(K/M) in eV and Ang to cm**-1 is 519.6
+      real(dp) xmagic
       parameter (xmagic=519.6d0)
-
-      external
-     .  paste
-c     .  io_assign, io_close, paste
 
       data pi / 3.1415926d0 /
       data overflow /.false./
@@ -320,7 +318,7 @@ c ...
 
 c Read Force Constants Matrix ...
       call io_assign(iunit2)
-      fname = fdf_string('Vibra.FC',paste(slabel,'.FC'))
+      fname = fdf_string('Vibra.FC',trim(slabel)//'.FC')
       open(iunit2,file=fname,status='old')
       read(iunit2,*)
 c Negative displacements
@@ -366,7 +364,7 @@ c ...
 c If intensities are required then read Born effective charges
       if (intensity) then
         call io_assign(iunit2)
-        fname = paste(slabel,'.BC')
+        fname = trim(slabel)//'.BC'
         open(iunit2,file=fname,status='old')
         read(iunit2,*)
         do j = 1,natoms
@@ -473,7 +471,7 @@ c Loop over k points
 
         do ix=1,3*natoms
         do jx=1,3*natoms
-            dc(ix,jx)=(0.0,0.0)
+            dc(ix,jx)= cmplx(0.0_dp,0.0_dp, dp)
         enddo
         enddo
 
@@ -517,7 +515,7 @@ c Loop over k points
             enddo
 c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
             do in = 1,neq
-              phase = cos(qr(in))*(1.0,0.0) + sin(qr(in))*(0.0,1.0)
+              phase = cmplx(cos(qr(in)), sin(qr(in)), dp)
               do ii=1,3
               do ij=1,3
                 ix = (i-1)*3+ii
@@ -536,14 +534,14 @@ c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
         do jx=1,3*natoms
           i = (ix-mod(ix-1,3))/3+1
           j = (jx-mod(jx-1,3))/3+1
-          dc(ix,jx) = dc(ix,jx) / dsqrt(xmass(i)*xmass(j))
+          dc(ix,jx) = dc(ix,jx) / sqrt(xmass(i)*xmass(j))
         enddo
         enddo
 
         do ix=1,3*natoms
           do jx=ix,3*natoms
-            dd(ix,jx)=imag(dc(jx,ix))
-            dd(jx,ix)=real(dc(jx,ix))
+            dd(ix,jx)=aimag(dc(jx,ix))
+            dd(jx,ix)=real(dc(jx,ix), dp)
           enddo
         enddo
 
@@ -561,17 +559,17 @@ c Compute the IR intensities if requested
 
 c Loop over modes
         do i = 1,3*natoms
-          IRinten(i) = 0.0d0
+          IRinten(i) = 0._dp
           do ij = 1,3
-            IRtrm = (0.0d0,0.0d0)
+            IRtrm = cmplx(0._dp,0._dp, dp)
             ind = - 3
             do j = 1,natoms
               ind = ind + 3
 
 c Mass weight eigenvectors
-              rmass = 1.0d0/sqrt(xmass(j))
+              rmass = 1._dp/sqrt(xmass(j))
               do ii = 1,3
-                vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i))
+                vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i), dp)
                 vecmw(ii) = vecmw(ii)*rmass
               enddo
 
@@ -593,12 +591,12 @@ c write out eigenvalues.
 c convert to cm**-1. the conversion factor is xmagic (511**2)
           omega(i)=xmagic*xmagic*omega(i)
           if(omega(i).gt.0.0d0)then
-            omega(i)=dsqrt(omega(i))
+            omega(i)=sqrt(omega(i))
           else
             omega(i)=-omega(i)
-            omega(i)=-dsqrt(omega(i))
+            omega(i)=-sqrt(omega(i))
 c        write(*,*)' Caution: omega**2 .lt.0.0 .....',
-c     1	' sqrt(abs(omega2))=',omega(i)
+c     1 ' sqrt(abs(omega2))=',omega(i)
           end if
           write(*,*)' eigenvalue #',i,' omega=',omega(i)
 
@@ -614,27 +612,27 @@ Cc =================================================================
 c write the eigenvalues and eigenvectors to output data file.
         if (icall .eq. 3) then
           call io_assign(iunit3)
-          fname = paste(slabel,'.vectors')
+          fname = trim(slabel)//'.vectors'
           open(iunit3,file=fname,status='unknown',position='append')
           if (ik.eq.1) then
             rewind(iunit3)
-	    write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
-	    write(6,'(2a,/)')' to output file ', fname
+            write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
+            write(6,'(2a,/)')' to output file ', fname
           endif
           write(iunit3,'(/,a,3f12.6)') 'k            = ',
      .                                  q(1),q(2),q(3)
-	  do 20 i=1,3*natoms
-	    write(iunit3,'(a,i5)')     'Eigenvector  = ',i
-	    write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
+          do 20 i=1,3*natoms
+            write(iunit3,'(a,i5)')     'Eigenvector  = ',i
+            write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
             if (intensity) then
-	      write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
+              write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
             endif
-	    write(iunit3,'(a)')        'Eigenmode (real part)'
-	    write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
-	    write(iunit3,'(a)')        'Eigenmode (imaginary part)'
-	    write(iunit3,'(3e12.4)') (zi(j,i),j=1,3*natoms)
-20	  continue
-	  call io_close(iunit3)
+            write(iunit3,'(a)')        'Eigenmode (real part)'
+            write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
+            write(iunit3,'(a)')        'Eigenmode (imaginary part)'
+            write(iunit3,'(3e12.4)') (zi(j,i),j=1,3*natoms)
+20        continue
+          call io_close(iunit3)
         endif
 Cc =================================================================
 

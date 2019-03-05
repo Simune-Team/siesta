@@ -33,7 +33,7 @@
 
       use m_dynamics,      only: nose, verlet2, npr, anneal, pr
 
-      use m_energies,      only: Ekinion, Etot
+      use m_energies,      only: Ekinion
       use write_subs
       use m_steps
       use m_kinetic
@@ -54,13 +54,24 @@
       use siesta_master,   only: coordsFromMaster ! Get coords from master prog
       use m_target_stress, only: subtract_target_stress
 
+      use m_check_walltime
+      use m_mpi_utils,     only: barrier
+      
+#ifdef NCDF_4
+      use m_exp_coord, only : exp_coord_next
+#endif
+#ifdef SIESTA__FLOOK
+      use siesta_dicts, only : dict_variable_add
+      use flook_siesta, only : slua_call, LUA_MOVE
+#endif
+
       implicit none
 
       integer, intent(in)   :: istep
       logical, intent(out)  :: relaxd
 
 
-      integer               :: i, ia, ix, iadispl, ixdispl
+      integer               :: ix, iadispl, ixdispl
       integer, parameter    :: iunit = 2   ! Physical-units option for MD:
                                        ! 1=>(eV,Ang), 2=>(Ry,Bohr)
       real(dp)              :: Pint    ! Instantaneous pressure 
@@ -70,19 +81,27 @@
       logical               :: foundxv  ! dummy for call to ioxv
       logical               :: foundzm  ! dummy for call to iozm
 
+      logical               :: time_is_up
+      character(len=40)     :: tmp_str
+      
       real(dp), external :: volcel
 
+#ifdef DEBUG
+      call write_debug( '    PRE siesta_move' )
+#endif
 
-!------------------------------------------------------------------------- BEGIN
+!------------------------------------------------------------------ BEGIN
 
       call timer( 'siesta_move', 1 )
 
       ! Save the last geometry for which the density matrix 
       ! (electronic structure) has been calculated
 
-        xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
-        ucell_last(1:3,1:3) = ucell(1:3,1:3)
-        scell_last(1:3,1:3) = scell(1:3,1:3)
+!$OMP parallel workshare default(shared)
+      xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
+      ucell_last(1:3,1:3) = ucell(1:3,1:3)
+      scell_last(1:3,1:3) = scell(1:3,1:3)
+!$OMP end parallel workshare
 
 ! Move atoms ..........................................................
 !
@@ -213,8 +232,9 @@
                write(6,'(/,a,f12.3,a)')
      $              'siesta: Temp_ion =', tempion, ' K'
             endif
-            call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+              call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
+
             call siesta_write_positions(moved=.true.)
             call write_md_record( istep )
             call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )
@@ -317,21 +337,24 @@
      &        xa, va, foundxv)
 
         ! Undo the last atom displacement
-        if (istep .gt. inicoor) then
+        if ( istep > inicoor ) then ! inicoor == 0
           iadispl = (istep-mod(istep-1,6))/6+ia1
           ix = mod(istep-1,6)+1
           ixdispl = (ix - mod(ix-1,2) +1)/2
           xa(ixdispl,iadispl) = xa(ixdispl,iadispl) - dx
-        endif
+        end if
 
         ! Displace atom by dx
-        if (istep .lt. fincoor) then
+        ! NOTE: MOVE is before istep increment, hence
+        ! fincoor == istep will be the last step and 
+        ! the initial geometry should be retained.
+        if ( istep < fincoor ) then ! fincoor = (ia2-ia1+1)*6
           iadispl = ((istep+1)-mod(istep,6))/6+ia1
           ix = mod(istep,6)+1
           ixdispl = (ix - mod(ix-1,2) +1)/2
-          dx=-dx
+          dx = -dx
           xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
-        endif
+        end if
 
       case (7)  ! PHONON interface --- removed
 
@@ -355,7 +378,62 @@
             call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
           endif
 
-      end select
+      ! Saving XV file after the same number of MD steps as TDWF and DM
+      ! is saved for a consistent start in case of TDDFT calculation
+      !   if(td_elec_dyn) then
+      !      if (mod(istep+1, tdednwrite).eq.0) then
+      !      call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va,
+      !&             foundxv)
+      !      end if
+      !   else 
+      !  call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+      !&             foundxv)
+      !  end if    ! td_elec_dyn
+
+#ifdef NCDF_4
+       case (9)                 ! explicit coordinate mode
+
+          relaxd = .false.
+
+          ! Save the md-record
+          call write_md_record( istep )
+          if ( istep < fincoor ) then
+             call exp_coord_next( istep + 1 , na_u, xa)
+          else
+             relaxd = .true.
+          end if
+#endif
+          
+#ifdef SIESTA__FLOOK
+       case (10) ! LUA hook coordinates
+
+          relaxd = .false.
+
+          ! Add the quest for relaxed list of variables
+          call dict_variable_add('MD.Relaxed',relaxd)
+
+          ! Communicate with lua
+          call slua_call(LUA, LUA_MOVE)
+
+          if ( volcel(ucell) < 1.0e-8_dp ) then
+             ! In case the user requests a recalculation of the
+             ! unit-cell size (for molecules)
+             call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
+          end if
+
+          if ( relaxd ) then
+             ! see comments for idyn == 1
+          else
+             call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+     &            foundxv)
+             
+             call siesta_write_positions( moved=.true. )
+             call write_md_record( istep )
+             call superx_if_compat( ucell, nsc, na_u, na_s, xa, scell )
+          end if
+#endif
+
+       end select
 
 ! Output memory use at the end of this geometry step
       if (cml_p) then
@@ -363,27 +441,53 @@
       endif
 
       call timer( 'siesta_move', 2 )
+      call timer( 'IterGeom', 2 )
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
 
+        ! Check whether we are short of time to continue
+        call check_walltime(time_is_up)
+        if (time_is_up) then
+           ! Do any other bookeeping not done by "die"
+           ! Note that this routine is only called by SIESTA_worker's
+           ! so we can carry out the timing and other output operations
+           ! protected by a SIESTA_Comm barrier
+           call timer('all',2)
+           call timer('all',3)
+           if (.not. relaxd) then
+              call message('WARNING','GEOM_NOT_CONV: '//
+     $             'Geometry relaxation not converged')
+              write(tmp_str,"(a,i5)") 'Geometry step: ', istep
+              call message(' (info)', trim(tmp_str))
+           endif
+           call barrier()
+           call die("OUT_OF_TIME: Time is up at end of geometry step. ")
+        endif
+
 !--------------------------------------------------------------------------- END
 
-      CONTAINS
+#ifdef DEBUG
+      call write_debug( '    POS siesta_move' )
+#endif
+
+      contains
 
       ! For backwards compatibility only
 
-      SUBROUTINE SUPERX_if_compat( UCELL, NSC, NA, MAXA, XA, SCELL )
+      subroutine superx_if_compat( ucell, nsc, na, maxa, xa, scell )
       use siesta_options, only : compat_pre_v4_dynamics
       use atomlist, only : superx
 
-      INTEGER           MAXA, NA, NSC(3)
-      real(dp)    SCELL(3,3), UCELL(3,3), XA(3,MAXA)
+      integer :: maxa, na, nsc(3)
+      real(dp) :: ucell(3,3), xa(3,MAXA), scell(3,3)
+      ! Only xa and scell are overwritten upon exit
+      ! but superx does not have intent (so we ca not either)
 
       if (compat_pre_v4_dynamics) then
          call superx( UCELL, NSC, NA, MAXA, XA, SCELL )
-      endif
-      end subroutine SUPERX_if_compat
+      end if
+      end subroutine superx_if_compat
+      
+      end subroutine siesta_move
 
-      END subroutine siesta_move
-
-      END MODULE m_siesta_move
+      end module m_siesta_move

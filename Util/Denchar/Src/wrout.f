@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -97,6 +97,8 @@ C Write general information only if called for the first time
         WRITE(UNIT1,'(A)')
      .    '                          ************************       '
 
+        WRITE(UNIT1,'(A,A)')
+     .    '  DENCHAR version: ', "2.2"
         WRITE(UNIT1,'(A,A)')
      .    '  You are running DENCHAR for system: ',SNAME
         WRITE(UNIT1,'(A)')
@@ -239,7 +241,7 @@ C Write general information only if called for the first time
      .    '  '
           WRITE(UNIT1,'(A)')
      .    '  Atomic coordinates in the in-plane reference frame'
-          WRITE(UNIT1,'(A,19(1H ),A)')
+          WRITE(UNIT1,'(A,19(" "),A)')
      .    '  Atomic Index','Atomic coordinates'
           DO IA = 1, NAPLA
             WRITE(UNIT1,'(A,I14,5X,3F15.4)')

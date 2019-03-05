@@ -25,8 +25,6 @@
 !   USED module routines:
 ! use m_bessph,  only bessph  ! Spherical bessel functions
 ! use m_radfft,  only radfft  ! Radial fast Fourier transform
-! use sorting,   only order   ! Orders a vector by increasing values
-! use sorting,   only ordix   ! Index of a vector by increasing values
 !
 !******************************************************************************
 !! subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen )
@@ -71,8 +69,6 @@ MODULE m_filter
 ! Used module routines (presently contained within the module, to be moved out):
 USE m_bessph,  only: bessph  ! Spherical bessel functions
 USE m_radfft,  only: radfft  ! Radial fast Fourier transform
-USE sorting,   only: order   ! Orders a vector by increasing values
-USE sorting,   only: ordix   ! Index of a vector by increasing values
 
   implicit none
 
@@ -88,15 +84,13 @@ PRIVATE ! Nothing is declared public beyond this point
   integer, parameter :: dp = selected_real_kind(14,100)
 
 ! Internal parameters for filter subroutine
-  integer, parameter:: nmesh = 128        ! Number of radial integr. points
+  integer, parameter:: nmesh = 1024       ! Number of radial integr. points
   integer, parameter:: minj  = 10         ! Min. num. of Bessel functions
   real(dp),parameter:: njkr  = 0.65_dp    ! Num. Bess. funcs. / (kc*rc)
   real(dp),parameter:: emax  = 1.e-2_dp   ! Min. accepted eigval
   real(dp),parameter:: krtol = 1.e-12_dp  ! Tol. for roots of Bess. funcs.
 !  real(dp),parameter:: k2mix = 1.e-6_dp  ! Mix weight of k2 in 'Hamiltonian'
   real(dp),parameter:: k2mix = 0.10_dp  ! Mix weight of k2 in 'Hamiltonian'
-
-  real(dp), save :: kc_needed = 0.0_dp
 
 CONTAINS
 
@@ -194,16 +188,15 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
   integer,  intent(out), optional   :: n_eigen        ! Number of eigenvectors of the filtering kernel
 
 ! Internal variables and arrays
-  integer :: i, ierror, ij, ij1, ij2, ik, ir, n, nj, m
+  integer :: i, ij, ij1, ij2, ik, ir, n, nj, m
   real(dp):: cij, dk, dkr, dr, f0norm, fg, fnorm, jl0, jl1, jl2, &
              k, k4j1(0:nmesh), kmesh(0:nmesh), kr, kr0, kr1, kr2, &
              pi, rc, rmesh(0:nmesh)
 !             k, k4j1(0:nmesh), kmesh(0:2*nmesh), kr, kr0, kr1, kr2, &
 !             pi, rc, rmesh(0:2*nmesh)
-  integer, allocatable:: indx(:)
   real(dp),allocatable:: aux(:), c(:,:), e(:), fm(:), g(:,:), gr(:,:), &
                          h(:,:), jl(:,:), jlk(:,:), jlnorm(:), jlr(:), &
-                         kj(:), s(:,:)
+                         kj(:)
 
 ! Fix number of basis Bessel functions by empirical rule
   pi = acos(-1._dp)
@@ -221,9 +214,9 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
 
 ! Allocate arrays
   allocate( aux(n), c(n,n), e(n), fm(0:nmesh), &
-            g(0:nmesh,n), gr(nr,n), h(n,n), indx(n), &
-            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n), s(n,n) )
-!            jl(0:nmesh,n), jlk(0:2*nmesh,n), jlnorm(n), jlr(n), kj(n), s(n,n) )
+            g(0:nmesh,n), gr(nr,n), h(n,n), &
+            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n) )
+!            jl(0:nmesh,n), jlk(0:2*nmesh,n), jlnorm(n), jlr(n), kj(n) )
 
 ! Find roots of spherical Bessel functions 
   dkr = pi/2         ! Safe enough not to miss any root
@@ -312,12 +305,8 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
     
   end do
 
-! Initialize unity overlap matrix to call rdiag
-  s = 0
-  forall(i=1:n) s(i,i) = 1
-
 ! Diagonalize 'Hamiltonian'
-  call filter_rdiag( h, s, n, n, n, e, c, n, 0, ierror )
+  call filter_rdiag( h, n, e, c )
 
 ! Subtract mixing weight of total kinetic energy from 'Hamiltonian'
 !  do ij = 1,n
@@ -401,7 +390,7 @@ subroutine filter( l, nr, r, f, kc, norm_opt, n_eigen)
   end if
 
 ! Deallocate arrays
-  deallocate( aux, c, e, fm, g, gr, h, indx, jl, jlk, jlnorm, jlr, kj, s )
+  deallocate( aux, c, e, fm, g, gr, h, jl, jlk, jlnorm, jlr, kj )
 
 end subroutine filter
 
@@ -429,14 +418,13 @@ subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filt
   integer,  intent(out)   :: nfilteret                ! Number of filterets created
 
 ! Internal variables and arrays
-  integer :: i, ierror, ij, ij1, ij2, ik, ir, n, nj, m, j
+  integer :: i, ij, ij1, ij2, ik, ir, n, nj, m
   real(dp):: cij, dk, dkr, dr, f0norm, fnorm, fg, jl0, jl1, jl2, &
              k, k4j1(0:nmesh), kmesh(0:nmesh), kr, kr0, kr1, kr2, &
              pi, rc, rmesh(0:nmesh), co1
-  integer, allocatable:: indx(:)
   real(dp),allocatable:: aux(:), c(:,:), e(:), fm(:), g(:,:), gr(:,:), &
                          h(:,:), jl(:,:), jlk(:,:), jlnorm(:), jlr(:), &
-                         kj(:), s(:,:), filtertmp(:,:)
+                         kj(:), filtertmp(:,:)
 
 ! Fix number of basis Bessel functions by empirical rule
   pi = acos(-1._dp)
@@ -452,8 +440,8 @@ subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filt
   end do
 
 ! Allocate arrays
-  allocate( aux(n), c(n,n), e(n), fm(0:nmesh), g(0:nmesh,n), gr(nr,n), h(n,n), indx(n), &
-            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n), s(n,n) )
+  allocate( aux(n), c(n,n), e(n), fm(0:nmesh), g(0:nmesh,n), gr(nr,n), h(n,n), &
+            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n) )
   allocate( filtertmp(nr,maxfilteret) ) 
 
 ! Find roots of spherical Bessel functions 
@@ -536,12 +524,8 @@ subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filt
     h(ij,ij) = (1-k2mix) * h(ij,ij) + k2mix * kj(ij)**2
   end do
 
-! Initialize unity overlap matrix to call rdiag
-  s = 0
-  forall(i=1:n) s(i,i) = 1
-
 ! Diagonalize 'Hamiltonian'
-  call filter_rdiag( h, s, n, n, n, e, c, n, 0, ierror )
+  call filter_rdiag( h, n, e, c )
 
 ! Find how many eigenvalues are within filter tolerance
   m = 0
@@ -618,7 +602,7 @@ subroutine gen_filteret( l, nr, maxfilteret, r, f, kc, norm_opt, nfilteret, filt
 
 ! Deallocate arrays
   deallocate( filtertmp )
-  deallocate( aux, c, e, fm, g, gr, h, indx, jl, jlk, jlnorm, jlr, kj, s )
+  deallocate( aux, c, e, fm, g, gr, h, jl, jlk, jlnorm, jlr, kj )
 
 end subroutine gen_filteret
 
@@ -643,14 +627,13 @@ subroutine gen_pol_filteret( l, nr, maxfilteret, r, kc, nfilteret, filteret )
   integer,  intent(out)   :: nfilteret                ! Number of filterets created
 
 ! Internal variables and arrays
-  integer :: i, ierror, ij, ij1, ij2, ik, ir, n, nj, m, j
-  real(dp):: cij, dk, dkr, dr, f0norm, fnorm, fg, jl0, jl1, jl2, &
+  integer :: i, ij, ij1, ij2, ik, ir, n, nj, m
+  real(dp):: cij, dk, dkr, dr, jl0, jl1, jl2, &
              k, k4j1(0:nmesh), kmesh(0:nmesh), kr, kr0, kr1, kr2, &
              pi, rc, rmesh(0:nmesh)
-  integer, allocatable:: indx(:)
   real(dp),allocatable:: c(:,:), e(:), g(:,:), gr(:,:), &
                          h(:,:), jl(:,:), jlk(:,:), jlnorm(:), jlr(:), &
-                         kj(:), s(:,:)
+                         kj(:)
 
 ! Fix number of basis Bessel functions by empirical rule
   pi = acos(-1._dp)
@@ -666,8 +649,8 @@ subroutine gen_pol_filteret( l, nr, maxfilteret, r, kc, nfilteret, filteret )
   end do
 
 ! Allocate arrays
-  allocate( c(n,n), e(n), g(0:nmesh,n), gr(nr,n), h(n,n), indx(n), &
-            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n), s(n,n) )
+  allocate( c(n,n), e(n), g(0:nmesh,n), gr(nr,n), h(n,n), &
+            jl(0:nmesh,n), jlk(0:nmesh,n), jlnorm(n), jlr(n), kj(n) )
 
 ! Find roots of spherical Bessel functions 
   dkr = pi/2         ! Safe enough not to miss any root
@@ -749,12 +732,8 @@ subroutine gen_pol_filteret( l, nr, maxfilteret, r, kc, nfilteret, filteret )
     h(ij,ij) = (1-k2mix) * h(ij,ij) + k2mix * kj(ij)**2
   end do
 
-! Initialize unity overlap matrix to call rdiag
-  s = 0
-  forall(i=1:n) s(i,i) = 1
-
 ! Diagonalize 'Hamiltonian'
-  call filter_rdiag( h, s, n, n, n, e, c, n, 0, ierror )
+  call filter_rdiag( h, n, e, c )
 
 ! Find how many eigenvalues are within filter tolerance
   m = 0
@@ -786,7 +765,7 @@ subroutine gen_pol_filteret( l, nr, maxfilteret, r, kc, nfilteret, filteret )
   endif
 
 ! Deallocate arrays
-  deallocate( c, e, g, gr, h, indx, jl, jlk, jlnorm, jlr, kj, s )
+  deallocate( c, e, g, gr, h, jl, jlk, jlnorm, jlr, kj )
 
 end subroutine gen_pol_filteret
 
@@ -877,61 +856,39 @@ end subroutine gen_pol_filteret
 ! Written by G.Fabricius and J.Soler, March 1998
 ! Rewritten by Julian Gale, August 2004
 ! ************************** INPUT ******************************************
-! real*8 H(nml,nm)                 : Symmetric H matrix
-! real*8 S(nml,nm)                 : Symmetric S matrix
+! real*8 H(n,n)                    : Symmetric H matrix
 ! integer n                        : Order of the generalized  system
-! integer nm                       : Right hand dimension of H and S matrices
-! integer nml                      : Left hand dimension of H and S matrices
-!                                    which is greater than or equal to nm
-! integer neigvec                  : No. of eigenvectors to calculate
-! integer iscf                     : SCF cycle
 ! ************************** OUTPUT *****************************************
-! real*8 w(nml)                    : Eigenvalues
-! real*8 Z(nml,nm)                 : Eigenvectors
-! integer ierror                   : Flag indicating success code for routine
-!                                  :  0 = success
-!                                  : -1 = repeat call as memory is increased
-!                                  :  1 = fatal error
+! real*8 w(n)                      : Eigenvalues
+! real*8 Z(n,n)                    : Eigenvectors
 ! ***************************************************************************
 
-  subroutine filter_rdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
+  subroutine filter_rdiag(H,n,w,Z)
 
 !  Modules
 
     use precision
-    use sys,   only : die
+    use sys, only : die
 
     implicit          none
 
 ! Passed variables
-    integer                 :: ierror
-    integer                 :: iscf
-    integer                 :: n
-    integer                 :: neigvec
-    integer                 :: nm
-    integer                 :: nml
-    real(dp)                :: H(nml,nm)
-    real(dp)                :: S(nml,nm)
-    real(dp)                :: w(nml)
-    real(dp)                :: Z(nml,nm)
+    integer :: n
+    real(dp) :: H(n,n)
+    real(dp) :: w(n)
+    real(dp) :: Z(n,n)
 
-! Local variables
-    character            :: jobz
-    character            :: range
-    integer              :: ilaenv
-    integer              :: info
-    integer              :: liwork
-    integer              :: lwork
-    integer              :: nb
-    integer              :: neigok
-    real(dp)             :: vl
-    real(dp)             :: vu
+    ! Local variables
+    integer :: ilaenv
+    integer :: info
+    integer :: liwork, lwork
+    integer :: nb
+    integer :: neigok
+    real(dp) :: vl, vu
 
-    real(dp),  parameter :: abstol = 1.0e-8_dp
-    real(dp),  parameter :: orfac = 1.0e-3_dp
-    real(dp),  parameter :: zero = 0.0_dp
-    real(dp),  parameter :: one = 1.0_dp
-    real(dp),  parameter :: MemoryFactor = 1.5_dp
+    real(dp), parameter :: abstol = 1.0e-8_dp
+    real(dp), parameter :: orfac = 1.0e-3_dp
+    real(dp), parameter :: MemoryFactor = 1.5_dp
 
     integer, allocatable :: ifail(:), iwork(:)
     real(dp),allocatable :: work(:)
@@ -940,30 +897,21 @@ end subroutine gen_pol_filteret
 ! Setup                                                                     *
 !****************************************************************************
 
-! Initialise error flag
-    ierror = 0
-
 ! Trap n=1 case, which is not handled correctly otherwise (JMS 2011/07/19)
-    if (n==1) then
+    if ( n == 1 ) then
+      
       w(:) = 0._dp
-      w(1) = H(1,1) / S(1,1)
+      w(1) = H(1,1)
       Z(:,:) = 0._dp
-      Z(1,1) = 1._dp / sqrt(S(1,1))
-      goto 1000   ! exit point
+      Z(1,1) = 1._dp
+      
+      return
+      
     end if
 
 ! vl and vu are not currently used, but they must be initialized
     vl = 0
     vu = n
-
-! Set general Lapack parameters
-    if (neigvec.gt.0) then
-      jobz   = 'V'
-      range  = 'A'
-    else
-      jobz   = 'N'
-      range  = 'A'
-    endif
 
 ! Calculate memory requirements
     nb = ilaenv(1,'DSYTRD','U',n,-1,-1,-1)
@@ -981,52 +929,33 @@ end subroutine gen_pol_filteret
 !****************************************************************************
 ! Solve standard eigenvalue problem                                         *
 !****************************************************************************
-    call dsyevx(jobz,range,'U',n,H,n,vl,vu,1,neigvec,abstol, &
+    call dsyevx('V','A','U',n,H,n,vl,vu,1,n,abstol, &
                 neigok,w,Z,n,work,lwork,iwork,ifail,info)
 
 ! Check error flag
     if (info.ne.0) then
-      ierror = 1
       if (info.lt.0) then
         call die('Illegal argument to standard eigensolver')
       elseif (info.gt.0)   then
         if (mod(info/2,2).ne.0) then
-          write(6,'(/,''Clustered eigenvectors not converged - '', &
-            ''more memory required'',/)')
+          write(6,'(/,"Clustered eigenvectors not converged - ", &
+            &"more memory required",/)')
         endif
         call die('Failure to converge standard eigenproblem')
       endif
     endif
-    if (neigok.lt.neigvec) then
+    if (neigok.lt.n) then
       call die('Insufficient eigenvalues converged in filter_rdiag')
     endif
 
-!****************************************************************************
-! Back transformation                                                       *
-!****************************************************************************
-    if (neigvec.gt.0) then
-      call dtrsm('Left','U','N','Non-unit',n,neigvec,one,S,n,Z,n)
-    endif
-    if (info.ne.0) then
-      call die('Error in back transformation in filter_rdiag')
-    endif
- 
 !***************************************************************************
 ! Clean up                                                                 *
 !***************************************************************************
-
-! Common exit point 
-  999 continue
 
 ! Deallocate workspace arrays
     deallocate( work )
     deallocate( iwork )
     deallocate( ifail )
-
-!  Exit point, excluding deallocations
-1000  continue
-
-    return
 
   end subroutine filter_rdiag
 
