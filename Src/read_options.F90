@@ -76,6 +76,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
   !                                                 6   = CheSS
+  !                                                10   = Dummy
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  total_spin       : Total spin of the system
@@ -665,7 +666,13 @@ subroutine read_options( na, ns, nspin )
           value=method, dictRef='siesta:SCFmethod' )
   endif
 
-  if (leqi(method,'matrix')) then
+  if (leqi(method,'dummy')) then
+     isolve = SOLVE_DUMMY
+     if (ionode)  then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
+             'Dummy (For testing)'
+     endif
+  else if (leqi(method,'matrix')) then
      isolve = MATRIX_WRITE
      if (ionode)  then
         write(*,3) 'redata: Method of Calculation', 'Matrix write only'
@@ -736,7 +743,7 @@ subroutine read_options( na, ns, nspin )
 #ifdef SIESTA__PEXSI
           'PEXSI, '//&
 #endif
-          'OrderN, OMM, Diagon or Transiesta' )
+          'OrderN, OMM, Diagon, Transiesta, or Dummy' )
   endif
 
 #ifdef DEBUG
