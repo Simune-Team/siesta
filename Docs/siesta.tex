@@ -6082,6 +6082,10 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
   solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
   PEXSI method (\fdf*{PEXSI}) or the \fdf*{CheSS} solver.
+  In addition, the \fdf*{Dummy} solver will just return a
+  slightly perturbed density-matrix without actually solving for
+  the electronic structure. This is useful for timing other routines.
+
   
 \end{fdfentry}
 
@@ -9335,6 +9339,15 @@ always include all arrays.
   this defaults to \fdffalse.
   
 \end{fdflogicalT}
+
+\begin{fdflogicalF}{TimingSplitScfSteps}
+
+  The timings for individual scf steps will be recorded separately.
+  
+  NOTE: The 'tree' timer should be used to make meaningful use of this
+  information. It is enabled by default if this variable is \fdftrue.
+
+\end{fdflogicalF}
 
 \begin{fdfentry}{MaxWalltime}[real time]<Infinity>
 
