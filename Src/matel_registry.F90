@@ -71,13 +71,13 @@ module m_matel_registry
      integer         :: lcut = -huge(1)
   end type registered_function_t
   !
-  ! There should be a mechanism to make the size
-  ! of the pool dynamic.
-  !
-  integer, parameter :: nmax_funcs = 300
-  type(registered_function_t), dimension(nmax_funcs), save :: matel_pool
+  ! This is a dynamic array, allocated and extended as needed.
+  type(registered_function_t), dimension(:), allocatable, save :: matel_pool
 
-  integer, private    :: nfuncs = 0
+  integer, parameter :: initial_size = 100
+  integer, parameter :: delta_size = 50
+  integer, private :: nmax_funcs = 0  ! current maximum size of the pool
+  integer, private :: nfuncs = 0      ! number of functions in pool
 
   public :: register_in_rf_pool, register_in_tf_pool
   public :: evaluate, rcut, lcut
@@ -93,6 +93,31 @@ CONTAINS
     ok = (gindex > 0 .AND. gindex <= nfuncs)
   end function valid
 
+  subroutine check_size_of_pool(nfuncs)
+    integer, intent(in) :: nfuncs
+
+    type(registered_function_t), dimension(:), allocatable :: tmp_pool
+    
+    if (nfuncs > nmax_funcs) then
+       if (.not. allocated(matel_pool)) then
+          allocate(matel_pool(initial_size))
+          nmax_funcs = initial_size
+          !print *, "pool: allocated initial size:", nmax_funcs
+       else
+          ! copy data to tmp array
+          allocate(tmp_pool(nmax_funcs))
+          ! This is a deep copy
+          tmp_pool(1:nmax_funcs) = matel_pool(1:nmax_funcs)
+          deallocate(matel_pool)
+          allocate(matel_pool(nmax_funcs + delta_size))
+          matel_pool(1:nmax_funcs) = tmp_pool(1:nmax_funcs)
+          nmax_funcs = nmax_funcs + delta_size
+          !print *, "pool: extended size:", nmax_funcs
+          deallocate(tmp_pool)
+       endif
+    endif
+  end subroutine check_size_of_pool
+               
   !
   !   This is the main entry to the registry for simple radial functions
   !
@@ -109,7 +134,8 @@ CONTAINS
     n_indexes = size(indexes)
 
     nfuncs = nfuncs + 1
-    if (nfuncs > nmax_funcs) call die("Overflow in registry")
+    call check_size_of_pool(nfuncs)
+
     gindex = nfuncs
 
     allocate(matel_pool(gindex)%rf)
@@ -139,7 +165,8 @@ CONTAINS
     integer, intent(out)    :: gindex           ! global index
 
     nfuncs = nfuncs + 1
-    if (nfuncs > nmax_funcs) call die("Overflow in registry")
+    call check_size_of_pool(nfuncs)
+
     gindex = nfuncs
 
     allocate(matel_pool(gindex)%tf)
