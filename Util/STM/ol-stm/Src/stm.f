@@ -188,10 +188,6 @@ C Initialize neighbour subroutine --------------------------------------
 
       IF (NSPIN .GT. 2)  STOP 'stm: WRONG NSPIN'
 
-C Check that cell is orthorombic
-
-!!      IF (UCELL(3,1) /= 0.0D0 .OR. UCELL(3,2) /= 0.0D0 .OR.
-!!     .    UCELL(1,3) /= 0.0D0 .OR. UCELL(2,3) /= 0.0D0) THEN
       IF (.not. monoclinic(ucell)) then
         WRITE(6,*) 'error: the code only accepts monoclinic cells'
         WRITE(6,*) '       with Z as the vertical axis'
@@ -214,7 +210,7 @@ C Check that we have a bound state (E below vacuum level)
         DO ISPIN = 1,NSPIN
 
           ENER = E(IK,IWF,ISPIN)
-          IF (ENER .LT. EMIN .OR. ENER .GT. EMAX) GOTO 99
+          IF (ENER .LT. EMIN .OR. ENER .GT. EMAX) CYCLE
 
           IF (E(IK,IWF,ISPIN) .GT. V0) THEN
             WRITE(6,*) 'ERROR: ENERGY EIGENVALUE ',IWF,
@@ -223,181 +219,74 @@ C Check that we have a bound state (E below vacuum level)
            STOP
           ENDIF
 
-!Initialize density to 
-!unextrapolated density
           
-           if  (ZMIN < Zref) then
-
 ! Loop over all points in real space -----------------------------------
 
-           DO NZ = 1,NPZ
-! coordinate in Z
-            XPO(3) = (NZ-1)*(ZMAX-ZMIN)/NPZ
+             DO NZ = 1,NPZ
 
-            if ( XPO(3) < Zref ) then
+                XPO(3) = ZMIN + (NZ-1)*(ZMAX-ZMIN)/NPZ
+                if ( XPO(3) < Zref ) then
+                  ! Initialize density to unextrapolated density
           
-             DO NY = 1,NPY
-               DO NX = 1,NPX
-! coordinate in X
-            XPO(1) = (NX-1)*UCELL(1,1)/NPX + (NY-1)*UCELL(1,2)/NPY 
-! coordinate in Y
-            XPO(2) = (NX-1)*UCELL(2,1)/NPX + (NY-1)*UCELL(2,2)/NPY 
+                   WRITE(6,"(a,f10.4)") 'stm: Using plain LDOS for z =',
+     $                                  xpo(3)
+                   DO NY = 1,NPY
+                      DO NX = 1,NPX
 
+                         XPO(1) = (NX-1)*UCELL(1,1)/NPX +
+     $                            (NY-1)*UCELL(1,2)/NPY 
+                         XPO(2) = (NX-1)*UCELL(2,1)/NPX +
+     $                            (NY-1)*UCELL(2,2)/NPY 
 
-C Initialize the wave function at each point -----------------------
-            CWAVE   = (0.0D0, 0.0D0)
+                         call get_cwave()
 
+                         RHO(NX-1,NY-1,NZ-1)  = RHO (NX-1,NY-1,NZ-1)    
+     &                    + DREAL(CWAVE*DCONJG(CWAVE))* ARMUNI * WK(IK)
 
-C Phase to cancel the phase of the wave function: -i.k.r
-            PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+                      ENDDO  
+                   ENDDO
 
-C Localize non-zero orbitals at each point in real space ---------------
-     
-            IA   = 0
-            ISEL = 0
-            NNA  = MAXNA
+                else
 
-            CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
-     .                   NNA, JNA, XIJ, R2IJ, FIRST )
+                   ! Extrapolate from reference plane
+                   ! Compute value of the wfn at this reference plane
+                   WRITE(6,"(a,i4)") 'stm: Extrapolating from nz:', nz
 
-C Loop over Non-zero orbitals ------------------------------------------ 
-            DO  IAT1 = 1, NNA
-              IF( R2IJ(IAT1) .LE. RMAX2 ) then
+                   DO NY = 1,NPY
+                      DO NX = 1,NPX
 
-              IAVEC1   = JNA(IAT1)
-              IS1      = ISA(IAVEC1)
-              XVEC1(1) = -XIJ(1,IAT1)
-              XVEC1(2) = -XIJ(2,IAT1)
-              XVEC1(3) = -XIJ(3,IAT1)
+                         XPO(1) = (NX-1)*UCELL(1,1)/NPX +
+     $                            (NY-1)*UCELL(1,2)/NPY 
+                         XPO(2) = (NX-1)*UCELL(2,1)/NPX +
+     $                            (NY-1)*UCELL(2,2)/NPY 
+                         XPO(3) = ZREF
 
-C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
+                         call get_cwave()
+                         CW(NX-1,NY-1)  = CWAVE * SQRT(ARMUNI)
 
-              PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
-     .                K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
-     .                K(IK,3)*(XPO(3)+XIJ(3,IAT1))
+                      ENDDO  
+                   ENDDO  
 
-              SI=DSIN(PHASE)
-              CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
-
-                DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
-                IPHI1 = IPHORB(IO)
-                IUO   = INDXUO(IO)
-                CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
-
-                CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
-     .          EXPPHI * EXMIKR
-
-                ENDDO
-              ENDIF
-            ENDDO
-
-            RHO(NX-1,NY-1,NZ-1)  = RHO (NX-1,NY-1,NZ-1)    
-     &              + DREAL(CWAVE*DCONJG(CWAVE))* ARMUNI * WK(IK)
-
-                ENDDO  
-             ENDDO  
-            endif
-           ENDDO  
-          endif
-
-C Calculate the value of the w.f. at each point of the reference plane
-
-! check that the reference plane is in
-! a reasonbale range, otherwise do not
-! do anything
-
-         if ( ZREF < ZMAX) then
-
-C Loop over all points in real space -----------------------------------
-
-          DO 101 NY = 1,NPY
-          DO 100 NX = 1,NPX
-
-
-C Initialize the wave function at each point -----------------------
-            CWAVE   = (0.0D0, 0.0D0)
-
-C Determine position of current point in the reference plane
-            XPO(1) = (NX-1)*UCELL(1,1)/NPX + (NY-1)*UCELL(1,2)/NPY 
-            XPO(2) = (NX-1)*UCELL(2,1)/NPX + (NY-1)*UCELL(2,2)/NPY 
-            XPO(3) = ZREF
-
-C Phase to cancel the phase of the wave function: -i.k.r
-            PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
-
-C Localize non-zero orbitals at each point in real space ---------------
-     
-            IA   = 0
-            ISEL = 0
-            NNA  = MAXNA
-
-            CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
-     .                   NNA, JNA, XIJ, R2IJ, FIRST )
-
-C Loop over Non-zero orbitals ------------------------------------------ 
-            DO 110 IAT1 = 1, NNA
-              IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
-
-              IAVEC1   = JNA(IAT1)
-              IS1      = ISA(IAVEC1)
-              XVEC1(1) = -XIJ(1,IAT1)
-              XVEC1(2) = -XIJ(2,IAT1)
-              XVEC1(3) = -XIJ(3,IAT1)
-
-C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
-
-              PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
-     .                K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
-     .                K(IK,3)*(XPO(3)+XIJ(3,IAT1))
-
-              SI=DSIN(PHASE)
-              CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
-
-              DO 120 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
-                IPHI1 = IPHORB(IO)
-                IUO   = INDXUO(IO)
-                CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
-
-                CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
-     .          EXPPHI * EXMIKR
-
- 120          ENDDO
- 110        ENDDO
-
-            CW(NX-1,NY-1)  = CWAVE * SQRT(ARMUNI)
-
-C End x loop
-100       ENDDO  
-C End y loop
-101       ENDDO  
-
-
-
-C Call routine to extrapolate wave function and compute STM image
-
-          ENER = E(IK,IWF,ISPIN)
-          CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF,ZMIN,ZMAX,UCELL,V0,
+                   ENER = E(IK,IWF,ISPIN)
+                   CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF,ZMIN,ZMAX,UCELL,V0,
      .                     CW,ENER,K(IK,1),CWE)
+                   ! Be careful not to overwrite the z<zref parts...
+                   RHO(:,:,NZ-1:) = RHO(:,:,NZ-1:) +
+     $                         DREAL(CWE(:,:,NZ-1:)*
+     $                               DCONJG(CWE(:,:,NZ-1:)))
+     $                         * WK(IK)
 
-          RHO = RHO + DREAL(CWE*DCONJG(CWE)) * WK(IK)
+                   ! And we are done with the z planes
+                   EXIT
 
-       endif  ! zref < zmax
+                endif    ! z below or above Zref
 
-C End loop on spin
-99      ENDDO
-C End kpoint and wavefunctions loops
-      ENDDO
-      ENDDO
+             ENDDO       ! NZ
+
+
+          ENDDO  ! Spin
+       ENDDO     ! wfn number
+      ENDDO      ! k-point
 
       ! This should not be necessary if a proper BZ-sampled set of wfs is used
       total_weight = sum(wk(1:nk))
@@ -508,6 +397,60 @@ C CLOSE ALLOCATABLE ARRAYS
 
       CONTAINS
 
+      subroutine get_cwave()
+      ! Inherits all data by host association
+      
+            CWAVE   = (0.0D0, 0.0D0)
+
+C Phase to cancel the phase of the wave function: -i.k.r
+            PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
+            SIMIKR=DSIN(PMIKR)
+            COMIKR=DCOS(PMIKR)
+            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+
+C Localize non-zero orbitals at each point in real space ---------------
+     
+            IA   = 0
+            ISEL = 0
+            NNA  = MAXNA
+
+            CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
+     .                   NNA, JNA, XIJ, R2IJ, FIRST )
+
+C Loop over Non-zero orbitals ------------------------------------------ 
+            DO 110 IAT1 = 1, NNA
+              IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
+
+              IAVEC1   = JNA(IAT1)
+              IS1      = ISA(IAVEC1)
+              XVEC1(1) = -XIJ(1,IAT1)
+              XVEC1(2) = -XIJ(2,IAT1)
+              XVEC1(3) = -XIJ(3,IAT1)
+
+C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
+
+              PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
+     .                K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
+     .                K(IK,3)*(XPO(3)+XIJ(3,IAT1))
+
+              SI=DSIN(PHASE)
+              CO=DCOS(PHASE)
+              EXPPHI=DCMPLX(CO,SI)
+
+              DO 120 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
+                IPHI1 = IPHORB(IO)
+                IUO   = INDXUO(IO)
+                CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
+
+                CWAVE  = CWAVE  + PHIMU * 
+     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
+     .          EXPPHI * EXMIKR
+
+ 120          ENDDO
+ 110        ENDDO
+
+      end subroutine get_cwave
+      
       function monoclinic(cell)
       real(dp), intent(in) :: cell(3,3)
       logical monoclinic

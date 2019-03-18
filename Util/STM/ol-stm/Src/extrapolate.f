@@ -147,6 +147,8 @@ C LOOP OVER SIMULATION HEIGHTS ........
       DO NZ = 1, NPZ
         Z = ZMIN + (NZ-1)*STEPZ
 
+        IF (Z < ZREF) CYCLE
+        
 C LOOP OVER POINTS IN XY PLANE ...
         DO NY = 1, NPY
           NY1 = NY-1
