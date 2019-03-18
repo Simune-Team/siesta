@@ -20,7 +20,6 @@ C
 C  Modules
 C
       USE PRECISION
-      USE PARALLEL
       USE BASIS_IO
       USE LISTSC_MODULE, ONLY: LISTSC_INIT
       USE FDF
@@ -39,39 +38,24 @@ C
      .  ISA, LASTO, IPHORB, INDXUO, 
      .  NUMD, LISTD, LISTDPTR, NWF
 
-      INTEGER, DIMENSION(:,:), ALLOCATABLE ::
-     .   INDW
+      real(dp), DIMENSION(:), ALLOCATABLE  ::  WK
+      INTEGER, DIMENSION(:,:), ALLOCATABLE ::  INDW
 
-      DOUBLE PRECISION
+      REAL(DP)
      .   CELL(3,3), VOLUME, VOLCEL, RMAXO, UCELL(3,3), V0, EMAX, EMIN
 
-      DOUBLE PRECISION
-     .  ZMIN, ZMAX, ZREF, ZREF2,
-     .  ARMUNI
+      REAL(DP)  ZMIN, ZMAX, ZREF, ARMUNI
 
-      DOUBLE PRECISION, DIMENSION(:,:,:,:), ALLOCATABLE ::
-     .   RPSI,IPSI
+      REAL(DP), DIMENSION(:,:,:,:), ALLOCATABLE ::  RPSI,IPSI
+      REAL(DP), DIMENSION(:,:,:), ALLOCATABLE ::   E
+      REAL(DP), DIMENSION(:,:), ALLOCATABLE ::   XA, K
 
-      DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE ::
-     .   E
-
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
-     .   XA, DSCF, K
-
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE ::
-     .   DATM, DSCFNA
-
-      CHARACTER
-     .  FILEIN*20, FILEOUT*20,
-     .  SNAME*40, FNAME*50
-      LOGICAL 
-     .  FOUND
+      CHARACTER  FILEIN*20, FILEOUT*20, SNAME*40, FNAME*50
 
       INTEGER :: wf_unit
       logical :: gamma
       
-      EXTERNAL
-     .  IODM, REDATA, REINITSTM, VOLCEL
+      EXTERNAL :: IODM, REDATA, REINITSTM, VOLCEL
 
 
 C ****** READ FROM SIESTA **********************************************
@@ -88,6 +72,7 @@ C INTEGER MAXNA               : Maximum number of neighbours of any atom
 C INTEGER NSC(3)              : Num. of unit cells in each supercell direction
 C INTEGER NUMWF               : Max num of wavefncts to print for a given k-po.
 C INTEGER NWF(NK)             : Num of wavefncts to print for each k-point
+C REAL(dp) WK(NK)             : weight of each k-point
 C INTEGER ISA(MAXA)           : Species index of each atom in the supercell
 C INTEGER LASTO(0:MAXA)       : Last orbital of each atom in array iphorb
 C INTEGER IPHORB(MAXO)        : Orbital index (within atom) of each orbital
@@ -111,8 +96,6 @@ C REAL*8  VOLUME              : Volumen of unit cell (in bohr**3)
 C REAL*8  RMAXO               : Maximum range of basis orbitals
 C REAL*8  XA(3,NA_S)          : Atomic coordinates in cartesian coordinates
 C                               (units in bohrs)
-C REAL*8  DATM(NO_S)          : Occupations of basis orbitals in free atom
-C REAL*8  DSCF(MAXND,NSPIN)   : Density Matrix (DM)
 C REAL*8  RPSI(NO_U,NK,NUMWF,NSPIN): Wave function coefficients (real part)
 C REAL*8  IPSI(NO_U,NK,NUMWF,NSPIN): Wave function coefficients (imag part)
 C REAL*8  E(NK,NUMWF,NSPIN)        : Wave function energies
@@ -125,15 +108,10 @@ C                               points of the plane is zero
 C                               (Plane Reference Frame; PRF)
 C INTEGER IUNITCD             : Units of the charge density
 C REAL*8  ZREF                : Position of reference plane for wf. extrapol.
-C REAL*8  ZREF2                : Position of reference plane for wf. extrapol.
 C REAL*8  ZMIN, ZMAX          : Limits of the or 3D grid in the PRF for z-axis
 C INTEGER NSCX, NSCY          : Number of cells to plot in cube file (in x
 C                               and y directions)
 C REAL*8  ARMUNI              : Conversion factors for the charge density
-C ****** INTERNAL VARIABLES ********************************************
-C REAL*8  DSCFNA(MAXND)       : Density Matrix for Neutral Atoms
-C LOGICAL FOUND               : Has DM been found in disk?
-C                               (Only when task = 'read')
 C **********************************************************************
 
 
@@ -169,13 +147,11 @@ C Allocate some variables ----------------------------------------------
       ALLOCATE(INDXUO(NO_S))
       CALL MEMORY('A','D',NO_S,'mainstm')
 
-      ALLOCATE(DATM(NO_S))
-      CALL MEMORY('A','D',NO_S,'mainstm')
 
 C Read some variables from SIESTA --------------------------------------
       CALL REDATA( NO_S, NA_S, NO_U, MAXND, NSPIN,
      .             ISA, IPHORB, INDXUO, LASTO,
-     .             CELL, NSC, XA, RMAXO, DATM )
+     .             CELL, NSC, XA, RMAXO )
 
 C Read the information about the basis set -----------------------------
       CALL READ_BASIS_ASCII(ns)
@@ -212,6 +188,8 @@ C allocate temporary space for eigenvalues and eigenfunctions
 C allocate space for eigenenergies and (complex) eigenfunctions 
         ALLOCATE(NWF(NK))
         CALL MEMORY('A','I',NK,'mainstm')
+        ALLOCATE(WK(NK))
+        CALL MEMORY('A','D',NK,'mainstm')
         ALLOCATE(INDW(NK,NUMWF))
         CALL MEMORY('A','I',NUMWF*NK,'mainstm')
         ALLOCATE(K(NK,3))
@@ -229,12 +207,12 @@ C allocate space for eigenenergies and (complex) eigenfunctions
         
         rewind(wf_unit)
         CALL read_wfsx(wf_unit,NSPIN,NO_U,NWF,NUMWF,NK,
-     $       RPSI,IPSI,E,K,INDW)
+     $       RPSI,IPSI,E,K,WK,INDW)
         call io_close(wf_unit)
 
 C Read option for STM 
       CALL READSTM( VOLUME, 
-     .     IUNITCD, NPX, NPY, NPZ, ZREF, ZREF2, ZMIN, ZMAX, EMAX, EMIN,
+     .     IUNITCD, NPX, NPY, NPZ, ZREF, ZMIN, ZMAX, EMAX, EMIN,
      .      NSCX, NSCY, ARMUNI )
 
 C Call routine to calculate the value of the potential at vacuum
@@ -245,8 +223,8 @@ C Call routine to compute STM image
 
         CALL STM   ( NA_S, NO_S, NO_U, MAXNA, NSPIN, 
      .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
-     .               RPSI, IPSI, E, INDW, NWF, NUMWF, NK, K,
-     .               ZREF,ZREF2, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
+     .               RPSI, IPSI, E, INDW, NWF, NUMWF, NK, K, WK,
+     .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
      .               V0, EMAX, EMIN,
      .               ARMUNI, IUNITCD, RMAXO )
 

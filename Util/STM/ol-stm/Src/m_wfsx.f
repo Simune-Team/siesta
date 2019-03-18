@@ -56,14 +56,14 @@
         end subroutine wfsx_get_info
       
       SUBROUTINE read_wfsx(unit,NSPIN,NORB,NWF,NUMWF,NK,
-     .                     RPSI,IPSI,E,K,IND)
+     .                     RPSI,IPSI,E,K,WK,IND)
 
       INTEGER, intent(in) :: unit, NSPIN, NORB
       integer, intent(in) :: NUMWF, NK
       integer, intent(out) :: NWF(NK), IND(NK,NUMWF)
       real(dp),intent(out) :: RPSI(NORB,NK,NUMWF,NSPIN), 
      .     IPSI(NORB,NK,NUMWF,NSPIN),
-     .     E(NK,NUMWF,NSPIN), K(NK,3)
+     .     E(NK,NUMWF,NSPIN), K(NK,3), WK(NK)
       
 C Reads the wavefunctions and energies from a file written by Siesta
 C P. Ordejon, July 2003
@@ -119,7 +119,7 @@ C P. Ordejon, July 2004
         
         DO IK = 1, NK
           DO ISPIN = 1,NSPIN
-            READ(UNIT) IIK,K(IK,1),K(IK,2),K(IK,3)
+            READ(UNIT) IIK,K(IK,1),K(IK,2),K(IK,3), WK(IK)
             IF (IK .NE. IIK) THEN
               WRITE(6,*) 'Inconsistent order of kpoints in WFSX file!'
               STOP

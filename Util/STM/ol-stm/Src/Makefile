@@ -71,8 +71,7 @@ SYSOBJ=$(SYS).o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS_STM = atompla.o  \
-        bessph.o chkdim.o dismin.o \
+OBJS_STM = bessph.o chkdim.o dismin.o \
 	dot.o fftw3_mymod.o extrapolate.o \
         io.o iodm.o length.o \
         mainstm.o matvect.o memory.o \

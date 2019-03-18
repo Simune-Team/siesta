@@ -7,7 +7,7 @@
 ! ---
 
       SUBROUTINE READSTM(VOLUME, 
-     .      IUNITCD, NPX, NPY, NPZ, ZREF, ZREF2, ZMIN, ZMAX, EMAX, EMIN,
+     .      IUNITCD, NPX, NPY, NPZ, ZREF, ZMIN, ZMAX, EMAX, EMIN,
      .      NSCX, NSCY, ARMUNI ) 
 
 C **********************************************************************
@@ -30,7 +30,7 @@ C **********************************************************************
      .  NPX, NPY, NPZ, IUNITCD, NSCX, NSCY
      
       DOUBLE PRECISION, INTENT(OUT) ::
-     .  ZREF, zref2, ZMIN, ZMAX, ARMUNI, EMIN, EMAX
+     .  ZREF, ZMIN, ZMAX, ARMUNI, EMIN, EMAX
 
 
 C ****** INPUT *********************************************************
@@ -42,7 +42,6 @@ C                          IUNITCD = 2 => Ele/(Ang)**3
 C                          IUNITCD = 3 => Ele/(unitcell)
 C INTEGER NPX, NPY, NPZ  : Number of points generated along x, y and z
 C REAL*8 ZREF            : Position of reference plane for wf. extrapol.(Bohr)
-C REAL*8 ZREF2            : Position of second reference plane.(Bohr)
 C REAL*8  ZMIN, ZMAX     : Limits of the z-direction (in Bohr)
 C INTEGER NSCX, NSCY     : Number of cells in x and y direction to plot
 C                          in cube file
@@ -100,7 +99,6 @@ C READ UNITS OF CHARGE DENSITY TO USE
       EMAX = FDF_PHYSICAL('STM.Emax',1.0d10,'eV')
 
       ZREF = FDF_PHYSICAL('STM.RefZ',1.0d40,'Bohr')
-      ZREF2 = FDF_PHYSICAL('STM.RefZ2',ZREF,'Bohr')
       ZMIN = FDF_PHYSICAL('STM.MinZ',1.0d40,'Bohr')
       ZMAX = FDF_PHYSICAL('STM.MaxZ',1.0d40,'Bohr')
 

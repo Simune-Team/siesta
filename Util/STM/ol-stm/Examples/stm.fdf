@@ -2,7 +2,7 @@
 # After example by Oscar Paz
 
 SystemName              Si(100)-2x1 3 layers (H-saturated)
-SystemLabel             si2x1h
+SystemLabel             si2x1h-stm
 NumberOfAtoms           10
 NumberOfSpecies 2
 %block ChemicalSpeciesLabel

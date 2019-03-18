@@ -1,0 +1,9 @@
+This program needs some work:
+
+* Streaming over wavefunctions in the WFSX file instead of keeping them in memory.
+
+* Spin components of the wavefunctions are currently just added together.
+
+* The extrapolation routine does not check that Z > ZREF
+
+
