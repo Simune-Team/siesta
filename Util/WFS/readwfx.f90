@@ -240,12 +240,11 @@ integer, parameter :: sp = selected_real_kind(5,10)
         read(wfs_u) number_of_wfns
 
         write(io,*)
-        write(io,"(60('*'))") 
-        write(io,'(a,2x,i6,2x,3f10.6)') 'k-point = ',ik, k(1),k(2),k(3)
+        write(io,fmt='(a,2x,i6,2x,3f10.6)',advance="no") 'k-point = ',ik, k(1),k(2),k(3)
         if (.not. non_coll) then
-           write(io,'(a22,2x,i6)') 'Spin component = ',ispin
+           write(io,fmt='(2x,a,2x,i1)',advance="no") 'Spin component = ',ispin
         endif
-        write(io,'(a22,2x,i6)') 'Num. wavefunctions = ',number_of_wfns
+        write(io,fmt='(2x,a,1x,i6)') 'Num. wavefunctions = ',number_of_wfns
 
 ! Loop over wavefunctions 
 
@@ -259,10 +258,15 @@ integer, parameter :: sp = selected_real_kind(5,10)
               CYCLE
            endif
 
-           write(io,*)
            write(io,'(a22,2x,i6,2x,a,f10.6)') &
                 'Wavefunction = ', indwf, 'Eigval (eV) = ', eigval
-           write(io,"(60('-'))") 
+
+           if (threshold >= 100*100) then
+              read(wfs_u)   ! Skip wf data
+              CYCLE         ! Early exit to print only energies
+           endif
+
+           write(io,"(60('-'))")
            if (non_coll) then
               write(io,'(a72)') &
                            ' Atom  Species Orb-global Orb-in-atom '//  &
@@ -310,6 +314,7 @@ integer, parameter :: sp = selected_real_kind(5,10)
       write(6,*) "   -B Max_band  :  set maximum band index to be used               "
       write(6,*) "    "
       write(6,*) "   -t threshold :  set threshold for orbital contributions to be printed "
+      write(6,*) "                   (use large value to get only energy information)      "
       end subroutine manual
 
     end program readwfx
