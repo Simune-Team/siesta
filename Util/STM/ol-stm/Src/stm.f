@@ -204,8 +204,6 @@ C Loop over k-points and wavefunctions to include in the STM image
       WRITE(6,*) '     --------------------------------'
       DO IWF = 1,NWF(IK)
 
-        WRITE(6,*) 'stm:     Processing w.f. ',iwf
-
 C Check that we have a bound state (E below vacuum level)
         DO ISPIN = 1,NSPIN
 
@@ -218,6 +216,8 @@ C Check that we have a bound state (E below vacuum level)
             WRITE(6,*) '       IS ABOVE VACUUM LEVEL'
            STOP
           ENDIF
+
+        WRITE(6,"(a,i5,i2)") 'stm: wf (spin) in window: ', iwf, ispin
 
           
 ! Loop over all points in real space -----------------------------------
@@ -238,7 +238,8 @@ C Check that we have a bound state (E below vacuum level)
                          XPO(2) = (NX-1)*UCELL(2,1)/NPX +
      $                            (NY-1)*UCELL(2,2)/NPY 
 
-                         call get_cwave()
+                         call get_cwave(rpsi(:,ik,iwf,ispin),
+     $                                  ipsi(:,ik,iwf,ispin))
 
                          RHO(NX-1,NY-1,NZ-1)  = RHO (NX-1,NY-1,NZ-1)    
      &                    + DREAL(CWAVE*DCONJG(CWAVE))* ARMUNI * WK(IK)
@@ -261,7 +262,8 @@ C Check that we have a bound state (E below vacuum level)
      $                            (NY-1)*UCELL(2,2)/NPY 
                          XPO(3) = ZREF
 
-                         call get_cwave()
+                         call get_cwave(rpsi(:,ik,iwf,ispin),
+     $                                  ipsi(:,ik,iwf,ispin))
                          CW(NX-1,NY-1)  = CWAVE * SQRT(ARMUNI)
 
                       ENDDO  
@@ -327,31 +329,27 @@ C Calculate number of atoms in unit cell
 
       DO NSX = 1,NSCX
         DO NSY = 1,NSCY
-      DO IA = 1, NAU
-        WRITE(UNITRE1,'(i5,4f12.6)') ATOMIC_NUMBER(ISA(IA)),0.0, 
-     .     (XA(IX,IA)+(NSX-1)*UCELL(IX,1)+(NSY-1)*UCELL (IX,2) ,IX=1,3)
-      ENDDO
+           DO IA = 1, NAU
+              WRITE(UNITRE1,'(i5,4f12.6)') ATOMIC_NUMBER(ISA(IA)),0.0, 
+     .     (XA(IX,IA)+(NSX-1)*UCELL(IX,1)+(NSY-1)*UCELL(IX,2) ,IX=1,3)
+           ENDDO
         ENDDO
       ENDDO
 
       DO NSX = 1,NSCX
-      DO NX=0,NPX-1
-        DO NSY = 1,NSCY
-        DO NY=0,NPY-1
-          WRITE(UNITRE1,'(6e13.5)')
-     .            (RHO(NX,NY,NZ),NZ=0,NPZ-1)
-        ENDDO
-        ENDDO
+         DO NX=0,NPX-1
+            DO NSY = 1,NSCY
+               DO NY=0,NPY-1
+                  WRITE(UNITRE1,'(6e13.5)')
+     .                 (RHO(NX,NY,NZ),NZ=0,NPZ-1)
+               ENDDO
+            ENDDO
+         ENDDO
       ENDDO
-      ENDDO
-
-
-200   CONTINUE
 
       call io_close(unitre1)
 
-C Write charge density in Siesta format
-C
+! Write charge density in Siesta format
 
       call io_assign(unitre1)
       SNAME = FDF_STRING('SystemLabel','siesta')
@@ -397,7 +395,10 @@ C CLOSE ALLOCATABLE ARRAYS
 
       CONTAINS
 
-      subroutine get_cwave()
+      subroutine get_cwave(psi_re,psi_im)
+      real(dp), intent(in) :: psi_re(:)
+      real(dp), intent(in) :: psi_im(:)
+      
       ! Inherits all data by host association
       
             CWAVE   = (0.0D0, 0.0D0)
@@ -413,41 +414,40 @@ C Localize non-zero orbitals at each point in real space ---------------
             IA   = 0
             ISEL = 0
             NNA  = MAXNA
-
+            ! Get neighbors of point xpo
             CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
      .                   NNA, JNA, XIJ, R2IJ, FIRST )
 
 C Loop over Non-zero orbitals ------------------------------------------ 
-            DO 110 IAT1 = 1, NNA
-              IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
+            DO  IAT1 = 1, NNA
+               IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
 
-              IAVEC1   = JNA(IAT1)
-              IS1      = ISA(IAVEC1)
-              XVEC1(1) = -XIJ(1,IAT1)
-              XVEC1(2) = -XIJ(2,IAT1)
-              XVEC1(3) = -XIJ(3,IAT1)
+               IAVEC1   = JNA(IAT1)
+               IS1      = ISA(IAVEC1)
+               XVEC1(:) = -XIJ(:,IAT1) ! position of XPO with respect to
+                                       ! the atom
 
-C XPO + XIJ(IAT1) is just the absolute position of atom IAT1
+              !  XPO + XIJ(IAT1) is just the absolute position of atom IAT1
+              !  We could cancel the phase above and keep only k*xij
 
-              PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
-     .                K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
-     .                K(IK,3)*(XPO(3)+XIJ(3,IAT1))
+               PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
+     .                 K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
+     .                 K(IK,3)*(XPO(3)+XIJ(3,IAT1))
 
-              SI=DSIN(PHASE)
-              CO=DCOS(PHASE)
-              EXPPHI=DCMPLX(CO,SI)
+               SI=DSIN(PHASE)
+               CO=DCOS(PHASE)
+               EXPPHI=DCMPLX(CO,SI)
 
-              DO 120 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
-                IPHI1 = IPHORB(IO)
-                IUO   = INDXUO(IO)
-                CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
+               DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
+                  IPHI1 = IPHORB(IO)
+                  IUO   = INDXUO(IO)
+                  CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
-                CWAVE  = CWAVE  + PHIMU * 
-     .          DCMPLX(RPSI(IUO,IK,IWF,ISPIN),IPSI(IUO,IK,IWF,ISPIN)) *
-     .          EXPPHI * EXMIKR
+                  CWAVE  = CWAVE  + PHIMU * 
+     .             DCMPLX(psi_re(IUO),psi_im(IUO)) * EXPPHI * EXMIKR
 
- 120          ENDDO
- 110        ENDDO
+               ENDDO
+            ENDDO
 
       end subroutine get_cwave
       
