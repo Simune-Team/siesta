@@ -617,8 +617,10 @@ subroutine read_options( na, ns, nspin )
   monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
   monitor_forces_in_scf = fdf_get('SCF.MonitorForces',monitor_forces_in_scf)
 
-  ! MJVerstraete: symmetrize the atomic forces and stresses in m_fixed
-  symmetrize_forces = fdf_get('SymmetrizeForces',.true.)
+  ! MJVerstraete: symmetrize the positions atomic forces and stresses in m_fixed
+  impose_symmetries = fdf_get ('ImposeSymmetries', .true.)
+
+
 
   !--------------------------------------
   ! Initial spin density: Maximum polarization, Ferro (false), AF (true)

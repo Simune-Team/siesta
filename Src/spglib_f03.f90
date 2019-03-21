@@ -59,7 +59,7 @@ module spglib_f03
   public :: spgf_init, spgf_delete, spgf_print
   public :: spgf_mk_irred_k_grid
 
-  private :: matr3inv
+  private :: matr3invt
 
 !
 ! spglib C For interfaces copied from spglib_f08, and some more added
@@ -398,15 +398,25 @@ contains
     allocate (syms_this%xred(3,num_atom))
     syms_this%xred = xred
 
+    syms_this%celltransp = transpose(cell)
+
     ! refines positions with highest symmetry found within symprec
     ! REMOVED 13/6/2014!!! - this returns the conventional cell!!!
-    !call spg_refine_cell(cell, syms_this%xred, types, num_atom, symprec)
+    !ii =  spg_refine_cell(syms_this%celltransp, syms_this%xred, syms_this%types, num_atom, symprec)
+    !print *, 'numatombravais ', ii
     !print *, 'xred refined'
     !print '(3E20.10)', syms_this%xred
     !print *, 'cell refined'
-    !print '(3E20.10)', cell
+    !print '(3E20.10)', syms_this%celltransp
 
-    syms_this%celltransp = transpose(cell)
+    !jj = spg_find_primitive(syms_this%celltransp, syms_this%xred, syms_this%types, ii, symprec) 
+    !print *, 'numatomprim ', jj
+    !print *, 'xred refined'
+    !print '(3E20.10)', syms_this%xred
+    !print *, 'cell refined'
+    !print '(3E20.10)', syms_this%celltransp
+
+    !cell = transpose(syms_this%celltransp)
 
     syms_this%bravais_number = spg_get_international(syms_this%bravais_symbol, syms_this%celltransp(1,1), &
            & zerovec(1), types(1), 1, symprec)
@@ -441,8 +451,8 @@ contains
 ! get symops in cartesian coordinates - should still be integer -1 0 1 elements but store in floats
     allocate(syms_this%symops_cart(1:3, 1:3, 1:syms_this%n_operations))
 
-    !call matr3inv(syms_this%celltransp, cellinv) ! NB: returns inverse transpose, which is what we want
-    call matr3inv(cell, cellinv) ! NB: returns inverse transpose
+    !call matr3invt(syms_this%celltransp, cellinv) ! NB: returns inverse transpose, which is what we want
+    call matr3invt(cell, cellinv) 
     cellinv = transpose(cellinv)
 
     ! symcart = rprim * symred * gprim^T
@@ -471,7 +481,7 @@ contains
     allocate(syms_this%symops_recip_cart(1:3, 1:3, 1:syms_this%n_operations))
     do ii = 1, syms_this%n_operations
       dsymop = dble(syms_this%rotations(:, :, ii)) 
-      call matr3inv(dsymop,dsymopinv) ! still inverse transpose here
+      call matr3invt(dsymop,dsymopinv) ! still inverse transpose here
       syms_this%symops_recip(:,:,ii) = nint(dsymopinv)
 ! DEBUG - perhaps comment out later
       if (any(abs(dble(syms_this%symops_recip(:, :, ii)) - dsymopinv(:,:)) > 1.e-10)) then
@@ -603,7 +613,7 @@ contains
 !  GNU General Public License, see ~abinit/COPYING
 !  or http://www.gnu.org/copyleft/gpl.txt .
 !
-subroutine matr3inv(aa, ait)
+subroutine matr3invt(aa, ait)
 
  implicit none
 
@@ -643,7 +653,7 @@ subroutine matr3inv(aa, ait)
  ait(2,3) = (aa(3,1)*aa(1,2)-aa(1,1)*aa(3,2)) * dd
  ait(3,3) = (aa(1,1)*aa(2,2)-aa(2,1)*aa(1,2)) * dd
 
-end subroutine matr3inv
+end subroutine matr3invt
 
 
 end module spglib_f03

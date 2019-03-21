@@ -420,6 +420,10 @@ C     Initialise MPI and set processor number
       ! call init routine with main syms_global object from m_syms
       call syms_init( syms_global, ucell, na_u, isa, xa )
       if (IONode) call syms_print(syms_global)
+      if (impose_symmetries) then
+        call syms_cell( syms_global, na_u, xa, ucell )
+        call syms_pos( syms_global, na_u, xa, ucell )
+      end if
 #endif
 
 !     early exit if only checking the structure

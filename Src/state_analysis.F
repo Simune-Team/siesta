@@ -114,7 +114,7 @@
 
 #ifdef SIESTA__HAS__SPGLIB
 !     symmetrize forces and stresses
-      if (symmetrize_forces) then
+      if (impose_symmetries) then
         call syms_forces(syms_global, na_u, fa)
         call syms_stresses(syms_global, stress)
       end if
