@@ -25,7 +25,7 @@ module m_gridfunc
 #ifdef CDF
       public :: read_gridfunc_netcdf, write_gridfunc_netcdf
 #endif
-         
+      public :: get_planar_average, grid_p
       private
 
  CONTAINS
@@ -66,6 +66,36 @@ module m_gridfunc
      close( iu )
 
    end subroutine write_gridfunc
+
+   subroutine get_planar_average(gf, dim, val)
+     type(gridfunc_t), intent(in) :: gf
+     integer, intent(in) :: dim
+     real(grid_p), allocatable :: val(:,:)
+
+     integer :: isp, ix, iy, iz, n(3), spin_dim
+     real(grid_p) :: sum
+
+     n = gf%n
+     spin_dim = size(gf%val,dim=4)
+     
+     if (dim == 3) then
+        allocate(val(n(3),spin_dim))
+        do isp=1,gf%nspin
+           do iz=1,n(3)
+              sum = 0.0_grid_p
+              do iy=1,n(2)
+                 do ix=1,n(1)
+                    sum = sum + gf%val(ix,iy,iz,isp)
+                 enddo
+              enddo
+              val(iz,isp) = sum/(n(1)*n(2))
+           enddo
+        enddo
+     else
+        call die("non-z ave not implemented yet")
+     endif
+
+   end subroutine get_planar_average
 
    subroutine read_gridfunc(fname,gf)
      type(gridfunc_t), intent(inout) :: gf
@@ -240,5 +270,10 @@ end subroutine check
    call die("Cannot get free unit")
  end subroutine get_lun
 
+ subroutine die(str)
+   character(len=*), intent(in) :: str
+   write(0,"(a)") str
+   stop
+ end subroutine die
  end module m_gridfunc
 
