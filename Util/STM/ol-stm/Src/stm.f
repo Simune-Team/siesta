@@ -264,7 +264,7 @@ C Check that we have a bound state (E below vacuum level)
 
                          call get_cwave(rpsi(:,ik,iwf,ispin),
      $                                  ipsi(:,ik,iwf,ispin))
-                         CW(NX-1,NY-1)  = CWAVE * SQRT(ARMUNI)
+                         CW(NX-1,NY-1)  = CWAVE 
 
                       ENDDO  
                    ENDDO  
@@ -276,10 +276,10 @@ C Check that we have a bound state (E below vacuum level)
                    RHO(:,:,NZ-1:) = RHO(:,:,NZ-1:) +
      $                         DREAL(CWE(:,:,NZ-1:)*
      $                               DCONJG(CWE(:,:,NZ-1:)))
-     $                         * WK(IK)
+     $                         * WK(IK) * ARMUNI
 
                    ! And we are done with the z planes
-                   EXIT
+                   EXIT  ! loop over NZ
 
                 endif    ! z below or above Zref
 
@@ -400,54 +400,76 @@ C CLOSE ALLOCATABLE ARRAYS
       real(dp), intent(in) :: psi_im(:)
       
       ! Inherits all data by host association
-      
-            CWAVE   = (0.0D0, 0.0D0)
 
-C Phase to cancel the phase of the wave function: -i.k.r
-            PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
-            SIMIKR=DSIN(PMIKR)
-            COMIKR=DCOS(PMIKR)
-            EXMIKR=DCMPLX(COMIKR,SIMIKR)
+! The periodic part of the Bloch functions is defined by                                                 
+! \begin{equation}                                                                                       
+!   u_{n \vec{k}} (\vec{r}) =                                                                            
+!   \sum_{\vec{R} \mu} c_{n \mu}(\vec{k})                                                                
+!        e^{i \vec{k} \cdot ( \vec{r}_{\mu} + \vec{R} - \vec{r} )}                                       
+!        \phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} ) ,                                               
+!\end{equation}                                                                                          
+!                                                                                                        
+!\noindent where $\phi_{\mu} (\vec{r} - \vec{r}_{\mu} - \vec{R} )$                                       
+! is an atomic orbital of the basis set centered on atom $\mu$ in                                        
+! the unit cell $\vec{R}$, and $c_{n \mu}(\vec{k})$ are the coefficients                                 
+! of the wave function
+
+      CWAVE   = (0.0D0, 0.0D0)
+
+!     CWAVE is meant to be the periodic part of the wavefunction,
+!     for both the computation of the charge density directly (exp(ikr) phase
+!     is irrelevant) and for propagation of the wave function (?)
+      
+      ! First step (see below)
+      ! Phase to cancel the phase of the wave function: -i.k.r
+      
+      PMIKR = -(K(IK,1)*XPO(1) + K(IK,2)*XPO(2) + K(IK,3)*XPO(3))
+      SIMIKR=DSIN(PMIKR)
+      COMIKR=DCOS(PMIKR)
+      EXMIKR=DCMPLX(COMIKR,SIMIKR)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
-            IA   = 0
-            ISEL = 0
-            NNA  = MAXNA
-            ! Get neighbors of point xpo
-            CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
+      IA   = 0
+      ISEL = 0
+      NNA  = MAXNA
+      ! Get neighbors of point xpo
+      CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
      .                   NNA, JNA, XIJ, R2IJ, FIRST )
 
-C Loop over Non-zero orbitals ------------------------------------------ 
-            DO  IAT1 = 1, NNA
-               IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
+C     Loop over Non-zero orbitals ------------------------------------------
+      ! NOTE: If the z-extent of the box is large enough, we might be getting
+      ! contributions from orbitals in the next periodic image of the slab.
+      ! We should get rid of them
+      DO  IAT1 = 1, NNA
+         IF( R2IJ(IAT1) .GT. RMAX2 ) CYCLE
 
-               IAVEC1   = JNA(IAT1)
-               IS1      = ISA(IAVEC1)
-               XVEC1(:) = -XIJ(:,IAT1) ! position of XPO with respect to
+         IAVEC1   = JNA(IAT1)
+         IS1      = ISA(IAVEC1)
+         XVEC1(:) = -XIJ(:,IAT1) ! position of XPO with respect to
                                        ! the atom
 
-              !  XPO + XIJ(IAT1) is just the absolute position of atom IAT1
-              !  We could cancel the phase above and keep only k*xij
+         !  XPO + XIJ(IAT1) is just the absolute position of atom IAT1
+         !  We could cancel the phase above and keep only k*xij
 
-               PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
-     .                 K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
-     .                 K(IK,3)*(XPO(3)+XIJ(3,IAT1))
+         PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
+     .        K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
+     .        K(IK,3)*(XPO(3)+XIJ(3,IAT1))
 
-               SI=DSIN(PHASE)
-               CO=DCOS(PHASE)
-               EXPPHI=DCMPLX(CO,SI)
+         SI=DSIN(PHASE)
+         CO=DCOS(PHASE)
+         EXPPHI=DCMPLX(CO,SI)
 
-               DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
-                  IPHI1 = IPHORB(IO)
-                  IUO   = INDXUO(IO)
-                  CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
+         DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
+            IPHI1 = IPHORB(IO)
+            IUO   = INDXUO(IO)
+            CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
-                  CWAVE  = CWAVE  + PHIMU * 
-     .             DCMPLX(psi_re(IUO),psi_im(IUO)) * EXPPHI * EXMIKR
+            CWAVE  = CWAVE  + PHIMU * 
+     .           DCMPLX(psi_re(IUO),psi_im(IUO)) * EXPPHI * EXMIKR
 
-               ENDDO
-            ENDDO
+         ENDDO
+      ENDDO
 
       end subroutine get_cwave
       
@@ -457,6 +479,9 @@ C Loop over Non-zero orbitals ------------------------------------------
 
       real(dp), parameter :: tol = 1.0e-8_dp
 
+      ! This is too naive. It should be checking that a_3 is orthogonal
+      ! to both a_1 and a_2
+      
       monoclinic =  (abs(CELL(3,1)) < tol
      $         .and. abs(CELL(3,2)) < tol
      $         .and. abs(CELL(1,3)) < tol
