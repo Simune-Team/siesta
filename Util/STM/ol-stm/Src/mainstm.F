@@ -53,7 +53,8 @@ C
       CHARACTER  FILEIN*20, FILEOUT*20, SNAME*40, FNAME*50
 
       INTEGER :: wf_unit
-      logical :: gamma
+      logical :: gamma, non_coll
+      integer :: nspin_blocks
       
       EXTERNAL :: IODM, REDATA, REINITSTM, VOLCEL
 
@@ -183,32 +184,21 @@ C allocate temporary space for eigenvalues and eigenfunctions
      $       STATUS='unknown',position='rewind')
 
       CALL wfsx_get_info(wf_unit,NSPIN,NO_U,NUMWF,NK,gamma)
+
+      non_coll = (nspin == 4)
+      nspin_blocks = nspin
+      if (non_coll) nspin_blocks = 1
+
       print *, "NK, NUMWF, gamma: ", NK, NUMWF, gamma
       
-C allocate space for eigenenergies and (complex) eigenfunctions 
-        ALLOCATE(NWF(NK))
-        CALL MEMORY('A','I',NK,'mainstm')
-        ALLOCATE(WK(NK))
-        CALL MEMORY('A','D',NK,'mainstm')
-        ALLOCATE(INDW(NK,NUMWF))
-        CALL MEMORY('A','I',NUMWF*NK,'mainstm')
-        ALLOCATE(K(NK,3))
-        CALL MEMORY('A','D',NK*3,'mainstm')
-        ALLOCATE(E(NK,NUMWF,NSPIN))
-        CALL MEMORY('A','D',NUMWF*NSPIN*NK,'mainstm')
-        ALLOCATE(RPSI(NO_U,NK,NUMWF,NSPIN))
-        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'mainstm')
-        ALLOCATE(IPSI(NO_U,NK,NUMWF,NSPIN))
-        CALL MEMORY('A','D',NO_U*NUMWF*NSPIN*NK,'mainstm')
-
-!     call readwaves again to actually read wavefunctions
-! This could be inlined in routine stm below to
-! save memory
+      ! Prepare file to stream over it in routine stm
+      
+      rewind(wf_unit)
+      read(wf_unit)
+      read(wf_unit)
+      read(wf_unit)
+      read(wf_unit)             ! advance past header section
         
-        rewind(wf_unit)
-        CALL read_wfsx(wf_unit,NSPIN,NO_U,NWF,NUMWF,NK,
-     $       RPSI,IPSI,E,K,WK,INDW)
-        call io_close(wf_unit)
 
 C Read option for STM 
       CALL READSTM( VOLUME, 
@@ -221,9 +211,9 @@ C Call routine to calculate the value of the potential at vacuum
 
 C Call routine to compute STM image
 
-        CALL STM   ( NA_S, NO_S, NO_U, MAXNA, NSPIN, 
+        CALL STM   ( NA_S, NO_S, NO_U, MAXNA, nspin_blocks, non_coll,
      .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
-     .               RPSI, IPSI, E, INDW, NWF, NUMWF, NK, K, WK,
+     .               wf_unit, NK, gamma,
      .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
      .               V0, EMAX, EMIN,
      .               ARMUNI, IUNITCD, RMAXO )
