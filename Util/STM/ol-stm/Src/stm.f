@@ -199,9 +199,17 @@ C Loop over k-points and wavefunctions to include in the STM image
 
       allocate(wk(nk))
       DO IK  = 1, NK
+        do ispin = 1, nspin_blocks
          read(wf_unit) idummy, k(1:3), wk(ik)
-         if (idummy /= ik) stop "ik index mismatch in WFS file"
-         read(wf_unit) ispin
+            if (idummy /= ik) then
+               write(6,*) "ik index mismatch in WFS file"
+               WRITE(6,*) "ik in file, ik: ", idummy, ik
+            endif
+         read(wf_unit) idummy
+            if (idummy /= ispin) then
+               write(6,*) "ispin index mismatch in WFS file"
+               WRITE(6,*) "ispin in file, ispin: ", idummy, ispin
+            endif
          read(wf_unit) number_of_wfns
 
          WRITE(6,*) 'stm:  Processing kpoint ',IK
@@ -305,7 +313,8 @@ C Check that we have a bound state (E below vacuum level)
                 endif    ! z below or above Zref
 
              ENDDO       ! NZ
-          ! Note that values for different spins are now accumulated
+          ENDDO     ! ispin = 1, nspin_blocks
+                    ! Note that values for different spins are now accumulated
        ENDDO     ! wfn number
       ENDDO      ! k-point
 
