@@ -86,6 +86,8 @@ c****************************************************************************
 
        implicit none
 
+       integer, parameter :: dp = selected_real_kind(10,100)
+       
        real, allocatable :: f(:,:)
        real, allocatable :: rho(:)
 
@@ -194,6 +196,12 @@ c Read density
        write(6,*) 'nspin = ',nspin
        write(6,*)
 
+       if (.not. monoclinic(cell)) then
+          write(0,*) 'The cell is not monoclinic with ' //
+     $               'c lattice vector along z...'
+          stop " *** Unsuitable cell"
+       endif
+
        if (nspin == 1) then
           select case (spin_code)
           case ( 'x', 'y', 'z', 's')
@@ -240,7 +248,25 @@ c Generate x,y,z surface (dump to output file)
          call isoz( cell, mesh, mesh, rho, fvalue, oname)
        endif
 
-       end
+       CONTAINS
+       
+      function monoclinic(cell)
+      real(dp), intent(in) :: cell(3,3)
+      logical monoclinic
+
+      real(dp), parameter :: tol = 1.0e-8_dp
+
+      ! This is too naive. It should be checking that a_3 is orthogonal                            
+      ! to both a_1 and a_2, but it serves for this use case.                                    
+
+      monoclinic =  (abs(CELL(3,1)) < tol
+     $         .and. abs(CELL(3,2)) < tol
+     $         .and. abs(CELL(1,3)) < tol
+     $         .and. abs(CELL(2,3)) < tol )
+
+      end function monoclinic
+
+      end
 
 
        SUBROUTINE ISOCHARGE( CELL, NMESH, NSPAN, F, FVALUE, ONAME)
@@ -406,9 +432,11 @@ C Local variables and arrays
        OPEN( unit=2, file=oname )
 
        write(6,*) 'Writing STM image in file ', trim(oname)
- 
 
-C Find Jacobian matrix dx/dmesh and its inverse
+       ! NOTE: There is no support for a shift of the origin of coordinates
+       ! In particular, ZMIN is not honored.
+
+C     Find Jacobian matrix dx/dmesh and its inverse
        DO IC = 1,3
          DO IX = 1,3
            DXDM(IX,IC) = CELL(IX,IC) / NMESH(IC)
@@ -459,3 +487,4 @@ C Linear interpolation to find the value of F at ZVALUE
        CLOSE(2)
 
        END
+      
