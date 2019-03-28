@@ -19,7 +19,8 @@ C extrapolating the wavefunctions into vacuum
 C
 C Coded by P. Ordejon and N. Lorente,  November 2004
 C
-C Modified by N. Lorente, August 2005
+C     Modified by N. Lorente, August 2005
+      ! Restructured by A. Garcia, March 2019
 C **********************************************************************
 
       use precision, only: dp, sp
@@ -125,8 +126,10 @@ C INTEGER IZA(NA)          : Atomic number of each atom
 C **********************************************************************
 
       
-      ! The first dimension is the number of real numbers per orbital                                     
-      ! 1 for real wfs, 2 for complex, and four for the two spinor components                             
+      ! The first dimension of wf_single is the number of real numbers per orbital
+      ! to be read from the WFSX file:
+      ! 1 for real wfs, 2 for complex, and four for the two spinor components
+      ! wf is a complex array which holds either a wfn or a two-component spinor.
 
       if (non_coll) then
         allocate(wf_single(4,1:no_u))
@@ -223,7 +226,7 @@ C Loop over k-points and wavefunctions to include in the STM image
             endif
             read(wf_unit) ener
 
-C Check that we have a bound state (E below vacuum level)
+C Check that we have a bound state (E below vacuum level), in the chosen window
 
             IF (ENER .LT. EMIN .OR. ENER .GT. EMAX) then
                read(wf_unit)  ! skip wfn info
@@ -240,7 +243,7 @@ C Check that we have a bound state (E below vacuum level)
             WRITE(6,"(a,i5,i2)") 'stm: wf (spin) in window: ',iwf,ispin
 
             read(wf_unit) (wf_single(:,io), io=1,no_u)
-            ! Use a double precision form in what follows
+            ! Use a double precision complex form in what follows
             if ( non_coll) then
                wf(:,1) = cmplx(wf_single(1,:), wf_single(2,:), kind=dp)
                wf(:,2) = cmplx(wf_single(3,:), wf_single(4,:), kind=dp)
@@ -253,10 +256,12 @@ C Check that we have a bound state (E below vacuum level)
             endif
                
 ! Loop over all points in real space -----------------------------------
-
+! The last point (zmax) is not included
+            
              DO NZ = 1,NPZ
 
                 XPO(3) = ZMIN + (NZ-1)*(ZMAX-ZMIN)/NPZ
+
                 if ( XPO(3) < Zref ) then
                   ! Initialize density to unextrapolated density
           
