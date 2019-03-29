@@ -16,7 +16,9 @@ module m_gridfunc
 
   type, public :: gridfunc_t
      real(dp)              ::  cell(3,3)   ! by columns, in bohr
-     integer               ::  n(3)
+     real(dp)              ::  origin(3) = [0.0_dp, 0.0_dp, 0.0_dp]  ! in bohr
+     logical               ::  is_periodic(3) = [ .true., .true., .true.]
+     integer               ::  n(3) = [ 0,0,0 ]
      integer               ::  nspin
      real(grid_p), allocatable ::  val(:,:,:,:)
   end type gridfunc_t
@@ -25,7 +27,7 @@ module m_gridfunc
 #ifdef CDF
       public :: read_gridfunc_netcdf, write_gridfunc_netcdf
 #endif
-      public :: get_planar_average, grid_p
+      public :: get_planar_average, grid_p, monoclinic_z
       private
 
  CONTAINS
@@ -38,6 +40,8 @@ module m_gridfunc
      endif
      gf%n(:) = 0
      gf%cell(:,:) = 0.0_dp
+     gf%origin(:) = 0.0_dp
+     gf%is_periodic(:) = .true.
 
    end subroutine clean_gridfunc
 
@@ -54,7 +58,7 @@ module m_gridfunc
      call get_lun(iu)
      open(unit=iu,file=fname,form="unformatted",status="unknown", &
           position="rewind",action="write")
-     write(iu) gf%cell
+     write(iu) gf%cell, gf%origin, gf%is_periodic
      write(iu) n, gf%nspin
      do isp=1,gf%nspin
         do iz=1,n(3)
@@ -103,14 +107,22 @@ module m_gridfunc
 
      integer :: n(3) 
      integer :: isp, ix, iy, iz
-     integer :: iu
+     integer :: iu, iostat
 
      call clean_gridfunc(gf)
 
      call get_lun(iu)
      open(unit=iu,file=fname,form="unformatted",status="old", &
           position="rewind",action="read")
-     read(iu) gf%cell
+
+     read(iu,iostat=iostat) gf%cell, gf%origin, gf%is_periodic
+     if (iostat /= 0) then
+        backspace(iu)
+        read(iu) gf%cell
+        gf%origin(:) = 0.0_dp
+        gf%is_periodic(:) = .true.
+     endif
+
      read(iu) gf%n, gf%nspin
      n = gf%n
      allocate(gf%val(n(1),n(2),n(3),gf%nspin))
@@ -140,9 +152,10 @@ character(len=*), intent(in), optional :: description
 integer  :: ncid 
 integer  :: xyz_id, step_id, abc_id, spin_id
 integer  :: cell_id, n1_id, n2_id, n3_id, gridfunc_id
+integer  :: origin_id, is_periodic_id
 
 integer   ::    nspin  ! Number of spins 
-integer   ::    n(3)
+integer   ::    n(3), int_from_bool(3), i
 integer   ::   ispin, iostat, ix, iy, iz, iret
 
 !-----------------------------------------------------
@@ -170,6 +183,18 @@ call check( nf90_create(filename,NF90_CLOBBER,ncid))
                "Cell vectors in Bohr: xyz, abc")
        call check(iret)
 
+       iret = nf90_def_var(ncid,'origin',nf90_float,(/xyz_id/),origin_id)
+       call check(iret)
+       iret = nf90_put_att(ncid,origin_id,'Description', &
+               "Origin of coordinates: xyz")
+       call check(iret)
+
+       iret = nf90_def_var(ncid,'is_periodic',nf90_int,(/abc_id/),is_periodic_id)
+       call check(iret)
+       iret = nf90_put_att(ncid,cell_id,'Description', &
+               "Periodic along cell vectors (1:yes, 0:no): abc")
+       call check(iret)
+
        iret = nf90_def_var(ncid,'gridfunc',nf90_float,(/n1_id,n2_id,n3_id,spin_id/),gridfunc_id)
        call check(iret)
        if (present(description)) then
@@ -185,6 +210,14 @@ call check( nf90_create(filename,NF90_CLOBBER,ncid))
        call check(iret)
 !
        iret = nf90_put_var(ncid, cell_id, gf%cell, start = (/1, 1 /), count = (/3, 3/) )
+       call check(iret)
+       iret = nf90_put_var(ncid, origin_id, gf%origin, start = [1], count = [3] )
+       call check(iret)
+       int_from_bool(:) = 0
+       do i = 1, 3
+          if (gf%is_periodic(i)) int_from_bool(i) = 1
+       enddo
+       iret = nf90_put_var(ncid, is_periodic_id, int_from_bool, start = [1], count = [3] )
        call check(iret)
 
       iret = nf90_put_var(ncid, gridfunc_id, gf%val, start = (/1, 1, 1, 1 /), &
@@ -207,11 +240,13 @@ type(gridfunc_t), intent(inout)    :: gf
 integer  :: ncid 
 integer  :: xyz_id, step_id, abc_id, spin_id
 integer  :: cell_id, n1_id, n2_id, n3_id, gridfunc_id
+integer  :: origin_id, is_periodic_id
 
 integer   ::    nspin  ! Number of spins 
-integer   ::    n(3)
+integer   ::    n(3), int_from_bool(3), i
 integer   ::   ispin, iostat, ix, iy, iz, iret
 
+logical   ::   has_origin, has_is_periodic
 real(dp)  ::    cell(3,3)
 !-----------------------------------------------------
 
@@ -229,12 +264,34 @@ call check( nf90_open(filename,NF90_NOWRITE,ncid))
        call check( nf90_inquire_dimension(ncid, dimid=n3_id, len=n(3)) )
 
        call check( nf90_inq_varid(ncid, "cell", cell_id) )
+
+       iret =  nf90_inq_varid(ncid, "origin", origin_id)
+       has_origin = (iret == nf90_noerr)
+       iret =  nf90_inq_varid(ncid, "is_periodic", is_periodic_id)
+       has_is_periodic = (iret == nf90_noerr)
+          
        call check( nf90_inq_varid(ncid, "gridfunc", gridfunc_id) )
 
        iret = nf90_get_var(ncid, cell_id, cell, start = (/1, 1 /), &
-                        count = (/3, 3/) )
-       call check(iret)
+            count = (/3, 3/) )
 
+       if (has_origin) then
+          iret = nf90_get_var(ncid, origin_id, gf%origin, start = [1], count = [3] )
+          call check(iret)
+       else
+          gf%origin(:) = 0.0_dp
+       endif
+       
+       if (has_is_periodic) then
+          iret = nf90_get_var(ncid, is_periodic_id, int_from_bool, start = [1], count = [3] )
+          call check(iret)
+          do i = 1, 3
+             gf%is_periodic(i) = (int_from_bool(i) == 1)
+          enddo
+       else
+          gf%is_periodic(:) = .true.
+       endif
+       
    gf%n(:) = n(:)
    gf%cell = cell
 
@@ -275,5 +332,21 @@ end subroutine check
    write(0,"(a)") str
    stop
  end subroutine die
+
+ function monoclinic_z(cell)
+   real(dp), intent(in) :: cell(3,3)
+   logical monoclinic_z
+
+   real(dp), parameter :: tol = 1.0e-8_dp
+
+   ! Check that the 'c' vector is along z, and 'a' and 'b' in the XY plane
+
+   monoclinic_z =  (abs(CELL(3,1)) < tol   &
+               .and. abs(CELL(3,2)) < tol  &
+               .and. abs(CELL(1,3)) < tol  &
+               .and. abs(CELL(2,3)) < tol )
+
+   end function monoclinic_z
+
  end module m_gridfunc
 

@@ -345,7 +345,11 @@ C Initialize neighbour subroutine --------------------------------------
       ! write the correct range of the z axis: temporarily override ucell
       USAVE = UCELL(3,3)
       UCELL(3,3) = abs(ZMAX-ZMIN)
-      WRITE(grid_u) UCELL, 0.0_dp, 0.0_dp, ZMIN   ! Extra info for origin
+      
+      WRITE(grid_u) UCELL,
+     $              [0.0_dp, 0.0_dp, ZMIN], ! Extra info for origin
+     $              [.true.,.true.,.false.] ! Periodic ?
+
       ! restore ucell
       UCELL(3,3)=USAVE
       WRITE(grid_u) NPX, NPY, NPZ, 1     ! nspin=1 in file. Fix this
