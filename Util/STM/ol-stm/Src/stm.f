@@ -30,6 +30,8 @@ C **********************************************************************
 
       IMPLICIT NONE
 
+      real(dp), parameter :: Ang    = 1.0_dp / 0.529177_dp
+      
       INTEGER, INTENT(IN) ::
      .  NA, NO, NO_U, NPX, NPY, NPZ, IUNITCD,
      .  nspin_blocks, MAXNA, NK,
@@ -82,8 +84,8 @@ C **********************************************************************
 
       INTEGER
      .  IA, ISEL, NNA, I, J, IN, IAT1, IO, IUO, IAVEC1, 
-     .  IS1, IPHI1, NX, NY, NZ, IWF, IK, ISPIN, UNITRE1,
-     .  IX, IY, IZ, NSX, NSY, NAU
+     .  IS1, IPHI1, NX, NY, NZ, IWF, IK, ISPIN, grid_u, str_u,
+     .  IX, IY, IZ, NSX, NSY, NAU, iv
 
       REAL(DP)
      .  DOT, RMAX, XPO(3), RMAX2, XVEC1(3),
@@ -149,41 +151,31 @@ C Initialize neighbour subroutine --------------------------------------
       ISEL = 0
       RMAX = RMAXO
       NNA  = MAXNA
+
       IF (ALLOCATED(JNA)) THEN
-        CALL MEMORY('D','I',SIZE(JNA),'stm')
         DEALLOCATE(JNA)
       ENDIF
       IF (ALLOCATED(R2IJ)) THEN
-        CALL MEMORY('D','D',SIZE(R2IJ),'stm')
         DEALLOCATE(R2IJ)
       ENDIF
       IF (ALLOCATED(XIJ)) THEN
-        CALL MEMORY('D','D',SIZE(XIJ),'stm')
         DEALLOCATE(XIJ)
       ENDIF
 
       ALLOCATE(JNA(MAXNA))
-      CALL MEMORY('A','I',MAXNA,'stm')
       ALLOCATE(R2IJ(MAXNA))
-      CALL MEMORY('A','D',MAXNA,'stm')
       ALLOCATE(XIJ(3,MAXNA))
-      CALL MEMORY('A','D',3*MAXNA,'stm')
 
       ALLOCATE(CW(0:NPX-1,0:NPY-1))
-      CALL MEMORY('A','Z',NPX*NPY,'stm')
       ALLOCATE(CWE(0:NPX-1,0:NPY-1,0:NPZ-1))
-      CALL MEMORY('A','Z',NPX*NPY*NPZ,'stm')
       ALLOCATE(RHO(0:NPX-1,0:NPY-1,0:NPZ-1))
-      CALL MEMORY('A','D',NPX*NPY*NPZ,'stm')
 
       FIRST = .TRUE.
       DO I = 1,3
         XPO(I) = 0.D0
       ENDDO
-
       CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
      .             NNA, JNA, XIJ, R2IJ, FIRST )
- 
       FIRST = .FALSE.
       RMAX2 =  RMAXO**2
 
@@ -198,7 +190,8 @@ C Initialize neighbour subroutine --------------------------------------
 ! Initialize density
 
       RHO = 0
-C Loop over k-points and wavefunctions to include in the STM image
+
+!     Loop over k-points and wavefunctions to include in the STM image
 
       allocate(wk(nk))
       DO IK  = 1, NK
@@ -226,7 +219,8 @@ C Loop over k-points and wavefunctions to include in the STM image
             endif
             read(wf_unit) ener
 
-C Check that we have a bound state (E below vacuum level), in the chosen window
+            ! Check that we have a bound state (E below vacuum level),
+            ! in the chosen window
 
             IF (ENER .LT. EMIN .OR. ENER .GT. EMAX) then
                read(wf_unit)  ! skip wfn info
@@ -255,8 +249,8 @@ C Check that we have a bound state (E below vacuum level), in the chosen window
                endif
             endif
                
-! Loop over all points in real space -----------------------------------
-! The last point (zmax) is not included
+             ! Loop over all points in real space
+             ! The last point (zmax) is not included
             
              DO NZ = 1,NPZ
 
@@ -330,62 +324,10 @@ C Check that we have a bound state (E below vacuum level), in the chosen window
       if ((nspin_blocks == 1) .and. (.not. non_coll))  then
          rho = 2.0_dp * rho
       endif
-         
-
-      call io_assign(unitre1)
-      SNAME = FDF_STRING('SystemLabel','siesta')
-      stm_label = FDF_STRING('stm-label','')
-      if (stm_label == '') then
-         FNAME = trim(SNAME) // '.STM.cube'
-      else
-         FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.cube'
-      endif
-      
-        WRITE(6,*)
-        WRITE(6,*) 'stm: writing cube format file ',FNAME
-        WRITE(6,*)
-        WRITE(6,*) '     ',NSCX,' x ',NSCY,' cells in cube plot'
-
-C Calculate number of atoms in unit cell
-      VC = VOLCEL(CELL)
-      VU = VOLCEL(UCELL)
-      NAU = NA / IDNINT(VC/VU)
-
-      open(unitre1,file=FNAME,form='formatted',status='unknown')
-      WRITE(UNITRE1,*) 'STM'
-      WRITE(UNITRE1,*) 'STM'
-      !! VOXEL sizes are wrong (should divide by NPX, etc)
-      WRITE(UNITRE1,'(i5,4f12.6)') NAU*NSCX*NSCY, 0.0, 0.0, ZMIN
-      WRITE(UNITRE1,'(i5,4f12.6)') NPX*NSCX,(UCELL(1,J)/(NPX-1),J=1,3)
-      WRITE(UNITRE1,'(i5,4f12.6)') NPY*NSCY,(UCELL(2,J)/(NPY-1),J=1,3)
-      WRITE(UNITRE1,'(i5,4f12.6)') NPZ,0.0,0.0,((ZMAX-ZMIN)/(NPZ-1))
-
-
-      DO NSX = 1,NSCX
-        DO NSY = 1,NSCY
-           DO IA = 1, NAU
-              WRITE(UNITRE1,'(i5,4f12.6)') ATOMIC_NUMBER(ISA(IA)),0.0, 
-     .     (XA(IX,IA)+(NSX-1)*UCELL(IX,1)+(NSY-1)*UCELL(IX,2) ,IX=1,3)
-           ENDDO
-        ENDDO
-      ENDDO
-
-      DO NSX = 1,NSCX
-         DO NX=0,NPX-1
-            DO NSY = 1,NSCY
-               DO NY=0,NPY-1
-                  WRITE(UNITRE1,'(6e13.5)')
-     .                 (RHO(NX,NY,NZ),NZ=0,NPZ-1)
-               ENDDO
-            ENDDO
-         ENDDO
-      ENDDO
-
-      call io_close(unitre1)
 
 ! Write charge density in Siesta format
 
-      call io_assign(unitre1)
+      call io_assign(grid_u)
       SNAME = FDF_STRING('SystemLabel','siesta')
       stm_label = FDF_STRING('stm-label','')
       if (stm_label == '') then
@@ -397,35 +339,36 @@ C Calculate number of atoms in unit cell
       WRITE(6,*)
       WRITE(6,*) 'stm: writing SIESTA format file ', FNAME
       WRITE(6,*)
-      open(unitre1,file=FNAME,form='unformatted',
+
+      open(grid_u,file=FNAME,form='unformatted',
      .         status='unknown')
-C write the correct range of the z axis: temporarily override ucell
+      ! write the correct range of the z axis: temporarily override ucell
       USAVE = UCELL(3,3)
       UCELL(3,3) = abs(ZMAX-ZMIN)
-      WRITE(unitre1) UCELL
-C restore ucell
+      WRITE(grid_u) UCELL, 0.0_dp, 0.0_dp, ZMIN   ! Extra info for origin
+      ! restore ucell
       UCELL(3,3)=USAVE
-      WRITE(unitre1) NPX, NPY, NPZ, 1
+      WRITE(grid_u) NPX, NPY, NPZ, 1     ! nspin=1 in file. Fix this
 
       DO IZ=0,NPZ-1
         DO IY=0,NPY-1
-          WRITE(unitre1) (REAL(RHO(IX,IY,IZ)),IX=0,NPX-1)
+          WRITE(grid_u) (REAL(RHO(IX,IY,IZ)),IX=0,NPX-1)
         ENDDO
       ENDDO
 
-      call io_close(unitre1)
+      call io_close(grid_u)
 
-
-
-C CLOSE ALLOCATABLE ARRAYS
-
-
+      ! Write a dummy STRUCT file for use with the 'grid to cube' converter
+      call io_assign(str_u)
+      open(str_u,file=trim(SNAME)//'.CELL_STRUCT',
+     $     form='formatted', status='unknown')
+      write(str_u,'(3x,3f18.9)') ((cell(ix,iv)/Ang,ix=1,3),iv=1,3)
+      write(str_u,*) 0  ! number of atoms
+      close(str_u)
+      
       DEALLOCATE(RHO)
-      CALL MEMORY('D','D',NPX*NPY*NPZ,'stm')
       DEALLOCATE(CWE)
-      CALL MEMORY('D','Z',NPX*NPY*NPZ,'stm')
       DEALLOCATE(CW)
-      CALL MEMORY('D','Z',NPX*NPY,'stm')
 
       CONTAINS
 
@@ -512,16 +455,13 @@ C     Loop over Non-zero orbitals ------------------------------------------
       real(dp), parameter :: tol = 1.0e-8_dp
 
       ! This is too naive. It should be checking that a_3 is orthogonal
-      ! to both a_1 and a_2
+      ! to both a_1 and a_2, but it is fine for this use case.
       
       monoclinic =  (abs(CELL(3,1)) < tol
      $         .and. abs(CELL(3,2)) < tol
      $         .and. abs(CELL(1,3)) < tol
      $         .and. abs(CELL(2,3)) < tol )
 
-      print *, "monoclinic: ", monoclinic
-      print *, cell
-
-         end function monoclinic
+      end function monoclinic
 
       END
