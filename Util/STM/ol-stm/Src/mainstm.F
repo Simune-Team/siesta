@@ -164,7 +164,8 @@ C Call routine to calculate the value of the potential at vacuum
 
 C Call routine to compute STM image
 
-        CALL STM   ( NA_S, NO_S, NO_U, MAXNA, nspin_blocks, non_coll,
+        CALL STM   ( NA_S, NO_S, NO_U, MAXNA, nspin,
+     $               nspin_blocks, non_coll,
      .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
      .               wf_unit, NK, gamma,
      .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,

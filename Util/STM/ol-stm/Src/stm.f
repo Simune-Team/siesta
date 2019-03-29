@@ -6,7 +6,7 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 
-      SUBROUTINE STM( NA, NO, NO_U, MAXNA, nspin_blocks, non_coll,
+      SUBROUTINE STM( NA, NO, NO_U, MAXNA, nspin,nspin_blocks,non_coll,
      .                ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
      .                wf_unit, NK, gamma_wfsx,
      .                ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
@@ -34,7 +34,7 @@ C **********************************************************************
       
       INTEGER, INTENT(IN) ::
      .  NA, NO, NO_U, NPX, NPY, NPZ, IUNITCD,
-     .  nspin_blocks, MAXNA, NK,
+     .  nspin, nspin_blocks, MAXNA, NK,
      .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA),
      .  NSCX, NSCY
       integer, intent(in) :: wf_unit
@@ -85,7 +85,7 @@ C **********************************************************************
       INTEGER
      .  IA, ISEL, NNA, I, J, IN, IAT1, IO, IUO, IAVEC1, 
      .  IS1, IPHI1, NX, NY, NZ, IWF, IK, ISPIN, grid_u, str_u,
-     .  IX, IY, IZ, NSX, NSY, NAU, iv
+     .  IX, IY, IZ, NSX, NSY, NAU, iv, is
 
       REAL(DP)
      .  DOT, RMAX, XPO(3), RMAX2, XVEC1(3),
@@ -94,18 +94,21 @@ C **********************************************************************
 
       real(dp) :: total_weight, k(3)
       
-      REAL(DP), ALLOCATABLE :: RHO(:,:,:)
+      REAL(DP), ALLOCATABLE :: RHO(:,:,:,:)
       REAL(SP), ALLOCATABLE :: wf_single(:,:)
       COMPLEX(DP), ALLOCATABLE :: wf(:,:)
       REAL(DP), ALLOCATABLE :: wk(:)
 
-      COMPLEX(DP)  CWAVE, EXPPHI, EXMIKR
-      COMPLEX(DP), ALLOCATABLE :: CW(:,:), CWE(:,:,:)
+      COMPLEX(DP)  EXPPHI, EXMIKR, d11, d12, d21, d22
+
+      ! The last dimension of these is the number of spinor components
+      ! 1 for collinear, and 2 for NC/SOC
+      COMPLEX(DP), ALLOCATABLE :: CW(:,:,:), CWE(:,:,:,:), CWAVE(:)
  
       LOGICAL FIRST
-      integer :: idummy, number_of_wfns
+      integer :: idummy, number_of_wfns, spinor_comps
 
-      CHARACTER  SNAME*40, FNAME*60, stm_label*60
+      CHARACTER ::  SNAME*40, FNAME*256, stm_label*60
 
       EXTERNAL ::  NEIGHB, IO_ASSIGN, IO_CLOSE
 
@@ -136,7 +139,9 @@ C **********************************************************************
       if (non_coll) then
         allocate(wf_single(4,1:no_u))
         allocate(wf(1:no_u,2))
+        spinor_comps = 2
       else
+        spinor_comps = 1
         if (gamma_wfsx) then
            allocate(wf_single(1,1:no_u))
            allocate(wf(1:no_u,1))
@@ -166,9 +171,10 @@ C Initialize neighbour subroutine --------------------------------------
       ALLOCATE(R2IJ(MAXNA))
       ALLOCATE(XIJ(3,MAXNA))
 
-      ALLOCATE(CW(0:NPX-1,0:NPY-1))
-      ALLOCATE(CWE(0:NPX-1,0:NPY-1,0:NPZ-1))
-      ALLOCATE(RHO(0:NPX-1,0:NPY-1,0:NPZ-1))
+      allocate(CWAVE(spinor_comps))
+      ALLOCATE(CW(0:NPX-1,0:NPY-1,spinor_comps))
+      ALLOCATE(CWE(0:NPX-1,0:NPY-1,0:NPZ-1,spinor_comps))
+      ALLOCATE(RHO(0:NPX-1,0:NPY-1,0:NPZ-1,nspin))
 
       FIRST = .TRUE.
       DO I = 1,3
@@ -253,30 +259,52 @@ C Initialize neighbour subroutine --------------------------------------
              ! The last point (zmax) is now included by making stepz=(Zmax-Zmin)/(NPZ-1)
              ! This forces the definition of a slightly larger c vector below.
              ! In this way, the last plane recorded in the file will correspond to Z=Zmax
-             DO NZ = 1,NPZ
+             DO NZ = 0, NPZ-1
 
-                XPO(3) = ZMIN + (NZ-1)*(ZMAX-ZMIN)/(NPZ-1)
+                XPO(3) = ZMIN + NZ*(ZMAX-ZMIN)/(NPZ-1)
 
                 if ( XPO(3) < Zref ) then
                   ! Initialize density to unextrapolated density
           
                    WRITE(6,"(a,f10.4)") 'stm: Using plain LDOS for z =',
      $                                  xpo(3)
-                   DO NY = 1,NPY
-                      DO NX = 1,NPX
+                   DO NY = 0,NPY-1
+                      DO NX = 0,NPX-1
 
                          ! Note that the (periodic) X and Y directions
                          ! are treated as usual, with smaller step
-                         XPO(1) = (NX-1)*UCELL(1,1)/NPX +
-     $                            (NY-1)*UCELL(1,2)/NPY 
-                         XPO(2) = (NX-1)*UCELL(2,1)/NPX +
-     $                            (NY-1)*UCELL(2,2)/NPY 
+                         XPO(1) = NX*UCELL(1,1)/NPX +
+     $                            NY*UCELL(1,2)/NPY 
+                         XPO(2) = NX*UCELL(2,1)/NPX +
+     $                            NY*UCELL(2,2)/NPY 
 
-                         call get_cwave(wf(:,1))
+                         call get_cwave(wf(:,1:spinor_comps))
 
-                         RHO(NX-1,NY-1,NZ-1)  = RHO (NX-1,NY-1,NZ-1)    
-     &                    + DREAL(CWAVE*DCONJG(CWAVE))* ARMUNI * WK(IK)
+                         ! Now for the various cases
+                         if (nspin <= 2) then
+                            RHO(NX,NY,NZ,ispin)  = RHO (NX,NY,NZ,ispin)    
+     &                           + REAL(CWAVE(1)*CONJG(CWAVE(1)), dp)
+     $                             * ARMUNI * WK(IK)
+                         else   ! non-collinear
+                            ! CHECK THIS
+                            d11 = cwave(1) * conjg(cwave(1))
+                            d12 = cwave(1) * conjg(cwave(2))
+                            d21 = cwave(2) * conjg(cwave(1))
+                            d22 = cwave(2) * conjg(cwave(2))
 
+                            ! Hermitify?
+                            D12 = 0.5_dp * (D12 + conjg(D21))
+                            
+                            ! Recall: dm(:,3) = real(d12);  dm(:,4) = -aimag(d12)
+                            rho(nx,ny,nz,1) = rho(nx,ny,nz,1) 
+     $                                 + real(d11,dp) * armuni * wk(ik)
+                            rho(nx,ny,nz,2) = rho(nx,ny,nz,2) 
+     $                                 + real(d22,dp) * armuni * wk(ik)
+                            rho(nx,ny,nz,3) = rho(nx,ny,nz,3)
+     $                                 + real(d12,dp) * armuni * wk(ik)
+                            rho(nx,ny,nz,4) = rho(nx,ny,nz,4)
+     $                                 - aimag(d12) * armuni * wk(ik)
+                         endif
                       ENDDO  
                    ENDDO
 
@@ -286,28 +314,65 @@ C Initialize neighbour subroutine --------------------------------------
                    ! Compute value of the wfn at this reference plane
                    WRITE(6,"(a,i4)") 'stm: Extrapolating from nz:', nz
 
-                   DO NY = 1,NPY
-                      DO NX = 1,NPX
+                   DO NY = 0,NPY-1
+                      DO NX = 0,NPX-1
 
-                         XPO(1) = (NX-1)*UCELL(1,1)/NPX +
-     $                            (NY-1)*UCELL(1,2)/NPY 
-                         XPO(2) = (NX-1)*UCELL(2,1)/NPX +
-     $                            (NY-1)*UCELL(2,2)/NPY 
+                         XPO(1) = NX*UCELL(1,1)/NPX +
+     $                            NY*UCELL(1,2)/NPY 
+                         XPO(2) = NX*UCELL(2,1)/NPX +
+     $                            NY*UCELL(2,2)/NPY 
                          XPO(3) = ZREF
 
-                         call get_cwave(wf(:,1))
-                         CW(NX-1,NY-1)  = CWAVE 
+                         call get_cwave(wf(:,1:spinor_comps))
+                         CW(NX,NY,1:spinor_comps) =
+     $                                      CWAVE(1:spinor_comps) 
 
                       ENDDO  
                    ENDDO  
 
-                   CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF,ZMIN,ZMAX,UCELL,V0,
-     .                     CW,ENER,K,CWE)
+                   ! This is mildly wasteful in terms of initialization
+                   ! of FFTW, but it will do for now
+                   ! We assume that both spinor components are propagated
+                   ! in the same way
+                   do is = 1, spinor_comps
+                      CALL EXTRAPOLATE(NPX,NPY,NPZ,ZREF,ZMIN,ZMAX,
+     $                         UCELL,V0,
+     .                         CW(0,0,is),ENER,K,CWE(0,0,0,is))
+                   enddo
+                   
+                   ! Now for the various cases
                    ! Be careful not to overwrite the z<zref parts...
-                   RHO(:,:,NZ-1:) = RHO(:,:,NZ-1:) +
-     $                         DREAL(CWE(:,:,NZ-1:)*
-     $                               DCONJG(CWE(:,:,NZ-1:)))
-     $                         * WK(IK) * ARMUNI
+                   if (nspin <= 2) then
+                      RHO(:,:,NZ:,ispin)  = RHO (:,:,NZ:,ispin)    
+     &                     + REAL(CWE(:,:,NZ:,1)*
+     $                     CONJG(CWE(:,:,NZ:,1)), dp)
+     $                     * ARMUNI * WK(IK)
+                   else         ! non-collinear
+
+                      do ny=0,npy-1
+                         do nx=0,npx-1
+                            do iz = nz, npz-1
+                         d11 = cwe(nx,ny,iz,1) * conjg(cwe(nx,ny,iz,1))
+                         d12 = cwe(nx,ny,iz,1) * conjg(cwe(nx,ny,iz,2))
+                         d21 = cwe(nx,ny,iz,2) * conjg(cwe(nx,ny,iz,1))
+                         d22 = cwe(nx,ny,iz,2) * conjg(cwe(nx,ny,iz,2))
+
+                         !     Hermitify?
+                         D12 = 0.5_dp * (D12 + conjg(D21))
+                            
+                      ! Recall: dm(:,3) = real(d12);  dm(:,4) = -aimag(d12)
+                         rho(nx,ny,iz,1) = rho(nx,ny,iz,1) 
+     $                                 + real(d11,dp) * armuni * wk(ik)
+                         rho(nx,ny,iz,2) = rho(nx,ny,iz,2) 
+     $                                 + real(d22,dp) * armuni * wk(ik)
+                         rho(nx,ny,iz,3) = rho(nx,ny,iz,3)
+     $                                 + real(d12,dp) * armuni * wk(ik)
+                         rho(nx,ny,iz,4) = rho(nx,ny,iz,4)
+     $                                - aimag(d12) * armuni * wk(ik)
+                        enddo
+                      enddo
+                    enddo
+                   endif  ! collinear or not
 
                    ! And we are done with the z planes
                    EXIT  ! loop over NZ
@@ -316,7 +381,7 @@ C Initialize neighbour subroutine --------------------------------------
 
              ENDDO       ! NZ
           ENDDO     ! ispin = 1, nspin_blocks
-                    ! Note that values for different spins are now accumulated
+                    
        ENDDO     ! wfn number
       ENDDO      ! k-point
 
@@ -355,14 +420,15 @@ C Initialize neighbour subroutine --------------------------------------
      $              [0.0_dp, 0.0_dp, ZMIN], ! Extra info for origin
      $              [.true.,.true.,.false.] ! Periodic ?
 
-      WRITE(grid_u) NPX, NPY, NPZ, 1     ! nspin=1 in file. Fix this
+      WRITE(grid_u) NPX, NPY, NPZ, nspin 
 
-      DO IZ=0,NPZ-1
-        DO IY=0,NPY-1
-          WRITE(grid_u) (REAL(RHO(IX,IY,IZ)),IX=0,NPX-1)
-        ENDDO
-      ENDDO
-
+      do ispin = 1, nspin
+         DO IZ=0,NPZ-1
+            DO IY=0,NPY-1
+               WRITE(grid_u) (REAL(RHO(IX,IY,IZ,ispin),sp),IX=0,NPX-1)
+            ENDDO
+         ENDDO
+      enddo
       call io_close(grid_u)
 
       ! Write a dummy STRUCT file for use with the 'grid to cube' converter
@@ -379,11 +445,12 @@ C Initialize neighbour subroutine --------------------------------------
       DEALLOCATE(RHO)
       DEALLOCATE(CWE)
       DEALLOCATE(CW)
+      deallocate(cwave)
 
       CONTAINS
 
       subroutine get_cwave(psi)
-      complex(dp), intent(in) :: psi(:)
+      complex(dp), intent(in) :: psi(:,:)  ! Can deal with spinors
       
       ! Inherits all data by host association
 
@@ -451,7 +518,8 @@ C     Loop over Non-zero orbitals ------------------------------------------
             IUO   = INDXUO(IO)
             CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
 
-            CWAVE = CWAVE + PHIMU * psi(iuo) * EXPPHI * EXMIKR
+            ! Note implicit loop over spinor components
+            CWAVE(:) = CWAVE(:) + PHIMU * psi(iuo,:) * EXPPHI * EXMIKR
 
          ENDDO
       ENDDO
