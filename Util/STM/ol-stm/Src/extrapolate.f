@@ -46,28 +46,18 @@ C ***********************************************************************
 C----------------------------------------------------------
 C INTERNAL VARIABLES
 
-      INTEGER
-     .  NX, NY, NZ, NX1, NY1, IA1, IA2
+      INTEGER ::  NX, NY, NZ, NX1, NY1, IA1, IA2
 
-      REAL(DP)
-     .  DECAY, GX, GY, Z, VOLCEL, EAU, V0AU
+      REAL(DP) :: DECAY, GX, GY, Z, VOLCEL, EAU, V0AU
 
       REAL(DP), SAVE ::
      .  STEPZ, A1(3), A2(3), A3(3), VOL, VEC1(3), VEC2(3)
 
-      COMPLEX(DP)
-     .  EXPSI(0:NPX-1,0:NPY-1)
+      COMPLEX(DP) :: EXPSI(0:NPX-1,0:NPY-1)
 
-      LOGICAL, SAVE :: FIRST
+      LOGICAL, SAVE :: FIRST = .true.
 
-      EXTERNAL 
-     .  VOLCEL
-
-!      EXTERNAL
-!     .  dfftw_plan_dft_2d, dfftw_execute, dfftw_destroy_plan
-
-      DATA FIRST /.TRUE./
-
+      EXTERNAL  VOLCEL
 
 C CHANGE UNITS OF ENERGY TO A.U.
 
@@ -83,8 +73,6 @@ C CHECK THAT STATE IS BOUND (E BELOW VACUUM LEVEL)
 
 C INITIALIZE VARIABLES ............
 
-      IF (FIRST) THEN
-
 ! the only problem is the decay
 ! which is calculated now by an ABS
 ! so in principle this can be commented out
@@ -99,7 +87,8 @@ C INITIALIZE VARIABLES ............
 !         STOP
 !       ENDIF
 
-!! Note that this stepz is different from that in stm.f !!
+      IF (FIRST) THEN
+
         IF (NPZ .NE. 1) THEN
           STEPZ = (ZMAX - ZMIN) / (NPZ - 1)
         ELSE 
@@ -133,7 +122,9 @@ C LOOP OVER SIMULATION HEIGHTS ........
       DO NZ = 1, NPZ
         Z = ZMIN + (NZ-1)*STEPZ
 
-        IF (Z < ZREF) CYCLE
+        ! NOTE: No "inward propagation...", despite what Nicolas says above
+        ! Points with Z < ZREF are computed from un-propagated wfs
+        IF (Z < ZREF) CYCLE  
         
 C LOOP OVER POINTS IN XY PLANE ...
         DO NY = 1, NPY
@@ -149,11 +140,11 @@ C G COMPONENTS
             GY = IA1*VEC1(2) + IA2*VEC2(2)
 
 C CALCULATE EXPONENT OF DECAY
-           DECAY = DSQRT( 2.0D0*(V0AU-EAU) + 
+           DECAY = SQRT( 2.0D0*(V0AU-EAU) + 
      .                    (GX+K(1))**2 + (GY+K(2))**2)
 
 C EXTEND WAVE FUNCTION TO CURRENT HEIGHT
-            EXPSI(NX1,NY1) = CW(NX1,NY1) * DEXP(-DECAY*ABS(Z-ZREF)) / 
+            EXPSI(NX1,NY1) = CW(NX1,NY1) * EXP(-DECAY*ABS(Z-ZREF)) / 
      .                       (NPX*NPY)
           ENDDO
         ENDDO        !  LOOP XY

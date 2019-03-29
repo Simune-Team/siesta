@@ -250,11 +250,12 @@ C Initialize neighbour subroutine --------------------------------------
             endif
                
              ! Loop over all points in real space
-             ! The last point (zmax) is not included
-            
+             ! The last point (zmax) is now included by making stepz=(Zmax-Zmin)/(NPZ-1)
+             ! This forces the definition of a slightly larger c vector below.
+             ! In this way, the last plane recorded in the file will correspond to Z=Zmax
              DO NZ = 1,NPZ
 
-                XPO(3) = ZMIN + (NZ-1)*(ZMAX-ZMIN)/NPZ
+                XPO(3) = ZMIN + (NZ-1)*(ZMAX-ZMIN)/(NPZ-1)
 
                 if ( XPO(3) < Zref ) then
                   ! Initialize density to unextrapolated density
@@ -264,6 +265,8 @@ C Initialize neighbour subroutine --------------------------------------
                    DO NY = 1,NPY
                       DO NX = 1,NPX
 
+                         ! Note that the (periodic) X and Y directions
+                         ! are treated as usual, with smaller step
                          XPO(1) = (NX-1)*UCELL(1,1)/NPX +
      $                            (NY-1)*UCELL(1,2)/NPY 
                          XPO(2) = (NX-1)*UCELL(2,1)/NPX +
@@ -344,14 +347,14 @@ C Initialize neighbour subroutine --------------------------------------
      .         status='unknown')
       ! write the correct range of the z axis: temporarily override ucell
       USAVE = UCELL(3,3)
-      UCELL(3,3) = abs(ZMAX-ZMIN)
+      ! Make the cell slightly taller, so that the last (NPZ-1) plane corresponds
+      ! to Z=Zmax
+      UCELL(3,3) = NPZ * abs(ZMAX-ZMIN) / (NPZ-1)
       
       WRITE(grid_u) UCELL,
      $              [0.0_dp, 0.0_dp, ZMIN], ! Extra info for origin
      $              [.true.,.true.,.false.] ! Periodic ?
 
-      ! restore ucell
-      UCELL(3,3)=USAVE
       WRITE(grid_u) NPX, NPY, NPZ, 1     ! nspin=1 in file. Fix this
 
       DO IZ=0,NPZ-1
@@ -366,10 +369,13 @@ C Initialize neighbour subroutine --------------------------------------
       call io_assign(str_u)
       open(str_u,file=trim(SNAME)//'.CELL_STRUCT',
      $     form='formatted', status='unknown')
-      write(str_u,'(3x,3f18.9)') ((cell(ix,iv)/Ang,ix=1,3),iv=1,3)
+      write(str_u,'(3x,3f18.9)') ((UCELL(ix,iv)/Ang,ix=1,3),iv=1,3)
       write(str_u,*) 0  ! number of atoms
       close(str_u)
       
+      ! restore ucell
+      UCELL(3,3)=USAVE
+
       DEALLOCATE(RHO)
       DEALLOCATE(CWE)
       DEALLOCATE(CW)
