@@ -952,7 +952,6 @@ planed.o: precision.o
 ranger.o: precision.o
 readpla.o: precision.o
 readsts.o: precision.o
-readwaves.o: precision.o
 readwavesx.o: precision.o
 redata_denchar.o: precision.o
 rhoofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
