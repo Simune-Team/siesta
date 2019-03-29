@@ -86,14 +86,13 @@ SYSOBJ=$(SYS).o
 
 # Note that machine-specific files are now in top Src directory.
 
-OBJS_STM = atompla.o  \
-        bessph.o chkdim.o dismin.o \
+OBJS_STM = bessph.o chkdim.o dismin.o \
 	dot.o fftw3_mymod.o extrapolate.o \
-        io.o iodm.o length.o \
-        mainstm.o matvect.o memory.o \
+        io.o iodm.o \
+        mainstm.o memory.o \
 	neighb.o pxf.o \
 	radfft.o ranger.o \
-        readstm.o m_wfsx.o \
+        readstm.o \
         redata.o  reinitstm.o stm.o \
 	vacpot.o volcel.o handlers.o local_sys.o
 
@@ -956,7 +955,7 @@ zmatrix.o: alloc.o local_sys.o m_cell.o parallel.o precision.o siesta_geom.o
 zmatrix.o: units.o
 atompla.o: local_sys.o precision.o
 extrapolate.o: fftw3_mymod.o precision.o
-mainstm.o: basis_io.o listsc.o m_wfsx.o parallel.o precision.o
+mainstm.o: basis_io.o listsc.o parallel.o precision.o
 ranger.o: precision.o
 stm.o: atmfuncs.o chemical.o precision.o
 vacpot.o: precision.o
