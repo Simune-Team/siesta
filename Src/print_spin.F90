@@ -3,6 +3,7 @@ subroutine print_spin(qspin)
   ! Prints spin in output and CML files
   !
   use m_spin,          only: nspin  ! This is spin%grid (1, 2, or 4)
+  use m_spin,          only: spin
   use atomlist,        only: no_l
   use sparse_matrices, only: listhptr, numh
   use sparse_matrices, only: S, Dscf   ! Dscf could have 1, 2, 4, or 8 components
