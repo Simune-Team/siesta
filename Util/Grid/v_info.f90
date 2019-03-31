@@ -18,7 +18,7 @@ program v_info
   call read_gridfunc(fname,gf)
   call get_planar_average(gf,3,average)
   if (monoclinic_z(gf%cell)) then
-     print *, " z (Ang)     Value "
+     print *, "#   z (Ang)     Value "
      do i = 1, size(average,dim=1)
         z_coord = gf%origin(3) + (i-1) * gf%cell(3,3) / gf%n(3)
         print *, z_coord/Ang, average(i,1)

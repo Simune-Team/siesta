@@ -185,8 +185,6 @@ C Initialize neighbour subroutine --------------------------------------
       FIRST = .FALSE.
       RMAX2 =  RMAXO**2
 
-      IF (non_coll)  STOP 'stm: Not ready for NC/SOC yet'
-
       IF (.not. monoclinic(ucell)) then
         WRITE(6,*) 'error: the code only accepts monoclinic cells'
         WRITE(6,*) '       with Z as the vertical axis'
