@@ -14,12 +14,12 @@
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
-      use m_new_matel,   only : new_matel
+      !use m_new_matel,   only : new_matel
+      use matel_mod,     only : get_matel_s
       use m_iodm_old,    only : write_dm
       use m_matio,       only : write_mat
       use atomlist, only: no_l
       use fdf
-
       implicit none
 
       public :: overlap
@@ -66,6 +66,7 @@ C Internal variables ......................................................
       integer               :: ia, ind, io, ioa, is,  iio, j, ja, jn,
      &                         jo, joa, js, jua, nnia, ig, jg
       real(dp)              :: grSij(3) , rij, Sij
+      !real(dp)              :: grSij2(3), Sij2
       real(dp),     pointer :: Si(:)
       external  timer
 
@@ -103,8 +104,14 @@ C           Valid orbital
                 !
                 jg = orb_gindex(js,joa)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call new_MATEL( 'S', ig, jg, xij(1:3,jn),
+!                  call new_MATEL( 'S', ig, jg, xij(1:3,jn),
+!     &                        Sij2, grSij2 )
+                  call get_matel_s( ig, jg, xij(1:3,jn),
      &                        Sij, grSij )
+!                  if (ABS(Sij-Sij2)>1.0e-8_dp) then
+!                    write(*,*) 'OVERLAP Check this', Sij, Sij-Sij2
+!                    call die('bye bye')
+!                  endif
                   Si(jo) = Si(jo) + Sij
                 endif
               enddo
@@ -139,7 +146,6 @@ C     Deallocate local memory
      $               userfile="SMATBS",compatible=.false.)
          call timer("fastWriteMat",2)
       endif
-
 
 C     Finish timer
       call timer( 'overlap', 2 )

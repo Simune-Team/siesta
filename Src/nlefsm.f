@@ -84,7 +84,8 @@ C
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
-      use m_new_matel,   only : new_matel
+      !use m_new_matel,   only : new_matel
+      use matel_mod,     only : get_matel_s
 
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
@@ -123,6 +124,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp)
      .  Cijk, epsk, fik, rki, rmax, rmaxkb, rmaxo, 
      .  Sik, Sjk, volume
+      !real(dp) rgt, rgtv(3)
 
       real(dp), dimension(:), pointer :: Di, Vi
       real(dp), dimension(:,:), pointer :: Ski, xno
@@ -302,8 +304,14 @@ C           Only calculate if needed locally in our MPI process
                  ikb = ikb + 1
                  ! epsk_sqrt = sqrt(epskb(ks,koa))
                  kg = kbproj_gindex(ks,koa)
-                 call new_MATEL( 'S', kg, ig, xki(1:3,ina),
+!                 call new_MATEL( 'S', kg, ig, xki(1:3,ina),
+!     &                rgt, rgtv )
+                call get_matel_s( kg, ig, xki(1:3,ina),
      &                Ski(ikb,nno), grSki(1:3,ikb,nno) )
+                !if (ABS(Ski(ikb,nno)-rgt)>1.0e-8_dp) then
+                !  write(*,*) 'Check this',Ski(ikb,nno),Ski(ikb,nno)-rgt
+                !    call die('bye bye')
+                !endif
               enddo
 
            enddo ! loop over orbitals
@@ -583,7 +591,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp) :: Vit_saved
 
 C ------------------------------------------------------------
-
 C Start time counter
       call timer( 'nlefsm', 1 )
 

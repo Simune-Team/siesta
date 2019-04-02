@@ -14,7 +14,8 @@
       
 C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
-      
+      use parallel,  only : Node
+
       USE siesta_options,  only: g2cut, split_sr_so
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_so_on_2D, H_so_off_2D
@@ -68,6 +69,9 @@ C     and initializes data structures on the grid.
 
       logical :: ill_defined_sr_so_split
       
+      real(dp), external :: MPI_WTIME
+      real(dp)           :: lo_time
+
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
 #endif
@@ -87,12 +91,17 @@ C     Self-energy of isolated ions
 
 !     Neutral-atom: energy
 
+      lo_time = MPI_WTIME( )
       call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &           isa, Ena, dummy_fa, dummy_stress,
      &           forces_and_stress=.false.)
+      if (NODE==0) write(*,*) "TIME(naefs )", MPI_Wtime() - lo_time
+      lo_time = MPI_WTIME( )
       call dnaefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &            isa, DEna, dummy_fa, dummy_stress,
      &            forces_and_stress=.false.) 
+      if (NODE==0) write(*,*) "TIME(dnaefs)", MPI_Wtime() - lo_time
+      lo_time = MPI_WTIME( )
       Ena = Ena + DEna
  
 C     Metadynamics energy
@@ -104,7 +113,8 @@ C     Metadynamics energy
 C     Add on force field contribution to energy
       call twobody( na_u,xa,isa,ucell,Emm,
      &              ifa=0,fa=dummy_fa,istr=0,stress=dummy_stress)
-
+      if (NODE==0) write(*,*) "TIME(twobod)", MPI_Wtime() - lo_time
+      lo_time = MPI_WTIME( )
 !
 !     Now we compute matrix elements of the Kinetic and Non-local
 !     parts of H
@@ -121,6 +131,8 @@ C     Add on force field contribution to energy
      &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
      &             H_val,
      &             matrix_elements_only=.true.) 
+      if (NODE==0) write(*,*) "TIME(kinefs)", MPI_Wtime() - lo_time
+      lo_time = MPI_WTIME( )
 
 !     Non-local-pseudop:  matrix elements only
       H_val => val(H_vkb_1D)
@@ -138,6 +150,7 @@ C     Add on force field contribution to energy
      &             dummy_dm, dummy_E, dummy_fa, dummy_stress,
      &             H_val,
      &             matrix_elements_only=.true.) 
+      if (NODE==0) write(*,*) "TIME(nlefsm)", MPI_Wtime() - lo_time
       else
         H_so_off => val(H_so_off_2D)
         H_so_off = cmplx(0._dp, 0._dp, dp)

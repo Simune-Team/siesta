@@ -64,12 +64,14 @@ C
       use atmfuncs,      only : rcut, orb_gindex
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays 
-      use m_new_matel,   only : new_matel
+!      use m_new_matel,   only : new_matel
+      use matel_mod,     only : get_matel_t
+
       use alloc,         only : re_alloc, de_alloc
 
       implicit none
 
-      integer ::  maxnd, maxnh, na, no, nspin, nua
+      integer ::  maxnd, maxnh, na, no, nspin, nua, p_atom
 
       integer
      .  indxua(na), iphorb(no), isa(na), lasto(0:na), 
@@ -90,6 +92,7 @@ C Internal variables ..................................................
 
       real(dp)
      .  fij(3), grTij(3) , rij, Tij, volcel, volume
+!      real(dp) Tij2, grTij2(3)
 
       real(dp), dimension(:), pointer :: Di, Ti
 
@@ -117,12 +120,14 @@ C Allocate local memory
 
       do ia = 1,nua
         is = isa(ia)
-        call mneighb( scell, 2.0d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
-
 C Is this orbital on this Node?
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           if (iio.gt.0) then  ! Local orbital
+            if (p_atom/=ia) then
+              call mneighb( scell, 2.0d0*rmaxo, na, xa, ia, 0, nnia )
+              p_atom = ia
+            endif
             ioa = iphorb(io)
             ig = orb_gindex(is,ioa)
 
@@ -144,8 +149,15 @@ C Is this orbital on this Node?
                 js = isa(ja)
                 jg = orb_gindex(js,joa)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call new_MATEL( 'T', ig, jg, xij(1:3,jn),
+!                  call new_MATEL( 'T', ig, jg, xij(1:3,jn),
+!     .                      Tij2, grTij2 )
+                  call get_matel_t( ig, jg, xij(1:3,jn),
      .                      Tij, grTij )
+                  !if (ABS(Tij-Tij2)>1.0e-8_dp) then
+                  !  write(*,*) 'OVERLAP Check this', Tij, Tij-Tij2
+                  !  call die('bye bye')
+                  !endif
+
                   Ti(jo) = Ti(jo) + Tij
 
                   if (.not. matrix_elements_only) then
