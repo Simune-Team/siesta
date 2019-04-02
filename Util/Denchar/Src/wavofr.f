@@ -6,9 +6,10 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 
-      SUBROUTINE WAVOFR( NA, NO, NUO, MAXNA, NSPIN, 
+      SUBROUTINE WAVOFR( NA, NO, no_u, MAXNA, NSPIN, nspin_blocks,
+     .                   non_coll,
      .                   ISA, IPHORB, INDXUO, LASTO, XA, CELL,
-     .                   RPSI, IPSI, E, INDW, NWF, NUMWF, NK, K,
+     .                   wf_unit, NK, gamma_wfsx,
      .                   IDIMEN, IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .                   ZMIN, ZMAX, NPX, NPY, NPZ, COORPO, NORMAL, 
      .                   DIRVER1, DIRVER2, 
@@ -29,27 +30,26 @@ C **********************************************************************
       IMPLICIT NONE
 
       INTEGER, INTENT(IN) ::
-     .  NA, NO, NUO, IOPTION, NPX, NPY, NPZ, ISCALE, IUNITCD,
-     .  IDIMEN, NSPIN, MAXNA, NK, NWF(NK), NUMWF, 
-     .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA),
-     .  INDW(NK,NUMWF)
+     .  NA, NO, NO_U, IOPTION, NPX, NPY, NPZ, ISCALE, IUNITCD,
+     .  IDIMEN, NSPIN, nspin_blocks, MAXNA, NK,
+     .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA)
       real(dp), INTENT(IN) ::
      .  XA(3,NA), XMIN, XMAX, YMIN, YMAX, ZMIN, ZMAX,
      .  COORPO(3,3), NORMAL(3), DIRVER1(3), DIRVER2(3), ARMUNI,
      .  RMAXO
+      logical, intent(in) :: non_coll, gamma_wfsx
+      integer, intent(in) :: wf_unit
+      real(dp), INTENT(IN) :: CELL(3,3)
 
-      real(dp), INTENT(IN) ::
-     . CELL(3,3), 
-     . RPSI(NUO,NK,NUMWF,NSPIN), IPSI(NUO,NK,NUMWF,NSPIN),
-     . E(NK,NUMWF,NSPIN), K(NK,3)
 
 C ****** INPUT *********************************************************
 C INTEGER NA               : Total number of atoms in Supercell
 C INTEGER NO               : Total number of orbitals in Supercell
-C INTEGER NUO              : Total number of orbitals in Unit Cell
+C INTEGER NO_U             : Total number of orbitals in Unit Cell
 C INTEGER MAXNA            : Maximum number of neighbours of any atom
-C INTEGER NSPIN            : Number of different spin polarizations
-C                            Nspin = 1 => unpolarized, Nspin = 2 => polarized
+C INTEGER NSPIN            : Number of different spin polarizations: 1, 2, 4
+! integer nspin_blocks     : blocks in WFSX file       
+! logical non_coll         : NC/SOC wfs data?
 C INTEGER ISA(NA)          : Species index of each atom
 C INTEGER IPHORB(NO)       : Orital index of each orbital in its atom
 C INTEGER INDXUO(NO)       : Equivalent orbital in unit cell
@@ -58,14 +58,7 @@ C REAL*8  XA(3,NA)         : Atomic positions in cartesian coordinates
 C                            (in bohr)
 C REAL*8  CELL(3,3)        : Supercell vectors CELL(IXYZ,IVECT)
 C                            (in bohr)
-C REAL*8 RPSI(NUO,NK,NUMWF,NSPIN): Wave function coefficients (real part)
-C REAL*8 IPSI(NUO,NK,NUMWF,NSPIN): Wave function coefficients (imag part)
-C REAL*8 E(NK,NUMWF,NSPIN) : Eigen energies
-C INTEGER INDW(NUMWF,NK)   : Index of the wavefunctions
-C INTEGER NWF(NK)          : Number of wavefncts to print for each k-point
-C INTEGER NUMWF            : Max num of wavefncts to print a given k-point
 C INTEGER NK               : Number of k-points
-C REAL*8 K(NK,3)           : k-points
 C INTEGER IDIMEN           : Specify if the run is to plot quantities
 C                            in a plane or in a 3D grid (2 or 3, respect)
 C INTEGER IOPTION          : Option to generate the plane
@@ -92,17 +85,17 @@ C INTEGER ISCALE           : Unit if the points of the plane
 C REAL*8  RMAXO            : Maximum range of basis orbitals
 C **********************************************************************
 
-      INTEGER
-     .  NPLAMAX, NAPLA, NAINCELL
+      INTEGER  NPLAMAX, NAPLA, NAINCELL
+      INTEGER, DIMENSION(:), ALLOCATABLE ::  INDICES, JNA
 
-      INTEGER, DIMENSION(:), ALLOCATABLE ::
-     .  INDICES, JNA
+      REAL(SP), ALLOCATABLE :: wf_single(:,:)
+      COMPLEX(DP), ALLOCATABLE :: wf(:,:)
+      complex(dp), allocatable :: CWAVE(:)
 
+      real(dp) :: k(3)
       REAL, DIMENSION(:,:), allocatable :: RWF, IMWF, MWF, PWF
 
-      real(dp), DIMENSION(:), ALLOCATABLE ::
-     .   R2IJ
-
+      real(dp), DIMENSION(:), ALLOCATABLE ::  R2IJ
       real(dp), DIMENSION(:,:), ALLOCATABLE ::
      .   PLAPO, POINRE, XAPLA, XIJ, XAINCELL
 
@@ -115,6 +108,11 @@ C **********************************************************************
      .  IS1, IS2, IPHI1, IPHI2, IND, IX, IY, IZ, NX, NY, NZ, IWF, 
      .  INDWF, IZA(NA), IK
 
+      integer :: spinor_comps, ispin, iwf_orig
+      integer :: idummy, number_of_wfns
+      real(dp) :: ener
+      complex(dp) :: expphi
+      
       real(dp)
      .  RMAX, XPO(3), RMAX2, XVEC1(3),
      .  XVEC2(3), PHIMU, GRPHIMU(3),
@@ -169,27 +167,39 @@ C REAL IMWF(NPO,NSPIN)     : Wave fnctn at each point of the grid (imag part)
 C INTEGER IZA(NA)          : Atomic number of each atom
 C **********************************************************************
 
-C Allocate some variables ---------------------------------------------
+      ! The first dimension of wf_single is the number of real numbers per orbital
+      ! to be read from the WFSX file:
+      ! 1 for real wfs, 2 for complex, and four for the two spinor components
+      ! wf is a complex array which holds either a wfn or a two-component spinor.
 
+      if (non_coll) then
+        allocate(wf_single(4,1:no_u))
+        allocate(wf(1:no_u,2))
+        spinor_comps = 2
+      else
+        spinor_comps = 1
+        if (gamma_wfsx) then
+           allocate(wf_single(1,1:no_u))
+           allocate(wf(1:no_u,1))
+        else
+           allocate(wf_single(2,1:no_u))
+           allocate(wf(1:no_u,1))
+        endif
+      endif
+      allocate(CWAVE(spinor_comps))
+
+C     Allocate some variables ---------------------------------------------
 
       PI = 4.0D0 * ATAN(1.0D0)
 
       NPLAMAX = NPX * NPY * NPZ
 
       ALLOCATE(PLAPO(NPLAMAX,3))
-      CALL MEMORY('A','D',3*NPLAMAX,'wavofr')
-
       ALLOCATE(POINRE(NPLAMAX,3))
-      CALL MEMORY('A','D',3*NPLAMAX,'wavofr')
-
       ALLOCATE(INDICES(NA))
-      CALL MEMORY('A','I',NA,'wavofr')
-
       ALLOCATE(XAPLA(3,NA))
-      CALL MEMORY('A','D',3*NA,'wavofr')
 
       ALLOCATE(XAINCELL(3,NA))
-      CALL MEMORY('A','D',3*NA,'wavofr')
 
 C Build the plane ------------------------------------------------------
           CALL PLANE( NA, NPLAMAX, IDIMEN, IOPTION, 
@@ -198,7 +208,6 @@ C Build the plane ------------------------------------------------------
      .                DIRVER1, DIRVER2, 
      .                XA, NAPLA, INDICES, ISCALE,
      .                POINRE, PLAPO, XAPLA )   
-C End building of the plane --------------------------------------------
 
 C Initialize neighbour subroutine --------------------------------------
       IA = 0
@@ -206,23 +215,17 @@ C Initialize neighbour subroutine --------------------------------------
       RMAX = RMAXO
       NNA  = MAXNA
       IF (ALLOCATED(JNA)) THEN
-        CALL MEMORY('D','I',SIZE(JNA),'wavofr')
         DEALLOCATE(JNA)
       ENDIF
       IF (ALLOCATED(R2IJ)) THEN
-        CALL MEMORY('D','D',SIZE(R2IJ),'wavofr')
         DEALLOCATE(R2IJ)
       ENDIF
       IF (ALLOCATED(XIJ)) THEN
-        CALL MEMORY('D','D',SIZE(XIJ),'wavofr')
         DEALLOCATE(XIJ)
       ENDIF
       ALLOCATE(JNA(MAXNA))
-      CALL MEMORY('A','I',MAXNA,'wavofr')
       ALLOCATE(R2IJ(MAXNA))
-      CALL MEMORY('A','D',MAXNA,'wavofr')
       ALLOCATE(XIJ(3,MAXNA))
-      CALL MEMORY('A','D',3*MAXNA,'wavofr')
 
       FIRST = .TRUE.
       DO I = 1,3
@@ -235,42 +238,70 @@ C Initialize neighbour subroutine --------------------------------------
       FIRST = .FALSE.
       RMAX2 =  RMAXO**2
 
-C Loop over wavefunctions to write out
+! Stream over wavefunctions in file
 
       DO IK  = 1, NK
-      DO IWF = 1,NWF(IK)
+        do ispin = 1, nspin_blocks
+         read(wf_unit) idummy, k(1:3)
+            if (idummy /= ik) then
+               write(6,*) "ik index mismatch in WFS file"
+               WRITE(6,*) "ik in file, ik: ", idummy, ik
+            endif
+         read(wf_unit) idummy
+            if (idummy /= ispin) then
+               write(6,*) "ispin index mismatch in WFS file"
+               WRITE(6,*) "ispin in file, ispin: ", idummy, ispin
+            endif
+         read(wf_unit) number_of_wfns
+
+         WRITE(6,*) 'stm:  Processing kpoint ',IK
+         WRITE(6,*) 'stm:  nwf: ', number_of_wfns
+         WRITE(6,*) '     --------------------------------'
+         DO IWF = 1, number_of_wfns
+            read(wf_unit) iwf_orig
+            if (iwf_orig /= iwf) then
+               ! The file holds a subset of wfs, with the original indexes...
+               WRITE(6,*) 'Original wf index: ', iwf_orig
+            endif
+            read(wf_unit) ener
+
+            read(wf_unit) (wf_single(:,io), io=1,no_u)
+            ! Use a double precision complex form in what follows
+            if ( non_coll) then
+               wf(:,1) = cmplx(wf_single(1,:), wf_single(2,:), kind=dp)
+               wf(:,2) = cmplx(wf_single(3,:), wf_single(4,:), kind=dp)
+            else
+               if (gamma_wfsx) then
+                  wf(:,1) = cmplx(wf_single(1,:), 0.0_sp, kind=dp)
+               else
+                  wf(:,1) = cmplx(wf_single(1,:),wf_single(2,:),kind=dp)
+               endif
+            endif
 
 
-        INDWF = INDW(IK,IWF)
-        CHAR1 = ITOCHAR(INDWF)
-        CHAR2 = ITOCHAR(IK)
-C Open files to store wave functions -----------------------------------
-        SNAME = FDF_STRING('SystemLabel','siesta')
+            CHAR1 = ITOCHAR(Iwf_Orig)
+            CHAR2 = ITOCHAR(IK)
+!     Open files to store wave functions -----------------
+            SNAME = FDF_STRING('SystemLabel','siesta')
 
-        IF (NSPIN .EQ. 1) THEN
+         IF (NSPIN .EQ. 1) THEN
+
           IF (IDIMEN .EQ. 2) THEN
-            FNAMEWFRE = TRIM(SNAME)//'.CON.K'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR2
-            FNAMEWFRE = TRIM(FNAMEWFRE)//'.WF'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR1
+            FNAMEWFRE = TRIM(SNAME)//'.CON.K' //
+     $            trim(char2) // '.WF.' // trim(CHAR1)
             FNAMEWFPH = TRIM(FNAMEWFRE)//'.PHASE'
             FNAMEWFMO = TRIM(FNAMEWFRE)//'.MOD'
             FNAMEWFIM = TRIM(FNAMEWFRE)//'.IMAG'
             FNAMEWFRE = TRIM(FNAMEWFRE)//'.REAL'
           ELSEIF (IDIMEN .EQ. 3) THEN
-            FNAMEWFRE = TRIM(SNAME)//'.K'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR2
-            FNAMEWFRE = TRIM(FNAMEWFRE)//'.WF'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//CHAR1
-            FNAMEWFPH = TRIM(FNAMEWFRE)//'.PHASE'
-            FNAMEWFPH = TRIM(FNAMEWFPH)//'.cube'
-            FNAMEWFMO = TRIM(FNAMEWFRE)//'.MOD'
-            FNAMEWFMO = TRIM(FNAMEWFMO)//'.cube'
-            FNAMEWFIM = TRIM(FNAMEWFRE)//'.IMAG'
-            FNAMEWFIM = TRIM(FNAMEWFIM)//'.cube'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//'.REAL'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//'.cube'
+            FNAMEWFRE = TRIM(SNAME)//'.K' //
+     $            trim(char2) // '.WF.' // trim(CHAR1)
+            FNAMEWFPH = TRIM(FNAMEWFRE)//'.PHASE.cube'
+            FNAMEWFMO = TRIM(FNAMEWFRE)//'.MOD.cube'
+            FNAMEWFIM = TRIM(FNAMEWFRE)//'.IMAG.cube'
+            FNAMEWFRE = TRIM(FNAMEWFRE)//'.REAL.cube'
           ENDIF
+
           CALL IO_ASSIGN(UNITRE1)
           OPEN(UNIT = UNITRE1, FILE = FNAMEWFRE, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
@@ -287,43 +318,35 @@ C Open files to store wave functions -----------------------------------
           OPEN(UNIT = UNITPH1, FILE = FNAMEWFPH, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITPH1)
-        ELSEIF (NSPIN .EQ. 2) THEN
-          IF (IDIMEN .EQ. 2) THEN
-            FNAMEWFURE = TRIM(SNAME)//'.CON.K'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR2
-            FNAMEWFURE = TRIM(FNAMEWFURE)//'.WF'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR1
+
+       ELSEIF ((NSPIN .EQ. 2) .or. (NSPIN == 4))  THEN
+          ! We will reuse 'up' and 'down' for the spinor components
+           IF (IDIMEN .EQ. 2) THEN
+            FNAMEWFURE = TRIM(SNAME)//'.CON.K' //
+     $            trim(char2) // '.WF.' // trim(CHAR1)
             FNAMEWFDRE = TRIM(FNAMEWFURE)//'.DOWN'
             FNAMEWFDPH = TRIM(FNAMEWFDRE)//'.PHASE'
             FNAMEWFDMO = TRIM(FNAMEWFDRE)//'.MOD'
             FNAMEWFDIM = TRIM(FNAMEWFDRE)//'.IMAG'
             FNAMEWFDRE = TRIM(FNAMEWFDRE)//'.REAL'
+
             FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP'
             FNAMEWFUPH = TRIM(FNAMEWFURE)//'.PHASE'
             FNAMEWFUMO = TRIM(FNAMEWFURE)//'.MOD'
             FNAMEWFUIM = TRIM(FNAMEWFURE)//'.IMAG'
             FNAMEWFURE = TRIM(FNAMEWFURE)//'.REAL'
-          ELSE IF (IDIMEN .EQ. 3) THEN
-            FNAMEWFURE = TRIM(SNAME)//'.K'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR2
-            FNAMEWFURE = TRIM(FNAMEWFURE)//'.WF'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//CHAR1
-            FNAMEWFDPH = TRIM(FNAMEWFURE)//'.DOWN.PHASE'
-            FNAMEWFDPH = TRIM(FNAMEWFDPH)//'.cube'
-            FNAMEWFDMO = TRIM(FNAMEWFURE)//'.DOWN.MOD'
-            FNAMEWFDMO = TRIM(FNAMEWFDMO)//'.cube'
-            FNAMEWFDIM = TRIM(FNAMEWFURE)//'.DOWN.IMAG'
-            FNAMEWFDIM = TRIM(FNAMEWFDIM)//'.cube'
-            FNAMEWFDRE = TRIM(FNAMEWFURE)//'.DOWN.REAL'
-            FNAMEWFDRE = TRIM(FNAMEWFDRE)//'.cube'
-            FNAMEWFUPH = TRIM(FNAMEWFURE)//'.UP.PHASE'
-            FNAMEWFUPH = TRIM(FNAMEWFUPH)//'.cube'
-            FNAMEWFUMO = TRIM(FNAMEWFURE)//'.UP.MOD'
-            FNAMEWFUMO = TRIM(FNAMEWFUMO)//'.cube'
-            FNAMEWFUIM = TRIM(FNAMEWFURE)//'.UP.IMAG'
-            FNAMEWFUIM = TRIM(FNAMEWFUIM)//'.cube'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP.REAL'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//'.cube'
+
+         ELSE IF (IDIMEN .EQ. 3) THEN
+            FNAMEWFURE = TRIM(SNAME)//'.K' //
+     $            trim(char2) // '.WF.' // trim(CHAR1)
+            FNAMEWFDPH = TRIM(FNAMEWFURE)//'.DOWN.PHASE.cube'
+            FNAMEWFDMO = TRIM(FNAMEWFURE)//'.DOWN.MOD.cube'
+            FNAMEWFDIM = TRIM(FNAMEWFURE)//'.DOWN.IMAG.cube'
+            FNAMEWFDRE = TRIM(FNAMEWFURE)//'.DOWN.REAL.cube'
+            FNAMEWFUPH = TRIM(FNAMEWFURE)//'.UP.PHASE.cube'
+            FNAMEWFUMO = TRIM(FNAMEWFURE)//'.UP.MOD.cube'
+            FNAMEWFUIM = TRIM(FNAMEWFURE)//'.UP.IMAG.cube'
+            FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP.REAL.cube'
           ENDIF
 
           CALL IO_ASSIGN(UNITRE1)
@@ -361,7 +384,7 @@ C Open files to store wave functions -----------------------------------
         ELSE
           WRITE(6,*)'BAD NUMBER NSPIN IN WAVOFR.F'
           WRITE(6,*)'NSPIN = ',NSPIN
-          WRITE(6,*)'IT MUST BE 1 => NON POLARIZED, OR 2 = > POLARIZED'
+          WRITE(6,*)'IT MUST BE 1, 2, or 4'
           STOP
         ENDIF
 
@@ -373,6 +396,7 @@ C Select all atoms in list to be printed out
               XAINCELL(IX,IA)=XAPLA(IX,IA)
             ENDDO
           ENDDO
+
         ELSE IF (IDIMEN .EQ.3) THEN
           DO IX = 1,3
             DO IY = 1,3
@@ -399,127 +423,34 @@ C   Determine atoms which are within the plotting box
           ENDDO
 
           IF (NSPIN .EQ. 1) THEN
-            WRITE(UNITRE1,*) FNAMEWFRE
-            WRITE(UNITRE1,*) FNAMEWFRE
-            WRITE(UNITRE1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITRE1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITRE1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITRE1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITRE1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITIM1,*) FNAMEWFIM
-            WRITE(UNITIM1,*) FNAMEWFIM
-            WRITE(UNITIM1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITIM1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITIM1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITIM1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITIM1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITMO1,*) FNAMEWFMO
-            WRITE(UNITMO1,*) FNAMEWFMO
-            WRITE(UNITMO1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITMO1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITMO1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITMO1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITMO1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITPH1,*) FNAMEWFPH
-            WRITE(UNITPH1,*) FNAMEWFPH
-            WRITE(UNITPH1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITPH1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITPH1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITPH1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITPH1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
+            call write_cube_header(unitre1,fnamewfre)
+            call write_cube_header(unitim1,fnamewfim)
+            call write_cube_header(unitmo1,fnamewfmo)
+            call write_cube_header(unitph1,fnamewfph)
+      
           ELSE IF (NSPIN .EQ. 2) THEN
-            WRITE(UNITRE1,*) FNAMEWFURE
-            WRITE(UNITRE1,*) FNAMEWFURE
-            WRITE(UNITRE1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITRE1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITRE1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITRE1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITRE1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITRE2,*) FNAMEWFDRE
-            WRITE(UNITRE2,*) FNAMEWFDRE
-            WRITE(UNITRE2,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITRE2,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITRE2,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITRE2,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITRE2,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITIM1,*) FNAMEWFUIM
-            WRITE(UNITIM1,*) FNAMEWFUIM
-            WRITE(UNITIM1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITIM1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITIM1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITIM1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITIM1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITIM2,*) FNAMEWFDIM
-            WRITE(UNITIM2,*) FNAMEWFDIM
-            WRITE(UNITIM2,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITIM2,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITIM2,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITIM2,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITIM2,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITMO1,*) FNAMEWFUMO
-            WRITE(UNITMO1,*) FNAMEWFUMO
-            WRITE(UNITMO1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITMO1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITMO1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITMO1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITMO1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITMO2,*) FNAMEWFDMO
-            WRITE(UNITMO2,*) FNAMEWFDMO
-            WRITE(UNITMO2,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITMO2,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITMO2,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITMO2,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITMO2,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITPH1,*) FNAMEWFUPH
-            WRITE(UNITPH1,*) FNAMEWFUPH
-            WRITE(UNITPH1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITPH1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITPH1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITPH1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITPH1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
-            WRITE(UNITPH2,*) FNAMEWFDPH
-            WRITE(UNITPH2,*) FNAMEWFDPH
-            WRITE(UNITPH2,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-            WRITE(UNITPH2,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-            WRITE(UNITPH2,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-            WRITE(UNITPH2,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-            DO IA = 1,NAINCELL
-              WRITE(UNITPH2,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                   (XAINCELL(IX,IA),IX=1,3)
-            ENDDO
+             if (ispin == 1 ) then
+                call write_cube_header(unitre1,fnamewfure)
+                call write_cube_header(unitim1,fnamewfuim)
+                call write_cube_header(unitmo1,fnamewfumo)
+                call write_cube_header(unitph1,fnamewfuph)
+             else
+                call write_cube_header(unitre2,fnamewfdre)
+                call write_cube_header(unitim2,fnamewfdim)
+                call write_cube_header(unitmo2,fnamewfdmo)
+                call write_cube_header(unitph2,fnamewfdph)
+             endif
+          ELSE IF (NSPIN .EQ. 4) THEN
+                call write_cube_header(unitre1,fnamewfure)
+                call write_cube_header(unitim1,fnamewfuim)
+                call write_cube_header(unitmo1,fnamewfumo)
+                call write_cube_header(unitph1,fnamewfuph)
+
+                call write_cube_header(unitre2,fnamewfdre)
+                call write_cube_header(unitim2,fnamewfdim)
+                call write_cube_header(unitmo2,fnamewfdmo)
+                call write_cube_header(unitph2,fnamewfdph)
+
           ENDIF
         ENDIF
 
@@ -530,54 +461,31 @@ C   Determine atoms which are within the plotting box
      .             IUNITCD,  NA, NAINCELL, INDICES, XAINCELL )
 
         WRITE(6,'(A)')
-        WRITE(6,'(A)')
-     .    '   Generating values of wavefunction on the grid'
-        WRITE(6,'(A,I6)')
-     .    '   for k-point ',IK
-        WRITE(6,'(A,I6)')
-     .    '   for eigenstate number ',INDW(IK,IWF)
-        WRITE(6,'(A,I6)')
-     .    '   Please, wait....'
-        WRITE(6,'(A)')
+        WRITE(6,'(A,i0,a,i0)')
+     .    '   Generating grid values for wf... k-point:',IK,
+     $       ' wf #:', iwf_orig
 
 
 C Allocate space for wave functions in 3D-grid
 
         IF (.NOT.ALLOCATED(RWF)) THEN
           ALLOCATE(RWF(NPX*NPY*NPZ,NSPIN))
-          CALL MEMORY('A','D',NPX*NPY*NPZ*NSPIN,'WAVOFR')
           ALLOCATE(IMWF(NPX*NPY*NPZ,NSPIN))
-          CALL MEMORY('A','D',NPX*NPY*NPZ*NSPIN,'WAVOFR')
           ALLOCATE(MWF(NPX*NPY*NPZ,NSPIN))
-          CALL MEMORY('A','D',NPX*NPY*NPZ*NSPIN,'WAVOFR')
           ALLOCATE(PWF(NPX*NPY*NPZ,NSPIN))
-          CALL MEMORY('A','D',NPX*NPY*NPZ*NSPIN,'WAVOFR')
         ENDIF
 
-C Loop over wavefunctions to write out
       
 C Loop over all points in real space -----------------------------------
-C      DO 100 NPO = 1, NPX*NPY*NPZ
+
         NPO = 0
         DO 102 NZ = 1,NPZ
         DO 101 NY = 1,NPY
         DO 100 NX = 1,NPX
           NPO = NPO + 1
 
-
-C Initialize the wave function at each point -----------------------
-          RWAVE  = 0.D0
-          RWAVEUP   = 0.D0
-          RWAVEDN   = 0.D0
-          IWAVE  = 0.D0
-          IWAVEUP   = 0.D0
-          IWAVEDN   = 0.D0
-          MWAVE  = 0.D0
-          MWAVEUP   = 0.D0
-          MWAVEDN   = 0.D0
-          PWAVE  = 0.D0
-          PWAVEUP   = 0.D0
-          PWAVEDN   = 0.D0
+          ! Initialize the wave function at each point -----------------------
+          CWAVE(:) = 0.0_dp
 
 C Localize non-zero orbitals at each point in real space ---------------
           DO IX = 1,3
@@ -592,7 +500,7 @@ C Localize non-zero orbitals at each point in real space ---------------
      .                 NNA, JNA, XIJ, R2IJ, FIRST )
 
 C Loop over Non-zero orbitals ------------------------------------------ 
-           DO 110 IAT1 = 1, NNA
+           DO IAT1 = 1, NNA
              IF( R2IJ(IAT1) .GT. RMAX2 ) EXIT
 
              IAVEC1   = JNA(IAT1)
@@ -601,136 +509,136 @@ C Loop over Non-zero orbitals ------------------------------------------
              XVEC1(2) = -XIJ(2,IAT1)
              XVEC1(3) = -XIJ(3,IAT1)
 
-C We take atom 1 as center of coordinates
-
-C             PHASE = K(IK,1)*XA(1,IAVEC1)+
-C     .               K(IK,2)*XA(2,IAVEC1)+
-C     .               K(IK,3)*XA(3,IAVEC1)
-
-             PHASE = K(IK,1)*(XPO(1)+XIJ(1,IAT1))+
-     .               K(IK,2)*(XPO(2)+XIJ(2,IAT1))+
-     .               K(IK,3)*(XPO(3)+XIJ(3,IAT1))
+             PHASE = K(1)*(XPO(1)+XIJ(1,IAT1))+
+     .               K(2)*(XPO(2)+XIJ(2,IAT1))+
+     .               K(3)*(XPO(3)+XIJ(3,IAT1))
 
              SI=SIN(PHASE)
              CO=COS(PHASE)
+             EXPPHI=CMPLX(CO,SI,dp)
 
-             DO 120 IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
+             DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                IPHI1 = IPHORB(IO)
                IUO   = INDXUO(IO)
                CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
+               ! Note implicit loop over spinor components
+               CWAVE(:) = CWAVE(:) + PHIMU * WF(iuo,:) * EXPPHI 
 
-               IF ( NSPIN .EQ. 1 ) THEN
-                 RWAVE  = RWAVE  + PHIMU * 
-     .            (RPSI(IUO,IK,IWF,1)*CO - IPSI(IUO,IK,IWF,1)*SI)
-                 IWAVE  = IWAVE  + PHIMU * 
-     .            (RPSI(IUO,IK,IWF,1)*SI + IPSI(IUO,IK,IWF,1)*CO)
-               ELSEIF (NSPIN .EQ. 2) THEN 
-                 RWAVEUP  = RWAVEUP  + PHIMU * 
-     .            (RPSI(IUO,IK,IWF,1)*CO - IPSI(IUO,IK,IWF,1)*SI)
-                 IWAVEUP  = IWAVEUP  + PHIMU * 
-     .            (RPSI(IUO,IK,IWF,1)*SI + IPSI(IUO,IK,IWF,1)*CO)
-                 RWAVEDN  = RWAVEDN  + PHIMU * 
-     .            (RPSI(IUO,IK,IWF,2)*CO - IPSI(IUO,IK,IWF,2)*SI)
-                 IWAVEDN  = IWAVEDN  + PHIMU * 
-     .            (RPSI(IUO,IK,IWF,2)*SI + IPSI(IUO,IK,IWF,2)*CO)
-               ENDIF
+            ENDDO       ! orbitals
+         ENDDO ! atoms
+           
+           IF ( NSPIN .EQ. 1 ) THEN
 
-C calculate module and phase of wavefunction
+              rwave = real(cwave(1), dp)
+              iwave = aimag(cwave(1))
 
-               IF ( NSPIN .EQ. 1 ) THEN
-                 MWAVE = DSQRT(RWAVE**2 + IWAVE**2)
-                 IF (DABS(IWAVE) .LT. 1.D-6) IWAVE = DABS(IWAVE)
-                 IF (DABS(RWAVE) .LT. 1.D-12) THEN
-                   IF (IWAVE .GT. 0.0D0) PWAVE = PI/2.0D0
-                   IF (IWAVE .LT. 0.0D0) PWAVE = -PI/2.0D0
-                 ELSE
-                   PWAVE = DATAN(IWAVE/RWAVE)
-                 ENDIF
-                 IF (RWAVE .LT. 0.0D0 .AND. IWAVE .GE. 0.0d0)
-     .              PWAVE = PWAVE + PI
-                 IF (RWAVE .LT. 0.0D0 .AND. IWAVE .LT. 0.0D0)
-     .              PWAVE = PWAVE - PI
-               ELSEIF (NSPIN .EQ. 2) THEN 
-                 MWAVEUP = DSQRT(RWAVEUP**2 + IWAVEUP**2)
+              call mod_and_phase(rwave,iwave,mwave,pwave)
 
-                 IF (DABS(IWAVEUP) .LT. 1.D-6) IWAVEUP = DABS(IWAVEUP)
-                 IF (DABS(RWAVEUP) .LT. 1.D-12) THEN
-                   IF (IWAVEUP .GT. 0.0D0) PWAVEUP = PI/2.0D0
-                   IF (IWAVEUP .LT. 0.0D0) PWAVEUP = -PI/2.0D0
-                 ELSE
-                   PWAVEUP = DATAN(IWAVEUP/RWAVEUP)
-                 ENDIF
-                 IF (RWAVEUP .LT. 0.0D0 .AND. IWAVEUP .GE. 0.0d0)
-     .              PWAVEUP = PWAVEUP + PI
-                 IF (RWAVEUP .LT. 0.0D0 .AND. IWAVEUP .LT. 0.0D0)
-     .              PWAVEUP = PWAVEUP - PI
+      
+           ELSEIF (NSPIN .EQ. 2) THEN
 
-                 MWAVEDN = DSQRT(RWAVEDN**2 + IWAVEDN**2)
+              if (ispin == 1) then
+                 rwaveup = real(cwave(1), dp)
+                 iwaveup = aimag(cwave(1))
+                 call mod_and_phase(rwaveup,iwaveup,mwaveup,pwaveup)
+              else
+                 rwavedn = real(cwave(1), dp)
+                 iwavedn = aimag(cwave(1))
+                 call mod_and_phase(rwavedn,iwavedn,mwavedn,pwavedn)
+              endif
 
-                 IF (DABS(IWAVEDN) .LT. 1.D-6) IWAVEDN = DABS(IWAVEDN)
-                 IF (DABS(RWAVEDN) .LT. 1.D-12) THEN
-                   IF (IWAVEDN .GT. 0.0D0) PWAVEDN = PI/2.0D0
-                   IF (IWAVEDN .LT. 0.0D0) PWAVEDN = -PI/2.0D0
-                 ELSE
-                   PWAVEDN = DATAN(IWAVEDN/RWAVEDN)
-                 ENDIF
-                 IF (RWAVEDN .LT. 0.0D0 .AND. IWAVEDN .GE. 0.0d0)
-     .              PWAVEDN = PWAVEDN + PI
-                 IF (RWAVEDN .LT. 0.0D0 .AND. IWAVEDN .LT. 0.0D0)
-     .              PWAVEDN = PWAVEDN - PI
+           ELSEIF (NSPIN .EQ. 4) THEN
 
-               ENDIF
+              rwaveup = real(cwave(1), dp)
+              iwaveup = aimag(cwave(1))
+              rwavedn = real(cwave(2), dp)
+              iwavedn = aimag(cwave(2))
+              call mod_and_phase(rwaveup,iwaveup,mwaveup,pwaveup)
+              call mod_and_phase(rwavedn,iwavedn,mwavedn,pwavedn)
 
- 120         ENDDO
- 110       ENDDO
- 
-           IF (IDIMEN .EQ. 2) THEN
-             IF ( NSPIN .EQ. 1 ) THEN
-               WRITE(UNITRE1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),RWAVE*SQRT(ARMUNI)
-               WRITE(UNITIM1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),IWAVE*SQRT(ARMUNI)
-               WRITE(UNITMO1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),MWAVE*SQRT(ARMUNI)
-               WRITE(UNITPH1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),PWAVE
-             ELSEIF ( NSPIN .EQ. 2 ) THEN
-               WRITE(UNITRE1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),RWAVEUP*SQRT(ARMUNI)
-               WRITE(UNITRE2,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),RWAVEDN*SQRT(ARMUNI)
-               WRITE(UNITIM1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),IWAVEUP*SQRT(ARMUNI)
-               WRITE(UNITIM2,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),IWAVEDN*SQRT(ARMUNI)
-               WRITE(UNITMO1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),MWAVEUP*SQRT(ARMUNI)
-               WRITE(UNITMO2,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),MWAVEDN*SQRT(ARMUNI)
-               WRITE(UNITPH1,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),PWAVEUP
-               WRITE(UNITPH2,'(3F12.5)')
-     .              PLAPO(NPO,1),PLAPO(NPO,2),PWAVEDN
-             ENDIF
-           ELSE IF (IDIMEN .EQ. 3) THEN
-             IF (NSPIN .EQ. 1) THEN
-               RWF(NPO,1) = RWAVE*SQRT(ARMUNI)
-               IMWF(NPO,1) = IWAVE*SQRT(ARMUNI)
-               MWF(NPO,1) = MWAVE*SQRT(ARMUNI)
-               PWF(NPO,1) = PWAVE
-             ELSE IF (NSPIN .EQ.2) THEN
-               RWF(NPO,1) = RWAVEUP*SQRT(ARMUNI)
-               RWF(NPO,2) = RWAVEDN*SQRT(ARMUNI)
-               IMWF(NPO,1) = IWAVEUP*SQRT(ARMUNI)
-               IMWF(NPO,2) = IWAVEDN*SQRT(ARMUNI)
-               MWF(NPO,1) = MWAVEUP*SQRT(ARMUNI)
-               MWF(NPO,2) = MWAVEDN*SQRT(ARMUNI)
-               PWF(NPO,1) = PWAVEUP
-               PWF(NPO,2) = PWAVEDN
-             ENDIF
            ENDIF
 
+           IF (IDIMEN .EQ. 2) THEN
+             IF ( NSPIN .EQ. 1 ) THEN
+                WRITE(UNITRE1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),RWAVE*SQRT(ARMUNI)
+                WRITE(UNITIM1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),IWAVE*SQRT(ARMUNI)
+                WRITE(UNITMO1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),MWAVE*SQRT(ARMUNI)
+                WRITE(UNITPH1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),PWAVE
+             ELSEIF ( NSPIN .EQ. 2 ) THEN
+                if (ispin == 1) then              
+                   WRITE(UNITRE1,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),RWAVEUP*SQRT(ARMUNI)
+                   WRITE(UNITIM1,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),IWAVEUP*SQRT(ARMUNI)
+                   WRITE(UNITMO1,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),MWAVEUP*SQRT(ARMUNI)
+                   WRITE(UNITPH1,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),PWAVEUP
+                else
+                   WRITE(UNITRE2,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),RWAVEDN*SQRT(ARMUNI)
+                   WRITE(UNITIM2,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),IWAVEDN*SQRT(ARMUNI)
+                   WRITE(UNITMO2,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),MWAVEDN*SQRT(ARMUNI)
+                   WRITE(UNITPH2,'(3F12.5)')
+     .                  PLAPO(NPO,1),PLAPO(NPO,2),PWAVEDN
+                endif
+             ELSEIF ( NSPIN .EQ. 4 ) THEN
+                WRITE(UNITRE1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),RWAVEUP*SQRT(ARMUNI)
+                WRITE(UNITIM1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),IWAVEUP*SQRT(ARMUNI)
+                WRITE(UNITMO1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),MWAVEUP*SQRT(ARMUNI)
+                WRITE(UNITPH1,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),PWAVEUP
 
+                WRITE(UNITRE2,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),RWAVEDN*SQRT(ARMUNI)
+                WRITE(UNITIM2,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),IWAVEDN*SQRT(ARMUNI)
+                WRITE(UNITMO2,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),MWAVEDN*SQRT(ARMUNI)
+                WRITE(UNITPH2,'(3F12.5)')
+     .               PLAPO(NPO,1),PLAPO(NPO,2),PWAVEDN
+             ENDIF
+          ELSE IF (IDIMEN .EQ. 3) THEN
+             IF (NSPIN .EQ. 1) THEN
+                RWF(NPO,1) = RWAVE*SQRT(ARMUNI)
+                IMWF(NPO,1) = IWAVE*SQRT(ARMUNI)
+                MWF(NPO,1) = MWAVE*SQRT(ARMUNI)
+                PWF(NPO,1) = PWAVE
+             ELSE IF (NSPIN .EQ.2) THEN
+               if (ispin == 1) then
+                  RWF(NPO,1) = RWAVEUP*SQRT(ARMUNI)
+                  IMWF(NPO,1) = IWAVEUP*SQRT(ARMUNI)
+                  MWF(NPO,1) = MWAVEUP*SQRT(ARMUNI)
+                  PWF(NPO,1) = PWAVEUP
+               else
+                  RWF(NPO,2) = RWAVEDN*SQRT(ARMUNI)
+                  IMWF(NPO,2) = IWAVEDN*SQRT(ARMUNI)
+                  MWF(NPO,2) = MWAVEDN*SQRT(ARMUNI)
+                  PWF(NPO,2) = PWAVEDN
+               endif
+             ELSE IF (NSPIN .EQ. 4) THEN
+
+                RWF(NPO,1) = RWAVEUP*SQRT(ARMUNI)
+                IMWF(NPO,1) = IWAVEUP*SQRT(ARMUNI)
+                MWF(NPO,1) = MWAVEUP*SQRT(ARMUNI)
+                PWF(NPO,1) = PWAVEUP
+
+                RWF(NPO,2) = RWAVEDN*SQRT(ARMUNI)
+                IMWF(NPO,2) = IWAVEDN*SQRT(ARMUNI)
+                MWF(NPO,2) = MWAVEDN*SQRT(ARMUNI)
+                PWF(NPO,2) = PWAVEDN
+
+            ENDIF
+         ENDIF
 
            IF (IDIMEN .EQ. 2) THEN
              IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
@@ -764,28 +672,63 @@ C End y and z loops
      .            (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
               ENDDO
             ENDDO
-          ELSE IF (NSPIN .EQ. 2) THEN
-            DO NX=1,NPX
-              DO NY=1,NPY
-                WRITE(UNITRE1,'(6e13.5)')
-     .            (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                WRITE(UNITRE2,'(6e13.5)')
-     .            (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                WRITE(UNITIM1,'(6e13.5)')
-     .            (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                WRITE(UNITIM2,'(6e13.5)')
-     .            (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                WRITE(UNITMO1,'(6e13.5)')
-     .            (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                WRITE(UNITMO2,'(6e13.5)')
-     .            (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                WRITE(UNITPH1,'(6e13.5)')
-     .            (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                WRITE(UNITPH2,'(6e13.5)')
-     .            (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-              ENDDO
-            ENDDO
-          ENDIF
+         ELSE IF (NSPIN .EQ. 2) THEN
+            if (ispin == 1) then
+               DO NX=1,NPX
+                  DO NY=1,NPY
+                     WRITE(UNITRE1,'(6e13.5)')
+     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                     WRITE(UNITIM1,'(6e13.5)')
+     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                     WRITE(UNITMO1,'(6e13.5)')
+     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                     WRITE(UNITPH1,'(6e13.5)')
+     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                  ENDDO
+               ENDDO
+            else
+               DO NX=1,NPX
+                  DO NY=1,NPY
+                     WRITE(UNITRE2,'(6e13.5)')
+     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                     WRITE(UNITIM2,'(6e13.5)')
+     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                     WRITE(UNITMO2,'(6e13.5)')
+     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                     WRITE(UNITPH2,'(6e13.5)')
+     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                  ENDDO
+               ENDDO
+            endif
+         ELSE IF (NSPIN .EQ. 4) THEN
+
+               DO NX=1,NPX
+                  DO NY=1,NPY
+                     WRITE(UNITRE1,'(6e13.5)')
+     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                     WRITE(UNITIM1,'(6e13.5)')
+     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                     WRITE(UNITMO1,'(6e13.5)')
+     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                     WRITE(UNITPH1,'(6e13.5)')
+     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                  ENDDO
+               ENDDO
+
+               DO NX=1,NPX
+                  DO NY=1,NPY
+                     WRITE(UNITRE2,'(6e13.5)')
+     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                     WRITE(UNITIM2,'(6e13.5)')
+     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                     WRITE(UNITMO2,'(6e13.5)')
+     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                     WRITE(UNITPH2,'(6e13.5)')
+     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                  ENDDO
+               ENDDO
+
+         ENDIF
 
           WRITE(6,'(A)')
           WRITE(6,'(A)')
@@ -795,7 +738,7 @@ C End y and z loops
             WRITE(6,'(A,A)') '   ',FNAMEWFIM
             WRITE(6,'(A,A)') '   ',FNAMEWFMO
             WRITE(6,'(A,A)') '   ',FNAMEWFPH
-          ELSE IF (NSPIN .EQ. 2) THEN
+          ELSE IF ((NSPIN .EQ. 2) .or. (NSPIN .EQ. 4)) THEN
             WRITE(6,'(A,A)') '   ',FNAMEWFURE
             WRITE(6,'(A,A)') '   ',FNAMEWFUIM
             WRITE(6,'(A,A)') '   ',FNAMEWFDRE
@@ -804,32 +747,70 @@ C End y and z loops
             WRITE(6,'(A,A)') '   ',FNAMEWFUPH
             WRITE(6,'(A,A)') '   ',FNAMEWFDMO
             WRITE(6,'(A,A)') '   ',FNAMEWFDPH
+            if (nspin == 4) write(6,"(a)")
+     $           "... up and down for spinor components"
           ENDIF
-        ENDIF
-
+        ENDIF ! 3D
 
 
         CALL IO_CLOSE(UNITRE1)
         CALL IO_CLOSE(UNITIM1)
-        IF (NSPIN .EQ. 2) CALL IO_CLOSE(UNITRE2)
-        IF (NSPIN .EQ. 2) CALL IO_CLOSE(UNITIM2)
+        IF (NSPIN >= 2) CALL IO_CLOSE(UNITRE2)
+        IF (NSPIN >= 2) CALL IO_CLOSE(UNITIM2)
         CALL IO_CLOSE(UNITMO1)
         CALL IO_CLOSE(UNITPH1)
-        IF (NSPIN .EQ. 2) CALL IO_CLOSE(UNITMO2)
-        IF (NSPIN .EQ. 2) CALL IO_CLOSE(UNITPH2)
+        IF (NSPIN >= 2) CALL IO_CLOSE(UNITMO2)
+        IF (NSPIN >= 2) CALL IO_CLOSE(UNITPH2)
      
           
-      ENDDO
-      ENDDO
+      ENDDO  ! wfn
+      ENDDO  ! spin_block
+      ENDDO  ! k-point
 
-      CALL MEMORY('D','D',SIZE(RWF),'wavofr')
       DEALLOCATE(RWF)
-      CALL MEMORY('D','D',SIZE(IMWF),'wavofr')
       DEALLOCATE(IMWF)
-      CALL MEMORY('D','D',SIZE(MWF),'wavofr')
       DEALLOCATE(MWF)
-      CALL MEMORY('D','D',SIZE(PWF),'wavofr')
       DEALLOCATE(PWF)
 
-      RETURN    
+        CONTAINS
+      
+       subroutine write_cube_header(lun,fname)
+       integer, intent(in) :: lun
+       character(len=*), intent(in) :: fname
+       ! rest by host association
+      
+            WRITE(LUN,*) FNAME
+            WRITE(LUN,*) FNAME
+            WRITE(LUN,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
+            WRITE(LUN,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
+            WRITE(LUN,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
+            WRITE(LUN,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
+            DO IA = 1,NAINCELL
+              WRITE(LUN,'(i5,4f12.6)') IZA(IA),0.0,
+     .                                   (XAINCELL(IX,IA),IX=1,3)
+            ENDDO
+       end subroutine write_cube_header
+
       END
+
+      subroutine mod_and_phase(rwave,iwave,mwave,pwave)
+      integer, parameter :: dp = selected_real_kind(10,100)
+      real(dp), intent(in) :: rwave
+      real(dp), intent(inout) :: iwave
+      real(dp), intent(out) :: mwave, pwave
+
+      real(dp), parameter :: pi = 3.1141592653589_dp
+      
+      MWAVE = DSQRT(RWAVE**2 + IWAVE**2)
+      IF (DABS(IWAVE) .LT. 1.D-6) IWAVE = DABS(IWAVE)
+      IF (DABS(RWAVE) .LT. 1.D-12) THEN
+         IF (IWAVE .GT. 0.0D0) PWAVE = PI/2.0D0
+         IF (IWAVE .LT. 0.0D0) PWAVE = -PI/2.0D0
+      ELSE
+         PWAVE = DATAN(IWAVE/RWAVE)
+      ENDIF
+      IF (RWAVE .LT. 0.0D0 .AND. IWAVE .GE. 0.0d0)
+     .     PWAVE = PWAVE + PI
+      IF (RWAVE .LT. 0.0D0 .AND. IWAVE .LT. 0.0D0)
+     .     PWAVE = PWAVE - PI
+      end

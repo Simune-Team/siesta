@@ -78,7 +78,7 @@ OBJS_DENCHAR = atompla.o planed.o\
         matvect.o memory.o colinear.o\
 	neighb.o pxf.o \
 	radfft.o m_fft_gpfa.o ranger.o \
-        readwavesx.o rhoofr.o wavofr.o \
+        rhoofr.o wavofr.o \
         redata_denchar.o local_reinit.o denchar.o \
 	volcel.o wrout.o stsofr.o local_sys.o
 
@@ -952,7 +952,6 @@ planed.o: precision.o
 ranger.o: precision.o
 readpla.o: precision.o
 readsts.o: precision.o
-readwavesx.o: precision.o
 redata_denchar.o: precision.o
 rhoofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
 stsofr.o: atmfuncs.o chemical.o listsc.o precision.o
