@@ -1,0 +1,29 @@
+#--------------------------------------- 
+#Input Generated for Space Group Testing 
+#--------------------------------------- 
+SystemLabel  04-tetragonal-oP.37-spg111.inp 
+NumberOfSpecies 1 
+%block ChemicalSpeciesLabel 
+ 1  1  H 
+%endblock ChemicalSpeciesLabel 
+LatticeConstant  1.0 Ang   
+%block LatticeVectors 
+  7.0   0.0   0.0  
+  4.28626379699e-16   7.0   0.0  
+  4.28626379699e-16   4.28626379699e-16   9.0  
+%endblock LatticeVectors 
+AtomicCoordinatesFormat  Fractional 
+%block AtomicCoordinatesAndAtomicSpecies 
+1.7000000000E-01   1.5000000000E-01   1.1000000000E-01  1  1   H 
+8.5000000000E-01   1.7000000000E-01   8.9000000000E-01  1  2   H 
+8.3000000000E-01   1.5000000000E-01   8.9000000000E-01  1  3   H 
+8.3000000000E-01   8.5000000000E-01   1.1000000000E-01  1  4   H 
+8.5000000000E-01   8.3000000000E-01   1.1000000000E-01  1  5   H 
+1.5000000000E-01   1.7000000000E-01   1.1000000000E-01  1  6   H 
+1.5000000000E-01   8.3000000000E-01   8.9000000000E-01  1  7   H 
+1.7000000000E-01   8.5000000000E-01   8.9000000000E-01  1  8   H 
+%endblock AtomicCoordinatesAndAtomicSpecies 
+MaxSCFIterations 	0  
+MD.TypeOfRun    CG   
+MD.NumCGsteps   0  
+SCF.MustConverge  .False. 
