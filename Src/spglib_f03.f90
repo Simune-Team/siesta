@@ -15,7 +15,7 @@
 
 module spglib_f03
 
-  use iso_c_binding, only:  c_char, c_int, c_double, c_ptr, c_f_pointer
+  use iso_c_binding, only:  c_char, c_int, c_double, c_ptr, c_f_pointer, c_null_char
   !use spglib_f08 ! this is also included in spglib and 
   !  could be a nice way to avoid recoding the interfaces for everything.
   !  however, it does imply making spglib with exactly the same fortran compiler as siesta
@@ -385,6 +385,9 @@ contains
     double precision :: dsymop(3,3)
     double precision :: dsymopinv(3,3)
     double precision :: zerovec(3) = (/0.0d0, 0.0d0, 0.0d0/)
+    character(kind=c_char) :: bravais_symbol_(11)
+    character(kind=c_char) :: international_symbol_(11)
+    character(kind=c_char) :: hall_symbol_(17)
 
 
     syms_this%num_atom = num_atom
@@ -418,11 +421,22 @@ contains
 
     !cell = transpose(syms_this%celltransp)
 
-    syms_this%bravais_number = spg_get_international(syms_this%bravais_symbol, syms_this%celltransp(1,1), &
+    syms_this%bravais_number = spg_get_international(bravais_symbol_, syms_this%celltransp(1,1), &
            & zerovec(1), types(1), 1, symprec)
+    syms_this%bravais_symbol = ""
+    do ii=1,size(bravais_symbol_)
+      if (bravais_symbol_(ii) == c_null_char) exit
+      syms_this%bravais_symbol = trim(syms_this%bravais_symbol) // bravais_symbol_(ii)
+    end do
 
-    syms_this%spacegroup_number = spg_get_international(syms_this%international_symbol, syms_this%celltransp(1,1), &
+    syms_this%spacegroup_number = spg_get_international(international_symbol_, syms_this%celltransp(1,1), &
            & syms_this%xred(1,1), types(1), num_atom, symprec)
+    ! find end of C string, and chop
+    syms_this%international_symbol = ""
+    do ii=1,size(international_symbol_)
+      if (international_symbol_(ii) == c_null_char) exit
+      syms_this%international_symbol = trim(syms_this%international_symbol) // international_symbol_(ii)
+    end do
 
     max_size = spg_get_multiplicity(syms_this%celltransp(1,1), syms_this%xred(1,1), types(1), num_atom, symprec)
 
