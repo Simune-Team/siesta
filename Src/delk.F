@@ -101,10 +101,6 @@ C (not included in the original vmat subroutine)
       complex(dp),     pointer :: delkmats(:),   omp_delkmats(:,:)
 
 
-#ifdef _OMP_
-      integer                  :: omp_get_num_threads,
-     &                            omp_get_thread_num
-#endif
 #ifdef MPI
       integer                  :: MPIerror
 #endif
@@ -161,27 +157,9 @@ C     Find value of maxloc
       endif
 
 C     Allocate local memory
-!$OMP   PARALLEL DEFAULT(NONE) SHARED(no,np,nvmax,iaorb,iphorb,
-!$   &    isa,numVs,listVsptr,listVs,dVol,maxloc,maxloc2,
-!$   &    nvmaxl,triang,lenx,leny,lenxy,parallellocal,omp_ilc,
-!$   &    omp_ilocal,omp_iorb,omp_DscfL,omp_delkmats,omp_Clocal,
-!$   &    omp_Vlocal,
-!$   &    omp_phia,r2cut,indxuo,dxa,nsp,xdop,xdsp,NeedDscfL,listdl,
-!$   &    numdl,listdlptr,directphi,endpht,lstpht,listp2,phi,nodes,node)
-!$   &    PRIVATE(i,ia,ic,ii,ijl,il,imp,ind,iop,ip,iphi,is,isp,irealim,
-!$   &    iu,iul,ix,j,jc,jl,last,lasta,lastop,nc,nlocal,nphiloc,Vij,
-!$   &    r2sp,dxsp,VClocal,ilc,ilocal,iorb,DscfL,delkmats,Clocal,
-!$   &    Vlocal,      
-!$   &    phia,nth,tid)
-#ifdef _OMP_
-      NTH = omp_get_num_threads( )
-      TID = omp_get_thread_num( ) + 1
-#else
       NTH = 1
       TID = 1
-#endif
 
-!$OMP SINGLE
       if (ParallelLocal) then
         nullify ( omp_DscfL )
         call re_alloc( omp_DscfL, 1, nvmaxl, 1, 2, 1, NTH, 
@@ -205,7 +183,6 @@ C     Allocate local memory
      &               'Clocal', 'delk' )
       call re_alloc( omp_phia, 1, maxoa, 1, nsp, 1, NTH,
      &               'phia', 'delk' )
-!$OMP END SINGLE
 
       if (ParallelLocal) then
         DscfL => omp_DscfL(1:nvmaxl,1:2,TID)
@@ -231,7 +208,6 @@ C     Full initializations done only once
       last                     = 0
 
 C     Loop over grid points
-!$OMP DO SCHEDULE(GUIDED,LENXY)
       do ip = 1,np
 C       Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
@@ -469,7 +445,6 @@ C             Loop over sub-points
           enddo
         enddo
       enddo
-!$OMP END DO
 
 C  Add final Vlocal to delkmat
       do il = 1,last
@@ -571,10 +546,8 @@ C  Add final Vlocal to delkmat
         endif
       enddo
 
-!$OMP BARRIER
 
       if (ParallelLocal) then
-!$OMP   DO SCHEDULE(STATIC)
         do ind = 1, nvmaxl
           do irealim = 1, 2
             do ii = 2, NTH
@@ -583,19 +556,14 @@ C  Add final Vlocal to delkmat
             enddo
           enddo
         enddo
-!$OMP   END DO
       else if (NTH.gt.1) then
-!$OMP   DO SCHEDULE(STATIC)
         do ind = 1, nvmax
           do ii = 1, NTH
             delkmat(ind) = delkmat(ind) + 
      &                     omp_delkmats(ind,ii)
           enddo
         enddo
-!$OMP   END DO
       endif
-
-!$OMP END PARALLEL
 
 C     Free memory
       call de_alloc( omp_phia, 'phia', 'delk' )
