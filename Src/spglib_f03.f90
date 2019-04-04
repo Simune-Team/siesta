@@ -370,7 +370,7 @@ contains
 ! real*8  cell(3,3)    : input lattice vectors (Bohr)
 ! integer num_atom           : input number of atoms
 ! integer types(num_atom)      : input species indexes
-! real*8  xred(3,num_atom)     : input atomic cartesian coordinates (Bohr)
+! real*8  xred(3,num_atom)     : input atomic reduced coordinates (Bohr)
 ! *****************************************************************
     implicit         none
     type(SpglibDataset_ext), intent(out) :: syms_this
@@ -381,7 +381,7 @@ contains
 ! local vars
     integer :: max_size
     integer :: ii, isym, jj
-    double precision :: cellinv(3,3)
+    double precision :: cellinvT(3,3)
     double precision :: dsymop(3,3)
     double precision :: dsymopinv(3,3)
     double precision :: zerovec(3) = (/0.0d0, 0.0d0, 0.0d0/)
@@ -465,14 +465,14 @@ contains
 ! get symops in cartesian coordinates - should still be integer -1 0 1 elements but store in floats
     allocate(syms_this%symops_cart(1:3, 1:3, 1:syms_this%n_operations))
 
-    !call matr3invt(syms_this%celltransp, cellinv) ! NB: returns inverse transpose, which is what we want
-    call matr3invt(cell, cellinv) 
-    cellinv = transpose(cellinv)
+    !call matr3invt(syms_this%celltransp, cellinvT) ! NB: returns inverse transpose, which is what we want
+    call matr3invt(cell, cellinvT) 
+    !cellinv = transpose(cellinv) ! cellinv is now the straight inverse of cell
 
     ! symcart = rprim * symred * gprim^T
     do ii = 1, syms_this%n_operations
-      !dsymop = matmul(syms_this%celltransp, matmul(dble(syms_this%rotations(:, :, ii)), cellinv))
-      dsymop = matmul(cell, matmul(dble(syms_this%rotations(:, :, ii)), cellinv))
+      !dsymop = matmul(syms_this%celltransp, matmul(dble(syms_this%rotations(:, :, ii)), cellinvT))
+      dsymop = matmul(cell, matmul(dble(syms_this%rotations(:, :, ii)), cellinvT))
       !syms_this%symops_cart(:, :, ii) = nint(dsymop)
       syms_this%symops_cart(:, :, ii) = dsymop
 
@@ -484,7 +484,7 @@ contains
          print *, 'rot        ', syms_this%rotations(:, :, ii)
          print *, 'rotcart    ', syms_this%symops_cart(:, :, ii)
          print *, 'rotcart_dp ', dsymop
-         print *, 'error : cartesian symop element is not -1 0 +1'
+         print *, 'notice : cartesian symop element is not -1 0 +1'
          !stop
       end if
 !END DEBUG
@@ -502,7 +502,7 @@ contains
         stop 'error : recip symop element is not integer (normally -1 0 +1)'
       end if
 ! END DEBUG
-      dsymop = matmul(transpose(cellinv), matmul(dble(syms_this%symops_recip(:, :, ii)), syms_this%celltransp))
+      dsymop = matmul(transpose(cellinvT), matmul(dble(syms_this%symops_recip(:, :, ii)), cell))
       syms_this%symops_recip_cart(:, :, ii) = nint(dsymop)
 ! DEBUG - perhaps comment out later: one check is that the group of operations is closed.
 !      do jj = 1, ii-1
@@ -579,6 +579,21 @@ contains
       write (*,'(3E20.10)') syms_this%symops_cart(:,2,ii)
       write (*,'(3E20.10)') syms_this%symops_cart(:,3,ii)
       write (*, '(3(E20.10,2x))') syms_this%trans_cart(:,ii)
+      write (*,*)
+    end do
+    write (*,'(a)') "----------------------------------------------------------------------"
+    write (*,'(a)') " reciprocal space symops in reduced coordinates = "
+    do ii = 1, syms_this%n_operations
+      write (*,'(3I6)') syms_this%symops_recip(:,1,ii)
+      write (*,'(3I6)') syms_this%symops_recip(:,2,ii)
+      write (*,'(3I6)') syms_this%symops_recip(:,3,ii)
+      write (*,*)
+    end do
+    write (*,'(a)') " reciprocal space symops in cartesian coordinates = "
+    do ii = 1, syms_this%n_operations
+      write (*,'(3E20.10)') syms_this%symops_recip_cart(:,1,ii)
+      write (*,'(3E20.10)') syms_this%symops_recip_cart(:,2,ii)
+      write (*,'(3E20.10)') syms_this%symops_recip_cart(:,3,ii)
       write (*,*)
     end do
     write (*,'(a)') "----------------------------------------------------------------------"

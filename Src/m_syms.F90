@@ -295,17 +295,17 @@ subroutine syms_stresses (syms_this, stress)
   type(SpglibDataset_ext), intent(in) :: syms_this
   double precision, intent(inout) :: stress(3,3)
 
-  double precision :: stress_sym(3,3), dsymop(3,3), dsymopi(3,3)
+  double precision :: stress_sym(3,3), dsymop(3,3)
   double precision :: maxdiff
 
   stress_sym = 0.0d0
   do isym = 1, syms_this%n_operations
-    dsymop = syms_this%symops_recip_cart(:, :, isym)
-    dsymopi = transpose(syms_this%symops_recip_cart(:,:,isym))
+    dsymop  =           syms_this%symops_recip_cart(:,:,isym)
 ! TODO: make trials with hex and trigonal space groups to check the order of recip and normal symops
-    stress_sym = stress_sym + matmul(dsymopi, matmul(stress, dsymop))
+    stress_sym = stress_sym + matmul(dsymop, matmul(stress, transpose(dsymop)))
   end do
   stress_sym = stress_sym/syms_this%n_operations
+
   print '(a)', 'old  stress = '
   print '(3E20.10)',stress(:,1)
   print '(3E20.10)',stress(:,2)
