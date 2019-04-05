@@ -45,7 +45,7 @@
 ! Notice that, if the restore call is skipped, the new defaults will
 ! stay in effect until a new call to alloc_dafault is made.
 ! ==================================================================
-! SUBROUTINE alloc_report( level, unit, file, printNow, threshold )
+! SUBROUTINE alloc_report( level, unit, file, printNow, threshold, shutdown )
 !   Sets the output file for the allocation report
 ! INPUT (optional):
 !   integer      :: level     : Level (detail) of report
@@ -53,7 +53,8 @@
 !   character*(*):: file      : Output file name
 !   logical      :: printNow  : If present & true => print report now
 !   real(dp)     :: threshold : Memory threshold (in bytes) to print
-!                               the memory use of any given array 
+!                               the memory use of any given array
+!   logical      :: shutdown  : If present & true then close output unit.
 ! BEHAVIOR:
 !   The detail/extent of the report increses with the value of level:
 ! level=0 : no report at all (the default)
@@ -73,6 +74,13 @@
 ! reports are written consecutively in the same file, each with a 
 ! time stamp header.
 !   If threshold is not present, threshold=0 is assumed.
+!   When performing library invocations of this module in say
+! external methods it is vital to close units before exiting the
+! library to ensure that no dangling files are kept open.
+! To ensure the file is closed before return one can use
+! the shutdown=.true. argument to forcefully close (and free)
+! the unit used to report. If not present or .false. the unit
+! will be kept open.
 !   In parallel execution, the report sections that involve every
 ! reallocation (levels 1, 3, and 4) are written only by node 0.
 ! The section that is written upon request (level 2) is written
