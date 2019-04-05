@@ -24,7 +24,6 @@ C **********************************************************************
       USE FDF
       USE ATMFUNCS
       USE CHEMICAL
-      USE LISTSC_MODULE, ONLY: LISTSC
       use planed, only: plane
 
       IMPLICIT NONE
@@ -79,7 +78,6 @@ C                            (Only used if ioption = 2)
 C REAL*8  DIRVER2(3)       : Components of the second vector contained 
 C                            in the plane
 C                            (Only used if ioption = 2)
-C REAL*8  ARMUNI           : Conversion factor for the charge density
 C INTEGER IUNITCD          : Unit of the charge density
 C INTEGER ISCALE           : Unit if the points of the plane
 C REAL*8  RMAXO            : Maximum range of basis orbitals
@@ -106,10 +104,10 @@ C **********************************************************************
       INTEGER
      .  I, J, IN, IAT1, IAT2, JO, IO, IUO, IAVEC, IAVEC1, IAVEC2, 
      .  IS1, IS2, IPHI1, IPHI2, IND, IX, IY, IZ, NX, NY, NZ, IWF, 
-     .  INDWF, IZA(NA), IK
+     .  INDWF, IZA(NA), IK, is
 
       integer :: spinor_comps, ispin, iwf_orig
-      integer :: idummy, number_of_wfns
+      integer :: idummy, number_of_wfns, spinor_dim
       real(dp) :: ener
       complex(dp) :: expphi
       
@@ -124,7 +122,7 @@ C **********************************************************************
      .  MWAVE, MWAVEUP, MWAVEDN,
      .  PWAVE, PWAVEUP, PWAVEDN
  
-      LOGICAL FIRST
+      LOGICAL FIRST, empty_domain
 
       CHARACTER
      .  SNAME*40, FNAMEWFRE*60, FNAMEWFIM*60, 
@@ -167,26 +165,6 @@ C REAL IMWF(NPO,NSPIN)     : Wave fnctn at each point of the grid (imag part)
 C INTEGER IZA(NA)          : Atomic number of each atom
 C **********************************************************************
 
-      ! The first dimension of wf_single is the number of real numbers per orbital
-      ! to be read from the WFSX file:
-      ! 1 for real wfs, 2 for complex, and four for the two spinor components
-      ! wf is a complex array which holds either a wfn or a two-component spinor.
-
-      if (non_coll) then
-        allocate(wf_single(4,1:no_u))
-        allocate(wf(1:no_u,2))
-        spinor_comps = 2
-      else
-        spinor_comps = 1
-        if (gamma_wfsx) then
-           allocate(wf_single(1,1:no_u))
-           allocate(wf(1:no_u,1))
-        else
-           allocate(wf_single(2,1:no_u))
-           allocate(wf(1:no_u,1))
-        endif
-      endif
-      allocate(CWAVE(spinor_comps))
 
 C     Allocate some variables ---------------------------------------------
 
@@ -240,8 +218,31 @@ C Initialize neighbour subroutine --------------------------------------
 
 ! Stream over wavefunctions in file
 
+      ! The first dimension of wf_single is the number of real numbers per orbital
+      ! to be read from the WFSX file:
+      ! 1 for real wfs, 2 for complex, and four for the two spinor components
+      ! wf is a complex array which holds either a wfn or a two-component spinor.
+
+      if (non_coll) then
+        allocate(wf_single(4,1:no_u))
+        allocate(wf(1:no_u,2))
+        spinor_comps = 2
+      else
+        spinor_comps = 1
+        if (gamma_wfsx) then
+           allocate(wf_single(1,1:no_u))
+           allocate(wf(1:no_u,1))
+        else
+           allocate(wf_single(2,1:no_u))
+           allocate(wf(1:no_u,1))
+        endif
+      endif
+      allocate(CWAVE(spinor_comps))
+
       DO IK  = 1, NK
-        do ispin = 1, nspin_blocks
+
+         do ispin = 1, nspin_blocks
+
          read(wf_unit) idummy, k(1:3)
             if (idummy /= ik) then
                write(6,*) "ik index mismatch in WFS file"
@@ -254,9 +255,10 @@ C Initialize neighbour subroutine --------------------------------------
             endif
          read(wf_unit) number_of_wfns
 
-         WRITE(6,*) 'stm:  Processing kpoint ',IK
-         WRITE(6,*) 'stm:  nwf: ', number_of_wfns
+         WRITE(6,"(a,i0,a,i0)") 'Processing kpoint ',IK,
+     $              ' nwf: ', number_of_wfns
          WRITE(6,*) '     --------------------------------'
+
          DO IWF = 1, number_of_wfns
             read(wf_unit) iwf_orig
             if (iwf_orig /= iwf) then
@@ -336,7 +338,7 @@ C Initialize neighbour subroutine --------------------------------------
             FNAMEWFUIM = TRIM(FNAMEWFURE)//'.IMAG'
             FNAMEWFURE = TRIM(FNAMEWFURE)//'.REAL'
 
-         ELSE IF (IDIMEN .EQ. 3) THEN
+           ELSE IF (IDIMEN .EQ. 3) THEN
             FNAMEWFURE = TRIM(SNAME)//'.K' //
      $            trim(char2) // '.WF.' // trim(CHAR1)
             FNAMEWFDPH = TRIM(FNAMEWFURE)//'.DOWN.PHASE.cube'
@@ -347,7 +349,7 @@ C Initialize neighbour subroutine --------------------------------------
             FNAMEWFUMO = TRIM(FNAMEWFURE)//'.UP.MOD.cube'
             FNAMEWFUIM = TRIM(FNAMEWFURE)//'.UP.IMAG.cube'
             FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP.REAL.cube'
-          ENDIF
+           ENDIF
 
           CALL IO_ASSIGN(UNITRE1)
           OPEN(UNIT = UNITRE1, FILE = FNAMEWFURE, STATUS = 'UNKNOWN',
@@ -468,16 +470,18 @@ C   Determine atoms which are within the plotting box
 
 C Allocate space for wave functions in 3D-grid
 
+        spinor_dim = max(nspin,2)
         IF (.NOT.ALLOCATED(RWF)) THEN
-          ALLOCATE(RWF(NPX*NPY*NPZ,NSPIN))
-          ALLOCATE(IMWF(NPX*NPY*NPZ,NSPIN))
-          ALLOCATE(MWF(NPX*NPY*NPZ,NSPIN))
-          ALLOCATE(PWF(NPX*NPY*NPZ,NSPIN))
+          ALLOCATE(RWF(NPX*NPY*NPZ,spinor_dim))
+          ALLOCATE(IMWF(NPX*NPY*NPZ,spinor_dim))
+          ALLOCATE(MWF(NPX*NPY*NPZ,spinor_dim))
+          ALLOCATE(PWF(NPX*NPY*NPZ,spinor_dim))
         ENDIF
 
       
 C Loop over all points in real space -----------------------------------
 
+        empty_domain = .true.
         NPO = 0
         DO 102 NZ = 1,NPZ
         DO 101 NY = 1,NPY
@@ -499,6 +503,9 @@ C Localize non-zero orbitals at each point in real space ---------------
           CALL NEIGHB( CELL, RMAX, NA, XA, XPO, IA, ISEL, 
      .                 NNA, JNA, XIJ, R2IJ, FIRST )
 
+          if (nna /= 0) empty_domain = .false.
+
+          
 C Loop over Non-zero orbitals ------------------------------------------ 
            DO IAT1 = 1, NNA
              IF( R2IJ(IAT1) .GT. RMAX2 ) EXIT
@@ -516,17 +523,16 @@ C Loop over Non-zero orbitals ------------------------------------------
              SI=SIN(PHASE)
              CO=COS(PHASE)
              EXPPHI=CMPLX(CO,SI,dp)
-
+             
              DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
                IPHI1 = IPHORB(IO)
                IUO   = INDXUO(IO)
                CALL PHIATM( IS1, IPHI1, XVEC1, PHIMU, GRPHIMU )
-               ! Note implicit loop over spinor components
+               !     Note implicit loop over spinor components
                CWAVE(:) = CWAVE(:) + PHIMU * WF(iuo,:) * EXPPHI 
-
             ENDDO       ! orbitals
          ENDDO ! atoms
-           
+
            IF ( NSPIN .EQ. 1 ) THEN
 
               rwave = real(cwave(1), dp)
@@ -559,98 +565,69 @@ C Loop over Non-zero orbitals ------------------------------------------
            ENDIF
 
            IF (IDIMEN .EQ. 2) THEN
-             IF ( NSPIN .EQ. 1 ) THEN
-                WRITE(UNITRE1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),RWAVE*SQRT(ARMUNI)
-                WRITE(UNITIM1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),IWAVE*SQRT(ARMUNI)
-                WRITE(UNITMO1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),MWAVE*SQRT(ARMUNI)
-                WRITE(UNITPH1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),PWAVE
+              IF ( NSPIN .EQ. 1 ) THEN
+                 call write_plapo(unitre1,rwave)
+                 call write_plapo(unitim1,iwave)
+                 call write_plapo(unitmo1,mwave)
+                 call write_plapo(unitph1,pwave)
              ELSEIF ( NSPIN .EQ. 2 ) THEN
                 if (ispin == 1) then              
-                   WRITE(UNITRE1,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),RWAVEUP*SQRT(ARMUNI)
-                   WRITE(UNITIM1,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),IWAVEUP*SQRT(ARMUNI)
-                   WRITE(UNITMO1,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),MWAVEUP*SQRT(ARMUNI)
-                   WRITE(UNITPH1,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),PWAVEUP
+                 call write_plapo(unitre1,rwaveup)
+                 call write_plapo(unitim1,iwaveup)
+                 call write_plapo(unitmo1,mwaveup)
+                 call write_plapo(unitph1,pwaveup)
                 else
-                   WRITE(UNITRE2,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),RWAVEDN*SQRT(ARMUNI)
-                   WRITE(UNITIM2,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),IWAVEDN*SQRT(ARMUNI)
-                   WRITE(UNITMO2,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),MWAVEDN*SQRT(ARMUNI)
-                   WRITE(UNITPH2,'(3F12.5)')
-     .                  PLAPO(NPO,1),PLAPO(NPO,2),PWAVEDN
+                 call write_plapo(unitre2,rwavedn)
+                 call write_plapo(unitim2,iwavedn)
+                 call write_plapo(unitmo2,mwavedn)
+                 call write_plapo(unitph2,pwavedn)
                 endif
              ELSEIF ( NSPIN .EQ. 4 ) THEN
-                WRITE(UNITRE1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),RWAVEUP*SQRT(ARMUNI)
-                WRITE(UNITIM1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),IWAVEUP*SQRT(ARMUNI)
-                WRITE(UNITMO1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),MWAVEUP*SQRT(ARMUNI)
-                WRITE(UNITPH1,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),PWAVEUP
 
-                WRITE(UNITRE2,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),RWAVEDN*SQRT(ARMUNI)
-                WRITE(UNITIM2,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),IWAVEDN*SQRT(ARMUNI)
-                WRITE(UNITMO2,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),MWAVEDN*SQRT(ARMUNI)
-                WRITE(UNITPH2,'(3F12.5)')
-     .               PLAPO(NPO,1),PLAPO(NPO,2),PWAVEDN
-             ENDIF
+                 call write_plapo(unitre1,rwaveup)
+                 call write_plapo(unitim1,iwaveup)
+                 call write_plapo(unitmo1,mwaveup)
+                 call write_plapo(unitph1,pwaveup)
+
+                 call write_plapo(unitre2,rwavedn)
+                 call write_plapo(unitim2,iwavedn)
+                 call write_plapo(unitmo2,mwavedn)
+                 call write_plapo(unitph2,pwavedn)
+
+              ENDIF
+              
           ELSE IF (IDIMEN .EQ. 3) THEN
              IF (NSPIN .EQ. 1) THEN
-                RWF(NPO,1) = RWAVE*SQRT(ARMUNI)
-                IMWF(NPO,1) = IWAVE*SQRT(ARMUNI)
-                MWF(NPO,1) = MWAVE*SQRT(ARMUNI)
+                RWF(NPO,1) = RWAVE
+                IMWF(NPO,1) = IWAVE
+                MWF(NPO,1) = MWAVE
                 PWF(NPO,1) = PWAVE
              ELSE IF (NSPIN .EQ.2) THEN
                if (ispin == 1) then
-                  RWF(NPO,1) = RWAVEUP*SQRT(ARMUNI)
-                  IMWF(NPO,1) = IWAVEUP*SQRT(ARMUNI)
-                  MWF(NPO,1) = MWAVEUP*SQRT(ARMUNI)
+                  RWF(NPO,1) = RWAVEUP
+                  IMWF(NPO,1) = IWAVEUP
+                  MWF(NPO,1) = MWAVEUP
                   PWF(NPO,1) = PWAVEUP
                else
-                  RWF(NPO,2) = RWAVEDN*SQRT(ARMUNI)
-                  IMWF(NPO,2) = IWAVEDN*SQRT(ARMUNI)
-                  MWF(NPO,2) = MWAVEDN*SQRT(ARMUNI)
+                  RWF(NPO,2) = RWAVEDN
+                  IMWF(NPO,2) = IWAVEDN
+                  MWF(NPO,2) = MWAVEDN
                   PWF(NPO,2) = PWAVEDN
                endif
              ELSE IF (NSPIN .EQ. 4) THEN
 
-                RWF(NPO,1) = RWAVEUP*SQRT(ARMUNI)
-                IMWF(NPO,1) = IWAVEUP*SQRT(ARMUNI)
-                MWF(NPO,1) = MWAVEUP*SQRT(ARMUNI)
+                RWF(NPO,1) = RWAVEUP
+                IMWF(NPO,1) = IWAVEUP
+                MWF(NPO,1) = MWAVEUP
                 PWF(NPO,1) = PWAVEUP
 
-                RWF(NPO,2) = RWAVEDN*SQRT(ARMUNI)
-                IMWF(NPO,2) = IWAVEDN*SQRT(ARMUNI)
-                MWF(NPO,2) = MWAVEDN*SQRT(ARMUNI)
+                RWF(NPO,2) = RWAVEDN
+                IMWF(NPO,2) = IWAVEDN
+                MWF(NPO,2) = MWAVEDN
                 PWF(NPO,2) = PWAVEDN
 
             ENDIF
          ENDIF
-
-           IF (IDIMEN .EQ. 2) THEN
-             IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
-               WRITE(UNITRE1,*)
-               WRITE(UNITIM1,*)
-               IF ( NSPIN .EQ. 2 ) THEN
-                 WRITE(UNITRE2,*)
-                 WRITE(UNITIM2,*)
-               ENDIF
-             ENDIF
-           ENDIF
-
 
 C End x loop
  100    ENDDO  
@@ -658,77 +635,44 @@ C End y and z loops
  101    ENDDO  
  102    ENDDO  
 
+        if (empty_domain) then
+           call die("This domain is not covered by any atoms!")
+        endif
+        
         IF (IDIMEN .EQ. 3) THEN
-          IF (NSPIN .EQ. 1) THEN
-            DO NX=1,NPX
+! Write cube file data; Z dim changes fastest
+
+           DO NX=1,NPX
               DO NY=1,NPY
-                WRITE(UNITRE1,'(6e13.5)')
-     .            (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                WRITE(UNITIM1,'(6e13.5)')
-     .            (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                WRITE(UNITMO1,'(6e13.5)')
-     .            (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                WRITE(UNITPH1,'(6e13.5)')
-     .            (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+
+                 if ( (NSPIN .EQ. 1)  .or.
+     $                ((NSPIN .EQ.2).and.(ispin.eq.1)) .or. 
+     $                (NSPIN .EQ.4)  ) then
+
+                    WRITE(UNITRE1,'(6e13.5)')
+     $                   (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                    WRITE(UNITIM1,'(6e13.5)')
+     $                  (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                    WRITE(UNITMO1,'(6e13.5)')
+     $                   (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                    WRITE(UNITPH1,'(6e13.5)')
+     $                   (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                 endif
+                 
+                 if ( ((NSPIN .EQ.2).and.(ispin.eq.2)) .or. 
+     $                   (NSPIN .EQ.4)  ) then
+
+                    WRITE(UNITRE2,'(6e13.5)')
+     $                   (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                    WRITE(UNITIM2,'(6e13.5)')
+     $                  (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                    WRITE(UNITMO2,'(6e13.5)')
+     $                   (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                    WRITE(UNITPH2,'(6e13.5)')
+     $                   (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                 endif
               ENDDO
-            ENDDO
-         ELSE IF (NSPIN .EQ. 2) THEN
-            if (ispin == 1) then
-               DO NX=1,NPX
-                  DO NY=1,NPY
-                     WRITE(UNITRE1,'(6e13.5)')
-     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                     WRITE(UNITIM1,'(6e13.5)')
-     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                     WRITE(UNITMO1,'(6e13.5)')
-     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                     WRITE(UNITPH1,'(6e13.5)')
-     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                  ENDDO
-               ENDDO
-            else
-               DO NX=1,NPX
-                  DO NY=1,NPY
-                     WRITE(UNITRE2,'(6e13.5)')
-     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                     WRITE(UNITIM2,'(6e13.5)')
-     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                     WRITE(UNITMO2,'(6e13.5)')
-     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                     WRITE(UNITPH2,'(6e13.5)')
-     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                  ENDDO
-               ENDDO
-            endif
-         ELSE IF (NSPIN .EQ. 4) THEN
-
-               DO NX=1,NPX
-                  DO NY=1,NPY
-                     WRITE(UNITRE1,'(6e13.5)')
-     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                     WRITE(UNITIM1,'(6e13.5)')
-     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                     WRITE(UNITMO1,'(6e13.5)')
-     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                     WRITE(UNITPH1,'(6e13.5)')
-     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                  ENDDO
-               ENDDO
-
-               DO NX=1,NPX
-                  DO NY=1,NPY
-                     WRITE(UNITRE2,'(6e13.5)')
-     .                    (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                     WRITE(UNITIM2,'(6e13.5)')
-     .                   (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                     WRITE(UNITMO2,'(6e13.5)')
-     .                    (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                     WRITE(UNITPH2,'(6e13.5)')
-     .                    (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                  ENDDO
-               ENDDO
-
-         ENDIF
+           ENDDO
 
           WRITE(6,'(A)')
           WRITE(6,'(A)')
@@ -772,7 +716,16 @@ C End y and z loops
       DEALLOCATE(MWF)
       DEALLOCATE(PWF)
 
-        CONTAINS
+      CONTAINS
+      
+        subroutine write_plapo(lun,w)
+        integer, intent(in) :: lun
+        real(dp), intent(in) :: w
+        ! rest by host association
+        
+        WRITE(lun,'(3F12.5)') PLAPO(NPO,1),PLAPO(NPO,2),w
+        IF ( MOD(NPO,NPX) .EQ. 0 ) WRITE(lun,*)
+        end subroutine write_plapo
       
        subroutine write_cube_header(lun,fname)
        integer, intent(in) :: lun
@@ -793,24 +746,24 @@ C End y and z loops
 
       END
 
-      subroutine mod_and_phase(rwave,iwave,mwave,pwave)
+      subroutine mod_and_phase(rw,iw,mw,pw)
       integer, parameter :: dp = selected_real_kind(10,100)
-      real(dp), intent(in) :: rwave
-      real(dp), intent(inout) :: iwave
-      real(dp), intent(out) :: mwave, pwave
+      real(dp), intent(in) :: rw
+      real(dp), intent(inout) :: iw
+      real(dp), intent(out) :: mw, pw
 
       real(dp), parameter :: pi = 3.1141592653589_dp
       
-      MWAVE = DSQRT(RWAVE**2 + IWAVE**2)
-      IF (DABS(IWAVE) .LT. 1.D-6) IWAVE = DABS(IWAVE)
-      IF (DABS(RWAVE) .LT. 1.D-12) THEN
-         IF (IWAVE .GT. 0.0D0) PWAVE = PI/2.0D0
-         IF (IWAVE .LT. 0.0D0) PWAVE = -PI/2.0D0
+      MW = SQRT(RW**2 + IW**2)
+      IF (ABS(IW) .LT. 1.D-6) IW = ABS(IW)
+      IF (ABS(RW) .LT. 1.D-12) THEN
+         IF (IW .GT. 0.0D0) PW = PI/2.0D0
+         IF (IW .LT. 0.0D0) PW = -PI/2.0D0
       ELSE
-         PWAVE = DATAN(IWAVE/RWAVE)
+         PW = ATAN(IW/RW)
       ENDIF
-      IF (RWAVE .LT. 0.0D0 .AND. IWAVE .GE. 0.0d0)
-     .     PWAVE = PWAVE + PI
-      IF (RWAVE .LT. 0.0D0 .AND. IWAVE .LT. 0.0D0)
-     .     PWAVE = PWAVE - PI
+      IF (RW .LT. 0.0D0 .AND. IW .GE. 0.0d0)
+     .     PW = PW + PI
+      IF (RW .LT. 0.0D0 .AND. IW .LT. 0.0D0)
+     .     PW = PW - PI
       end
