@@ -74,7 +74,7 @@ SYSOBJ=$(SYS).o
 OBJS_DENCHAR = atompla.o planed.o\
         bessph.o chkdim.o dismin.o \
 	dot.o readpla.o readsts.o \
-        io.o iodm.o itochar.o length.o \
+        io.o iodm.o length.o \
         matvect.o memory.o colinear.o\
 	neighb.o pxf.o \
 	radfft.o m_fft_gpfa.o ranger.o \

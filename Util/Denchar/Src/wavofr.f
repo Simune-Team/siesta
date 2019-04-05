@@ -17,13 +17,14 @@
 C **********************************************************************
 C Compute the wave functions at the points of a plane or a 3D grid
 C in real space
-C Coded by P. Ordejon, from Junquera's rhoofr. July 2003
+C     Coded by P. Ordejon, from Junquera's rhoofr. July 2003
+!     Extended to NC spin by Alberto Garcia, 2019      
 C **********************************************************************
 
       use precision
       USE FDF
-      USE ATMFUNCS
-      USE CHEMICAL
+      USE ATMFUNCS, only: phiatm
+      USE CHEMICAL, only: atomic_number
       use planed, only: plane
 
       IMPLICIT NONE
@@ -129,12 +130,9 @@ C **********************************************************************
      .  FNAMEWFURE*60, FNAMEWFUIM*60, FNAMEWFDRE*60, FNAMEWFDIM*60, 
      .  FNAMEWFMO*60, FNAMEWFPH*60,
      .  FNAMEWFUMO*60, FNAMEWFUPH*60, FNAMEWFDMO*60, FNAMEWFDPH*60,
-     .  CHAR1*10, CHAR2*10, ITOCHAR*10, 
-     .  EXT*20, EXT2*25
+     .  CHAR1*10, CHAR2*10, EXT*20, EXT2*25
 
-      EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE,
-     .  NEIGHB, WROUT, ITOCHAR
+      EXTERNAL IO_ASSIGN, IO_CLOSE, NEIGHB, WROUT
 
 C **********************************************************************
 C INTEGER NPLAMAX          : Maximum number of points in the plane
@@ -240,7 +238,7 @@ C Initialize neighbour subroutine --------------------------------------
       allocate(CWAVE(spinor_comps))
 
       DO IK  = 1, NK
-
+         ! ** Put filters in these loops
          do ispin = 1, nspin_blocks
 
          read(wf_unit) idummy, k(1:3)
@@ -280,9 +278,9 @@ C Initialize neighbour subroutine --------------------------------------
                endif
             endif
 
-
-            CHAR1 = ITOCHAR(Iwf_Orig)
-            CHAR2 = ITOCHAR(IK)
+            write(CHAR1,"(i0)") Iwf_Orig
+            write(CHAR2,"(i0)") IK
+            
 !     Open files to store wave functions -----------------
             SNAME = FDF_STRING('SystemLabel','siesta')
 
