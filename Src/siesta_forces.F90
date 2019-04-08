@@ -116,6 +116,7 @@ contains
     real(dp) :: drhog ! Max. change in rho(G) (experimental)
     real(dp), target :: G2max ! actually used meshcutoff
     type(converger_t) ::  conv_harris, conv_freeE
+    character(len=20) timer_str_scf
 
     ! For initwf
     integer :: istpp
@@ -300,7 +301,13 @@ contains
 
           end if
 
-          call timer( 'IterSCF', 1 )
+          if (fdf_get("timing-split-scf-steps",.false.)) then
+             write(timer_str_scf,"(a,i0)") 'IterSCF_', iscf
+          else
+             timer_str_scf = 'IterSCF'
+          endif
+
+          call timer( timer_str_scf, 1 )
           if (cml_p) &
                call cmlStartStep( xf=mainXML, type='SCF', index=iscf )
           
@@ -424,7 +431,7 @@ contains
              end if
           end if
 
-          call timer( 'IterSCF', 2 )
+          call timer( timer_str_scf, 2 )
           call print_timings( first_scf, istep == inicoor )
           if (cml_p) call cmlEndStep(mainXML)
 
@@ -646,7 +653,7 @@ contains
       if ( .not. first_scf ) return
       if ( .not. first_md ) return
 
-      routine = 'IterSCF'
+      routine = timer_str_scf
 
       if ( TSrun ) then
          ! with Green function generation

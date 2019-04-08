@@ -909,6 +909,14 @@ contains
             &not possible with N_elec > 3.'
     end if
 
+    do i = 1, N_Elec
+      if ( Elecs(i)%repeat .and. Elecs(i)%bloch%size() > 1 ) then
+        write(*,'(a)') 'Electrode '//trim(Elecs(i)%name)//' is &
+            &using Bloch unfolding using the repeat scheme! &
+            &Please use the tiling scheme (it is orders of magnitudes faster!).'
+      end if
+    end do
+
 #ifdef MPI
 #ifdef NCDF_PARALLEL
     if ( .not. save_parallel ) then

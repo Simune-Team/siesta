@@ -443,6 +443,7 @@
         elseif ((isolve==SOLVE_DIAGON) .or. (isolve==SOLVE_PEXSI)
      .                              .or. (isolve==SOLVE_ELSI)
      .                              .or. (isolve==SOLVE_CHESS)
+     .                              .or. (isolve==SOLVE_DUMMY)
      .                              .or. (isolve==SOLVE_TRANSI)) then
           if (cml_p) then
              call cmlAddProperty(xf=mainXML, value=Etot/eV, 

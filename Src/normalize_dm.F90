@@ -11,43 +11,25 @@ module m_normalize_dm
 
   private
   
-  public :: normalize_dm
+  public :: normalize_dm, dm_norm
 
 contains
-
-  subroutine normalize_dm( first )
-    
+  subroutine dm_norm(qsol)
     use precision, only: dp
-    use sparse_matrices, only: Dscf, Escf, maxnh, S
-    use siesta_options,  only: dm_normalization_tol
-    use siesta_options,  only: normalize_dm_during_scf
-    use siesta_options,  only: mix_scf_first
-    use atomlist, only: qtot
-    use parallel, only: IOnode
-    use sys,      only: die
+    use sparse_matrices, only: Dscf, maxnh, S
     use m_spin,   only: spin
 #ifdef MPI
     use m_mpi_utils, only: globalize_sum
 #endif
-    
-    ! Whether the SCF step is the first
-    ! In this case a different tolerance is used...
-    ! Say if reading an old DM
-    logical, intent(in) :: first
 
-    integer :: io, is
-    ! Total unnormalized electron charge
-    real(dp):: qsol
-    ! Scaling for normalization
-    real(dp):: scale
-    character(len=132) :: msg
+    real(dp), intent(out) :: qsol
+
+    integer :: is, io
 #ifdef MPI
     real(dp):: buffer1
 #endif
-
-    ! Normalize density matrix to exact charge
     
-    qsol = 0.0_dp
+      qsol = 0.0_dp
 !$OMP parallel do default(shared), collapse(2), &
 !$OMP& private(is,io), reduction(+:qsol)
     do is = 1 , spin%spinor
@@ -61,6 +43,35 @@ contains
     call globalize_sum(qsol, buffer1)
     qsol = buffer1
 #endif
+  end subroutine dm_norm
+  
+  subroutine normalize_dm( first )
+    
+    use precision, only: dp
+    use sparse_matrices, only: Dscf, Escf, maxnh, S
+    use siesta_options,  only: dm_normalization_tol
+    use siesta_options,  only: normalize_dm_during_scf
+    use siesta_options,  only: mix_scf_first
+    use atomlist, only: qtot
+    use parallel, only: IOnode
+    use sys,      only: die
+    use m_spin,   only: spin
+    
+    ! Whether the SCF step is the first
+    ! In this case a different tolerance is used...
+    ! Say if reading an old DM
+    logical, intent(in) :: first
+
+    integer :: io, is
+    ! Total unnormalized electron charge
+    real(dp):: qsol
+    ! Scaling for normalization
+    real(dp):: scale
+    character(len=132) :: msg
+
+    ! Normalize density matrix to exact charge
+    call dm_norm(qsol)
+    
 
     ! Calculate the relative difference from the total charge
     scale = abs(qsol / qtot - 1._dp)

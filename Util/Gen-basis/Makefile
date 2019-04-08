@@ -177,6 +177,7 @@ basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
 basis_specs.o: pseudopotential.o 
 basis_types.o: alloc.o atmparams.o precision.o pseudopotential.o 
 bessph.o: precision.o 
+bloch_unfold.o: units.o
 bonds.o: alloc.o atmfuncs.o mneighb.o precision.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
 born_charge.o: precision.o siesta_geom.o siesta_options.o sparse_matrices.o
@@ -577,12 +578,12 @@ m_ts_electrode.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o
 m_ts_electrode.o: geom_helper.o intrinsic_missing.o m_iterator.o m_mat_invert.o
 m_ts_electrode.o: m_pivot_array.o m_ts_elec_se.o m_ts_electype.o parallel.o
 m_ts_electrode.o: precision.o  units.o
-m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_electype.o: intrinsic_missing.o m_char.o m_geom_box.o m_geom_plane.o
-m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
-m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
-m_ts_electype.o: units.o
+m_ts_electype.o: bloch_unfold.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_electype.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
+m_ts_electype.o: geom_helper.o intrinsic_missing.o m_char.o m_geom_box.o
+m_ts_electype.o: m_geom_plane.o m_handle_sparse.o m_iodm.o m_os.o m_region.o
+m_ts_electype.o: m_ts_chem_pot.o m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o
+m_ts_electype.o: parallel.o precision.o units.o
 m_ts_full_scat.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o
 m_ts_full_scat.o: m_ts_method.o parallel.o precision.o
 m_ts_fullg.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
@@ -981,6 +982,7 @@ gen-basis.o: atm_types.o atom.o atom_options.o basis_io.o basis_specs.o
 gen-basis.o: basis_types.o chemical.o ldau_specs.o parallel.o precision.o 
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 band.o: bands.o
+bloch_unfold_m.o: bloch_unfold.o
 class_ctrimat.o: class_TriMat.o
 class_ddata1d.o: class_Data1D.o
 class_ddata2d.o: class_Data2D.o

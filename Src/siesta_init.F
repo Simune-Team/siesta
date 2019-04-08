@@ -369,6 +369,10 @@ C     Initialise MPI and set processor number
          use_parallel_timer = fdf_get('UseParallelTimer', .true.)
          use_tree_timer = fdf_get('UseTreeTimer', .false.)
       end if
+      ! Enable tree-timer for this case
+      if (fdf_get("timing-split-scf-steps",.false.)) then
+         use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      endif
 
 !     Start time counter
 !     Note new placement of this first use, so that
