@@ -44,9 +44,11 @@ C *********************************************************************
       use neighbour, only: mneighb, jna=>jan, xij, r2ij,
      &                     reset_neighbour_arrays
 
-      use m_mpi_utils, only : globalize_sum
       use parallel,    only : Node, Nodes
+#ifdef MPI
+      use m_mpi_utils, only : globalize_sum
       use mpi_siesta,  only : MPI_Comm_World
+#endif      
       implicit none
       integer  na, nua
 

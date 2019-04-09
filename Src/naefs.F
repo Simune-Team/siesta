@@ -45,9 +45,11 @@ C *********************************************************************
      &                        reset_neighbour_arrays
 !      use m_new_matel, only : new_matel
       use matel_mod,   only : get_matel_t
-      use m_mpi_utils, only : globalize_sum
       use parallel,    only : Node, Nodes
+#ifdef MPI
+      use m_mpi_utils, only : globalize_sum
       use mpi_siesta,  only : MPI_Comm_World
+#endif      
       implicit none
 
       integer na, nua

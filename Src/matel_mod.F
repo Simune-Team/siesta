@@ -17,8 +17,10 @@
      &                             EVALUATE_X, EVALUATE_Y, EVALUATE_Z
       use spher_harm, only : RLYLM, YLMEXP, ylmylm, lofilm
       use spher_harm, only : reset_spher_harm
+#ifdef MPI
       use mpi_siesta,  only : MPI_INTEGER, MPI_COMM_WORLD
       use mpi_siesta,  only : MPI_DOUBLE_PRECISION, MPI_IN_PLACE
+#endif      
       private
       public :: init_matel     ! Initiallize S, T, TA, X, Y, Z, S_op, X_op, Y_op, Z_op
       public :: init_matel_SP  ! Initiallize SP
