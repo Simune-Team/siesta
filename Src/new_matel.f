@@ -146,6 +146,10 @@ C Internal variable types and dimensions ----------------------------
 
       EXTERNAL  PROPOR, TIMER
 C -------------------------------------------------------------------
+!      write(*,*) 'TO DO check new_MATEL => ', OPERAT, IG1, IG2
+!      call MPI_Finalize( I )
+!      stop
+
 C Start time counter 
 *     CALL TIMER( MYNAME, 1 )
 

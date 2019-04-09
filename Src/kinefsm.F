@@ -153,10 +153,9 @@ C Is this orbital on this Node?
 !     .                      Tij2, grTij2 )
                   call get_matel_t( ig, jg, xij(1:3,jn),
      .                      Tij, grTij )
-                  !if (ABS(Tij-Tij2)>1.0e-8_dp) then
-                  !  write(*,*) 'OVERLAP Check this', Tij, Tij-Tij2
-                  !  call die('bye bye')
-                  !endif
+!                  if (ABS(Tij-Tij2)>1.0e-8_dp) then
+!                    call die('KINEFSM=>get_matel_t')
+!                  endif
 
                   Ti(jo) = Ti(jo) + Tij
 

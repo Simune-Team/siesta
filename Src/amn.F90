@@ -88,10 +88,11 @@ subroutine amn( ispin )
                                                     !    global index to the 
                                                     !    trial projection
                                                     !    functions
-  use m_new_matel,        only: new_matel           ! New MATEL implementation 
+!  use m_new_matel,        only: new_matel           ! New MATEL implementation 
                                                     !   with the global indices 
                                                     !   of the radial functions 
                                                     !   as inputs
+  use matel_mod,          only : get_matel_s, init_matel_SP
   use atmfuncs,           only: orb_gindex          ! Subroutine that gives
                                                     !   the global index of an
                                                     !   atomic orbital
@@ -175,6 +176,7 @@ subroutine amn( ispin )
   real(dp) :: phase           ! Product of the k-vector with the position
                               !   where the neighbour orbital is centered
   real(dp) :: kvector(3)      ! k-point vector in the Wannier90 grid
+!  real(dp) :: overlap2, gradient2(3)
 
 
   complex(dp), dimension(:,:), pointer :: psiloc => null() ! Coefficients of the wave
@@ -300,6 +302,7 @@ kpoints:                 &
 !   all the bands...  In this way we will save the globalization of
 !   band data.
 !
+    call init_matel_SP( numproj, projector_gindex(1)-1 )
 #ifdef MPI
     do iproj = 1+Node, numproj, Nodes
 #else
@@ -332,12 +335,16 @@ OrbitalQueue:                                                        &
       do while (associated(item))
         r12 = trialcenter - item%center
         globalindexorbital = orb_gindex( item%specie, item%specieindex )
-        call new_matel('S',                & ! Compute the overlap
- &                     globalindexorbital, & ! Between orbital with globalinde
- &                     globalindexproj,    & ! And projector with globalindex
- &                     r12,                & 
- &                     overlap,            & 
- &                     gradient )
+        ! Compute the overlap Between orbital with globalinde
+        ! And projector with globalindex
+!        call new_matel( 'S', globalindexorbital, globalindexproj, r12, &
+!     &                  overlap2, gradient2 )
+        call get_matel_s( globalindexorbital, globalindexproj, r12, &
+     &                    overlap, gradient )
+!        if (ABS(overlap-overlap2)>1.0E-10) then
+!          write(*,*) ABS(overlap-overlap2), &
+!     &     ABS((overlap-overlap2)/overlap)
+!        endif
 
         phase = -1.0_dp * dot_product( kvector, item%center )
         exponential = exp( iu * phase )

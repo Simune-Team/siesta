@@ -5,16 +5,16 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
-      module m_dnaefs
-      public :: dnaefs
+      module m_naefs
+      public :: naefs
       CONTAINS
-      subroutine dnaefs( nua, na, scell, xa, indxua, rmaxv,
-     .                   isa, DEna, fa, stress, forces_and_stress)
+      subroutine naefs(nua, na, scell, xa, indxua, rmaxv,
+     .                 isa, Ena, fa, stress, forces_and_stress)
 C *********************************************************************
-C Correction of Neutral Atom energies, forces and stress due to the
-C overlap between ionic (bare pseudopotential) charges.
+C Neutral Atom (NA) energy, forces and stress.
+C This is the self energy of rho_na=-Laplacian(v_na(Ry))/(8*pi)
 C Energies in Ry. Lengths in Bohr.
-C Written by J.Soler and P.Ordejon, August-October'96, June'98 
+C Writen by J.Soler and P.Ordejon, August-October'96, June'98 
 C Modified by DSP Aug., 1998
 C **************************** INPUT **********************************
 C integer nua              : Number of atoms in unit cell
@@ -26,7 +26,7 @@ C real*8  rmaxv            : Maximum cutoff for NA potential
 C integer isa(na)          : Species index of each atom
 C logical forces_and_stress   Determines whether fa and stress are touched
 C **************************** OUTPUT *********************************
-C real*8 DEna              : NA energy correction
+C real*8 Ena               : NA energy
 C ********************** INPUT and OUTPUT *****************************
 C real*8 fa(3,na)          : Atomic forces (NA part added to input)
 C real*8 stress(3,3)       : Stress tensor (NA part added to input)
@@ -39,38 +39,49 @@ C      INTEGER IS : Specie index
 C
 C *********************************************************************
 
-      use precision
-      use atmfuncs,  only: izofis, psover
-      use neighbour, only: mneighb, jna=>jan, xij, r2ij,
-     &                     reset_neighbour_arrays
-
+      use precision 
+      use atmfuncs,    only : izofis, vna_gindex
+      use neighbour,   only : jna=>jan, xij, mneighb,
+     &                        reset_neighbour_arrays
+!      use m_new_matel, only : new_matel
+      use matel_mod,   only : get_matel_t
+      use m_mpi_utils, only : globalize_sum
+      use parallel,    only : Node, Nodes
+      use mpi_siesta,  only : MPI_Comm_World
       implicit none
 
-      integer  na, nua
+      integer na, nua
 
-      integer  indxua(na), isa(na)
+      integer
+     .  indxua(na), isa(na)
 
       real(dp)
-     .  scell(3,3), DEna, fa(3,nua), rmaxv, stress(3,3), xa(3,na)
+     .  scell(3,3), Ena, fa(3,nua), rmaxv, stress(3,3), xa(3,na)
 
       logical, intent(in)  :: forces_and_stress
 
 C Internal variables ......................................................
-      integer
-     .  ia, is, ix, ja, jn, js, jx, jua, nnia
+      integer  ia, is, ix, ja, jn, js, jx, jua, nnia, ig, jg
+      real(dp)  fij(3), pi, vij, volcel, volume 
+!      real(dp)  fij2(3), vij2
+      integer  :: div, mod, first, last
 
-      real(dp)
-     .  dvdr, fij(3), rij, r2min, vij, volcel, volume
-       
-      parameter ( r2min = 1.d-15 )
 C ......................
+      call timer( 'naefs', 1 )
 
-      call mneighb( scell, 2.0d0*rmaxv, na, xa, 0, 0, nnia )
+      div   = nua / Nodes
+      mod   = nua - div*Nodes
+      first = 1 + Node*div + MIN(Node,mod)
+      last  = (Node+1)*div + MIN(Node+1,mod)
 
+C Initialize neighb subroutine
+      call mneighb( scell, 2.d0*rmaxv, na, xa, 0, 0, nnia )
+
+      pi = 4.0d0 * atan(1.0d0)
       volume = nua * volcel(scell) / na
-      DEna = 0.0d0
- 
-      do ia = 1,nua
+      Ena = 0.0d0
+
+      do ia = first, last
 
 C Find neighbour atoms
         call mneighb( scell, 2.0d0*rmaxv, na, xa, ia, 0, nnia )
@@ -78,16 +89,20 @@ C Find neighbour atoms
           ja = jna(jn)
           jua = indxua(ja)
           is = isa(ia)
-          js = isa(ja) 
+          js = isa(ja)
+          if (izofis(is).gt.0 .and. izofis(js).gt.0) then
+            ig = vna_gindex(is)
+            jg = vna_gindex(js)
+!            call new_MATEL( 'T', ig, jg, xij(1:3,jn), vij2, fij2 )
+            call get_matel_t( ig, jg, xij(1:3,jn), vij, fij )
+!            if (ABS(vij-vij2)>1.0e-8_dp) then
+!              call die('naefs=>get_matel_t')
+!            endif
 
-          if (r2ij(jn).gt.r2min .and.
-     .        izofis(is).gt.0 .and. izofis(js).gt.0) then
-            rij = sqrt( r2ij(jn) )
-            call psover( is, js, rij, vij, dvdr )
-            DEna = DEna + vij / 2.0d0
+            Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
                do ix = 1,3
-                  fij(ix) = dvdr * xij(ix,jn) / rij / 2.0d0
+                  fij(ix) = fij(ix) / (16.0d0*pi)
                   fa(ix,ia)  = fa(ix,ia)  + fij(ix)
                   fa(ix,jua) = fa(ix,jua) - fij(ix)
                   do jx = 1,3
@@ -99,6 +114,21 @@ C Find neighbour atoms
           endif
         enddo
       enddo
+
+C     Free local memory
+!      call new_MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
       call reset_neighbour_arrays( )
-      end subroutine dnaefs
-      end module m_dnaefs
+#ifdef MPI
+      if (Nodes.gt.1) then
+        call globalize_sum( Ena, Ena, MPI_Comm_World )
+        if (forces_and_stress) then
+          call globalize_sum( stress, stress, MPI_Comm_World )
+          call globalize_sum( fa, fa, MPI_Comm_World )
+        endif
+      endif
+#endif
+      call timer( 'naefs', 2 )
+      end subroutine naefs
+      end module m_naefs
+
+

@@ -39,7 +39,7 @@
       real(dp),         pointer :: DXAM(:,:), DXNM(:,:)
       real(dp)                  :: celast(nx,nx) = 0.0_dp,
      &                             rglast        = 0.0_dp
-      real(dp),         public  :: x0(nx)    
+      real(dp),         public  :: x0(nx)        = 0.0_dp
 
       contains
 

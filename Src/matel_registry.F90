@@ -83,6 +83,7 @@ module m_matel_registry
   public :: evaluate, rcut, lcut
   public :: evaluate_x, evaluate_y, evaluate_z
   public :: show_pool
+  public :: get_nfuncs
 
 CONTAINS
 
@@ -92,6 +93,11 @@ CONTAINS
 
     ok = (gindex > 0 .AND. gindex <= nfuncs)
   end function valid
+
+  function get_nfuncs( ) result (nf)
+    integer  :: nf
+    nf = nfuncs
+  end function get_nfuncs
 
   !
   !   This is the main entry to the registry for simple radial functions

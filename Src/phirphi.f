@@ -47,7 +47,8 @@ C *********************************************************************
       use alloc,        only : re_alloc, de_alloc
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb, reset_neighbour_arrays
-      use m_new_matel,  only : new_matel
+!      use m_new_matel,  only : new_matel
+      use matel_mod,    only : get_matel_x, get_matel_y, get_matel_z
 
       implicit none
 
@@ -68,6 +69,7 @@ C Internal variables
 
       real(dp)
      .  grSij(3), rij, Sij, xinv(3)
+!      real(dp) Sij2, grSij2(3)
 
       real(dp), dimension(:), pointer ::  Si
 
@@ -109,32 +111,58 @@ C Allocate local memory
                    jg = orb_gindex(js,joa)
 
                   if (abs(dk(1)).gt.tiny) then
-                    call new_MATEL('X', ig, jg, xij(1:3,jn),
-     .                          Sij, grSij ) 
+                    jg=4
+                    
+!                    call new_MATEL('X', ig, jg, xij(1:3,jn),
+!     .                          Sij2, grSij2 ) 
+                    call get_matel_x( ig, jg, xij(:,jn), Sij, grSij )
+!                    if (ABS(Sij-Sij2)>1.0e-8) then
+!                      call die( "get_matel_x" )
+!                    endif
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(1)  
  
-                    call new_MATEL('X', jg, ig, xinv,
-     .                          Sij, grSij )
+!                    call new_MATEL('X', jg, ig, xinv,
+!     .                          Sij2, grSij2 )
+                    call get_matel_x( jg, ig, xinv, Sij, grSij )
+!                    if (ABS(Sij-Sij2)>1.0e-8) then
+!                      call die( "get_matel_x" )
+!                    endif
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(1)  
                   endif
                      
                   if (abs(dk(2)).gt.tiny) then
-                    call new_MATEL('Y', ig, jg, xij(1:3,jn),
-     .                          Sij, grSij )
+!                    call new_MATEL( 'Y', ig, jg, xij(1:3,jn),
+!     .                          Sij2, grSij2 )
+                    call get_matel_y( ig, jg, xij(:,jn), Sij, grSij )
+!                    if (ABS(Sij-Sij2)>1.0e-8) then
+!                      call die( "get_matel_y" )
+!                    endif
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(2) 
                 
-                    call new_MATEL('Y', jg, ig, xinv,
-     .                          Sij, grSij )
+!                    call new_MATEL('Y', jg, ig, xinv,
+!     .                          Sij2, grSij2 )
+                    call get_matel_y( jg, ig, xinv, Sij, grSij )
+!                    if (ABS(Sij-Sij2)>1.0e-8) then
+!                      call die( "get_matel_y" )
+!                    endif
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(2)  
                   endif
  
                   if (abs(dk(3)).gt.tiny) then
-                    call new_MATEL('Z', ig, jg, xij(1:3,jn),
-     .                          Sij, grSij )
+!                    call new_MATEL('Z', ig, jg, xij(1:3,jn),
+!     .                          Sij2, grSij2 )
+                    call get_matel_z( ig, jg, xij(:,jn), Sij, grSij )
+!                    if (ABS(Sij-Sij2)>1.0e-8) then
+!                      call die( "get_matel_z" )
+!                    endif
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(3) 
  
-                    call new_MATEL('Z', jg, ig, xinv,
-     .                          Sij, grSij )
+!                    call new_MATEL('Z', jg, ig, xinv,
+!     .                          Sij2, grSij2 )
+                    call get_matel_z( jg, ig, xinv, Sij, grSij )
+!                    if (ABS(Sij-Sij2)>1.0e-8) then
+!                      call die( "get_matel_z" )
+!                    endif
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(3) 
                   endif
                 endif
