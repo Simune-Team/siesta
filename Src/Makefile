@@ -119,7 +119,7 @@ OBJS =  automatic_cell.o atom_options.o \
         cart2frac.o obc.o \
         precision.o sys.o m_cell.o files.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o atom.o atmparams.o \
-        m_mpi_utils.o fdf_extra.o m_iorho.o  \
+        m_mpi_inplace.o m_mpi_utils.o fdf_extra.o m_iorho.o  \
         atmfuncs.o listsc.o memoryinfo.o m_memory.o sorting.o \
         atomlist.o atm_types.o radial.o \
         alloc.o spher_harm.o periodic_table.o version.o timestamp.o \
@@ -722,7 +722,7 @@ die.o: parallel.o
 dipole.o: mesh.o parallel.o precision.o sys.o
 dm_charge.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 dm_charge.o: class_Sparsity.o m_mpi_utils.o m_spin.o precision.o
-dnaefs.o: atmfuncs.o m_mpi_utils.o mneighb.o parallel.o precision.o
+dnaefs.o: atmfuncs.o m_mpi_inplace.o mneighb.o parallel.o precision.o
 domain_decom.o: alloc.o parallel.o precision.o printmatrix.o schecomm.o
 domain_decom.o: sparse_matrices.o sys.o
 doping_uniform.o: alloc.o m_ntm.o mesh.o parallel.o precision.o sys.o
@@ -900,6 +900,7 @@ m_mixing.o: class_Data1D.o class_Fstack_Data1D.o parallel.o precision.o
 m_mixing_scf.o: class_Fstack_Data1D.o m_mixing.o parallel.o precision.o
 m_monitor.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 m_monitor.o: parallel.o precision.o
+m_mpi_inplace.o: precision.o
 m_mpi_utils.o: precision.o sys.o
 m_ncdf_io.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
@@ -1157,7 +1158,8 @@ moreParallelSubs.o: alloc.o m_io.o parallel.o precision.o sys.o
 moremeshsubs.o: alloc.o mesh.o parallel.o precision.o schecomm.o sys.o
 mulliken.o: alloc.o atmfuncs.o m_spin.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
-naefs.o: atmfuncs.o m_mpi_utils.o matel_mod.o mneighb.o parallel.o precision.o
+naefs.o: atmfuncs.o m_mpi_inplace.o matel_mod.o mneighb.o parallel.o
+naefs.o: precision.o
 new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
 new_matel.o: precision.o radfft.o spher_harm.o sys.o
 nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o matel_mod.o

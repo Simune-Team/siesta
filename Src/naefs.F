@@ -47,7 +47,7 @@ C *********************************************************************
       use matel_mod,   only : get_matel_t
       use parallel,    only : Node, Nodes
 #ifdef MPI
-      use m_mpi_utils, only : globalize_sum
+      use m_mpi_inplace, only : globalize_sum
       use mpi_siesta,  only : MPI_Comm_World
 #endif      
       implicit none
@@ -122,10 +122,10 @@ C     Free local memory
       call reset_neighbour_arrays( )
 #ifdef MPI
       if (Nodes.gt.1) then
-        call globalize_sum( Ena, Ena, MPI_Comm_World )
+        call globalize_sum( Ena, MPI_Comm_World )
         if (forces_and_stress) then
-          call globalize_sum( stress, stress, MPI_Comm_World )
-          call globalize_sum( fa, fa, MPI_Comm_World )
+          call globalize_sum( stress, MPI_Comm_World )
+          call globalize_sum( fa, MPI_Comm_World )
         endif
       endif
 #endif
