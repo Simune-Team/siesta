@@ -162,7 +162,7 @@ OBJS =  automatic_cell.o atom_options.o \
         m_getopts.o f2kcli.o \
         m_svd.o m_matio.o\
         rusage.o memory_snapshot.o compute_ebs_shift.o memory_all.o \
-	matel_registry.o matel_mod.o register_rfs.o new_matel.o \
+	matel_registry.o matel_params.o matel_ylm.o matel_mod.o register_rfs.o new_matel.o \
 	kpoint_convert.o \
 	m_target_stress.o compute_max_diff.o \
 	m_initwf.o wavefunctions.o \
@@ -1128,9 +1128,12 @@ m_zminim.o: files.o parallel.o parallelsubs.o precision.o siesta_options.o
 m_zminim.o: sys.o
 madelung.o: parallel.o precision.o sys.o
 matel_mod.o: alloc.o atm_types.o atmfuncs.o interpolation.o ldau_specs.o
-matel_mod.o: matel_registry.o parallel.o precision.o radfft.o
-matel_mod.o: siesta2wannier90.o siesta_options.o spher_harm.o sys.o
+matel_mod.o: matel_params.o matel_registry.o matel_ylm.o parallel.o precision.o
+matel_mod.o: radfft.o siesta2wannier90.o siesta_options.o spher_harm.o sys.o
+matel_params.o: precision.o
 matel_registry.o: m_trialorbitalclass.o precision.o radial.o spher_harm.o sys.o
+matel_ylm.o: alloc.o matel_params.o matel_registry.o parallel.o precision.o
+matel_ylm.o: radfft.o spher_harm.o sys.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
 memory.o: alloc.o memoryinfo.o parallel.o precision.o
 memory_all.o: rusage.o
