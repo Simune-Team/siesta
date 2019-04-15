@@ -6,6 +6,16 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
 !
+      !> Re-designed module to allow a pre-computation of the needed matrix elements
+      !> in parallel, followed by a globalization of the data among all the MPI processes.
+      !> Once the interpolation tables are setup, further calls to the matrix-element
+      !> evaluator (here renamed 'get_matel_?') are cheap. This has a dramatic effect in
+      !> some routines (such as nlefsm) that had to perform the table-building operations
+      !> under conditions that did not scale in parallel.
+
+      !> Concept: Rogeli Grima (BSC) and Alberto Garcia (ICMAB)
+      !> Initial implementation:  Rogeli Grima (BSC)
+
       module matel_mod
       use precision, only : dp
       use alloc,     only : re_alloc, de_alloc, alloc_default,
@@ -31,6 +41,9 @@
       public :: get_matel_z    ! Get a value from Z or Z_op
 
 C     Module Variables
+      !> These are the functions recorded in the 'matel registry'; the number of each kind
+      !> serve as markers for the different sections needed in the tables.
+      !> 
       integer           :: num_or  ! Number of different orbitals
       integer           :: num_kb  ! Number of different KB projectors
       integer           :: num_lda ! Number of different LDA+U functions
@@ -60,6 +73,8 @@ C     parameters
       real(dp)          :: DR
       real(dp)          :: DRTAB
 
+      !> A function evaluator that selects the function on the basis of a single index 'ig'
+      !> that is de-referenced in the 'matel_registry'.
       ABSTRACT INTERFACE
         subroutine FUNC_p(ig,rvec,yy,grady)
           use precision, only : dp
@@ -68,6 +83,16 @@ C     parameters
           real(dp), intent(out) :: yy, grady(3)
         end subroutine FUNC_p
       END INTERFACE
+
+      !> This really holds the expansion of a set of functions in spherical-harmonics 
+      !> Indexing arrays could be avoided if we kept the information of a given function
+      !> in a simpler derived type instead, and making this an _array_ of the simpler elements.
+      !> In this context, several "functions" might be associated to the same object in the registry:
+      !> for example, a given PAO with index 'ig' might be just 'evaluate'd, or 'x_evaluate'd, etc.
+      !> Note that *most* of the functions we deal with are "pure" (PAOs, KBs, LDAUps are of the
+      !> form f(r)Y_lm(theta,phi) already, so most of the dereferencing done here is superfluous.
+      !> We have, on the other hand, {x,y,z}*{PAO,KB}  (but they  might be simply Y_(l+1),m for a given m?)
+      !> and the wannier projectors, which are not "pure".
 
       TYPE SPHER_HARM_t
         integer           :: N           ! Number of orbitals/projectors
@@ -86,6 +111,9 @@ C     parameters
         procedure :: INDF
       END TYPE SPHER_HARM_t
 
+      !> The main type that holds the interpolation tables and all the indexes needed to find
+      !> the right radial tables. Note that it contains pointers to "spherical-harmonic decompositions",
+      !> with two versions (1 and 2), but '2' is not always needed.
       TYPE MATEL
         integer           :: MODE             ! One of MODE_S, MODE_T or MODE_XYZ
         integer           :: NROWS            ! Number of rows of MATEL
@@ -116,14 +144,34 @@ C     parameters
 
       END TYPE MATEL
 
+      !> There are different tables, each appropriate to a given operation and kind of function.
+      !> The indexing is a bit cumbersome due to the one-dimensional nature of the matel_registry,
+      !> in which all functions are stored in the same section: first orbitals, then KB projectors,
+      !> then Vna, and finally LDA+U projectors.
+      !> In addition, when using the Wannier interface, "trial orbitals" (called also "projectors"
+      !> in the code (numproj of them) need to be dealt with.
+
+      !> Overlaps of PAOs, KBs, or LDAUprojs with PAOs
       TYPE(MATEL) :: S           ! Unity (overlap). S(1:num_or+num_kb+num_lda,1:num_or)
+      !> Laplacian among PAOs
       TYPE(MATEL) :: T           ! -Laplacian.      T(1:num_or,1:num_or)
-      TYPE(MATEL) :: TA          ! -Laplacian.      T(vna_gindex(1):vna_gindex(1)+num_va,vna_gindex(1):vna_gindex(1)+num_va)
+      !> Laplacian among Vna functions
+      TYPE(MATEL) :: TA          ! -Laplacian.      T(vna_gindex(1):vna_gindex(1)+num_va,
+                                 !                    vna_gindex(1):vna_gindex(1)+num_va)
+
+      !> X, Y, Z among orbitals (for dielectric polarization calculations)
       TYPE(MATEL) :: X           ! X projection.    X(1:num_or,1:num_or)
       TYPE(MATEL) :: Y           ! Y projection.    Y(1:num_or,1:num_or)
       TYPE(MATEL) :: Z           ! Z projection.    Z(1:num_or,1:num_or)
+
+      !> Overlaps of PAOs with wannier projectors
       TYPE(MATEL) :: SP          ! Unity (overlap). S(1:num_or,vna_gindex(N)+1:vna_gindex(N)+numproj)
+
+      !> Overlaps of PAOs with KBs for optical calculations (different from table "S" because
+      !> the KBs are "function 2")
       TYPE(MATEL) :: S_op        ! Unity (overlap). S_op(1:num_or,num_or+1:num_or+num_kb)
+
+      !> X,Y,Z  PAOs with KBs for optical calculations
       TYPE(MATEL) :: X_op        ! X projection).   X_op(1:num_or,num_or+1:num_or+num_kb)
       TYPE(MATEL) :: Y_op        ! Y projection).   X_op(1:num_or,num_or+1:num_or+num_kb)
       TYPE(MATEL) :: Z_op        ! Z projection).   Z_op(1:num_or,num_or+1:num_or+num_kb)
@@ -369,6 +417,11 @@ C     Local variables
 
       l_inc  = MERGE(1,0,IOPER.EQ.MODE_XYZ)
 
+      !> This is clever, but obscure. It is better to create explicitly
+      !> arrays of spherical-harmonic decompositions, and use them
+      !> explicitly. A wrapper type might be used to provide the indexing
+      !> expected by the matel tables.
+      
       if (present(SpHa)) then
         ! If present SpHa use it
         this%SpHa1 => SpHa
