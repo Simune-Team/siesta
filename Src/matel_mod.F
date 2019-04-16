@@ -80,12 +80,15 @@ C     parameters
       !> with two versions (1 and 2), but '2' is not always needed.
       TYPE MATEL
         integer           :: MODE             ! One of MODE_S, MODE_T or MODE_XYZ
-        integer           :: NROWS            ! Number of rows of MATEL
-        integer           :: NCOLS            ! Number of columns of MATEL
-        integer           :: MAT_ROWS         ! Leading size of matrix (in num or harmonics)
+        integer           :: NROWS            ! Number of rows of functions of MATEL
+        integer           :: NCOLS            ! Number of columns of functions of MATEL
+        integer           :: MAT_ROWS         ! Leading size of matrix (in num of harmonics)
+        integer           :: MAT_COLS         ! Columns of matrix (in num of harmonics)
 
         TYPE(SPHER_HARM_t), pointer :: SpHa1  ! Orbitals & projectors
         TYPE(SPHER_HARM_t), pointer :: SpHa2
+        integer           :: BASE_SPHA1        ! Base index for block of interest in SpHa1
+        integer           :: BASE_SPHA2        ! Base index for block of interest in SpHa2
 
         real(dp), POINTER :: FFR(:,:,:)       ! Radial functions. To save space we only store
         integer           :: MFFR, NFFR       ! linear independent functions.
@@ -107,6 +110,17 @@ C     parameters
         procedure :: GET_MATEL
 
       END TYPE MATEL
+
+      !> k-space spherical-harmonic decomposition of
+      !> registered functions
+      type(spher_harm_t), target :: ylmk_val_all
+      type(spher_harm_t), target :: ylmk_x_orbs
+      type(spher_harm_t), target :: ylmk_y_orbs
+      type(spher_harm_t), target :: ylmk_z_orbs
+      type(spher_harm_t), target :: ylmk_x_kbs
+      type(spher_harm_t), target :: ylmk_y_kbs
+      type(spher_harm_t), target :: ylmk_z_kbs
+
 
       !> There are different tables, each appropriate to a given operation and kind of function.
       !> The indexing is a bit cumbersome due to the one-dimensional nature of the matel_registry,
@@ -142,64 +156,54 @@ C     parameters
 
       contains
 
-      subroutine INIT( this, IOPER, nrows, ncols, incr, f, SpHa )
-C *******************************************************************
-C  Initiallize a MATEL structure
-C ************************* INPUT ***********************************
-C  integer IOPER   : One of MODE_S, MODE_T or MODE_XYZ
-C  integer nrows   : Number of rows of MATEL
-C  integer ncols   : Number of columns of MATEL
-C  integer incr    : Increment to achieve the first orbital. It could 
-C                    be necessary one for each dimension, but we have
-C                    not needed it.
-C  FUNC_p f        : Function to compute the Spherical harmonic
-C  SPHER_HARM_t SpHa : Optional. Reuse this if present
-C ************************* OUTPUT **********************************
+      subroutine INIT( this, IOPER, SpHa1, lo1, hi1,
+     $                              SpHa2, lo2, hi2)
+
+!  Initialize a MATEL structure
+
+!  integer IOPER   : One of MODE_S, MODE_T or MODE_XYZ
+
       implicit none
       class(MATEL)        :: this
-      integer, intent(in) :: IOPER, nrows, ncols, incr
-      PROCEDURE(FUNC_p)   :: f
-      type(SPHER_HARM_t), pointer, optional :: SpHa
-C     Local variables
-      integer             :: IG, IG1, IG2, ILOCAL, IFLM1, IFLM2,
-     &                       fi, la, lorb, l_inc
+      integer, intent(in) :: IOPER, lo1, hi1, lo2, hi2
+      type(SPHER_HARM_t), intent(in), target :: SpHa1, SpHa2
 
-      ! Init type values
-      this%MODE  = IOPER
-      this%NROWS = nrows
-      this%NCOLS = ncols
-
-      l_inc  = MERGE(1,0,IOPER.EQ.MODE_XYZ)
-
-      !> This is clever, but obscure. It is better to create explicitly
-      !> arrays of spherical-harmonic decompositions, and use them
-      !> explicitly. A wrapper type might be used to provide the indexing
-      !> expected by the matel tables.
+      integer :: n_harms_hi, n_harms_lo
       
-      if (present(SpHa)) then
-        ! If present SpHa use it
-        this%SpHa1 => SpHa
-      else
-        ! Otherwise, compute the spherical harmonic
-        nullify(this%SpHa1)
-        allocate(this%SpHa1)
-        call this%SpHa1%compute_SpHa( this%NROWS, INCR, f, l_inc )
-        call this%SpHa1%reduce_SpHa( )
-      endif
-      this%MAT_ROWS = this%SpHa1%get_Dim( this%NROWS )
+      this%MODE  = IOPER
+      this%NROWS = hi1 - lo1 + 1
+      this%NCOLS = hi2 - lo2 + 1
 
-      if (LOC(f).NE.LOC(this%SpHa1%func) .or.
-     &    this%SpHa1%N.LT.(this%NCOLS+INCR) ) then
-        ! Compute the second Spherical harmonic
-        nullify(this%SpHa2)
-        allocate(this%SpHa2)
-        call this%SpHa2%compute_SpHa( this%NCOLS, INCR, f, l_inc )
-        call this%SpHa2%reduce_SpHa( )
-      else
-        ! Reuse the first Spherical harmonic
-        this%SpHa2 => this%SpHa1
-      endif
+      print *, "init: rows, cols:", this%NROWS, this%NCOLS
 
+      this%SpHa1 => SpHa1
+      this%SpHa2 => SpHa2
+
+      ! Find total number of harmonics in the block of SpHa1 we are
+      ! interested in
+
+      n_harms_hi = this%SpHa1%get_Dim( hi1 )
+      n_harms_lo = 0
+      if (lo1 > 1 ) then
+         n_harms_lo = this%SpHa1%get_Dim( lo1 - 1 )
+      endif
+      this%MAT_ROWS = n_harms_hi - n_harms_lo
+      this%BASE_SPHA1 = n_harms_lo
+
+      ! Find total number of harmonics in the block of SpHa2 we are
+      ! interested in
+
+      n_harms_hi = this%SpHa2%get_Dim( hi2 )
+      n_harms_lo = 0
+      if (lo2 > 1 ) then
+         n_harms_lo = this%SpHa2%get_Dim( lo2 - 1 )
+      endif
+      this%MAT_COLS = n_harms_hi - n_harms_lo
+      this%BASE_SPHA2 = n_harms_lo
+
+      print *, "init: dim1, dim2:", this%MAT_ROWS, this%MAT_COLS
+      print *, "init: base1, base2:", this%BASE_SPHA1, this%BASE_SPHA2
+      
       ! Compute and reduce Radial Expansion
       call this%compute_RadExp( )
       call this%reduce_RadExp( )
@@ -231,8 +235,8 @@ C *******************************************************************
       CALL RE_ALLOC( this%Y, 1, this%MILM, 'Y', MYNAME )
       CALL RE_ALLOC( this%DYDR, 1, 3, 1, this%MILM, 'DYDR', MYNAME )
 
-      dim1 = this%SpHa1%get_Dim( this%NROWS )
-      dim2 = this%SpHa2%get_Dim( this%NCOLS )
+      dim1 = this%MAT_ROWS
+      dim2 = this%MAT_COLS
       nullify( this%INDFFY )
       call RE_ALLOC( this%INDFFY, 1, dim1*dim2+1, 'INDFFY', MYNAME )
 
@@ -261,8 +265,9 @@ C *******************************************************************
       ! Iterate all combinations of harmonics
       do i= first, last
         ! Get the harmonics IDS
-        ih1 = MOD(i-1,dim1)+1
-        ih2 = (i-1)/dim1+1
+        ! Note accounting for block of interest
+        ih1 = MOD(i-1,dim1) + 1 + this%BASE_SPHA1
+        ih2 = (i-1)/dim1 + 1 + this%BASE_SPHA2
         ! Get the orbitals IDS
         ig1 = this%SpHa1%Harm2Orb( ih1 )
         ig2 = this%SpHa2%Harm2Orb( ih2 )
@@ -410,8 +415,8 @@ C *******************************************************************
      &                     G_ILMFF(:), G_INDFFR(:)
       real(dp), pointer :: G_FFR(:,:,:), G_FFY(:,:)
 #endif
-      dim1 = this%SpHa1%get_Dim( this%NROWS )
-      dim2 = this%SpHa2%get_Dim( this%NCOLS )
+      dim1 = this%MAT_ROWS
+      dim2 = this%MAT_COLS
 #ifdef MPI
       if (NODES.GT.1) then
         ! Allocate space for temporal arrays
@@ -579,7 +584,9 @@ C     Find if orbitals are far (out of range)
 C       Find spherical harmonics times R**L
         DO IFLM1= this%SpHa1%INDF(IG1),this%SpHa1%INDF(IG1+1)-1
           DO IFLM2= this%SpHa2%INDF(IG2), this%SpHa2%INDF(IG2+1)-1
-            IH = IFLM1 + (IFLM2-1)*this%MAT_ROWS
+            ! Note
+            IH = (IFLM1-this%BASE_SPHA1)  +
+     $           (IFLM2-this%BASE_SPHA2-1)*this%MAT_ROWS
             LMAX = 0
             DO IFFY = this%INDFFY(IH), this%INDFFY(IH+1)-1
               JLM = this%ILMFF(IFFY)
@@ -619,16 +626,17 @@ C *******************************************************************
       use m_matel_registry, only : get_nfuncs
       implicit none
       ! Local Variables
-      integer             :: is, IO, KO
+      integer             :: is, IO, KO, top, top_vna
       logical             :: optical
       logical,       save :: init = .false.
       TYPE(allocDefaults) :: OLDEFS
 
+      
       ! Initiallize only once
       if (init) return
       init = .true.
 
-      ! Set allocation defaults
+       ! Set allocation defaults
       call alloc_default( old=oldefs, copy=.true., shrink=.false. )
 
       CALL RESET_SPHER_HARM( )
@@ -645,29 +653,69 @@ C *******************************************************************
         NUM_LDA = NUM_LDA + species(is)%nprojsldau
       enddo
 
-      optical = fdf_boolean('OpticalCalculation',.false.)
+      top = num_or + num_kb + num_lda 
+      top_vna = top + num_va
+      call ylmk_val_all%compute_spha(1, top_vna, EVALUATE, 0)
+      call ylmk_val_all%reduce_spha()
 
-      ! Initiallize the needed matrices
-      call S%init( MODE_S, num_or+num_kb+num_lda, num_or, 0, EVALUATE )
+      call s%init(MODE_S, ylmk_val_all, 1, top,
+     $                    ylmk_val_all, 1, num_or)
 
-      call T%init( MODE_T, num_or, num_or, 0, EVALUATE, S%SpHa1 )
-      call TA%init( MODE_T, num_va, num_va, vna_gindex(1)-1, EVALUATE )
+      call T%init(MODE_T, ylmk_val_all, 1, num_or,
+     $                    ylmk_val_all, 1, num_or)
+      
+      call TA%init(MODE_T, ylmk_val_all, top+1, top_vna,
+     $                     ylmk_val_all, top+1, top_vna)
 
+      
       if (bornz) then
-        call X%init( MODE_XYZ, num_or, num_or, 0, EVALUATE_X, S%SpHa1 )
-        call Y%init( MODE_XYZ, num_or, num_or, 0, EVALUATE_Y, S%SpHa1 )
-        call Z%init( MODE_XYZ, num_or, num_or, 0, EVALUATE_Z, S%SpHa1 )
+
+         call ylmk_x_orbs%compute_spha(1, num_or, EVALUATE_X, 1)
+         call ylmk_x_orbs%reduce_spha()
+         call X%init( MODE_XYZ, ylmk_val_all, 1, num_or,
+     $                         ylmk_x_orbs, 1, num_or)
+
+         call ylmk_y_orbs%compute_spha(1, num_or, EVALUATE_Y, 1)
+         call ylmk_y_orbs%reduce_spha()
+         call Y%init( MODE_XYZ, ylmk_val_all, 1, num_or,
+     $                         ylmk_y_orbs, 1, num_or)
+
+         call ylmk_z_orbs%compute_spha(1, num_or, EVALUATE_Z, 1)
+         call ylmk_z_orbs%reduce_spha()
+         call X%init( MODE_XYZ, ylmk_val_all, 1, num_or,
+     $                         ylmk_z_orbs, 1, num_or)
+
       endif
 
+      optical = fdf_boolean('OpticalCalculation',.false.)
+
       if (optical) then
-        call S_op%init( MODE_S, num_or, num_kb, num_or,
-     &                  EVALUATE, S%SpHa1 )
-        call X_op%init( MODE_XYZ, num_or, num_kb, num_or,
-     &                  EVALUATE_X, S%SpHa1 )
-        call Y_op%init( MODE_XYZ, num_or, num_kb, num_or,
-     &                  EVALUATE_Y, S%SpHa1 )
-        call Z_op%init( MODE_XYZ, num_or, num_kb, num_or,
-     &                  EVALUATE_Z, S%SpHa1 )
+         
+         call S_op%init(MODE_S, ylmk_val_all, 1, num_or,
+     $                    ylmk_val_all, num_or+1, num_kb)
+
+         call ylmk_x_kbs%compute_spha(num_or+1, num_or+num_kb,
+     $                                EVALUATE_X, 1)
+         call ylmk_x_kbs%reduce_spha()
+
+         call X_op%init( MODE_XYZ, ylmk_val_all, 1, num_or,
+     $                         ylmk_x_kbs, 1, num_kb)
+
+         call ylmk_y_kbs%compute_spha(num_or+1, num_or+num_kb,
+     $                                EVALUATE_Y, 1)
+         call ylmk_y_kbs%reduce_spha()
+
+         call Y_op%init( MODE_XYZ, ylmk_val_all, 1, num_or,
+     $                         ylmk_y_kbs, 1, num_kb)
+
+         call ylmk_z_kbs%compute_spha(num_or+1, num_or+num_kb,
+     $                                EVALUATE_Z, 1)
+         call ylmk_z_kbs%reduce_spha()
+
+         call Z_op%init( MODE_XYZ, ylmk_val_all, 1, num_or,
+     $                         ylmk_z_kbs, 1, num_kb)
+
+         
       endif
 
       ! Restore allocation defaults
@@ -693,8 +741,8 @@ C *******************************************************************
 
       ! Set allocation defaults
       call alloc_default( old=oldefs, copy=.true., shrink=.false. )
-
-      call SP%init( MODE_S, num_or, numproj, incr, EVALUATE, S%SpHa1 )
+      call die("Wannier matel tables not implemented")
+!!!!      call SP%init( MODE_S, num_or, numproj, incr, EVALUATE, S%SpHa1 )
 
       ! Restore allocation defaults
       CALL alloc_default( restore=oldefs )

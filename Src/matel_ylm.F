@@ -66,7 +66,7 @@ C     parameters
 
       TYPE, public :: SPHER_HARM_t
         integer           :: N           ! Number of orbitals/projectors
-        integer           :: INCR        ! Increment needed to reach to the first orbital/projector
+        integer           :: BASE        ! Base for registry index count
         real(dp), POINTER :: F(:,:)      ! Radial expansion for each spherical harmonic
         integer,  POINTER :: ILM(:)      ! Spherical harmonics indexes
         integer,  POINTER :: IND(:)      ! Number of spherical harmonics (after COMPUTE_SPHA)
@@ -83,25 +83,30 @@ C     parameters
 
       contains
 
-      subroutine COMPUTE_SPHA( this, size, incr, func, l_inc )
-C *******************************************************************
-C Compute the spherical harmonics in parallel
-C ************************* INPUT ***********************************
-C  integer size   : The number of functionals to compute. It can
-C                   include: orbitals, kb projectors, LDAu projectors,
-C                   Vna projectors and any other needed projector.
-C  integer incr   : It is used to index the global position of the
-C                   functional for VNA.
-C  FUNC_p func    : Functional to be computed
-C  integer L_INC  : Some calls to YLMEXP should increment the value of L
-C ************************* DESCRI **********************************
-C  Split all the orbitals between the processors and compute the spherical
-C  harmonics.
-C *******************************************************************
+      subroutine COMPUTE_SPHA( this, first_gindex, last_gindex,
+     $                         func, l_inc )
+
+!     Find the spherical-harmonic decomposition of a set of functions
+!     from the 'matel-registry'      
+!     The operations are performed in parallel
+
       implicit none
+      
       class(SPHER_HARM_t) :: this
-      integer, intent(in) :: size, incr, l_inc
+
+      !> First and last global registry indexes of the set of functions
+      integer, intent(in) :: first_gindex, last_gindex
+
+      !> Function to be decomposed. Typically it is "evaluate", as in
+      !> the 'matel-registry' interface.  It can include an implicit
+      !> matrix element function (for example, 'evaluate_x' includes the
+      !> product by 'x' of radial functions).
+
       PROCEDURE(FUNC_p)   :: func
+      
+      !> When the implied matrix element function increases the maximum l
+      integer, intent(in) :: l_inc
+
 !     Local variables
       integer             :: i, ig, il, first, last, nlocal, nf, mf,
      &                       l, nilm, jlm
@@ -112,8 +117,8 @@ C *******************************************************************
       integer,    pointer :: G_ILM(:), G_INVP(:)
 #endif
 
-      this%N      = size
-      this%INCR   = incr
+      this%N      = last_gindex - first_gindex + 1
+      this%BASE   = first_gindex - 1  ! this is the base for counting
 
       ! Split the orbitals among processors
       nlocal      = GET_LOOP_LIMITS( this%N, Node, first, last )
@@ -130,7 +135,7 @@ C *******************************************************************
       ! Iterate local orbitals
       do IL = first, last
         ! Get the Global Index of the orbital
-        IG = this%INCR+IL
+        IG = this%BASE+IL
         l = LCUT( IG )
         nilm = (l+2)**2
         ! Check if we have enought memory
@@ -290,7 +295,7 @@ C *******************************************************************
       class(SPHER_HARM_t) :: this
       integer, intent(in) :: id
       integer             :: d
-      d = this%Ind(id-this%INCR)
+      d = this%Ind(id-this%BASE)
       end function INDF
 
       function GET_LOOP_LIMITS( N, ID,  FIRST, LAST ) RESULT(SIZE)
