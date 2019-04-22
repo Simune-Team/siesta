@@ -92,7 +92,7 @@ subroutine amn( ispin )
                                                     !   with the global indices 
                                                     !   of the radial functions 
                                                     !   as inputs
-  use matel_mod,          only : get_matel_s, init_matel_SP
+  use matel_mod,          only : get_matel_s, init_matel_wannier
   use atmfuncs,           only: orb_gindex          ! Subroutine that gives
                                                     !   the global index of an
                                                     !   atomic orbital
@@ -302,7 +302,7 @@ kpoints:                 &
 !   all the bands...  In this way we will save the globalization of
 !   band data.
 !
-    call init_matel_SP( numproj, projector_gindex(1)-1 )
+    call init_matel_wannier( numproj )
 #ifdef MPI
     do iproj = 1+Node, numproj, Nodes
 #else

@@ -160,6 +160,10 @@ C     parameters
         ENDDO
         this%IND(IL) = NILM
       enddo
+
+      ! Replicate data to all processors
+      call REDUCE_SPHA( this)
+      
       end subroutine COMPUTE_SPHA
 
       subroutine REDUCE_SPHA( this )
