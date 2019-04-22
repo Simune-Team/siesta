@@ -124,8 +124,8 @@ C     Free local memory
       if (Nodes.gt.1) then
         call globalize_sum( Ena, MPI_Comm_World )
         if (forces_and_stress) then
-          call globalize_sum( stress, MPI_Comm_World )
-          call globalize_sum( fa, MPI_Comm_World )
+          !          call globalize_sum( stress, MPI_Comm_World )
+          !          call globalize_sum( fa, MPI_Comm_World )
         endif
       endif
 #endif

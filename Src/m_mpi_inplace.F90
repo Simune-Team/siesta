@@ -63,7 +63,7 @@ module m_mpi_inplace
 
       subroutine Globalize_sum_inplace_vv_dp(var,comm)
       real(dp), intent(inout), dimension(:,:)  :: var
-      integer, intent(in), optional :: comm
+      integer, intent(in)                      :: comm
 
 #ifdef MPI
       call MPI_AllReduce(MPI_IN_PLACE,var(1,1),size(var),MPI_double_precision, &

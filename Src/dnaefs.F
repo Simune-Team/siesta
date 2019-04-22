@@ -114,8 +114,9 @@ C Find neighbour atoms
       if (Nodes.gt.1) then
         call globalize_sum( DEna, MPI_Comm_World )
         if (forces_and_stress) then
-          call globalize_sum( stress, MPI_Comm_World )
-          call globalize_sum( fa, MPI_Comm_World )
+          ! Do not globalize, since we are adding to fal and stressl
+          !          call globalize_sum( stress, MPI_Comm_World )
+          !          call globalize_sum( fa, MPI_Comm_World )
         endif
       endif
 #endif

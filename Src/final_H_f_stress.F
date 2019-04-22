@@ -142,13 +142,15 @@
       
 
 ! Neutral-atom: energy, forces and stress ............................
+      ! These routines parallelize fa and stress over atoms
       call naefs( na_u, na_s, scell, xa, indxua, rmaxv,
-     &            isa, Ena, fa, stress, forces_and_stress=.true. )
+     &            isa, Ena, fal, stressl, forces_and_stress=.true. )
       call dnaefs( na_u, na_s, scell, xa, indxua, rmaxv,
-     &            isa, DEna, fa, stress, forces_and_stress=.true. )
+     &            isa, DEna, fal, stressl, forces_and_stress=.true. )
       Ena = Ena + DEna
 
 !     Kinetic: energy, forces, stress and matrix elements .................
+      ! Forces and stresses parallelized over orbitals
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -166,6 +168,7 @@
       Eso = 0.0_dp
       
       if ( .not.spin%SO_offsite ) then
+      ! Forces and stresses parallelized over orbitals
        call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &              maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -179,6 +182,7 @@
 #endif
       else
         H_so_off => val(H_so_off_2D)
+      ! Forces and stresses parallelized over orbitals
        call nlefsm_SO_off(scell, na_u, na_s, isa, xa, indxua,
      &                maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                numh, listhptr, listh, numh, listhptr, listh,
@@ -207,6 +211,7 @@
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
          H_ldau => val(H_ldau_2D)
+         ! Forces and stresses parallelized over orbitals
          call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .        numh, listhptr, listh, numh, listhptr, listh,
