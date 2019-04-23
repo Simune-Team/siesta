@@ -80,8 +80,8 @@ C     parameters
       !> with two versions (1 and 2), but '2' is not always needed.
       TYPE MATEL
         integer           :: MODE             ! One of MODE_S, MODE_T or MODE_XYZ
-        integer           :: NROWS            ! Number of rows of functions of MATEL
-        integer           :: NCOLS            ! Number of columns of functions of MATEL
+        integer           :: NROWS            ! Number of rows of functions in table (F_1)
+        integer           :: NCOLS            ! Number of columns of functions in table (F_2)
         integer           :: MAT_ROWS         ! Leading size of matrix (in num of harmonics)
         integer           :: MAT_COLS         ! Columns of matrix (in num of harmonics)
 
@@ -105,9 +105,10 @@ C     parameters
 
         CONTAINS
         procedure :: INIT
+        procedure :: GET_MATEL
+        ! called only internally
         procedure :: COMPUTE_RADEXP
         procedure :: REDUCE_RADEXP
-        procedure :: GET_MATEL
 
       END TYPE MATEL
 
@@ -281,11 +282,12 @@ C *******************************************************************
 
       ! Iterate all combinations of harmonics
       do i= first, last
-        ! Get the harmonics IDS
+        ! Get the harmonic terms IDS
         ! Note accounting for block of interest
         ih1 = MOD(i-1,dim1) + 1 + this%BASE_SPHA1
         ih2 = (i-1)/dim1 + 1 + this%BASE_SPHA2
-        ! Get the orbitals IDS
+        ! Get the matel-registry IDS of the functions
+        ! from which the harmonic terms originate
         ig1 = this%SpHa1%Harm2Orb( ih1 )
         ig2 = this%SpHa2%Harm2Orb( ih2 )
 
@@ -309,7 +311,7 @@ C *******************************************************************
         L1 = LOFILM( this%SpHa1%ILM(IH1) )
         L2 = LOFILM( this%SpHa2%ILM(IH2) )
         if (L1+L2 .GT. L1L2) then
-          ! Realloctae more memory if necessary
+          ! Reallocate more memory if necessary
           L1L2 = L1+L2
           CALL RE_ALLOC( IFFR, 0, L1L2, 'IFFR', MYNAME )
           CALL RE_ALLOC( CFFR, 0, L1L2, 'CFFR', MYNAME )
@@ -340,13 +342,13 @@ C *******************************************************************
             FFL(IR) = FFL(JR)
           ENDDO
 
-          ! To save space, we check if the new radial function is
-          ! linear dependent of the previous computed.
+          ! To save space, we check if the new radial function has
+          ! been seen before (save a global factor of proportionality)
           IFFR(L3) = 0
           DO JG= 1, this%NFFR
             IF ( PROPOR( NRTAB, FFL(1), this%FFR(1,1,JG),
      &                   FFTOL, CPROP)) THEN
-              ! If found, save the index and the coeffient of proporcionality
+              ! If found, save the index and the coefficient of proportionality
               IFFR(L3) = JG
               CFFR(L3) = CPROP
               EXIT
@@ -376,7 +378,7 @@ C *******************************************************************
           ENDIF
         ENDDO
 
-        ! Reallocate some arrays
+        ! Reallocate some arrays for the angular expansion
         NILM = (L1+L2+1)**2
         IF (NILM.GT.this%MILM) THEN
           CALL RE_ALLOC( this%Y, 1, NILM, 'Y', MYNAME, .FALSE. )
@@ -419,8 +421,9 @@ C  Reduce the values of the different arrays of MATEL
 C  At input, INDFFY contains the number of harmonics of every
 C  interaction. At exit, it can be used as and index.
 C  NOTE: TO DO!!! The reduction of FFR can be improved. We are saving
-C        functions that are not linear independent. We should choose
-C        between saving time or saving space.
+C  functions that are not linearly independent (since we did the
+C  work on different processors). We should choose between saving time
+C  or saving space.
 C *******************************************************************
       implicit none
       class(MATEL) :: this
@@ -530,9 +533,11 @@ C *******************************************************************
 #endif
       end subroutine reduce_RadExp
 
+
+      !> Utility function      
       function GET_LOOP_LIMITS( N, ID,  FIRST, LAST ) RESULT(SIZE)
 C *******************************************************************
-C  Get the loop limits resulting to split N elements between Nodes
+C  Get the loop limits adequate to split N elements among Nodes
 C ************************* INPUT ***********************************
 C  integer  N : Number of elements to distribute
 C  integer ID : Id of the Node
@@ -628,11 +633,12 @@ C           Interpolate radial functions and obtain SH expansion
       ENDIF
       end subroutine get_matel
 
+      !> Callable from Siesta
       subroutine init_matel( )
-C *******************************************************************
-C  Initialize most of the module MATEL: S, T, TA, X, Y, Z, S_op,
-C  X_op, Y_op, Z_op
-C *******************************************************************
+
+!  Initialize the MATEL tables S, T, TA, X, Y, Z, S_op,
+!  X_op, Y_op, Z_op
+
       use fdf,       only : fdf_boolean
       use atm_types, only : nspecies, species
       use atmfuncs,  only : nofis, nkbfis, orb_gindex, kbproj_gindex
@@ -670,21 +676,34 @@ C *******************************************************************
         NUM_LDAU = NUM_LDAU + species(is)%nprojsldau
       enddo
 
+      ! Find the spherical harmonic decomposition and
+      ! Fourier transform of all the registry objects
+      ! except the wannier trial functions
       top = num_orb + num_kb + num_ldau 
       top_vna = top + num_va
       call ylmk_val_all%compute_spha(1, top_vna, EVALUATE, 0)
 
-      call s%init(MODE_S, ylmk_val_all, 1, top,
+      ! Overlap table from PAOs, KBs, and LDAU projs to PAOs.
+      call S%init(MODE_S, ylmk_val_all, 1, top,
      $                    ylmk_val_all, 1, num_orb)
 
+      ! Laplacian table from PAOs to PAOs.
       call T%init(MODE_T, ylmk_val_all, 1, num_orb,
      $                    ylmk_val_all, 1, num_orb)
       
+      ! Laplacian table from Vnas to Vnas
       call TA%init(MODE_T, ylmk_val_all, top+1, top_vna,
      $                     ylmk_val_all, top+1, top_vna)
 
-      
+
+      ! This section executed only if polarization calculations
+      ! are requested (they need matrix elements of the position operator)
       if (bornz) then
+
+      ! Find the spherical harmonic decomposition and
+      ! Fourier transform of {x,y,z}*\phi, where \phi is a PAO
+
+      ! The X, Y, and Z tables are then overlaps of PAOs and xPAOs
 
          call ylmk_x_orbs%compute_spha(1, num_orb, EVALUATE_X, 1)
          call X%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
@@ -702,10 +721,18 @@ C *******************************************************************
 
       optical = fdf_boolean('OpticalCalculation',.false.)
 
+      ! This section executed only if an 'optical' calculation
+      ! is requested 
       if (optical) then
          
+      ! Overlap table from PAOs to KBs.
          call S_op%init(MODE_S, ylmk_val_all, 1, num_orb,
      $                    ylmk_val_all, num_orb+1, num_kb)
+
+      ! Find the spherical harmonic decomposition and
+      ! Fourier transform of {x,y,z}*\chi, where \chi is a KB proj.
+
+      ! The X_op, Y_op, and Z_op tables are then overlaps of PAOs and xKBs
 
          call ylmk_x_kbs%compute_spha(num_orb+1, num_orb+num_kb,
      $                                EVALUATE_X, 1)

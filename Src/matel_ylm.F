@@ -6,15 +6,24 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
 !
-      !> Re-designed module to allow a pre-computation of the needed matrix elements
-      !> in parallel, followed by a globalization of the data among all the MPI processes.
-      !> Once the interpolation tables are setup, further calls to the matrix-element
-      !> evaluator (here renamed 'get_matel_?') are cheap. This has a dramatic effect in
-      !> some routines (such as nlefsm) that had to perform the table-building operations
-      !> under conditions that did not scale in parallel.
+!> This module implements a data structure and associated procedures to
+!> handle the expansion in spherical harmonics of the functions in the
+!> 'matel registry', and their fourier transforms, as a first step in
+!> the computation of two-center integrals (See Siesta paper). In this
+!> context, several "functions" might be associated to the same object
+!> in the registry: for example, a given PAO with index 'ig' might be
+!> just 'evaluate'd, or 'x_evaluate'd, etc.  Note that *most* of the
+!> functions we deal with are "pure" (PAOs, KBs, and LDAU projectors are
+!> of the form f(r)Y_lm(theta,phi) already, so most of the dereferencing
+!> done here is superfluous.  We have, on the other hand,
+!> {x,y,z}*{PAO,KB} (but they might be simply Y_(l+1),m for a given m?)
+!> and the wannier projectors, which might not be "pure".
 
-      !> Concept: Rogeli Grima (BSC) and Alberto Garcia (ICMAB)
-      !> Initial implementation:  Rogeli Grima (BSC)
+!> The computations are done in parallel and the results replicated
+!> ("all-reduced") in in all processors.
+      
+!> Initial implementation: Rogeli Grima (BSC)
+!> Clarifications and some enhancements: Alberto Garcia (ICMAB)
 
       module matel_ylm
 
@@ -43,8 +52,8 @@ C     parameters
       CHARACTER(LEN=*), parameter :: MYNAME =  'MATEL_YLM'
 
 
-      !> A function evaluator that selects the function on the basis of a single index 'ig'
-      !> that is de-referenced in the 'matel_registry'.
+      !> An evaluator that selects the function on the basis of a single index 'ig'
+      !> that is de-referenced in the 'matel_registry'. It returns the value and the gradient.
       ABSTRACT INTERFACE
         subroutine FUNC_p(ig,rvec,yy,grady)
           use precision, only : dp
@@ -57,28 +66,23 @@ C     parameters
       !> This really holds the expansion of a set of functions in spherical-harmonics 
       !> Indexing arrays could be avoided if we kept the information of a given function
       !> in a simpler derived type instead, and making this an _array_ of the simpler elements.
-      !> In this context, several "functions" might be associated to the same object in the registry:
-      !> for example, a given PAO with index 'ig' might be just 'evaluate'd, or 'x_evaluate'd, etc.
-      !> Note that *most* of the functions we deal with are "pure" (PAOs, KBs, LDAUps are of the
-      !> form f(r)Y_lm(theta,phi) already, so most of the dereferencing done here is superfluous.
-      !> We have, on the other hand, {x,y,z}*{PAO,KB}  (but they  might be simply Y_(l+1),m for a given m?)
-      !> and the wannier projectors, which are not "pure".
-
+   
       TYPE, public :: SPHER_HARM_t
         integer           :: N           ! Number of orbitals/projectors
         integer           :: BASE        ! Base for registry index count
         real(dp), POINTER :: F(:,:)      ! Radial expansion for each spherical harmonic
-        integer,  POINTER :: ILM(:)      ! Spherical harmonics indexes
+        integer,  POINTER :: ILM(:)      ! Spherical harmonics indexes (packed l,m)
         integer,  POINTER :: IND(:)      ! Number of spherical harmonics (after COMPUTE_SPHA)
                                          ! Index of harmonics (after REDUCE_SPHA)
-        integer,  POINTER :: INVP(:)     ! Orbital/Projector of an harmonic
+        integer,  POINTER :: INVP(:)     ! Map from harmonic components to the associated function
         PROCEDURE(FUNC_p), POINTER, nopass :: func
         CONTAINS
         procedure :: COMPUTE_SPHA
-        procedure :: REDUCE_SPHA
         procedure :: GET_DIM
         procedure :: HARM2ORB
         procedure :: INDF
+        ! now called internally by 'compute_spha'
+        procedure, private :: REDUCE_SPHA
       END TYPE SPHER_HARM_t
 
       contains
@@ -105,22 +109,17 @@ C     parameters
       PROCEDURE(FUNC_p)   :: func
       
       !> When the implied matrix element function increases the maximum l
+      !> e.g. for x*\Phi, the maximum l is increased by 1, so l_inc=1
       integer, intent(in) :: l_inc
 
 !     Local variables
       integer             :: i, ig, il, first, last, nlocal, nf, mf,
      &                       l, nilm, jlm
-#ifdef MPI
-      integer             :: MPIERR
-      integer,    pointer :: count(:), displ(:), coun2(:), disp2(:)
-      real(dp),   pointer :: G_F(:,:)
-      integer,    pointer :: G_ILM(:), G_INVP(:)
-#endif
 
       this%N      = last_gindex - first_gindex + 1
       this%BASE   = first_gindex - 1  ! this is the base for counting
 
-      ! Split the orbitals among processors
+      ! Split the work on the N functions among processors
       nlocal      = GET_LOOP_LIMITS( this%N, Node, first, last )
       nf          = 0
 
@@ -136,19 +135,19 @@ C     parameters
       do IL = first, last
         ! Get the Global Index of the orbital
         IG = this%BASE+IL
-        l = LCUT( IG )
-        nilm = (l+2)**2
-        ! Check if we have enought memory
+        l = LCUT( IG )            ! Maximum l
+        nilm = (l+2)**2           ! Total maximum number of l,m indexes
+        ! Check if we have enough memory
         if (nf+nilm > mf ) THEN
           mf = (nf+NILM)*EXPAND
           CALL RE_ALLOC( this%INVP, 1, mf, 'INVP', MYNAME )
           CALL RE_ALLOC( this%F, 0, NQ, 1, mf, 'F', MYNAME )
           CALL RE_ALLOC( this%ILM, 1, mf, 'ILM', MYNAME )
         endif
-        ! Compute Spherical harmonics of orbital IG
+        ! Compute Spherical harmonic expansion of orbital IG
         CALL YLMEXP( L+L_INC, RLYLM, func, IG, 0, NQ, RMAX, NILM,
      &             this%ILM(nf+1:), this%F(:,nf+1:) )
-        ! Store orbital
+        ! Store orbital in Fourier space
         DO JLM = 1, NILM
           nf = nf + 1
           ! Save the orbital ID of current harmonic
@@ -259,11 +258,13 @@ C *******************************************************************
 
       function GET_DIM( this, n ) result(d)
 C *******************************************************************
-C Return the size of the sparse struct until position n
+!  Returns the accumulated number of spherical-harmonic terms at position n
+!  of the 'Spha' data structure, as tracked by the pointer array IND.
+!  The total number of terms is get_dim(this%N)
 C ************************* INPUT ***********************************
-C  integer n      : position to check
+C  integer n      : position to check. (1 <= n <= this%N)
 C ************************* OUTPUT **********************************
-C  integer n      : Size of the array
+C  integer d      : Number of terms
 C *******************************************************************
       implicit none
       class(SPHER_HARM_t) :: this
@@ -274,7 +275,8 @@ C *******************************************************************
 
       function Harm2Orb( this, id ) result(d)
 C *******************************************************************
-C Return the orbital global Id of current harmonic
+! Returns the global registry Id of the function from which the current harmonic
+! originates. 
 C ************************* INPUT ***********************************
 C  integer id      : harmonic Id
 C ************************* OUTPUT **********************************
