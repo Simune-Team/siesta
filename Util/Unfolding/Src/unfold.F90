@@ -51,11 +51,11 @@ program unfold
   integer, parameter :: nr = 4096       ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
   integer, parameter :: maxpaths = 100  ! max number of unfolded band paths
-  integer, parameter :: maxnq = 4000    ! max number of q sampling points
+  integer, parameter :: maxnq = 10000    ! max number of q sampling points
   real(dp),parameter :: g2c = 50_dp     ! default refolding G cutoff (ry)
   real(dp),parameter :: qc = 50_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
   logical, parameter :: writeOrbitals = .false.  ! write atomic orbital files?
-  real(dp),parameter :: tolSuperCell = 1.e-6 ! tolerance for comparing cell and supercell
+  real(dp),parameter :: tolSuperCell = 5.e-6 ! tolerance for comparing cell and supercell
   integer, parameter :: allocReportLevelDefault = 2 ! default allocation report level
 
   ! Internal variables
@@ -178,6 +178,8 @@ program unfold
   if (myNode==0) then
     print*,'unfold: nr,dr,rc=',nr,dr,rc
     print*,'unfold: nq,dq,qc=',nq,dq,qc
+    if (nq .gt. maxnq) & 
+          call die('unfold ERROR: parameter maxnq is too small')
     print'(a,/,(2i4,f12.6))','unfold: isp,io,rc=', &
       ((isp,io,rcut(isp,io),io=1,nofis(isp)),isp=1,nsp)
   endif
@@ -278,9 +280,9 @@ program unfold
   vol = volcel(ucell)        ! unit cell volume
   call reclat(ucell,rcell,1) ! rcell = reciprocal cell vectors
   if (myNode==0) then
-    print'(a,f12.6,/,(3f21.15))','unfold: vol, unit_cell (bohr) =',vol,ucell
     print'(a,/,(2i6,3f12.6))','unfold: ia,ispecies,xa (bohr) =', &
       (ia,isa(ia),xa(:,ia),ia=1,na)
+    print'(a,f20.6,/,(3f21.15))','unfold: vol, unit_cell (bohr) =',vol,ucell
     print'(a,/,(3f21.15))','unfold: reciprocal_cell (1/bohr) =',rcell
   endif
 
@@ -355,7 +357,7 @@ program unfold
       if (nqline==1) then
         npaths = npaths+1
         if (npaths>maxpaths) &
-          call die('unfold ERROR: parameter maxpaths too small')
+          call die('unfold ERROR: parameter maxpaths is too small')
         nq = nq+1
         call re_alloc( q, 1,3, 1,nq, myName//'q' )
         call re_alloc( iline,  1,nq, myName//'iline' )
@@ -416,10 +418,11 @@ program unfold
     g(:,1) = 0
   endif
   if (myNode==0) print'(a,/,(3f12.6))','unfold: refoldCell=',refoldCell
+  if (myNode==0) print'(a,/,(3f12.6))','unfold: refoldBcell=',refoldBcell
   if (myNode==0) print*,'unfold: alat,gcut,ng=',alat,gcut,ng
 
   ! Find if simulation cell is a supercell of refold cell
-  cellRatio = matmul(refoldBcell,ucell)/(2*pi)
+  cellRatio = matmul(transpose(refoldBcell),ucell)/(2*pi)
   notSuperCell = .not.all(abs(cellRatio-nint(cellRatio))<tolSuperCell)
   if (myNode==0) print'(a,l,a,/,(3f12.6))', &
     'unfold: notSuperCell= ',notSuperCell,'   cellRatio=',cellRatio
@@ -444,6 +447,9 @@ program unfold
   call timer_start(myName//'main loop')
   if (myNode==0) print*,'unfold: main loop'
   do ipath = 1,npaths
+
+if (myNode==0) print*,'unfold: ipath',ipath,'of',npaths
+
     iq1 = lastq(ipath-1)+1
     iq2 = lastq(ipath)
     call re_alloc( udos, iq1,iq2, 0,ne, 1,nspin, myName//'udos', &
@@ -480,8 +486,10 @@ program unfold
                   h(iou,jou) = h(iou,jou) + hsx%hamilt(ij,ispin)*phase
                 enddo
               enddo
+            !  print*,'node:',iqNode
               call cdiag(h,s,nou,nou,nou,eb(:,ispin),psi(:,:,ispin), &
                          nbands,iscf,ierr,-1)
+              ! if (myNode==0) print*,'unfold:check error in cdiag'
               if (ierr/=0) print*,'unfold: ERROR in cdiag'
               eb(:,ispin) = eb(:,ispin)*fdf_convfac('ry',eunit) ! from Ry to eunit
               call timer_stop(myName//'diag')
@@ -495,33 +503,37 @@ program unfold
               dek = emin + (je+1)*de - eb(ib,ispin)
               we = dek/de
               ukg = 0
-              do io = 1,nou
-                ia = hsx%iaorb(io)
-                isp = isa(ia)
-                iao = hsx%iphorb(io)
-                l = lofio(isp,iao)
-                m = mofio(isp,iao)
-                jlm = l*(l+1) + m+1                 ! ilm(l,m)
-                irq = floor(qmod/dq)
-                drq = (irq+1)*dq-qmod
-                wq = drq/dq
-                phi = phiq(irq,isp,iao)*wq + phiq(irq+1,isp,iao)*(1-wq)
-                phi = (-ii)**l * ylm(jlm) * phi
-                psik = c0*psi(io,ib,ispin)*phi*exp(-ii*sum(gq*xa(:,ia)))
-                ukg = ukg + psik
-              enddo ! io
-              ddos = cdos*vol*abs(ukg)**2
-              if (gnorm<1.e-12_dp) then
-                if (je>=0 .and. je<=ne) &
-                  udos(iq,je,ispin) = udos(iq,je,ispin) + ddos*we
-                if (je>=-1 .and. je<ne) &
-                  udos(iq,je+1,ispin) = udos(iq,je+1,ispin) + ddos*(1-we)
-              endif
-              if (refolding) then
-                if (je>=0 .and. je<=ne) &
-                  rdos(iq,je,ispin) = rdos(iq,je,ispin) + ddos*we
-                if (je>=-1 .and. je<ne) &
-                  rdos(iq,je+1,ispin) = rdos(iq,je+1,ispin) + ddos*(1-we)
+              if (je>=-1 .and. je<=ne) then ! select energies
+               ! call timer_start(myName//'selected e')
+                do io = 1,nou
+                  ia = hsx%iaorb(io)
+                  isp = isa(ia)
+                  iao = hsx%iphorb(io)
+                  l = lofio(isp,iao)
+                  m = mofio(isp,iao)
+                  jlm = l*(l+1) + m+1                 ! ilm(l,m)
+                  irq = floor(qmod/dq)
+                  drq = (irq+1)*dq-qmod
+                  wq = drq/dq
+                  phi = phiq(irq,isp,iao)*wq + phiq(irq+1,isp,iao)*(1-wq)
+                  phi = (-ii)**l * ylm(jlm) * phi
+                  psik = c0*psi(io,ib,ispin)*phi*exp(-ii*sum(gq*xa(:,ia)))
+                  ukg = ukg + psik
+                enddo ! io
+                ddos = cdos*vol*abs(ukg)**2
+                if (gnorm<1.e-12_dp) then
+                  if (je>=0 .and. je<=ne) &
+                    udos(iq,je,ispin) = udos(iq,je,ispin) + ddos*we
+                  if (je>=-1 .and. je<ne) &
+                    udos(iq,je+1,ispin) = udos(iq,je+1,ispin) + ddos*(1-we)
+                endif
+                if (refolding) then
+                  if (je>=0 .and. je<=ne) &
+                    rdos(iq,je,ispin) = rdos(iq,je,ispin) + ddos*we
+                  if (je>=-1 .and. je<ne) &
+                    rdos(iq,je+1,ispin) = rdos(iq,je+1,ispin) + ddos*(1-we)
+                endif
+               ! call timer_stop(myName//'selected e')
               endif
             enddo ! ib
             call timer_stop(myName//'g sum')
@@ -529,6 +541,8 @@ program unfold
         enddo ! ig
       endif ! (myNode==iqNode)
     enddo ! iq
+
+if (myNode==0) print*,'unfold: end of main loop'
 
 #ifdef MPI
     ntmp = (iq2-iq1+1)*(ne+1)*nspin
@@ -550,7 +564,7 @@ program unfold
 
     ! Read Fermi level
     ! from SystemLabel.out:
- 
+
     if (myNode==0) then
       call system('grep ''Fermi = '' *out -h > fermi')
       open(8181,file='fermi',action='read')
@@ -561,6 +575,8 @@ program unfold
       call system('rm fermi')
       close(8181)
     endif
+
+if (myNode==0) print*,'unfold: writing output files'
 
     if (myNode==0) then
       do ispin = 1,nspin
