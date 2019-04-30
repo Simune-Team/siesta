@@ -50,8 +50,8 @@ program unfold
   character(len=*),parameter:: myName = 'unfold '
   integer, parameter :: nr = 4096       ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
-  integer, parameter :: maxpaths = 100  ! max number of unfolded band paths
-  integer, parameter :: maxnq = 10000    ! max number of q sampling points
+  integer, parameter :: maxpaths = 150  ! max number of unfolded band paths
+  integer, parameter :: maxnq = 15000    ! max number of q sampling points
   real(dp),parameter :: g2c = 50_dp     ! default refolding G cutoff (ry)
   real(dp),parameter :: qc = 50_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
   logical, parameter :: writeOrbitals = .false.  ! write atomic orbital files?
