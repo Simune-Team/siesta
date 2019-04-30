@@ -4346,6 +4346,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 \end{fdfentry}
 
 \begin{fdfentry}{SCF.Mixer!Weight}[real]<0.25>%
+  \fdfdepend{DM!MixingWeight}%
   \fdfindex*{DM!MixingWeight}[|see SCF.Mixer.Weight]
 
   The mixing weight used to mix the quantity.
@@ -4353,19 +4354,27 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
   \begin{equation}
     \DM^{n+1}_{\mathrm{in}} = \DM^n_{\mathrm{in}} + w \Res[n].
   \end{equation}
-  For details regarding the other methods please see \fdf{SCF.Mixer!Method}.
+  For details regarding the other methods please see
+  \fdf{SCF.Mixer!Method}.
+
+  \note the older keyword \fdf{DM!MixingWeight} is used if this key is
+  not found in the input.
 
 \end{fdfentry}
 
 
 \begin{fdfentry}{SCF.Mixer!History}[integer]<2>%
+  \fdfdepend{DM.NumberPulay,DM.NumberBroyden}%
   \fdfindex*{DM.NumberPulay}[|see SCF.Mixer.History]%
   \fdfindex*{DM.NumberBroyden}[|see SCF.Mixer.History]
 
   Number of previous SCF steps used in estimating the following input.
   Increasing this number, typically, increases stability and a number
   of around 6 or above may be advised.
-  
+
+  \note the older keyword \fdf{DM.NumberPulay}/\fdf{DM.NumberBroyden}
+  is used if this key is not found in the input.
+
 \end{fdfentry}
 
 
@@ -6082,6 +6091,10 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
   solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
   PEXSI method (\fdf*{PEXSI}) or the \fdf*{CheSS} solver.
+  In addition, the \fdf*{Dummy} solver will just return a
+  slightly perturbed density-matrix without actually solving for
+  the electronic structure. This is useful for timing other routines.
+
   
 \end{fdfentry}
 
@@ -9335,6 +9348,15 @@ always include all arrays.
   this defaults to \fdffalse.
   
 \end{fdflogicalT}
+
+\begin{fdflogicalF}{TimingSplitScfSteps}
+
+  The timings for individual scf steps will be recorded separately.
+  
+  NOTE: The 'tree' timer should be used to make meaningful use of this
+  information. It is enabled by default if this variable is \fdftrue.
+
+\end{fdflogicalF}
 
 \begin{fdfentry}{MaxWalltime}[real time]<Infinity>
 
