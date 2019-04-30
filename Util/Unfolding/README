@@ -32,7 +32,9 @@ BandLinesScale  pi/a       # used in BandLines and UnfoldedBandLines blocks
    0.000  0.000  1.000
 %endblock LatticeVectors
 
-COOP.Write   true          # makes siesta write the .HSX file used by unfold
+SaveHS        true         # makes siesta write the .HSX file used by unfold
+# COOP.Write  true         # makes siesta write the .HSX file, and other files
+		           # (only one of both is needed)
 
 %block UnfoldedBandLines
   320  -20.0  60 eV        # numEnergies, Emin, Emax, Eunit
@@ -58,14 +60,14 @@ single point. This allows a q-line to not begin at the end of previous one, e.g.
 %block UnfoldedBandLines
   320  -20.0  60 eV          # numEnergyIntervals, Emin, Emax, Eunit
    1   1.0  1.0  1.0         # mustBeOne, first_qVector (in units of BandLinesScale)
- 100   0.0  0.0  0.0  \Gamma # line_numq, endLine_qVector, opt_label
+ 100   0.0  0.0  0.0 \Gamma  # line_numq, endLine_qVector, q_label
  120   2.0  0.0  0.0         # add as many path lines as required
    1   0.0  0.0  0.0         # new path (begins with a single point)
  100   4.0  4.0  0.0
 %endblock UnfoldedBandLines
 
-As in BandLines, a label can be added at the end of each q-line to specify
-the name of the last point of that line.
+As in BandLines, a label can be added at the end of a q-line with the name 
+of the specified q-point.
 
 The unfolded and refolded bands calculated by unfold are written in files
 SYSLABEL.unfoldedBands and SYSLABEL.refoldedBands (where SYSLABEL=si8 in 
