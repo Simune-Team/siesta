@@ -19,5 +19,7 @@ grid2cube:  Converts to Gaussian Cube format
 g2c_ng:    (experimental) New version of grid2cube with some extra features,
            such as the possibility to deal with non-orthorhombic cells, and
 	   the generation of supercells. (No changes of origin yet)
-           
 
+v_info:    (experimental) Plots the plane average V(z) of an electrostatic
+           potential function in a grid-format file.
+	   

@@ -36,7 +36,9 @@ OBJDIR=Obj
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 
-VPATH:=$(shell pwd)/../../../../Src
+VPATH_SRC:=$(shell pwd)/../../../../Src
+VPATH_GRID:=$(shell pwd)/../../../../Util/Grid
+VPATH:=$(VPATH_GRID):$(VPATH_SRC)
 
 default: what stm
 
@@ -119,7 +121,7 @@ MOD_OBJS=precision.o parallel.o m_io.o alloc.o memoryinfo.o listsc.o  \
          domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
          sparse_matrices.o interpolation.o m_fft_gpfa.o \
          files.o pseudopotential.o chemical.o xml.o \
-         parallelsubs.o spatial.o
+         parallelsubs.o spatial.o m_gridfunc.o units.o
 
 # Additional class objects
 CLS_OBJS = m_uuid.o object_debug.o class_Sparsity.o \
@@ -958,7 +960,7 @@ extrapolate.o: fftw3_mymod.o precision.o
 mainstm.o: basis_io.o listsc.o parallel.o precision.o
 ranger.o: precision.o
 stm.o: atmfuncs.o chemical.o precision.o
-vacpot.o: precision.o
+vacpot.o: precision.o units.o m_gridfunc.o
 band.o: bands.o
 bloch_unfold_m.o: bloch_unfold.o
 class_cdata1d.o: class_Data1D.o

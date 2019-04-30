@@ -6,6 +6,7 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 !
+!> Utilities to dea with real-space grid functions
 module m_gridfunc
 
   implicit          none
@@ -15,11 +16,19 @@ module m_gridfunc
   integer, parameter          :: grid_p = sp  ! NOTE this
 
   type, public :: gridfunc_t
-     real(dp)              ::  cell(3,3)   ! by columns, in bohr
-     real(dp)              ::  origin(3) = [0.0_dp, 0.0_dp, 0.0_dp]  ! in bohr
+     !> Lattice vectors (by columns, in bohr)
+     real(dp)              ::  cell(3,3)   
+     !> Possible shift for the origin of the box, useful in some
+     !> situations (sub-boxes, for example) (in bohr)
+     real(dp)              ::  origin(3) = [0.0_dp, 0.0_dp, 0.0_dp]
+     !> The 'grid' format can in principle hold functions that
+     !> are not periodic (for example, values in a sub-box)
      logical               ::  is_periodic(3) = [ .true., .true., .true.]
+     !> Number of points along each cell direction
      integer               ::  n(3) = [ 0,0,0 ]
+     !> Extra dimension, typically the spin index
      integer               ::  nspin
+     !> Array holding the values of the grid function
      real(grid_p), allocatable ::  val(:,:,:,:)
   end type gridfunc_t
 
@@ -28,6 +37,8 @@ module m_gridfunc
       public :: read_gridfunc_netcdf, write_gridfunc_netcdf
 #endif
       public :: get_planar_average, grid_p, monoclinic_z
+      public :: monoclinic
+    
       private
 
  CONTAINS
@@ -71,9 +82,16 @@ module m_gridfunc
 
    end subroutine write_gridfunc
 
+   !> Computes a simple-minded 'planar average' of a grid
+   !> function. This is a mathematical average. For a more
+   !> physical average, see the 'macroave' utility
    subroutine get_planar_average(gf, dim, val)
+     !> The object representing the grid function
      type(gridfunc_t), intent(in) :: gf
+     !> The dimension that indexes the average values.
+     !> These are obtained by summing over the two other dimensions.
      integer, intent(in) :: dim
+     !> Array holding the averages (second dimension is the 'spin'))
      real(grid_p), allocatable :: val(:,:)
 
      integer :: isp, ix, iy, iz, n(3), spin_dim
@@ -81,10 +99,12 @@ module m_gridfunc
 
      n = gf%n
      spin_dim = size(gf%val,dim=4)
-     
-     if (dim == 3) then
-        allocate(val(n(3),spin_dim))
-        do isp=1,gf%nspin
+
+     allocate(val(n(dim),spin_dim))
+
+     do isp=1,gf%nspin
+        select case (dim)
+        case (3)
            do iz=1,n(3)
               sum = 0.0_grid_p
               do iy=1,n(2)
@@ -94,10 +114,29 @@ module m_gridfunc
               enddo
               val(iz,isp) = sum/(n(1)*n(2))
            enddo
-        enddo
-     else
-        call die("non-z ave not implemented yet")
-     endif
+        case (2)
+           do iy=1,n(2)
+              sum = 0.0_grid_p
+              do iz=1,n(3)
+                 do ix=1,n(1)
+                    sum = sum + gf%val(ix,iy,iz,isp)
+                 enddo
+              enddo
+              val(iy,isp) = sum/(n(1)*n(3))
+           enddo
+        case (1)
+           do ix=1,n(1)
+              sum = 0.0_grid_p
+              do iz=1,n(3)
+                 do iy=1,n(2)
+                    sum = sum + gf%val(ix,iy,iz,isp)
+                 enddo
+              enddo
+              val(ix,isp) = sum/(n(2)*n(3))
+           enddo
+        end select
+        
+     enddo
 
    end subroutine get_planar_average
 
@@ -333,6 +372,12 @@ end subroutine check
    stop
  end subroutine die
 
+ !> Physically, it should not matter whether the 'c' axis points along
+ !> z, since rotations are irrelevant. However, some programs are
+ !> hard-wired for the z-direction. Hence the name. See the
+ !> 'monoclinic' function for the rotationally invariant
+ !> version.
+ 
  function monoclinic_z(cell)
    real(dp), intent(in) :: cell(3,3)
    logical monoclinic_z
@@ -347,6 +392,41 @@ end subroutine check
                .and. abs(CELL(2,3)) < tol )
 
    end function monoclinic_z
+
+   !> Checks that the lattice vector of index 'dim' is orthogonal to
+   !> the other two.
+
+   function monoclinic(cell,dim)
+     real(dp), intent(in) :: cell(3,3)
+     integer, intent(in)  :: dim
+     logical monoclinic
+
+     real(dp), parameter :: tol = 1.0e-8_dp
+
+   ! Check that the 'dim' vector is orthogonal to the other two
+     monoclinic = .true.
+     if (abs(dot_product(cell(:,dim),cell(:,next(dim,1)))) > tol) then
+        monoclinic = .false.
+     endif
+     if (abs(dot_product(cell(:,dim),cell(:,next(dim,2)))) > tol) then
+        monoclinic = .false.
+     endif
+
+   CONTAINS
+     !> generates cyclic neighbors of dimension 'i' with shift 'm'
+     !> For example:
+     !>   x --> y:   next(1,1) = 2
+     !>   y --> x:   next(2,2) = 1
+     function next(i,m) result(ind)
+       integer, intent(in) :: i, m
+       integer :: ind
+       
+       ind = i + m
+       if (ind > 3) then
+          ind = ind - 3
+       endif
+     end function next
+   end function monoclinic
 
  end module m_gridfunc
 
