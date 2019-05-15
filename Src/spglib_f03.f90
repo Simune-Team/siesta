@@ -381,7 +381,7 @@ contains
 ! local vars
     integer :: max_size
     integer :: ii, isym, jj
-    double precision :: cellinvT(3,3)
+    double precision :: cellinv(3,3)
     double precision :: dsymop(3,3)
     double precision :: dsymopinv(3,3)
     double precision :: zerovec(3) = (/0.0d0, 0.0d0, 0.0d0/)
@@ -466,13 +466,13 @@ contains
     allocate(syms_this%symops_cart(1:3, 1:3, 1:syms_this%n_operations))
 
     !call matr3invt(syms_this%celltransp, cellinvT) ! NB: returns inverse transpose, which is what we want
-    call matr3invt(cell, cellinvT) 
-    !cellinv = transpose(cellinv) ! cellinv is now the straight inverse of cell
+    call matr3invt(cell, cellinv) 
+    cellinv = transpose(cellinv) ! cellinv is now the straight inverse of cell
 
     ! symcart = rprim * symred * gprim^T
     do ii = 1, syms_this%n_operations
       !dsymop = matmul(syms_this%celltransp, matmul(dble(syms_this%rotations(:, :, ii)), cellinvT))
-      dsymop = matmul(cell, matmul(dble(syms_this%rotations(:, :, ii)), cellinvT))
+      dsymop = matmul(cell, matmul(dble(syms_this%rotations(:, :, ii)), cellinv))
       !syms_this%symops_cart(:, :, ii) = nint(dsymop)
       syms_this%symops_cart(:, :, ii) = dsymop
 
@@ -486,6 +486,11 @@ contains
          print *, 'rotcart_dp ', dsymop
          print *, 'notice : cartesian symop element is not -1 0 +1'
          !stop
+      end if
+      if (abs(abs(matr3det(syms_this%symops_cart(:, :, ii)))-1.0d0) > 1.d-12) then
+         print *, 'rotcart    ', syms_this%symops_cart(:, :, ii)
+         print *, 'is not a correct symmetry matrix with determinant = +- 1'
+         stop
       end if
 !END DEBUG
     end do
@@ -501,10 +506,21 @@ contains
       if (any(abs(dble(syms_this%symops_recip(:, :, ii)) - dsymopinv(:,:)) > 1.e-10)) then
         stop 'error : recip symop element is not integer (normally -1 0 +1)'
       end if
+      if (abs(abs(matr3det(dble(syms_this%symops_recip(:, :, ii))))-1.0d0) > 1.d-12) then
+         print *, 'reciprot    ', syms_this%symops_recip(:, :, ii)
+         print *, 'is not a correct symmetry matrix with determinant = +- 1'
+         stop
+      end if
 ! END DEBUG
-      dsymop = matmul(transpose(cellinvT), matmul(dble(syms_this%symops_recip(:, :, ii)), cell))
-      syms_this%symops_recip_cart(:, :, ii) = nint(dsymop)
+
+      syms_this%symops_recip_cart(:, :, ii) = matmul(transpose(cellinv), &
+&           matmul(dble(syms_this%symops_recip(:, :, ii)), transpose(cell)))
 ! DEBUG - perhaps comment out later: one check is that the group of operations is closed.
+      if (abs(abs(matr3det(syms_this%symops_recip_cart(:, :, ii)))-1.0d0) > 1.d-12) then
+         print *, 'reciprotcart    ', syms_this%symops_recip_cart(:, :, ii)
+         print *, 'is not a correct symmetry matrix with determinant = +- 1'
+         stop
+      end if
 !      do jj = 1, ii-1
 !         print '(3(3E20.10, 3x))', matmul(syms_this%symops_recip_cart(:, :, ii), syms_this%symops_recip_cart(:, :, jj))
 !      end do
@@ -684,6 +700,27 @@ subroutine matr3invt(aa, ait)
 
 end subroutine matr3invt
 
+function matr3det(aa)
+
+ implicit none
+
+!Arguments ------------------------------------
+!arrays
+ double precision, intent(in) :: aa(3,3)
+ double precision :: matr3det
+
+!Local variables-------------------------------
+!scalars
+ double precision :: t1,t2,t3
+
+! *************************************************************************
+
+ t1 = aa(2,2) * aa(3,3) - aa(3,2) * aa(2,3)
+ t2 = aa(3,2) * aa(1,3) - aa(1,2) * aa(3,3)
+ t3 = aa(1,2) * aa(2,3) - aa(2,2) * aa(1,3)
+ matr3det  = aa(1,1) * t1 + aa(2,1) * t2 + aa(3,1) * t3
+
+end function matr3det
 
 end module spglib_f03
 
