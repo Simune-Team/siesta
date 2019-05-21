@@ -10630,6 +10630,12 @@ end
   If there are any variables you require which are not in the list,
   please contact the developers.
 
+  If you want to stop \siesta\ from Lua you can use the following:
+  \begin{codeexample}
+    siesta.Stop = true
+    siesta.send({"Stop"})
+  \end{codeexample}
+  which will abort \siesta.
 
   Remark that since \emph{anything} may be changed via Lua one may
   easily make \siesta\ crash due to inconsistencies in the internal
