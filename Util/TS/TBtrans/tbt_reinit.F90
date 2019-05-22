@@ -37,7 +37,7 @@ subroutine tbt_reinit( sname , slabel )
   integer ::  count, in, length, lun, lun_tmp, iostat
   character(len=256) :: line
 
-  logical :: debug_input, file_exists
+  logical :: debug_input, file_exists, is_pipe
 
 ! Print Welcome and Presentation .......................................
 !     Non-master mpi-processes receive a copy of all the
@@ -66,18 +66,22 @@ subroutine tbt_reinit( sname , slabel )
      write(6,'(a)') &
           '                           ************************ '
 
-! ..................
 !
 !       Set name of file to read from. Done only
 !       in the master node.
 !
+     is_pipe = .true.
 #ifndef NO_F2003
      count = command_argument_count()
      if ( count > 0 ) then
         filein = ' '
-        call get_command_argument(count,filein,length)
+        call get_command_argument(count, filein, length)
         inquire(file=filein,exist=debug_input)
-        if ( .not. debug_input ) count = 0
+        if ( debug_input ) then
+          is_pipe = .false.
+        else
+          count = 0
+        end if
      end if
 #endif
 
@@ -87,23 +91,22 @@ subroutine tbt_reinit( sname , slabel )
 !      processed and dumped to a temporary file)
 !
      inquire(file='INPUT_DEBUG',exist=debug_input)
-     if (debug_input) then
+     if ( debug_input ) then
         write(*,'(a)') 'WARNING: ' // &
              'TBTrans is reading its input from file INPUT_DEBUG'
         filein = 'INPUT_DEBUG'
 
 #ifndef NO_F2003
-     else if ( count > 0 ) then
+     else if ( .not. is_pipe ) then
 
         ! Get file-name from input line (last input argument)
-        count = command_argument_count()
         filein = ' '
-        call get_command_argument(count,filein,length)
+        call get_command_argument(count, filein, length)
         if ( length > len(filein) ) then
            call die('The argument is too long to be retrieved, please &
                 &limit to 50 characters for the input file')
         end if
-        inquire(file=filein,exist=debug_input)
+        inquire(file=filein, exist=debug_input)
         if ( .not. debug_input ) then
            call die('Input file '//trim(filein)//' does not exist? Have &
                 &you specified the wrong file-name?')
@@ -126,13 +129,13 @@ subroutine tbt_reinit( sname , slabel )
            inquire( file=filein, exist=file_exists )
            if (.not.file_exists) exit
         end do
-!
+
         open(lun_tmp,file=filein, &
              form='formatted',status='replace')
         rewind(lun_tmp)
         write(*,"(a,23('*'),a,28('*'))") &
              '***', ' Dump of input data file '
-!
+
         do
            read(lun,iostat=iostat,fmt='(a)') line
            if (iostat /= 0 ) exit
@@ -154,7 +157,6 @@ subroutine tbt_reinit( sname , slabel )
 !
      endif
   endif
-! ...
 
 ! Set up fdf ...
 !
@@ -167,94 +169,98 @@ subroutine tbt_reinit( sname , slabel )
   call fdf_init(filein,trim(fileout))
 
 #ifndef NO_F2003
-  ! Read special variables from the command line
+  ! Read command line flags from the command line
   count = command_argument_count()
+  
+  ! When we are not using pipes we have to skip the last argument
+  if ( .not. is_pipe ) count = count - 1
+  
   if ( count > 0 ) then
-     in = 0
-     do while ( in <= count - 1 )
+    in = 0
+    do while ( in <= count )
+      in = in + 1
+      call get_command_argument(in,line,length)
+      
+      ! If it is not an option, skip it
+      if ( line(1:1) /= '-' ) cycle
+      
+      do while ( line(1:1) == '-' )
+        line = line(2:)
+      end do
+      
+      ! We allow these line
+      if ( line(1:3) == 'fdf' ) then
+        if ( in >= count ) &
+            call die('Missing argument on command line, -fdf')
         in = in + 1
         call get_command_argument(in,line,length)
-
-        ! If it is not an option, skip it
-        if ( line(1:1) /= '-' ) cycle
-
-        do while ( line(1:1) == '-' )
-           line = line(2:)
-        end do
-
-        ! We allow these line
-        if ( line(1:3) == 'fdf' ) then
-           if ( in >= count - 1 ) &
-                call die('Missing argument on command line, -fdf')
-           in = in + 1
-           call get_command_argument(in,line,length)
-
-           ! We allow these variations:
-           !  TBT.Voltage=0.1:eV
-           !  TBT.Voltage:0.1:eV
-           !  TBT.Voltage=0.1=eV
-           line = cmd_tokenize(line)
-           call fdf_overwrite(line)
-
-        else if ( line(1:1) == 'V' ) then
-           if ( in >= count - 1 ) &
-                call die('Missing argument on command line, -V')
-           in = in + 1
-           call get_command_argument(in,line,length)
-           line = cmd_tokenize(line)
-           line = 'TBT.Voltage '//trim(line)
-           call fdf_overwrite(line)
-
-        else if ( line(1:1) == 'D' ) then
-           if ( in >= count - 1 ) &
-                call die('Missing argument on command line, -D')
-           in = in + 1
-           call get_command_argument(in,line,length)
-           line = 'TBT.Directory '//trim(line)
-           call fdf_overwrite(line)
-
-        else if ( line(1:2) == 'HS' ) then
-           if ( in >= count - 1 ) &
-                call die('Missing argument on command line, -HS')
-           in = in + 1
-           call get_command_argument(in,line,length)
-           line = 'TBT.HS '//trim(line)
-           call fdf_overwrite(line)
-
-        else if ( line(1:1) == 'L' ) then
-           if ( in >= count - 1 ) &
-                call die('Missing argument on command line, -L')
-           in = in + 1
-           call get_command_argument(in,line,length)
-           line = cmd_tokenize(line)
-           line = 'SystemLabel '//trim(line)
-           call fdf_overwrite(line)
-
-        else if ( line(1:4) == 'help' .or. line(1:1) == 'h' ) then
-           write(*,'(a)') 'Help for calling the tight-binding transport code'
-           write(*,'(a)') '  -out <file>'
-           write(*,'(a)') '      Write all output to <file> instead of STDOUT'
-           write(*,'(a)') '  -fdf <label>=<value>[:<unit>]'
-           write(*,'(a)') '      Set the label to the corresponding value.'
-           write(*,'(a)') '  -V <value>:<unit>'
-           write(*,'(a)') '      Short-hand for setting TBT.Voltage'
-           write(*,'(a)') '  -D <directory>'
-           write(*,'(a)') '      Short-hand for setting TBT.Directory'
-           write(*,'(a)') '  -HS <Hamiltonian>'
-           write(*,'(a)') '      Short-hand for setting TBT.HS'
-           write(*,'(a)') '  -L <name>'
-           write(*,'(a)') '      Short-hand for setting SystemLabel'
-           write(*,'(a)') '  <fdf-file>'
-           write(*,'(a)') '      Use file as fdf-input, you need not to pipe it in.'
-           call bye('Help-menu requested, stopping')
-        end if
         
-     end do
+        ! We allow these variations:
+        !  TBT.Voltage=0.1:eV
+        !  TBT.Voltage:0.1:eV
+        !  TBT.Voltage=0.1=eV
+        line = cmd_tokenize(line)
+        call fdf_overwrite(line)
+        
+      else if ( line(1:1) == 'V' ) then
+        if ( in >= count ) &
+            call die('Missing argument on command line, -V')
+        in = in + 1
+        call get_command_argument(in,line,length)
+        line = cmd_tokenize(line)
+        line = 'TBT.Voltage '//trim(line)
+        call fdf_overwrite(line)
+        
+      else if ( line(1:1) == 'D' ) then
+        if ( in >= count ) &
+            call die('Missing argument on command line, -D')
+        in = in + 1
+        call get_command_argument(in,line,length)
+        line = 'TBT.Directory '//trim(line)
+        call fdf_overwrite(line)
+        
+      else if ( line(1:2) == 'HS' ) then
+        if ( in >= count ) &
+            call die('Missing argument on command line, -HS')
+        in = in + 1
+        call get_command_argument(in,line,length)
+        line = 'TBT.HS '//trim(line)
+        call fdf_overwrite(line)
+        
+      else if ( line(1:1) == 'L' ) then
+        if ( in >= count ) &
+            call die('Missing argument on command line, -L')
+        in = in + 1
+        call get_command_argument(in,line,length)
+        line = cmd_tokenize(line)
+        line = 'SystemLabel '//trim(line)
+        call fdf_overwrite(line)
+        
+      else if ( line(1:4) == 'help' .or. line(1:1) == 'h' ) then
+        write(*,'(a)') 'Help for calling the tight-binding transport code'
+        write(*,'(a)') '  -out <file>'
+        write(*,'(a)') '      Write all output to <file> instead of STDOUT'
+        write(*,'(a)') '  -fdf <label>=<value>[:<unit>]'
+        write(*,'(a)') '      Set the label to the corresponding value.'
+        write(*,'(a)') '  -V <value>:<unit>'
+        write(*,'(a)') '      Short-hand for setting TBT.Voltage'
+        write(*,'(a)') '  -D <directory>'
+        write(*,'(a)') '      Short-hand for setting TBT.Directory'
+        write(*,'(a)') '  -HS <Hamiltonian>'
+        write(*,'(a)') '      Short-hand for setting TBT.HS'
+        write(*,'(a)') '  -L <name>'
+        write(*,'(a)') '      Short-hand for setting SystemLabel'
+        write(*,'(a)') '  <fdf-file>'
+        write(*,'(a)') '      Use file as fdf-input, you need not to pipe it in.'
+        call bye('Help-menu requested, stopping')
+      end if
+      
+    end do
   end if
 #endif
 
   ! Initialize the verbosity setting
-  call init_verbosity('TBT.Verbosity',5)
+  call init_verbosity('TBT.Verbosity', 5)
 
 ! Define Name of the system ...
   sname = fdf_get('SystemName',' ')
@@ -263,7 +269,6 @@ subroutine tbt_reinit( sname , slabel )
      write(*,'(a,a)') 'reinit: System Name: ',trim(sname)
      write(*,'(a,71("-"))') 'reinit: '
   endif
-! ...
 
 ! Define System Label (short name to label files) ...
   slabel = fdf_get('SystemLabel','siesta')
@@ -271,7 +276,6 @@ subroutine tbt_reinit( sname , slabel )
      write(*,'(a,a)') 'reinit: System Label: ',trim(slabel)
      write(*,'(a,71("-"))') 'reinit: '
   endif
-! ...
 
 contains
 
