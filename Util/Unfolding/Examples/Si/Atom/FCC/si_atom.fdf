@@ -62,5 +62,4 @@ BandLinesScale  pi/a
 %endblock RefoldingLatticeVectors
 
 COOP.Write
-WriteBnads
 

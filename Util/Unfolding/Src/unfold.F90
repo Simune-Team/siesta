@@ -128,6 +128,20 @@ program unfold
   threshold = fdf_get( 'AllocReportThreshold', 0._dp )
   call alloc_report( level, file='unfold.alloc', printNow=.false., threshold=threshold )
 
+
+   ! Read Fermi level from SystemLabel.out file
+   if (myNode==0) then
+     call system('grep ''Fermi = '' *out -h > fermi')
+     open(8181,file='fermi',action='read')
+     read(8181,'(a)') dumm
+     ic = index(dumm,'=')
+     read(dumm(ic+1:),*) efermi
+     print*,'unfold: Fermi = ',efermi
+     call system('rm fermi')
+     close(8181)
+   endif
+
+
   ! Read atomic basis
   if (myNode==0) then
     print*,'unfold: reading atomic orbitals'
@@ -432,7 +446,7 @@ program unfold
   nlm = (lmax+1)**2
   c0 = (2*pi)**1.5_dp / vol
   de = (emax-emin)/ne
-  cdos = 1/(2*pi)**3/de
+  cdos = 1.0    ! 1/(2*pi)**3
   ParallelOverK = .true.
   diag_serial = .true.
   nbands = nou
@@ -447,9 +461,7 @@ program unfold
   call timer_start(myName//'main loop')
   if (myNode==0) print*,'unfold: main loop'
   do ipath = 1,npaths
-
-if (myNode==0) print*,'unfold: ipath',ipath,'of',npaths
-
+    if (myNode==0) print*,'unfold: ipath',ipath,'of',npaths
     iq1 = lastq(ipath-1)+1
     iq2 = lastq(ipath)
     call re_alloc( udos, iq1,iq2, 0,ne, 1,nspin, myName//'udos', &
@@ -486,10 +498,8 @@ if (myNode==0) print*,'unfold: ipath',ipath,'of',npaths
                   h(iou,jou) = h(iou,jou) + hsx%hamilt(ij,ispin)*phase
                 enddo
               enddo
-            !  print*,'node:',iqNode
               call cdiag(h,s,nou,nou,nou,eb(:,ispin),psi(:,:,ispin), &
                          nbands,iscf,ierr,-1)
-              ! if (myNode==0) print*,'unfold:check error in cdiag'
               if (ierr/=0) print*,'unfold: ERROR in cdiag'
               eb(:,ispin) = eb(:,ispin)*fdf_convfac('ry',eunit) ! from Ry to eunit
               call timer_stop(myName//'diag')
@@ -503,8 +513,7 @@ if (myNode==0) print*,'unfold: ipath',ipath,'of',npaths
               dek = emin + (je+1)*de - eb(ib,ispin)
               we = dek/de
               ukg = 0
-              if (je>=-1 .and. je<=ne) then ! select energies
-               ! call timer_start(myName//'selected e')
+              if (je>=-1 .and. je<=ne) then   ! select energies
                 do io = 1,nou
                   ia = hsx%iaorb(io)
                   isp = isa(ia)
@@ -533,7 +542,6 @@ if (myNode==0) print*,'unfold: ipath',ipath,'of',npaths
                   if (je>=-1 .and. je<ne) &
                     rdos(iq,je+1,ispin) = rdos(iq,je+1,ispin) + ddos*(1-we)
                 endif
-               ! call timer_stop(myName//'selected e')
               endif
             enddo ! ib
             call timer_stop(myName//'g sum')
@@ -561,20 +569,6 @@ if (myNode==0) print*,'unfold: end of main loop'
       rdos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
     endif
 #endif
-
-    ! Read Fermi level
-    ! from SystemLabel.out:
-
-    if (myNode==0) then
-      call system('grep ''Fermi = '' *out -h > fermi')
-      open(8181,file='fermi',action='read')
-      read(8181,'(a)') dumm
-      ic = index(dumm,'=')
-      read(dumm(ic+1:),*) efermi
-      print*,'unfold: Fermi = ',efermi
-      call system('rm fermi')
-      close(8181)
-    endif
 
 if (myNode==0) print*,'unfold: writing output files'
 

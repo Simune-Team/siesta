@@ -34,7 +34,7 @@ BandLinesScale  pi/a       # used in BandLines and UnfoldedBandLines blocks
 
 SaveHS        true         # makes siesta write the .HSX file used by unfold
 # COOP.Write  true         # makes siesta write the .HSX file, and other files
-		           # (only one of both is needed)
+		           # (only one option is needed)
 
 %block UnfoldedBandLines
   320  -20.0  60 eV        # numEnergies, Emin, Emax, Eunit

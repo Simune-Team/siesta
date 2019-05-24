@@ -69,9 +69,8 @@ PAO.BasisSize  DZP
    0   0   1   0.0
 %endblock kgrid.MonkhorstPack
 
-COOP.Write			.true.
-WriteBands			.true.
-TimeReversalSymmetryForKpoints	.false.
+# COOP.Write			.true.
+SaveHS				.true.
 
 %block BandLines
    1   1.0  0.0  0.0  
@@ -79,7 +78,8 @@ TimeReversalSymmetryForKpoints	.false.
   30   1.0  1.0  0.0  
 %endblock BandLines
 
-BandLinesScale  pi/a
+BandLinesScale  	pi/a
+RefoldingGcutoff	20.0 Ry
 
 %block UnfoldedBandLines
  400  -20.0  60.0  eV
@@ -98,9 +98,9 @@ BandLinesScale  pi/a
 #  30   2.0  2.0  2.0  \Gamma
 #%endblock UnfoldedBandLines
 
-#%block RefoldingLatticeVectors
-#  0.000  0.500  0.500
-#  0.500  0.000  0.500
-#  0.500  0.500  0.000
-#%endblock RefoldingLatticeVectors
+%block RefoldingLatticeVectors
+  0.000  0.500  0.500
+  0.500  0.000  0.500
+  0.500  0.500  0.000
+%endblock RefoldingLatticeVectors
 

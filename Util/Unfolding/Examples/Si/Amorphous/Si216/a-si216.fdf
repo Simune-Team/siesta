@@ -21,10 +21,8 @@ AtomicCoordinatesFormat		Ang
 
 PAO.BasisSize 	 SZ
 
-DM.MixingWeight   0.1
-COOP.Write			.true.
-WriteBands			.true.
-TimeReversalSymmetryForKpoints	.false.
+DM.MixingWeight   0.05
+SaveHS		 .true.
 
 %block kgrid.MonkhorstPack
    2   0   0   0.5
@@ -35,24 +33,19 @@ TimeReversalSymmetryForKpoints	.false.
 BandLinesScale  pi/a
 
 %block UnfoldedBandLines
- 400  -25.0 70.0 eV
-   1   4.0  4.0  4.0
- 130   0.0  0.0  0.0
- 140   7.0  0.0  0.0
+   300  -20.0  20.0  eV
+   1   3.0  3.0  3.0  L
+  20   0.0  0.0  0.0  \Gamma
+  25   6.0  0.0  0.0  X
+  30   6.0  6.0  6.0  \Gamma
 %endblock UnfoldedBandLines
 
-#%block UnfoldedBandLines
-#  320  -20.0 60.0 eV
-#   1   1.0  1.0  1.0  L
-#  20   0.0  0.0  0.0  \Gamma
-#  25   2.0  0.0  0.0  X
-#  30   2.0  2.0  2.0  \Gamma
-#%endblock UnfoldedBandLines
+RefoldingGcutoff	15.0 Ry
 
-#%block RefoldingLatticeVectors
-#  0.000  0.500  0.500
-#  0.500  0.000  0.500
-#  0.500  0.500  0.000
-#%endblock RefoldingLatticeVectors
+%block RefoldingLatticeVectors
+  0.000  0.500  0.500
+  0.500  0.000  0.500
+  0.500  0.500  0.000
+%endblock RefoldingLatticeVectors
 
 

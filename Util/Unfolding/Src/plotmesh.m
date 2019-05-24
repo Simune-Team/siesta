@@ -10,9 +10,9 @@ ry = 13.60580;  % one ry in eV
 wmin = 1.e-4;
 
 % Change this:
-  npaths = 22;                  % number of files to read
-  wdir = '../divacancy/mesh02/';       % path to files
-  syslabel = 'Divacancy-11X11';        % Siesta label
+  npaths = 25;                         % number of files to read
+  wdir = '../path_to_files/';          % path to files
+  syslabel = 'SystemLabel';            % Siesta label
   flabel = '.refoldedBands.path';      % unfolded or refolded
 
 for ipath=1:npaths              
@@ -83,7 +83,8 @@ ptsize = 75;    % size of dots
 scatter3(qx,qy,e,ptsize*w.^1.1,w,'filled');
 
 colormap(flipud(bone));
-xlabel('qy')
-xlabel('qx')
-zlabel('energy')
+xlabel('k_y')
+xlabel('k_x')
+zlabel('Energy')
  
+
