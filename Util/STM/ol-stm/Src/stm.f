@@ -259,7 +259,11 @@ C Initialize neighbour subroutine --------------------------------------
              ! In this way, the last plane recorded in the file will correspond to Z=Zmax
              DO NZ = 0, NPZ-1
 
-                XPO(3) = ZMIN + NZ*(ZMAX-ZMIN)/(NPZ-1)
+                if (npz == 1) then
+                   XPO(3) = ZMIN
+                else
+                   XPO(3) = ZMIN + NZ*(ZMAX-ZMIN)/(NPZ-1)
+                endif
 
                 if ( XPO(3) < Zref ) then
                   ! Initialize density to unextrapolated density
@@ -397,9 +401,9 @@ C Initialize neighbour subroutine --------------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
       stm_label = FDF_STRING('stm-label','')
       if (stm_label == '') then
-         FNAME = trim(SNAME) // '.STM.siesta'
+         FNAME = trim(SNAME) // '.STM.LDOS'
       else
-         FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.siesta'
+         FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.LDOS'
       endif
 
       WRITE(6,*)
@@ -412,7 +416,11 @@ C Initialize neighbour subroutine --------------------------------------
       USAVE = UCELL(3,3)
       ! Make the cell slightly taller, so that the last (NPZ-1) plane corresponds
       ! to Z=Zmax
-      UCELL(3,3) = NPZ * abs(ZMAX-ZMIN) / (NPZ-1)
+      if (npz == 1 ) then
+         UCELL(3,3) = 1.0_dp   ! We have a single plane. Use a 1.0 bohr-thick height
+      else
+         UCELL(3,3) = NPZ * abs(ZMAX-ZMIN) / (NPZ-1)
+      endif
       
       WRITE(grid_u) UCELL,
      $              [0.0_dp, 0.0_dp, ZMIN], ! Extra info for origin

@@ -1,0 +1,12 @@
+How to implement multiple-cell views?
+
+-- Insert simple code in plstm. But how to specify this in the input?
+   (command-line arguments -- will break compatibility with AiiDA)
+   (maybe only -x NX -y NY allowed as arguments).
+
+-- Create a "multiplier" for grid files in m_gridfunc. But this does not
+   make much sense.
+
+-- Intermediate: Multiply the "2D data" after the main computation (just generate
+   to an array, instead of writing directly to stdout).
+
