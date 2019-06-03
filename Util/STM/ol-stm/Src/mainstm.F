@@ -20,6 +20,7 @@ C **********************************************************************
       USE BASIS_IO, only: read_basis_ascii
       USE LISTSC_MODULE, ONLY: LISTSC_INIT
       USE FDF
+      use broadening, only: width, gaussian_broadener
 
       IMPLICIT NONE
 
@@ -50,7 +51,9 @@ C **********************************************************************
       INTEGER :: wf_unit
       logical :: gamma, non_coll
       integer :: nspin_blocks
-      
+
+      integer :: ne
+      logical :: want_sts
       EXTERNAL :: REDATA, REINITSTM, VOLCEL
 
 C ****** READ FROM SIESTA **********************************************
@@ -164,6 +167,11 @@ C Call routine to calculate the value of the potential at vacuum
 
 C Call routine to compute STM image
 
+      ne = fdf_get('STS.NumberOfPoints',1)
+      want_sts = ((npz==1) .and. (ne > 1))
+      
+      if (.not. want_sts) then
+         
         CALL STM   ( NA_S, NO_S, NO_U, MAXNA, nspin,
      $               nspin_blocks, non_coll,
      .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
@@ -171,7 +179,18 @@ C Call routine to compute STM image
      .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
      .               V0, EMAX, EMIN,
      .               ARMUNI, IUNITCD, RMAXO )
-
+        else
+           ! Later: use function pointers
+           width = fdf_get('STS.broadening',0.2_dp)  ! in eV
+           CALL STS ( NA_S, NO_S, NO_U, MAXNA, nspin,
+     $               nspin_blocks, non_coll,
+     .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
+     .               wf_unit, NK, gamma,
+     .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
+     .               V0, EMAX, EMIN, NE, gaussian_broadener,
+     .               ARMUNI, IUNITCD, RMAXO )
+        endif
+        
         call io_close(wf_unit)
 
       END PROGRAM MAINSTM

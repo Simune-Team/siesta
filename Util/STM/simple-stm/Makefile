@@ -13,7 +13,7 @@
 
 OBJDIR=Obj
 
-all: plstm
+all: plstm plsts
 
 include ../../../$(OBJDIR)/arch.make
 VPATH=../../Grid
@@ -34,6 +34,11 @@ plstm: plstm.o m_gridfunc.o
 
 plstm.o: m_gridfunc.o
 
+plsts: plsts.o m_gridfunc.o
+	$(FC) $(LDFLAGS) -o $@  plsts.o m_gridfunc.o $(LIBS)
+
+plsts.o: m_gridfunc.o
+
 clean: 
-	rm -f *.o plstm
+	rm -f *.o plstm plsts
 
