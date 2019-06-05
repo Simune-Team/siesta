@@ -121,7 +121,7 @@ C **********************************************************************
      .  PHASE, SI, CO, ENER, PMIKR, SIMIKR, COMIKR, USAVE, VC, VU
 
       real(dp) :: step_e, e_sampled, weight
-      real(dp), allocatable :: sts_data(:,:,:)
+      real(dp), allocatable :: sts_data(:,:,:,:)
       
       real(dp) :: total_weight, k(3)
       
@@ -205,7 +205,7 @@ C Initialize neighbour subroutine --------------------------------------
       ALLOCATE(CW(0:NPX-1,0:NPY-1,spinor_comps))
       ALLOCATE(CWE(0:NPX-1,0:NPY-1,0:NPZ-1,spinor_comps))
 
-      ALLOCATE(sts_data(0:NPX-1,0:NPY-1,NE))
+      ALLOCATE(sts_data(0:NPX-1,0:NPY-1,0:NPZ-1,NE))
 
       step_e = (emax-emin) / (ne-1)
 
@@ -318,7 +318,8 @@ C Initialize neighbour subroutine --------------------------------------
                             ! Now for the various cases
                             if (nspin <= 2) then
                                ! will accumulate charge over the two spins
-                               sts_data(nx,ny,ie) = sts_data(nx,ny,ie) +
+                               sts_data(nx,ny,nz,ie) =
+     $                             sts_data(nx,ny,nz,ie) +
      &                             REAL(CWAVE(1)*CONJG(CWAVE(1)), dp)
      $                             * ARMUNI * WK(IK) * weight
                             else ! non-collinear: use only total charge
@@ -326,9 +327,11 @@ C Initialize neighbour subroutine --------------------------------------
                                d11 = cwave(1) * conjg(cwave(1))
                                d12 = cwave(1) * conjg(cwave(2))
 
-                               sts_data(nx,ny,ie) = sts_data(nx,ny,ie) +
+                               sts_data(nx,ny,nz,ie) =
+     $                           sts_data(nx,ny,nz,ie) +
      $                           real(d11,dp) * armuni * wk(ik) * weight
-                               sts_data(nx,ny,ie) = sts_data(nx,ny,ie) +
+                               sts_data(nx,ny,nz,ie) =
+     $                           sts_data(nx,ny,nz,ie) +
      $                           real(d22,dp) * armuni * wk(ik) * weight
                             endif
                          enddo  ! ie
@@ -370,30 +373,29 @@ C Initialize neighbour subroutine --------------------------------------
                    do ie = 1, ne
                       e_sampled = emin + (ie-1)*step_e
                       weight = broadener(ener-e_sampled)
-                            
+                      factor = armuni * WK(IK) * weight
                    ! Now for the various cases
                    ! Be careful not to overwrite the z<zref parts...
                       if (nspin <= 2) then
                          ! will accumulate charge over the two spins
-                         sts_data(:,:,ie) = sts_data(:,:,ie) +
-     &                      REAL(CWE(:,:,NZ,1)*
-     $                     CONJG(CWE(:,:,NZ,1)), dp)
-     $                     * ARMUNI * WK(IK) * weight
+                         sts_data(:,:,nz:,ie) = sts_data(:,:,nz:,ie) +
+     &                      REAL(CWE(:,:,NZ:,1)*
+     $                     CONJG(CWE(:,:,NZ:,1)), dp) * factor
 
                       else      ! non-collinear
 
-                         do ny=0,npy-1
-                            do nx=0,npx-1
-                               do iz = nz, npz-1
+                         do iz = nz, npz-1
+                            do ny=0,npy-1
+                               do nx=0,npx-1
                                   d11 = cwe(nx,ny,iz,1) *
      $                                 conjg(cwe(nx,ny,iz,1))
                                   d22 = cwe(nx,ny,iz,2) *
      $                                 conjg(cwe(nx,ny,iz,2))
                                   
-                               sts_data(nx,ny,ie) = sts_data(nx,ny,ie) +
-     $                           real(d11,dp) * armuni * wk(ik) * weight
-                               sts_data(nx,ny,ie) = sts_data(nx,ny,ie) +
-     $                           real(d22,dp) * armuni * wk(ik) * weight
+                                  sts_data(nx,ny,iz,ie) =
+     $                                 sts_data(nx,ny,iz,ie) +
+     $                                 real(d11+d22,dp) * factor
+
                                enddo
                             enddo
                          enddo
@@ -454,7 +456,7 @@ C Initialize neighbour subroutine --------------------------------------
       do ie = 1, ne
          DO IZ=0,NPZ-1
             DO IY=0,NPY-1
-               WRITE(grid_u) (REAL(sts_data(IX,IY,ie),sp),IX=0,NPX-1)
+               WRITE(grid_u) (REAL(sts_data(IX,IY,IZ,ie),sp),IX=0,NPX-1)
             ENDDO
          ENDDO
       enddo

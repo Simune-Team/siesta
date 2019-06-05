@@ -348,9 +348,9 @@ C Initialize neighbour subroutine --------------------------------------
      $                     * ARMUNI * WK(IK)
                    else         ! non-collinear
 
-                      do ny=0,npy-1
-                         do nx=0,npx-1
-                            do iz = nz, npz-1
+                      do iz = nz, npz-1
+                         do ny=0,npy-1
+                            do nx=0,npx-1
                          d11 = cwe(nx,ny,iz,1) * conjg(cwe(nx,ny,iz,1))
                          d12 = cwe(nx,ny,iz,1) * conjg(cwe(nx,ny,iz,2))
                          d21 = cwe(nx,ny,iz,2) * conjg(cwe(nx,ny,iz,1))
