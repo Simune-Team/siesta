@@ -9,7 +9,7 @@
       SUBROUTINE STM( NA, NO, NO_U, MAXNA, nspin,nspin_blocks,non_coll,
      .                ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
      .                wf_unit, NK, gamma_wfsx,
-     .                ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
+     .                ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, 
      .                V0, EMAX, EMIN,
      .                ARMUNI, IUNITCD, RMAXO )
 
@@ -35,8 +35,7 @@ C **********************************************************************
       INTEGER, INTENT(IN) ::
      .  NA, NO, NO_U, NPX, NPY, NPZ, IUNITCD,
      .  nspin, nspin_blocks, MAXNA, NK,
-     .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA),
-     .  NSCX, NSCY
+     .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA)
       integer, intent(in) :: wf_unit
       logical, intent(in) :: non_coll, gamma_wfsx
 
@@ -68,8 +67,6 @@ C INTEGER NK               : Number of k-points
 c REAL*8 ZREF              : Position of reference plane for wf. estrapol.
 C REAL*8  ZMIN, ZMAX       : Limits of the z-direction for the STM scan
 C INTEGER NPX,NPY,NPZ      : Number of points along x and y and z
-C INTEGER NSCX, NSCY       : Number of cells in x and y direction to plot
-C                            in cube file
 C REAL*8  V0               : Value of the potential at the vacuum region in eV
 C REAL*8  EMAX             : Maximum value for the energy window for STM in eV
 C REAL*8  EMIN             : Minimum value for the energy window for STM in eV

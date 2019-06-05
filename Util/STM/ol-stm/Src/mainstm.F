@@ -8,13 +8,27 @@
 
       PROGRAM MAINSTM
 
-C **********************************************************************
-C Reads eigenfunctions and eigenvalues from SIESTA and computes STM images
-C
-C Coded by P. Ordejon, November 2004
-C Modified by N. Lorente, August 2005
-C Re-structured and adapted to NC/SOC by Alberto Garcia, March 2019
-C **********************************************************************
+! Reads eigenfunctions and eigenvalues from SIESTA and computes the
+!     LDOS needed to simulate STM images or STS curves.
+!     Input:
+!     - WFSX file
+!     - .DIM and .PLD files      
+!     - .ion files
+!     - .VH file
+!
+!     Output for STM:
+!     - A 'gridfunc' file, which for STM simulations will have information
+!     about all the planes desired. (It marks the contents as "non-periodic"
+! along Z.
+!     Output for STS:
+!     - A 'gridfunc' file with a single plane perpendicular to Z, and using
+!     the 'spin' dimension to store values for different energies.
+!     - An auxiliary file with the values of the energy used in sampling.
+      
+! Coded by P. Ordejon, November 2004
+! Modified by N. Lorente, August 2005
+! Re-structured, adapted to NC/SOC, and extended to STS: Alberto Garcia, March 2019
+
 
       USE PRECISION, only:dp
       USE BASIS_IO, only: read_basis_ascii
@@ -29,7 +43,7 @@ C **********************************************************************
      .   NSC(3), NK, no_u_in_wfs_file, idummy
 
       INTEGER
-     .  NPX, NPY, NPZ, IUNITCD, IX, IV, NSCX, NSCY
+     .  NPX, NPY, NPZ, IUNITCD, IX, IV
 
       INTEGER, DIMENSION(:), ALLOCATABLE ::
      .  ISA, LASTO, IPHORB, INDXUO
@@ -78,23 +92,22 @@ C REAL*8  RMAXO               : Maximum range of basis orbitals
 C REAL*8  XA(3,NA_S)          : Atomic coordinates in cartesian coordinates
 C                               (units in bohrs)
 
-C ****** INFORMATION OF THE PLANE OR 3D GRID ***************************
+C ****** INFORMATION FOR 3D GRID ***************************
 C INTEGER NPX, NPY, NPZ       : Number of points generated along x and y
 C                               (and z for 3D grids) 
 C INTEGER IUNITCD             : Units of the charge density
 C REAL*8  ZREF                : Position of reference plane for wf. extrapol.
 C REAL*8  ZMIN, ZMAX          : Limits of the 3D grid for z-axis
-C INTEGER NSCX, NSCY          : Number of cells to plot in cube file (in x
-C                               and y directions)
 C REAL*8  ARMUNI              : Conversion factors for the charge density
-C **********************************************************************
+
 
       FILEIN  = 'stdin'
       FILEOUT = 'out.fdf'
       CALL FDF_INIT(FILEIN,FILEOUT)
 
       WRITE(6,*)
-      WRITE(6,*) 'STM Simulation program with wfs projection'
+      WRITE(6,*) 'STM/STS Simulation program' //
+     $           ' with optional wfs projection'
       WRITE(6,*) 'P. Ordejon and N. Lorente, Nov. 04'
       WRITE(6,*) 'A. Garcia, March 2019'
       WRITE(6,*)
@@ -155,40 +168,46 @@ C Calculate unit cell vectors
       endif
       read(wf_unit)   ! orbital labels
 
-      ! The file is now positioned to start reading wfs in routine 'stm'
+      ! The file is now positioned to start reading wfs in routines 'stm' or 'sts'
 
       CALL READSTM( VOLUME, 
      .     IUNITCD, NPX, NPY, NPZ, ZREF, ZMIN, ZMAX, EMAX, EMIN,
-     .      NSCX, NSCY, ARMUNI )
+     .     ARMUNI )
 
-C Call routine to calculate the value of the potential at vacuum
+! Call routine to calculate the value of the potential at vacuum
 
       CALL VACPOT(V0)
 
-C Call routine to compute STM image
+! STS calculations are restricted to a single plane perpendicular to Z
+! It can be argued that a single point, or line, might be enough. But      
+! we can easily reuse the code for 'stm' in the 'sts' routine. In 
+! postprocessing the extra information can be filtered.
 
       ne = fdf_get('STS.NumberOfPoints',1)
       want_sts = ((npz==1) .and. (ne > 1))
       
-      if (.not. want_sts) then
-         
-        CALL STM   ( NA_S, NO_S, NO_U, MAXNA, nspin,
-     $               nspin_blocks, non_coll,
-     .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
-     .               wf_unit, NK, gamma,
-     .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
-     .               V0, EMAX, EMIN,
-     .               ARMUNI, IUNITCD, RMAXO )
-        else
-           ! Later: use function pointers
+      if (want_sts) then
+
+           ! Later: use function pointers for broadener
            width = fdf_get('STS.broadening',0.2_dp)  ! in eV
+          
            CALL STS ( NA_S, NO_S, NO_U, MAXNA, nspin,
      $               nspin_blocks, non_coll,
      .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
      .               wf_unit, NK, gamma,
-     .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, NSCX, NSCY,
+     .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ,
      .               V0, EMAX, EMIN, NE, gaussian_broadener,
      .               ARMUNI, IUNITCD, RMAXO )
+        else
+
+           CALL STM ( NA_S, NO_S, NO_U, MAXNA, nspin,
+     $               nspin_blocks, non_coll,
+     .               ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
+     .               wf_unit, NK, gamma,
+     .               ZREF, ZMIN, ZMAX, NPX, NPY, NPZ,
+     .               V0, EMAX, EMIN,
+     .               ARMUNI, IUNITCD, RMAXO )
+
         endif
         
         call io_close(wf_unit)
