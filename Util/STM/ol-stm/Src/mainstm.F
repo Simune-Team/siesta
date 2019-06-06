@@ -178,13 +178,16 @@ C Calculate unit cell vectors
 
       CALL VACPOT(V0)
 
-! STS calculations are restricted to a single plane perpendicular to Z
+! STS calculations can be done on several planes perpendicular to z
+! at the same time. But note that the resulting data file might be large.
 ! It can be argued that a single point, or line, might be enough. But      
 ! we can easily reuse the code for 'stm' in the 'sts' routine. In 
 ! postprocessing the extra information can be filtered.
+! Besides, for the "projection" technique we need a full XY-unit cell,
+! since we need to fourier-transform the wavefunctions.      
 
       ne = fdf_get('STS.NumberOfPoints',1)
-      want_sts = ((npz==1) .and. (ne > 1))
+      want_sts = (ne > 1)
       
       if (want_sts) then
 

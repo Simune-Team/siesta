@@ -1,12 +1,24 @@
-How to implement multiple-cell views?
+The old version of the 'ol-stm' program produced .cube files as output,
+in addition to binary 'gridfunc' files. An option to replicate the information
+in multiple cells along the X and Y directions was available.
 
--- Insert simple code in plstm. But how to specify this in the input?
-   (command-line arguments -- will break compatibility with AiiDA)
-   (maybe only -x NX -y NY allowed as arguments).
+The current version produces a single 'gridfunc' file with information in the
+unit cell only (as pertains the x and y directions; the Z information corresponds
+to a set of planes and might not fill the whole unit cell).
 
--- Create a "multiplier" for grid files in m_gridfunc. But this does not
-   make much sense.
+Once an array with 2D information (either "constant-height" or "constant-mode")
+is produced by 'plstm', an extra two loops (on NX and NY) can achieve the desired
+replication for plotting.
+This has not yet been implemented pending the clarification of how best to give
+the NX, NY information to the program.
 
--- Intermediate: Multiply the "2D data" after the main computation (just generate
-   to an array, instead of writing directly to stdout).
+ * The 'input file' has been extended to the limit while maintaining
+   backwards compatibility.
+
+ * We might use command-line arguments. For everything, or maybe only -x NX -y NY  for the
+   replication options.
+
+Suggestions are welcome.
+
+
 

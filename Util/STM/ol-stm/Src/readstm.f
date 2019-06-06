@@ -28,7 +28,7 @@ C **********************************************************************
      .  VOLUME
 
       INTEGER, INTENT(OUT) ::
-     .  NPX, NPY, NPZ, IUNITCD, NSCX, NSCY
+     .  NPX, NPY, NPZ, IUNITCD
      
       DOUBLE PRECISION, INTENT(OUT) ::
      .  ZREF, ZMIN, ZMAX, ARMUNI, EMIN, EMAX

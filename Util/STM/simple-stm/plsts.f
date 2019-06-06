@@ -9,7 +9,8 @@
       program plsts
 
 ! Simple explorer of STS data files (wip)
-      
+!     This is too simple for now. Ideas are welcome.
+
       use m_gridfunc, only: gridfunc_t, read_gridfunc
 
        implicit none

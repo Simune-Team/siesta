@@ -117,7 +117,7 @@ C **********************************************************************
 
       REAL(DP)
      .  DOT, RMAX, XPO(3), RMAX2, XVEC1(3),
-     .  PHIMU, GRPHIMU(3),
+     .  PHIMU, GRPHIMU(3), factor,
      .  PHASE, SI, CO, ENER, PMIKR, SIMIKR, COMIKR, USAVE, VC, VU
 
       real(dp) :: step_e, e_sampled, weight
