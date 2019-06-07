@@ -315,6 +315,8 @@ CONTAINS
       write(6,*) "           -d:  debug                    "
       write(6,*) "   -m Min_e  :  set lower bound of energy range                    "
       write(6,*) "   -M Max_e  :  set upper bound of energy range                    "
+      write(6,*) "   -b Min_band  :  set minimum band index to be used               "
+      write(6,*) "   -B Max_band  :  set maximum band index to be used               "
       write(6,*)
       write(6,"('* INPUT FILES')")
       write(6,"('    [output files from SIESTA >=  2.4.1]')")

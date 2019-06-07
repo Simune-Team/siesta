@@ -20,9 +20,21 @@ program spin_texture
 
   logical :: gamma_wfsx, got_qcos, logical_dummy, non_coll
   integer :: ii1, ii2, ind, ind_red, no1, no2, n_int, nnz
-  integer :: nwfmx, nspin_blocks
+  integer :: nwfmx, nwfmin, nspin_blocks
   real(dp) :: factor, qsol
   character(len=256) :: file_prefix
+
+  integer  :: min_band = -huge(1)
+  integer  :: max_band =  huge(1)
+  logical  :: min_band_set = .false.
+  logical  :: max_band_set = .false.
+  logical  :: band_interval_set = .false.
+  real(dp) :: min_eigval_in_band_set
+  real(dp) :: max_eigval_in_band_set
+  real(dp) :: maximum_spec_eigval = huge(1)
+  real(dp) :: minimum_spec_eigval = -huge(1)
+  real(dp) :: min_eigval
+  real(dp) :: max_eigval
 
   real(dp) :: st(0:3)
   complex(DP), dimension(2)    :: spinor_1, spinor_2
@@ -33,17 +45,23 @@ program spin_texture
   !
   n_opts = 0
   do
-     call getopts('dhm:M:',opt_name,opt_arg,n_opts,iostat)
+     call getopts('dhm:M:b:B:',opt_name,opt_arg,n_opts,iostat)
      if (iostat /= 0) exit
      select case(opt_name)
      case ('d')
         debug = .true.
      case ('+d')
         debug = .false.
+     case ('b')
+        read(opt_arg,*) min_band
+        min_band_set = .true.
+     case ('B')
+        read(opt_arg,*) max_band
+        max_band_set = .true.
      case ('m')
-        read(opt_arg,*) minimum_spec_energy
+        read(opt_arg,*) minimum_spec_eigval
      case ('M')
-        read(opt_arg,*) maximum_spec_energy
+        read(opt_arg,*) maximum_spec_eigval
      case ('h')
         call manual_spin_texture()
      case ('?',':')
@@ -56,7 +74,9 @@ program spin_texture
   nargs = command_argument_count()
   nlabels = nargs - n_opts + 1
   if (nlabels /= 1)  then
-     write(0,*) "Usage: spin_texture [ -d ] [ -h ] [-m MIN_ENERGY] [-M MAX_ENERGY] SystemLabel"
+     write(0,*) "Usage: spin_texture [ -d ] [ -h ] " // &
+                "                    [-m MIN_EIGVAL] [-M MAX_EIGVAL]" // &
+                "                    [-b MIN_BAND] [-M MAX_BAND]   SystemLabel"
      write(0,*) "Use -h option for manual"
      STOP
   endif
@@ -65,6 +85,8 @@ program spin_texture
   if (iostat /= 0) then
      STOP "Cannot get SystemLabel"
   endif
+
+  band_interval_set = (min_band_set .or. max_band_set)
 
   !==================================================
 
@@ -97,8 +119,11 @@ program spin_texture
   if (debug) print *, "NSPIN BLOCKS: ", nspin_blocks
 
   nwfmx = 0
-  min_energy = huge(1.0_dp)
-  max_energy = -huge(1.0_dp)
+  nwfmin = huge(1)
+  min_eigval = huge(1.0_dp)
+  max_eigval = -huge(1.0_dp)
+  min_eigval_in_band_set = huge(1.0_dp)
+  max_eigval_in_band_set = -huge(1.0_dp)
 
   do ik=1,nkp
      do is=1,nspin_blocks
@@ -108,20 +133,70 @@ program spin_texture
         read(wfs_u) is0
         read(wfs_u) number_of_wfns
         nwfmx = max(nwfmx,number_of_wfns)
+        nwfmin = min(nwfmin,number_of_wfns)
 
         do iw=1,number_of_wfns
            read(wfs_u) iw0
            read(wfs_u) eigval
-           min_energy = min(min_energy,eigval)
-           max_energy = max(max_energy,eigval)
+           min_eigval = min(min_eigval,eigval)
+           max_eigval = max(max_eigval,eigval)
+           if ((iw>=min_band).and.(iw<=max_band)) then
+              min_eigval_in_band_set = min(min_eigval_in_band_set,eigval)
+              max_eigval_in_band_set = max(max_eigval_in_band_set,eigval)
+           endif
            read(wfs_u)
         enddo
      enddo
   enddo
 
-  write(0,*) " Maximum number of wfs per k-point: ", nwfmx
-  write(0,"(a,2f12.4)") "Min_energy, max_energy on WFS file: ",  &
-       min_energy, max_energy
+  write(0,*) "Minimum/Maximum number of wfs per k-point: ", nwfmin, nwfmx
+  write(0,"(a,2f12.4)") "min_eigval, max_eigval on WFS file: ",  &
+       min_eigval, max_eigval
+  write(0,"(a,2f12.4)") "Min_eigval, max_eigval in band set : ",  &
+          min_eigval_in_band_set, max_eigval_in_band_set
+
+  if (band_interval_set) then
+
+     if (min_band_set .and. (min_band < 1)) then
+        write(0,"(a)") " ** Min_band implicitly reset to 1..."
+     endif
+     if (min_band_set .and. (min_band > nwfmin)) then
+        write(0,"(a,2i5)") " ** Min_band is too large for some k-points: (min_band, nwfmin):", min_band, nwfmin
+        STOP
+     endif
+     if (max_band_set .and. (max_band > nwfmin)) then
+        write(0,"(a,2i5)") " ** Max_band is too large for some k-points: (max_band, nwfmin):", max_band, nwfmin
+        write(0,"(a)") " ** Max_band will be effectively reset to its maximum allowed value"
+     endif
+     if (max_band_set .and. (max_band < max(1,min_band))) then
+        write(0,"(a,2i5)") " ** Max_band is less than the effective min_band: "// &
+             "(max_band, eff min_band):", max_band, max(1,min_band)
+        STOP
+     endif
+
+     min_eigval = min_eigval_in_band_set
+     max_eigval = max_eigval_in_band_set
+  endif
+  
+  write(0,"(a,3i4)") "Implicit band set used: (min, max_min, max_max):",  &
+                   max(1,min_band), min(nwfmin,max_band), min(nwfmx,max_band)
+
+  ! min_eigval, max_eigval: Determine which eigenstates are used to compute the curves
+  write(0,"(a,2f12.4)") "Minimum and maximum eigenvalues " // &
+       "(based on file data and band selection): ",  min_eigval, max_eigval
+
+  if (minimum_spec_eigval > min_eigval) then
+     min_eigval = minimum_spec_eigval
+     write(0,"(a,f12.4)") "* Minimum eigenvalue changed as per user range request: ",  min_eigval
+  endif
+  if (maximum_spec_eigval < max_eigval) then
+     max_eigval = maximum_spec_eigval
+     write(0,"(a,f12.4)") "* Maximum eigenvalue changed as per user range request: ",  max_eigval
+  endif
+
+  ! Sanity checks
+  write(0,"(a,2f12.4)") "Minimum and maximum eigenvalues to be processed: ",  min_eigval, max_eigval
+  if (min_eigval > max_eigval) STOP "Meaningless range. Check -b/-B and -m/-M options"
 
 
   ! Read HSX file
@@ -136,11 +211,11 @@ program spin_texture
 
   !-------------------------------------------------------------------
 
-  if (minimum_spec_energy > min_energy)   min_energy = minimum_spec_energy
-  if (maximum_spec_energy < max_energy)  max_energy = maximum_spec_energy
+  if (minimum_spec_eigval > min_eigval)   min_eigval = minimum_spec_eigval
+  if (maximum_spec_eigval < max_eigval)  max_eigval = maximum_spec_eigval
 
-  write(6,"(a,2f12.4)") "# Min_energy, max_energy considered: ",  &
-       min_energy, max_energy
+  write(6,"(a,2f12.4)") "# min_eigval, max_eigval considered: ",  &
+       min_eigval, max_eigval
 
   !====================
 
@@ -259,7 +334,7 @@ program spin_texture
         read(wfs_u) 
         read(wfs_u) 
      
-        if (debug) print *, "Number of k-points, spins: ", nkp, nsp
+        if (debug) write(0,*) "Number of k-points, spins: ", nkp, nsp
         do ik=1,nkp
 
            write(6,'(/A,i4,A,3f12.6,A)')   &
@@ -270,16 +345,21 @@ program spin_texture
               read(wfs_u)
               read(wfs_u)
               read(wfs_u)  number_of_wfns
-              if (debug) print *, "  Number of wfns: ", number_of_wfns
+              if (debug) write(0,*) "  Number of wfns: ", number_of_wfns
               do iw=1,number_of_wfns
-                 if (debug) print *, "     wfn: ", iw
+                 if (debug) write(0,*) "     wfn: ", iw
                  read(wfs_u) 
                  read(wfs_u) eigval
-                 if (debug) print *, "   eigval: ", eigval
+                 if (debug) write(0,*) "   eigval: ", eigval
                  ! Early termination of iteration
-                 if (eigval < min_energy .or. eigval > max_energy) then
+                 if (eigval < min_eigval .or. eigval > max_eigval) then
                     read(wfs_u)   ! Still need to read this
-                    if (debug) print *, "-------------- skipped"
+                    if (debug) write(0,*) "---- skipped: not in e range"
+                    CYCLE
+                 endif
+                 if (iw < min_band .or. iw > max_band) then
+                    read(wfs_u)   ! Still need to read this
+                    if (debug) write(0,*) "---- skipped: not in band range"
                     CYCLE
                  endif
 

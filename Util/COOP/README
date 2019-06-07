@@ -35,8 +35,8 @@ charge density associated to those states.
 ----------------------------------------------------------------------
 
 SPIN_TEXTURE computes the "spin texture" of the nk spinor states stored in a WFSX
-file. The selection of states is at the moment only on the basis of an energy interval
-(the whole range of energies in the file by default).
+file. The selection of states is on the basis of an eigenvalue interval
+(the whole range of energies in the file by default), or by band range.
 
 The WFSX file can be created during a Siesta calculation in several ways
 
@@ -51,6 +51,23 @@ The WFSX file can be created during a Siesta calculation in several ways
 -- Using the WaveFuncKpoints block, *together* with the option
    	 SaveHS T
 
-The 'SaveHS T' option is needed to generate information about the overlap matrix, which is
-needed by the program.
+(The 'SaveHS T' option is needed to generate information about the
+overlap matrix, which is needed by the program.)
 
+
+In general what one needs depends on the system. Many times simply
+having the spin texture along the directions of maximum symmetry, the
+same ones used to plot the band structure, is enough. In those
+cases BandLines serves perfectly. A regular sampling can be
+interesting when one does not know anything about the shape of the band
+and is interested in the texture of spin in the whole area of the
+Brillouin Zone. It would be the brute force option.
+
+In cases with Dirac cones (graphene, topological insulators), a radial
+sampling around the Dirac point (or in concentric circles with
+equispaced points) is usually what gives the best information.
+
+This is one of the cases where the user should know what he needs,
+there is no generic recipe.
+
+See the header of the 'read_spin_texture.f90' file for hints about plotting.
