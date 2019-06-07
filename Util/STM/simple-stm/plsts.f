@@ -87,7 +87,7 @@
      $      status="unknown", position="rewind",action="write")
 
        write(6,*) 'Writing STS I(E) data at point ' //
-     $            ' in file: ' // trim(fname)//'.sts.dat'
+     $            ' in file: ' // trim(name)//'.sts.dat'
 
        write(2,'(a)') '#  Energy (eV)  I(E)  '
        do i = 1, ne

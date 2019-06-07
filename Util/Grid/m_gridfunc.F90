@@ -108,12 +108,16 @@ module m_gridfunc
      do k = 1, 3
         nk = real(n(k),kind=dp)
         r(k) =  modulo(n(k)*xfrac(k),nk)
-        lo(k) = int(r(k))
-        hi(k) = mod ( lo(k)+1, n(k) )
+        lo(k) = int(r(k))  
+        hi(k) = mod ( lo(k)+1, n(k) ) 
         x(k) = r(k) - lo(k)
         y(k) = 1 - x(k)
      enddo
 
+     ! Switch to 1-based array convention
+     lo(:) = lo(:) + 1
+     hi(:) = hi(:) + 1
+     
 !      compute charge density by linear interpolation
 
      vals(:) = gf%val(lo(1),lo(2),lo(3),:) * y(1) * y(2) * y(3) + &

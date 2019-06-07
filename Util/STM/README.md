@@ -57,19 +57,18 @@ The information in an LDOS file can be processed in several ways:
      (Again, if spin-resolved STS is needed, more coding is required
      -- suggestions and merge requests welcome).
 
-     STS information, as produced by wfs2ldos in STS mode, is in a file
-     with extension '.STS', and can be processed by ad-hoc tools based
-     on functionality in Util/Grid. For example, one might be
+     STS information, as produced by wfs2ldos in STS mode, is in a
+     file with extension '.STS', and can be processed by ad-hoc tools
+     based on functionality in Util/Grid. For example, one might be
      interested in plotting the STS spectra at a given point, or a
      given line. Then, the "value extractors" in Util/Grid can be
      leveraged to produce the given values (keeping the energy as an
      extra variable).  These kinds of tools are not written yet. The
      only available demonstrator is a simple program ('plsts') that
-     gets the I(E) information at a point near the center of the first
-     plane in the LDOS file, and also produces information for a
-     contour plot of the LDOS at a particular energy in the
-     file. (Energy data is kept in an auxiliary file with extension
-     .STS_AUX).
+     gets the I(E) information at a point, and also produces
+     information for a contour plot of the LDOS at a particular energy
+     in the file. (Energy data is kept in an auxiliary file with
+     extension .STS_AUX).
 
      It is also possible to convert the gridfunc files to netCDF
      format and use existing netCDF visualizers, or scripts in Python or
