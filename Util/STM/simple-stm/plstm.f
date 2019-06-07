@@ -315,7 +315,7 @@ c****************************************************************************
           case ( 'v')
              stop "Cannot use tip spin for spin-less file"
           case ( 'q')
-             rho(:) = f(:,1) + f(:,2)
+             rho(:) = f(:,1)
           end select
        else if (nspin == 2) then
           select case (spin_code)

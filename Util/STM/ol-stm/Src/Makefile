@@ -38,7 +38,8 @@ OBJDIR=Obj
 
 VPATH_SRC:=$(shell pwd)/../../../../Src
 VPATH_GRID:=$(shell pwd)/../../../../Util/Grid
-VPATH:=$(VPATH_GRID):$(VPATH_SRC)
+#VPATH:=$(VPATH_GRID):$(VPATH_SRC)
+VPATH:=$(VPATH_SRC)
 
 default: what stm
 
@@ -95,7 +96,7 @@ OBJS_STM = bessph.o chkdim.o dismin.o \
 	neighb.o pxf.o \
 	radfft.o ranger.o \
         readstm.o \
-        redata.o  reinitstm.o stm.o \
+        redata.o  reinitstm.o stm.o sts.o\
 	vacpot.o volcel.o handlers.o local_sys.o
 
 INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
@@ -103,10 +104,10 @@ INCFLAGS:= $(FFTW_INCFLAGS) $(NETCDF_INCFLAGS) $(INCFLAGS)
 # Use the makefile in Src/fdf and all the sources there.
 
 FDF=libfdf.a
-FDF_MAKEFILE=$(VPATH)/fdf/makefile
-FDF_INCFLAGS:=-I$(VPATH)/fdf $(INCFLAGS)
+FDF_MAKEFILE=$(VPATH_SRC)/fdf/makefile
+FDF_INCFLAGS:=-I$(VPATH_SRC)/fdf $(INCFLAGS)
 $(FDF): 
-	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
+	(cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH_SRC)/fdf" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)"\
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
@@ -124,6 +125,9 @@ MOD_OBJS=precision.o parallel.o m_io.o alloc.o memoryinfo.o listsc.o  \
          parallelsubs.o spatial.o m_gridfunc.o units.o
 
 # Additional class objects
+# These are just needed because sparse_matrices has "delete" operations for
+# some pieces of data. (And sparse_matrices is needed because of the index arrays)
+# ...
 CLS_OBJS = m_uuid.o object_debug.o class_Sparsity.o \
 	class_OrbitalDistribution.o \
 	class_Data1D.o class_Data2D.o \
@@ -135,7 +139,11 @@ CLS_OBJS = m_uuid.o object_debug.o class_Sparsity.o \
 	class_Fstack_Pair_Geometry_SpData2D.o
 
 COM_OBJS_STM=$(OBJS_STM) $(SYSOBJ)
-ALL_OBJS_STM= $(CLS_OBJS) $(MOD_OBJS) $(COM_OBJS_STM)
+ALL_OBJS_STM= $(MOD_OBJS) $(COM_OBJS_STM) $(CLS_OBJS)
+
+m_gridfunc.o: $(VPATH_GRID)/m_gridfunc.F90
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
+vacpot.o: m_gridfunc.o
 
 stm: $(FDF) $(ALL_OBJS_STM)
 	$(FC) -o stm \
@@ -271,11 +279,13 @@ dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o rhofft.o
 dhscf.o: rhoofd.o siesta_options.o units.o vmat.o
 diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
 diag2g.o: fermid.o intrinsic_missing.o local_sys.o parallel.o parallelsubs.o
-diag2g.o: precision.o
+diag2g.o: precision.o writewave.o
 diag2k.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
+diag2k.o: writewave.o
 diag3g.o: fermid.o intrinsic_missing.o local_sys.o parallel.o parallelsubs.o
-diag3g.o: precision.o
+diag3g.o: precision.o writewave.o
 diag3k.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
+diag3k.o: writewave.o
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o intrinsic_missing.o local_sys.o m_spin.o parallel.o
 diagg.o: parallelsubs.o precision.o writewave.o
@@ -955,14 +965,15 @@ zm_fire_optim.o: m_fire.o parallel.o precision.o siesta_options.o units.o
 zm_fire_optim.o: zmatrix.o
 zmatrix.o: alloc.o local_sys.o m_cell.o parallel.o precision.o siesta_geom.o
 zmatrix.o: units.o
-atompla.o: local_sys.o precision.o
 extrapolate.o: fftw3_mymod.o precision.o
-mainstm.o: basis_io.o listsc.o parallel.o precision.o
+mainstm.o: basis_io.o listsc.o precision.o sts.o
 ranger.o: precision.o
 stm.o: atmfuncs.o chemical.o precision.o
-vacpot.o: precision.o units.o m_gridfunc.o
+sts.o: atmfuncs.o chemical.o precision.o
+vacpot.o: precision.o units.o
 band.o: bands.o
 bloch_unfold_m.o: bloch_unfold.o
+broadening.o: sts.o
 class_cdata1d.o: class_Data1D.o
 class_cdata2d.o: class_Data2D.o
 class_cspdata1d.o: class_SpData1D.o

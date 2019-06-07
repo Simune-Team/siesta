@@ -37,6 +37,7 @@ module m_gridfunc
       public :: read_gridfunc_netcdf, write_gridfunc_netcdf
 #endif
       public :: get_planar_average, grid_p, monoclinic_z
+      public :: get_values_at_point
       public :: monoclinic
     
       private
@@ -82,6 +83,55 @@ module m_gridfunc
 
    end subroutine write_gridfunc
 
+   !> Evaluates a 'grid function' at an arbitrary point in the box.
+   !> The function is computed using linear interpolation.
+   subroutine get_values_at_point(gf, xfrac, vals)
+     !> The object representing the grid function
+     type(gridfunc_t), intent(in) :: gf
+     !> The fractional coordinates of the point
+     real(dp), intent(in) :: xfrac(3)
+     !> Array holding the values (with the 'spin' dimension)
+     real(grid_p), allocatable :: vals(:)
+
+     integer  ::  n(3), lo(3), hi(3)
+     real(dp) ::  r(3), x(3), y(3)
+     integer  ::  i, j, k
+     real(dp) ::  nk
+
+     n(:) = gf%n(:)
+
+!           Find the right 3D "grid cube" and the reduced coordinates
+!           of the point in it. The double mod assures that negative
+!           numbers are well treated (the idea is to bring the coordinates
+!           to the [0,n(k)) interval)
+! 
+     do k = 1, 3
+        nk = real(n(k),kind=dp)
+        r(k) =  modulo(n(k)*xfrac(k),nk)
+        lo(k) = int(r(k))  
+        hi(k) = mod ( lo(k)+1, n(k) ) 
+        x(k) = r(k) - lo(k)
+        y(k) = 1 - x(k)
+     enddo
+
+     ! Switch to 1-based array convention
+     lo(:) = lo(:) + 1
+     hi(:) = hi(:) + 1
+     
+!      compute charge density by linear interpolation
+
+     vals(:) = gf%val(lo(1),lo(2),lo(3),:) * y(1) * y(2) * y(3) + &
+          gf%val(lo(1),lo(2),hi(3),:) * y(1) * y(2) * x(3) + &
+          gf%val(lo(1),hi(2),lo(3),:) * y(1) * x(2) * y(3) + &
+          gf%val(lo(1),hi(2),hi(3),:) * y(1) * x(2) * x(3) + &
+          gf%val(hi(1),lo(2),lo(3),:) * x(1) * y(2) * y(3) + &
+          gf%val(hi(1),lo(2),hi(3),:) * x(1) * y(2) * x(3) + &
+          gf%val(hi(1),hi(2),lo(3),:) * x(1) * x(2) * y(3) + &
+          gf%val(hi(1),hi(2),hi(3),:) * x(1) * x(2) * x(3) 
+
+   end subroutine get_values_at_point
+
+   
    !> Computes a simple-minded 'planar average' of a grid
    !> function. This is a mathematical average. For a more
    !> physical average, see the 'macroave' utility

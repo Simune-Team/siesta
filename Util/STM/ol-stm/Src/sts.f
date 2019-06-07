@@ -6,15 +6,37 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 
-      SUBROUTINE STM( NA, NO, NO_U, MAXNA, nspin,nspin_blocks,non_coll,
+      module broadening
+      integer, parameter :: dp = selected_real_kind(10,100)
+      real(dp), parameter :: pi = 3.141592653589_dp
+      real(dp), public :: width
+
+      CONTAINS
+      function gaussian_broadener(x) result(g)
+      real(dp), intent(in) :: x
+      real(dp) :: g
+
+      g = (1.0_dp/(width*sqrt(pi))) * exp(-(x/width)**2.0_dp)
+      end function gaussian_broadener
+      
+      function lorentzian_broadener(x) result(g)
+      real(dp), intent(in) :: x
+      real(dp) :: g
+
+      g = (width/pi) / (x**2.0_dp + width**2.0_dp)
+      
+      end function lorentzian_broadener
+      end module broadening
+      
+      SUBROUTINE STS( NA, NO, NO_U, MAXNA, nspin,nspin_blocks,non_coll,
      .                ISA, IPHORB, INDXUO, LASTO, XA, CELL, UCELL,
      .                wf_unit, NK, gamma_wfsx,
-     .                ZREF, ZMIN, ZMAX, NPX, NPY, NPZ, 
-     .                V0, EMAX, EMIN,
+     .                ZREF, ZMIN, ZMAX, NPX, NPY, NPZ,
+     .                V0, EMAX, EMIN, NE, broadener,
      .                ARMUNI, IUNITCD, RMAXO )
 
 C **********************************************************************
-C Simulate STM images in the Tersoff-Hamann approximation, by
+C Simulate STS spectra in the Tersoff-Hamann approximation, by
 C extrapolating the wavefunctions into vacuum
 C
 C Coded by P. Ordejon and N. Lorente,  November 2004
@@ -35,7 +57,7 @@ C **********************************************************************
       INTEGER, INTENT(IN) ::
      .  NA, NO, NO_U, NPX, NPY, NPZ, IUNITCD,
      .  nspin, nspin_blocks, MAXNA, NK,
-     .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA)
+     .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA), NE
       integer, intent(in) :: wf_unit
       logical, intent(in) :: non_coll, gamma_wfsx
 
@@ -47,6 +69,14 @@ C **********************************************************************
       REAL(DP) :: UCELL(3,3), VOLCEL, XA(3,NA)
 
       EXTERNAL :: VOLCEL
+
+      interface
+         function broadener(x)
+         integer, parameter :: dp = selected_real_kind(10,100)
+         real(dp), intent(in) :: x
+         real(dp) :: broadener
+         end function broadener
+      end interface
       
 C ****** INPUT *********************************************************
 C INTEGER NA               : Total number of atoms in Supercell
@@ -70,6 +100,7 @@ C INTEGER NPX,NPY,NPZ      : Number of points along x and y and z
 C REAL*8  V0               : Value of the potential at the vacuum region in eV
 C REAL*8  EMAX             : Maximum value for the energy window for STM in eV
 C REAL*8  EMIN             : Minimum value for the energy window for STM in eV
+C INTEGER NE               : Number of points in energy sampling
 C REAL*8  ARMUNI           : Conversion factor for the charge density
 C INTEGER IUNITCD          : Unit of the charge density
 C REAL*8  RMAXO            : Maximum range of basis orbitals
@@ -82,16 +113,18 @@ C **********************************************************************
       INTEGER
      .  IA, ISEL, NNA, I, J, IN, IAT1, IO, IUO, IAVEC1, 
      .  IS1, IPHI1, NX, NY, NZ, IWF, IK, ISPIN, grid_u, str_u,
-     .  IX, IY, IZ, NSX, NSY, NAU, iv, is
+     .  IX, IY, IZ, NSX, NSY, NAU, iv, is, ie
 
       REAL(DP)
      .  DOT, RMAX, XPO(3), RMAX2, XVEC1(3),
-     .  PHIMU, GRPHIMU(3),
+     .  PHIMU, GRPHIMU(3), factor,
      .  PHASE, SI, CO, ENER, PMIKR, SIMIKR, COMIKR, USAVE, VC, VU
 
+      real(dp) :: step_e, e_sampled, weight
+      real(dp), allocatable :: sts_data(:,:,:,:)
+      
       real(dp) :: total_weight, k(3)
       
-      REAL(DP), ALLOCATABLE :: RHO(:,:,:,:)
       REAL(SP), ALLOCATABLE :: wf_single(:,:)
       COMPLEX(DP), ALLOCATABLE :: wf(:,:)
       REAL(DP), ALLOCATABLE :: wk(:)
@@ -171,8 +204,13 @@ C Initialize neighbour subroutine --------------------------------------
       allocate(CWAVE(spinor_comps))
       ALLOCATE(CW(0:NPX-1,0:NPY-1,spinor_comps))
       ALLOCATE(CWE(0:NPX-1,0:NPY-1,0:NPZ-1,spinor_comps))
-      ALLOCATE(RHO(0:NPX-1,0:NPY-1,0:NPZ-1,nspin))
 
+      ALLOCATE(sts_data(0:NPX-1,0:NPY-1,0:NPZ-1,NE))
+
+      step_e = (emax-emin) / (ne-1)
+
+      if (npz /= 1)  STOP 'npz/=1 in STS'
+      
       FIRST = .TRUE.
       DO I = 1,3
         XPO(I) = 0.D0
@@ -188,9 +226,9 @@ C Initialize neighbour subroutine --------------------------------------
         STOP
       ENDIF
 
-! Initialize density
-
-      RHO = 0
+!     Initialize STS data
+      
+      sts_data = 0.0_dp
 
 !     Loop over k-points and wavefunctions to include in the STM image
 
@@ -228,12 +266,6 @@ C Initialize neighbour subroutine --------------------------------------
                CYCLE
             ENDIF
 
-            IF (ENER .GT. V0) THEN
-               WRITE(6,*) 'ERROR: ENERGY EIGENVALUE ',IWF,
-     .              ' FOR K-POINT ', IK, 'FOR SPIN ',ISPIN
-               WRITE(6,*) '       IS ABOVE VACUUM LEVEL'
-               STOP
-            ENDIF
 
             WRITE(6,"(a,i5,i2)") 'stm: wf (spin) in window: ',iwf,ispin
 
@@ -279,31 +311,30 @@ C Initialize neighbour subroutine --------------------------------------
 
                          call get_cwave(wf(:,1:spinor_comps))
 
-                         ! Now for the various cases
-                         if (nspin <= 2) then
-                            RHO(NX,NY,NZ,ispin)  = RHO (NX,NY,NZ,ispin)    
-     &                           + REAL(CWAVE(1)*CONJG(CWAVE(1)), dp)
-     $                             * ARMUNI * WK(IK)
-                         else   ! non-collinear
-                            ! CHECK THIS
-                            d11 = cwave(1) * conjg(cwave(1))
-                            d12 = cwave(1) * conjg(cwave(2))
-                            d21 = cwave(2) * conjg(cwave(1))
-                            d22 = cwave(2) * conjg(cwave(2))
-
-                            ! Hermitify?
-                            D12 = 0.5_dp * (D12 + conjg(D21))
+                         do ie = 1, ne
+                            e_sampled = emin + (ie-1)*step_e
+                            weight = broadener(ener-e_sampled)
                             
-                            ! Recall: dm(:,3) = real(d12);  dm(:,4) = -aimag(d12)
-                            rho(nx,ny,nz,1) = rho(nx,ny,nz,1) 
-     $                                 + real(d11,dp) * armuni * wk(ik)
-                            rho(nx,ny,nz,2) = rho(nx,ny,nz,2) 
-     $                                 + real(d22,dp) * armuni * wk(ik)
-                            rho(nx,ny,nz,3) = rho(nx,ny,nz,3)
-     $                                 + real(d12,dp) * armuni * wk(ik)
-                            rho(nx,ny,nz,4) = rho(nx,ny,nz,4)
-     $                                 - aimag(d12) * armuni * wk(ik)
-                         endif
+                            ! Now for the various cases
+                            if (nspin <= 2) then
+                               ! will accumulate charge over the two spins
+                               sts_data(nx,ny,nz,ie) =
+     $                             sts_data(nx,ny,nz,ie) +
+     &                             REAL(CWAVE(1)*CONJG(CWAVE(1)), dp)
+     $                             * ARMUNI * WK(IK) * weight
+                            else ! non-collinear: use only total charge
+
+                               d11 = cwave(1) * conjg(cwave(1))
+                               d12 = cwave(1) * conjg(cwave(2))
+
+                               sts_data(nx,ny,nz,ie) =
+     $                           sts_data(nx,ny,nz,ie) +
+     $                           real(d11,dp) * armuni * wk(ik) * weight
+                               sts_data(nx,ny,nz,ie) =
+     $                           sts_data(nx,ny,nz,ie) +
+     $                           real(d22,dp) * armuni * wk(ik) * weight
+                            endif
+                         enddo  ! ie
                       ENDDO  
                    ENDDO
 
@@ -339,57 +370,54 @@ C Initialize neighbour subroutine --------------------------------------
      .                         CW(0,0,is),ENER,K,CWE(0,0,0,is))
                    enddo
                    
+                   do ie = 1, ne
+                      e_sampled = emin + (ie-1)*step_e
+                      weight = broadener(ener-e_sampled)
+                      factor = armuni * WK(IK) * weight
                    ! Now for the various cases
                    ! Be careful not to overwrite the z<zref parts...
-                   if (nspin <= 2) then
-                      RHO(:,:,NZ:,ispin)  = RHO (:,:,NZ:,ispin)    
-     &                     + REAL(CWE(:,:,NZ:,1)*
-     $                     CONJG(CWE(:,:,NZ:,1)), dp)
-     $                     * ARMUNI * WK(IK)
-                   else         ! non-collinear
+                      if (nspin <= 2) then
+                         ! will accumulate charge over the two spins
+                         sts_data(:,:,nz:,ie) = sts_data(:,:,nz:,ie) +
+     &                      REAL(CWE(:,:,NZ:,1)*
+     $                     CONJG(CWE(:,:,NZ:,1)), dp) * factor
 
-                      do iz = nz, npz-1
-                         do ny=0,npy-1
-                            do nx=0,npx-1
-                         d11 = cwe(nx,ny,iz,1) * conjg(cwe(nx,ny,iz,1))
-                         d12 = cwe(nx,ny,iz,1) * conjg(cwe(nx,ny,iz,2))
-                         d21 = cwe(nx,ny,iz,2) * conjg(cwe(nx,ny,iz,1))
-                         d22 = cwe(nx,ny,iz,2) * conjg(cwe(nx,ny,iz,2))
+                      else      ! non-collinear
 
-                         !     Hermitify?
-                         D12 = 0.5_dp * (D12 + conjg(D21))
-                            
-                      ! Recall: dm(:,3) = real(d12);  dm(:,4) = -aimag(d12)
-                         rho(nx,ny,iz,1) = rho(nx,ny,iz,1) 
-     $                                 + real(d11,dp) * armuni * wk(ik)
-                         rho(nx,ny,iz,2) = rho(nx,ny,iz,2) 
-     $                                 + real(d22,dp) * armuni * wk(ik)
-                         rho(nx,ny,iz,3) = rho(nx,ny,iz,3)
-     $                                 + real(d12,dp) * armuni * wk(ik)
-                         rho(nx,ny,iz,4) = rho(nx,ny,iz,4)
-     $                                - aimag(d12) * armuni * wk(ik)
-                        enddo
-                      enddo
-                    enddo
-                   endif  ! collinear or not
+                         do iz = nz, npz-1
+                            do ny=0,npy-1
+                               do nx=0,npx-1
+                                  d11 = cwe(nx,ny,iz,1) *
+     $                                 conjg(cwe(nx,ny,iz,1))
+                                  d22 = cwe(nx,ny,iz,2) *
+     $                                 conjg(cwe(nx,ny,iz,2))
+                                  
+                                  sts_data(nx,ny,iz,ie) =
+     $                                 sts_data(nx,ny,iz,ie) +
+     $                                 real(d11+d22,dp) * factor
 
+                               enddo
+                            enddo
+                         enddo
+                      endif     ! collinear or not
+                   enddo        ! ie
                    ! And we are done with the z planes
-                   EXIT  ! loop over NZ
+                   EXIT         ! loop over NZ
 
-                endif    ! z below or above Zref
+                endif           ! z below or above Zref
 
-             ENDDO       ! NZ
-          ENDDO     ! ispin = 1, nspin_blocks
+             ENDDO              ! NZ
+          ENDDO                 ! ispin = 1, nspin_blocks
                     
-       ENDDO     ! wfn number
-      ENDDO      ! k-point
+       ENDDO                    ! wfn number
+      ENDDO                     ! k-point
 
       ! This should not be necessary if a proper BZ-sampled set of wfs is used
       total_weight = sum(wk(1:nk))
-      rho = rho / total_weight
+      sts_data = sts_data / total_weight
       ! Normalize if not spin-polarized
       if ((nspin_blocks == 1) .and. (.not. non_coll))  then
-         rho = 2.0_dp * rho
+         sts_data = 2.0_dp * sts_data
       endif
 
 ! Write charge density in Siesta format
@@ -398,13 +426,13 @@ C Initialize neighbour subroutine --------------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
       stm_label = FDF_STRING('stm-label','')
       if (stm_label == '') then
-         FNAME = trim(SNAME) // '.STM.LDOS'
+         FNAME = trim(SNAME) // '.STS'
       else
-         FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STM.LDOS'
+         FNAME = trim(SNAME) // '.' // trim(stm_label) // '.STS'
       endif
 
       WRITE(6,*)
-      WRITE(6,*) 'stm: writing SIESTA format file ', FNAME
+      WRITE(6,*) 'STS: writing fake SIESTA format file ', FNAME
       WRITE(6,*)
 
       open(grid_u,file=FNAME,form='unformatted',
@@ -423,12 +451,12 @@ C Initialize neighbour subroutine --------------------------------------
      $              [0.0_dp, 0.0_dp, ZMIN], ! Extra info for origin
      $              [.true.,.true.,.false.] ! Periodic ?
 
-      WRITE(grid_u) NPX, NPY, NPZ, nspin 
+      WRITE(grid_u) NPX, NPY, NPZ, ne   ! Note that we abuse the 'spin' component 
 
-      do ispin = 1, nspin
+      do ie = 1, ne
          DO IZ=0,NPZ-1
             DO IY=0,NPY-1
-               WRITE(grid_u) (REAL(RHO(IX,IY,IZ,ispin),sp),IX=0,NPX-1)
+               WRITE(grid_u) (REAL(sts_data(IX,IY,IZ,ie),sp),IX=0,NPX-1)
             ENDDO
          ENDDO
       enddo
@@ -441,11 +469,17 @@ C Initialize neighbour subroutine --------------------------------------
       write(str_u,'(3x,3f18.9)') ((UCELL(ix,iv)/Ang,ix=1,3),iv=1,3)
       write(str_u,*) 0  ! number of atoms
       close(str_u)
+      ! Write a STS_AUX file with the values of the energy
+      call io_assign(str_u)
+      open(str_u,file=trim(SNAME)//'.STS_AUX',
+     $     form='formatted', status='unknown')
+      write(str_u,'(i4,3x,g23.10)') (ie, emin+(ie-1)*step_e, ie=1,ne)
+      close(str_u)
       
       ! restore ucell
       UCELL(3,3)=USAVE
 
-      DEALLOCATE(RHO)
+      DEALLOCATE(sts_data)
       DEALLOCATE(CWE)
       DEALLOCATE(CW)
       deallocate(cwave)
