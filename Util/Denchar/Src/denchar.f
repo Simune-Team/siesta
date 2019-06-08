@@ -29,8 +29,13 @@ C
       USE LISTSC_MODULE, ONLY: LISTSC_INIT
       USE FDF
       use parallel, only: nodes, node
+      use m_getopts
 
       IMPLICIT NONE
+
+      character(len=200) :: opt_arg
+      character(len=10)  :: opt_name 
+      integer :: nargs, iostat, n_opts, nlabels
 
       INTEGER
      .   NO_U, NO_S, NA_S, NSPIN, MAXND, MAXNA,
@@ -52,26 +57,18 @@ C
      .  COORPO(3,3), NORMAL(3), DIRVER1(3),
      .  DIRVER2(3), ARMUNI, EMIN
 
-      real(dp), DIMENSION(:,:,:,:), ALLOCATABLE ::
-     .   RPSI,IPSI
-
-      real(dp), DIMENSION(:,:,:), ALLOCATABLE ::
-     .   E
-
-      real(dp), DIMENSION(:,:), ALLOCATABLE ::
-     .   XA, DSCF, K
-
-      real(dp), DIMENSION(:), ALLOCATABLE ::
-     .   DATM
+      real(dp), DIMENSION(:,:), ALLOCATABLE     :: XA, DSCF, K
+      real(dp), DIMENSION(:), ALLOCATABLE       :: DATM
 
       CHARACTER
      .  FILEIN*20, FILEOUT*20, sname*30
 
       LOGICAL 
-     .  FOUND, CHARGE, WAVES, ionode
+     .  FOUND, CHARGE, WAVES, ionode, debug
       logical :: gamma_wfsx, non_coll
       integer :: nspin_wfsx, nspin_blocks, wf_unit
       integer :: no_u_wfsx
+      integer :: kpoint_selected, wf_selected
       
       EXTERNAL
      .  IODM, READPLA, REDATA_DENCHAR, REINIT, RHOOFR, VOLCEL
@@ -150,12 +147,51 @@ C LOGICAL FOUND               : Has DM been found in disk?
 C                               (Only when task = 'read')
 C **********************************************************************
 C
+!     Process options
+!
+      kpoint_selected = 0
+      wf_selected = 0
+      n_opts = 0
+      do
+         call getopts('dhk:w:',
+     $        opt_name,opt_arg,n_opts,iostat)
+         if (iostat /= 0) exit
+         select case(opt_name)
+         case ('d')
+            debug = .true.
+         case ('k')
+            read(opt_arg,*) kpoint_selected
+         case ('w')
+            read(opt_arg,*) wf_selected
+         case ('h')
+            write(0,*) " See manual "
+            STOP
+         case ('?',':')
+            write(0,*) "Invalid option: ", opt_arg(1:1)
+            write(0,*) "Use -h option for manual"
+            write(0,*) ""
+            !call manual()
+            STOP
+         end select
+      enddo
+
+      nargs = command_argument_count()
+      nlabels = nargs - n_opts + 1
+      if (nlabels == 1)  then
+        call get_command_argument(n_opts,value=FILEIN,status=iostat)
+        if ( iostat /= 0 ) then
+           stop "Cannot get name of fdf file in command line"
+        end if
+      else
+        FILEIN = 'stdin'
+      endif
+
       nodes = 1
       node = 0
       ionode = .true.
 
 C Set up fdf -----------------------------------------------------------
-      FILEIN  = 'stdin'
+      !      FILEIN  = 'stdin'
       FILEOUT = 'out.fdf'
       CALL FDF_INIT(FILEIN,FILEOUT)
 
@@ -269,7 +305,8 @@ C Form Density Matrix for Neutral and Isolated Atoms -------------------
      .               IDIMEN, IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .               ZMIN, ZMAX, NPX, NPY, NPZ, COORPO, NORMAL, 
      .               DIRVER1, DIRVER2, 
-     .               ARMUNI, IUNITCD, ISCALE, RMAXO )
+     .               ARMUNI, IUNITCD, ISCALE, RMAXO,
+     .               kpoint_selected, wf_selected)
       ENDIF
 
       END PROGRAM DENCHAR

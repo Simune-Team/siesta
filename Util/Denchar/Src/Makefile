@@ -104,7 +104,7 @@ MOD_OBJS=precision.o parallel.o debugmpi.o m_io.o alloc.o memoryinfo.o listsc.o 
          schecomm.o sparse_matrices.o interpolation.o\
          files.o pseudopotential.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         spatial.o timer_local.o 
+         spatial.o timer_local.o m_getopts.o
 
 # Additional class objects
 CLS_OBJS = m_uuid.o object_debug.o class_Sparsity.o \
@@ -257,11 +257,13 @@ dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o rhofft.o
 dhscf.o: rhoofd.o siesta_options.o units.o vmat.o
 diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
 diag2g.o: fermid.o intrinsic_missing.o local_sys.o parallel.o parallelsubs.o
-diag2g.o: precision.o
+diag2g.o: precision.o writewave.o
 diag2k.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
+diag2k.o: writewave.o
 diag3g.o: fermid.o intrinsic_missing.o local_sys.o parallel.o parallelsubs.o
-diag3g.o: precision.o
+diag3g.o: precision.o writewave.o
 diag3k.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
+diag3k.o: writewave.o
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o intrinsic_missing.o local_sys.o m_spin.o parallel.o
 diagg.o: parallelsubs.o precision.o writewave.o
@@ -943,7 +945,7 @@ zmatrix.o: alloc.o local_sys.o m_cell.o parallel.o precision.o siesta_geom.o
 zmatrix.o: units.o
 atompla.o: local_sys.o precision.o
 colinear.o: precision.o
-denchar.o: basis_io.o listsc.o parallel.o precision.o
+denchar.o: basis_io.o listsc.o m_getopts.o parallel.o precision.o
 length.o: precision.o
 local_reinit.o: files.o
 matvect.o: precision.o
@@ -951,9 +953,10 @@ neighb.o: precision.o
 planed.o: precision.o
 ranger.o: precision.o
 readpla.o: precision.o
+readwavesx.o: precision.o
 redata_denchar.o: precision.o
 rhoofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
-wavofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
+wavofr.o: atmfuncs.o chemical.o planed.o precision.o
 wrout.o: precision.o
 band.o: bands.o
 bloch_unfold_m.o: bloch_unfold.o

@@ -13,7 +13,8 @@
      .                   IDIMEN, IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .                   ZMIN, ZMAX, NPX, NPY, NPZ, COORPO, NORMAL, 
      .                   DIRVER1, DIRVER2, 
-     .                   ARMUNI, IUNITCD, ISCALE, RMAXO )
+     .                   ARMUNI, IUNITCD, ISCALE, RMAXO,
+     $                   kpoint_selected, wf_selected )
 C **********************************************************************
 C Compute the wave functions at the points of a plane or a 3D grid
 C in real space
@@ -39,6 +40,7 @@ C **********************************************************************
      .  RMAXO
       logical, intent(in) :: non_coll, gamma_wfsx
       integer, intent(in) :: wf_unit
+      integer, intent(in) :: kpoint_selected, wf_selected
       real(dp), INTENT(IN) :: CELL(3,3)
 
 
@@ -84,6 +86,8 @@ C INTEGER ISCALE           : Unit if the points of the plane
 C REAL*8  RMAXO            : Maximum range of basis orbitals
 C **********************************************************************
 
+      logical :: filtering_k_points, filtering_wfs
+      
       INTEGER  NPLAMAX, NAPLA, NAINCELL
       INTEGER, DIMENSION(:), ALLOCATABLE ::  INDICES, JNA
 
@@ -126,10 +130,10 @@ C **********************************************************************
       LOGICAL FIRST, empty_domain
 
       CHARACTER
-     .  SNAME*40, FNAMEWFRE*60, FNAMEWFIM*60, 
-     .  FNAMEWFURE*60, FNAMEWFUIM*60, FNAMEWFDRE*60, FNAMEWFDIM*60, 
-     .  FNAMEWFMO*60, FNAMEWFPH*60,
-     .  FNAMEWFUMO*60, FNAMEWFUPH*60, FNAMEWFDMO*60, FNAMEWFDPH*60,
+     .  SNAME*40, FN_RE*60, FN_IM*60, 
+     .  FN_URE*60, FN_UIM*60, FN_DRE*60, FN_DIM*60, 
+     .  FN_MO*60, FN_PH*60,
+     .  FN_UMO*60, FN_UPH*60, FN_DMO*60, FN_DPH*60,
      .  CHAR1*10, CHAR2*10, EXT*20, EXT2*25
 
       EXTERNAL IO_ASSIGN, IO_CLOSE, NEIGHB, WROUT
@@ -163,7 +167,9 @@ C REAL IMWF(NPO,NSPIN)     : Wave fnctn at each point of the grid (imag part)
 C INTEGER IZA(NA)          : Atomic number of each atom
 C **********************************************************************
 
-
+      filtering_k_points = (kpoint_selected /= 0 )
+      filtering_wfs = (wf_selected /= 0 )
+      
 C     Allocate some variables ---------------------------------------------
 
       PI = 4.0D0 * ATAN(1.0D0)
@@ -237,9 +243,9 @@ C Initialize neighbour subroutine --------------------------------------
       endif
       allocate(CWAVE(spinor_comps))
 
-      DO IK  = 1, NK
+      k_loop: DO IK  = 1, NK
          ! ** Put filters in these loops
-         do ispin = 1, nspin_blocks
+         spin_loop: do ispin = 1, nspin_blocks
 
          read(wf_unit) idummy, k(1:3)
             if (idummy /= ik) then
@@ -253,12 +259,30 @@ C Initialize neighbour subroutine --------------------------------------
             endif
          read(wf_unit) number_of_wfns
 
+         if (filtering_k_points .and. (ik /= kpoint_selected)) then
+            write(0,*) 'k-point ', ik, ' skipped'
+            do IWF = 1, number_of_wfns
+               read(wf_unit) 
+               read(wf_unit) 
+               read(wf_unit) 
+            enddo
+            CYCLE k_loop
+         endif
+         
          WRITE(6,"(a,i0,a,i0)") 'Processing kpoint ',IK,
      $              ' nwf: ', number_of_wfns
          WRITE(6,*) '     --------------------------------'
 
-         DO IWF = 1, number_of_wfns
+         wf_loop: DO IWF = 1, number_of_wfns
+
             read(wf_unit) iwf_orig
+            ! Note that we mean the *original* index
+            if (filtering_wfs .and. (iwf_orig /= wf_selected)) then
+               read(wf_unit) 
+               read(wf_unit)
+               CYCLE wf_loop
+            endif
+               
             if (iwf_orig /= iwf) then
                ! The file holds a subset of wfs, with the original indexes...
                WRITE(6,*) 'Original wf index: ', iwf_orig
@@ -287,98 +311,98 @@ C Initialize neighbour subroutine --------------------------------------
          IF (NSPIN .EQ. 1) THEN
 
           IF (IDIMEN .EQ. 2) THEN
-            FNAMEWFRE = TRIM(SNAME)//'.CON.K' //
+            FN_RE = TRIM(SNAME)//'.CON.K' //
      $            trim(char2) // '.WF.' // trim(CHAR1)
-            FNAMEWFPH = TRIM(FNAMEWFRE)//'.PHASE'
-            FNAMEWFMO = TRIM(FNAMEWFRE)//'.MOD'
-            FNAMEWFIM = TRIM(FNAMEWFRE)//'.IMAG'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//'.REAL'
+            FN_PH = TRIM(FN_RE)//'.PHASE'
+            FN_MO = TRIM(FN_RE)//'.MOD'
+            FN_IM = TRIM(FN_RE)//'.IMAG'
+            FN_RE = TRIM(FN_RE)//'.REAL'
           ELSEIF (IDIMEN .EQ. 3) THEN
-            FNAMEWFRE = TRIM(SNAME)//'.K' //
+            FN_RE = TRIM(SNAME)//'.K' //
      $            trim(char2) // '.WF.' // trim(CHAR1)
-            FNAMEWFPH = TRIM(FNAMEWFRE)//'.PHASE.cube'
-            FNAMEWFMO = TRIM(FNAMEWFRE)//'.MOD.cube'
-            FNAMEWFIM = TRIM(FNAMEWFRE)//'.IMAG.cube'
-            FNAMEWFRE = TRIM(FNAMEWFRE)//'.REAL.cube'
+            FN_PH = TRIM(FN_RE)//'.PHASE.cube'
+            FN_MO = TRIM(FN_RE)//'.MOD.cube'
+            FN_IM = TRIM(FN_RE)//'.IMAG.cube'
+            FN_RE = TRIM(FN_RE)//'.REAL.cube'
           ENDIF
 
           CALL IO_ASSIGN(UNITRE1)
-          OPEN(UNIT = UNITRE1, FILE = FNAMEWFRE, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITRE1, FILE = FN_RE, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITRE1)
           CALL IO_ASSIGN(UNITIM1)
-          OPEN(UNIT = UNITIM1, FILE = FNAMEWFIM, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITIM1, FILE = FN_IM, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITIM1)
           CALL IO_ASSIGN(UNITMO1)
-          OPEN(UNIT = UNITMO1, FILE = FNAMEWFMO, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITMO1, FILE = FN_MO, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITMO1)
           CALL IO_ASSIGN(UNITPH1)
-          OPEN(UNIT = UNITPH1, FILE = FNAMEWFPH, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITPH1, FILE = FN_PH, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITPH1)
 
        ELSEIF ((NSPIN .EQ. 2) .or. (NSPIN == 4))  THEN
           ! We will reuse 'up' and 'down' for the spinor components
            IF (IDIMEN .EQ. 2) THEN
-            FNAMEWFURE = TRIM(SNAME)//'.CON.K' //
+            FN_URE = TRIM(SNAME)//'.CON.K' //
      $            trim(char2) // '.WF.' // trim(CHAR1)
-            FNAMEWFDRE = TRIM(FNAMEWFURE)//'.DOWN'
-            FNAMEWFDPH = TRIM(FNAMEWFDRE)//'.PHASE'
-            FNAMEWFDMO = TRIM(FNAMEWFDRE)//'.MOD'
-            FNAMEWFDIM = TRIM(FNAMEWFDRE)//'.IMAG'
-            FNAMEWFDRE = TRIM(FNAMEWFDRE)//'.REAL'
+            FN_DRE = TRIM(FN_URE)//'.DOWN'
+            FN_DPH = TRIM(FN_DRE)//'.PHASE'
+            FN_DMO = TRIM(FN_DRE)//'.MOD'
+            FN_DIM = TRIM(FN_DRE)//'.IMAG'
+            FN_DRE = TRIM(FN_DRE)//'.REAL'
 
-            FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP'
-            FNAMEWFUPH = TRIM(FNAMEWFURE)//'.PHASE'
-            FNAMEWFUMO = TRIM(FNAMEWFURE)//'.MOD'
-            FNAMEWFUIM = TRIM(FNAMEWFURE)//'.IMAG'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//'.REAL'
+            FN_URE = TRIM(FN_URE)//'.UP'
+            FN_UPH = TRIM(FN_URE)//'.PHASE'
+            FN_UMO = TRIM(FN_URE)//'.MOD'
+            FN_UIM = TRIM(FN_URE)//'.IMAG'
+            FN_URE = TRIM(FN_URE)//'.REAL'
 
            ELSE IF (IDIMEN .EQ. 3) THEN
-            FNAMEWFURE = TRIM(SNAME)//'.K' //
+            FN_URE = TRIM(SNAME)//'.K' //
      $            trim(char2) // '.WF.' // trim(CHAR1)
-            FNAMEWFDPH = TRIM(FNAMEWFURE)//'.DOWN.PHASE.cube'
-            FNAMEWFDMO = TRIM(FNAMEWFURE)//'.DOWN.MOD.cube'
-            FNAMEWFDIM = TRIM(FNAMEWFURE)//'.DOWN.IMAG.cube'
-            FNAMEWFDRE = TRIM(FNAMEWFURE)//'.DOWN.REAL.cube'
-            FNAMEWFUPH = TRIM(FNAMEWFURE)//'.UP.PHASE.cube'
-            FNAMEWFUMO = TRIM(FNAMEWFURE)//'.UP.MOD.cube'
-            FNAMEWFUIM = TRIM(FNAMEWFURE)//'.UP.IMAG.cube'
-            FNAMEWFURE = TRIM(FNAMEWFURE)//'.UP.REAL.cube'
+            FN_DPH = TRIM(FN_URE)//'.DOWN.PHASE.cube'
+            FN_DMO = TRIM(FN_URE)//'.DOWN.MOD.cube'
+            FN_DIM = TRIM(FN_URE)//'.DOWN.IMAG.cube'
+            FN_DRE = TRIM(FN_URE)//'.DOWN.REAL.cube'
+            FN_UPH = TRIM(FN_URE)//'.UP.PHASE.cube'
+            FN_UMO = TRIM(FN_URE)//'.UP.MOD.cube'
+            FN_UIM = TRIM(FN_URE)//'.UP.IMAG.cube'
+            FN_URE = TRIM(FN_URE)//'.UP.REAL.cube'
            ENDIF
 
           CALL IO_ASSIGN(UNITRE1)
-          OPEN(UNIT = UNITRE1, FILE = FNAMEWFURE, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITRE1, FILE = FN_URE, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITRE1)
           CALL IO_ASSIGN(UNITRE2)
-          OPEN(UNIT = UNITRE2, FILE = FNAMEWFDRE, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITRE2, FILE = FN_DRE, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITRE2)
           CALL IO_ASSIGN(UNITIM1)
-          OPEN(UNIT = UNITIM1, FILE = FNAMEWFUIM, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITIM1, FILE = FN_UIM, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITIM1)
           CALL IO_ASSIGN(UNITIM2)
-          OPEN(UNIT = UNITIM2, FILE = FNAMEWFDIM, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITIM2, FILE = FN_DIM, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITIM2)
           CALL IO_ASSIGN(UNITMO1)
-          OPEN(UNIT = UNITMO1, FILE = FNAMEWFUMO, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITMO1, FILE = FN_UMO, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITMO1)
           CALL IO_ASSIGN(UNITMO2)
-          OPEN(UNIT = UNITMO2, FILE = FNAMEWFDMO, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITMO2, FILE = FN_DMO, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITMO2)
           CALL IO_ASSIGN(UNITPH1)
-          OPEN(UNIT = UNITPH1, FILE = FNAMEWFUPH, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITPH1, FILE = FN_UPH, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITPH1)
           CALL IO_ASSIGN(UNITPH2)
-          OPEN(UNIT = UNITPH2, FILE = FNAMEWFDPH, STATUS = 'UNKNOWN',
+          OPEN(UNIT = UNITPH2, FILE = FN_DPH, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITPH2)
         ELSE
@@ -403,7 +427,8 @@ C Select all atoms in list to be printed out
               OCELL(IX,IY)=0.D0
             ENDDO
           ENDDO
-C   Determine cell size
+C     Determine cell size
+          ! Note that we are *always* using an orthorhombic box!
           OCELL(1,1) = DABS(XMAX-XMIN)
           OCELL(2,2) = DABS(YMAX-YMIN)
           OCELL(3,3) = DABS(ZMAX-ZMIN)
@@ -423,33 +448,33 @@ C   Determine atoms which are within the plotting box
           ENDDO
 
           IF (NSPIN .EQ. 1) THEN
-            call write_cube_header(unitre1,fnamewfre)
-            call write_cube_header(unitim1,fnamewfim)
-            call write_cube_header(unitmo1,fnamewfmo)
-            call write_cube_header(unitph1,fnamewfph)
+            call write_cube_header(unitre1,fn_re)
+            call write_cube_header(unitim1,fn_im)
+            call write_cube_header(unitmo1,fn_mo)
+            call write_cube_header(unitph1,fn_ph)
       
           ELSE IF (NSPIN .EQ. 2) THEN
              if (ispin == 1 ) then
-                call write_cube_header(unitre1,fnamewfure)
-                call write_cube_header(unitim1,fnamewfuim)
-                call write_cube_header(unitmo1,fnamewfumo)
-                call write_cube_header(unitph1,fnamewfuph)
+                call write_cube_header(unitre1,fn_ure)
+                call write_cube_header(unitim1,fn_uim)
+                call write_cube_header(unitmo1,fn_umo)
+                call write_cube_header(unitph1,fn_uph)
              else
-                call write_cube_header(unitre2,fnamewfdre)
-                call write_cube_header(unitim2,fnamewfdim)
-                call write_cube_header(unitmo2,fnamewfdmo)
-                call write_cube_header(unitph2,fnamewfdph)
+                call write_cube_header(unitre2,fn_dre)
+                call write_cube_header(unitim2,fn_dim)
+                call write_cube_header(unitmo2,fn_dmo)
+                call write_cube_header(unitph2,fn_dph)
              endif
           ELSE IF (NSPIN .EQ. 4) THEN
-                call write_cube_header(unitre1,fnamewfure)
-                call write_cube_header(unitim1,fnamewfuim)
-                call write_cube_header(unitmo1,fnamewfumo)
-                call write_cube_header(unitph1,fnamewfuph)
+                call write_cube_header(unitre1,fn_ure)
+                call write_cube_header(unitim1,fn_uim)
+                call write_cube_header(unitmo1,fn_umo)
+                call write_cube_header(unitph1,fn_uph)
 
-                call write_cube_header(unitre2,fnamewfdre)
-                call write_cube_header(unitim2,fnamewfdim)
-                call write_cube_header(unitmo2,fnamewfdmo)
-                call write_cube_header(unitph2,fnamewfdph)
+                call write_cube_header(unitre2,fn_dre)
+                call write_cube_header(unitim2,fn_dim)
+                call write_cube_header(unitmo2,fn_dmo)
+                call write_cube_header(unitph2,fn_dph)
 
           ENDIF
         ENDIF
@@ -676,19 +701,19 @@ C End y and z loops
           WRITE(6,'(A)')
      .      '   Your output files are:'
           IF (NSPIN .EQ. 1) THEN
-            WRITE(6,'(A,A)') '   ',FNAMEWFRE
-            WRITE(6,'(A,A)') '   ',FNAMEWFIM
-            WRITE(6,'(A,A)') '   ',FNAMEWFMO
-            WRITE(6,'(A,A)') '   ',FNAMEWFPH
+            WRITE(6,'(A,A)') '   ',FN_RE
+            WRITE(6,'(A,A)') '   ',FN_IM
+            WRITE(6,'(A,A)') '   ',FN_MO
+            WRITE(6,'(A,A)') '   ',FN_PH
           ELSE IF ((NSPIN .EQ. 2) .or. (NSPIN .EQ. 4)) THEN
-            WRITE(6,'(A,A)') '   ',FNAMEWFURE
-            WRITE(6,'(A,A)') '   ',FNAMEWFUIM
-            WRITE(6,'(A,A)') '   ',FNAMEWFDRE
-            WRITE(6,'(A,A)') '   ',FNAMEWFDIM
-            WRITE(6,'(A,A)') '   ',FNAMEWFUMO
-            WRITE(6,'(A,A)') '   ',FNAMEWFUPH
-            WRITE(6,'(A,A)') '   ',FNAMEWFDMO
-            WRITE(6,'(A,A)') '   ',FNAMEWFDPH
+            WRITE(6,'(A,A)') '   ',FN_URE
+            WRITE(6,'(A,A)') '   ',FN_UIM
+            WRITE(6,'(A,A)') '   ',FN_DRE
+            WRITE(6,'(A,A)') '   ',FN_DIM
+            WRITE(6,'(A,A)') '   ',FN_UMO
+            WRITE(6,'(A,A)') '   ',FN_UPH
+            WRITE(6,'(A,A)') '   ',FN_DMO
+            WRITE(6,'(A,A)') '   ',FN_DPH
             if (nspin == 4) write(6,"(a)")
      $           "... up and down for spinor components"
           ENDIF
@@ -705,9 +730,9 @@ C End y and z loops
         IF (NSPIN >= 2) CALL IO_CLOSE(UNITPH2)
      
           
-      ENDDO  ! wfn
-      ENDDO  ! spin_block
-      ENDDO  ! k-point
+      ENDDO  wf_loop ! wfn
+      ENDDO  spin_loop ! spin_block
+      ENDDO  k_loop ! k-point
 
       DEALLOCATE(RWF)
       DEALLOCATE(IMWF)
