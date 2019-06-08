@@ -16,12 +16,10 @@ C Modified by J. Junquera 07/01
 C 3D and wavefunction capabilities coded by P. Ordejon, June 2003
 C Modified to handle complex wavefunctions and multiple k-points
 C by P. Ordejon, July 2004
-C Modified to include the local density of states at a point
-C by P. Ordejon, July 2004
 C Modified to use the more efficient WFSX format for wave functions
 C by A. Garcia, May 2012
 C Added more files in 3D mode (A. Garcia, Nov 2016)
-C Version: 2.2
+! Added support for NC/SOC wfs and streamlined by A. Garcia (March-June 2019)
 C **********************************************************************
 C
 C  Modules
@@ -36,11 +34,11 @@ C
 
       INTEGER
      .   NO_U, NO_S, NA_S, NSPIN, MAXND, MAXNA,
-     .   NSC(3), NK, NE
+     .   NSC(3), NK
       integer :: ns_dummy
 
       INTEGER
-     .  IDIMEN, IOPTION, NPX, NPY, NPZ, IUNITCD, ISCALE, BFUNC
+     .  IDIMEN, IOPTION, NPX, NPY, NPZ, IUNITCD, ISCALE
 
       INTEGER, DIMENSION(:), ALLOCATABLE ::
      .  ISA, LASTO, IPHORB, INDXUO, 
@@ -52,7 +50,7 @@ C
       real(dp)
      .  XMIN, XMAX, YMIN, YMAX, ZMIN, ZMAX,
      .  COORPO(3,3), NORMAL(3), DIRVER1(3),
-     .  DIRVER2(3), ARMUNI, EMIN, DELTAE, ETA, XSTS(3)
+     .  DIRVER2(3), ARMUNI, EMIN
 
       real(dp), DIMENSION(:,:,:,:), ALLOCATABLE ::
      .   RPSI,IPSI
@@ -70,7 +68,7 @@ C
      .  FILEIN*20, FILEOUT*20, sname*30
 
       LOGICAL 
-     .  FOUND, CHARGE, WAVES, STS, ionode
+     .  FOUND, CHARGE, WAVES, ionode
       logical :: gamma_wfsx, non_coll
       integer :: nspin_wfsx, nspin_blocks, wf_unit
       integer :: no_u_wfsx
@@ -123,7 +121,6 @@ C ****** INFORMATION OF THE POINT, PLANE OR 3D GRID ***********************
 C INTEGER IDIMEN              : Specifies 2D or 3D mode
 C LOGICAL CHARGE              : Should charge density be computed?
 C LOGICAL WAVES               : Should wave functions be computed?
-C LOGICAL STS                 : Should STS simulation be done?
 C INTEGER IOPTION             : Option to generate the plane or 3D grid
 C                               1 = Normal vector to xy plane (ie, z direction)
 C                               2 = Two vectors belonging to the xy plane
@@ -134,10 +131,6 @@ C                               (and z for 3D grids) directions in a system of
 C                               reference in which the third component of the 
 C                               points of the plane is zero 
 C                               (Plane Reference Frame; PRF)
-C INTEGER NE                  : Number of energies for STS curve
-C REAL*8 EMIN                 : Minimum energy of STS curve
-C REAL*8 DELTAE               : Step in STS curve
-C REAL*8 ETA                  : Lorenzian width used in STS curve
 C INTEGER IUNITCD             : Units of the charge density
 C INTEGER ISCALE              : Units of the points of the plane or 3D grid
 C REAL*8  XMIN, XMAX          : Limits of the plane in the PRF for x-axis
@@ -151,10 +144,6 @@ C REAL*8  DIRVER1(3)          : Components of the first vector contained
 C                               in the plane
 C REAL*8  DIRVER2(3)          : Components of the first vector contained 
 C                               in the plane
-C REAL*8 XSTS(3)              : Coordinates of points where STS spectrum
-C                               is calculated
-C INTEGER BFUNC               : Broadening function for STS spectra:
-C                               1 = Lorentzian, 2 = Gaussian
 C REAL*8  ARMUNI              : Conversion factors for the charge density
 C ****** INTERNAL VARIABLES ********************************************
 C LOGICAL FOUND               : Has DM been found in disk?
@@ -172,10 +161,7 @@ C Set up fdf -----------------------------------------------------------
 
 C Read some variables from SIESTA to define the limits of some arrays --
       CALL REINIT( NO_S, NA_S, NO_U, MAXND, MAXNA, NSPIN, IDIMEN,
-     .     CHARGE, WAVES, STS )
-      if (sts) then
-         call die("STS mode not updated yet")
-      endif
+     .     CHARGE, WAVES )
 
 C Allocate some variables ----------------------------------------------
       ALLOCATE(XA(3,NA_S))
@@ -228,7 +214,7 @@ C Read Density Matrix from files ---------------------------------------
         ENDIF 
       ENDIF
 
-      IF (WAVES .OR. STS) THEN
+      IF (WAVES) THEN
 
       ! Read header of WFSX file
 
@@ -252,12 +238,6 @@ C Read Density Matrix from files ---------------------------------------
       endif
       read(wf_unit)   ! orbital labels
 
-      ENDIF
-
-C Find out parameters of STS simulation
-      IF (STS) THEN
-        CALL READSTS(VOLUME, EMIN, NE, DELTAE, ETA, XSTS, BFUNC,
-     .               IUNITCD, ARMUNI)
       ENDIF
 
       IF (CHARGE .OR. WAVES) THEN
@@ -291,14 +271,5 @@ C Form Density Matrix for Neutral and Isolated Atoms -------------------
      .               DIRVER1, DIRVER2, 
      .               ARMUNI, IUNITCD, ISCALE, RMAXO )
       ENDIF
-
-c$$$      IF (STS) THEN
-c$$$         ! ** Not updated yet. Should be moved to STM-ol
-c$$$        CALL STSOFR( NA_S, NO_S, NO_U, MAXNA, NSPIN,
-c$$$     .               ISA, IPHORB, INDXUO, LASTO, XA, CELL,
-c$$$     .               RPSI, IPSI, E, INDW, NWF, NUMWF, NK, K,
-c$$$     .               ARMUNI, IUNITCD, RMAXO,
-c$$$     .               EMIN, NE, DELTAE, ETA, XSTS, BFUNC )
-c$$$      ENDIF
 
       END PROGRAM DENCHAR

@@ -73,14 +73,14 @@ SYSOBJ=$(SYS).o
 # Note that machine-specific files are now in top Src directory.
 OBJS_DENCHAR = atompla.o planed.o\
         bessph.o chkdim.o dismin.o \
-	dot.o readpla.o readsts.o \
+	dot.o readpla.o \
         io.o iodm.o length.o \
         matvect.o memory.o colinear.o\
 	neighb.o pxf.o \
 	radfft.o m_fft_gpfa.o ranger.o \
         rhoofr.o wavofr.o \
         redata_denchar.o local_reinit.o denchar.o \
-	volcel.o wrout.o stsofr.o local_sys.o
+	volcel.o wrout.o local_sys.o
 
 # Use the makefile in Src/fdf and all the sources there.
 FDF=libfdf.a
@@ -951,10 +951,8 @@ neighb.o: precision.o
 planed.o: precision.o
 ranger.o: precision.o
 readpla.o: precision.o
-readsts.o: precision.o
 redata_denchar.o: precision.o
 rhoofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
-stsofr.o: atmfuncs.o chemical.o listsc.o precision.o
 wavofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
 wrout.o: precision.o
 band.o: bands.o
