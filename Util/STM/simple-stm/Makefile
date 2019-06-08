@@ -29,15 +29,15 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 
-plstm: plstm.o m_gridfunc.o
-	$(FC) $(LDFLAGS) -o $@  plstm.o m_gridfunc.o $(LIBS)
+plstm.o: m_gridfunc.o options.o
+plsts.o: m_gridfunc.o
+plstm: options.o plstm.o m_gridfunc.o
+	$(FC) $(LDFLAGS) -o $@  plstm.o m_gridfunc.o options.o $(LIBS)
 
-plstm.o: m_gridfunc.o
 
-plsts: plsts.o m_gridfunc.o
+plsts: plsts.o m_gridfunc.o 
 	$(FC) $(LDFLAGS) -o $@  plsts.o m_gridfunc.o $(LIBS)
 
-plsts.o: m_gridfunc.o
 
 clean: 
 	rm -f *.o plstm plsts
