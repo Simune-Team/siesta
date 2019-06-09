@@ -56,21 +56,31 @@ module m_elsi_interface
   type(elsi_handle) :: elsi_h
 
   integer :: elsi_global_comm    ! Used by all routines. Freed at end of scf loop
+
   integer :: which_solver
   integer :: which_broad
   integer :: out_level
   integer :: out_json
   integer :: mp_order
+  integer :: illcond_check
+  real(dp) :: illcond_tol
+  
   integer :: elpa_flavor
-  integer :: omm_flavor
-  integer :: omm_n_elpa
+
+  integer  :: omm_flavor
+  integer  :: omm_n_elpa
+  real(dp) :: omm_tol
+  
   integer :: pexsi_tasks_per_pole
+  integer :: pexsi_n_pole
+  integer :: pexsi_n_mu
   integer :: pexsi_tasks_symbolic
+  real(dp) :: pexsi_inertia_tol
+
   integer :: sips_n_slice
   integer :: sips_n_elpa
-  integer :: ntpoly_method
 
-  real(dp) :: omm_tol
+  integer  :: ntpoly_method
   real(dp) :: ntpoly_filter
   real(dp) :: ntpoly_tol
 
@@ -212,22 +222,32 @@ subroutine elsi_get_opts()
 
   use fdf,         only: fdf_get
 
-  solver_string        = fdf_get("ELSISolver", "elpa")
-  out_level            = fdf_get("ELSIOutputLevel", 0)
-  out_json             = fdf_get("ELSIOutputJson", 1)
-  broad_string         = fdf_get("ELSIBroadeningMethod", "fermi")
-  mp_order             = fdf_get("ELSIBroadeningMPOrder", 1)
-  elpa_flavor          = fdf_get("ELSIELPAFlavor", 2)
-  omm_flavor           = fdf_get("ELSIOMMFlavor", 0)
-  omm_n_elpa           = fdf_get("ELSIOMMELPASteps", 3)
-  omm_tol              = fdf_get("ELSIOMMTolerance", 1.0e-9_dp)
-  pexsi_tasks_per_pole = fdf_get("ELSIPEXSITasksPerPole", ELSI_NOT_SET)
-  pexsi_tasks_symbolic = fdf_get("ELSIPEXSITasksSymbolic", 1)
-  sips_n_slice         = fdf_get("ELSISIPSSlices", ELSI_NOT_SET)
-  sips_n_elpa          = fdf_get("ELSISIPSELPASteps", 2)
-  ntpoly_method        = fdf_get("ELSINTPOLYMethod", 2)
-  ntpoly_filter        = fdf_get("ELSINTPOLYFilter", 1.0e-9_dp)
-  ntpoly_tol           = fdf_get("ELSINTPOLYTolerance", 1.0e-6_dp)
+  solver_string        = fdf_get("ELSI-Solver", "elpa")
+  out_level            = fdf_get("ELSI-Output-Level", 0)
+  out_json             = fdf_get("ELSI-Output-Json", 1)
+  broad_string         = fdf_get("ELSI-Broadening-Method", "fermi")
+  mp_order             = fdf_get("ELSI-Broadening-MPOrder", 1)
+  illcond_check        = fdf_get("ELSI-Ill-Condition-Check", 0 )
+  illcond_tol          = fdf_get("ELSI-Ill-Condition-Tolerance", 1.0e-5_dp )
+  
+  elpa_flavor          = fdf_get("ELSI-ELPA-Flavor", 2)
+
+  omm_flavor           = fdf_get("ELSI-OMM-Flavor", 0)
+  omm_n_elpa           = fdf_get("ELSI-OMM-ELPA-Steps", 3)
+  omm_tol              = fdf_get("ELSI-OMM-Tolerance", 1.0e-9_dp)
+
+  pexsi_tasks_per_pole = fdf_get("ELSI-PEXSI-Tasks-Per-Pole", ELSI_NOT_SET)
+  pexsi_tasks_symbolic = fdf_get("ELSI-PEXSI-Tasks-Symbolic", 1)
+  pexsi_n_pole         = fdf_get("ELSI-PEXSI-Number-Of-Poles", 20)
+  pexsi_n_mu           = fdf_get("ELSI-PEXSI-Number-Of-Mu-Points", 2)
+  pexsi_inertia_tol    = fdf_get("ELSI-PEXSI-Inertia-Tolerance", 0.05_dp)
+
+  sips_n_slice         = fdf_get("ELSI-SIPS-Slices", ELSI_NOT_SET)
+  sips_n_elpa          = fdf_get("ELSI-SIPS-ELPA-Steps", 2)
+
+  ntpoly_method        = fdf_get("ELSI-NTPOLY-Method", 2)
+  ntpoly_filter        = fdf_get("ELSI-NTPOLY-Filter", 1.0e-9_dp)
+  ntpoly_tol           = fdf_get("ELSI-NTPOLY-Tolerance", 1.0e-6_dp)
 
   select case (solver_string)
   case ("elpa", "ELPA")
@@ -363,6 +383,10 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_output_log(elsi_h, out_json)
     call elsi_set_write_unit(elsi_h, 6)
 
+    ! Possible ill-conditioning of S
+    call elsi_set_illcond_check(elsi_h, illcond_check)
+    call elsi_set_illcond_tol(elsi_h, illcond_tol)
+
     ! Broadening
     call elsi_set_mu_broaden_scheme(elsi_h, which_broad)
     call elsi_set_mu_broaden_width(elsi_h, temp)
@@ -375,23 +399,34 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_omm_n_elpa(elsi_h, omm_n_elpa)
     call elsi_set_omm_tol(elsi_h, omm_tol)
 
+! --- PEXSI
+    
     if (pexsi_tasks_per_pole /= ELSI_NOT_SET) then
       call elsi_set_pexsi_np_per_pole(elsi_h, pexsi_tasks_per_pole)
     end if
 
+    call elsi_set_pexsi_n_mu(elsi_h, pexsi_n_mu)
+    call elsi_set_pexsi_n_pole(elsi_h, pexsi_n_pole)
+    call elsi_set_pexsi_inertia_tol(elsi_h, pexsi_inertia_tol)
+    
     call elsi_set_pexsi_np_symbo(elsi_h, pexsi_tasks_symbolic)
     call elsi_set_pexsi_temp(elsi_h, temp)
+
 !    call elsi_set_pexsi_gap(elsi_h, gap)
 !    call elsi_set_pexsi_delta_e(elsi_h, delta_e)
+
     call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
     call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
 
+! --- SIPs
+    
     if (sips_n_slice /= ELSI_NOT_SET) then
       call elsi_set_sips_n_slice(elsi_h, sips_n_slice)
     end if
 
     call elsi_set_sips_n_elpa(elsi_h, sips_n_elpa)
-    call elsi_set_sips_interval(elsi_h, -10.0_dp, 10.0_dp)
+    call elsi_set_sips_ev_min(elsi_h, -10.0_dp)
+    call elsi_set_sips_ev_max(elsi_h,  10.0_dp)
 
     call elsi_set_ntpoly_method(elsi_h, ntpoly_method)
     call elsi_set_ntpoly_filter(elsi_h, ntpoly_filter)
@@ -1312,6 +1347,10 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
     call elsi_set_output_log(elsi_h, out_json)
     call elsi_set_write_unit(elsi_h, 6)
 
+    ! Possible ill-conditioning of S
+    call elsi_set_illcond_check(elsi_h, illcond_check)
+    call elsi_set_illcond_tol(elsi_h, illcond_tol)
+
     ! Broadening
     call elsi_set_mu_broaden_scheme(elsi_h, which_broad)
     call elsi_set_mu_broaden_width(elsi_h, temp)
@@ -1328,10 +1367,16 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
       call elsi_set_pexsi_np_per_pole(elsi_h, pexsi_tasks_per_pole)
     end if
 
+    call elsi_set_pexsi_n_mu(elsi_h, pexsi_n_mu)
+    call elsi_set_pexsi_n_pole(elsi_h, pexsi_n_pole)
+    call elsi_set_pexsi_inertia_tol(elsi_h, pexsi_inertia_tol)
+
     call elsi_set_pexsi_np_symbo(elsi_h, pexsi_tasks_symbolic)
     call elsi_set_pexsi_temp(elsi_h, temp)
+
 !    call elsi_set_pexsi_gap(elsi_h, gap)
 !    call elsi_set_pexsi_delta_e(elsi_h, delta_e)
+
     call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
     call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
 
@@ -1340,7 +1385,8 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
     end if
 
     call elsi_set_sips_n_elpa(elsi_h, sips_n_elpa)
-    call elsi_set_sips_interval(elsi_h, -10.0_dp, 10.0_dp)
+    call elsi_set_sips_ev_min(elsi_h, -10.0_dp)
+    call elsi_set_sips_ev_max(elsi_h,  10.0_dp)
 
     call elsi_set_ntpoly_method(elsi_h, ntpoly_method)
     call elsi_set_ntpoly_filter(elsi_h, ntpoly_filter)

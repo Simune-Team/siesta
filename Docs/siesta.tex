@@ -957,7 +957,8 @@ libraries
   \index{External library!ELSI}%
   The ELSI library may be used with \siesta\ for access to a range of
   solvers, see Sec.~\ref{SolverELSI}. Currently the interface is
-  implemented (tested) as of ELSI version 2.0.2. If
+  implemented (tested) as of ELSI version with date stamp 20190121
+  (for released versions: 2.2.0). If
   newer versions retain the same interface they may also be used.
 
   Add these flags to your \file{arch.make} file to enable ELSI
@@ -7010,6 +7011,12 @@ ELSI manual:
 \begin{fdfentry}{ELSI!Broadening!MPOrder}[integer]<1>
 \end{fdfentry}
 
+\begin{fdfentry}{ELSI!Ill-Condition!Check}[integer]<0>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Ill-Condition!Tolerance}[real]<$10^{-5}$>
+\end{fdfentry}
+
 \begin{fdfentry}{ELSI!ELPA!Flavor}[integer]<2>
 \end{fdfentry}
 
@@ -7027,6 +7034,15 @@ ELSI manual:
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!PEXSI!TasksSymbolic}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Number-of-Poles}[integer]<20>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Number-of-Mu-Points}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Inertia-Tolerance}[real]<$0.05$>
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!NTPoly!Method}[integer]<2>
