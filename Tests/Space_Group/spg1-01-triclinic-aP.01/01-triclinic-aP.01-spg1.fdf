@@ -1,0 +1,30 @@
+#--------------------------------------- 
+#Input Generated for Space Group Testing 
+#--------------------------------------- 
+SystemLabel  01-triclinic-aP.01-spg1.inp 
+NumberOfSpecies 1 
+%block ChemicalSpeciesLabel 
+ 1  1  H 
+%endblock ChemicalSpeciesLabel 
+LatticeConstant  1.0 Ang   
+%block LatticeVectors 
+  7.0   0.0   0.0  
+  0.610090199236   7.96955758472   0.0  
+  1.2155372436899998   2.62507486176   8.35680001239  
+%endblock LatticeVectors 
+AtomicCoordinatesFormat  Fractional 
+%block AtomicCoordinatesAndAtomicSpecies
+ 1.0000000000E+00  0.0000000000E+00  0.0000000000E+00  1  1  H
+ 8.7155742748E-02  9.9619469809E-01  0.0000000000E+00  1  2  H  
+ 1.7364817767E-01  3.2813435772E-01  9.2853333471E-01  1  3  H   
+%endblock AtomicCoordinatesAndAtomicSpecies 
+MaxSCFIterations 	0  
+MD.TypeOfRun    CG   
+MD.NumCGsteps   0  
+SCF.MustConverge  .False. 
+
+
+#1.7000000000E-01   1.5000000000E-01   1.1000000000E-01  1  1   H 
+#0.734 0.467 0.66  1  2 H
+#0.44  0.824 0.31415  1  3  H
+
