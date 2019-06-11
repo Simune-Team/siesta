@@ -12009,6 +12009,34 @@ electrodes in a generic input format.
     Setting this to \fdffalse\ will heavily degrade performance and
     it is highly discouraged!
 
+    \option[delta-Ef]%
+    \fdfindex*{TS!Elec.<>!delta-Ef}%
+    Specify an offset for the Fermi-level of the electrode. This will
+    directly be added to the Fermi-level found in the electrode file.
+    
+    \note this option only makes sense for semi-conducting electrodes
+    since it shifts the entire electronic structure. This is because
+    the Fermi-level may be arbitrarily placed anywhere in the band
+    gap. It is the users responsibility to define a value which does
+    not introduce a potential drop between the electrode and device
+    region.
+
+    \option[V-fraction]%
+    \fdfindex*{TS!Elec.<>!V-fraction}%
+
+    Specify the fraction of the chemical potential shift in the
+    electrode-device coupling region. This corresponds to:
+    \begin{equation}
+      \mathbf H_{\mathfrak eD} \leftarrow \mathbf H_{\mathfrak eD} +
+      \mu_{\mathfrak e} \mathrm{V-fraction} \mathbf S_{\mathfrak eD}
+    \end{equation}
+    in the coupling region. Consequently the value \emph{must} be
+    between $0$ and $1$.
+
+    \note this option \emph{only} makes sense for
+    \fdf{TS!Elec.<>!DM-update:none} since otherwise the electrostatic
+    potential will be incorporated in the Hamiltonian.
+
     \option[check-kgrid]%
     \fdfindex*{TS!Elec.<>!check-kgrid}%
     For $N$ electrode calculations the $\mathbf k$ mesh will sometimes

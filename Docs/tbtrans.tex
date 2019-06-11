@@ -1735,6 +1735,36 @@ is no need to specify the chemical potential
     If this is \fdffalse\ the surface Green function file is deleted
     and re-created upon start.
 
+    
+    \option[delta-Ef]%
+    \fdfindex*{TBT!Elec.<>!delta-Ef}%
+    Specify an offset for the Fermi-level of the electrode. This will
+    directly be added to the Fermi-level found in the electrode file.
+    
+    \note this option only makes sense for semi-conducting electrodes
+    since it shifts the entire electronic structure. This is because
+    the Fermi-level may be arbitrarily placed anywhere in the band
+    gap. It is the users responsibility to define a value which does
+    not introduce a potential drop between the electrode and device
+    region.
+
+    \option[V-fraction]%
+    \fdfindex*{TBT!Elec.<>!V-fraction}%
+
+    Specify the fraction of the chemical potential shift in the
+    electrode-device coupling region. This corresponds to:
+    \begin{equation}
+      \mathbf H_{\mathfrak eD} \leftarrow \mathbf H_{\mathfrak eD} +
+      \mu_{\mathfrak e} \mathrm{V}_f \mathbf S_{\mathfrak eD}
+    \end{equation}
+    in the coupling region. Consequently the value \emph{must} be
+    between $0$ and $1$.
+
+    \note this option may be used for tight-binding calculations as an
+    empirical applied bias (with the potential drop at the
+    electrode/device interface).
+
+
     \option[check-kgrid]%
     \fdfindex*{TBT.Elec.<>!check-kgrid}%
     For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
