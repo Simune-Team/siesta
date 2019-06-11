@@ -1611,7 +1611,12 @@ is no need to specify the chemical potential
     \option[semi-inf-direction|semi-inf-dir|semi-inf]%
     \fdfindex*{TBT.Elec.<>!semi-inf-direction}%
     The semi-infinite direction of the electrode with respect to the
-    electrode unit-cell. 
+    electrode unit-cell.
+
+    It may be one of \fdf*{[-+][abc]}, \fdf*{[-+]A[123]}, \fdf*{ab},
+    \fdf*{ac}, \fdf*{bc} or \fdf*{abc}. The latter four all describe a
+    real-space self-energy as described in \cite{1905.11113}.
+
 
     \note this has nothing to do with the scattering region unit cell,
     \tbtrans\ will figure out the alignment of the electrode unit-cell

@@ -406,7 +406,8 @@ contains
             leqi(ln,'semi-inf-dir') .or. leqi(ln,'semi-inf') ) then
          
          tmp = 'Semi-infinite direction not understood correctly, &
-             &allowed format: [-+][a-c|a[1-3]]'
+             &allowed format: [-+][abc|a[1-3]] or any two/three directions &
+             &without direction ab|ac|bc|abc'
 
          ! This possibility exists
          !  semi-inf [-+][ ][a-c|a[1-3]] -> [direction] [vector]

@@ -11869,7 +11869,11 @@ electrodes in a generic input format.
     \option[semi-inf-direction|semi-inf-dir|semi-inf]%
     \fdfindex*{TS!Elec.<>!semi-inf-direction}%
     The semi-infinite direction of the electrode with respect to the
-    electrode unit-cell. 
+    electrode unit-cell.
+
+    It may be one of \fdf*{[-+][abc]}, \fdf*{[-+]A[123]}, \fdf*{ab},
+    \fdf*{ac}, \fdf*{bc} or \fdf*{abc}. The latter four all describe a
+    real-space self-energy as described in \cite{1905.11113}.
 
     \note this direction is \emph{not} with respect to the scattering
     region unit cell. It is with respect to the electrode unit
