@@ -179,6 +179,31 @@ A list of the currently implemented features are:
 \end{itemize}
 
 
+\subsection{\phtrans}
+
+The NEGF formalism also applies to phonons via some simple
+differences. Here is a list of some of the differences:
+\begin{itemize}
+  \item For \phtrans\ all options are \emph{still} prefixed with \fdf*{TBT}!
+  
+  \item The Green function calculation looks like:
+  \begin{equation}
+    \label{eq:PHT:Gf}
+    \mathbf G_{\mathbf q} = [(\omega^2 +i\eta^2)\mathbf I -\mathbf
+    D_{\mathbf q} -\boldsymbol\Sigma_{\mathbf q}(\omega)]^{-1},
+  \end{equation}
+  where $\omega$ is referred to as \emph{energy} in the remaining
+  document.
+  
+  \item Calculating density matrices (\fdf{TBT.DM!Gf},
+  \fdf{TBT.COOP!Gf}, \fdf{TBT.COHP!Gf}) are prefactored with $2\omega$
+  which is currently empirically done.
+\end{itemize}
+
+\note \phtrans\ is not as tested as \tbtrans. Any feedback on all
+parts are most welcome!
+
+
 
 \section{Compilation}
 
@@ -853,7 +878,7 @@ $\mathrm{LDOS}(E)$ profiles using \sisl.
   Calculate the energy and $k$-resolved density matrix for the Green
   function. The density matrix may be used to construct 
   real-space LDOS profiles.
-  
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DM!A}
@@ -862,7 +887,7 @@ $\mathrm{LDOS}(E)$ profiles using \sisl.
   Calculate the energy and $k$-resolved density matrix for the
   electrode spectral functions. The density matrix may be used to
   construct real-space LDOS profiles.
-  
+
 \end{fdflogicalF}
 
 

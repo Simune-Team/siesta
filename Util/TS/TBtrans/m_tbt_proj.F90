@@ -1309,6 +1309,13 @@ contains
     integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP, prec_DM
     integer :: nnzs_dev, N_eigen
     type(OrbitalDistribution) :: fdit
+#ifdef TBT_PHONON
+    character(len=*), parameter :: T_unit = 'g0'
+    character(len=*), parameter :: COHP_unit = 'Ry'
+#else
+    character(len=*), parameter :: T_unit = 'G0'
+    character(len=*), parameter :: COHP_unit = 'Ry/Ry'
+#endif
 #ifdef MPI
     integer :: MPIerror, status(MPI_STATUS_SIZE)
 #endif
@@ -1898,9 +1905,9 @@ contains
                   atts = dic)
               call ncdf_put_var(grp3,'kT',Elecs(iE)%mu%kT)
 
+              dic = dic//('unit'.kv.'1/Ry')
               if ( 'proj-DOS-A' .in. save_DATA ) then
                 dic = dic//('info'.kv.'Spectral function density of states')
-                dic = dic//('unit'.kv.'1/Ry')
                 call ncdf_def_var(grp3,'ADOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
                     atts = dic, &
                     compress_lvl = cmp_lvl, chunks = (/r%n,1,1/))
@@ -1908,21 +1915,21 @@ contains
               end if
 
               if ( 'proj-DM-A' .in. save_DATA ) then
-                dic = dic//('info'.kv.'Spectral function density matrix')//('unit'.kv.'1/Ry')
+                dic = dic//('info'.kv.'Spectral function density matrix')
                 call ncdf_def_var(grp3,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
                     atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
                 mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
               end if
 
               if ( 'proj-COOP-A' .in. save_DATA ) then
-                dic = dic//('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
+                dic = dic//('info'.kv.'Crystal orbital overlap population')
                 call ncdf_def_var(grp3,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                     atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
                 mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
               end if
 
               if ( 'proj-COHP-A' .in. save_DATA ) then
-                dic = dic//('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
+                dic = dic//('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.COHP_unit)
                 call ncdf_def_var(grp3,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                     atts = dic , chunks = (/nnzs_dev/), compress_lvl=cmp_lvl)
                 mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
@@ -1930,9 +1937,10 @@ contains
 
               ! Prepare for orb-current
               call delete(dic)
-
+              dic = ('unit'.kv.T_unit)
+              
               if ( 'proj-orb-current' .in. save_DATA ) then
-                dic = ('info'.kv.'Orbital current')
+                dic = dic//('info'.kv.'Orbital current')
                 call ncdf_def_var(grp3,'J',prec_J,(/'nnzs', 'ne  ', 'nkpt'/), &
                     atts = dic, chunks = (/nnzs_dev/), compress_lvl = cmp_lvl)
                 mem = mem + calc_mem(prec_J, nnzs_dev, NE, nkpt)
@@ -2277,6 +2285,7 @@ contains
 
     ! At this point we still need to add the "non-projected"
     ! LHS projections.
+    dic = 'unit'.kv.T_unit
     do it = 1 , N_proj_T
 
       i = proj_T(it)%L%idx

@@ -371,8 +371,10 @@ contains
     type(tRgn) :: a_Dev_sort, r_tmp
 #ifdef TBT_PHONON
     character(len=*), parameter :: T_unit = 'g0'
+    character(len=*), parameter :: COHP_unit = 'Ry'
 #else
     character(len=*), parameter :: T_unit = 'G0'
+    character(len=*), parameter :: COHP_unit = 'Ry/Ry'
 #endif
 #ifdef MPI
     integer :: MPIerror
@@ -704,20 +706,21 @@ contains
 
     end if
 
+    dic = dic // ('unit'.kv.'1/Ry')
     if ( 'DM-Gf' .in. save_DATA ) then
-       dic = dic // ('info'.kv.'Green function density matrix')//('unit'.kv.'1/Ry')
+       dic = dic // ('info'.kv.'Green function density matrix')
        call ncdf_def_var(ncdf,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
            atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
        mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
     end if
     if ( 'COOP-Gf' .in. save_DATA ) then
-       dic = dic // ('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
+       dic = dic // ('info'.kv.'Crystal orbital overlap population')
        call ncdf_def_var(ncdf,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
             atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
        mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
     end if
     if ( 'COHP-Gf' .in. save_DATA ) then
-       dic = dic // ('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
+       dic = dic // ('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.COHP_unit)
        call ncdf_def_var(ncdf,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
             atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
        mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
@@ -826,49 +829,51 @@ contains
        
        ! Now we will only add information that is calculated
        if ( iEl == N_Elec ) then
-          ! check if all are calculated
-          if ( ('DOS-A-all' .nin. save_DATA) .and. &
-               ('T-all'.nin. save_DATA) ) cycle
+         ! check if all are calculated
+         if ( ('DOS-A-all' .nin. save_DATA) .and. &
+             ('T-all'.nin. save_DATA) ) cycle
        end if
 
+       ! All have this unit
+       dic = ('unit'.kv.'1/Ry')
+
        if ( 'DM-A' .in. save_DATA ) then
-          dic = dic//('info'.kv.'Spectral function density matrix')//('unit'.kv.'1/Ry')
+          dic = dic//('info'.kv.'Spectral function density matrix')
           call ncdf_def_var(grp,'DM',prec_DM,(/'nnzs','ne  ','nkpt'/), &
               atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_DM, nnzs_dev, NE, nkpt)
        end if
 
        if ( 'DOS-A' .in. save_DATA ) then
-          dic = dic//('info'.kv.'Spectral function density of states')// &
-               ('unit'.kv.'1/Ry')
+          dic = dic//('info'.kv.'Spectral function density of states')
           call ncdf_def_var(grp,'ADOS',prec_DOS,(/'no_d','ne  ','nkpt'/), &
                atts = dic, chunks = (/r%n,1,1/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_DOS, r%n, NE, nkpt)
        end if
 
        if ( 'COOP-A' .in. save_DATA ) then
-          dic = dic//('info'.kv.'Crystal orbital overlap population')//('unit'.kv.'1/Ry')
+          dic = dic//('info'.kv.'Crystal orbital overlap population')
           call ncdf_def_var(grp,'COOP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
        end if
 
        if ( 'COHP-A' .in. save_DATA ) then
-          dic = dic//('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.'Ry/Ry')
+          dic = dic//('info'.kv.'Crystal orbital Hamilton population')//('unit'.kv.COHP_unit)
           call ncdf_def_var(grp,'COHP',prec_COOP,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_COOP, nnzs_dev, NE, nkpt)
        end if
 
+       ! All quantities here are transmissions.
+       dic = dic//('unit'.kv.T_unit)
+
        if ( 'orb-current' .in. save_DATA ) then
-          dic = dic//('info'.kv.'Orbital transmission')//('unit'.kv.T_unit)
+          dic = dic//('info'.kv.'Orbital transmission')
           call ncdf_def_var(grp,'J',prec_J,(/'nnzs','ne  ','nkpt'/), &
                atts = dic , chunks = (/nnzs_dev/) , compress_lvl=cmp_lvl)
           mem = mem + calc_mem(prec_J, nnzs_dev, NE, nkpt)
        end if
-
-       ! All quantities here are transmissions.
-       dic = dic//('unit'.kv.T_unit)
 
        tmp = trim(Elecs(iEl)%name)
        do jEl = 1 , N_Elec
