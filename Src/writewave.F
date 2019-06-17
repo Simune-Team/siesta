@@ -654,11 +654,13 @@ C This is the only exit point
       end subroutine wwave
 
 
-      subroutine writew(nuotot,nuo,ik,k,ispin,eo,psi,gamma,non_coll)
+      subroutine writew(nuotot,nuo,ik,k,ispin,eo,psi,
+     $                  gamma,non_coll,blocksize)
 
       use precision
       use sys
-      use parallel,     only : Node, Nodes, Blocksize
+      use parallel,     only : Node, Nodes
+      use parallel,     only : Module_Blocksize=>BlockSize
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use units,        only : eV
       use kpoint_grid,  only : kweight
@@ -676,6 +678,7 @@ C This is the only exit point
       logical, intent(in)  ::  non_coll, gamma
       real(dp), intent(in) ::  eo(*), k(3)
       real(dp), intent(in) ::  psi(:)
+      integer, intent(in)  ::  blocksize
 
 
 C  Internal variables .............................................
@@ -757,15 +760,19 @@ C First print the index and value of k-point
         write(iu) nwflist(ik)
       endif
 
-C Loop over wavefunctions that should be printed
+      ! Loop over wavefunctions that should be stored
 
-      ! For dealings with block-sizes, we need to be aware that
-      ! non-collinear calculations have an extra effective factor of two.
+      ! The effective blocksize to use is passed as an argument.
+      ! Module_blocksize is the variable in the 'parallel' module that
+      ! holds the value that all the helper functions (WhichNodeOrb,
+      ! GetNodeOrb, etc) see.  Hence, we must temporarily set
+      ! Module_blocksize to the passed blocksize.
 
-      if (non_coll) then
-         blocksize_saved = blocksize
-         blocksize = 2*blocksize
-      endif
+      ! Examples: non-collinear calculations need a wf blocksize double
+      ! the 'orbital' one
+
+      blocksize_saved = Module_blocksize
+      Module_blocksize = blocksize
       
       if (Node .eq. 0 .and. debug) then
          print *, " -*- Will print ", nwflist(ik), " wfns."
@@ -852,7 +859,6 @@ C eigenvector is now stored in aux in Node 0, and can be printed
         endif
 
       enddo
-
       
 C Close output file
 
@@ -860,10 +866,9 @@ C Close output file
         call io_close(iu)
       endif
 
-      if (non_coll) then
-         blocksize = blocksize_saved
-      endif
-      
+      ! Restore blocksize value in module
+      Module_blocksize = blocksize_saved
+
 C Deallocate auxiliary arrays
 
       call memory('D','D',size(aux),'writewave')

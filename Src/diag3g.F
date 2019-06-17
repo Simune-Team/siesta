@@ -206,7 +206,7 @@ C of referencing has been changed in several places to reflect this.
          call c_f_pointer( c_loc(psi), psi_real_1d, [size(psi)*2] )
          call writew(nuotot,nuo,1,k,1,
      &        eo,psi_real_1d,gamma=.true.,
-     $        non_coll=.true.)
+     $        non_coll=.true.,blocksize=2*BlockSize)
       endif
 
 !     Check if we are done

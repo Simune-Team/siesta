@@ -338,7 +338,8 @@ C *********************************************************************
            call c_f_pointer(c_loc(psi),psi_real,[2*size(psi)])
            call writew(nuotot,nuo,ik,kpoint(1,ik),1, ! last '1' is 'spin-block number'
      .                 eo(1,ik),       ! energies
-     .                 psi_real,gamma=.false.,non_coll=.true.)
+     .                 psi_real,gamma=.false.,non_coll=.true.,
+     $                 blocksize=2*BlockSize)
         endif
 
         if (.not. getD) CYCLE   ! process new k-point

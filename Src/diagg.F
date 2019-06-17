@@ -205,8 +205,8 @@ C Repeat diagonalisation with increased memory to handle clustering
           call c_f_pointer(c_loc(psi(:,:,ispin)),psi_real_1d,
      $                     [size(psi,1)*size(psi,2)])
           call writew(nuotot,nuo,1,k,ispin,
-     &                eo(1,ispin),psi_real_1d,.true.,
-     $                non_coll=.false.)
+     &                eo(1,ispin),psi_real_1d,gamma=.true.,
+     $                non_coll=.false.,blocksize=BlockSize)
         endif
 
       enddo
