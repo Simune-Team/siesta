@@ -33,7 +33,7 @@ An LDOS file can be produced in several ways:
     be in the same 'gridfunc' format, but in this case, in general,
     the LDOS function *will not* be periodic.
 
-    The wfs2ldos program can optionally perform an intermediate step
+    The wfs2ldos/ol-stm program can optionally perform an intermediate step
     of projection of the wave-functions from a reference plane and
     into the vacuum, before computing the LDOS. (See the manual for
     ol-stm/wfs2ldos). This is completely transparent to the user.

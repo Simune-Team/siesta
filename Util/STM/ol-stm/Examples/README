@@ -1,5 +1,5 @@
 In the example directories, use the fdf file both to run Siesta and
-to execute the wfs2ldos program (each program will use only the
+to execute the 'stm' program compiled in ../Src (each program will use only the
 keywords that are relevant to it).
 
 The wavefunctions will come out in the SystemLabel.fullBZ.WFSX file. You have

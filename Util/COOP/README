@@ -34,9 +34,10 @@ charge density associated to those states.
 
 ----------------------------------------------------------------------
 
-SPIN_TEXTURE computes the "spin texture" of the nk spinor states stored in a WFSX
-file. The selection of states is on the basis of an eigenvalue interval
-(the whole range of energies in the file by default), or by band range.
+SPIN_TEXTURE computes the "spin texture" of the nk spinor states
+stored in a WFSX file. The selection of states is on the basis of an
+eigenvalue interval (the whole range of energies in the file by
+default), or by band range.
 
 The WFSX file can be created during a Siesta calculation in several ways
 
@@ -67,7 +68,7 @@ In cases with Dirac cones (graphene, topological insulators), a radial
 sampling around the Dirac point (or in concentric circles with
 equispaced points) is usually what gives the best information.
 
-This is one of the cases where the user should know what he needs,
+This is one of the cases where users should know what they need,
 there is no generic recipe.
 
 See the header of the 'read_spin_texture.f90' file for hints about plotting.

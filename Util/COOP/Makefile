@@ -24,7 +24,7 @@
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 
-default: mprop fat
+default: mprop fat spin_texture
 
 all: mprop dm_creator fat spin_texture
 
