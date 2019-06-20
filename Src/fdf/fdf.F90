@@ -1552,6 +1552,7 @@ MODULE fdf
         call fdf_removelabel(label)
 
         ! Add token to the list of fdf-flags
+        ! Since we add it directly we shouldn't destroy the pline
         call fdf_addtoken(line, pline)
         if ( fdf_debug ) then
           write(fdf_log,'(2a)') '---> Overwriting token: ', trim(label)
@@ -1559,8 +1560,6 @@ MODULE fdf
 
       end if
 
-      call destroy(pline)
-      
     END SUBROUTINE fdf_overwrite
 
 !
