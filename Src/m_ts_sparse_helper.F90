@@ -297,10 +297,8 @@ contains
     ! create the overlap electrode fermi-level
     E_Ef(:) = Ef
     do iEl = 1 , N_Elec
-       ! currently I am not sure the not bulk setting
-       ! makes sense with this method, either way, it is an experimental
-       ! feature.
-       E_Ef(iEl) = Ef - Elecs(iEl)%Ef_frac_CT * Elecs(iEl)%mu%mu
+      ! Note that for bulk V_frac_CT will be set to 0.
+      E_Ef(iEl) = Ef - Elecs(iEl)%V_frac_CT * Elecs(iEl)%mu%mu
     end do
 
     s  => spar(SpArrH)
@@ -572,11 +570,7 @@ contains
     ! create the overlap electrode fermi-level
     E_Ef(:) = Ef
     do iEl = 1 , N_Elec
-       ! currently I am not sure the not bulk setting
-       ! makes sense with this method, either way, it is an experimental
-       ! feature.
-       if ( .not. Elecs(iEl)%bulk ) cycle
-       E_Ef(iEl) = Ef - Elecs(iEl)%Ef_frac_CT * Elecs(iEl)%mu%mu
+      E_Ef(iEl) = Ef - Elecs(iEl)%V_frac_CT * Elecs(iEl)%mu%mu
     end do
     
     s  => spar(SpArrH)

@@ -1700,7 +1700,8 @@ two ways for \siesta\ and \program{Gen-basis} to generate them: $(i)$
 Use atomic PAO's of higher angular momentum with suitable confinement,
 and $(ii)$ solve the pseudoatom in the presence of an electric field
 and obtain the $l+1$ orbitals from the perturbation of the $l$
-orbitals by the field.
+orbitals by the field. Experience shows that method $(i)$ tends to
+give better results.
 
 So-called diffuse orbitals, that might be important in the description
 of open systems such as surfaces, can be simply added by specifying
@@ -11077,6 +11078,12 @@ end
   If there are any variables you require which are not in the list,
   please contact the developers.
 
+  If you want to stop \siesta\ from Lua you can use the following:
+  \begin{codeexample}
+    siesta.Stop = true
+    siesta.send({"Stop"})
+  \end{codeexample}
+  which will abort \siesta.
 
   Remark that since \emph{anything} may be changed via Lua one may
   easily make \siesta\ crash due to inconsistencies in the internal
@@ -12338,7 +12345,11 @@ electrodes in a generic input format.
     \option[semi-inf-direction|semi-inf-dir|semi-inf]%
     \fdfindex*{TS!Elec.<>!semi-inf-direction}%
     The semi-infinite direction of the electrode with respect to the
-    electrode unit-cell. 
+    electrode unit-cell.
+
+    It may be one of \fdf*{[-+][abc]}, \fdf*{[-+]A[123]}, \fdf*{ab},
+    \fdf*{ac}, \fdf*{bc} or \fdf*{abc}. The latter four all describe a
+    real-space self-energy as described in \cite{1905.11113}.
 
     \note this direction is \emph{not} with respect to the scattering
     region unit cell. It is with respect to the electrode unit
@@ -12477,6 +12488,34 @@ electrodes in a generic input format.
     needed. 
     Setting this to \fdffalse\ will heavily degrade performance and
     it is highly discouraged!
+
+    \option[delta-Ef]%
+    \fdfindex*{TS!Elec.<>!delta-Ef}%
+    Specify an offset for the Fermi-level of the electrode. This will
+    directly be added to the Fermi-level found in the electrode file.
+    
+    \note this option only makes sense for semi-conducting electrodes
+    since it shifts the entire electronic structure. This is because
+    the Fermi-level may be arbitrarily placed anywhere in the band
+    gap. It is the users responsibility to define a value which does
+    not introduce a potential drop between the electrode and device
+    region.
+
+    \option[V-fraction]%
+    \fdfindex*{TS!Elec.<>!V-fraction}%
+
+    Specify the fraction of the chemical potential shift in the
+    electrode-device coupling region. This corresponds to:
+    \begin{equation}
+      \mathbf H_{\mathfrak eD} \leftarrow \mathbf H_{\mathfrak eD} +
+      \mu_{\mathfrak e} \mathrm{V-fraction} \mathbf S_{\mathfrak eD}
+    \end{equation}
+    in the coupling region. Consequently the value \emph{must} be
+    between $0$ and $1$.
+
+    \note this option \emph{only} makes sense for
+    \fdf{TS!Elec.<>!DM-update:none} since otherwise the electrostatic
+    potential will be incorporated in the Hamiltonian.
 
     \option[check-kgrid]%
     \fdfindex*{TS!Elec.<>!check-kgrid}%

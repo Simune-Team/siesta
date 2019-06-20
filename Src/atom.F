@@ -3526,6 +3526,7 @@ C
         do l = 0,lmxo 
               
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
            else
               Vpot => vps(:,l)
@@ -4001,13 +4002,14 @@ C
 ! LOOP over angular momenta
 !
         do l=0,lmxo 
-              
-          if (l .gt. lmax_ps) then
-             Vpot => vlocal
-          else
-             Vpot => vps(:,l)
-          endif
-           
+
+           if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
+              Vpot => vlocal
+           else
+              Vpot => vps(:,l)
+           endif
+
           do nsm=1,nsemic(l)+1 
             if (nzeta(l,nsm).gt.0) then
               write(6,'(/A,I2)')
@@ -4576,6 +4578,7 @@ C
         do l=0,lmxo
 
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
            else
               Vpot => vps(:,l)
@@ -4817,6 +4820,7 @@ C
         do l=0,lmxo
 
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
            else
               Vpot => vps(:,l)
@@ -5161,6 +5165,7 @@ C
         do l=0,lmxo
 
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
            else
               Vpot => vps(:,l)
@@ -6005,6 +6010,8 @@ C Calculate the soft-confinement potential for the polarization orbitals
                   endif
 
                   if (lpol .gt. lmax_ps) then
+                     write(6,"(a,i2)")
+     $                "*Note: V_local used for lpol=", lpol
                      Vpot => vlocal
                   else
                      Vpot => vps(:,lpol)
@@ -6349,6 +6356,8 @@ C
                 lpol = l + 1
               endif
               if (lpol .gt. lmax_ps) then
+                 write(6,"(a,i2)")
+     $                "*Note: V_local used for lpol=", lpol
                  Vpot => vlocal
               else
                  Vpot => vps(:,lpol)

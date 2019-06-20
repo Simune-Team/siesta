@@ -7,6 +7,8 @@ module flook_siesta
   use siesta_geom
   use parallel, only : IONode, Node, Nodes
 
+  use sys, only: bye, die
+
 #endif
 
   implicit none
@@ -495,6 +497,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
   ! ! ! ! ! ! !
 
 
+  !> Lua-exposed function to retrieve data from Siesta
+  !!
+  !! This function is called from Lua for asking for data transfer
+  !! from Siesta.
   function slua_receive_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
@@ -539,6 +545,10 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
   end function slua_receive_siesta
 
+  !> Lua-exposed function to send data to Siesta
+  !!
+  !! This function is called from Lua to transfer data from Lua
+  !! to Siesta.
   function slua_send_siesta(state) result(nret) bind(c)
     use, intrinsic :: iso_c_binding, only: c_ptr, c_int
 
@@ -573,6 +583,11 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
     call slua_get_dict(tbl, variables, keys)
 
     call lua_close_tree(tbl)
+
+    ! Check whether the user has requested to abort siesta
+    if ( 'Stop' .in. keys ) then
+      call bye('LUA code has asked to stop execution!') ! Exit siesta
+    end if
 
     ! Clean-up
     call delete(keys)
