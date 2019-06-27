@@ -300,23 +300,24 @@ contains
        if ( ('proj-only'.nin.save_DATA).and.('Sigma-only'.nin.save_DATA) ) then
 
           ! Initialize data files
-         call name_save( ispin, TSHS%nspin,cdf_fname, end = 'nc')
+         call name_save( ispin, TSHS%nspin, cdf_fname, end = 'nc')
          call init_cdf_save(cdf_fname,TSHS,r_oDev,DevTri,ispin, &
              N_Elec, Elecs, r_aEl, r_oElpd, ElTri, &
              nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
 
        end if
        
-       call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'SE.nc')
+       call name_save( ispin, TSHS%nspin, cdf_fname_sigma, end = 'SE.nc')
        call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,DevTri,ispin, &
-           N_Elec, Elecs, r_aEl, &
+           N_Elec, Elecs, r_aEl, r_oElpd, ElTri, &
            nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf )
 
        if ( ('Sigma-only'.nin.save_DATA) ) then
        
           call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
-          call init_Proj_save( cdf_fname_proj,TSHS,r_oDev,DevTri,ispin, N_Elec, Elecs, &
-               nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
+          call init_Proj_save( cdf_fname_proj,TSHS,r_oDev,DevTri,ispin, &
+              N_Elec, Elecs, r_aEl, r_oElpd, ElTri, &
+              nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
        end if
 
        if ( n_k /= 0 ) then

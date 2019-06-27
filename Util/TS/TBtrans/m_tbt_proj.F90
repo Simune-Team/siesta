@@ -1246,8 +1246,9 @@ contains
   end function ProjMolEl_same
 
   ! Initialize the TBT.Proj.nc file
-  subroutine init_proj_save( fname, TSHS , r, btd, ispin, N_Elec, Elecs, &
-       nkpt, kpt, wkpt, NE , Eta, a_Dev, a_Buf, sp_dev_sc, save_DATA )
+  subroutine init_proj_save( fname, TSHS , r, btd, ispin, &
+      N_Elec, Elecs, raEl, roElpd, btd_El, &
+      nkpt, kpt, wkpt, NE , Eta, a_Dev, a_Buf, sp_dev_sc, save_DATA )
 
     use parallel, only : Node, Nodes, IONode
     use units, only: eV
@@ -1281,6 +1282,7 @@ contains
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
+    type(tRgn), intent(in) :: raEl(N_Elec), roElpd(N_Elec), btd_El(N_Elec)
     integer, intent(in) :: nkpt, NE
     real(dp), intent(in) :: Eta
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
@@ -1307,7 +1309,7 @@ contains
     complex(dp), allocatable :: zv(:,:), zS_sq(:,:)
     complex(dp) :: zn
     integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP, prec_DM
-    integer :: nnzs_dev, N_eigen
+    integer :: nnzs_dev, N_eigen, no_e
     type(OrbitalDistribution) :: fdit
 #ifdef TBT_PHONON
     character(len=*), parameter :: T_unit = 'g0'
@@ -1386,7 +1388,7 @@ contains
       write(*,'(a)')'tbt: k-resolved projections only work if dispersion'
       write(*,'(a)')'tbt: does not create band-crossings.'
       write(*,'(a)')'tbt: IT IS YOUR RESPONSIBILITY TO ENSURE THIS!'
-      write(*,'(a)')'tbt: Do specific k-points separately at band-crossings.'
+      write(*,'(a)')'tbt: Do specific k-points seperately at band-crossings.'
       write(*,'(a/)')'tbt: *********'
 
     end if
@@ -1555,11 +1557,11 @@ contains
     ! Save the current system size
     call ncdf_def_dim(ncdf,'no_u',TSHS%no_u)
     call ncdf_def_dim(ncdf,'na_u',TSHS%na_u)
+    call ncdf_def_dim(ncdf,'nkpt',nkpt)
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
-    call ncdf_def_dim(ncdf,'nkpt',nkpt)
     call ncdf_def_dim(ncdf,'ne',NE)
     call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
     call ncdf_def_dim(ncdf,'n_btd',btd%n)
@@ -1738,6 +1740,85 @@ contains
 
     call delete(dic)
 
+    do iE = 1 , N_Elec
+      
+      call ncdf_def_grp(ncdf,trim(Elecs(iE)%name),grp)
+      
+      ! Define atoms etc.
+      i = TotUsedAtoms(Elecs(iE))
+      call ncdf_def_dim(grp,'na',i)
+      
+      dic = dic//('info'.kv.'Electrode atoms')
+      call rgn_range(r_tmp, ELecs(iE)%idx_a, ELecs(iE)%idx_a + i - 1)
+      call ncdf_def_var(grp,'a',NF90_INT,(/'na'/), atts = dic)
+      call ncdf_put_var(grp,'a',r_tmp%r)
+      mem = mem + calc_mem(NF90_INT, r_tmp%n)
+      call rgn_delete(r_tmp)
+      
+      call ncdf_def_dim(grp,'na_down',raEl(iE)%n)
+      dic = dic//('info'.kv.'Electrode + downfolding atoms')
+      call ncdf_def_var(grp,'a_down',NF90_INT,(/'na_down'/), atts = dic)
+      call ncdf_put_var(grp,'a_down',raEl(iE)%r)
+      mem = mem + calc_mem(NF90_INT, raEl(iE)%n)
+      
+      ! Save generic information about electrode
+      dic = dic//('info'.kv.'Bloch expansion')
+      call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), atts = dic)
+      call ncdf_put_var(grp,'bloch',Elecs(iE)%Bloch%B)
+      mem = mem + calc_mem(NF90_INT, 3)
+
+      call ncdf_def_dim(grp,'no_down',roElpd(iE)%n)
+
+      dic = dic//('info'.kv.'Downfolding region orbital pivot table')
+      call ncdf_def_var(grp,'pivot_down',NF90_INT,(/'no_down'/), atts = dic)
+      call ncdf_put_var(grp,'pivot_down',roElpd(iE)%r)
+      mem = mem + calc_mem(NF90_INT, roElpd(iE)%n)
+      
+      call ncdf_def_dim(grp,'n_btd',btd_El(iE)%n)
+
+      dic = dic//('info'.kv.'Blocks in BTD downfolding for the pivot_down table')
+      call ncdf_def_var(grp,'btd',NF90_INT,(/'n_btd'/), atts = dic)
+      call ncdf_put_var(grp,'btd',btd_El(iE)%r)
+      mem = mem + calc_mem(NF90_INT, btd_El(iE)%n)
+
+      no_e = Elecs(iE)%o_inD%n
+      call ncdf_def_dim(grp,'no_e',no_e)
+
+      dic = ('info'.kv.'Orbital pivot table for self-energy')
+      call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
+      call ncdf_put_var(grp,'pivot',Elecs(iE)%o_inD%r)
+      mem = mem + calc_mem(NF90_INT, no_e)
+
+      dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
+      call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'mu',Elecs(iE)%mu%mu)
+
+#ifdef TBT_PHONON
+      dic = dic//('info'.kv.'Phonon temperature')
+#else
+      dic = dic//('info'.kv.'Electronic temperature')
+#endif
+      call ncdf_def_var(grp,'kT',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'kT',Elecs(iE)%mu%kT)
+
+      dic = dic//('info'.kv.'Imaginary part of self-energy')
+#ifdef TBT_PHONON
+      dic = dic//('unit'.kv.'Ry**2')
+#endif
+      call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'eta',Elecs(iE)%Eta)
+
+      dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
+      call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'Accuracy',Elecs(iE)%accu)
+      call delete(dic)
+
+      mem = mem + calc_mem(NF90_DOUBLE, 4) ! mu, kT, eta, Accuracy
+
+    end do
+
+    call delete(dic)
+
     do im = 1 , N_mol
 
       ! Whether this molecule is Gamma-calculated
@@ -1891,19 +1972,6 @@ contains
                 Elecs(iE),mols(im),ip) ) then
               ! we have transport from this electrode molecular projection
               call ncdf_def_grp(grp2,trim(Elecs(iE)%name),grp3)
-
-              dic = ('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
-              call ncdf_def_var(grp3,'mu',NF90_DOUBLE,(/'one'/), &
-                  atts = dic)
-              call ncdf_put_var(grp3,'mu',Elecs(iE)%mu%mu)
-#ifdef TBT_PHONON
-              dic = dic//('info'.kv.'Phonon temperature')
-#else
-              dic = dic//('info'.kv.'Electronic temperature')
-#endif
-              call ncdf_def_var(grp3,'kT',NF90_DOUBLE,(/'one'/), &
-                  atts = dic)
-              call ncdf_put_var(grp3,'kT',Elecs(iE)%mu%kT)
 
               dic = dic//('unit'.kv.'1/Ry')
               if ( 'proj-DOS-A' .in. save_DATA ) then
@@ -2293,7 +2361,7 @@ contains
 
       ! We have a simple projection
       ! Create electrode group
-      call ncdf_def_grp(ncdf,Elecs(-i)%name,grp)
+      call ncdf_open_grp(ncdf,Elecs(-i)%name,grp)
 
       ! Now we create all transport related quantities
       do ipt = 1 , size(proj_T(it)%R)
@@ -2723,7 +2791,7 @@ contains
         ! Read in from Gamma file
         allocate(rp(no,mols(im)%lvls%n))
         call ncdf_get_var(grp,'state',rp)
-        mols(im)%p = rp
+        mols(im)%p(:,:) = rp(:,:)
         deallocate(rp)
       else
         call ncdf_get_var(grp,'state',mols(im)%p,start=(/1,1,ikpt/))
