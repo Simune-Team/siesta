@@ -494,7 +494,7 @@ C ----------------------------------------------------------------------
            end select
            if ( abs(ortho) > 1.e-9_dp ) then
              call die('User defined E-field must be
-     &perpendicular to semi-infinite directions')
+     &perpendicular to semi-infinite directions.')
            end if
          end do
         end if ! acting_efield
@@ -1245,57 +1245,6 @@ C Find dipole
           dipol(1:3) = const * b1Xb2(1:3)
        end if
 
-       if ( TSmode ) then
-         if ( N_elec > 1 ) then
-           ! Orthogonalize dipole to electrode transport directions
-           do ia = 1 , N_Elec
-             select case ( Elecs(ia)%t_dir )
-             case ( 4 )         ! B-C
-               x0 = Elecs(ia)%cell(:,2)
-               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-               dipol(1:3) = dipol(1:3) - const * x0
-               x0 = Elecs(ia)%cell(:,3)
-               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-               dipol(1:3) = dipol(1:3) - const * x0
-             case ( 5 )         ! A-C
-               x0 = Elecs(ia)%cell(:,1)
-               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-               dipol(1:3) = dipol(1:3) - const * x0
-               x0 = Elecs(ia)%cell(:,3)
-               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-               dipol(1:3) = dipol(1:3) - const * x0
-             case ( 6 )         ! A-B
-               x0 = Elecs(ia)%cell(:,1)
-               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-               dipol(1:3) = dipol(1:3) - const * x0
-               x0 = Elecs(ia)%cell(:,2)
-               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-               dipol(1:3) = dipol(1:3) - const * x0
-             case ( 7 )         ! A-B-C
-               call die('dhscf: no dipole moment in infinite systems')
-             case default
-               x0 = Elecs(ia)%cell(:,Elecs(ia)%t_dir)
-               const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-               dipol(1:3) = dipol(1:3) - const * x0
-             end select
-           end do
-         else if ( (shape == 'molecule') .or. (shape == 'chain') ) then
-           ! Only allow dipole correction for chains and molecules
-           ! along the semi-infinite direciton.
-           ! Note this is *only* for 1-electrode setups
-           ! Note that since the above removes the periodic directions
-           ! this should not do anything for 'chain' with the same semi-infinite
-           ! direction
-           if ( Elecs(1)%t_dir > 3 ) then
-             call die('A real-space self-energy requires some &
-     &kind of periodicity')
-           end if
-           x0 = Elecs(1)%cell(:,Elecs(1)%t_dir)
-           const = ddot(3,dipol,1,x0,1) / ddot(3,x0,1,x0,1)
-           dipol(1:3) = const * x0
-         end if
-       end if
-          
       endif
 
 C ----------------------------------------------------------------------
