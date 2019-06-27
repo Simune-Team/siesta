@@ -1,0 +1,28 @@
+#--------------------------------------- 
+#Input Generated for Space Group Testing 
+#--------------------------------------- 
+SystemLabel  02-monoclinic-mP.01-spg3.inp 
+NumberOfSpecies 1 
+%block ChemicalSpeciesLabel 
+ 1  1  H 
+%endblock ChemicalSpeciesLabel 
+LatticeConstant  1.0 Ang   
+%block LatticeVectors 
+  7.0   0.0   0.0  
+  4.28626379699e-16   8.0   0.0  
+  1.2155372436899998   4.04795645672e-16   8.86326977709  
+%endblock LatticeVectors 
+AtomicCoordinatesFormat  Ang #Fractional 
+%block AtomicCoordinatesAndAtomicSpecies 
+1.0000000000E+00  0.0000000000E+00  0.0000000000E+00  1  1  H
+6.1232339957E-17  1.0000000000E+00  0.0000000000E+00  1  2  H
+1.7364817767E-01  5.0599455709E-17  9.8480775301E-01  1  3  H
+#1.7000000000E-01   1.5000000000E-01   1.1000000000E-01  1  1   H 
+#8.3000000000E-01   1.5000000000E-01   8.9000000000E-01  1  2   H 
+#0.734 0.467 0.66   1  3 H
+#0.44  0.824 0.31415  1  4 H
+%endblock AtomicCoordinatesAndAtomicSpecies 
+MaxSCFIterations 	0  
+MD.TypeOfRun    CG   
+MD.NumCGsteps   0  
+SCF.MustConverge  .False. 

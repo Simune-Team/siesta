@@ -1,0 +1,64 @@
+
+timer: Number of nodes =      8
+timer: Busiest calculating node was node =      6
+timer: Times refer to node =      6
+timer: Total elapsed wall-clock time (sec) =        0.354
+timer: CPU times (sec):
+Calc: Sum, Avge, myNode, Avg/Max =       2.806       0.351       0.354   0.991
+No communications time available. Compile with -DMPI_TIMING
+Tot:  Sum, Avge, myNode, Avg/Max =       2.806       0.351       0.354   0.991
+Program times printed if >  0.000E+00 of total
+
+Program            Calls     Prg.com  Prg.com     Prg.tot  Prg.tot Nod.avg
+                                     /Tot.com             /Tot.tot/Nod.max
+siesta                 1       0.000   0.0000       0.354   0.9999   0.991
+Setup                  1       0.000   0.0000       0.106   0.2989   0.997
+bands                  1       0.000   0.0000       0.000   0.0000   0.560
+KSV_init               1       0.000   0.0000       0.000   0.0000   0.842
+IterGeom               1       0.000   0.0000       0.248   0.7009   0.988
+state_init             1       0.000   0.0000       0.014   0.0382   0.919
+hsparse                1       0.000   0.0000       0.000   0.0001   0.853
+overlap                1       0.000   0.0000       0.002   0.0069   0.783
+Setup_H0               1       0.000   0.0000       0.144   0.4077   0.994
+naefs                  2       0.000   0.0000       0.000   0.0009   0.891
+MolMec                 2       0.000   0.0000       0.000   0.0000   0.661
+kinefsm                2       0.000   0.0000       0.001   0.0027   0.642
+nlefsm                 2       0.000   0.0000       0.024   0.0691   0.976
+DHSCF_Init             1       0.000   0.0000       0.119   0.3354   0.987
+DHSCF1                 1       0.000   0.0000       0.039   0.1114   0.996
+INITMESH               3       0.000   0.0000       0.005   0.0150   0.638
+DHSCF2                 1       0.000   0.0000       0.079   0.2238   0.979
+REMESH                 1       0.000   0.0000       0.006   0.0182   0.797
+SPLOAD                 2       0.000   0.0000       0.005   0.0147   0.627
+REORD                  5       0.000   0.0000       0.001   0.0027   0.957
+PHION                  1       0.000   0.0000       0.015   0.0413   0.947
+COMM_BSC               5       0.000   0.0000       0.008   0.0218   0.665
+POISON                 2       0.000   0.0000       0.049   0.1390   0.966
+fft                    4       0.000   0.0000       0.045   0.1286   0.948
+PostSCF                1       0.000   0.0000       0.090   0.2541   0.986
+DHSCF                  1       0.000   0.0000       0.087   0.2453   0.981
+DHSCF3                 1       0.000   0.0000       0.059   0.1667   0.983
+rhoofd                 1       0.000   0.0000       0.002   0.0055   0.957
+CellXC                 1       0.000   0.0000       0.026   0.0738   0.966
+cellXC                 1       0.000   0.0000       0.026   0.0738   0.966
+vmat                   1       0.000   0.0000       0.002   0.0058   0.926
+DHSCF4                 1       0.000   0.0000       0.028   0.0786   0.975
+dfscf                  1       0.000   0.0000       0.019   0.0537   0.956
+overfsm                1       0.000   0.0000       0.000   0.0001   0.946
+state_analysis         1       0.000   0.0000       0.000   0.0007   0.404
+siesta_move            1       0.000   0.0000       0.000   0.0000   0.522
+Analysis               1       0.000   0.0000       0.000   0.0000   0.135
+optical                1       0.000   0.0000       0.000   0.0000   0.650
+No communications time available. Compile with -DMPI_TIMING
+
+Definitions:
+Program: Name of a time-profiled routine (or code section)
+Calls:   Number of profiled calls to a program
+Prg.com: CPU time in communications in one program in one node
+Tot.com: CPU time in communications in all progs. in one node
+Prg.tot: total CPU time in one program in one node
+Tot.tot: total CPU time in all programs in one node
+Nod.avg: average calculation time in one program across nodes
+Nod.max: maximum calculation time in one program across nodes
+Calculation time: CPU time excluding communications
+

@@ -1,0 +1,42 @@
+# Created by GDIS version 0.90.0
+#ZrO2 pure without variable cell
+
+SystemLabel      06-cubic-cP.01-spg195
+
+#----------------------------------------------------------
+#                       Crystal flags
+#----------------------------------------------------------
+NumberOfAtoms    12
+
+NumberOfSpecies  1
+
+%block ChemicalSpeciesLabel
+    1   1   H
+%endblock ChemicalSpeciesLabel
+
+LatticeConstant 8.0 Ang
+%block LatticeVectors
+ 1.0000000000E+00  0.0000000000E+00  0.0000000000E+00
+ 0.0000000000E+00  1.0000000000E+00  0.0000000000E+00
+ 0.0000000000E+00  0.0000000000E+00  1.0000000000E+00
+%endblock LatticeVectors
+
+AtomicCoordinatesFormat Ang
+%block AtomicCoordinatesAndAtomicSpecies
+ 1.7000000000E-01  1.5000000000E-01  1.1000000000E-01  1  1  H
+ 1.1000000000E-01  1.7000000000E-01  1.5000000000E-01  1  2  H
+ 8.3000000000E-01  8.5000000000E-01  1.1000000000E-01  1  3  H
+ 8.3000000000E-01  1.5000000000E-01  8.9000000000E-01  1  4  H
+ 1.7000000000E-01  8.5000000000E-01  8.9000000000E-01  1  5  H
+ 1.5000000000E-01  1.1000000000E-01  1.7000000000E-01  1  6  H
+ 1.1000000000E-01  8.3000000000E-01  8.5000000000E-01  1  7  H
+ 8.9000000000E-01  8.3000000000E-01  1.5000000000E-01  1  8  H
+ 8.9000000000E-01  1.7000000000E-01  8.5000000000E-01  1  9  H
+ 8.5000000000E-01  1.1000000000E-01  8.3000000000E-01  1  10  H
+ 1.5000000000E-01  8.9000000000E-01  8.3000000000E-01  1  11  H
+ 8.5000000000E-01  8.9000000000E-01  1.7000000000E-01  1  12  H
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+MaxSCFIterations 	0
+MD.TypeOfRun            CG
+MD.NumCGsteps           0

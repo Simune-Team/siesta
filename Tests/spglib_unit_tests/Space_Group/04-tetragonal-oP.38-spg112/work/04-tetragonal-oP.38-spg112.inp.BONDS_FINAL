@@ -1,0 +1,32 @@
+Neighbors of:     1 H at:   2.2488  1.9842  1.8708
+    7 H                     2.9929  Ang. Really at:   1.9842 -2.2488 -1.8708
+    2 H                     2.9929  Ang. Really at:  -1.9842  2.2488 -1.8708
+    4 H                     3.1740  Ang. Really at:  -2.2488 -1.9842  1.8708
+Neighbors of:     2 H at:  11.2439  2.2488 15.1367
+    4 H                     2.9929  Ang. Really at:  10.9793 -1.9842 18.8784
+    1 H                     2.9929  Ang. Really at:  15.4769  1.9842 18.8784
+    7 H                     3.1740  Ang. Really at:  15.2123 -2.2488 15.1367
+Neighbors of:     3 H at:  10.9793  1.9842  6.6329
+    5 H                     2.9929  Ang. Really at:  11.2439 -2.2488 10.3746
+    6 H                     2.9929  Ang. Really at:  15.2123  2.2488 10.3746
+    8 H                     3.1740  Ang. Really at:  15.4769 -1.9842  6.6329
+Neighbors of:     4 H at:  10.9793 11.2439  1.8708
+    7 H                     2.9929  Ang. Really at:  15.2123 10.9793 -1.8708
+    2 H                     2.9929  Ang. Really at:  11.2439 15.4769 -1.8708
+    1 H                     3.1740  Ang. Really at:  15.4769 15.2123  1.8708
+Neighbors of:     5 H at:  11.2439 10.9793 10.3746
+    8 H                     2.9929  Ang. Really at:  15.4769 11.2439  6.6329
+    3 H                     2.9929  Ang. Really at:  10.9793 15.2123  6.6329
+    6 H                     3.1740  Ang. Really at:  15.2123 15.4769 10.3746
+Neighbors of:     6 H at:   1.9842  2.2488 10.3746
+    8 H                     2.9929  Ang. Really at:   2.2488 -1.9842  6.6329
+    3 H                     2.9929  Ang. Really at:  -2.2488  1.9842  6.6329
+    5 H                     3.1740  Ang. Really at:  -1.9842 -2.2488 10.3746
+Neighbors of:     7 H at:   1.9842 10.9793 15.1367
+    4 H                     2.9929  Ang. Really at:  -2.2488 11.2439 18.8784
+    1 H                     2.9929  Ang. Really at:   2.2488 15.2123 18.8784
+    2 H                     3.1740  Ang. Really at:  -1.9842 15.4769 15.1367
+Neighbors of:     8 H at:   2.2488 11.2439  6.6329
+    5 H                     2.9929  Ang. Really at:  -1.9842 10.9793 10.3746
+    6 H                     2.9929  Ang. Really at:   1.9842 15.4769 10.3746
+    3 H                     3.1740  Ang. Really at:  -2.2488 15.2123  6.6329

@@ -1,0 +1,602 @@
+Siesta Version  : trunk-755
+Architecture    : unknown
+Compiler version: GNU Fortran (Ubuntu 5.4.0-6ubuntu1~16.04.10) 5.4.0 20160609
+Compiler flags  : mpif90 -O2 -fPIC -ftree-vectorize
+PP flags        : -DFC_HAVE_ABORT -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DGRID_DP -DPHI_GRID_SP -DSIESTA__HAS__SPGLIB  -DSIESTA__DIAG_2STAGE
+Libraries       : libsiestaLAPACK.a libsiestaBLAS.a libfdict.a  /usr/lib/libscalapack-openmpi.so   libsiestaLAPACK.a libsiestaBLAS.a libfdict.a /usr/lib/libblacsF77init-openmpi.so /usr/lib/libblacsCinit-openmpi.so /usr/lib/libblacs-openmpi.so
+Directory       : /home/ICN2/aakhtar/Projects/spglib-inclusion/Obj-spg/Tests/Space_Group/02-monoclinic-mP.02-spg4/work
+PARALLEL version
+
+* Running on 8 nodes in parallel
+>> Start of run:   2-APR-2019  17:10:15
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from ../02-monoclinic-mP.02-spg4.fdf
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: 
+reinit: -----------------------------------------------------------------------
+reinit: System Label: 02-monoclinic-mP.02-spg4.inp
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+Species number:   1 Atomic number:    1 Label: H
+
+Ground state valence configuration:   1s01
+Reading pseudopotential information in formatted form from H.psf
+
+Valence configuration for pseudopotential generation:
+1s( 1.00) rc: 1.25
+2p( 0.00) rc: 1.25
+3d( 0.00) rc: 1.25
+4f( 0.00) rc: 1.25
+For H, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+H                    Z=   1    Mass=  1.0100        Charge= 0.17977+309
+Lmxo=0 Lmxkb= 2    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=1
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for H                     (Z =   1)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    1.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  1.2343
+V l=1 = -2*Zval/r beyond r=  1.2189
+V l=2 = -2*Zval/r beyond r=  1.2189
+All V_l potentials equal beyond r=  1.2343
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.2343
+
+VLOCAL1: 99.0% of the norm of Vloc inside     28.493 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     64.935 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.45251
+atom: Maximum radius for r*vlocal+2*Zval:    1.21892
+
+KBgen: Kleinman-Bylander projectors: 
+GHOST: No ghost state for L =  0
+   l= 0   rc=  1.364359   el= -0.467325   Ekb= -2.005361   kbcos= -0.336422
+GHOST: No ghost state for L =  1
+   l= 1   rc=  1.434438   el=  0.001430   Ekb= -0.501708   kbcos= -0.021697
+GHOST: No ghost state for L =  2
+   l= 2   rc=  1.470814   el=  0.002365   Ekb= -0.190555   kbcos= -0.002281
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 1s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.828263
+                 energy =   -0.449375
+                kinetic =    0.929372
+    potential(screened) =   -1.378747
+       potential(ionic) =   -1.915047
+
+   izeta = 2
+                 rmatch =    3.854947
+              splitnorm =    0.150000
+                 energy =   -0.336153
+                kinetic =    1.505294
+    potential(screened) =   -1.841447
+       potential(ionic) =   -2.413582
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 1s
+
+   izeta = 1
+                     rc =    4.828263
+                 energy =    0.706972
+                kinetic =    1.396397
+    potential(screened) =   -0.689424
+       potential(ionic) =   -1.169792
+atom: Total number of Sankey-type orbitals:  5
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 1s( 1.00)                                                            
+Vna: chval, zval:    1.00000   1.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   4.828263
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1    1 H                       # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+H                     1                    # Species label, number of l-shells
+ n=1   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   4.828      3.855   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+coor:   Atomic-coordinates input format  =     Fractional
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      2.50145   2.26767   1.84241  1        1
+siesta:     13.02367   9.82658  14.90675  1        2
+
+siesta: System type = molecule  
+
+initatomlists: Number of atoms, orbitals, and projectors:      2    10    18
+
+----------------------------------------------------------------------
+ Output of crystal symmetries 
+
+ Int Sp Group number =     11
+ Int Sp Group symbol = P2_1/m
+ Bravais lattice is     10  P2/m
+ Hall number =     60
+
+ number of symops =      4
+ symops and translations in reduced coordinates = 
+     1     0     0
+     0     1     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0    -1     0
+     0     0    -1
+    0.0000000000E+00      0.8000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0     1     0
+     0     0    -1
+    0.0000000000E+00      0.5000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0    -1     0
+     0     0     1
+    0.0000000000E+00      0.3000000000E+00      0.0000000000E+00
+
+ symops and translations in cartesian coordinates = 
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.6162975822E-32    0.1000000000E+01    0.0000000000E+00
+   -0.2775557562E-16   -0.6162975822E-32    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+   -0.6162975822E-32   -0.1000000000E+01    0.0000000000E+00
+    0.2775557562E-16    0.6162975822E-32   -0.1000000000E+01
+    0.0000000000E+00      0.1209425202E+02      0.6119625693E-15
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.1071565949E-15    0.1000000000E+01    0.0000000000E+00
+    0.2775557562E-16   -0.9134228244E-16   -0.1000000000E+01
+    0.0000000000E+00      0.7558907511E+01      0.3824766058E-15
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+   -0.1071565949E-15   -0.1000000000E+01    0.0000000000E+00
+   -0.2775557562E-16    0.9134228244E-16    0.1000000000E+01
+    0.0000000000E+00      0.4535344507E+01      0.2294859635E-15
+
+----------------------------------------------------------------------
+
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Spin configuration                          = none
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.                         = NO
+redata: Matel table size (NRTAB)                    =     1024
+redata: Mesh Cutoff                                 =   300.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =        0
+redata: SCF mix quantity                            = Hamiltonian
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: Require Harris convergence for SCF          =   F
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.000100
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Max. number of TDED Iter                    =        1
+redata: Number of TDED substeps                     =        3
+redata: Dynamics option                             = Single-point calculation
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.250000
+mix.SCF:    Mixing weight                        =     0.250000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: ***********************************************************************
+
+%block SCF.Mixers
+  Pulay
+%endblock SCF.Mixers
+
+%block SCF.Mixer.Pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.2500
+  weight.linear 0.2500
+  history 2
+%endblock SCF.Mixer.Pulay
+
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
+Total number of electrons:     2.000000
+Total ionic charge:     2.000000
+
+* ProcessorY, Blocksize:    2   1
+
+
+* Orbital distribution balance (max,min):     2     1
+
+
+siesta: k-grid: Number of k-points =         1
+siesta: k-point is Gamma-only
+
+diag: Algorithm                                     = D&C
+diag: Parallel over k                               =   F
+diag: Use parallel 2D distribution                  =   T
+diag: Parallel block-size                           = 1
+diag: Parallel distribution                         =     2 x     4
+diag: Used triangular part                          = Lower
+diag: Absolute tolerance                            =  0.100E-15
+diag: Orthogonalization factor                      =  0.100E-05
+diag: Memory factor                                 =  1.0000
+
+
+ts: **************************************************************
+ts: Save H and S matrices                           =    F
+ts: Save DM and EDM matrices                        =    F
+ts: Fix Hartree potential                           =    F
+ts: Only save the overlap matrix S                  =    F
+ts: **************************************************************
+
+************************ Begin: TS CHECKS AND WARNINGS ************************
+************************ End: TS CHECKS AND WARNINGS **************************
+
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        7.000000    0.000000    0.000000
+        0.000000    8.000000    0.000000
+        1.215537    0.000000    8.863270
+
+outcell: Cell vector modules (Ang)   :    7.000000    8.000000    8.946233
+outcell: Cell angles (23,13,12) (deg):     90.0000     82.1910     90.0000
+outcell: Cell volume (Ang**3)        :    496.3431
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=10 nrows=2 sparsity=.1000 nnzs=10, refcount: 7>
+  <dData1D:(new from dSpData1D) n=10, refcount: 1>
+refcount: 1>
+new_DM -- step:     1
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 0
+    nrows_g=10 nrows=2 sparsity=.1000 nnzs=10, refcount: 8>
+  <dData2D:DM n=10 m=1, refcount: 1>
+refcount: 1>
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       2       5
+New grid distribution:   1
+           1       1:   40    1:   23    1:   12
+           2       1:   40    1:   23   13:   24
+           3       1:   40    1:   23   25:   36
+           4       1:   40    1:   23   37:   48
+           5       1:   40   24:   45    1:   12
+           6       1:   40   24:   45   13:   24
+           7       1:   40   24:   45   25:   36
+           8       1:   40   24:   45   37:   48
+
+InitMesh: MESH =    80 x    90 x    96 =      691200
+InitMesh: (bp) =    40 x    45 x    48 =       86400
+InitMesh: Mesh cutoff (required, used) =   300.000   324.232 Ry
+ExtMesh (bp) on 0 =   100 x    83 x    68 =      564400
+New grid distribution:   2
+           1      13:   40    1:   14    1:   20
+           2       1:   12    1:   14    1:   20
+           3       1:   22    1:   27   21:   48
+           4      23:   40    1:   27   21:   48
+           5      19:   40   15:   45    1:   20
+           6       1:   18   15:   45    1:   20
+           7       1:   28   28:   45   21:   48
+           8      29:   40   28:   45   21:   48
+New grid distribution:   3
+           1      21:   40   16:   45    1:   17
+           2      14:   40    1:   15    1:   17
+           3      20:   40    1:   27   18:   48
+           4       1:   13    1:   15    1:   17
+           5       1:   20   16:   45    1:   17
+           6      29:   40   28:   45   18:   48
+           7       1:   19    1:   27   18:   48
+           8       1:   28   28:   45   18:   48
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    88 x    74 x    76 =      494912
+PhiOnMesh: Number of (b)points on node 0 =                 7840
+PhiOnMesh: nlist on node 0 =                15110
+SCF_NOT_CONV: SCF did not converge  in maximum number of steps.
+Geom step, scf iteration, dmax:    0     0     0.000000
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       2       5
+
+siesta: E_KS(eV) =              -23.7544
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+siesta: E_KS - E_eggbox =       -23.7544
+change in fa due to symmetrization =     0.16801341877597375648E-16    0.31767129466852623757E-16   -0.30585343285816080083E-15
+change in fa due to symmetrization =     0.16801368347376977345E-16    0.97144508841673847284E-16   -0.30585343285816080083E-15
+Max change in any component of fa due to symmetrization =     0.3058534329E-15
+Max relative change =     0.4927578584E+00
+old  stress = 
+   -0.2481577097E-10    0.7126623439E-20    0.3369589019E-11
+    0.5580669322E-20   -0.1465118395E-09   -0.9952637130E-20
+    0.3369589021E-11   -0.9952637130E-20    0.2508633801E-10
+stress with symmetrization = 
+   -0.2481577097E-10    0.0000000000E+00    0.3369589019E-11
+    0.0000000000E+00   -0.1465118395E-09    0.0000000000E+00
+    0.3369589021E-11    0.0000000000E+00    0.2508633801E-10
+change in components of stress due to symmetrization = 
+    0.0000000000E+00   -0.7126623439E-20    0.0000000000E+00
+   -0.5580669322E-20    0.0000000000E+00    0.9952637130E-20
+    0.0000000000E+00    0.9952637130E-20    0.0000000000E+00
+Max change in any component of stress due to symmetrization =     0.9952637130E-20
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.000000    0.000000    0.000000
+----------------------------------------
+   Max    0.000003
+   Res    0.000002    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.000003    constrained
+
+Stress-tensor-Voigt (kbar):       -0.00       -0.00        0.00        0.00        0.00        0.00
+(Free)E + p*V (eV/cell)      -23.7544
+Target enthalpy (eV/cell)      -23.7544
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =         0.000000
+siesta: Eions   =        39.414643
+siesta: Ena     =        10.589115
+siesta: Ekin    =        25.287126
+siesta: Enl     =        -6.709072
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         0.000000
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Enegf   =         0.000000
+siesta: Exc     =       -13.506934
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =         0.000000
+siesta: Etot    =       -23.754409
+siesta: FreeEng =       -23.754409
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =       0.000000
+siesta:       Kinetic =      25.287126
+siesta:       Hartree =      10.664261
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
+siesta:    Ext. field =       0.000000
+siesta:       Enegf   =       0.000000
+siesta:   Exch.-corr. =     -13.506934
+siesta:  Ion-electron =     -40.286231
+siesta:       Ion-ion =      -5.912630
+siesta:       Ekinion =       0.000000
+siesta:         Total =     -23.754409
+siesta:         Fermi =       0.000000
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:    -0.000000    0.000000    0.000000
+siesta:     0.000000   -0.000000    0.000000
+siesta:     0.000000    0.000000    0.000000
+
+siesta: Cell volume =        496.343108 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00000000         -0.00000000  Ry/Bohr**3
+siesta:           0.00000000         -0.00000001  eV/Ang**3
+siesta:           0.00000717         -0.00001121  kBar
+(Free)E+ p_basis*V_orbitals  =         -23.316784
+(Free)Eharris+ p_basis*V_orbitals  =           0.437625
+
+siesta: Electric dipole (a.u.)  =   -0.000000    0.000000   -0.000000
+siesta: Electric dipole (Debye) =   -0.000000    0.000000   -0.000000
+
+>> End of run:   2-APR-2019  17:10:15
+Job completed

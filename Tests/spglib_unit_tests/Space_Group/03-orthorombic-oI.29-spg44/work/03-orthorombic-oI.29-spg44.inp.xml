@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<cml convention="CMLComp" xmlns="http://www.xml-cml.org/schema"
+ xmlns:siesta="http://www.uam.es/siesta/namespace"
+ xmlns:siestaUnits="http://www.uam.es/siesta/namespace/units"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:fpx="http://www.uszla.me.uk/fpx"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:units="http://www.uszla.me.uk/FoX/units"
+ xmlns:cmlUnits="http://www.xml-cml.org/units/units"
+ xmlns:siUnits="http://www.xml-cml.org/units/siUnits"
+ xmlns:atomicUnits="http://www.xml-cml.org/units/atomic">
+ <metadataList>
+  <metadata name="siesta:Program" content="Siesta" />
+  <metadata name="siesta:Version" content="trunk-755" />
+  <metadata name="siesta:Arch" content="unknown" />
+  <metadata name="siesta:Flags" content="mpif90 -O2 -fPIC -ftree-vectorize" />
+  <metadata name="siesta:PPFlags"
+   content="-DFC_HAVE_ABORT -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DGRID_DP -DPHI_GRID_SP -DSIESTA__HAS__SPGLIB  -DSIESTA__DIAG_2STAGE" />
+  <metadata name="siesta:StartTime" content="2019-04-02T17-10-45" />
+  <metadata name="siesta:run_UUID"
+   content="11e6fd80-557b-11e9-7a55-78d9ffb54497" />
+  <metadata name="siesta:Mode" content="Parallel" />
+  <metadata name="siesta:Nodes" content="         8" />
+  <metadata name="siesta:NetCDF" content="false" />
+ </metadataList>
+</cml>

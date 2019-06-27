@@ -1,0 +1,1529 @@
+Siesta Version  : trunk-755
+Architecture    : unknown
+Compiler version: GNU Fortran (Ubuntu 5.4.0-6ubuntu1~16.04.10) 5.4.0 20160609
+Compiler flags  : mpif90 -O2 -fPIC -ftree-vectorize
+PP flags        : -DFC_HAVE_ABORT -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DGRID_DP -DPHI_GRID_SP -DSIESTA__HAS__SPGLIB  -DSIESTA__DIAG_2STAGE
+Libraries       : libsiestaLAPACK.a libsiestaBLAS.a libfdict.a  /usr/lib/libscalapack-openmpi.so   libsiestaLAPACK.a libsiestaBLAS.a libfdict.a /usr/lib/libblacsF77init-openmpi.so /usr/lib/libblacsCinit-openmpi.so /usr/lib/libblacs-openmpi.so
+Directory       : /home/ICN2/aakhtar/Projects/spglib-inclusion/Obj-spg/Tests/Space_Group/06-cubic-cP.27-spg221/work
+PARALLEL version
+
+* Running on 8 nodes in parallel
+>> Start of run:   2-APR-2019  17:13:36
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from ../06-cubic-cP.27-spg221.fdf
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: 
+reinit: -----------------------------------------------------------------------
+reinit: System Label: 06-cubic-cP.27-spg221.inp
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+Species number:   1 Atomic number:    1 Label: H
+
+Ground state valence configuration:   1s01
+Reading pseudopotential information in formatted form from H.psf
+
+Valence configuration for pseudopotential generation:
+1s( 1.00) rc: 1.25
+2p( 0.00) rc: 1.25
+3d( 0.00) rc: 1.25
+4f( 0.00) rc: 1.25
+For H, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+H                    Z=   1    Mass=  1.0100        Charge= 0.17977+309
+Lmxo=0 Lmxkb= 2    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=1
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for H                     (Z =   1)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    1.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  1.2343
+V l=1 = -2*Zval/r beyond r=  1.2189
+V l=2 = -2*Zval/r beyond r=  1.2189
+All V_l potentials equal beyond r=  1.2343
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.2343
+
+VLOCAL1: 99.0% of the norm of Vloc inside     28.493 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     64.935 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.45251
+atom: Maximum radius for r*vlocal+2*Zval:    1.21892
+
+KBgen: Kleinman-Bylander projectors: 
+GHOST: No ghost state for L =  0
+   l= 0   rc=  1.364359   el= -0.467325   Ekb= -2.005361   kbcos= -0.336422
+GHOST: No ghost state for L =  1
+   l= 1   rc=  1.434438   el=  0.001430   Ekb= -0.501708   kbcos= -0.021697
+GHOST: No ghost state for L =  2
+   l= 2   rc=  1.470814   el=  0.002365   Ekb= -0.190555   kbcos= -0.002281
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 1s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.828263
+                 energy =   -0.449375
+                kinetic =    0.929372
+    potential(screened) =   -1.378747
+       potential(ionic) =   -1.915047
+
+   izeta = 2
+                 rmatch =    3.854947
+              splitnorm =    0.150000
+                 energy =   -0.336153
+                kinetic =    1.505294
+    potential(screened) =   -1.841447
+       potential(ionic) =   -2.413582
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 1s
+
+   izeta = 1
+                     rc =    4.828263
+                 energy =    0.706972
+                kinetic =    1.396397
+    potential(screened) =   -0.689424
+       potential(ionic) =   -1.169792
+atom: Total number of Sankey-type orbitals:  5
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 1s( 1.00)                                                            
+Vna: chval, zval:    1.00000   1.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   4.828263
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1    1 H                       # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+H                     1                    # Species label, number of l-shells
+ n=1   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   4.828      3.855   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+coor:   Atomic-coordinates input format  =     Fractional
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      2.57003   2.26767   1.66296  1        1
+siesta:      1.66296   2.57003   2.26767  1        2
+siesta:     12.54779  12.85014   1.66296  1        3
+siesta:     12.54779   2.26767  13.45486  1        4
+siesta:      2.26767   2.57003  13.45486  1        5
+siesta:      2.26767   1.66296   2.57003  1        6
+siesta:      1.66296  12.54779  12.85014  1        7
+siesta:     13.45486  12.54779   2.26767  1        8
+siesta:     13.45486   2.26767   2.57003  1        9
+siesta:      2.57003  12.85014  13.45486  1       10
+siesta:     12.85014  12.54779  13.45486  1       11
+siesta:     13.45486   2.57003  12.85014  1       12
+siesta:     12.85014   2.57003   1.66296  1       13
+siesta:      2.57003   1.66296  12.85014  1       14
+siesta:      2.26767  12.54779   1.66296  1       15
+siesta:     12.85014   1.66296  12.54779  1       16
+siesta:      2.26767  13.45486  12.54779  1       17
+siesta:      2.57003  13.45486   2.26767  1       18
+siesta:     13.45486  12.85014  12.54779  1       19
+siesta:     12.85014  13.45486   2.57003  1       20
+siesta:      1.66296  12.85014   2.57003  1       21
+siesta:      1.66296   2.26767  12.54779  1       22
+siesta:     12.54779  13.45486  12.85014  1       23
+siesta:     12.54779   1.66296   2.26767  1       24
+siesta:     12.54779  12.85014  13.45486  1       25
+siesta:     13.45486  12.54779  12.85014  1       26
+siesta:      2.57003   2.26767  13.45486  1       27
+siesta:      2.57003  12.85014   1.66296  1       28
+siesta:     12.85014  12.54779   1.66296  1       29
+siesta:     12.85014  13.45486  12.54779  1       30
+siesta:     13.45486   2.57003   2.26767  1       31
+siesta:      1.66296   2.57003  12.85014  1       32
+siesta:      1.66296  12.85014  12.54779  1       33
+siesta:     12.54779   2.26767   1.66296  1       34
+siesta:      2.26767   2.57003   1.66296  1       35
+siesta:      1.66296  12.54779   2.26767  1       36
+siesta:      2.26767  12.54779  13.45486  1       37
+siesta:     12.54779  13.45486   2.26767  1       38
+siesta:     12.85014   2.57003  13.45486  1       39
+siesta:      2.26767  13.45486   2.57003  1       40
+siesta:     12.85014   1.66296   2.57003  1       41
+siesta:     12.54779   1.66296  12.85014  1       42
+siesta:      1.66296   2.26767   2.57003  1       43
+siesta:      2.26767   1.66296  12.54779  1       44
+siesta:     13.45486   2.26767  12.54779  1       45
+siesta:     13.45486  12.85014   2.57003  1       46
+siesta:      2.57003   1.66296   2.26767  1       47
+siesta:      2.57003  13.45486  12.85014  1       48
+
+siesta: System type = bulk      
+
+initatomlists: Number of atoms, orbitals, and projectors:     48   240   432
+
+----------------------------------------------------------------------
+ Output of crystal symmetries 
+
+ Int Sp Group number =    221
+ Int Sp Group symbol = Pm-3m      
+ Bravais lattice is    221  Pm-3m      
+ Hall number =    517
+
+ number of symops =     48
+ symops and translations in reduced coordinates = 
+     1     0     0
+     0     1     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0    -1     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+    -1     0     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+     1     0     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0    -1     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0     1     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+     1     0     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+    -1     0     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0    -1     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0     1     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+    -1     0     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+     1     0     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0     1     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0    -1     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+     1     0     0
+     0     0    -1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+    -1     0     0
+     0     0     1
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+     0     0     1
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+     0     0    -1
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+     0    -1     0
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+     0     1     0
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+     0     0    -1
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+     0     0     1
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+     0     1     0
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+     0    -1     0
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+     0     0    -1
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+     0     0     1
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+     0    -1     0
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+     0     1     0
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0    -1     0
+     0     0     1
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     1     0
+     0     0    -1
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+     0     1     0
+    -1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+     0    -1     0
+     1     0     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+     1     0     0
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+    -1     0     0
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0     0    -1
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0     0     1
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+    -1     0     0
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+     1     0     0
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0     0     1
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0     0    -1
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+    -1     0     0
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+     1     0     0
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0     0    -1
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0     0     1
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0    -1
+     1     0     0
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     0     0     1
+    -1     0     0
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+     1     0     0
+     0     0     1
+     0    -1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    -1     0     0
+     0     0    -1
+     0     1     0
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+ symops and translations in cartesian coordinates = 
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+    0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00    0.1000000000E+01
+    0.0000000000E+00   -0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+   -0.1000000000E+01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1000000000E+01
+    0.0000000000E+00    0.1000000000E+01    0.0000000000E+00
+    0.0000000000E+00      0.0000000000E+00      0.0000000000E+00
+
+----------------------------------------------------------------------
+
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Spin configuration                          = none
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   F
+redata: Number of Atomic Species                    =        1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.                         = NO
+redata: Matel table size (NRTAB)                    =     1024
+redata: Mesh Cutoff                                 =   300.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =        0
+redata: SCF mix quantity                            = Hamiltonian
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: New DM Mixing Weight                        =     0.2500
+redata: New DM Occupancy tolerance                  = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: Require Harris convergence for SCF          =   F
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.000100
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   F
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Electronic Temperature                      =   299.9869 K
+redata: Fix the spin of the system                  =   F
+redata: Max. number of TDED Iter                    =        1
+redata: Number of TDED substeps                     =        3
+redata: Dynamics option                             = Single-point calculation
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 2
+mix.SCF:    Linear mixing weight                 =     0.250000
+mix.SCF:    Mixing weight                        =     0.250000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: ***********************************************************************
+
+%block SCF.Mixers
+  Pulay
+%endblock SCF.Mixers
+
+%block SCF.Mixer.Pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.2500
+  weight.linear 0.2500
+  history 2
+%endblock SCF.Mixer.Pulay
+
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
+Total number of electrons:    48.000000
+Total ionic charge:    48.000000
+
+* ProcessorY, Blocksize:    2  24
+
+
+* Orbital distribution balance (max,min):    48    24
+
+
+siesta: k-grid: Number of k-points =         1
+siesta: k-point is Gamma-only
+
+diag: Algorithm                                     = D&C
+diag: Parallel over k                               =   F
+diag: Use parallel 2D distribution                  =   T
+diag: Parallel block-size                           = 24
+diag: Parallel distribution                         =     2 x     4
+diag: Used triangular part                          = Lower
+diag: Absolute tolerance                            =  0.100E-15
+diag: Orthogonalization factor                      =  0.100E-05
+diag: Memory factor                                 =  1.0000
+
+
+ts: **************************************************************
+ts: Save H and S matrices                           =    F
+ts: Save DM and EDM matrices                        =    F
+ts: Fix Hartree potential                           =    F
+ts: Only save the overlap matrix S                  =    F
+ts: **************************************************************
+
+************************ Begin: TS CHECKS AND WARNINGS ************************
+************************ End: TS CHECKS AND WARNINGS **************************
+
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcell: Unit cell vectors (Ang):
+        8.000000    0.000000    0.000000
+        0.000000    8.000000    0.000000
+        0.000000    0.000000    8.000000
+
+outcell: Cell vector modules (Ang)   :    8.000000    8.000000    8.000000
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    512.0000
+siesta: WARNING: Atoms     1    35 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     2    43 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     3    29 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     4    39 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     5    27 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     6    47 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     7    33 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     8    46 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms     9    31 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    10    37 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    11    25 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    12    45 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    13    34 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    14    44 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    15    28 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    16    42 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    17    48 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    18    40 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    19    26 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    20    38 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    21    36 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    22    32 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    23    30 too close: rij =    0.226274 Ang
+siesta: WARNING: Atoms    24    41 too close: rij =    0.226274 Ang
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=240 nrows=48 sparsity=.2000 nnzs=11520, refcount: 7>
+  <dData1D:(new from dSpData1D) n=11520, refcount: 1>
+refcount: 1>
+new_DM -- step:     1
+Initializing Density Matrix...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 0
+    nrows_g=240 nrows=48 sparsity=.2000 nnzs=11520, refcount: 8>
+  <dData2D:DM n=11520 m=1, refcount: 1>
+refcount: 1>
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      48     168
+New grid distribution:   1
+           1       1:   45    1:   23    1:   12
+           2       1:   45    1:   23   13:   23
+           3       1:   45    1:   23   24:   34
+           4       1:   45    1:   23   35:   45
+           5       1:   45   24:   45    1:   12
+           6       1:   45   24:   45   13:   23
+           7       1:   45   24:   45   24:   34
+           8       1:   45   24:   45   35:   45
+
+InitMesh: MESH =    90 x    90 x    90 =      729000
+InitMesh: (bp) =    45 x    45 x    45 =       91125
+InitMesh: Mesh cutoff (required, used) =   300.000   349.789 Ry
+ExtMesh (bp) on 0 =   105 x    83 x    72 =      627480
+New grid distribution:   2
+           1      18:   45   18:   45    1:   16
+           2      18:   45    1:   17    1:   16
+           3      17:   45    1:   16   17:   45
+           4       1:   16    1:   16   17:   45
+           5       1:   17   18:   45    1:   16
+           6       1:   17    1:   17    1:   16
+           7      17:   45   17:   45   17:   45
+           8       1:   16   17:   45   17:   45
+New grid distribution:   3
+           1       1:   21   22:   45    1:   21
+           2       1:   21    1:   21   22:   45
+           3      22:   45    1:   21   22:   45
+           4       1:   21   22:   45   22:   45
+           5      22:   45   22:   45    1:   21
+           6      22:   45    1:   21    1:   21
+           7      22:   45   22:   45   22:   45
+           8       1:   21    1:   21    1:   21
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    88 x    88 x    76 =      588544
+PhiOnMesh: Number of (b)points on node 0 =                12544
+PhiOnMesh: nlist on node 0 =               368556
+SCF_NOT_CONV: SCF did not converge  in maximum number of steps.
+Geom step, scf iteration, dmax:    0     0     0.000000
+
+Using DM_out to compute the final energy and forces
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      48     168
+
+siesta: E_KS(eV) =              151.9611
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+
+siesta: E_KS - E_eggbox =       151.9611
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.24691360067663481459E-12   -0.20516921495072892867E-12
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22915003228263230994E-12    0.21493917756743030623E-12
+change in fa due to symmetrization =     0.24424906541753443889E-12   -0.54178883601707639173E-13   -0.21360690993788011838E-12
+change in fa due to symmetrization =    -0.23625545964023331180E-12    0.34638958368304884061E-13    0.20516921495072892867E-12
+change in fa due to symmetrization =     0.63060667798708891496E-13    0.22382096176443155855E-12   -0.22248869413488137070E-12
+change in fa due to symmetrization =    -0.36415315207705134526E-13   -0.24691360067663481459E-12    0.21405099914773018099E-12
+change in fa due to symmetrization =    -0.23003821070233243518E-12    0.46185277824406512082E-13   -0.22515322939398174640E-12
+change in fa due to symmetrization =     0.24513724383723456413E-12   -0.58619775700208265334E-13    0.20827783941967936698E-12
+change in fa due to symmetrization =    -0.49737991503207013011E-13    0.23891999489933368750E-12    0.20827783941967936698E-12
+change in fa due to symmetrization =     0.43520742565306136385E-13   -0.23359092438113293611E-12   -0.21094237467877974268E-12
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.23003821070233243518E-12    0.68389738316909642890E-13    0.20872192862952942960E-12
+change in fa due to symmetrization =    -0.24691360067663481459E-12   -0.32862601528904633597E-13   -0.20916601783937949222E-12
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+change in fa due to symmetrization =     0.40856207306205760688E-13   -0.23447910280083306134E-12    0.23359092438113293611E-12
+change in fa due to symmetrization =    -0.50626169922907138243E-13    0.24780177909633493982E-12   -0.20206059048177849036E-12
+change in fa due to symmetrization =    -0.24957813593573519029E-12   -0.33750779948604758829E-13    0.23403501359098299872E-12
+change in fa due to symmetrization =     0.22470914018413168378E-12    0.61284310959308641031E-13   -0.19895196601282805204E-12
+change in fa due to symmetrization =     0.78159700933611020446E-13   -0.44408920985006261617E-14    0.91482377229112898931E-13
+change in fa due to symmetrization =    -0.80380146982861333527E-13    0.57731597280508140102E-13   -0.11279865930191590451E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.11191048088221577927E-12    0.95035090907913399860E-13
+change in fa due to symmetrization =    -0.12878587085651815869E-12    0.13500311979441903532E-12   -0.12345680033831740730E-12
+change in fa due to symmetrization =     0.79047879353311145678E-13    0.57731597280508140102E-13   -0.12256862191861728206E-12
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+Max relative change =     0.1071679725E-12
+old  stress = 
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+Max relative change =     0.1071679725E-12
+old  stress = 
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+Max relative change =     0.1071679725E-12
+old  stress = 
+change in fa due to symmetrization =    -0.75051076464660582133E-13   -0.31086244689504383132E-13    0.10036416142611415125E-12
+change in fa due to symmetrization =     0.12390088954816746991E-12    0.12434497875801753253E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.12878587085651815869E-12   -0.10746958878371515311E-12    0.11635137298071640544E-12
+change in fa due to symmetrization =    -0.79047879353311145678E-13   -0.46185277824406512082E-13   -0.86153306710912147537E-13
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+change in fa due to symmetrization =     0.73718808835110394284E-13    0.32862601528904633597E-13    0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.13278267374516872223E-12   -0.13233858453531865962E-12   -0.86153306710912147537E-13
+change in fa due to symmetrization =     0.12834178164666809607E-12    0.12256862191861728206E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+Max relative change =     0.1071679725E-12
+change in fa due to symmetrization =    -0.74162898044960456900E-13    0.46185277824406512082E-13    0.11723955140041653067E-12
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+change in fa due to symmetrization =     0.75939254884360707365E-13   -0.52402526762307388708E-13   -0.88817841970012523234E-13
+change in fa due to symmetrization =    -0.13145040611561853439E-12    0.11457501614131615497E-12    0.14388490399142028764E-12
+change in fa due to symmetrization =     0.13278267374516872223E-12   -0.12878587085651815869E-12   -0.12612133559741778299E-12
+change in fa due to symmetrization =     0.12168044349891715683E-12    0.14965806371947110165E-12    0.13056222769591840915E-12
+change in fa due to symmetrization =    -0.13589129821411916055E-12   -0.13899992268306959886E-12   -0.11191048088221577927E-12
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+Max relative change =     0.1071679725E-12
+old  stress = 
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+change in fa due to symmetrization =    -0.56843418860808014870E-13    0.85265128291212022305E-13   -0.96811447747313650325E-13
+change in fa due to symmetrization =     0.48849813083506887779E-13   -0.72830630415410269052E-13    0.10924594562311540358E-12
+change in fa due to symmetrization =    -0.13766765505351941101E-12    0.14432899320127035026E-12   -0.72830630415410269052E-13
+change in fa due to symmetrization =     0.11723955140041653067E-12   -0.12434497875801753253E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.38191672047105384991E-13    0.64837024638109141961E-13    0.11457501614131615497E-12
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+old  stress = 
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+Max relative change =     0.1071679725E-12
+old  stress = 
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+change in fa due to symmetrization =    -0.53290705182007513940E-13   -0.80824236192711396143E-13   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.11723955140041653067E-12   -0.12390088954816746991E-12    0.93258734068513149396E-13
+change in fa due to symmetrization =     0.13145040611561853439E-12    0.12612133559741778299E-12   -0.10391687510491465218E-12
+change in fa due to symmetrization =     0.67501559897209517658E-13   -0.82600593032111646608E-13   -0.12789769243681803346E-12
+change in fa due to symmetrization =    -0.41744385725905885920E-13    0.10080825063596421387E-12    0.10746958878371515311E-12
+change in fa due to symmetrization =     0.12967404927621828392E-12   -0.12567724638756772038E-12   -0.95923269327613525093E-13
+change in fa due to symmetrization =    -0.12256862191861728206E-12    0.14743761767022078857E-12    0.79047879353311145678E-13
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+change in fa due to symmetrization =    -0.39968028886505635455E-13   -0.78603790143461083062E-13    0.10302869668521452695E-12
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+Max relative change =     0.1071679725E-12
+old  stress = 
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+change in fa due to symmetrization =     0.59507954119908390567E-13    0.80824236192711396143E-13   -0.11102230246251565404E-12
+Max change in any component of fa due to symmetrization =     0.2495781359E-12
+Max relative change =     0.1071679725E-12
+old  stress = 
+   -0.1555360158E-01   -0.3489775743E-18   -0.9893344824E-18
+    0.2371692252E-19   -0.1555360158E-01    0.8468974220E-16
+   -0.1301042607E-17    0.8492013516E-16   -0.1555360158E-01
+stress with symmetrization = 
+   -0.1555360158E-01    0.0000000000E+00    0.0000000000E+00
+
+siesta: Atomic forces (eV/Ang):
+    0.0000000000E+00   -0.1555360158E-01    0.0000000000E+00
+    0.0000000000E+00    0.0000000000E+00   -0.1555360158E-01
+change in components of stress due to symmetrization = 
+   -0.5412337245E-15    0.3489775743E-18    0.9893344824E-18
+   -0.2371692252E-19   -0.5048045315E-15   -0.8468974220E-16
+    0.1301042607E-17   -0.8492013516E-16    0.1035629915E-14
+----------------------------------------
+   Tot    0.000000   -0.000000    0.000000
+----------------------------------------
+   Max  202.015101
+   Res  148.739768    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max  202.015101    constrained
+
+Stress-tensor-Voigt (kbar):    -2288.06    -2288.06    -2288.06        0.00        0.00        0.00
+(Free)E + p*V (eV/cell)      883.1374
+Target enthalpy (eV/cell)      151.9611
+Max change in any component of stress due to symmetrization =     0.1035629915E-14
+
+siesta: Program's energy decomposition (eV):
+siesta: Ebs     =         0.000000
+siesta: Eions   =       945.951434
+siesta: Ena     =      1497.167808
+siesta: Ekin    =       606.891014
+siesta: Enl     =      -471.245115
+siesta: Eso     =         0.000000
+siesta: Eldau   =         0.000000
+siesta: DEna    =         0.000013
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Enegf   =         0.000000
+siesta: Exc     =      -534.901184
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =         0.000000
+siesta: Etot    =       151.961103
+siesta: FreeEng =       151.961103
+
+siesta: Final energy (eV):
+siesta:  Band Struct. =       0.000000
+siesta:       Kinetic =     606.891014
+siesta:       Hartree =    2058.675573
+siesta:       Eldau   =       0.000000
+siesta:       Eso     =       0.000000
+siesta:    Ext. field =       0.000000
+siesta:       Enegf   =       0.000000
+siesta:   Exch.-corr. =    -534.901184
+siesta:  Ion-electron =   -5828.202643
+siesta:       Ion-ion =    3849.498342
+siesta:       Ekinion =       0.000000
+siesta:         Total =     151.961103
+siesta:         Fermi =       0.000000
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1  202.015101 -149.692317  -56.148602
+siesta:      2  -56.148602  202.015101 -149.692317
+siesta:      3 -202.015101  149.692317  -56.148602
+siesta:      4 -202.015101 -149.692317   56.148602
+siesta:      5 -149.692317  202.015101   56.148602
+siesta:      6 -149.692317  -56.148602  202.015101
+siesta:      7  -56.148602 -202.015101  149.692317
+siesta:      8   56.148602 -202.015101 -149.692317
+siesta:      9   56.148602 -149.692317  202.015101
+siesta:     10  202.015101  149.692317   56.148602
+siesta:     11  149.692317 -202.015101   56.148602
+siesta:     12   56.148602  202.015101  149.692317
+siesta:     13  149.692317  202.015101  -56.148602
+siesta:     14  202.015101  -56.148602  149.692317
+siesta:     15 -149.692317 -202.015101  -56.148602
+siesta:     16  149.692317  -56.148602 -202.015101
+siesta:     17 -149.692317   56.148602 -202.015101
+siesta:     18  202.015101   56.148602 -149.692317
+siesta:     19   56.148602  149.692317 -202.015101
+siesta:     20  149.692317   56.148602  202.015101
+siesta:     21  -56.148602  149.692317  202.015101
+siesta:     22  -56.148602 -149.692317 -202.015101
+siesta:     23 -202.015101   56.148602  149.692317
+siesta:     24 -202.015101  -56.148602 -149.692317
+siesta:     25 -202.015101  149.692317   56.148602
+siesta:     26   56.148602 -202.015101  149.692317
+siesta:     27  202.015101 -149.692317   56.148602
+siesta:     28  202.015101  149.692317  -56.148602
+siesta:     29  149.692317 -202.015101  -56.148602
+siesta:     30  149.692317   56.148602 -202.015101
+siesta:     31   56.148602  202.015101 -149.692317
+siesta:     32  -56.148602  202.015101  149.692317
+siesta:     33  -56.148602  149.692317 -202.015101
+siesta:     34 -202.015101 -149.692317  -56.148602
+siesta:     35 -149.692317  202.015101  -56.148602
+siesta:     36  -56.148602 -202.015101 -149.692317
+siesta:     37 -149.692317 -202.015101   56.148602
+siesta:     38 -202.015101   56.148602 -149.692317
+siesta:     39  149.692317  202.015101   56.148602
+siesta:     40 -149.692317   56.148602  202.015101
+siesta:     41  149.692317  -56.148602  202.015101
+siesta:     42 -202.015101  -56.148602  149.692317
+siesta:     43  -56.148602 -149.692317  202.015101
+siesta:     44 -149.692317  -56.148602 -202.015101
+siesta:     45   56.148602 -149.692317 -202.015101
+siesta:     46   56.148602  149.692317  202.015101
+siesta:     47  202.015101  -56.148602 -149.692317
+siesta:     48  202.015101   56.148602  149.692317
+siesta: ----------------------------------------
+siesta:    Tot    0.000000   -0.000000    0.000000
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:    -1.428079    0.000000    0.000000
+siesta:     0.000000   -1.428079    0.000000
+siesta:     0.000000    0.000000   -1.428079
+
+siesta: Cell volume =        512.000000 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.01555360         -0.00520866  Ry/Bohr**3
+siesta:           1.42807880         -0.47824172  eV/Ang**3
+siesta:        2288.05922174       -766.23599912  kBar
+(Free)E+ p_basis*V_orbitals  =         162.464114
+(Free)Eharris+ p_basis*V_orbitals  =          10.503012
+
+>> End of run:   2-APR-2019  17:13:39
+Job completed
