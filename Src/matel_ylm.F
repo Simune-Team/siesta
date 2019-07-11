@@ -39,11 +39,6 @@
       use m_matel_registry, only: LCUT
       
       use spher_harm, only : RLYLM, YLMEXP, lofilm
-      use spher_harm, only : reset_spher_harm
-#ifdef MPI
-      use mpi_siesta,  only : MPI_INTEGER, MPI_COMM_WORLD
-      use mpi_siesta,  only : MPI_DOUBLE_PRECISION, MPI_IN_PLACE
-#endif      
       private
 
 C     parameters
@@ -171,8 +166,14 @@ C  Reduce the values of the different arrays of SPHER_HARM_t.
 C  At input, IND contains the number of harmonics of every orbital.
 C  At exit, it can be used to index the harmonics of every orbital
 C *******************************************************************
+#ifdef MPI
+      use mpi_siesta,  only : MPI_INTEGER, MPI_COMM_WORLD
+      use mpi_siesta,  only : MPI_DOUBLE_PRECISION, MPI_IN_PLACE
+#endif      
       implicit none
+
       class(SPHER_HARM_t) :: this
+
 !     Local variables
       integer             :: i, ig, first, last, nf, prev
 #ifdef MPI

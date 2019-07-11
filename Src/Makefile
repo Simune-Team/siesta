@@ -1130,7 +1130,7 @@ m_zminim.o: sys.o
 madelung.o: parallel.o precision.o sys.o
 matel_mod.o: alloc.o atm_types.o atmfuncs.o ldau_specs.o matel_registry.o
 matel_mod.o: matel_table.o matel_ylm.o precision.o radfft.o siesta2wannier90.o
-matel_mod.o: siesta_options.o spher_harm.o
+matel_mod.o: siesta_options.o
 matel_registry.o: m_trialorbitalclass.o precision.o radial.o spher_harm.o sys.o
 matel_table.o: alloc.o interpolation.o matel_params.o matel_registry.o
 matel_table.o: matel_ylm.o parallel.o precision.o radfft.o spher_harm.o sys.o
@@ -1347,7 +1347,7 @@ sparse_matrices.o: class_OrbitalDistribution.o class_SpData1D.o
 sparse_matrices.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o
 sparse_matrices.o: precision.o
 spatial.o: precision.o
-spher_harm.o: alloc.o precision.o sys.o
+spher_harm.o: precision.o
 spinorbit.o: atm_types.o atmfuncs.o atmparams.o basis_types.o m_mpi_utils.o
 spinorbit.o: parallel.o parallelsubs.o precision.o pseudopotential.o
 state_analysis.o: atomlist.o born_charge.o flook_siesta.o m_energies.o

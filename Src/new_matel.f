@@ -75,7 +75,6 @@ C Modules -----------------------------------------------------------
       use interpolation, only: spline, splint
       use m_errorf, only: derf
       use spher_harm, only: rlylm, ylmexp, ylmylm, lofilm
-      use spher_harm, only: reset_spher_harm
       use sys,     only: die
       use m_radfft
 C -------------------------------------------------------------------
@@ -168,7 +167,6 @@ C Nullify pointers
 
 C Check if tables must be re-initialized 
       IF ( IG1.LE.0 .OR. IG2.LE.0 ) THEN
-        CALL RESET_SPHER_HARM( )
         CALL RESET_RADFFT( )
         CALL DE_ALLOC( IFFR, 'IFFR', MYNAME )
         CALL DE_ALLOC( ILM, 'ILM', MYNAME )

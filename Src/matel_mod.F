@@ -26,7 +26,6 @@
       use precision, only : dp
       use alloc,     only : alloc_default, allocDefaults
 
-      use spher_harm, only : reset_spher_harm
       use m_radfft,  only : reset_radfft
       use m_matel_registry, ONLY : EVALUATE,
      &                             EVALUATE_X, EVALUATE_Y, EVALUATE_Z
@@ -123,7 +122,6 @@
        ! Set allocation defaults
       call alloc_default( old=oldefs, copy=.true., shrink=.false. )
 
-      CALL RESET_SPHER_HARM( )
       CALL RESET_RADFFT( )
 
       ! Get the number of orbitals and KB orbitals
