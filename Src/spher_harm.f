@@ -256,6 +256,9 @@ C *********************************************************************
       L  = MAX( LOFILM(ILM1), LOFILM(ILM2) )
       LM = (L+1)*(L+1)
 
+      !! Checks and allocations can be avoided by using a parameter MAXL, as
+      !! in the rlylm and ylmexp routines below
+      !! MAXL could be 10 or even 8 (ylmexp)
       if (LM.gt.MAX_LM) then
 
         MAX_LM = LM
