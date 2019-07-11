@@ -63,18 +63,6 @@ C     parameters
       integer,          parameter :: MODE_T   = 2
       integer,          parameter :: MODE_XYZ = 3
 
-
-      !> A function evaluator that selects the function on the basis of a single index 'ig'
-      !> that is de-referenced in the 'matel_registry'.
-      ABSTRACT INTERFACE
-        subroutine FUNC_p(ig,rvec,yy,grady)
-          use precision, only : dp
-          integer, intent(in)   :: ig
-          real(dp), intent(in)  :: rvec(3)
-          real(dp), intent(out) :: yy, grady(3)
-        end subroutine FUNC_p
-      END INTERFACE
-
       !> The main type that holds the interpolation tables and all the indexes needed to find
       !> the right radial tables. Note that it contains pointers to "spherical-harmonic decompositions",
       !> with two versions (1 and 2), but '2' is not always needed.
@@ -192,7 +180,7 @@ C     parameters
       this%NROWS = hi1 - lo1 + 1
       this%NCOLS = hi2 - lo2 + 1
 
-      print *, "init: rows, cols:", this%NROWS, this%NCOLS
+!      print *, "init: rows, cols:", this%NROWS, this%NCOLS
 
       this%SpHa1 => SpHa1
       this%SpHa2 => SpHa2
@@ -219,8 +207,8 @@ C     parameters
       this%MAT_COLS = n_harms_hi - n_harms_lo
       this%BASE_SPHA2 = n_harms_lo
 
-      print *, "init: dim1, dim2:", this%MAT_ROWS, this%MAT_COLS
-      print *, "init: base1, base2:", this%BASE_SPHA1, this%BASE_SPHA2
+!      print *, "init: dim1, dim2:", this%MAT_ROWS, this%MAT_COLS
+!      print *, "init: base1, base2:", this%BASE_SPHA1, this%BASE_SPHA2
       
       ! Compute and reduce Radial Expansion
       call this%compute_RadExp( )

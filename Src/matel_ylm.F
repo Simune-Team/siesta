@@ -52,17 +52,6 @@ C     parameters
       CHARACTER(LEN=*), parameter :: MYNAME =  'MATEL_YLM'
 
 
-      !> An evaluator that selects the function on the basis of a single index 'ig'
-      !> that is de-referenced in the 'matel_registry'. It returns the value and the gradient.
-      ABSTRACT INTERFACE
-        subroutine FUNC_p(ig,rvec,yy,grady)
-          use precision, only : dp
-          integer, intent(in)   :: ig
-          real(dp), intent(in)  :: rvec(3)
-          real(dp), intent(out) :: yy, grady(3)
-        end subroutine FUNC_p
-      END INTERFACE
-
       !> This really holds the expansion of a set of functions in spherical-harmonics 
       !> Indexing arrays could be avoided if we kept the information of a given function
       !> in a simpler derived type instead, and making this an _array_ of the simpler elements.
@@ -75,14 +64,14 @@ C     parameters
         integer,  POINTER :: IND(:)      ! Number of spherical harmonics (after COMPUTE_SPHA)
                                          ! Index of harmonics (after REDUCE_SPHA)
         integer,  POINTER :: INVP(:)     ! Map from harmonic components to the associated function
-        PROCEDURE(FUNC_p), POINTER, nopass :: func
+
         CONTAINS
-        procedure :: COMPUTE_SPHA
-        procedure :: GET_DIM
-        procedure :: HARM2ORB
-        procedure :: INDF
-        ! now called internally by 'compute_spha'
-        procedure, private :: REDUCE_SPHA
+          procedure :: COMPUTE_SPHA
+          procedure :: GET_DIM
+          procedure :: HARM2ORB
+          procedure :: INDF
+          ! now called internally by 'compute_spha'
+          procedure, private :: REDUCE_SPHA
       END TYPE SPHER_HARM_t
 
       contains
@@ -106,8 +95,17 @@ C     parameters
       !> matrix element function (for example, 'evaluate_x' includes the
       !> product by 'x' of radial functions).
 
-      PROCEDURE(FUNC_p)   :: func
-      
+      !> The evaluator selects the function on the basis of a single index 'ig'
+      !> that is de-referenced in the 'matel_registry'. It returns the value and the gradient.
+      INTERFACE
+        subroutine func(ig,rvec,yy,grady)
+          use precision, only : dp
+          integer, intent(in)   :: ig
+          real(dp), intent(in)  :: rvec(3)
+          real(dp), intent(out) :: yy, grady(3)
+        end subroutine func
+      END INTERFACE
+
       !> When the implied matrix element function increases the maximum l
       !> e.g. for x*\Phi, the maximum l is increased by 1, so l_inc=1
       integer, intent(in) :: l_inc
