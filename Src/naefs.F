@@ -43,8 +43,7 @@ C *********************************************************************
       use atmfuncs,    only : izofis, vna_gindex
       use neighbour,   only : jna=>jan, xij, mneighb,
      &                        reset_neighbour_arrays
-!      use m_new_matel, only : new_matel
-      use matel_mod,   only : get_matel_t
+      use matel_mod,   only : new_matel
       use parallel,    only : Node, Nodes
 #ifdef MPI
       use m_mpi_inplace, only : globalize_sum
@@ -95,11 +94,7 @@ C Find neighbour atoms
           if (izofis(is).gt.0 .and. izofis(js).gt.0) then
             ig = vna_gindex(is)
             jg = vna_gindex(js)
-!            call new_MATEL( 'T', ig, jg, xij(1:3,jn), vij2, fij2 )
-            call get_matel_t( ig, jg, xij(1:3,jn), vij, fij )
-!            if (ABS(vij-vij2)>1.0e-8_dp) then
-!              call die('naefs=>get_matel_t')
-!            endif
+            call new_MATEL( 'T', ig, jg, xij(1:3,jn), vij, fij )
 
             Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
@@ -118,7 +113,6 @@ C Find neighbour atoms
       enddo
 
 C     Free local memory
-!      call new_MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
       call reset_neighbour_arrays( )
 #ifdef MPI
       if (Nodes.gt.1) then

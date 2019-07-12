@@ -42,6 +42,8 @@
       public :: get_matel_y    ! Get a value from Y or Y_opt
       public :: get_matel_z    ! Get a value from Z or Z_opt
 
+      public :: new_matel
+      
       !> These are the functions recorded in the 'matel registry'; the number of each kind
       !> serve as markers for the different sections needed in the tables.
       !> 
@@ -49,6 +51,7 @@
       integer           :: num_kb  ! Number of different KB projectors
       integer           :: num_ldau ! Number of different LDA+U functions
       integer           :: num_va  ! Number of different Vna functions
+      integer           :: num_wannier_projs  ! Number of different Vna functions
 
       !> k-space spherical-harmonic decomposition of
       !> registered functions
@@ -104,7 +107,6 @@
       use atmfuncs,  only : nofis, nkbfis, orb_gindex, kbproj_gindex
       use atmfuncs,  only : vna_gindex, ldau_gindex
       use siesta_options, only : bornz, w90_processing
-      use m_siesta2wannier90, only : numproj
       use ldau_specs, only : switch_ldau
       use m_matel_registry, only : get_nfuncs
 
@@ -244,6 +246,7 @@
       ! Wannier trial functions, which are registered in the
       ! pool after every other function
 
+      num_wannier_projs = numproj ! set module variable
       top_vna = num_orb + num_kb + num_ldau + num_va
 
       call ylmk_val_wannier_projs%compute_spha(top_vna+1,
@@ -369,4 +372,178 @@ C *******************************************************************
       ENDIF
       end subroutine get_matel_z
 
+      SUBROUTINE new_MATEL( OPERAT, IG1, IG2, R12, S12, DSDR )
+C *******************************************************************
+C Finds two-center matrix elements between 'atomic orbitals' 
+C with finite radial and angular momentum cutoffs.
+C Written by J.M.Soler. April 1995.
+C Matrix elements of the position operator by DSP. June, 1999
+C Electrostatic interaction added by JMS. July 2002.
+C Introduction of unified 'global' indexes by AG. July 2011.
+C ************************* INPUT ***********************************
+C CHARACTER OPERAT : Operator to be used. The valid options are:
+C   'S' => Unity (overlap). Uppercase required for all values.
+C   'T' => -Laplacian
+C   'U' => 1/|r'-r| (with evaluate returning charge distributions)
+C   'X' => x, returning <phi1(r-R12)|x|phi2(r)> (origin on second atom)
+C   'Y' => y, returning <phi1(r-R12)|y|phi2(r)>
+C   'Z' => z, returning <phi1(r-R12)|z|phi2(r)>
+C INTEGER IG1    : Global index of 1st function (must be positive)
+C INTEGER IG2    : Gloabal index of 2nd function
+C                    Indexes IG1, IG2 are used only to call 
+C                    routines LCUT, RCUT and EVALUATE (see below), and 
+C                    may have other meanings within those routines
+C REAL*8  R12(3) : Vector from first to second atom
+C ************************* OUTPUT **********************************
+C REAL*8 S12      : Matrix element between orbitals.
+C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
+C ************************* ROUTINES CALLED *************************
+C The following functions must exist:
+C
+C INTEGER FUNCTION LCUT(IG)
+C   Returns the maximum angular momentum of the functions
+C Input:
+C   INTEGER IG : Global function index
+C
+C REAL*8 FUNCTION RCUT(IG)
+C   Returns cutoff radius of the function
+C Input:
+C   INTEGER IG : Global function index
+C
+C SUBROUTINE EVALUATE(IG,R,PHI,GRPHI)
+C   Returns the value of the functions to be integrated
+C Input:
+C   INTEGER IG : Global function index
+C   REAL*8  R(3) : Position with respect to atom
+C Output:
+C   REAL*8  PHI      : Value of orbital at point R
+C   REAL*8  GRPHI(3) : Gradient of PHI at point R  
+C ************************* UNITS ***********************************
+C Length units are arbitrary, but must be consistent in MATEL, RCUT
+C   and EVALUATE. The laplacian unit is (length unit)**(-2).
+C ************************* BEHAVIOUR *******************************
+C 1) If |R12| > RCUT(IS1,IO1) + RCUT(IS2,IO2), returns U(Rmax)*Rmax/R
+C    for OPERAT='U', and exactly zero in all other cases.
+C 2) If (IS1.LE.0 .OR. IS2.LE.0) all internal tables are erased for
+C    reinitialization and nothing is calculated.
+
+      !> Operation code
+      character(len=1), intent(in) :: OPERAT
+      !> Global index of 1st function
+      integer, intent(in)      :: IG1
+      !> Global index of 2nd function
+      integer, intent(in)      :: IG2
+
+      !> Vector from first to second atom
+      real(dp), intent(in)    :: R12(3)
+
+      !> Matrix element
+      real(dp), intent(out)    :: S12
+      !> Derivative (gradient) of S12 with respect to R12.
+      real(dp), intent(out)    :: DSDR(3)
+
+      integer :: top
+      
+      top = num_orb + num_kb + num_ldau 
+
+      select case (operat)
+      case ( 'S' )
+
+         if ( (ig1 <= top) .and. (is_orb(ig2)) ) then
+            call tab_S%get_matel(IG1, IG2, R12, S12, DSDR)
+         else if (is_orb(ig1) .and. (is_kb(ig2))) then
+            call tab_S_opt%get_matel(IG1, IG2, R12, S12, DSDR)
+         else if (is_orb(ig1) .and. (is_wannier_proj(ig2))) then
+            call tab_S_wann%get_matel(IG1, IG2, R12, S12, DSDR)
+         else
+            call die("Cannot process 'S' in matel")
+         endif
+
+      case ( 'T' )
+
+         if ( is_orb(ig1) .and. (is_orb(ig2))) then
+            call tab_T%get_matel(IG1, IG2, R12, S12, DSDR)
+         else if  (is_vna(ig1) .and. (is_vna(ig2))) then
+            call tab_TA%get_matel(IG1, IG2, R12, S12, DSDR)
+         else
+            call die("Cannot process 'T' in matel")
+         endif
+         
+      case ( 'X' )
+
+         if  (is_orb(ig1) .and. (is_orb(ig2))) then
+            call tab_X%get_matel(IG1, IG2, R12, S12, DSDR)
+         else if (is_orb(ig1) .and. (is_kb(ig2))) then
+            call tab_X_opt%get_matel(IG1, IG2, R12, S12, DSDR)
+         else
+            call die("Cannot process 'X' in matel")
+         endif
+         
+      case ( 'Y' )
+
+         if ( is_orb(ig1) .and. (is_orb(ig2))) then
+            call tab_Y%get_matel(IG1, IG2, R12, S12, DSDR)
+         else if (is_orb(ig1) .and. (is_kb(ig2))) then
+            call tab_Y_opt%get_matel(IG1, IG2, R12, S12, DSDR)
+         else
+            call die("Cannot process 'Y' in matel")
+         endif
+         
+      case ( 'Z' )
+
+         if  (is_orb(ig1) .and. (is_orb(ig2))) then
+            call tab_Z%get_matel(IG1, IG2, R12, S12, DSDR)
+         else if (is_orb(ig1) .and. (is_kb(ig2))) then
+            call tab_Z_opt%get_matel(IG1, IG2, R12, S12, DSDR)
+         else
+            call die("Cannot process 'Z' in matel")
+         endif
+         
+         case ( 'U' )
+            call die("Cannot process 'U' in matel")
+
+         case default
+            call die("Unrecognized 'operat' in matel")
+
+         end select
+
+      end subroutine new_matel
+
+      function is_orb(ig) result(res)
+      integer, intent(in) :: ig
+      logical             :: res
+
+      res = ( ig > 0 .and. ig <= num_orb)
+      end function is_orb
+
+      function is_kb(ig) result(res)
+      integer, intent(in) :: ig
+      logical             :: res
+
+      res = ( ig > num_orb .and. ig <= (num_orb+num_kb))
+      end function is_kb
+
+      function is_vna(ig) result(res)
+      integer, intent(in) :: ig
+      logical             :: res
+
+      integer :: top
+
+      top = num_orb + num_kb + num_ldau 
+      res = ( ig > top .and. ig <= (top + num_va))
+      end function is_vna
+
+      function is_wannier_proj(ig) result(res)
+      integer, intent(in) :: ig
+      logical             :: res
+
+      integer :: top
+
+      top_vna = num_orb + num_kb + num_ldau + num_va
+      
+      res = ( ig > top_vna .and. ig <= (top_vna + num_wannier_projs))
+      end function is_wannier_proj
+
+
+      
       end module matel_mod

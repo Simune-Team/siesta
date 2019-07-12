@@ -1133,7 +1133,7 @@ matel_mod.o: matel_table.o matel_ylm.o precision.o radfft.o siesta2wannier90.o
 matel_mod.o: siesta_options.o
 matel_registry.o: m_trialorbitalclass.o precision.o radial.o spher_harm.o sys.o
 matel_table.o: alloc.o interpolation.o matel_params.o matel_registry.o
-matel_table.o: matel_ylm.o parallel.o precision.o radfft.o spher_harm.o sys.o
+matel_table.o: matel_ylm.o parallel.o precision.o radfft.o spher_harm.o
 matel_ylm.o: alloc.o matel_params.o matel_registry.o parallel.o precision.o
 matel_ylm.o: radfft.o spher_harm.o sys.o
 md_out.o: files.o m_energies.o precision.o sys.o units.o
