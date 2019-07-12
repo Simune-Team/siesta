@@ -6,19 +6,19 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
 !
-      !> Re-designed module to allow a pre-computation of the needed matrix elements
-      !> in parallel, followed by a globalization of the data among all the MPI processes.
-      !> Once the interpolation tables are setup, further calls to the matrix-element
-      !> evaluator (here renamed 'get_matel_?') are cheap. This has a dramatic effect in
-      !> some routines (such as nlefsm) that had to perform the table-building operations
-      !> under conditions that did not scale in parallel.
+      !> Re-designed module to allow a pre-computation of the needed
+      !> matrix elements in parallel, followed by a globalization of the
+      !> data among all the MPI processes.  Once the interpolation
+      !> tables are setup, further calls to the matrix-element evaluator
+      !> are cheap. This has a dramatic effect in some routines (such as
+      !> nlefsm) that had to perform the table-building operations under
+      !> conditions that did not scale in parallel.
 
       !> Concept: Rogeli Grima (BSC) and Alberto Garcia (ICMAB)
       !> Initial implementation:  Rogeli Grima (BSC)
 
       module matel_mod
 
-!      use matel_params
       use matel_ylm, only: spher_harm_t
       use matel_table, only: matel
       use matel_table, only: MODE_S, MODE_T, MODE_XYZ
@@ -30,28 +30,21 @@
       use m_matel_registry, ONLY : EVALUATE,
      &                             EVALUATE_X, EVALUATE_Y, EVALUATE_Z
 
-
       PRIVATE
       
       public :: init_matel     ! Initialize tables S, T, TA, X, Y, Z, S_opt, X_opt, Y_opt, Z_opt
       public :: init_matel_wannier ! Initialize table S_wann
       
-      public :: get_matel_s    ! Get a value from S, S_wann, or S_opt
-      public :: get_matel_t    ! Get a value from T or TA
-      public :: get_matel_x    ! Get a value from X or X_opt
-      public :: get_matel_y    ! Get a value from Y or Y_opt
-      public :: get_matel_z    ! Get a value from Z or Z_opt
-
-      public :: new_matel
+      public :: new_matel   ! Evaluates matrix elements with the old interface
       
-      !> These are the functions recorded in the 'matel registry'; the number of each kind
+      !> These relate to the functions recorded in the 'matel registry'; the number of each kind
       !> serve as markers for the different sections needed in the tables.
       !> 
       integer           :: num_orb  ! Number of different orbitals
       integer           :: num_kb  ! Number of different KB projectors
       integer           :: num_ldau ! Number of different LDA+U functions
       integer           :: num_va  ! Number of different Vna functions
-      integer           :: num_wannier_projs  ! Number of different Vna functions
+      integer           :: num_wannier_projs  ! Number of different Wannier trial orbitals
 
       !> k-space spherical-harmonic decomposition of
       !> registered functions
@@ -100,13 +93,20 @@
 
       !>  Initialize the MATEL tables S, T, TA, X, Y, Z, S_opt,
       !>  X_opt, Y_opt, Z_opt
+
+      !> *NOTE: Optical and Polarization tables are initialized
+      !> on the basis of "static" information in the fdf file. If
+      !> and when those operations can be launched "after-the-fact"
+      !> this might have to be changed.
+      !> Same if the 'LDAU' features are turned on after the first reading.
+
       subroutine init_matel( )
 
       use fdf,       only : fdf_boolean
       use atm_types, only : nspecies, species
       use atmfuncs,  only : nofis, nkbfis, orb_gindex, kbproj_gindex
       use atmfuncs,  only : vna_gindex, ldau_gindex
-      use siesta_options, only : bornz, w90_processing
+      use siesta_options, only : bornz
       use ldau_specs, only : switch_ldau
       use m_matel_registry, only : get_nfuncs
 
@@ -259,173 +259,41 @@
       CALL alloc_default( restore=oldefs )
       end subroutine init_matel_wannier
 
-      subroutine get_matel_s( IG1, IG2, R12, S12, DSDR )
-C *******************************************************************
-C  Get the Matrix element between orbitals and its derivative from
-C  one of the S matrices
-C ************************* INPUT ***********************************
-C INTEGER IG1    : Global index of 1st function
-C INTEGER IG2    : Gloabal index of 2nd function
-C REAL*8  R12(3) : Vector from first to second atom
-C ************************* OUTPUT **********************************
-C REAL*8 S12      : Matrix element between orbitals.
-C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
-C *******************************************************************
-      implicit none
-      integer  :: IG1, IG2
-      real(dp) ::  R12(3), DSDR(3), S12
-      ! Local Variables
-      IF (IG2.LE.num_orb) then
-        call tab_S%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ELSE IF (IG2.LE.num_orb+num_kb) then
-        call tab_S_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ELSE
-        call tab_S_wann%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ENDIF
-      end subroutine get_matel_s
-
-      subroutine get_matel_t( IG1, IG2, R12, S12, DSDR )
-C *******************************************************************
-C  Get the Matrix element between orbitals and its derivative from
-C  one of the T matrices
-C ************************* INPUT ***********************************
-C INTEGER IG1    : Global index of 1st function
-C INTEGER IG2    : Gloabal index of 2nd function
-C REAL*8  R12(3) : Vector from first to second atom
-C ************************* OUTPUT **********************************
-C REAL*8 S12      : Matrix element between orbitals.
-C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
-C *******************************************************************
-      implicit none
-      integer  :: IG1, IG2
-      real(dp) ::  R12(3), DSDR(3), S12
-      if (IG1.le.NUM_ORB .and. IG2.le.NUM_ORB) then
-        call tab_T%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      else
-        call tab_TA%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      endif
-      end subroutine get_matel_t
-
-      subroutine get_matel_x( IG1, IG2, R12, S12, DSDR )
-C *******************************************************************
-C  Get the Matrix element between orbitals and its derivative from
-C  one of the X matrices
-C ************************* INPUT ***********************************
-C INTEGER IG1    : Global index of 1st function
-C INTEGER IG2    : Gloabal index of 2nd function
-C REAL*8  R12(3) : Vector from first to second atom
-C ************************* OUTPUT **********************************
-C REAL*8 S12      : Matrix element between orbitals.
-C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
-C *******************************************************************
-      implicit none
-      integer  :: IG1, IG2
-      real(dp) ::  R12(3), DSDR(3), S12
-      IF (IG2.LE.num_orb) then
-        call tab_X%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ELSE
-        call tab_X_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ENDIF
-      end subroutine get_matel_x
-
-      subroutine get_matel_y( IG1, IG2, R12, S12, DSDR )
-C *******************************************************************
-C  Get the Matrix element between orbitals and its derivative from
-C  one of the Y matrices
-C ************************* INPUT ***********************************
-C INTEGER IG1    : Global index of 1st function
-C INTEGER IG2    : Gloabal index of 2nd function
-C REAL*8  R12(3) : Vector from first to second atom
-C ************************* OUTPUT **********************************
-C REAL*8 S12      : Matrix element between orbitals.
-C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
-C *******************************************************************
-      implicit none
-      integer  :: IG1, IG2
-      real(dp) ::  R12(3), DSDR(3), S12
-      IF (IG2.LE.num_orb) then
-        call tab_Y%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ELSE
-        call tab_Y_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ENDIF
-      end subroutine get_matel_y
-
-      subroutine get_matel_z( IG1, IG2, R12, S12, DSDR )
-C *******************************************************************
-C  Get the Matrix element between orbitals and its derivative from
-C  one of the Z matrices
-C ************************* INPUT ***********************************
-C INTEGER IG1    : Global index of 1st function
-C INTEGER IG2    : Gloabal index of 2nd function
-C REAL*8  R12(3) : Vector from first to second atom
-C ************************* OUTPUT **********************************
-C REAL*8 S12      : Matrix element between orbitals.
-C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
-C *******************************************************************
-      implicit none
-      integer  :: IG1, IG2
-      real(dp) ::  R12(3), DSDR(3), S12
-      IF (IG2.LE.num_orb) then
-        call tab_Z%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ELSE
-        call tab_Z_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
-      ENDIF
-      end subroutine get_matel_z
-
       SUBROUTINE new_MATEL( OPERAT, IG1, IG2, R12, S12, DSDR )
-C *******************************************************************
-C Finds two-center matrix elements between 'atomic orbitals' 
-C with finite radial and angular momentum cutoffs.
-C Written by J.M.Soler. April 1995.
-C Matrix elements of the position operator by DSP. June, 1999
-C Electrostatic interaction added by JMS. July 2002.
-C Introduction of unified 'global' indexes by AG. July 2011.
-C ************************* INPUT ***********************************
+
+! Finds two-center matrix elements between 'atomic orbitals' 
+! with finite radial and angular momentum cutoffs.
+
+! The interface is the same as "new_matel" in the m_new_matel
+! module, but the routine itself only dispatches execution
+! to the new table objects (Alberto Garcia, July 2019, after Rogeli Grima)      
+
+! The tables must be initialized previously by calls to init_matel and
+! (if needed) init_matel_wannier.
+      
+! INPUT 
+
 C CHARACTER OPERAT : Operator to be used. The valid options are:
 C   'S' => Unity (overlap). Uppercase required for all values.
 C   'T' => -Laplacian
-C   'U' => 1/|r'-r| (with evaluate returning charge distributions)
+C   'U' => 1/|r'-r| (with evaluate returning charge distributions) *NOT IMPLEMENTED
 C   'X' => x, returning <phi1(r-R12)|x|phi2(r)> (origin on second atom)
 C   'Y' => y, returning <phi1(r-R12)|y|phi2(r)>
 C   'Z' => z, returning <phi1(r-R12)|z|phi2(r)>
 C INTEGER IG1    : Global index of 1st function (must be positive)
-C INTEGER IG2    : Gloabal index of 2nd function
+C INTEGER IG2    : Global index of 2nd function
 C                    Indexes IG1, IG2 are used only to call 
-C                    routines LCUT, RCUT and EVALUATE (see below), and 
+C                    routines LCUT, RCUT and EVALUATE (in matel_registry), and 
 C                    may have other meanings within those routines
 C REAL*8  R12(3) : Vector from first to second atom
 C ************************* OUTPUT **********************************
 C REAL*8 S12      : Matrix element between orbitals.
 C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
-C ************************* ROUTINES CALLED *************************
-C The following functions must exist:
-C
-C INTEGER FUNCTION LCUT(IG)
-C   Returns the maximum angular momentum of the functions
-C Input:
-C   INTEGER IG : Global function index
-C
-C REAL*8 FUNCTION RCUT(IG)
-C   Returns cutoff radius of the function
-C Input:
-C   INTEGER IG : Global function index
-C
-C SUBROUTINE EVALUATE(IG,R,PHI,GRPHI)
-C   Returns the value of the functions to be integrated
-C Input:
-C   INTEGER IG : Global function index
-C   REAL*8  R(3) : Position with respect to atom
-C Output:
-C   REAL*8  PHI      : Value of orbital at point R
-C   REAL*8  GRPHI(3) : Gradient of PHI at point R  
-C ************************* UNITS ***********************************
+
 C Length units are arbitrary, but must be consistent in MATEL, RCUT
 C   and EVALUATE. The laplacian unit is (length unit)**(-2).
 C ************************* BEHAVIOUR *******************************
-C 1) If |R12| > RCUT(IS1,IO1) + RCUT(IS2,IO2), returns U(Rmax)*Rmax/R
-C    for OPERAT='U', and exactly zero in all other cases.
-C 2) If (IS1.LE.0 .OR. IS2.LE.0) all internal tables are erased for
-C    reinitialization and nothing is calculated.
+C If |R12| > RCUT(IS1,IO1) + RCUT(IS2,IO2), returns exactly zero.
 
       !> Operation code
       character(len=1), intent(in) :: OPERAT
@@ -543,7 +411,5 @@ C    reinitialization and nothing is calculated.
       
       res = ( ig > top_vna .and. ig <= (top_vna + num_wannier_projs))
       end function is_wannier_proj
-
-
       
       end module matel_mod

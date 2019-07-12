@@ -80,9 +80,7 @@ C *********************************************************************
       use sys,          only : die
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb, reset_neighbour_arrays
-!      use m_new_matel,  only : new_matel
-      use matel_mod,    only : get_matel_s, get_matel_x, get_matel_y,
-     &                         get_matel_z
+      use matel_mod,    only : new_matel
 
       implicit none
 
@@ -116,8 +114,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      &  dintg2(3), dint1, dint2, dintgmod2, 
      &  dintg1(3), dintgmod1,
      &  phi1, phi2, dphi1dr, dphi2dr, Sir0, r
-!      real(dp) Ski2, grSki2(3)
-
+      
       integer,  pointer, save :: iano(:)
       integer,  pointer, save :: iono(:)
       integer,           save :: maxkba = 25
@@ -268,36 +265,23 @@ C Find overlap between neighbour orbitals and KB projectors
                     do ix = 1,3
                      xinv(ix) = - xij(ix,ina)
                     enddo 
-!                    call new_MATEL('S', ig, kg, xinv, Ski2, grSki2 )
-                    call get_matel_s( ig, kg, xinv,
-     &                         Ski(1,ikb,nno), grSki )
-!                    if (ABS(Ski(1,ikb,nno)-Ski2)>1.0e-8) then
-!                      call die( "PRIRPHI_OPT=>get_matel_s" )
-!                    endif
+                    call new_MATEL('S', ig, kg, xinv,
+     &                         Ski(1,ikb,nno), grSki)
               
                     sum = 0.0d0
                     if (abs(dk(1)).gt.tiny) then
-!                      call new_MATEL('X', ig, kg, xinv,  Ski2, grSki2 )
-                      call get_matel_x( ig, kg, xinv, Sik, grSki )
-!                      if (ABS(Sik-Ski2)>1.0e-8) then
-!                        call die( "PRIRPHI_OPT=>get_matel_x" )
-!                      endif
+                      call new_MATEL('X', ig, kg, xinv,
+     &                           Sik, grSki)
                       sum = sum + Sik*dk(1) 
                     endif
                     if (abs(dk(2)).gt.tiny) then
-!                      call new_MATEL('Y', ig, kg, xinv, Ski2, grSki2 )
-                      call get_matel_y( ig, kg, xinv, Sik, grSki )
-!                      if (ABS(Sik-Ski2)>1.0e-8) then
-!                        call die( "PRIRPHI_OPT=>get_matel_y" )
-!                      endif
+                      call new_MATEL('Y', ig, kg, xinv,
+     &                           Sik, grSki)
                       sum = sum + Sik*dk(2)
                     endif
                     if (abs(dk(3)).gt.tiny) then
-!                      call new_MATEL('Z', ig, kg, xinv, Ski2, grSki2 )
-                      call get_matel_z( ig, kg, xinv, Sik, grSki )
-!                      if (ABS(Sik-Ski2)>1.0e-8) then
-!                        call die( "PRIRPHI_OPT=>get_matel_z" )
-!                      endif
+                      call new_MATEL('Z', ig, kg, xinv,
+     &                           Sik, grSki)
                       sum = sum + Sik*dk(3)
                     endif
                     Ski(2,ikb,nno) = sum
@@ -392,36 +376,20 @@ C Initialize neighb subroutine
 
                   if (matrix.eq.'R') then 
  
-!                    call new_MATEL('X', jg, ig, xinv, Ski2, grSki2 )
-                    call get_matel_x( jg, ig, xinv, Sij, grSij )
-!                    if (ABS(Sik-Ski2)>1.0e-8) then
-!                      call die( "PRIRPHI_OPT=>get_matel_x" )
-!                    endif
-
+                    call new_MATEL('X', jg, ig, xinv,
+     &                         Sij, grSij )
                     Si(jo) = Sij*dk(1)  
                      
-!                    call new_MATEL('Y', jg, ig, xinv, Ski2, grSki2 )
-                    call get_matel_y( jg, ig, xinv, Sij, grSij )
-!                    if (ABS(Sij-Ski2)>1.0e-8) then
-!                      call die( "PRIRPHI_OPT=>get_matel_y" )
-!                    endif
+                    call new_MATEL('Y', jg, ig, xinv,
+     &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(2)  
  
-!                    call new_MATEL('Z', jg, ig, xinv, Ski2, grSki2 )
-                    call get_matel_z( jg, ig, xinv, Sij, grSij )
-!                    if (ABS(Sij-Ski2)>1.0e-8) then
-!                      call die( "PRIRPHI_OPT=>get_matel_z" )
-!                    endif
-
+                    call new_MATEL('Z', jg, ig, xinv,
+     &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(3) 
            
-!                    call new_MATEL( 'S', ig, jg, xij(1:3,jn),
-!     &                              Ski2, grSki2 )
-                    call get_matel_s( ig, jg, xij(1:3,jn), Sij, grSij )
-!                    if (ABS(Sij-Ski2)>1.0e-8) then
-!                      call die( "PRIRPHI_OPT=>get_matel_s" )
-!                    endif
-
+                    call new_MATEL('S', ig, jg, xij(1:3,jn),
+     &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*(
      &                   xa(1,ia)*dk(1)
      &                 + xa(2,ia)*dk(2)
@@ -473,14 +441,8 @@ C     The factor of two because we use Ry for the Hamiltonian
                     else
 C Matrix elements between different atoms are taken from the 
 C gradient of the overlap 
-!                      call new_MATEL('S', ig, jg, xij(1:3,jn),
-!     &                           Ski2, grSki2 )
-                      call get_matel_s( ig, jg, xij(1:3,jn),
-     &                                  Sij, grSij )
-!                    if (ABS(Sij-Ski2)>1.0e-8) then
-!                      call die( "PRIRPHI_OPT=>get_matel_s" )
-!                    endif
-
+                      call new_MATEL('S', ig, jg, xij(1:3,jn),
+     &                           Sij, grSij )
 C The factor of two because we use Ry for the Hamiltonian
                       Si(jo) =
      &                  2.0d0*(grSij(1)*dk(1)
@@ -504,7 +466,6 @@ C The factor of two because we use Ry for the Hamiltonian
       enddo
 
 C     Free local memory
-!      call new_MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
 !N      call de_alloc( calculated, 'calculated', 'phirphi_opt' )
 !N      call de_alloc( Pij,        'Pij',        'phirphi_opt' )

@@ -22,8 +22,7 @@ contains
     use class_dSpData2D
     use geom_helper, only : iaorb, ucorb
     use atmfuncs,      only : orb_gindex
-!    use m_new_matel,   only : new_matel
-    use matel_mod,     only : get_matel_s
+    use matel_mod,     only : new_matel
 
     ! *********************************************************************
     ! Calculate the gradient of the overlap matrix
@@ -85,11 +84,7 @@ contains
         ! orbital g-index
         jg = orb_gindex(js,joa)
 
-!        call new_MATEL('S', ig, jg, xijo(:,ind), Sij2, grSij2 )
-        call get_matel_s( ig, jg, xijo(:,ind), Sij, grSij )
-!        if (ABS(Sij-Sij2)>1.0e-8_dp) then
-!          call die('OVERLAP_GRADIENT=>get_matel_s')
-!        endif
+        call new_MATEL('S', ig, jg, xijo(:,ind), Sij, grSij )
 
         grS(ind, 1) = grSij(1)
         grS(ind, 2) = grSij(2)

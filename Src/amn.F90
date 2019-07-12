@@ -88,11 +88,10 @@ subroutine amn( ispin )
                                                     !    global index to the 
                                                     !    trial projection
                                                     !    functions
-!  use m_new_matel,        only: new_matel           ! New MATEL implementation 
+  use matel_mod,          only: new_matel           ! New MATEL implementation 
                                                     !   with the global indices 
                                                     !   of the radial functions 
                                                     !   as inputs
-  use matel_mod,          only : get_matel_s, init_matel_wannier
   use atmfuncs,           only: orb_gindex          ! Subroutine that gives
                                                     !   the global index of an
                                                     !   atomic orbital
@@ -337,15 +336,8 @@ OrbitalQueue:                                                        &
         globalindexorbital = orb_gindex( item%specie, item%specieindex )
         ! Compute the overlap Between orbital with globalinde
         ! And projector with globalindex
-!        call new_matel( 'S', globalindexorbital, globalindexproj, r12, &
-!     &                  overlap2, gradient2 )
-        call get_matel_s( globalindexorbital, globalindexproj, r12, &
+        call new_matel( 'S', globalindexorbital, globalindexproj, r12, &
      &                    overlap, gradient )
-!        if (ABS(overlap-overlap2)>1.0E-10) then
-!          write(*,*) ABS(overlap-overlap2), &
-!     &     ABS((overlap-overlap2)/overlap)
-!        endif
-
         phase = -1.0_dp * dot_product( kvector, item%center )
         exponential = exp( iu * phase )
 

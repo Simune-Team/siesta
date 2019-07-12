@@ -64,8 +64,7 @@ C
       use atmfuncs,      only : rcut, orb_gindex
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb,
      &                          reset_neighbour_arrays 
-!      use m_new_matel,   only : new_matel
-      use matel_mod,     only : get_matel_t
+      use matel_mod,     only : new_matel
 
       use alloc,         only : re_alloc, de_alloc
 
@@ -149,13 +148,8 @@ C Is this orbital on this Node?
                 js = isa(ja)
                 jg = orb_gindex(js,joa)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-!                  call new_MATEL( 'T', ig, jg, xij(1:3,jn),
-!     .                      Tij2, grTij2 )
-                  call get_matel_t( ig, jg, xij(1:3,jn),
+                  call new_MATEL( 'T', ig, jg, xij(1:3,jn),
      .                      Tij, grTij )
-!                  if (ABS(Tij-Tij2)>1.0e-8_dp) then
-!                    call die('KINEFSM=>get_matel_t')
-!                  endif
 
                   Ti(jo) = Ti(jo) + Tij
 
@@ -194,7 +188,7 @@ C Is this orbital on this Node?
       enddo
 
 C Deallocate local memory
-!      call new_MATEL( 'T', 0, 0, 0, 0, xij, Tij, grTij )
+
       call reset_neighbour_arrays( )
       call de_alloc( Ti, 'Ti', 'kinefsm' )
       if (.not. matrix_elements_only) then

@@ -84,8 +84,7 @@ C
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
-!      use m_new_matel,   only : new_matel
-      use matel_mod,     only : get_matel_s
+      use matel_mod,     only : new_matel
 
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
@@ -128,7 +127,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp), dimension(:), pointer :: Di, Vi
       real(dp), dimension(:,:), pointer :: Ski, xno
       real(dp), dimension(:,:,:), pointer :: grSki
-      real(dp) ski2, grSki2(3)
 
       logical ::   within
       logical, dimension(:), pointer ::  listed, listedall
@@ -304,13 +302,8 @@ C           Only calculate if needed locally in our MPI process
                  ikb = ikb + 1
                  ! epsk_sqrt = sqrt(epskb(ks,koa))
                  kg = kbproj_gindex(ks,koa)
-!                 call new_MATEL( 'S', kg, ig, xki(1:3,ina),
-!     &                Ski2, grSki2 )
-                call get_matel_s( kg, ig, xki(1:3,ina),
+                 call new_MATEL( 'S', kg, ig, xki(1:3,ina),
      &                Ski(ikb,nno), grSki(1:3,ikb,nno) )
-!                if (ABS(Ski(ikb,nno)-Ski2)>1.0e-8_dp) then
-!                  call die('NLEFSM=>get_matel_s')
-!                endif
               enddo
 
            enddo ! loop over orbitals
@@ -410,7 +403,7 @@ C         Pick up contributions to H and restore Di and Vi
       endif
       
 C     Deallocate local memory
-!      call new_MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
+
       call reset_neighbour_arrays( )
       call de_alloc( grSki, 'grSki', 'nlefsm' )
       call de_alloc( Ski, 'Ski', 'nlefsm' )
@@ -521,8 +514,7 @@ C
       use neighbour,       only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,       only : mneighb, reset_neighbour_arrays
       use alloc,           only : re_alloc, de_alloc
-!      use m_new_matel,     only : new_matel
-      use matel_mod,       only : get_matel_s
+      use matel_mod,       only : new_matel
       use atm_types,       only : species_info, species
       use sparse_matrices, only : Dscf, xijo
       use siesta_options,  only : split_sr_so
@@ -575,7 +567,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp), dimension(:), pointer :: Di, Vi ! This is Vion
       real(dp), dimension(:,:), pointer :: Ski, xno
       real(dp), dimension(:,:,:), pointer :: grSki
-!      real(dp)           :: Ski2, grSki2(3)
 
       complex(dp)          :: V_sot(2,2), F_so(3,2,2)
       complex(dp), pointer :: V_so(:,:,:), Ds(:,:,:)
@@ -592,6 +583,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp) :: Vit_saved
 
 C ------------------------------------------------------------
+
 C Start time counter
       call timer( 'nlefsm', 1 )
 
@@ -759,13 +751,8 @@ C          Check maxno - if too small then increase array sizes
             !endif
             kg = kbproj_gindex(ks,koa)
             ig = orb_gindex(is,ioa)
-!            call new_MATEL( 'S', kg, ig, xki(1:3,ina),
-!     &                     Ski2, grSki2 )
-            call get_matel_s( kg, ig, xki(1:3,ina),
-     &            Ski(ikb,nno), grSki(1:3,ikb,nno) )
-!            if (ABS(Ski(ikb,nno)-Ski2)>1.0e-8_dp) then
-!              call die('NLEFSM=>get_matel_s')
-!            endif
+            call new_MATEL( 'S', kg, ig, xki(1:3,ina),
+     &                     Ski(ikb,nno), grSki(1:3,ikb,nno) )
            enddo
           endif  ! Within
 

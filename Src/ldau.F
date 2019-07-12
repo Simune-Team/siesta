@@ -106,8 +106,7 @@ C
       use neighbour    , only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour    , only : mneighb
       use alloc,         only : re_alloc, de_alloc
-!      use m_new_matel,   only : new_matel
-      use matel_mod,     only : get_matel_s
+      use matel_mod,     only : new_matel
       use radial,        only : rad_func
       use atm_types,     only : nspecies
       use atm_types,     only : species_info    ! Derived type with all the info
@@ -410,13 +409,8 @@ C ......................
 !                 and a neighbour atomic orbital
                   do ko = 1, nldauproj
                     kg  = ldau_gindex(ks,ko)
-!                    call new_matel( 'S', kg, ig, xki(1:3,ina),
-!     &                  Ski2, grSki2 )
-                    call get_matel_s( kg, ig, xki(1:3,ina),
-     &                  Ski(ko,nno), grSki(1:3,ko,nno))
-!                    if (ABS(Ski(ko,nno)-Ski2)>1.0e-8_dp) then
-!                      call die('ldau=>get_matel_s')
-!                    endif
+                    call new_matel( 'S', kg, ig, xki(1:3,ina),
+     &                   Ski(ko,nno), grSki(1:3,ko,nno))
                   enddo
 
                 endif   ! If on orbitals within range
@@ -629,15 +623,9 @@ C ......................
                     enddo
                     do ko = 1, nldauproj
                       kg = ldau_gindex(ks,ko)
-!                    call new_matel( 'S', kg, ig, xki(1:3,ina),
-!     &                  Ski2,grSki2 )
-                    call get_matel_s( kg, ig, xki(1:3,ina),
-     &                  Ski(ko,nno), grSki(1:3,ko,nno))
-!                    if (ABS(Ski(ko,nno)-Ski2)>1.0e-8_dp) then
-!                      write(*,*) 'NAEFS Check this', Ski2,
-!     &                           ABS(Ski(ko,nno)-Ski2)
-!                      call die('bye bye')
-!                    endif
+                      call new_matel( 'S', kg, ig, xki(1:3,ina),
+     &                     Ski(ko,nno), grSki(1:3,ko,nno))
+
                     enddo
 
                   endif   ! If on orbitals within range
