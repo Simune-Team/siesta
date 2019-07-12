@@ -24,7 +24,7 @@
       use precision, only : dp
       use alloc,     only : re_alloc, de_alloc, alloc_default,
      &                      allocDefaults
-      use sys,       only: die
+
       use parallel,  only : Node, Nodes
       use m_radfft,  only : radfft
       use m_matel_registry, ONLY : RCUT
@@ -42,8 +42,12 @@
       !> with two versions (1 and 2), but '2' is not always needed.
       TYPE, public :: MATEL
         integer           :: MODE             ! One of MODE_S, MODE_T or MODE_XYZ
-        integer           :: NROWS            ! Number of rows of functions in table (F_1)
-        integer           :: NCOLS            ! Number of columns of functions in table (F_2)
+
+        integer           :: min_ig1              ! Registry index of first "F_1" function
+        integer           :: max_ig1              ! Registry index of last "F_1" function
+        integer           :: min_ig2              ! Registry index of first "F_2" function
+        integer           :: max_ig2              ! Registry index of last "F_2" function
+
         integer           :: MAT_ROWS         ! Leading size of matrix (in num of harmonics)
         integer           :: MAT_COLS         ! Columns of matrix (in num of harmonics)
 
@@ -63,6 +67,7 @@
                                               ! Index of radial functions (after REDUCE_RADEXP)
 
         integer           :: MILM
+        !> Work space for computation of rlylm
         real(dp), POINTER :: Y(:), DYDR(:,:)
 
         CONTAINS
@@ -80,7 +85,7 @@
       real(dp),         parameter :: FFTOL     =  1.e-8_dp
       CHARACTER(LEN=*), parameter :: MYNAME =  'MATEL_TABLE'
 
-      
+      external :: die
 
       CONTAINS
       
@@ -116,10 +121,11 @@
       integer :: n_harms_hi, n_harms_lo
       
       this%MODE  = IOPER
-      this%NROWS = hi1 - lo1 + 1
-      this%NCOLS = hi2 - lo2 + 1
 
-!      print *, "init: rows, cols:", this%NROWS, this%NCOLS
+      this%min_ig1 = lo1 + spha1%base
+      this%max_ig1 = hi1 + spha1%base
+      this%min_ig2 = lo2 + spha2%base
+      this%max_ig2 = hi2 + spha2%base
 
       this%SpHa1 => SpHa1
       this%SpHa2 => SpHa2
@@ -146,9 +152,6 @@
       this%MAT_COLS = n_harms_hi - n_harms_lo
       this%BASE_SPHA2 = n_harms_lo
 
-!      print *, "init: dim1, dim2:", this%MAT_ROWS, this%MAT_COLS
-!      print *, "init: base1, base2:", this%BASE_SPHA1, this%BASE_SPHA2
-      
       ! Compute and reduce Radial Expansion
       call this%compute_RadExp( )
       call this%reduce_RadExp( )
@@ -489,36 +492,48 @@ C *******************************************************************
       SIZE = LAST - FIRST + 1
       end function GET_LOOP_LIMITS
 
+      !>  Get the matrix element and its derivative
       subroutine get_matel( THIS, IG1, IG2, R12, S12, DSDR )
-C *******************************************************************
-C  Get the Matrix element between orbitals and its derivative
-C ************************* INPUT ***********************************
-C INTEGER IG1    : Global index of 1st function
-C INTEGER IG2    : Gloabal index of 2nd function
-C REAL*8  R12(3) : Vector from first to second atom
-C ************************* OUTPUT **********************************
-C REAL*8 S12      : Matrix element between orbitals.
-C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
-C *******************************************************************
-      use interpolation, only: splint
-      implicit none
-      class(MATEL) :: THIS
-      integer      :: IG1, IG2
-      real(dp)     :: R12(3), DSDR(3), S12
 
-C     Local Parameter
+      use interpolation, only: splint
+
+      implicit none
+
+      !> Matel_table object
+      class(MATEL) :: THIS
+
+      !> Global index of 1st function
+      integer, intent(in)      :: IG1
+      !> Global index of 2nd function
+      integer, intent(in)      :: IG2
+
+      !> Vector from first to second atom
+      real(dp), intent(in)    :: R12(3)
+
+      !> Matrix element
+      real(dp), intent(out)    :: S12
+      !> Derivative (gradient) of S12 with respect to R12.
+      real(dp), intent(out)    :: DSDR(3)
+
       real(dp), parameter :: TINY = 1.e-12_dp
-C     Local variables
+
       integer  :: IX, IH, LMAX, IFFY, JLM, JFFR, IFLM1, IFLM2
       real(dp) ::  X12(3), R, SR, DSRDR
 
-C     Initialize output
+      if ( (ig1 < this%min_ig1) .or. (ig1 > this%max_ig1) ) then
+         call die("IG1 out of range in get_matel")
+      endif
+      if ( (ig2 < this%min_ig2) .or. (ig2 > this%max_ig2) ) then
+         call die("IG2 out of range in get_matel")
+      endif
+
+!     Initialize output
       S12 = 0.0_dp
       DSDR(1) = 0.0_dp
       DSDR(2) = 0.0_dp
       DSDR(3) = 0.0_dp
 
-C     Avoid R12=0
+!     Avoid R12=0
       X12(1) = R12(1)
       X12(2) = R12(2)
       X12(3) = R12(3)

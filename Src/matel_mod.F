@@ -33,13 +33,14 @@
 
       PRIVATE
       
-      public :: init_matel     ! Initialize S, T, TA, X, Y, Z, S_op, X_op, Y_op, Z_op
-      public :: init_matel_wannier  ! Initialize S_wann
-      public :: get_matel_s    ! Get a value from S, S_wann, or S_op
+      public :: init_matel     ! Initialize tables S, T, TA, X, Y, Z, S_opt, X_opt, Y_opt, Z_opt
+      public :: init_matel_wannier ! Initialize table S_wann
+      
+      public :: get_matel_s    ! Get a value from S, S_wann, or S_opt
       public :: get_matel_t    ! Get a value from T or TA
-      public :: get_matel_x    ! Get a value from X or X_op
-      public :: get_matel_y    ! Get a value from Y or Y_op
-      public :: get_matel_z    ! Get a value from Z or Z_op
+      public :: get_matel_x    ! Get a value from X or X_opt
+      public :: get_matel_y    ! Get a value from Y or Y_opt
+      public :: get_matel_z    ! Get a value from Z or Z_opt
 
       !> These are the functions recorded in the 'matel registry'; the number of each kind
       !> serve as markers for the different sections needed in the tables.
@@ -69,33 +70,33 @@
       !> in the code (numproj of them) need to be dealt with.
 
       !> Overlaps of PAOs, KBs, or LDAUprojs with PAOs
-      TYPE(MATEL) :: S           ! Unity (overlap). 
+      TYPE(MATEL) :: tab_S           ! Unity (overlap). 
       !> Laplacian among PAOs
-      TYPE(MATEL) :: T           ! -Laplacian.      
+      TYPE(MATEL) :: tab_T           ! -Laplacian.      
       !> Laplacian among Vna functions
-      TYPE(MATEL) :: TA         ! -Laplacian.
+      TYPE(MATEL) :: tab_TA         ! -Laplacian.
       
       !> X, Y, Z among orbitals (for dielectric polarization calculations)
-      TYPE(MATEL) :: X           ! X projection.   
-      TYPE(MATEL) :: Y           ! Y projection.   
-      TYPE(MATEL) :: Z           ! Z projection.   
+      TYPE(MATEL) :: tab_X           ! X projection.   
+      TYPE(MATEL) :: tab_Y           ! Y projection.   
+      TYPE(MATEL) :: tab_Z           ! Z projection.   
 
       !> Overlaps of PAOs with wannier projectors
-      TYPE(MATEL) :: S_wann      ! Unity (overlap).
+      TYPE(MATEL) :: tab_S_wann      ! Unity (overlap).
 
       !> Overlaps of PAOs with KBs for optical calculations (different from table "S" because
       !> the KBs are "function 2")
-      TYPE(MATEL) :: S_op        ! Unity (overlap)
+      TYPE(MATEL) :: tab_S_opt        ! Unity (overlap)
 
       !> X,Y,Z  PAOs with KBs for optical calculations
-      TYPE(MATEL) :: X_op        ! X projection
-      TYPE(MATEL) :: Y_op        ! Y projection
-      TYPE(MATEL) :: Z_op        ! Z projection
+      TYPE(MATEL) :: tab_X_opt        ! X projection
+      TYPE(MATEL) :: tab_Y_opt        ! Y projection
+      TYPE(MATEL) :: tab_Z_opt        ! Z projection
 
       CONTAINS
 
-      !>  Initialize the MATEL tables S, T, TA, X, Y, Z, S_op,
-      !>  X_op, Y_op, Z_op
+      !>  Initialize the MATEL tables S, T, TA, X, Y, Z, S_opt,
+      !>  X_opt, Y_opt, Z_opt
       subroutine init_matel( )
 
       use fdf,       only : fdf_boolean
@@ -143,15 +144,15 @@
       call ylmk_val_all%compute_spha(1, top_vna, EVALUATE, 0)
 
       ! Overlap table from PAOs, KBs, and LDAU projs to PAOs.
-      call S%init(MODE_S, ylmk_val_all, 1, top,
+      call tab_S%init(MODE_S, ylmk_val_all, 1, top,
      $                    ylmk_val_all, 1, num_orb)
 
       ! Laplacian table from PAOs to PAOs.
-      call T%init(MODE_T, ylmk_val_all, 1, num_orb,
+      call tab_T%init(MODE_T, ylmk_val_all, 1, num_orb,
      $                    ylmk_val_all, 1, num_orb)
       
       ! Laplacian table from Vnas to Vnas
-      call TA%init(MODE_T, ylmk_val_all, top+1, top_vna,
+      call tab_TA%init(MODE_T, ylmk_val_all, top+1, top_vna,
      $                     ylmk_val_all, top+1, top_vna)
 
 
@@ -165,15 +166,15 @@
       ! The X, Y, and Z tables are then overlaps of PAOs and xPAOs
 
          call ylmk_x_orbs%compute_spha(1, num_orb, EVALUATE_X, 1)
-         call X%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
+         call tab_X%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
      $                         ylmk_x_orbs, 1, num_orb)
 
          call ylmk_y_orbs%compute_spha(1, num_orb, EVALUATE_Y, 1)
-         call Y%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
+         call tab_Y%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
      $                         ylmk_y_orbs, 1, num_orb)
 
          call ylmk_z_orbs%compute_spha(1, num_orb, EVALUATE_Z, 1)
-         call X%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
+         call tab_X%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
      $                         ylmk_z_orbs, 1, num_orb)
 
       endif
@@ -185,30 +186,30 @@
       if (optical) then
          
       ! Overlap table from PAOs to KBs.
-         call S_op%init(MODE_S, ylmk_val_all, 1, num_orb,
+         call tab_S_opt%init(MODE_S, ylmk_val_all, 1, num_orb,
      $                    ylmk_val_all, num_orb+1, num_kb)
 
       ! Find the spherical harmonic decomposition and
       ! Fourier transform of {x,y,z}*\chi, where \chi is a KB proj.
 
-      ! The X_op, Y_op, and Z_op tables are then overlaps of PAOs and xKBs
+      ! The X_opt, Y_opt, and Z_opt tables are then overlaps of PAOs and xKBs
 
          call ylmk_x_kbs%compute_spha(num_orb+1, num_orb+num_kb,
      $                                EVALUATE_X, 1)
 
-         call X_op%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
+         call tab_X_opt%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
      $                         ylmk_x_kbs, 1, num_kb)
 
          call ylmk_y_kbs%compute_spha(num_orb+1, num_orb+num_kb,
      $                                EVALUATE_Y, 1)
 
-         call Y_op%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
+         call tab_Y_opt%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
      $                         ylmk_y_kbs, 1, num_kb)
 
          call ylmk_z_kbs%compute_spha(num_orb+1, num_orb+num_kb,
      $                                EVALUATE_Z, 1)
 
-         call Z_op%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
+         call tab_Z_opt%init( MODE_XYZ, ylmk_val_all, 1, num_orb,
      $                         ylmk_z_kbs, 1, num_kb)
 
          
@@ -248,7 +249,7 @@
       call ylmk_val_wannier_projs%compute_spha(top_vna+1,
      $                           top_vna+numproj, EVALUATE, 0)
 
-      call S_wann%init(MODE_S, ylmk_val_all, 1, num_orb,
+      call tab_S_wann%init(MODE_S, ylmk_val_all, 1, num_orb,
      $                     ylmk_val_wannier_projs, 1, numproj)
 
       ! Restore allocation defaults
@@ -272,11 +273,11 @@ C *******************************************************************
       real(dp) ::  R12(3), DSDR(3), S12
       ! Local Variables
       IF (IG2.LE.num_orb) then
-        call S%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_S%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ELSE IF (IG2.LE.num_orb+num_kb) then
-        call S_op%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_S_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ELSE
-        call S_wann%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_S_wann%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ENDIF
       end subroutine get_matel_s
 
@@ -296,9 +297,9 @@ C *******************************************************************
       integer  :: IG1, IG2
       real(dp) ::  R12(3), DSDR(3), S12
       if (IG1.le.NUM_ORB .and. IG2.le.NUM_ORB) then
-        call T%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_T%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       else
-        call TA%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_TA%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       endif
       end subroutine get_matel_t
 
@@ -318,9 +319,9 @@ C *******************************************************************
       integer  :: IG1, IG2
       real(dp) ::  R12(3), DSDR(3), S12
       IF (IG2.LE.num_orb) then
-        call X%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_X%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ELSE
-        call X_op%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_X_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ENDIF
       end subroutine get_matel_x
 
@@ -340,9 +341,9 @@ C *******************************************************************
       integer  :: IG1, IG2
       real(dp) ::  R12(3), DSDR(3), S12
       IF (IG2.LE.num_orb) then
-        call Y%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_Y%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ELSE
-        call Y_op%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_Y_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ENDIF
       end subroutine get_matel_y
 
@@ -362,9 +363,9 @@ C *******************************************************************
       integer  :: IG1, IG2
       real(dp) ::  R12(3), DSDR(3), S12
       IF (IG2.LE.num_orb) then
-        call Z%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_Z%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ELSE
-        call Z_op%GET_MATEL( IG1, IG2, R12, S12, DSDR )
+        call tab_Z_opt%GET_MATEL( IG1, IG2, R12, S12, DSDR )
       ENDIF
       end subroutine get_matel_z
 
