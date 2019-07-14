@@ -907,7 +907,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     ! Array for holding converted k-points
-    real(dp) :: bkpt(3), kpt(3), kq(3), wq
+    real(dp) :: bkpt(3), kpt(3), kq(3), wq, rcell(3,3)
     real(dp), allocatable :: lDOS(:)
     
     ! Dimensions
@@ -1099,6 +1099,8 @@ contains
     call itt_init  (it2,end1=nspin,end2=nkpnt)
     call itt_attach(it2,cur1=ispin,cur2=ikpt)
 
+    call reclat(El%cell,rcell,1)
+
     ! do spin and k-point loop in one go...
     do while ( .not. itt_step(it2) )
        
@@ -1126,7 +1128,7 @@ contains
           ! init qpoint in reciprocal lattice vectors
           kpt = bkpt(:) + q_exp(El,iqpt)
           ! Convert to 1/Bohr
-          call kpoint_convert(El%cell,kpt,kq,-1)
+          call kpoint_convert(rcell,kpt,kq,-2)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
           ! Calculate transfer matrices @Ef (including the chemical potential)
@@ -1780,7 +1782,7 @@ contains
     ! * LOCAL variables     *
     ! ***********************
     integer  :: iq
-    real(dp) :: kpt(3), kq(3)
+    real(dp) :: kpt(3), kq(3), rcell(3,3)
     
     ! Dimensions
     integer :: nq, nw
@@ -1939,6 +1941,8 @@ contains
     ! create the offset to be used for copying over elements
     off = nuo_E - nuou_E + 1
 
+    call reclat(El%cell,rcell,1)
+
     ! loop over the repeated cell...
     q_loop: do iq = 1 , nq
 
@@ -1946,7 +1950,7 @@ contains
        kpt(:) = bkpt(:) + q_exp(El,iq)
       
        ! Convert to 1/Bohr
-       call kpoint_convert(El%cell,kpt,kq,-1)
+       call kpoint_convert(rcell,kpt,kq,-2)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
        call set_HS_Transfer(ispin, El, n_s,sc_off, kq, &

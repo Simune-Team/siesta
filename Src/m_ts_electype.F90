@@ -122,9 +122,10 @@ module m_ts_electype
 
      ! Advanced stuff...
      logical :: kcell_check = .true.
-     ! If the user requests to assign different "spill-in fermi-level" 
+     ! If the user requests to assign different "spill-in bias"
      ! we allow that
-     real(dp) :: Ef_frac_CT = 0._dp
+     real(dp) :: V_frac_CT = 0._dp
+     real(dp) :: delta_Ef = 0._dp
 
      ! ---v--- Below we have the content of the TSHS file
      integer  :: nspin = 0, na_u = 0, no_u = 0, no_s = 0
@@ -405,7 +406,8 @@ contains
             leqi(ln,'semi-inf-dir') .or. leqi(ln,'semi-inf') ) then
          
          tmp = 'Semi-infinite direction not understood correctly, &
-             &allowed format: [-+][a-c|a[1-3]]'
+             &allowed format: [-+][abc|a[1-3]] or any two/three directions &
+             &without direction ab|ac|bc|abc'
 
          ! This possibility exists
          !  semi-inf [-+][ ][a-c|a[1-3]] -> [direction] [vector]
@@ -548,7 +550,7 @@ contains
           end if
           info(5) = .true.
 
-       else if ( leqi(ln,'Ef-fraction') ) then
+       else if ( leqi(ln,'V-fraction') ) then
 
           ! highly experimental feature,
           ! it determines the fraction of the electrode fermi-level
@@ -557,11 +559,20 @@ contains
           if ( fdf_bnvalues(pline) < 1 ) &
                call die('Fraction specification missing.')
           
-          this%Ef_frac_CT = fdf_bvalues(pline,1,after=1)
-          if ( this%Ef_frac_CT < 0._dp .or. &
-               1._dp < this%Ef_frac_CT ) then
-             call die('Fraction for fermi-level must be in [0;1] range')
+          this%V_frac_CT = fdf_bvalues(pline,1,after=1)
+          if ( this%V_frac_CT < 0._dp .or. &
+               1._dp < this%V_frac_CT ) then
+             call die('Fraction for bias must be in [0;1] range')
           end if
+
+        else if ( leqi(ln,'delta-Ef') ) then
+
+          ! highly experimental feature,
+          ! additional shifting of the Fermi-level
+          if ( fdf_bnvalues(pline) < 1 ) &
+               call die('delta-Ef specification missing.')
+
+          call pline_E_parse(pline, 1,ln, val=this%delta_Ef, before=3)
 
        else if ( leqi(ln,'GF') .or. &
             leqi(ln,'GF-file') ) then
@@ -676,6 +687,7 @@ contains
          nspin=this%nspin, Ef=this%Ef, ucell=this%cell, Qtot=this%Qtot, &
          nsc = this%nsc , &
          Bcast=.true.)
+    this%Ef = this%Ef + this%delta_Ef
 
     allocate(this%xa(3,this%na_u),this%lasto(0:this%na_u))
     call ts_read_TSHS_opt(this%HSfile,xa=this%xa,lasto=this%lasto, &
@@ -818,11 +830,15 @@ contains
     end if
 
                                  ! Same criteria as IsVolt
-    if ( this%DM_update > 0 .or. abs(this%mu%mu) < 0.000000735_dp ) then
-       ! when updating the cross-terms
-       ! there is no need to also shift the energy
-       ! I think this will battle each other out...
-       this%Ef_frac_CT = 0._dp
+    if ( abs(this%mu%mu) < 0.000000735_dp ) then
+      ! when updating the cross-terms
+      ! there is no need to also shift the energy
+      ! I think this will battle each other out...
+      if ( this%DM_update > 0 ) then
+        ! In TS runs when updating the cross terms the bias
+        ! is also taken into account.
+        this%V_frac_CT = 0._dp
+      end if
     end if
 
     ! if the user has specified text for the electrode position
@@ -1708,6 +1724,8 @@ contains
          Ef, Qtot, Temp, &
          istep, ia1, &
          Bcast=Bcast)
+    ! Correct fermi-level
+    Ef = Ef + this%delta_Ef
 
     if ( present(ispin) ) then
        if ( ispin > 0 ) then
@@ -2334,8 +2352,9 @@ contains
        write(*,f11)  '  Cross-terms and electrode region are updated'
     end if
 #endif
+    write(*,f8)  '  Manual delta-Ef shift', this%delta_Ef
     if ( abs(this%mu%mu) > 1.e-10_dp ) then
-       write(*,f8)  '  Hamiltonian E-C Ef fractional shift', this%Ef_frac_CT
+       write(*,f8)  '  Hamiltonian E-C bias fractional shift', this%V_frac_CT
     end if
 #ifndef TBTRANS
     if ( .not. this%kcell_check ) then
