@@ -2077,10 +2077,10 @@ contains
 
 
     ! Fix the action to finalize it..
-    if ( mix%restart > 0 .and. &
-         mod(current_itt(mix),mix%restart) == 0 ) then
-
-       mix%action = IOR(mix%action, ACTION_RESTART)
+    if ( mix%restart > 0 ) then
+      if ( mod(current_itt(mix),mix%restart) == 0 ) then
+        mix%action = IOR(mix%action, ACTION_RESTART)
+      end if
 
     end if
 
