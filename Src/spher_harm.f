@@ -22,6 +22,7 @@
       integer, parameter ::  MAXLM = (MAXL+1) * (MAXL+1)
       integer, parameter ::  MAXSP = (MAXL+1) * (2*MAXL+1)
 
+      public :: get_lmax
       public :: rlylm, ylmexp, ylmylm, lofilm
       public :: gauleg !! for phirphi...
       interface ylmexp
@@ -32,6 +33,12 @@
       
       CONTAINS
 
+      !> To interrogate the module about the maximum allowed L
+      subroutine get_lmax(lmax)
+      integer, intent(out) :: lmax
+      lmax = MAXL
+      end subroutine get_lmax
+      
       subroutine rlylm( LMAX, R, RLY, GRLY )
       integer, intent(in)   :: lmax
       real(dp), intent(in)  :: r(3)
@@ -47,16 +54,16 @@ C CONSTANT AND PLM ASSOCIATED LEGENDRE POLYNOMIALS.
 C THE ORDER OF THE Y'S IS THAT IMPLICIT IN THE NESTED LOOPS
 C    DO L=0,LMAX
 C      DO M=-L,L
-C WITH A UNIFIED INDEX ILM=1,...,LMAX**2 INCREASING BY ONE UNIT IN THE
+C WITH A UNIFIED INDEX ILM=1,...,(LMAX+1)**2 INCREASING BY ONE UNIT IN THE
 C  INNER LOOP.
 C WRITTEN BY J.M.SOLER. AUG/96
 C *********** INPUT ***************************************************
 C INTEGER LMAX : Maximum angular momentum quantum number required.
 C REAL*8  R(3) : Position at which Y and GY are required.
 C *********** OUTPUT **************************************************
-C REAL*8 RLY(LMAX*LMAX)    : Real spherical harmonics times r**l,
+C REAL*8 RLY(0:(LMAX+1)*(LMAX+1)-1)    : Real spherical harmonics times r**l,
 C                             at point R, as explained above.
-C REAL*8 GRLY(3,LMAX*LMAX) : Gradient of the RLY's at point R.
+C REAL*8 GRLY(1:3,0:(LMAX+1)*(LMAX+1)-1) : Gradient of the RLY's at point R.
 C *********** UNITS ***************************************************
 C Units of R are arbitrary. Units of RLY and GRLY are related to those
 C  of R in the obvious way.

@@ -95,7 +95,9 @@ C Find neighbour atoms
             ig = vna_gindex(is)
             jg = vna_gindex(js)
             call new_MATEL( 'T', ig, jg, xij(1:3,jn), vij, fij )
-
+            ! We could avoid the special treatment of vna
+            ! in the matel_registry module (i.e., include Ylm(0)=1/sqrt(4pi)
+            ! in the evaluation; then we could just divide by 4 here)
             Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
                do ix = 1,3

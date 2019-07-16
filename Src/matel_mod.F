@@ -108,7 +108,6 @@
       use atmfuncs,  only : vna_gindex, ldau_gindex
       use siesta_options, only : bornz
       use ldau_specs, only : switch_ldau
-      use m_matel_registry, only : get_nfuncs
 
       implicit none
       ! Local Variables

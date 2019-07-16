@@ -1,0 +1,22 @@
+Things to do in this branch before merging:
+
+* Add code to show the contents of the ylmk and matel tables.
+* Add a "name" field to the tables.
+* Adhere to the coding guidelines in Docs/developer/...
+* Add code to (re)-initialize the tables.
+* Move the initialization of the PAO, Vna, and KB tables to
+  siesta_init.
+* Maybe move the initialization of LDAU-related tables to the ldau
+  module.
+* Defer the initialization of the Polarization and Optical tables
+  until the analysis stage.
+* Defer the initialization of the Wannier tables
+* (In connection to the above): make sure that possible Lua-driven cases are
+  treated correctly.
+* Maybe eliminate the vna special case in the evaluation routine in
+  matel_registry (factor of Y_00=1/sqrt(4*pi)).
+* Maybe use "object-oriented" techniques in matel_registry to handle
+  radfuncs and trial_orbitals.
+* Add FORD documentation for the new suite of modules.
+* Add "unit tests"
+
