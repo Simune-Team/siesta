@@ -423,25 +423,46 @@ contains
 
          ! Do options so that a pulay option may refer to
          ! the actual names of the constants
+         
          if ( m%m == MIX_PULAY ) then
+           if ( leqi(opt,'weight.linear') &
+               .or. leqi(opt,'w.linear') ) then
+             
+             m%rv(1) = fdf_breals(pline,1)
+             if ( m%rv(1) <= 0._dp .or. 1._dp < m%rv(1) ) then
+               call die("m_mixing: Mixing weight should be 0 < weight <= 1")
+             end if
+             
+           else if ( leqi(opt,'svd.cond') ) then
+             m%rv(I_SVD_COND) = fdf_bvalues(pline,1)
+           end if
+           
+         else if ( m%m == MIX_BROYDEN ) then
+           
+           ! The linear mixing weight
+           if ( leqi(opt,'weight.linear') &
+               .or. leqi(opt,'w.linear') ) then
+             
+             m%rv(1) = fdf_breals(pline,1)
+             if ( m%rv(1) <= 0._dp .or. 1._dp < m%rv(1) ) then
+               call die("m_mixing: Linear mixing weight should be 0 < weight <= 1")
+             end if
 
-            ! The linear mixing weight
-            if ( leqi(opt,'weight.linear') &
-                 .or. leqi(opt,'w.linear') ) then
-               
-               m%rv(1) = fdf_breals(pline,1)
+           else if ( leqi(opt,'weight.prime') &
+               .or. leqi(opt,'w.prime') ) then
+             
+             m%rv(2) = fdf_breals(pline,1)
+             if ( m%rv(2) < 0._dp .or. 1._dp < m%rv(2) ) then
+               call die("m_mixing: Prime weight should be 0 <= weight <= 1")
+             end if
 
-            else if ( leqi(opt,'svd.cond') ) then
-
-               ! This is only applicable to the Pulay
-               ! mixing scheme...
-               
-               m%rv(I_SVD_COND) = fdf_bvalues(pline,1)
-               
-            end if
-
+           else if ( leqi(opt,'svd.cond') ) then
+             
+             m%rv(I_SVD_COND) = fdf_bvalues(pline,1)
+             
+           end if
+           
          end if
-
          
          ! Generic options for all advanced methods...
          if ( leqi(opt,'next.p') ) then
@@ -472,6 +493,10 @@ contains
   subroutine mixer_init( mix )
     type(tMixer), intent(inout) :: mix
     integer :: n
+
+    if ( mix%w <= 0._dp .or. 1._dp < mix%w ) then
+      call die("m_mixing: Mixing weight should be: 0 < weight <= 1")
+    end if
 
     ! Correct amount of history in the mixing.
     if ( 0 < mix%restart .and. &
@@ -518,7 +543,7 @@ contains
        
        ! allocate temporary array
        mix%n_hist = max(2, mix%n_hist)
-       n = 1 + mix%n_hist
+       n = 2 + mix%n_hist
        allocate(mix%rv(I_SVD_COND:n))
        mix%rv(1:n) = mix%w
 
@@ -702,7 +727,7 @@ contains
     type(tMixer), intent(in), target :: mixers(:)
 
     type(tMixer), pointer :: m
-    character(len=50) :: fmt
+    character(len=64) :: fmt
 
     logical :: bool
     integer :: i
@@ -795,9 +820,13 @@ contains
           write(*,'(2a,t50,''= '',i0)') trim(fmt), &
                '    History steps',m%n_hist
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
-               '    Jacobian weight',m%w
+               '    Linear mixing weight',m%rv(1)
           write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
-               '    Weight prime',m%rv(1)
+               '    Inverse Jacobian weight',m%w
+          write(*,'(2a,t50,''= '',f12.6)') trim(fmt), &
+               '    Weight prime',m%rv(2)
+          write(*,'(2a,t50,''= '',e10.4)') trim(fmt), &
+               '    SVD condition',m%rv(I_SVD_COND)
           if ( m%rv(I_P_NEXT) > 0._dp ) then
              write(*,'(2a,t50,''= '',f6.4)') trim(fmt), &
                   '    Step mixer parameter',m%rv(I_P_NEXT)
@@ -921,8 +950,11 @@ contains
        ! For Broyden this is the inverse Jacobian
        write(*,'(t3,a,f6.4)') 'weight ', m%w
        select case ( m%m )
-       case ( MIX_PULAY, MIX_BROYDEN )
-          write(*,'(t3,a,f6.4)') 'weight.linear ', m%rv(1)
+       case ( MIX_PULAY )
+         write(*,'(t3,a,f6.4)') 'weight.linear ', m%rv(1)
+       case ( MIX_BROYDEN )
+         write(*,'(t3,a,f6.4)') 'weight.linear ', m%rv(1)
+         write(*,'(t3,a,f6.4)') 'weight.prime ', m%rv(2)
        end select
           
        if ( m%n_hist > 0 ) then
@@ -1685,7 +1717,7 @@ contains
       ! This is the modified Broyden algorithm...
 
       ! Retrieve the previous weights
-      w => mix%rv(2:1+nh)
+      w => mix%rv(3:2+nh)
       select case ( mix%v )
       case ( 2 ) ! Unity Broyden
          
@@ -1779,9 +1811,9 @@ contains
 
       ! Add the diagonal term
       ! This should also prevent it from being
-      ! singular (unless mix%w == 0)
+      ! singular (unless mix%rv(2) == 0)
       do i = 1 , nh
-         A(i,i) = mix%rv(1) ** 2 + A(i,i)
+         A(i,i) = mix%rv(2) ** 2 + A(i,i)
       end do
 
       ! Calculate the inverse
@@ -2006,7 +2038,7 @@ contains
          
       end if
 
-      ! Get the linear mixing term...
+      ! Get the inverse Jacobian term...
       G = mix%w
 
       ! if debugging print out the different variables
@@ -2242,7 +2274,7 @@ contains
 
       ! Update weights (if necessary)
       if ( nh > 1 ) then
-         do i = 2 , nh
+         do i = 3 , nh + 1
             mix%rv(i) = mix%rv(i+1)
          end do
       end if

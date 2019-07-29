@@ -30,7 +30,8 @@
       use m_mixing_scf, only: scf_mix
       use m_mixing, only: mixing
       
-      use m_spin,           only: h_spin_dim, SpOrb
+      use m_spin,           only: spin
+
       use parallel,         only: IONode
 
       implicit none
@@ -42,6 +43,7 @@
 
       real(dp)              :: dtmp
       integer               :: iiscf, i, is
+      integer :: nspin_mix
 
       external :: mulliken
 !-------------------------------------------------------------------- BEGIN
@@ -52,15 +54,17 @@
          ! Mix Hamiltonian
          Xin => Hold
          Xout => H
+         nspin_mix = spin%H
       else
          ! Mix density matrix
          Xin => Dold
          Xout => Dscf
+         nspin_mix = spin%DM
       end if
 
 
       ! Create residual function to minimize
-      allocate(F(maxnh,h_spin_dim))
+      allocate(F(maxnh,nspin_mix))
 
 !$OMP parallel default(shared), private(dtmp,i)
 
@@ -103,15 +107,15 @@
       ! Upon exit Xout contains the mixed quantity
       select case ( mix_spin )
       case ( MIX_SPIN_ALL )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout)
+         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout)
       case ( MIX_SPIN_SPINOR )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
      &        nsub=2)
       case ( MIX_SPIN_SUM )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
      &        nsub=1)
       case ( MIX_SPIN_SUM_DIFF )
-         call mixing( scf_mix, maxnh, h_spin_dim, Xin, F, Xout,
+         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
      &        nsub=2)
       end select
 
@@ -148,31 +152,23 @@
       ! Correctly handle mixed quantity
       ! move over mixed quantity to "input"
       if ( mix_scf_first ) then
-         
-         ! always allow mixing
-!$OMP do
-         do is = 1 , size(Xin, 2)
-            do i = 1 , size(Xin, 1)
-               Xin(i,is) = Xout(i,is)
-            end do
-         end do
-!$OMP end do nowait
-         
+
+        ! always allow mixing
+        ! I.e. we do nothing
+        
       else if ( iscf == 1 ) then
          
-         ! We are not allowed to mix the first SCF
-         ! Remember that Xout contains the MIXED
-         ! quantity and F is the current residual
-         ! hence:
-         !   Xout = Xin + F
+        ! We are not allowed to mix the first SCF
+        ! Remember that Xout contains the MIXED
+        ! quantity and F is the current residual
+        ! hence for no mixing we re-create Xout:
+        !   Xout = Xin + F
 !$OMP do
-         do is = 1 , size(Xin, 2)
-            do i = 1 , size(Xin, 1)
-               Xin(i,is) = Xin(i,is) + F(i,is)
-               ! we require that Xin == Xout:
-               Xout(i,is) = Xin(i,is)
-            end do
-         end do
+        do is = 1 , nspin_mix
+          do i = 1 , size(Xin, 1)
+            Xout(i,is) = Xin(i,is) + F(i,is)
+          end do
+        end do
 !$OMP end do nowait
 
       end if
@@ -188,7 +184,7 @@
 
       if (muldeb .and. (.not. MixH) ) then 
          if (IONode) write (6,"(/a)") 'Using DM after mixing:'
-         if ( SpOrb .and. orbmoms) then
+         if ( spin%SO .and. orbmoms) then
             call moments( 1, na_u, no_u, maxnh, numh, listhptr,
      .           listh, S, Dscf, isa, lasto, iaorb, iphorb,
      .           indxuo )
