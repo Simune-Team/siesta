@@ -229,6 +229,10 @@ subroutine syms_cell( syms_this, na, xa, cell )
   call cross(cell(:,2),cell(:,3),recip_cell(:,1))
   call cross(cell(:,3),cell(:,1),recip_cell(:,2))
   recip_cell = recip_cell / volcel(cell)
+print '(a)', 'recipcell  = '
+print '(3E20.10)', recip_cell(:,1)
+print '(3E20.10)', recip_cell(:,2)
+print '(3E20.10)', recip_cell(:,3)
 
   ! Now unit cell:
   avgcell = 0.0d0
@@ -239,39 +243,76 @@ subroutine syms_cell( syms_this, na, xa, cell )
     if (info .ne. 0) then
       call die ("inver failed in syms_cell(symop)")
     end if
+print *
+print '(a)', ' symop  = '
+print '(3E20.10)', dsymop(:,1)
+print '(3E20.10)', dsymop(:,2)
+print '(3E20.10)', dsymop(:,3)
+print '(a)', ' invsym op = '
+print '(3E20.10)', isymop(:,1)
+print '(3E20.10)', isymop(:,2)
+print '(3E20.10)', isymop(:,3)
 
 !  apply symop on to right dimension of cell, which is the index of the 
 !    lattice vectors, not the cartesian component
     trialcell = matmul(syms_this%symops_cart(:,:,isym), cell) 
+print '(a)', ' sym vectors = '
+print '(3E20.10)', trialcell(:,1)
+print '(3E20.10)', trialcell(:,2)
+print '(3E20.10)', trialcell(:,3)
 
 !  apply reciprocal space lattice vectors, to project (parallel gauge, not cartesian) 
 !    the new symmetric ones back on to the original ones
 !    this order is crucial to contract the cartesian dimensions of recip and trialcell
     trialcell = matmul(transpose(recip_cell), trialcell)
+print '(a)', ' should be integers  = '
+print '(3E20.10)', trialcell(:,1)
+print '(3E20.10)', trialcell(:,2)
+print '(3E20.10)', trialcell(:,3)
 
 ! snap to grid of lattice nodes, to enforce symmetry
     int_trialcell = nint(trialcell)
+print '(a)', ' inttrialcell  = '
+print '(3I6)', int_trialcell(:,1)
+print '(3I6)', int_trialcell(:,2)
+print '(3I6)', int_trialcell(:,3)
 
 !  spin back to original frame of reference, to get set of vectors corresponding to cell
-    trialcell = matmul( transpose(isymop), matmul(cell, transpose(int_trialcell)) )
+    trialcell = matmul( isymop, matmul(cell, dble(int_trialcell)) )
+    !trialcell = matmul( transpose(isymop), matmul(cell, transpose(int_trialcell)) )
+print '(a)', ' trialcell  = '
+print '(3E20.10)', trialcell(:,1)
+print '(3E20.10)', trialcell(:,2)
+print '(3E20.10)', trialcell(:,3)
 
-   avgcell = avgcell + trialcell
+    avgcell = avgcell + trialcell
   end do
   avgcell = avgcell / syms_this%n_operations
 
 
 !DEBUG
+print '(a)', ' cell  = '
+print '(3E20.10)', cell(:,1)
+print '(3E20.10)', cell(:,2)
+print '(3E20.10)', cell(:,3)
+print '(a)', 'avg cell  = '
+print '(3E20.10)', avgcell(:,1)
+print '(3E20.10)', avgcell(:,2)
+print '(3E20.10)', avgcell(:,3)
 print '(a)', 'change in cell due to symmetrization = '
 print '(3E20.10)', avgcell(:,1)-cell(:,1)
 print '(3E20.10)', avgcell(:,2)-cell(:,2)
 print '(3E20.10)', avgcell(:,3)-cell(:,3)
 !END DEBUG
 
+  ! copy to output cell
   cell = avgcell
 
-  ! overwrite input with symmetrized version
-  call syms_red2cart(cell, na, syms_this%xred, xa)
+  ! also update cell in syms_this
   syms_this%celltransp = transpose(cell)
+
+  ! overwrite input positions with symmetrized version based on reduced pos in syms_this
+  call syms_red2cart(cell, na, syms_this%xred, xa)
 
 end subroutine syms_cell
 

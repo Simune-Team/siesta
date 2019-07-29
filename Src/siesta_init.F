@@ -707,26 +707,15 @@ C     Initialise MPI and set processor number
       call syms_init( syms_global, ucell, na_u, isa, xa )
       if (IONode) call syms_print(syms_global)
       if (impose_symmetries) then
-! add some noise 
-        print *, 'pos perturbed:'
-        do j = 1, na_u
-          do i = 1,3
-            xa(i,j) = xa(i,j) +  rand(0)*1.d-3
-          end do 
-          print *, xa(:,j)
-        end do 
-!end debug stuff
         call syms_cell( syms_global, na_u, xa, ucell )
         call syms_pos( syms_global, na_u, xa, ucell )
-        print *, 'pos symmetrized:'
-        do i = 1, na_u
-          print *, xa(:,i)
-        end do
-! final check that the symops are restored
+
+!  final check that the symops are restored - not costly but should be removed for production later
         call syms_delete(syms_global)
         call syms_init( syms_global, ucell, na_u, isa, xa )
         if (IONode) call syms_print(syms_global)
-!end debug stuff
+!  end debug stuff
+
       end if
 #endif
 
