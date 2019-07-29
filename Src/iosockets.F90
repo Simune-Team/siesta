@@ -183,6 +183,8 @@ subroutine coordsFromSocket( na, xa, cell )
   if (IOnode) then
     if (leqi(master,"i-pi") .and. trim(header)=="POSDATA") then 
       call readbuffer(socket, c, 9)
+      ! Please see below for the cell array
+      ! If this is to be used, it should *ALSO* be transposed!
       call readbuffer(socket, aux, 9)    ! not used in siesta
       master_xunit = ipi_xunit
       master_eunit = ipi_eunit
@@ -203,7 +205,15 @@ subroutine coordsFromSocket( na, xa, cell )
                  MPI_Comm_World, MPIerror)
   call MPI_Bcast(c,9, MPI_Double_Precision,0, MPI_Comm_World, MPIerror)
 #endif
-  cell = RESHAPE( c, (/3,3/) )
+  ! I-Pi assumes row-major order of *only* the cell parameters
+  ! So we need to transpose the cell
+  ! This is a very bad practice since the same is happening in
+  ! ASE I-pi implementation.
+  ! The cell is transposed when transfering, but not the coordinates.
+  ! Essentially one could leave out *any* transposes in all implementations
+  ! and it would work! However, this is now a legacy implementation
+  ! that should not be changed, neither in I-pi, nor ASE.
+  cell = TRANSPOSE( RESHAPE( c, (/3,3/) ) )
 
 ! Read and check number of atoms
   if (ionode) then
