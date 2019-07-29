@@ -26,7 +26,9 @@ private
 
 ! TODO: could be incorporated into second object in m_syms, with siesta specific info
 integer, allocatable :: syms_map_atoms(:,:)
+integer, allocatable :: syms_map_atoms_transl(:,:,:)
 integer, allocatable :: syms_inv_map_atoms(:,:) 
+integer, allocatable :: syms_inv_map_atoms_transl(:,:,:) 
 
 double precision :: syms_prec= 1.e-6 ! this is hard coded for the moment - could be input var for init_syms
 
@@ -72,7 +74,9 @@ subroutine syms_delete(syms_this)
   call spgf_delete(syms_this)
 
   if (allocated(syms_map_atoms)) deallocate(syms_map_atoms)
+  if (allocated(syms_map_atoms_transl)) deallocate(syms_map_atoms_transl)
   if (allocated(syms_inv_map_atoms)) deallocate(syms_inv_map_atoms)
+  if (allocated(syms_inv_map_atoms_transl)) deallocate(syms_inv_map_atoms_transl)
 
 end subroutine syms_delete
 
@@ -95,10 +99,14 @@ subroutine syms_equivpos(syms_this)
   ! should check that the syms_this is properly inited
 
   allocate (syms_map_atoms(syms_this%num_atom, syms_this%n_operations))
+  allocate (syms_map_atoms_transl(3,syms_this%num_atom, syms_this%n_operations))
   allocate (syms_inv_map_atoms(syms_this%num_atom, syms_this%n_operations))
+  allocate (syms_inv_map_atoms_transl(3,syms_this%num_atom, syms_this%n_operations))
 
   syms_map_atoms = 0
+  syms_map_atoms_transl = 0
   syms_inv_map_atoms = 0
+  syms_inv_map_atoms_transl = 0
   do iatom = 1, syms_this%num_atom
     do isym = 1, syms_this%n_operations
       foundsymatom = .false.
@@ -110,8 +118,10 @@ subroutine syms_equivpos(syms_this)
           cycle
         end if
         foundsymatom = .true.
-        syms_map_atoms     (iatom, isym) = jatom
-        syms_inv_map_atoms (jatom, isym) = iatom
+        syms_map_atoms          (iatom, isym) = jatom
+        syms_map_atoms_transl (:,iatom, isym) = nint(xredb(:)-syms_this%xred(:,jatom))
+        syms_inv_map_atoms          (jatom, isym) = iatom
+        syms_inv_map_atoms_transl (:,jatom, isym) = -nint(xredb(:)-syms_this%xred(:,jatom))
       end do
       if (.not. foundsymatom) then
         write (message, '(a,i6,a,i6)') 'error: no symmetric for atom ', iatom, ' under space group sym ', isym 
@@ -125,6 +135,7 @@ end subroutine syms_equivpos
 
 ! symmetrize positions according to space group we found
 ! NB: refine_cell in spglib is not usable as it returns the conventional cell!
+! TMP in abinit this routine is symmetrize_xred in shared/common/src/32_util/m_symtk.F90
 subroutine syms_pos( syms_this, na, xa, cell )
   implicit none
   type(SpglibDataset_ext), intent(inout) :: syms_this
@@ -133,56 +144,58 @@ subroutine syms_pos( syms_this, na, xa, cell )
   double precision,intent(inout) :: cell(3,3)
 
   integer :: iatom, isym, jatom, info
+  integer :: ib
   integer :: pos_sym_flag(na)
   double precision :: avgpos(3)
+  double precision :: tmpimg(3)
+  double precision, allocatable :: xreda(:,:)
   double precision, allocatable :: xreda_sym(:,:)
 
-!DEBUG
- do jatom = 1, na
-   print '(a,3E25.15)', 'input xreda = ', syms_this%xred(:,jatom)
- end do
-!END DEBUG
+! get red coordinates from input xa here 
+  allocate (xreda(3,na))
+  call syms_cart2red(cell, na, xa, xreda)
 
 ! check na==syms_this%num_atom
-  pos_sym_flag = 0
   allocate (xreda_sym(3,na))
+  pos_sym_flag(:) = 0
   do iatom = 1, na
     ! skip already symmetrized positions
     if (pos_sym_flag(iatom) /= 0) cycle
 
     ! average all positions of atoms equiv to iatom
     avgpos = 0.0d0
+
     do isym = 1, syms_this%n_operations
-! wrap to pmhalf to accumulate comparable xred values
-      avgpos = avgpos + syms_wrapvec_pmhalf(matmul (syms_this%rotations(:,:,isym),& 
-               syms_this%xred(:,syms_inv_map_atoms(iatom,isym))) + syms_this%translations(:,isym))
+      ib = syms_inv_map_atoms(iatom,isym)
+! apply operation to inverse image and aggregate
+      tmpimg(:) = matmul(syms_this%rotations(:,:,isym), xreda(:,ib)) &
+&               + syms_this%translations(:,isym) &
+&               + dble (syms_inv_map_atoms_transl(:,iatom,isym))
+      avgpos = avgpos + tmpimg
     end do
-    avgpos = avgpos / syms_this%n_operations
+    avgpos = avgpos / dble(syms_this%n_operations)
 
     ! copy symmetrized positions to all equiv positions and flag them as done
     do isym = 1, syms_this%n_operations
       jatom = syms_map_atoms(iatom,isym)
       if (pos_sym_flag(jatom) /= 0) cycle
+      ! construct image
+      xreda_sym(:,jatom) = matmul (syms_this%rotations(:,:,isym), avgpos) &
+&       + syms_this%translations(:,isym)
       ! use closest position by translation to the original input xred
-      xreda_sym(:,jatom) = syms_this%xred(:,jatom) + syms_wrapvec_pmhalf( &
-&       matmul (syms_this%rotations(:,:,isym), avgpos) + syms_this%translations(:,isym) &
-&       - syms_this%xred(:,jatom) )
+      xreda_sym(:,jatom) = xreda_sym(:,jatom) + nint(xreda(:,jatom)-xreda_sym(:,jatom))
 !DEBUG
-print '(a,3E25.15)', 'change in xreda due to symmetrization = ', xreda_sym(:,jatom)-syms_this%xred(:,jatom)
+!print '(a,I6,a,I6,3E25.15)', 'change in xreda due to symmetrization = ', &
+!&      jatom, 'image of ', iatom, xreda_sym(:,jatom)-xreda(:,jatom)
 !END DEBUG
       pos_sym_flag(jatom) = 1
     end do
   end do
 
-!DEBUG
- do jatom = 1, na
-   print '(a,3E25.15)', 'symmetrized xreda = ', xreda_sym(:,jatom)
- end do
-!END DEBUG
-
   ! also update the copy inside the object
   syms_this%xred = xreda_sym
   deallocate (xreda_sym)
+  deallocate (xreda)
 
   ! overwrite input xa with symmetrized version
   call syms_red2cart(cell, na, syms_this%xred, xa)
@@ -192,6 +205,7 @@ end subroutine syms_pos
 
 ! symmetrize cell according to space group we found
 ! NB: refine_cell in spglib is not usable as it returns the conventional cell!
+! TMP in abinit this routine is symmetrize_rprimd in shared/common/src/32_util/m_symtk.F90
 subroutine syms_cell( syms_this, na, xa, cell )
   implicit none
   type(SpglibDataset_ext), intent(inout) :: syms_this
@@ -199,34 +213,54 @@ subroutine syms_cell( syms_this, na, xa, cell )
   double precision,intent(inout) :: xa(3,na)
   double precision,intent(inout) :: cell(3,3)
 
+  double precision, external      :: volcel
+
   integer :: iatom, isym, jatom, info
+  integer :: transvec(3)
+  integer :: int_trialcell(3,3)
   double precision :: avgcell(3,3)
+  double precision :: recip_cell(3,3)
   double precision :: trialcell(3,3)
-  double precision :: itrialcell(3,3)
-  double precision :: revertcell(3,3)
+  double precision :: dsymop(3,3)
+  double precision :: isymop(3,3)
   double precision, allocatable :: xreda_sym(:,:)
+
+  call cross(cell(:,1),cell(:,2),recip_cell(:,3))
+  call cross(cell(:,2),cell(:,3),recip_cell(:,1))
+  call cross(cell(:,3),cell(:,1),recip_cell(:,2))
+  recip_cell = recip_cell / volcel(cell)
 
   ! Now unit cell:
   avgcell = 0.0d0
   do isym = 1, syms_this%n_operations
-    trialcell = matmul(cell, syms_this%rotations(:,:,isym))
-    ! for each of the new vectors, use translations as best as possible to approach the old ones
-    call INVER(trialcell,itrialcell,3,3,info)
+
+    dsymop = dble(syms_this%symops_cart(:,:,isym))
+    call INVER(dsymop,isymop,3,3,info)
     if (info .ne. 0) then
-      call die ("inver failed in syms_cell")
+      call die ("inver failed in syms_cell(symop)")
     end if
-    revertcell = dble(nint(matmul(itrialcell, cell)))
-    trialcell = matmul(trialcell, revertcell)
-    avgcell = avgcell + trialcell
+
+!  apply symop on to right dimension of cell, which is the index of the 
+!    lattice vectors, not the cartesian component
+    trialcell = matmul(syms_this%symops_cart(:,:,isym), cell) 
+
+!  apply reciprocal space lattice vectors, to project (parallel gauge, not cartesian) 
+!    the new symmetric ones back on to the original ones
+!    this order is crucial to contract the cartesian dimensions of recip and trialcell
+    trialcell = matmul(transpose(recip_cell), trialcell)
+
+! snap to grid of lattice nodes, to enforce symmetry
+    int_trialcell = nint(trialcell)
+
+!  spin back to original frame of reference, to get set of vectors corresponding to cell
+    trialcell = matmul( transpose(isymop), matmul(cell, transpose(int_trialcell)) )
+
+   avgcell = avgcell + trialcell
   end do
   avgcell = avgcell / syms_this%n_operations
-  
+
 
 !DEBUG
-print *, 'avgcell'
-print '(3E20.10)', avgcell(:,1)
-print '(3E20.10)', avgcell(:,2)
-print '(3E20.10)', avgcell(:,3)
 print '(a)', 'change in cell due to symmetrization = '
 print '(3E20.10)', avgcell(:,1)-cell(:,1)
 print '(3E20.10)', avgcell(:,2)-cell(:,2)
@@ -246,6 +280,7 @@ end subroutine syms_cell
 ! symmetrize forces (could be any input vector, and could do this for random
 ! tensors too...) 
 ! remember: in reciprocal space the inverse transpose matrices should be used...
+! TMP in abinit this routine is  in
 subroutine syms_forces(syms_this, na, fa)
   type(SpglibDataset_ext), intent(in) :: syms_this
   integer, intent(in) :: na
@@ -270,13 +305,15 @@ subroutine syms_forces(syms_this, na, fa)
                fa(:,syms_inv_map_atoms(iatom,isym)))
     end do
     avgforce = avgforce / syms_this%n_operations
+
     ! copy symmetrized force to all equiv positions and flag them as done
     do isym = 1, syms_this%n_operations
       jatom = syms_map_atoms(iatom,isym)
       if (force_sym_flag(jatom) /= 0) cycle
       fa_sym(:,jatom) = matmul (syms_this%symops_cart(:,:,isym), avgforce)
 !DEBUG
-print '(a,3E30.20)', 'change in fa due to symmetrization = ', fa(:,jatom)-fa_sym(:,jatom)
+print '(a,2I6,2x,3E30.20)', 'change in fa due to symmetrization = ', &
+&     iatom, jatom, fa(:,jatom)-fa_sym(:,jatom)
 !END DEBUG
       force_sym_flag(jatom) = 1
     end do
@@ -291,6 +328,7 @@ print '(a,3E30.20)', 'change in fa due to symmetrization = ', fa(:,jatom)-fa_sym
 end subroutine syms_forces
 
 ! stress
+! TMP note: in abinit this routine is stresssym in 41_geometry/m_geometry.F90
 subroutine syms_stresses (syms_this, stress)
   type(SpglibDataset_ext), intent(in) :: syms_this
   double precision, intent(inout) :: stress(3,3)
@@ -326,6 +364,7 @@ subroutine syms_stresses (syms_this, stress)
 end subroutine syms_stresses
     
 
+! TMP in abinit this is symredcart in 41_geometry/m_geometry.F90
 subroutine syms_red2cart(cell, num_atom, xred, xcart)
 ! *****************************************************************
 ! Arguments:

@@ -440,6 +440,7 @@ contains
 
     max_size = spg_get_multiplicity(syms_this%celltransp(1,1), syms_this%xred(1,1), types(1), num_atom, symprec)
 
+print *, 'max_size ', max_size
     allocate(syms_this%rotations(1:3, 1:3, 1:max_size))
     allocate(syms_this%translations(1:3, 1:max_size))
     allocate(syms_this%equivalent_atoms(1:syms_this%num_atom))
@@ -448,6 +449,17 @@ contains
        & syms_this%translations(1, 1), syms_this%equivalent_atoms(1), max_size, &
        & syms_this%celltransp(1, 1), syms_this%xred(1, 1), types(1), syms_this%spins_coll(1), &
        & num_atom, symprec)
+
+
+    ! purify the translations smaller than symprec
+    do isym = 1, syms_this%n_operations
+      do ii = 1, 3
+        if (abs (syms_this%translations(ii, isym) &
+&         - nint(syms_this%translations(ii, isym))) < symprec) then
+          syms_this%translations(ii, isym) = 0.0d0
+        end if
+      end do
+    end do
 
     ! complete object with Hall number - how do I extract the symbol???
     syms_this%hall_number = spg_get_hall_number_from_symmetry(syms_this%rotations(1, 1, 1),&

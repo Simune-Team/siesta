@@ -22,7 +22,7 @@ for d in 01-triclinic-aP.01-spg1 \
         02-monoclinic-mP.11-spg13 \
         02-monoclinic-mP.12-spg14 \
         02-monoclinic-mS.13-spg15 \
-                03-orthorombic-oP.01-spg16 \
+        03-orthorombic-oP.01-spg16 \
         03-orthorombic-oP.02-spg17 \
         03-orthorombic-oP.03-spg18 \
         03-orthorombic-oP.04-spg19 \
@@ -59,7 +59,7 @@ for d in 01-triclinic-aP.01-spg1 \
         03-orthorombic-oP.35-spg50 \
         03-orthorombic-oP.36-spg51 \
         03-orthorombic-oP.37-spg52 \
-03-orthorombic-oP.38-spg53 \
+        03-orthorombic-oP.38-spg53 \
         03-orthorombic-oP.39-spg54 \
         03-orthorombic-oP.40-spg55 \
         03-orthorombic-oP.41-spg56 \
@@ -149,8 +149,8 @@ for d in 01-triclinic-aP.01-spg1 \
         04-tetragonal-tI.66-spg140 \
         04-tetragonal-tI.67-spg141 \
         04-tetragonal-tI.68-spg142 \
-                05-hexagonal-hP.01-spg143 \
-                        05-hexagonal-hP.02-spg144 \
+        05-hexagonal-hP.01-spg143 \
+        05-hexagonal-hP.02-spg144 \
         05-hexagonal-hP.03-spg145 \
         05-hexagonal-hR.04-spg146 \
         05-hexagonal-hP.05-spg147 \
@@ -225,7 +225,7 @@ for d in 01-triclinic-aP.01-spg1 \
         06-cubic-cF.22-spg216 \
         06-cubic-cI.23-spg217 \
         06-cubic-cP.24-spg218 \
-                06-cubic-cF.25-spg219 \
+        06-cubic-cF.25-spg219 \
         06-cubic-cI.26-spg220 \
         06-cubic-cP.27-spg221 \
         06-cubic-cP.28-spg222 \
@@ -237,9 +237,6 @@ for d in 01-triclinic-aP.01-spg1 \
         06-cubic-cF.34-spg228 \
         06-cubic-cI.35-spg229 \
         06-cubic-cI.36-spg230 \
-
-           
- 
 
 #        
        
