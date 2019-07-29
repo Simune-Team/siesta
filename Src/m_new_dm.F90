@@ -79,6 +79,16 @@ contains
     logical :: DM_init ! Initialize density matrix from file or from atomic density
     logical :: read_DM
     integer :: DM_in_history, n_depth
+
+    ! Variable to signal how the initialization was performed.
+    ! The following table lists the (current) possibilities:
+    !  0: DM is filled from atomic information (no information present)
+    !  1: .DM file is read, Siesta continuation
+    !  2: An extrapolation of previous geometries.
+    !     The DM's from the previous coordinates are kept in memory
+    !  3: .TSDE file is read, TranSiesta continuation
+    ! If the value is negative it means that one cannot mix in the
+    ! first step, regardless of user inquiry!
     integer :: init_method
 
     real(dp), pointer :: DM(:,:), EDM(:,:)
@@ -192,8 +202,8 @@ contains
           call print_type(DM_2D)
        end if
 
-       ! Defines the initialiazation to be re-using
-       init_method = -1
+       ! A negative value specifies that one cannot mix in the initial step
+       init_method = -3
 
     end if
 
@@ -290,7 +300,7 @@ contains
 
           old_Ef = Ef
           Ef = fdf_get('TS.Fermi.Initial',Ef,'Ry')
-          if ( init_method == 2 ) then
+          if ( abs(init_method) == 3 ) then
              ! As the fermi-level has been read in from a previous
              ! calculation (TSDE), the EDM should only be shifted by the difference
              diff_Ef = Ef - old_Ef
@@ -301,10 +311,10 @@ contains
 
           if ( IONode ) then
              write(*,*) ! new-line
-             if ( init_method < 2 ) then
+             if ( abs(init_method) < 3 ) then
                 write(*,'(a,f9.5,a)')'transiesta: Setting the Fermi-level to: ', &
                      Ef / eV,' eV'
-             else if ( init_method == 2 ) then
+             else if ( abs(init_method) == 3 ) then
                 write(*,'(a,2(f10.6,a))')'transiesta: Changing Fermi-level from -> to: ', &
                      old_Ef / eV,' -> ',Ef / eV, ' eV'
              end if
@@ -337,7 +347,9 @@ contains
     ! this would lead to non-degenerate transverse eigenmodes for simple molecules
     if ( init_method == 0 ) then ! atomicly filled data
        ! allow mix_scf_first
-    else if ( mix_scf_first ) then
+    else if ( mix_scf_first .and. init_method < 0 ) then
+       ! Do not allow mixing first SCF step since we are reusing a DM
+       ! from another geometry.
        mix_scf_first = .false.
     end if
     
@@ -385,7 +397,7 @@ contains
     ! integer init_method           : returns method it has read the data with
     !                                   0 == atomic filling (possibly user-defined
     !                                   1 == .DM read
-    !                                   2 == .TSDE read
+    !                                   3 == .TSDE read
     ! *******************************************************************
 
     ! The spin-configuration that is used to determine the spin-order.
@@ -457,7 +469,7 @@ contains
     else 
 
        ! Print-out whether transiesta is starting, or siesta is starting
-       call ts_method_init( init_method == 2 )
+       call ts_method_init( abs(init_method) == 3 )
 
     end if
 
@@ -559,7 +571,7 @@ contains
     !                                 method used to read the DM/EDM
     !                                   0 == not read
     !                                   1 == .DM read
-    !                                   2 == .TSDE read
+    !                                   3 == .TSDE read
     ! *******************************************************************
 
     !> The spin-configuration that is used to determine the spin-order.
@@ -592,6 +604,7 @@ contains
 
     ! The currently read stuff
     type(dSpData2D) :: DM_read
+    type(Sparsity), pointer :: sp_read
     type(dSpData2D) :: EDM_read
 
     ! Signal the file has not been found.
@@ -614,7 +627,7 @@ contains
 
        if ( TSDE_found ) then
           ! Signal we have read TSDE
-          init_method = 2
+          init_method = 3
 
           DM_found = .true.
 
@@ -669,6 +682,16 @@ contains
 
     ! Density matrix size checks
     if ( DM_found ) then
+
+      ! Specify the *correct* init_method
+      ! In cases where the sparsity pattern changes, we assume this has to do with
+      ! MD simulations and thus a geometry change.
+      ! By default we do not allow mixing the first step when re-using a DM from another
+      ! geometry. This is because of idempotency.
+      sp_read => spar(DM_read)
+      if ( .not. equivalent(sp, sp_read) ) then
+        init_method = -init_method
+      end if
 
       corrected_nsc = .false.
       if ( nsc_read(1) /= 0 .and. any(nsc /= nsc_read) ) then
