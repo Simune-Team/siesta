@@ -1,7 +1,7 @@
 #--------------------------------------- 
 #Input Generated for Space Group Testing 
 #--------------------------------------- 
-SystemLabel  03-orthorombic-oF.54-spg69.inp 
+SystemLabel  03-orthorhombic-oF.54-spg69.inp 
 NumberOfSpecies 1 
 %block ChemicalSpeciesLabel 
  1  1  H 

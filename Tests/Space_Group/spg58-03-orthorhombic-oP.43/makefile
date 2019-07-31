@@ -1,2 +1,2 @@
 include ../../test-spacegroup.mk
-name=03-orthorombic-oP.43-spg58
+name=03-orthorhombic-oP.43-spg58
