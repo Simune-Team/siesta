@@ -40,7 +40,7 @@
       USE alloc, only: re_alloc
       USE sys, only: die
       USE atomlist, only: no_u
-      USE m_spin, only: h_spin_dim
+      USE m_spin, only: spin
 
       implicit none
 
@@ -51,11 +51,11 @@
       nullify(wfk)
 
       nwk = 0
-      if (h_spin_dim < 4) then
-         max_n_states = no_u
+      if ( spin%Grid == 4 ) then
+        max_n_states = 2 * no_u
       else
-         max_n_states = 2*no_u
-      endif
+        max_n_states = no_u
+      end if
       call initwave( max_n_states, nwk, wfk )
 
       if (nwk .eq. 0) then
@@ -391,7 +391,7 @@ C #X.XXX #Y.YYY #Z.ZZZ
 
       end subroutine initwave
 
-      subroutine wwave( no, nspin, maxspn, maxo, maxuo, maxnh, 
+      subroutine wwave( no, spin, maxo, maxuo, maxnh, 
      .                  maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
      .                  gamma, nk, kpoint, nuotot, occtol)
@@ -399,10 +399,10 @@ C *********************************************************************
 C Finds wavefunctions at selected k-points.
 C Written by P. Ordejon, June 2003
 C from routine 'bands' written by J.M.Soler
+C Changed to use tSpin, N. Papior, August 2019
 C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
-C integer nspin  = h_spin_dim : Number of spin components of H, D
-C integer maxspn = spinor_dim : Second dimension of ek
+C tSpin spin                  : Contains spin information
 C integer maxo                : First dimension of ek
 C integer maxuo               : Second dimension of H and S
 C integer maxnh               : Maximum number of orbitals interacting  
@@ -414,7 +414,7 @@ C integer listhptr(nuo)       : Pointer to start of each row of the
 C                               hamiltonian matrix
 C integer listh(maxlh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  H(maxnh,spin%H)     : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  ef                  : Fermi energy
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
@@ -446,7 +446,7 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use atomlist,     only : iaorb, iphorb
       use siesta_geom,  only : isa
-      use m_spin,       only : NoMagn, SPpol, NonCol, SpOrb
+      use t_spin, only: tSpin
       use units, only : eV
 
 #ifdef MPI
@@ -457,12 +457,12 @@ C
 
       implicit          none
 
+      type(tSpin), intent(in) :: spin
       logical, intent(in) :: Gamma
       integer           maxk, maxnh, maxo, maxuo, nk, no, 
-     .                  h_spin_dim, spinor_dim, nspin, maxspn,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
-      real(dp)          ef, H(:,:), kpoint(3,maxk), 
+      real(dp)          ef, H(maxnh,spin%H), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
 
       external          io_assign, io_close, memory
@@ -488,11 +488,7 @@ C Dynamic arrays
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
       logical :: SaveParallelOverK
-      integer :: nspin_flag
       
-      h_spin_dim=size(H,dim=2)
-      nspin_flag = h_spin_dim
-      if (h_spin_dim == 8) nspin_flag = 4
 
 C Get local number of orbitals
 #ifdef MPI
@@ -517,15 +513,15 @@ C Check parameter maxk
 C Check spin
 
 C Allocate local arrays - only aux is relevant here
-      if ( h_spin_dim >= 4 ) then
+      if ( spin%Grid == 4 ) then
          nhs = 2 * (2*nuotot) * (2*nuo)
       else
          nhs = 2 * nuotot * nuo
       endif
       call allocDenseMatrix(nhs, nhs, nhs) 
 
-      allocate(ek(nuotot,maxspn,nk))
-      call memory('A','D',maxspn*nk*nuotot,'writewave')
+      allocate(ek(nuotot,spin%spinor,nk))
+      call memory('A','D',nuotot*spin%spinor*nk,'writewave')
       naux = 2*nuotot*5
       allocate(aux(naux))
       call memory('A','D',naux,'writewave')
@@ -544,12 +540,12 @@ C Open file
           write(6,'(a)') 'writewave: Wave Functions Coefficients'
           write(6,*)
           write(6,'(a26,2x,i6)') 'Number of k-points = ', nk
-          write(6,'(a26,2x,i6)') 'Number of Spins = ', nspin_flag
+          write(6,'(a26,2x,i6)') 'Number of Spins = ', spin%Grid
           write(6,'(a26,2x,i6)') 'Number of basis orbs = ',nuotot
           write(6,*)
         endif
         write(iu) nk, gamma
-        write(iu) nspin_flag   ! This will be 1, 2, or 4
+        write(iu) spin%Grid   ! This will be 1, 2, or 4
         write(iu) nuotot
         write(iu) (iaorb(j),labelfis(isa(iaorb(j))),
      .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
@@ -567,9 +563,9 @@ c fixspin and qs are not used in diagk, since getD=.false. ...
 
 C Call appropriate diagonalization routine
 
-      if (NoMagn .or. SPpol) then
+      if ( spin%Grid <= 2 ) then
        if (gamma) then
-         call diagg( h_spin_dim, nuo, maxuo, maxnh, maxnh, 
+         call diagg( spin%H, nuo, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
@@ -589,7 +585,7 @@ C Handle parallel over K points option which is not allowed for here
              call diag_init()
           end if
 
-         call diagk( h_spin_dim, nuo, no, maxspn, maxnh, maxnh,
+         call diagk( spin%H, nuo, no, spin%spinor, maxnh, maxnh,
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
@@ -603,7 +599,7 @@ C Handle parallel over K points option which is not allowed for here
          
        endif
 
-      elseif (NonCol) then
+      elseif ( spin%NCol) then
         if (gamma) then
           call diag2g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
@@ -620,7 +616,7 @@ C Handle parallel over K points option which is not allowed for here
      .                 Haux, Saux, psi, Haux, Saux, aux,
      .                 nuotot, occtol, 1, nuotot )
         endif
-      elseif (SpOrb) then
+      elseif ( spin%SO ) then
         if (gamma) then
           call diag3g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
