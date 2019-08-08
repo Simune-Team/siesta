@@ -24,7 +24,7 @@
      &                    qtot, Qtots, no_l
       use sys, only: die, bye
       use Kpoint_grid
-      use m_energies,   only: Ebs, Ecorrec, Entropy, DE_NEGF
+      use m_energies,   only: Ebs, Ecorrec, Entropy
       use m_energies,   only: Ef, Efs
       use m_rmaxh
       use m_eo
@@ -231,7 +231,7 @@ c$$$     &           S, 'S.matrix')
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        no_u == no_s, ucell, nsc, isc_off, no_u, na_u,
      &        lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot, .false., DE_NEGF )
+     &        H, S, Dscf, Escf, Ef, Qtot, .false.)
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp
