@@ -25,6 +25,7 @@ program unfold
                           fdf_bvalues, fdf_convfac, fdf_get, fdf_init, &
                           fdf_parallel, parsed_line
   use hsx_m,        only: hsx_t, read_hsx_file
+  use m_array,      only: array_copy
   use m_get_kpoints_scale, &
                     only: get_kpoints_scale
   use m_io,         only: io_assign, io_close
@@ -241,7 +242,7 @@ program unfold
 !      do i2 = -nx,nx
 !      do i1 = -nx,nx
 !        x = (/i1,i2,i3/)*dx
-!        xmod = sqrt(sum(x**2))+1.e-15
+!        xmod = sqrt(sum(x**2))+1.e-15_dp
 !        ir = ceiling(xmod/dr)
 !        wr = (ir*dr-xmod)/dr
 !        if (ir<=nr) then
@@ -271,7 +272,7 @@ program unfold
 !      do i2 = -ng,ng
 !      do i1 = -ng,ng
 !        gvec = (/i1,i2,i3/)*dg
-!        gmod = sqrt(sum(gvec**2))+1.e-15
+!        gmod = sqrt(sum(gvec**2))+1.e-15_dp
 !        iq = ceiling(gmod/dq)
 !        wq = (iq*dq-gmod)/dq
 !        if (iq<=nq) then
@@ -506,7 +507,7 @@ program unfold
             endif
 
             call timer_start(myName//'g sum')
-            qmod = sqrt(sum(qg**2))+1.e-15
+            qmod = sqrt(sum(qg**2))+1.e-15_dp
             call rlylm( lmax, qg/qmod, ylm, gylm )
             do ib = 1,nbands
               je = floor((eb(ib,ispin)-emin)/de)
@@ -556,17 +557,21 @@ if (myNode==0) print*,'unfold: end of main loop'
     ntmp = (iq2-iq1+1)*(ne+1)*nspin
     call re_alloc( tmp1, 1,ntmp, myName//'tmp1', copy=.false., shrink=.true. )
     call re_alloc( tmp2, 1,ntmp, myName//'tmp2', copy=.false., shrink=.true. )
-    tmp1 = reshape(udos,(/ntmp/))
+!    tmp1 = reshape(udos,(/ntmp/))
+    call array_copy([1,1,1],[iq2-iq1+1,ne+1,nspin],udos, 1,ntmp,tmp1)
     tmp2 = 0
     call MPI_reduce(tmp1,tmp2,ntmp,MPI_double_precision,MPI_sum,0, &
                     MPI_COMM_WORLD,ierr)
-    udos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
+!    udos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
+    call array_copy(1,ntmp,tmp2, [1,1,1],[iq2-iq1+1,ne+1,nspin],udos)
     if (refolding) then
-      tmp1 = reshape(rdos,(/ntmp/))
+!      tmp1 = reshape(rdos,(/ntmp/))
+      call array_copy([1,1,1],[iq2-iq1+1,ne+1,nspin],rdos, 1,ntmp,tmp1)
       tmp2 = 0
       call MPI_reduce(tmp1,tmp2,ntmp,MPI_double_precision,MPI_sum,0, &
                       MPI_COMM_WORLD,ierr)
-      rdos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
+!      rdos(iq1:iq2,0:ne,:) = reshape(tmp2,(/iq2-iq1+1,ne+1,nspin/))
+       call array_copy(1,ntmp,tmp2, [1,1,1],[iq2-iq1+1,ne+1,nspin],rdos)
     endif
 #endif
 

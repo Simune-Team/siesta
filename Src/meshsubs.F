@@ -370,10 +370,8 @@ C     Create extended mesh arrays for the first data distribution
 !     Issue a warning if the mesh sizes are smaller than
 !     the requested mesh cutoff
         if (RealCutoff<G2max .and. fdf_defined('MeshCutoff')) then
-           if (IOnode) print'(/,a,/)',"meshsubs WARNING: "
-     $          //"Input MeshSizes too small for requested MeshCutoff"
            call message("WARNING","Read mesh sizes give a smaller"
-     $                   // " cutoff than requested")
+     &                   // " cutoff than requested")
         endif
 
 !     Check whether the resulting mesh sizes are multiples
