@@ -8,7 +8,7 @@
 
 program unfold
 
-! Reads the .fdf, .ion, .HSX, .out and .psf files of a SIESTA calculation and 
+! Reads the .fdf, .ion, .HSX, .EIG and .psf files of a SIESTA calculation and 
 ! generates unfolded and refolded bands. See Util/Unfolding/README for details.
 ! Ref: "Band unfolding made simple", S.G.Mayo and J.M.Soler, Dic.2018
 !       arXiv:1812.03925          ( https://arxiv.org/abs/1812.03925 )
@@ -52,11 +52,11 @@ program unfold
   integer, parameter :: nr = 4096       ! number of radial points for basis orbitals
   integer, parameter :: maxl = 5        ! max angular momentum
   integer, parameter :: maxpaths = 150  ! max number of unfolded band paths
-  integer, parameter :: maxnq = 15000    ! max number of q sampling points
+  integer, parameter :: maxnq = 22000   ! max number of q sampling points
   real(dp),parameter :: g2c = 50_dp     ! default refolding G cutoff (ry)
   real(dp),parameter :: qc = 50_dp      ! cutoff for FT of atomic orbitals (bohr^-1)
   logical, parameter :: writeOrbitals = .false.  ! write atomic orbital files?
-  real(dp),parameter :: tolSuperCell = 5.e-6 ! tolerance for comparing cell and supercell
+  real(dp),parameter :: tolSuperCell = 5.e-5 ! tolerance for comparing cell and supercell
   integer, parameter :: allocReportLevelDefault = 2 ! default allocation report level
 
   ! Internal variables
@@ -129,19 +129,26 @@ program unfold
   threshold = fdf_get( 'AllocReportThreshold', 0._dp )
   call alloc_report( level, file='unfold.alloc', printNow=.false., threshold=threshold )
 
-
    ! Read Fermi level from SystemLabel.out file
-   if (myNode==0) then
-     call system('grep ''Fermi = '' *out -h > fermi')
-     open(8181,file='fermi',action='read')
-     read(8181,'(a)') dumm
-     ic = index(dumm,'=')
-     read(dumm(ic+1:),*) efermi
-     print*,'unfold: Fermi = ',efermi
-     call system('rm fermi')
-     close(8181)
-   endif
+!   if (myNode==0) then
+!     call system('grep ''Fermi = '' *out -h > fermi')
+!     open(8181,file='fermi',action='read')
+!     read(8181,'(a)') dumm
+!     ic = index(dumm,'=')
+!     read(dumm(ic+1:),*) efermi
+!     print*,'unfold: Fermi = ',efermi
+!     call system('rm fermi')
+!     close(8181)
+!   endif
 
+   ! Read Fermi level from SystemLabel.EIG file
+   slabel = fdf_get('SystemLabel','unknown')
+   if (myNode==0) then
+     fname = trim(slabel)//'.EIG'
+     open(8181,file=fname,action='read')
+     read(8181,*) efermi
+     print*,'unfold: Fermi = ',efermi
+   endif
 
   ! Read atomic basis
   if (myNode==0) then
@@ -302,7 +309,7 @@ program unfold
   endif
 
   ! Read HSX file with H, S, and xij matrices
-  slabel = fdf_get('SystemLabel','unknown')
+!  slabel = fdf_get('SystemLabel','unknown')
   fname = trim(slabel)//'.HSX'
   if (myNode==0) then
     call read_hsx_file(hsx,fname)
