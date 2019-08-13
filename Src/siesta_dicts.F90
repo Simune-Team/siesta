@@ -316,8 +316,19 @@ contains
          ('E.spin_orbit'.kvp.Eso)
     variables = variables // &
          ('E.ldau'.kvp.Eldau)
+    
     variables = variables // &
-         ('E.negf'.kvp.DE_NEGF)
+         ('E.negf.dN'.kvp.NEGF_DE)
+    variables = variables // &
+         ('E.negf.spin_orbit'.kvp.NEGF_Eso)
+    variables = variables // &
+         ('E.negf.harris'.kvp.NEGF_Eharrs)
+    variables = variables // &
+         ('E.negf.total'.kvp.NEGF_Etot)
+    variables = variables // &
+         ('E.negf.kinetic'.kvp.NEGF_Ekin)
+    variables = variables // &
+         ('E.negf.band_structure'.kvp.NEGF_Ebs)
 
     ! Add the number of charges to the system
     variables = variables // &

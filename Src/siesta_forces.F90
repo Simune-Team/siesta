@@ -86,7 +86,6 @@ contains
 #endif
     use m_check_walltime
 
-    use m_energies, only: DE_NEGF
     use m_ts_options, only : N_Elec
     use m_ts_method
     use m_ts_global_vars,      only: TSmode, TSinit, TSrun
@@ -395,7 +394,7 @@ contains
                 call transiesta(iscf,spin%H, &
                      block_dist, sparse_pattern, Gamma_Scf, ucell, nsc, &
                      isc_off, no_u, na_u, lasto, xa, maxnh, H, S, &
-                     Dscf, Escf, Ef, Qtot, .true., DE_NEGF)
+                     Dscf, Escf, Ef, Qtot, .true.)
 
                 ! We will not have not converged as we have just
                 ! changed the Fermi-level

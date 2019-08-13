@@ -442,9 +442,9 @@ subroutine read_options( na, ns, nspin )
 
   ! Density Matrix Mixing  (proportion of output DM in new input DM)
   wmix = fdf_get('DM.MixingWeight',0.25_dp)
-  if (ionode) then
-     write(6,6) 'redata: New DM Mixing Weight',wmix
-  endif
+!!$  if (ionode) then
+!!$     write(6,6) 'redata: New DM Mixing Weight',wmix
+!!$  endif
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML,name='DM.MixingWeight', &

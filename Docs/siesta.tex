@@ -11346,6 +11346,12 @@ the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
   in a \tbtrans\ calculation to achieve a converged transmission
   function.
 
+  \item%
+  Energies from \tsiesta\ are \emph{not} to be trusted since the open
+  boundaries complicates the energy calculation. Therefore you cannot
+  compare energies between different calculations and/or different
+  bias'.
+
 \end{itemize}
 
 \subsection{Electrodes}
@@ -12596,12 +12602,18 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Elecs!DM.Init}[string]<diagon|bulk>
+\begin{fdfentry}{TS!Elecs!DM.Init}[string]<bulk|diagon>
 
   The density matrix elements in the electrodes may be forcefully set
   to the bulk values by reading in the DM of the corresponding
-  electrode. This may be set to \fdf*{bulk} to forcefully set the bulk
-  values.
+  electrode. This is by default \fdf*{bulk} for non-bias calculation,
+  and otherwise defaults to \fdf*{diagon}.
+
+  This step is only required once since the DM will be constant in the
+  electrode regions and thus it will be propagated through the
+  \sysfile{TSDE} files without having to re-do this step.
+  If this is done (by default) in the 0 bias calculation it will also
+  be effective in the bias calculation.
 
   \note this will automatically be set to \fdf*{diagon} for
   non-equilibrium calculations. If bulk density matrix elements are

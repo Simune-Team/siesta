@@ -57,6 +57,8 @@ CONTAINS
 #ifdef MPI
       use m_mpi_utils,     only: globalize_sum
 #endif
+      use m_ts_global_vars, only: TSrun
+      use ts_energies_m, only: ts_compute_energies
 
       integer, intent(in)   :: iscf
 
@@ -85,6 +87,10 @@ CONTAINS
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 
       call update_DEna()
+      ! Also call transiesta
+      if ( TSrun ) then
+        call ts_compute_energies()
+      end if
       call update_Etot()
 
 
@@ -94,9 +100,13 @@ CONTAINS
 
       if (mix_charge) then   ! possibly add mixH here
          EHarrs = 0.0_dp
+         NEGF_Eharrs = 0._dp
       else
          call compute_DEharr()
          Eharrs = Etot + DEharr
+         if ( TSrun ) then
+           NEGF_Eharrs = NEGF_Etot + NEGF_DEharr
+         end if
       endif
 
 ! Possible correction to Etot if mixing the DM. This is purely
@@ -302,7 +312,8 @@ CONTAINS
       use class_zSpData2D, only : val
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_so_on_2D, H_so_off_2D
-
+      use ts_energies_m, only: ts_compute_energies
+      use m_ts_global_vars, only: TSrun
 
       type(filesOut_t)  :: filesOut  ! blank output file names
       real(dp), pointer :: H_vkb(:), H_kin(:), H_so_on(:,:)
@@ -400,7 +411,14 @@ CONTAINS
          Eso = buffer1
       endif
 #endif
-      
+
+      end if
+
+      ! Also call transiesta
+      if ( TSrun ) then
+        call ts_compute_energies()
+      end if
+       
       ! E0 = Ena + Ekin + Enl + Eso - Eions
 
       ! Clarify: Ecorrec (from O(N))

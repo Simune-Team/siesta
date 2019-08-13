@@ -948,7 +948,7 @@ C       Set the UNIFORM distribution again and copy DRho to it
         call de_alloc( DRho_par, 'DRho_par','dhscf' )
 
         if ( debug_dhscf ) then
-           write(*,debug_fmt) Node,'DRho',
+           write(*,debug_fmt) Node,'Rho',
      &          (sqrt(sum(DRho(:,ispin)**2)),ispin=1,nspin)
         end if
 
@@ -1150,6 +1150,11 @@ C Find difference between selfconsistent and atomic densities
         enddo
       enddo
 !$OMP end parallel do
+
+      if ( debug_dhscf ) then
+        write(*,debug_fmt) Node,'DRho',
+     &      (sqrt(sum(DRho(:,ispin)**2)),ispin=1,nspin)
+      end if
 
 C ----------------------------------------------------------------------
 C Save electron density difference
