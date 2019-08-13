@@ -303,7 +303,7 @@ C  Calculate all phi values and derivatives at all subpoints
               dxsp(1:3,isp) = xdop(1:3,iop)+xdsp(1:3,isp)-dxa(1:3,ia)
               r2sp = dxsp(1,isp)**2 + dxsp(2,isp)**2 + dxsp(3,isp)**2
               if (r2sp.lt.r2cut(is)) then
-                call all_phi( is,+1, dxsp(:,isp), nphiloc,
+                call all_phi( is,+1, dxsp(:,isp), maxoa, nphiloc,
      .                        phia(:,isp), grada(:,:,isp))
               else
                 phia(:,isp) = 0.0_dp
