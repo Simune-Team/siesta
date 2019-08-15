@@ -375,7 +375,7 @@ contains
 
     ! Whether we should always set the DM to bulk
     ! values (by reading in from electrode DM)
-    if ( TS_scf_mode == 1 ) then
+    if ( TS_scf_mode == 1 .or. .not. IsVolt ) then
        chars = 'bulk'
     else
        chars = 'diagon'
@@ -1571,10 +1571,15 @@ contains
                &not check the k-grid sampling vs. system k-grid &
                &sampling. Ensure appropriate sampling.'
        end if
-       if ( Elecs(i)%Ef_frac_CT /= 0._dp ) then
+       if ( Elecs(i)%V_frac_CT /= 0._dp ) then
           write(*,'(a)') 'Electrode '//trim(Elecs(i)%name)//' will &
                &shift coupling Hamiltonian with a shift in energy &
                &corresponding to the applied bias. Be careful here.'
+          warn = .true.
+       end if
+       if ( Elecs(i)%delta_Ef /= 0._dp ) then
+          write(*,'(a)') 'Electrode '//trim(Elecs(i)%name)//' will &
+               &shift the electronic structure manually. Be careful here.'
           warn = .true.
        end if
 

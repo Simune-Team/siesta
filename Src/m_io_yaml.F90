@@ -174,7 +174,6 @@ contains
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DEna", DEna
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DUscf", DUscf
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DUext", DUext
-    write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Enegf", DE_NEGF
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Exc", Exc
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Ecorrec", Ecorrec
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Emadel", Emad

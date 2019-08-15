@@ -68,12 +68,15 @@ C Other internal parameters
       PARAMETER (TINY=1.e-14_dp, ZERO=0._dp, HALF=0.5_dp, ONE=1._dp,
      .           TWO=2._dp, THREE=3._dp, SIX=6._dp)
 
+      real(dp), parameter :: pi = 3.14159265358979323846264338327950_dp
+      real(dp), parameter :: pi4 = 4 * pi
+
 C Internal variables
       INTEGER
-     .  I, ILM, ILM0, L, LMXMX, M, MS
+     .  I, ILM, ILM0, L, LMXMX, M
       REAL(DP)
      .  C(0:MAXLP1*MAXLP1), COSM, COSMM1, COSPHI,
-     .  ZP(0:MAXLP1,0:MAXLP1), FAC, FOURPI, GY(3),
+     .  ZP(0:MAXLP1,0:MAXLP1), FAC, GY(3),
      .  P(0:MAXLP1,0:MAXLP1),
      .  RL(-1:MAXL), RSIZE, RX, RY, RZ, RXY,
      .  SINM, SINMM1, SINPHI, YY
@@ -83,11 +86,10 @@ C Internal variables
 C Evaluate normalization constants once and for all
       IF (LMAX.GT.LMXMX) THEN
          IF (LMAX.GT.MAXL) call die('YLM: MAXL too small')
-         FOURPI=TWO**4*ATAN(ONE)
          DO 20 L=0,LMAX
             ILM0=L*L+L
             DO 15 M=0,L
-               FAC=(2*L+1)/FOURPI
+               FAC=(2*L+1)/pi4
                DO 10 I=L-M+1,L+M
                   FAC=FAC/I
    10          CONTINUE
@@ -202,27 +204,25 @@ C     Find spherical harmonics and their gradient
       SINM=ZERO
       DO 90 M=0,LMAX
         DO 80 L=M,LMAX
-          DO 75 MS = -1,1,2
-            IF (MS.EQ.-1) THEN
-              ILM=L*L+L-M
-              YY=C(ILM)*P(L,M)*SINM
-              GY(1)=(-ZP(L,M))*RX *RZ *SINM - P(L,M)*M*COSM*SINPHI/RXY
-              GY(2)=(-ZP(L,M))*RY *RZ *SINM + P(L,M)*M*COSM*COSPHI/RXY
-              GY(3)= ZP(L,M)*RXY*RXY*SINM
-            ELSE
-              ILM=L*L+L+M
-              YY=C(ILM)*P(L,M)*COSM
-              GY(1)=(-ZP(L,M))*RX *RZ *COSM + P(L,M)*M*SINM*SINPHI/RXY
-              GY(2)=(-ZP(L,M))*RY *RZ *COSM - P(L,M)*M*SINM*COSPHI/RXY
-              GY(3)= ZP(L,M)*RXY*RXY*COSM
-            ENDIF
-            GY(1)= GY(1)*C(ILM)/RSIZE
-            GY(2)= GY(2)*C(ILM)/RSIZE
-            GY(3)= GY(3)*C(ILM)/RSIZE
-            RLY(ILM)=RL(L)*YY
-            GRLY(1,ILM)= RX*L*RL(L-1)*YY + RL(L)*GY(1)
-            GRLY(2,ILM)= RY*L*RL(L-1)*YY + RL(L)*GY(2)
-            GRLY(3,ILM)= RZ*L*RL(L-1)*YY + RL(L)*GY(3)
+          ILM=L*L+L-M
+          GY(1)=(-ZP(L,M))*RX *RZ *SINM - P(L,M)*M*COSM*SINPHI/RXY
+          GY(2)=(-ZP(L,M))*RY *RZ *SINM + P(L,M)*M*COSM*COSPHI/RXY
+          GY(3)= ZP(L,M)*RXY*RXY*SINM
+          YY=C(ILM)*P(L,M)*SINM
+          RLY(ILM)=RL(L)*YY
+          GRLY(1,ILM)= RX*L*RL(L-1)*YY + RL(L)*GY(1)*C(ILM)/RSIZE
+          GRLY(2,ILM)= RY*L*RL(L-1)*YY + RL(L)*GY(2)*C(ILM)/RSIZE
+          GRLY(3,ILM)= RZ*L*RL(L-1)*YY + RL(L)*GY(3)*C(ILM)/RSIZE
+          
+          ILM=L*L+L+M
+          GY(1)=(-ZP(L,M))*RX *RZ *COSM + P(L,M)*M*SINM*SINPHI/RXY
+          GY(2)=(-ZP(L,M))*RY *RZ *COSM - P(L,M)*M*SINM*COSPHI/RXY
+          GY(3)= ZP(L,M)*RXY*RXY*COSM
+          YY=C(ILM)*P(L,M)*COSM
+          RLY(ILM)=RL(L)*YY
+          GRLY(1,ILM)= RX*L*RL(L-1)*YY + RL(L)*GY(1)*C(ILM)/RSIZE
+          GRLY(2,ILM)= RY*L*RL(L-1)*YY + RL(L)*GY(2)*C(ILM)/RSIZE
+          GRLY(3,ILM)= RZ*L*RL(L-1)*YY + RL(L)*GY(3)*C(ILM)/RSIZE
    75     CONTINUE
    80   CONTINUE
         COSMM1=COSM
