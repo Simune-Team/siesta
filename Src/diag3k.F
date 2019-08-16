@@ -18,7 +18,9 @@
       use sys
       use parallel,      only : Node, Nodes, BlockSize
       use parallelsubs,  only : LocalToGlobalOrb
+      use writewave,     only : writew
       use m_fermid,      only : fermid, stepf
+      use iso_c_binding, only : c_f_pointer, c_loc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -114,12 +116,14 @@ C *********************************************************************
       integer :: neigwanted
       
       complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux, Dk, Ek
-      complex(dp), dimension(2,nuotot,2*nuo) :: psi
-      complex(dp), dimension(2,nuotot) :: caux
-      logical               getD, getPSI
+      complex(dp), dimension(2,nuotot,2*nuo), target :: psi
+      complex(dp), dimension(2,nuotot), target :: caux
+      logical, intent(in) ::               getD, getPSI
       
-!     TEMPOS, INTERNAL VARIABLES etc.
-      
+
+      real(dp),    pointer :: aux(:)
+      real(dp), pointer  :: psi_real(:)
+
       integer  BNode, BTest, ie, ierror, iie, ik, ind, io, iio
       integer  iuo, j, jo, juo, neigneeded
       real(dp) ee, qe, t
@@ -175,6 +179,9 @@ C *********************************************************************
 !
 !
 
+      ! Jump point for bands and wfs output only
+      if (getPSI .and. (.not. GetD)) goto 10
+      
 !     Find eigenvalues at every k point
 
       do ik = 1,nk
@@ -214,11 +221,11 @@ C *********************************************************************
           call die('Terminating due to failed diagonalisation')
         endif
       enddo
-      
-!-----------------------------------------------------------------------
-!     Check if we are done
-!-----------------------------------------------------------------------
-      if (.not.getD) return
+
+      ! Check if we are done (i.e.: pure bands only)
+      if (.not.getD .and. .not. getPSI) then
+         RETURN
+      end if
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
@@ -240,16 +247,23 @@ C *********************************************************************
 !     New density and energy-density matrices of unit-cell orbitals
       Dnew(:,:) = 0.0_dp
       Enew(:,:) = 0.0_dp
+
+ 10   continue   ! ---- Start here for (getPsi and (not getDM))
       
-!     Find maximum eigenvector that is required for this k point 
       do ik = 1,nk
-        neigneeded = 0
-        ie = 2*nuotot  ! for mixed spins
-        do while (ie.gt.0.and.neigneeded.eq.0)
-          qe = qo(ie,ik)
-          if (abs(qe).gt.occtol) neigneeded = ie
-          ie = ie - 1
-        enddo
+         !  Find maximum eigenvector index that is required for this k point 
+         if (getPSI) then
+             ! We do not have info about occupation
+             neigneeded = neigwanted
+         else
+             neigneeded = 0
+             ie = 2*nuotot      ! for mixed spins
+             do while (ie.gt.0.and.neigneeded.eq.0)
+                qe = qo(ie,ik)
+                if (abs(qe).gt.occtol) neigneeded = ie
+                ie = ie - 1
+             enddo
+         endif
       
 !       Find eigenvectors 
         Saux = dcmplx(0.0_dp,0.0_dp)
@@ -314,6 +328,22 @@ C *********************************************************************
      .               neigneeded,iscf,ierror, 2*BlockSize)
         endif
       
+          if (getPSI) then
+             if (.not. getD) then
+                ! Fill in the missing eigenvalue information
+                ! This is useful if we are requesting WFS in a "bands" setting
+                call c_f_pointer(c_loc(caux),aux,[2*nuotot])
+                call kludge_copy(2*nuotot,eo(1,ik),aux)
+             endif
+             call c_f_pointer(c_loc(psi),psi_real,[2*size(psi)])
+             call writew(nuotot,nuo,ik,kpoint(1,ik),1,     ! last '1' is 'spin-block number'
+     .                   eo(1,ik),                         ! energies
+     .                   psi_real,gamma=.false.,non_coll=.true.,
+     $                   blocksize=2*BlockSize)
+          endif
+
+          if (.not. getD) CYCLE   ! process new k-point
+
 !***********************************************************************
 ! BUILD NEW DENSITY MATRIX
 !***********************************************************************
@@ -429,8 +459,18 @@ C *********************************************************************
         enddo
       enddo
       
-!***********************************************************************      
-      return
+      CONTAINS
+            ! Work around shape of aux array
+      subroutine kludge_copy(n,a,b)
+      integer, intent(in) :: n
+      real(dp), intent(out) :: a(n)
+      real(dp), intent(in)  :: b(n)
+!$OMP parallel workshare default(shared)
+      a(1:n) = b(1:n)
+!$OMP end parallel workshare
+      end subroutine kludge_copy
+
       end subroutine diag3k
 !***********************************************************************      
+
       

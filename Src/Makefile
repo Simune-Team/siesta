@@ -685,11 +685,11 @@ dhscf.o: parsing.o precision.o rhofft.o rhoofd.o siesta_options.o sys.o units.o
 dhscf.o: vmat.o
 diag.o: alloc.o diag_option.o parallel.o precision.o sys.o
 diag2g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
-diag2g.o: sys.o
-diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
+diag2g.o: sys.o writewave.o
+diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
 diag3g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
-diag3g.o: sys.o
-diag3k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
+diag3g.o: sys.o writewave.o
+diag3k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o intrinsic_missing.o m_spin.o parallel.o
 diagg.o: parallelsubs.o precision.o sys.o writewave.o
@@ -1352,7 +1352,7 @@ write_subs.o: alloc.o atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o m_ts_global_vars.o parallel.o precision.o
 write_subs.o: siesta_cml.o siesta_geom.o siesta_options.o units.o zmatrix.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o diag.o diag_option.o
-writewave.o: get_kpoints_scale.o kpoint_grid.o m_spin.o parallel.o
+writewave.o: get_kpoints_scale.o kpoint_grid.o m_spin.o m_spin.o parallel.o
 writewave.o: parallelsubs.o precision.o siesta_geom.o sys.o units.o
 xml.o: precision.o
 zm_broyden_optim.o: m_broyddj_nocomm.o parallel.o precision.o sys.o units.o

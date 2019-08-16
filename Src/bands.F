@@ -296,7 +296,8 @@ C This is the only exit point
       end subroutine initbands
 
 
-      subroutine bands( no_s, nspin, maxspn, no_u, no_l, maxnh, maxk,
+      subroutine bands( no_s, spin,
+     .                  no_u, no_l,maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
      .                  writeb, nk, kpoint, ek, occtol, getPSI )
 
@@ -305,40 +306,39 @@ C Optionally write WFS to file
 C Written by J.Soler, August 1997 and August 1998.
 C Initialisation moved into a separate routine, JDG Jan 2000.
 C WFS options by A. Garcia, April 2012
+C Cleaned for tSpin by N. Papior, August 2019
 
 C **************************** INPUT **********************************
 C integer no_s                : Number of basis orbitals in supercell
-C integer nspin               : Number of spin components
-C integer maxspn              : Maximum number of spin components
-C                               nspin /= maxspn for spin-orbit
+C type(tSpin) spin            : Containing all spin-information
 C integer maxnh               : Maximum number of orbitals interacting
 C                               with any orbital
 C integer maxk                : Last dimension of kpoint and ek
-C integer numh(no_l)           : Number of nonzero elements of each row
+C integer numh(no_l)          : Number of nonzero elements of each row
 C                               of hamiltonian matrix
-C integer listhptr(no_l)       : Pointer to start of each row of the
+C integer listhptr(no_l)      : Pointer to start of each row of the
 C                               hamiltonian matrix
 C integer listh(maxlh)        : Nonzero hamiltonian-matrix element
 C                               column indexes for each matrix row
-C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  H(maxnh,spin%H)     : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  ef                  : Fermi energy
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C integer no_u                : First dimension of ek
-C integer no_l               : Second dimension of H and S
-C integer indxuo(no_s)          : Index of equivalent orbital in unit cell
+C integer no_l                : Second dimension of H and S
+C integer indxuo(no_s)        : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.no_l, with
 C                               no_l the number of orbitals in unit cell
 C real*8  ef                  : Fermi energy
 C logical writeb              : This routine must write bands?
-C integer no_u              : Total number of orbitals in unit cell
+C integer no_u                : Total number of orbitals in unit cell
 C integer nk                  : Number of band k points
 C real*8  kpoint(3,maxk)      : k point vectors
 C real*8  occtol              : Occupancy threshold for DM build
 C *************************** OUTPUT **********************************
-C real*8  ek(no_u,maxspn,maxk) : Eigenvalues
+C real*8  ek(no_u,spin%spinor,maxk) : Eigenvalues
 C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
@@ -366,7 +366,7 @@ C
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use writewave,    only : wfs_filename
 
-      use m_spin,       only: NoMagn, SPpol, NonCol, SpOrb
+      use t_spin, only: tSpin
 
       use m_diag_option, only: ParallelOverK, Serial
       use m_diag, only: diag_init
@@ -374,13 +374,13 @@ C
 
       implicit          none
 
-      integer  ::   nspin
-      integer  ::   maxk, maxnh, maxspn, no_u, no_l, nk, no_s,
+      type(tSpin), intent(in) :: spin
+      integer  ::   maxk, maxnh, no_u, no_l, nk, no_s,
      .              indxuo(no_s), listh(maxnh), numh(no_l),
-     .              listhptr(*), nuo
+     .              listhptr(*)
       logical  ::   writeb
-      real(dp) ::   ef, ek(no_u,maxspn,maxk),
-     .              H(maxnh,nspin), kpoint(3,maxk),
+      real(dp) ::   ef, ek(no_u,spin%spinor,maxk),
+     .              H(maxnh,spin%H), kpoint(3,maxk),
      .              S(maxnh), xij(3,maxnh), occtol
       logical, intent(in) :: getPSI
 
@@ -394,7 +394,6 @@ C
       logical, parameter :: fixspin = .false.
 
       integer :: ik, il, io, ispin, iu, iu_wfs, iuo, naux, nhs, j
-
       logical :: SaveParallelOverK
       
       real(dp)
@@ -405,16 +404,9 @@ C Dynamic arrays
       real(dp), dimension(:), pointer :: aux => null()
 
       parameter ( eV = 1.d0 / 13.60580d0 )
+
       save Dnew, Enew, e1, e2, qk, qtot, temp, wk
-
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
-
-C Get number of local orbitals
-#ifdef MPI
-      call GetNodeOrbs(no_u,Node,Nodes,nuo)
-#else
-      nuo = no_u
-#endif
 
 C Start time counter
       call timer( 'bands', 1 )
@@ -430,12 +422,13 @@ C Check parameter maxk
       endif
 
 C     Allocate local arrays - only aux is relevant here
-      if ( nspin >=4 ) then
-         nhs  = 2 * (2*no_u) * (2*no_l)
+
+      if ( spin%Grid == 4 ) then
+         nhs = 2 * (2*no_u) * (2*no_l)
       else
          nhs = 2 * no_u*no_l
       endif
-      naux  = 2*no_u*5
+      naux = 2*no_u*5
       call allocDenseMatrix(nhs, nhs, nhs)
       call re_alloc( aux, 1, naux, 'aux', 'bands' )
 
@@ -448,7 +441,7 @@ C     Allocate local arrays - only aux is relevant here
         rewind (iu_wfs)
 
         write(iu_wfs) nk, .false. ! nk, Gamma, same file-format in WFS as for Gamma-point
-        write(iu_wfs) nspin
+        write(iu_wfs) spin%Grid
         write(iu_wfs) no_u
         write(iu_wfs) (iaorb(j),labelfis(isa(iaorb(j))),
      .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
@@ -458,7 +451,7 @@ C     Allocate local arrays - only aux is relevant here
       endif
 
 C Find the band energies
-      if (NoMagn .or. SPpol) then
+      if ( spin%Grid < 4 ) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
         qs(1) = 0.0_dp
         qs(2) = 0.0_dp
@@ -475,7 +468,7 @@ C Handle parallel over K points option which is not allowed for here
            call diag_init()
         end if
 
-        call diagk( nspin, no_l, no_s, maxspn, 
+        call diagk( spin%H, no_l, no_s, spin%spinor, 
      .              maxnh, maxnh, 
      .              no_u, numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, getPSI, fixspin, qtot, qs, temp,
@@ -487,29 +480,17 @@ C Handle parallel over K points option which is not allowed for here
         ParallelOverK = SaveParallelOverK
         if ( ParallelOverK ) Serial = .true.
 
-      elseif ( NonCol ) then
-         if (getPSI) then
-            if (node==0) then
-               write(6,*) "No WFS for non-colinear spin, yet..."
-            endif
-            RETURN
-         endif
+      elseif ( spin%NCol ) then
         call diag2k(no_l, no_s, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr,
-     .              listh, H, S, getD, qtot, temp, e1, e2,
+     .              listh, H, S, getD, getPSI, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              no_u, occtol, 1, no_u )
 
-      elseif ( SpOrb ) then
-        if (getPSI) then
-           if (node==0) then
-              write(6,*) "No WFS for spin-orbit, yet..."
-           endif
-           return
-        end if
-        call diag3k(nuo, no_s, maxnh, maxnh, no_u, numh,
+      elseif ( spin%SO ) then
+        call diag3k(no_l, no_s, maxnh, maxnh, no_u, numh,
      .              listhptr, listh, numh, listhptr, listh,
      .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,
      .              indxuo, nk, kpoint, wk, ek, qk, Dnew,
@@ -517,7 +498,7 @@ C Handle parallel over K points option which is not allowed for here
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              no_u, occtol, 1, no_u )
       else
-        call die( 'bands: ERROR: incorrect value of nspin')
+        call die( 'bands: ERROR: incorrect value of spin%H')
       endif
 
 C Write bands
@@ -540,7 +521,7 @@ C Find and write the ranges of k and ek
      .      path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
-          do ispin = 1,maxspn
+          do ispin = 1, spin%spinor
             do io = 1, no_u
               emax = max( emax, ek(io,ispin,ik) )
               emin = min( emin, ek(io,ispin,ik) )
@@ -552,13 +533,14 @@ C Write path for BandLines but not for BandPoints
         write(iu,*) emin/eV, emax/eV
 
 C Write eigenvalues
-        if ( nspin <= 2 ) then
-          write(iu,*) no_u, maxspn, nk
-        else if ( nspin <= 8 ) then
-          write(iu,*) 2*no_u, 1, nk
-        else
-          call die( 'bands: ERROR: incorrect value of nspin' )
-        end if
+        if ( spin%Grid == 4 ) then
+          write(iu,*) 2*no_u, 1, nk     ! A single spin channel, double number of bands
+        else 
+          write(iu,*) no_u, spin%spinor, nk
+        endif
+
+        ! For non-collinear calculations, the ek array will contain the first no_u
+        ! bands in ek(:,1,ik), and the next no_u bands in ek(:,2,ik)   
         path = 0.d0
         do ik = 1,nk
           if (nlines .ge. 0) then
@@ -568,11 +550,11 @@ C Write eigenvalues
      .                            (kpoint(3,ik)-kpoint(3,ik-1))**2 )
             write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
      .         path, ((ek(io,ispin,ik)/eV,io=1,no_u),
-     .         ispin=1,maxspn)
+     .         ispin=1,spin%spinor)
           else
             write(iu,'(3f9.5,8f12.4,/,(27x,8f12.4))')
      .        kpoint(1,ik), kpoint(2,ik), kpoint(3,ik),
-     .        ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,maxspn)
+     .        ((ek(io,ispin,ik)/eV,io=1,no_u),ispin=1,spin%spinor)
           endif
         enddo
 

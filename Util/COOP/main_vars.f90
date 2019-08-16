@@ -15,6 +15,7 @@ module main_vars
 
   public 
 
+  integer :: h_spin_dim
   integer :: ierr, klb, it, is, k, nw
   integer :: nao, ia, iz, ko, nkp, nsp, nen, mxwf, io, ie
   integer :: nnao, ik, is0, iw, iw0, i1, i2, i3, i4
@@ -29,6 +30,7 @@ module main_vars
 
   real(dp) :: qtot, temp_in_file, dm, alfa, vvv
   real(dp) :: qcos, qsin, w0, want
+  real(dp) :: qcos_H, qsin_H
   real(dp) :: min_energy, max_energy, e_step, energy, weight, efermi
   real(dp) :: low_e, high_e, eigval
   integer  :: intdos_u, number_of_wfns
@@ -66,8 +68,8 @@ module main_vars
   real(dp),    allocatable :: hamilt(:,:), Sover(:), xij(:,:), dij(:)
 
   real(dp),    allocatable :: wk(:)
-  real(SP),  allocatable :: wf(:,:)       ! Note single precision
-
+  real(SP),    allocatable :: wf_single(:,:)       ! Note single precision
+  real(DP),    allocatable :: wf(:,:)              ! Note double precision
   ! MPR file
   character :: what*4, tit(ncbmx)*30
   logical   :: dos, coop

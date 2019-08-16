@@ -101,6 +101,7 @@ C
       use writewave,     only : writew
       use m_fermid,      only : fermid, fermispin, stepf
       use m_spin,        only : spinor_dim, e_spin_dim
+      use iso_c_binding, only : c_loc, c_f_pointer
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -143,6 +144,7 @@ C  Internal variables .............................................
       real(dp) :: qp1, qp2, eqp1, eqp2
 
       real(dp), pointer :: lpsi(:,:)
+      real(dp), pointer :: psi_real_1d(:)
 
       logical, allocatable :: done_juo(:)
 C     ....................
@@ -347,8 +349,10 @@ C Repeat diagonalisation with increased memory to handle clustering
                 ! This is useful if we are requesting WFS in a "bands" setting
                 call kludge_copy(nuotot,eo(1,ispin,ik),aux)
              endif
+             call c_f_pointer(c_loc(psi),psi_real_1d,[size(psi)])
              call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
-     .                 aux,psi,.false.)
+     .                 aux,psi_real_1d,gamma=.false.,non_coll=.false.,
+     $                 blocksize=BlockSize)
           endif
 
           if (getD) then

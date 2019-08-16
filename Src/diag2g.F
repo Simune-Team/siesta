@@ -7,7 +7,7 @@
 !
       subroutine diag2g( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr,
-     .                   listd, H, S, getD, qtot, temp, e1, e2,
+     .                   listd, H, S, getD, getPSI, qtot, temp, e1, e2,
      .                   eo, qo, Dnew, Enew, ef, Entropy, 
      .                   Haux, Saux, psi, caux, 
      .                   nuotot, occtol, iscf, neigwanted)
@@ -19,6 +19,8 @@
       use sys
       use parallel,        only : Node, Nodes, BlockSize
       use parallelsubs,    only : LocalToGlobalOrb,GlobalToLocalOrb
+      use writewave,       only : writew
+      use iso_c_binding,   only : c_loc, c_f_pointer
       use m_fermid,        only : fermid, stepf
       use intrinsic_missing, only: MODP
 
@@ -100,16 +102,19 @@ C of referencing has been changed in several places to reflect this.
       real(dp) Entropy, eo(maxo*2), H(maxnh,4), qo(maxo*2)
       real(dp) qtot, S(maxnh), temp, occtol
       
-      complex(dp), dimension(2,nuotot,2*nuo) :: psi
+      complex(dp), dimension(2,nuotot,2*nuo), target :: psi
       complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux
-      complex(dp), dimension(2,nuotot) :: caux
-      logical               getD
+      complex(dp), dimension(2,nuotot), target :: caux
+      logical               getD, getPSI
       
 !     Internal variables .............................................
 
+      real(dp), pointer :: psi_real_1d(:)
+      real(dp), pointer :: aux(:)
+      
       integer           BNode, BTest, ie, ierror, iie, iio
       integer           ind, io, j, jo, nd, iuo, juo
-      real(dp)          ee, pipj, qe, t
+      real(dp)          ee, pipj, qe, t, k(3)
       complex(dp) :: cicj, D11, D22, D12, D21
 #ifdef MPI
       integer MPIerror
@@ -200,6 +205,14 @@ C of referencing has been changed in several places to reflect this.
         enddo
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
      .             2*neigwanted,iscf,ierror, 2*BlockSize)
+      endif
+
+      if (getPSI) then
+         k(1:3) = 0.0d0
+         call c_f_pointer( c_loc(psi), psi_real_1d, [size(psi)*2] )
+         call writew(nuotot,nuo,1,k,1,
+     &        eo,psi_real_1d,gamma=.true.,
+     $        non_coll=.true., blocksize=2*BlockSize)
       endif
       
 !     Check if we are done

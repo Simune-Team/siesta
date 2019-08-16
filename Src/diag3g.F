@@ -5,7 +5,7 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 !
-      subroutine diag3g( nuo, no, maxuo, maxnh, maxnd, maxo,
+      subroutine diag3g( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr,
      .                   listd, H, S, getD, getPSI, qtot, temp, e1, e2,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
@@ -16,8 +16,10 @@
       use sys
       use parallel,        only : Node, Nodes, BlockSize
       use parallelsubs,    only : LocalToGlobalOrb,GlobalToLocalOrb
+      use writewave,       only : writew
       use m_fermid,        only : fermid, stepf
       use intrinsic_missing, only: MODP
+      use iso_c_binding,   only : c_loc, c_f_pointer
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -33,7 +35,6 @@ C Reduced memory requirements, Nick, Aug. 2017
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals on local node
 C integer no                  : Number of basis orbitals
-C integer maxuo               : Maximum number of basis  orbitals
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of Dnew and Enew
 C integer maxo                : First dimension of eo and qo
@@ -86,7 +87,7 @@ C of referencing has been changed in several places to reflect this.
 !     Indices is and js are for spin components 
 !     Indices iuo and juo are for orbital components:
 ! *********************************************************************
-      integer maxo, maxuo, maxnd, maxnh
+      integer maxo, maxnd, maxnh
       integer no, nuo, nuotot, iscf, neigwanted
       
       integer listh(maxnh), numh(nuo), listhptr(nuo)
@@ -96,7 +97,8 @@ C of referencing has been changed in several places to reflect this.
       real(dp) Entropy, eo(maxo*2), H(maxnh,8), qo(maxo*2)
       real(dp) qtot, S(maxnh), temp, occtol
       
-      complex(dp), dimension(2,nuotot,2*nuo) :: psi
+      complex(dp), dimension(2,nuotot,2*nuo), target :: psi
+      real(dp), pointer                              :: psi_real_1d(:)
       complex(dp), dimension(2,nuotot,2,nuo) :: Haux, Saux
       complex(dp), dimension(2,nuotot) :: caux
       logical               getD, getPSI
@@ -105,7 +107,7 @@ C of referencing has been changed in several places to reflect this.
       
       integer           BNode, BTest, ie, ierror, iie, iio
       integer           ind, io, j, jo, nd, iuo, juo
-      real(dp)          ee, qe, t
+      real(dp)          ee, qe, t, k(3)
       complex(dp)       D11, D22, D12, D21
 #ifdef MPI
       integer MPIerror
@@ -193,7 +195,20 @@ C of referencing has been changed in several places to reflect this.
         call cdiag(Haux,Saux,2*nuotot,2*nuo,2*nuotot,eo,psi,
      .             2*neigwanted,iscf,ierror,2*BlockSize)
       endif
-      
+
+      if (getPSI) then
+         k(1:3) = 0.0d0
+
+          ! We do not have info about occupation
+          ! In the current implementation, neigneeded
+          ! is ALWAYS nuotot.
+          ! This is because writewave expects the full spectrum
+         call c_f_pointer( c_loc(psi), psi_real_1d, [size(psi)*2] )
+         call writew(nuotot,nuo,1,k,1,
+     &        eo,psi_real_1d,gamma=.true.,
+     $        non_coll=.true.,blocksize=2*BlockSize)
+      endif
+
 !     Check if we are done
       if (.not.getD) return
       

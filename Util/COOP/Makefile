@@ -24,9 +24,9 @@
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 
-default: mprop fat
+default: mprop fat spin_texture
 
-all: mprop dm_creator fat
+all: mprop dm_creator fat spin_texture
 
 include ../../$(OBJDIR)/arch.make
 
@@ -48,11 +48,16 @@ DEF_OBJS += main_vars.o
 MPROP_OBJS = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o
 FAT_OBJS   = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o
 DM_OBJS    = $(SIESTA_OBJS) $(DEF_OBJS) iodm_netcdf.o write_dm.o
+TEXTURE_OBJS  = $(SIESTA_OBJS) $(DEF_OBJS)
 
 dep: 
 	sfmakedepend --depend=obj --modext=o \
 		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
+		$(VPATH)/*.T90 \
 		*.f *.f90 *.F *.F90
+	@sed "/\.o: / s/\.T90\.o/\.o/g"  Makefile > tmp.Makefile
+	@mv tmp.Makefile Makefile
+	#The above lines will fix the template dependencies
 
 mprop: $(MPROP_OBJS) mprop.o
 	$(FC) -o $@ $(LDFLAGS) $(MPROP_OBJS) mprop.o
@@ -60,9 +65,11 @@ fat: $(FAT_OBJS) fat.o
 	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) fat.o
 dm_creator: $(DM_OBJS) dm_creator.o
 	$(FC) -o $@ $(LDFLAGS) $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
+spin_texture: $(TEXTURE_OBJS) spin_texture.o
+	$(FC) -o $@ $(LDFLAGS) $(TEXTURE_OBJS) spin_texture.o
 
 clean:
-	rm -f *.o *.mod mprop dm_creator fat
+	rm -f *.o *.mod mprop dm_creator fat spin_texture
 
 # DO NOT DELETE THIS LINE - used by make depend
 alloc.o: local_sys.o m_io.o parallel.o precision.o
@@ -123,6 +130,8 @@ chemical.o: local_sys.o parallel.o precision.o
 chempot.o: alloc.o local_sys.o mneighb.o parallel.o parallelsubs.o precision.o
 chkdim.o: local_sys.o
 chkgmx.o: cellsubs.o local_sys.o minvec.o precision.o
+class_Data1D.o: alloc.o
+class_Data2D.o: alloc.o
 class_Fstack_Data1D.o: class_Data1D.o class_Data1D.o
 class_Fstack_Pair_Data1D.o: class_Pair_Data1D.o class_Pair_Data1D.o
 class_Fstack_Pair_Geometry_SpData2D.o: class_Pair_Geometry_SpData2D.o
@@ -133,9 +142,12 @@ class_Pair_Geometry_SpData2D.o: class_Geometry.o class_SpData2D.o
 class_Pair_SpData1D.o: class_SpData1D.o class_SpData1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o class_Data1D.o class_Data1D.o
 class_SpData1D.o: class_Data1D.o class_Data1D.o
+class_SpData1D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData2D.o: class_Data2D.o class_Data2D.o
+class_SpData2D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
+class_TriMat.o: alloc.o intrinsic_missing.o
 coceri.o: files.o periodic_table.o precision.o units.o
 compute_dm.o: atomlist.o class_SpData1D.o compute_ebs_shift.o diagon.o
 compute_dm.o: iodmhs_netcdf.o kpoint_grid.o local_sys.o m_dminim.o m_energies.o
@@ -183,11 +195,13 @@ dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o rhofft.o
 dhscf.o: rhoofd.o siesta_options.o units.o vmat.o
 diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
 diag2g.o: fermid.o intrinsic_missing.o local_sys.o parallel.o parallelsubs.o
-diag2g.o: precision.o
+diag2g.o: precision.o writewave.o
 diag2k.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
+diag2k.o: writewave.o
 diag3g.o: fermid.o intrinsic_missing.o local_sys.o parallel.o parallelsubs.o
-diag3g.o: precision.o
+diag3g.o: precision.o writewave.o
 diag3k.o: fermid.o local_sys.o parallel.o parallelsubs.o precision.o
+diag3k.o: writewave.o
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o intrinsic_missing.o local_sys.o m_spin.o parallel.o
 diagg.o: parallelsubs.o precision.o writewave.o
