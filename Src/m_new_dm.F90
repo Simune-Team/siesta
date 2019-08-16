@@ -346,7 +346,16 @@ contains
     ! iterations. For instance when performing FC runs (externally driven)
     ! this would lead to non-degenerate transverse eigenmodes for simple molecules
     if ( init_method == 0 ) then ! atomicly filled data
-       ! allow mix_scf_first
+      ! allow mix_scf_first
+    else if ( mix_scf_first_force ) then
+      ! user requested a mix in the first step
+      mix_scf_first = .true.
+      if ( IONode .and. init_method < 0 ) then
+        ! Warn the user about this
+        write(*,"(a)") "Mixing first iteration is *forced* although the sparsity pattern has changed..."
+        write(*,"(a)") "Mixing non-compatible matrices may result in non-idempotency problems."
+        write(*,"(a)") "Please use a linear mixer for the first few steps to remove history effects."
+      end if
     else if ( mix_scf_first .and. init_method < 0 ) then
        ! Do not allow mixing first SCF step since we are reusing a DM
        ! from another geometry.

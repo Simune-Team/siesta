@@ -4101,12 +4101,29 @@ by potentially saving many self-consistency steps in production runs.
 
 \begin{fdflogicalT}{SCF.Mix!First}
   \fdfindex*{DM.MixSCF1}[|see SCF.Mix.First]
+  \fdfdepend{SCF.Mix!First.Force}%
 
   Whether the first SCF should be mixed or it uses the output as input
   in the next SCF step. It is generally advised to set this to true,
   at least when restarting calculations.
+
+  The general logic of mixing on the first method is determined by the
+  read matrices. If the sparsity pattern has changed between the read
+  matrix and the current matrix \siesta\ will default to \emph{not}
+  mix in the first step, regardless of this flag. To ensure mixing is
+  done in the first step \fdf{SCF.Mix!First.Force} should be set to
+  \fdftrue.
   
 \end{fdflogicalT}
+
+\begin{fdflogicalF}{SCF.Mix!First.Force}
+
+  Force the mixing of the first step, regardless of what \siesta\ may
+  heuristically decide.
+
+  This overrules \fdf{SCF.Mix!First}.
+  
+\end{fdflogicalF}
 
 
 In the following the density matrix ($\DM$) will be used in the
