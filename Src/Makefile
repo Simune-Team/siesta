@@ -1324,9 +1324,10 @@ timer.o: extrae_eventllist.o extrae_module.o m_timer.o parallel.o sys.o
 timer.o: timer_tree.o
 timer_tree.o: m_walltime.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
-ts_energies.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
-ts_energies.o: m_energies.o m_spin.o m_ts_electype.o m_ts_method.o
-ts_energies.o: m_ts_options.o parallel.o sparse_matrices.o
+ts_energies.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
+ts_energies.o: class_Sparsity.o geom_helper.o m_energies.o m_spin.o
+ts_energies.o: m_ts_electype.o m_ts_method.o m_ts_options.o parallel.o
+ts_energies.o: precision.o sparse_matrices.o
 ts_init.o: m_fixed.o m_os.o m_ts_cctype.o m_ts_charge.o m_ts_electrode.o
 ts_init.o: m_ts_electype.o m_ts_gf.o m_ts_global_vars.o m_ts_kpoints.o
 ts_init.o: m_ts_method.o m_ts_options.o parallel.o siesta_options.o
