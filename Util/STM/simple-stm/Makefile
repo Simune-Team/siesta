@@ -16,7 +16,7 @@ OBJDIR=Obj
 all: plstm plsts
 
 include ../../../$(OBJDIR)/arch.make
-VPATH=../../Grid
+vpath %.F90 ../../Grid
 
 INCFLAGS += $(NETCDF_INCFLAGS)
 LIBS = $(NETCDF_LIBS)
