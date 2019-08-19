@@ -52,7 +52,7 @@ contains
 
     use geom_helper, only : UCORB
     use m_ts_electype, only: Elec
-    use m_energies, only: NEGF_Ebs, NEGF_Ekin, NEGF_Eso, NEGF_Etot, NEGF_Enl
+    use m_energies, only: NEGF_Ebs, NEGF_Ekin, NEGF_Etot, NEGF_Enl
     use m_energies, only: NEGF_DEharr
 
 ! **********************
@@ -60,18 +60,19 @@ contains
 ! **********************
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_lo, no_u, lio, io, ind, jo, ir, jr, r, ispin
-    real(dp), pointer :: H_vkb(:), H_kin(:), H_so(:,:)
-    real(dp) :: Etmp(5,0:1+1+N_Elec*2)
+    real(dp), pointer :: H_vkb(:), H_kin(:)
+    real(dp) :: Etmp(4,0:1+1+N_Elec*2)
 #ifdef MPI
-    real(dp) :: tmp(5,0:1+1+N_Elec*2)
+    real(dp) :: tmp(4,0:1+1+N_Elec*2)
     integer :: MPIerror
 #endif
 
+    if ( spin%NCol .or. spin%SO ) then
+      call die('ts_energies: Not implemented for non-colinear or spin-orbit')
+    end if
+
     H_vkb => val(H_vkb_1D)
     H_kin => val(H_kin_1D)
-    if ( spin%SO ) then
-      H_so => val(H_so_2D)
-    end if
 
     ! Retrieve information about the sparsity pattern
     call attach(sp, &
@@ -114,23 +115,7 @@ contains
         end if
 
         ! Ebs
-        if ( spin%SO ) then
-          Etmp(1,r) = Etmp(1,r) + H(ind,1) * Dscf(ind,1) &
-              + H(ind,2) * Dscf(ind,2) &
-              + H(ind,3) * Dscf(ind,7) &
-              + H(ind,4) * Dscf(ind,8) &
-              - H(ind,5) * Dscf(ind,5) &
-              - H(ind,6) * Dscf(ind,6) &
-              + H(ind,7) * Dscf(ind,3) &
-              + H(ind,8) * Dscf(ind,4)
-        else if ( spin%NCol ) then
-          Etmp(1,r) = Etmp(1,r) + H(ind,1) * Dscf(ind,1) &
-              + H(ind,2) * Dscf(ind,2) &
-              + (H(ind,3) * Dscf(ind,3) &
-              + H(ind,4) * Dscf(ind,4) ) * 2
-        else
-          Etmp(1,r) = Etmp(1,r) + sum(H(ind,:) * Dscf(ind,:) )
-        end if
+        Etmp(1,r) = Etmp(1,r) + sum(H(ind,:) * Dscf(ind,:) )
 
         do ispin = 1, spin%spinor
           ! Ekin
@@ -139,34 +124,10 @@ contains
           Etmp(3,r) = Etmp(3,r) + H_vkb(ind) * Dscf(ind,ispin)
         end do
 
-        ! Eso
-        if ( spin%SO ) then
-          Etmp(4,r) = Etmp(4,r) + H_so(ind,1)*Dscf(ind,7) + H_so(ind,2)*Dscf(ind,8) &
-              + H_so(ind,5)*Dscf(ind,3) + H_so(ind,6)*Dscf(ind,4) &
-              - H_so(ind,3)*Dscf(ind,5) - H_so(ind,4)*Dscf(ind,6)
-
-        end if
-
         ! DEharr
-        if ( spin%SO ) then
-          Etmp(5,r) = Etmp(5,r) + H(ind,1) * ( Dscf(ind,1) - Dold(ind,1) )  &
-                          + H(ind,2) * ( Dscf(ind,2) - Dold(ind,2) )  &
-                          + H(ind,3) * ( Dscf(ind,7) - Dold(ind,7) )  &
-                          + H(ind,4) * ( Dscf(ind,8) - Dold(ind,8) )  &
-                          - H(ind,5) * ( Dscf(ind,5) - Dold(ind,5) )  &
-                          - H(ind,6) * ( Dscf(ind,6) - Dold(ind,6) )  &
-                          + H(ind,7) * ( Dscf(ind,3) - Dold(ind,3) )  &
-                          + H(ind,8) * ( Dscf(ind,4) - Dold(ind,4) )
-        else if ( spin%NCol ) then
-          Etmp(5,r) = Etmp(5,r) + H(ind,1) * ( Dscf(ind,1) - Dold(ind,1) )  &
-              + H(ind,2) * ( Dscf(ind,2) - Dold(ind,2) )  &
-              + 2.0_dp * H(ind,3) * ( Dscf(ind,3) - Dold(ind,3) )  &
-              + 2.0_dp * H(ind,4) * ( Dscf(ind,4) - Dold(ind,4) )
-        else
-          do ispin = 1, spin%spinor
-            Etmp(5,r) = Etmp(5,r) + H(ind,ispin) * (Dscf(ind,ispin) - Dold(ind,ispin))
-          end do
-        end if
+        do ispin = 1, spin%spinor
+          Etmp(4,r) = Etmp(4,r) + H(ind,ispin) * (Dscf(ind,ispin) - Dold(ind,ispin))
+        end do
 
       end do
     end do
@@ -196,8 +157,7 @@ contains
     NEGF_Ebs = Etmp(1,2)
     NEGF_Ekin = Etmp(2,2)
     NEGF_Enl = Etmp(3,2)
-    NEGF_Eso = Etmp(4,2)
-    NEGF_DEharr = Etmp(5,2)
+    NEGF_DEharr = Etmp(4,2)
 
   end subroutine ts_compute_energies
 

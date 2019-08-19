@@ -339,7 +339,6 @@
      .     'transiesta: Kinetic   =', NEGF_Ekin/eV,
      .     'transiesta: Ion-elec  =', (Enascf+NEGF_Enl+DUscf-
      .      Uscf-Uatm)/eV,
-     .     'transiesta: Eso       =', NEGF_Eso/eV,
      .     'transiesta: Eharris   =', (NEGF_Eharrs+Ekinion)/eV,
      .     'transiesta: Etot      =', (NEGF_Etot+Ekinion)/eV,
      .     'transiesta: FreeEng   =', (NEGF_FreeE+Ekinion)/eV
@@ -577,7 +576,6 @@
      .    'transiesta: ',  'Kinetic =', NEGF_Ekin/eV,
      .    'transiesta: ', 'Ion-elec =', (Enascf+NEGF_Enl+DUscf-
      .      Uscf-Uatm)/eV,
-     .    'transiesta: ',      'Eso =', NEGF_Eso/eV,
      .    'transiesta: ',    'Total =', (NEGF_Etot+Ekinion)/eV
         end if
         if ( fixspin ) then

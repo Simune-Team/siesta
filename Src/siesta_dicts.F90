@@ -320,8 +320,6 @@ contains
     variables = variables // &
          ('E.negf.dN'.kvp.NEGF_DE)
     variables = variables // &
-         ('E.negf.spin_orbit'.kvp.NEGF_Eso)
-    variables = variables // &
          ('E.negf.harris'.kvp.NEGF_Eharrs)
     variables = variables // &
          ('E.negf.total'.kvp.NEGF_Etot)
