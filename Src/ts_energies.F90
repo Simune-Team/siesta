@@ -52,7 +52,7 @@ contains
 
     use geom_helper, only : UCORB
     use m_ts_electype, only: Elec
-    use m_energies, only: NEGF_Ebs, NEGF_Ekin, NEGF_Eso, NEGF_Etot, NEGF_Enl
+    use m_energies, only: NEGF_Ebs, NEGF_Ekin, NEGF_Etot, NEGF_Enl
     use m_energies, only: NEGF_DEharr
 
 ! **********************
@@ -61,14 +61,14 @@ contains
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_lo, no_u, lio, io, ind, jo, ir, jr, r, ispin
     real(dp), pointer :: H_vkb(:), H_kin(:)
-    real(dp) :: Etmp(5,0:1+1+N_Elec*2)
+    real(dp) :: Etmp(4,0:1+1+N_Elec*2)
 #ifdef MPI
-    real(dp) :: tmp(5,0:1+1+N_Elec*2)
+    real(dp) :: tmp(4,0:1+1+N_Elec*2)
     integer :: MPIerror
 #endif
 
     if ( spin%NCol .or. spin%SO ) then
-      call die('ts_energies: currently has not implemented SO/NC')
+      call die('ts_energies: Not implemented for non-colinear or spin-orbit')
     end if
 
     H_vkb => val(H_vkb_1D)

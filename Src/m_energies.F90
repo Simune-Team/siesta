@@ -54,7 +54,6 @@ module m_energies
   real(dp) :: NEGF_Ebs
   real(dp) :: NEGF_Ekin
   real(dp) :: NEGF_Enl
-  real(dp) :: NEGF_Eso
   real(dp) :: NEGF_DEharr
   real(dp) :: NEGF_Eharrs
   real(dp) :: NEGF_Etot
@@ -102,7 +101,6 @@ contains
     NEGF_Ebs = 0._dp
     NEGF_Ekin = 0._dp
     NEGF_Enl = 0._dp
-    NEGF_Eso = 0._dp
     NEGF_DEharr = 0._dp
     NEGF_Eharrs = 0._dp
     NEGF_Etot = 0._dp
@@ -135,7 +133,7 @@ contains
         Ecorrec + Emad + Emm + Emeta + Eldau
 
     if ( TSrun ) then
-      NEGF_Etot = Ena + NEGF_Ekin + NEGF_Enl + NEGF_Eso - Eions + &
+      NEGF_Etot = Ena + NEGF_Ekin + NEGF_Enl - Eions + &
           DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm + Emeta + &
           Eldau + NEGF_DE
     end if
