@@ -88,7 +88,7 @@ contains
     !     The DM's from the previous coordinates are kept in memory
     !  3: .TSDE file is read, TranSiesta continuation
     ! If the value is negative it means that one cannot mix in the
-    ! first step, regardless of user inquiry!
+    ! first step, unless SCF.Mix.First.Force is true!
     integer :: init_method
 
     real(dp), pointer :: DM(:,:), EDM(:,:)
@@ -335,7 +335,7 @@ contains
     ! Determine how the mixing of the first step should be performed
     !
     ! The idea is that one will allow mixing on the first SCF step
-    ! only for atomicly filled orbitals. This will in most cases
+    ! only for atomically filled orbitals. This will in most cases
     ! be a good initial choice, while in certain systems (spin-orbit)
     ! it may not be so good.
     ! Subsequently for any MD steps beyond the initial step, we will not
@@ -352,8 +352,8 @@ contains
       mix_scf_first = .true.
       if ( IONode .and. init_method < 0 ) then
         ! Warn the user about this
-        write(*,"(a)") "Mixing first iteration is *forced* although the sparsity pattern has changed..."
-        write(*,"(a)") "Mixing non-compatible matrices may result in non-idempotency problems."
+        write(*,"(a)") "Mixing first scf iteration is *forced* although the sparsity pattern has changed..."
+        write(*,"(a)") "Mixing non-compatible matrices might result in problems."
         write(*,"(a)") "Please use a linear mixer for the first few steps to remove history effects."
       end if
     else if ( mix_scf_first .and. init_method < 0 ) then

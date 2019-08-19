@@ -4102,24 +4102,42 @@ by potentially saving many self-consistency steps in production runs.
 \begin{fdflogicalT}{SCF.Mix!First}
   \fdfindex*{DM.MixSCF1}[|see SCF.Mix.First]
   \fdfdepend{SCF.Mix!First.Force}%
-
-  Whether the first SCF should be mixed or it uses the output as input
-  in the next SCF step. It is generally advised to set this to true,
-  at least when restarting calculations.
-
-  The general logic of mixing on the first method is determined by the
-  read matrices. If the sparsity pattern has changed between the read
-  matrix and the current matrix \siesta\ will default to \emph{not}
-  mix in the first step, regardless of this flag. To ensure mixing is
-  done in the first step \fdf{SCF.Mix!First.Force} should be set to
-  \fdftrue.
   
+  This flag is used to decide whether mixing (of the DM or H) should
+  be done in the first SCF step. If mixing is not performed the output
+  DM or H generated in the first SCF step is used as input in the next
+  SCF step. When mixing the DM, this ``reset'' has the effect of
+  avoiding potentially undesirable memory effects: for example, a DM
+  read from file which corresponds to a different structure might not
+  satisfy the correct symmetry, and mixing will not fix it. On the
+  other hand, when reusing a DM for a restart of an interrupted
+  calculation, a full reset might not be advised.
+  
+  The value of this flag is one of the ingredients used by \siesta\ to
+  decide what to do. If \fdftrue\ (the default), mixing will be
+  performed in all cases, except when a DM has been read from file and
+  the sparsity pattern of the DM on file is different from the current
+  one. To ensure that a first-step mixing is done even in this case,
+  \fdf{SCF.Mix!First.Force} should be set to \fdftrue.
+  
+  If the flag is \fdffalse, no mixing in the first step will be
+  performed, except if overridden by \fdf{SCF.Mix!First.Force}.
+  
+  \note that the default value for this flag has changed from the old
+  (pre-version 4) setting in \siesta. The new setting is most
+  appropriate for the case of restarting calculations. On the other
+  hand, it means that mixing in the first SCF step will also be
+  performed for the standard case in which the initial DM is built as
+  a (diagonal) superposition of atomic orbital occupation values. In
+  some cases (e.g. spin-orbit calculations) better results might be
+  obtained by avoiding this mixing.
+
 \end{fdflogicalT}
 
 \begin{fdflogicalF}{SCF.Mix!First.Force}
 
-  Force the mixing of the first step, regardless of what \siesta\ may
-  heuristically decide.
+  Force the mixing (of DM or H) in the first SCF step, regardless of
+  what \siesta\ may heuristically decide.
 
   This overrules \fdf{SCF.Mix!First}.
   
