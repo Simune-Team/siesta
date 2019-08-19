@@ -89,17 +89,7 @@ C Write general information only if called for the first time
 
       IF (FRSTME) THEN
 
-
-        WRITE(UNIT1,'(A)')
-     .    '                          ************************       '
-        WRITE(UNIT1,'(A)')
-     .    '                          *  WELCOME TO DENCHAR  *       '
-        WRITE(UNIT1,'(A)')
-     .    '                          ************************       '
-
-        WRITE(UNIT1,'(A,A)')
-     .    '  DENCHAR version: ', "2.2"
-        WRITE(UNIT1,'(A,A)')
+         WRITE(UNIT1,'(A,A)')
      .    '  You are running DENCHAR for system: ',SNAME
         WRITE(UNIT1,'(A)')
      .    '  '
@@ -252,25 +242,6 @@ C Write general information only if called for the first time
         FRSTME = .FALSE.
 
       ENDIF
-
-      IF (CHARGE) THEN
-        
-        WRITE(UNIT1,'(A)')
-     .    '  '
-        WRITE(UNIT1,'(A)')
-     .    '  You are now computing charge density on the grid'
-
-      ENDIF
-
-      IF (WAVES) THEN
-        
-        WRITE(UNIT1,'(A)')
-     .    '  '
-        WRITE(UNIT1,'(A)')
-     .    '  You are now computing Wave Functions on the grid'
-
-      ENDIF
-
 
       END
        

@@ -304,6 +304,7 @@
       real(dp), intent(in) :: dHmax ! Max. change in H elements
 
       character(len=64) :: fmt
+      character(len=16) :: enl_str, eso_str
 
       logical              :: first_scf_step
       integer              :: i

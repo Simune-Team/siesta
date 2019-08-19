@@ -74,7 +74,7 @@ c****************************************************************************
 
       integer           idummy
       real(dp)              :: cell(3,3), oldx, celli(3,3), newx
-      real(dp)              :: xfrac(3)
+      real(dp)              :: xfrac(3), origin(3)
       real(sp), pointer     :: rho(:,:,:,:) => null()
 
       character(len=256) :: fnamexv, fnamein, fnameout(2)
@@ -161,11 +161,20 @@ c****************************************************************************
       nsc(:) = (/ sx, sy, sz /)
 
       mesh(:) = nsc(:) * gf%n(:)
+      origin(:) = gf%origin(:)
       nspin = gf%nspin
       rho => gf%val
       if (sx*sy*sz /= 1) then
          write(0,*) " We have a supercell:", nsc(:)
          supercell = .true.
+         do i = 1, 3
+            if (abs(origin(i)) > 1.e-10_dp) then
+               if (nsc(i) /= 1) then
+                  write(0,*) " Origin reset to 0 in direction:", i
+                  origin(i) = 0.0_dp
+               endif
+            endif
+         enddo
       endif
 
       write(6,*) 
@@ -224,7 +233,7 @@ c****************************************************************************
          write(2,*) trim(fnameout(isp))
          write(2,*) "z fastest, then y, x"
 ! Natoms and origin of volumetric data
-         write(2,'(i5,4f12.6)') natoms, 0.0,0.0,0.0
+         write(2,'(i5,4f12.6)') natoms, origin(:)
 
 
 ! Write vectors defining voxels
@@ -261,7 +270,7 @@ c****************************************************************************
          open( unit=2, file='Up-Down.cube', form='formatted')
          write(2,*) "Up-Down"
          write(2,*) "Up-Down"
-         write(2,'(i5,4f12.6)') natoms, 0.0,0.0,0.0
+         write(2,'(i5,4f12.6)') natoms, origin(:)
 
          nskip = 1
          do ix=1,3
@@ -292,7 +301,7 @@ c****************************************************************************
          open( unit=2, file='Up+Down.cube', form='formatted')
          write(2,*) "Up+Down"
          write(2,*) "Up+Down"
-         write(2,'(i5,4f12.6)') natoms, 0.0,0.0,0.0
+         write(2,'(i5,4f12.6)') natoms, origin(:)
 
          nskip = 1
          do ix=1,3

@@ -59,6 +59,13 @@ cdf_laplacian: cdf_laplacian.o fft3d.o m_fft_gpfa.o f2kcli.o m_getopts.o reclat.
 	$(FC) $(LDFLAGS) -o $@  cdf_laplacian.o \
                local_die.o fft3d.o m_fft_gpfa.o m_getopts.o f2kcli.o reclat.o $(NETCDF_LIBS)
 #
+V_INFO_OBJS=m_gridfunc.o v_info.o
+#
+v_info: $(V_INFO_OBJS)
+	$(FC) $(LDFLAGS) -o $@  $(V_INFO_OBJS) $(NETCDF_LIBS)
+v_info.o: m_gridfunc.o
+#
+#
 G2C_NG_OBJS=m_getopts.o reclat.o m_struct.o m_gridfunc.o local_die.o g2c_ng.o f2kcli.o
 #
 g2c_ng: $(G2C_NG_OBJS)
@@ -87,7 +94,7 @@ grid_supercell: grid_supercell.o
 #------------------
 clean: 
 	rm -f *.o grid2cdf grid2val grid2cube cdf2grid cdf2xsf *.o *.*d
-	rm -f cdf_laplacian g2c_ng grid_rotate grid_supercell
+	rm -f cdf_laplacian g2c_ng grid_rotate grid_supercell v_info
 #
 
 

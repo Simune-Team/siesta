@@ -405,14 +405,12 @@ CONTAINS
       end if
 
 #ifdef MPI
-      if (spin%SO) then
+      if ( spin%SO ) then
          ! Global reduction of Eso
          call globalize_sum( Eso, buffer1 )
          Eso = buffer1
       endif
 #endif
-
-      end if
 
       ! Also call transiesta
       if ( TSrun ) then

@@ -51,7 +51,6 @@
 #ifdef SIESTA__CHESS
       use m_chess, only: CheSS_wrapper
 #endif
-      use m_energies,   only: DE_NEGF
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
       use m_transiesta,     only : transiesta
       

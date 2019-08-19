@@ -13,10 +13,13 @@
 
 OBJDIR=Obj
 
-all: plstm
+all: plstm plsts
 
 include ../../../$(OBJDIR)/arch.make
+vpath %.F90 ../../Grid
 
+INCFLAGS += $(NETCDF_INCFLAGS)
+LIBS = $(NETCDF_LIBS)
 #
 # This is needed on some systems to avoid loading the parallel libraries, which
 # sometimes force running on queuing systems
@@ -26,18 +29,16 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 
-plstm: plstm.o
-	$(FC) $(LDFLAGS) -o $@  plstm.o 
+plstm.o: m_gridfunc.o options.o
+plsts.o: m_gridfunc.o
+plstm: options.o plstm.o m_gridfunc.o
+	$(FC) $(LDFLAGS) -o $@  plstm.o m_gridfunc.o options.o $(LIBS)
+
+
+plsts: plsts.o m_gridfunc.o 
+	$(FC) $(LDFLAGS) -o $@  plsts.o m_gridfunc.o $(LIBS)
+
 
 clean: 
-	rm -f *.o plstm *.*d
+	rm -f *.o plstm plsts
 
-
-dep:
-	-sfmakedepend --depend=obj --modext=o \
-		$(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 \
-		*.f *.f90 *.F *.F90
-	@sed '/^siesta_cmlsubs.o:/s/version.o//'  Makefile > tmp.Makefile
-	@mv tmp.Makefile Makefile
-
-# DO NOT DELETE THIS LINE - used by make depend

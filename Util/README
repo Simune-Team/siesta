@@ -20,8 +20,9 @@ COOP: Generation of COOP/COHP/PDOS curves for chemical analysis.
       Computation of data to generate "fatbands" plots.
 
 Denchar: Produces 2D and 3D plots of charge and spin density, and of
-         wave-functions. Uses the density matrix and basis orbital
-         information (by J. Junquera and P. Ordejon).
+         wave-functions. Uses the density matrix and/or wavefunction
+	 coefficients and basis orbital information
+	 (by J. Junquera, P. Ordejon, and A. Garcia).
 
 DensityMatrix: Utilities to process and convert density-matrix files.
 
@@ -92,9 +93,8 @@ SpPivot: A utility to create a pivoting table for the sparse
 	 patterns in Siesta. Can create GRAPHVIZ output for easy
 	 display of the sparsity pattern (by N. Papior)
 
-STM/simple-stm:   Simple program for STM simulations (by P. Ordejon)
-
-STM/ol-stm:  Ordejon-Lorente STM image simulator
+STM/   Utilities to generate information for simulated STM images
+       and STS spectra (P. Ordejon, N. Lorente, A. Garcia)
 
 TS: Contains several different utilities that are related to
     the NEGF code TranSiesta. (by N. Papior)
