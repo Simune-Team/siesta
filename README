@@ -12,6 +12,8 @@ In the Docs/ directory:
 The code itself can be found under Src/
 Examples and other tutorial material in Tests/, Tutorials/, and Examples/
 
+TranSiesta is now part of the executable, see the documentation for details.
+
 Utilities under Util/
 
 Pseudopotential-related information can be found under Pseudo/.
