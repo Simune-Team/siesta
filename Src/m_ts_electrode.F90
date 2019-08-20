@@ -1285,19 +1285,24 @@ contains
 #ifdef MPI
           call MPI_Reduce(iters(1,1,1,1), iters(1,1,1,2), nq*NEn*nkpnt, &
                MPI_Integer, MPI_Sum, 0, MPI_Comm_World, MPIerror)
+!$OMP parallel default(shared), private(j,i,iqpt)
 #else
-!$OMP parallel workshare
+!$OMP parallel default(shared), private(j,i,iqpt)
+
+!$OMP workshare
           iters(:,:,:,2) = iters(:,:,:,1)
-!$OMP end parallel workshare
+!$OMP end workshare
 #endif
           if ( IONode ) then
-!$OMP parallel workshare default(shared)
+!$OMP workshare
              i_mean = sum(iters(:,:,:,2)) / real(nq*NEn*nkpnt,dp)
-!$OMP end parallel workshare
+!$OMP end workshare
+
+!$OMP single
              i_std = 0._dp
-!$OMP parallel do default(shared), &
-!$OMP&private(j,i,iqpt), collapse(3), &
-!$OMP&reduction(+:i_std)
+!$OMP end single ! keep barrier
+
+!$OMP do reduction(+:i_std)
              do j = 1 , nkpnt
              do i = 1 , NEn
              do iqpt = 1 , nq
@@ -1305,15 +1310,19 @@ contains
              end do
              end do
              end do
-!$OMP end parallel do
+!$OMP end do
+
+!$OMP master
              i_std = sqrt(i_std/real(NEn*nq*nkpnt,dp))
              ! TODO if new surface-Green function scheme is implemented, fix here
              write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
                   &Mean/std iterations: ', i_mean             , i_std
              write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
                   &Min/Max iterations : ', minval(iters(:,:,:,2)) , maxval(iters(:,:,:,2))
+!$OMP end master
              
           end if
+!$OMP end parallel
        end if
 
     end do
@@ -2031,7 +2040,7 @@ contains
       if ( is_left ) then
          ! Left, we use the last orbitals
          ioff = 1 - off ! ioff is private in OMP orphaned routines
-!$OMP do private(j,i), collapse(2)
+!$OMP do private(j,i)
          do j = off , fS
             do i = off , fS
                to(ioff+i,ioff+j) = from(i,j)
@@ -2040,7 +2049,7 @@ contains
 !$OMP end do nowait
       else
          ! Right, the first orbitals
-!$OMP do private(j,i), collapse(2)
+!$OMP do private(j,i)
          do j = 1 , tS
             do i = 1 , tS
                to(i,j) = from(i,j)

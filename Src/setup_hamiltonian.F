@@ -88,13 +88,13 @@
 !$OMP parallel default(shared), private(ispin,io)
 
 !     Save present H matrix
-!$OMP do collapse(2)
       do ispin = 1, spin%H
+!$OMP do
          do io = 1,maxnh
             Hold(io,ispin) = H(io,ispin)
          end do
+!$OMP end do nowait
       end do
-!$OMP end do
 
 !$OMP single
       H_kin => val(H_kin_1D)
@@ -121,24 +121,24 @@
       end do
 
       if ( spin%SO_onsite ) then
-!$OMP do collapse(2)
         do ispin = 3 , spin%H
+!$OMP do
           do io = 1,maxnh
             H(io,ispin) = H_so_on(io,ispin-2)
           end do
-        end do
 !$OMP end do nowait
+        end do
          
       else
 
-!$OMP do collapse(2)
         do ispin = 3 , spin%H
+!$OMP do
           do io = 1,maxnh
             H(io,ispin) = 0._dp
           end do
-        end do
 !$OMP end do nowait
-         
+        end do
+
       end if
          
 ! ..................
@@ -157,9 +157,9 @@
       Eso = 0.0_dp
 !$OMP end single ! keep wait
       
-!$OMP do collapse(2), reduction(+:Ekin,Enl)
-      do ispin = 1, spin%spinor
-        do io = 1,maxnh
+!$OMP do reduction(+:Ekin,Enl)
+      do io = 1,maxnh
+        do ispin = 1, spin%spinor
           Ekin = Ekin + H_kin(io) * Dscf(io,ispin)
           Enl  = Enl  + H_vkb(io) * Dscf(io,ispin)
         end do

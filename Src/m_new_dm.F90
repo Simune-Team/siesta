@@ -991,14 +991,15 @@ contains
 !$OMP parallel default(shared), private(i1,i2)
 
       ! Initialize to 0
-!$OMP do collapse(2)
       do i2 = 1 , spin%DM
+!$OMP do
          do i1 = 1 , nnz
             DM(i1,i2) = 0._dp
          end do
+!$OMP end do nowait
       end do
-!$OMP end do
-
+       
+!$OMP barrier
       
       ! Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro
 !$OMP single
@@ -1196,14 +1197,16 @@ contains
 !$OMP parallel default(shared), private(i,ind,is,jo,gio,ia,io)
 
        ! Initialize to 0
-!$OMP do collapse(2)
        do is = 1 , spin%DM
+!$OMP do
           do i = 1 , nnz
              DM(i,is) = 0._dp
           end do
+!$OMP end do nowait
        end do
-!$OMP end do
 
+!$OMP barrier
+       
        ! Initialize the paramagnetic case
 !$OMP single
        do io = 1 , no_l

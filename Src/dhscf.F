@@ -1142,14 +1142,15 @@ C ----------------------------------------------------------------------
 C Find difference between selfconsistent and atomic densities
 
       !Both DRho and rhoatm are using a UNIFORM, sequential form
-!$OMP parallel do default(shared), private(ispin,ip),
-!$OMP&collapse(2)
+!$OMP parallel default(shared), private(ispin,ip)
       do ispin = 1,nsd
+!$OMP do
         do ip = 1,ntpl
           DRho(ip,ispin) = DRho(ip,ispin) - rhoatm(ip) * rnsd
         enddo
+!$OMP end do nowait
       enddo
-!$OMP end parallel do
+!$OMP end parallel
 
       if ( debug_dhscf ) then
         write(*,debug_fmt) Node,'DRho',
@@ -1418,25 +1419,29 @@ C ----------------------------------------------------------------------
 
       if (npcc .eq. 1) then
          
-!$OMP parallel do default(shared), private(ip,ispin), collapse(2)
+!$OMP parallel default(shared), private(ip,ispin)
        do ispin = 1,nsd
+!$OMP do
           do ip= 1, ntpl
              DRho(ip,ispin) = DRho(ip,ispin) +
      &            (rhopcc(ip)+rhoatm(ip)) * rnsd
           enddo
+!$OMP end do nowait
        enddo
-!$OMP end parallel do
+!$OMP end parallel
 
       else
 
-!$OMP parallel do default(shared), private(ip,ispin), collapse(2)
+!$OMP parallel default(shared), private(ip,ispin)
        do ispin = 1,nsd
+!$OMP do
           do ip= 1, ntpl
              DRho(ip,ispin) = DRho(ip,ispin) +
      &            rhoatm(ip) * rnsd
           enddo
+!$OMP end do nowait
        enddo
-!$OMP end parallel do
+!$OMP end parallel
 
       end if
 

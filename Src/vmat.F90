@@ -436,6 +436,8 @@ contains
     end do
 !$OMP end do nowait
 
+!$OMP barrier
+    
 ! Note that this is already performed in parallel!
 !   Add final Vlocal to Vs
     if ( ParallelLocal .and. last > 0 ) then
@@ -504,26 +506,28 @@ contains
 !$OMP barrier
 
     if ( ParallelLocal .and. NTH > 1 ) then
-!$OMP do collapse(2)
        do ispin = 1 , spin%H
+!$OMP do
           do ind = 1, nvmaxl
              do ii = 2, NTH
                 t_DscfL(ind,ispin,1) = t_DscfL(ind,ispin,1) + &
                      t_DscfL(ind,ispin,ii)
              end do
           end do
+!$OMP end do nowait
        end do
-!$OMP end do
+!$OMP barrier
     else if ( NTH > 1 ) then
-!$OMP do collapse(2)
        do ispin = 1 , spin%H
+!$OMP do
           do ind = 1, nvmax
              do ii = 2, NTH
                 Vs(ind,ispin) = Vs(ind,ispin) + t_Vss(ind,ispin,ii)
              end do
           end do
+!$OMP end do nowait
        end do
-!$OMP end do
+!$OMP barrier
     end if
 
 !   Free memory
