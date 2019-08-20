@@ -871,7 +871,7 @@ contains
           Ns = size(mols(i)%proj)
           ! step calculated DOS for molecule
           im = im + 1
-!$OMP parallel do default(shared), private(j,ip,ii), collapse(2)
+!$OMP parallel do default(shared), private(j,ip,ii)
           do j = 1 , step_o
             ! Calculate the projection matrix on these column
             ! indices

@@ -227,7 +227,6 @@ C Find new Fermi energy and occupation weights ........................
      &               eo, temp, qtot, qo, ef, Entropy )
       endif
 
-!$OMP parallel default(shared), private(t,rt,ispin,io,nd)
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -235,7 +234,7 @@ C Find weights for local density of states ............................
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
         rt = 1.0d0/t
-!$OMP do collapse(2)
+!$OMP parallel do default(shared), private(ispin,io)
         do ispin = 1,spinor_dim
           do io = 1,nuotot
             qo(io,ispin) = ( stepf((eo(io,ispin)-e2)*rt) -
@@ -243,18 +242,15 @@ C Find weights for local density of states ............................
      &                       2.0d0/dble(spinor_dim)
           enddo
         enddo
-!$OMP end do
+!$OMP end parallel do
       endif
       
       if (nuo.gt.0) then
 C New density and energy-density matrices of unit-cell orbitals .......
         nd = listdptr(nuo) + numd(nuo)
-!$OMP workshare
         Dnew(1:nd,1:h_spin_dim) = 0.0d0
         Enew(1:nd,1:e_spin_dim) = 0.0d0
-!$OMP end workshare
       endif
-!$OMP end parallel
 
       call timer( 'r-buildD', 1 )
 C Global operation to form new density matrix

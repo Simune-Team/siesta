@@ -267,7 +267,7 @@ contains
     
     ! Do:
     ! \Sigma = Z*S - H - \Sigma_bulk
-!$OMP parallel do default(shared), private(io,jo), collapse(2)
+!$OMP parallel do default(shared), private(io,jo)
     do jo = 1 , no_s
       do io = 1 , no_s
         Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
@@ -355,7 +355,7 @@ contains
 
       ! Do:
       ! work = Z*S - H - (Z*S - H - \Sigma_bulk)
-!$OMP do collapse(2)
+!$OMP do
       do jo = 1 , no_s
         do io = 1 , no_s
           work(io,jo,2) = work(io,jo,2) - Sigma(io,jo)
@@ -396,7 +396,7 @@ contains
        
       ! Do:
       ! \Sigma = Z*S - H - (Z*S - H - \Sigma_bulk)
-!$OMP do collapse(2)
+!$OMP do
       do jo = 1 , no_s
         do io = 1 , no_s
           Sigma(io,jo) = work(io,jo,2) - Sigma(io,jo)
@@ -474,7 +474,7 @@ contains
         
         ! Note that this is because the interface for H and S
         no = El%no_used
-!$OMP parallel do default(shared), private(iuo,juo), collapse(2)
+!$OMP parallel do default(shared), private(iuo,juo)
         do juo = 1 , no
           do iuo = 1 , no_s
             GSE(iuo,juo) = ZEnergy * S(iuo,juo,1) - H(iuo,juo,1)
@@ -487,7 +487,7 @@ contains
 
       else
 
-!$OMP parallel do default(shared), private(iuo,juo), collapse(2)
+!$OMP parallel do default(shared), private(iuo,juo)
         do juo = 1 , no_s
           do iuo = 1 , no_s
             !GSE(iuo,juo,1) = GS(iuo,juo,1)
@@ -535,7 +535,7 @@ contains
        rPi = 2._dp * Pi * (El%bloch%get_k(i1,i2,i3) + El%bkpt_cur)
        qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
-!$OMP do collapse(4)
+!$OMP do
        do iau = 1 , na_u
         do ia3 = 1 , B(3)
         do ia2 = 1 , B(2)
@@ -644,7 +644,7 @@ contains
        rPi(:) = 2._dp * Pi * (El%bloch%get_k(i1,i2,i3) + El%bkpt_cur)
        qPi = cdexp(dcmplx(0._dp,rPi(1)))
 
-!$OMP do collapse(4)
+!$OMP do
        do iau = 1 , na_u
         do ia3 = 1 , B(3)
         do ia2 = 1 , B(2)

@@ -2012,8 +2012,7 @@ contains
       call ncdf_get_var(grp, var, r3)
 
       ! Immediately sum all orbitals and convert to 1/eV
-!$OMP parallel do default(shared), collapse(2), &
-!$OMP&  private(ik,ie,io,DOS)
+!$OMP parallel do default(shared), private(ik,ie,io,DOS)
       do ik = 1, nkpt
         do ie = 1, NE
           DOS = 0._dp

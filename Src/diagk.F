@@ -219,17 +219,13 @@ C Find new Fermi energy and occupation weights ........................
 
       nd = listdptr(nuo) + numd(nuo)
 
-! NPA:
-! I have tried putting the parallel section out here
-! However, the intel compilers cannot figure it out :(
-
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.e-6_dp )
         rt = 1._dp / t
-!$OMP parallel do default(shared), collapse(3), private(ik,ispin,io)
+!$OMP parallel do default(shared), private(ik,ispin,io)
         do ik = 1,nk
           do ispin = 1,spinor_dim
             do io = 1,nuotot
@@ -244,10 +240,8 @@ C Find weights for local density of states ............................
 
 C New density and energy-density matrices of unit-cell orbitals .......
       if (nuo.gt.0) then
-!$OMP parallel workshare
         Dnew(1:nd,1:h_spin_dim) = 0.0_dp
         Enew(1:nd,1:e_spin_dim) = 0.0_dp
-!$OMP end parallel workshare
       endif
 
 
@@ -360,8 +354,7 @@ C Repeat diagonalisation with increased memory to handle clustering
 
 C Add contribution to density matrices of unit-cell orbitals
 C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-!$OMP parallel do default(shared), collapse(2)
-!$OMP&private(iuo,juo)
+!$OMP parallel do default(shared), private(iuo,juo)
             do iuo = 1,nuo
               do juo = 1,nuotot
                 Dk(1,juo,iuo) = 0.0_dp

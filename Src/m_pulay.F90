@@ -229,14 +229,11 @@ CONTAINS
 
     !  Compute current maximum deviation ...........
     dmax = 0.0_dp
-!$OMP parallel do default(shared), &
-!$OMP&collapse(2), private(is,ind), reduction(max:dmax)
     do is = 1,nspin
        do ind = 1 , maxnd
           dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
        end do
     enddo
-!$OMP end parallel do
 
 #ifdef MPI
     ! Ensure that dmax is the same on all nodes for convergence test/output

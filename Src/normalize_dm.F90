@@ -48,14 +48,11 @@ contains
     ! Normalize density matrix to exact charge
     
     qsol = 0.0_dp
-!$OMP parallel do default(shared), collapse(2), &
-!$OMP& private(is,io), reduction(+:qsol)
     do is = 1 , spin%spinor
        do io = 1 , maxnh
           qsol = qsol + Dscf(io,is) * S(io)
        end do
     end do
-!$OMP end parallel do
     
 #ifdef MPI
     call globalize_sum(qsol, buffer1)
@@ -104,21 +101,21 @@ contains
        
 !$OMP parallel default(shared), private(is,io)
        
-!$OMP do collapse(2)
        do is = 1 , spin%DM
-          do io = 1 , maxnh
+!$OMP do
+         do io = 1 , maxnh
              Dscf(io,is) = Dscf(io,is) * scale
           end do
-       end do
 !$OMP end do nowait
+       end do
 
-!$OMP do collapse(2)
        do is = 1 , spin%EDM
+!$OMP do
           do io = 1 , maxnh
              Escf(io,is) = Escf(io,is) * scale
           end do
-       end do
 !$OMP end do nowait
+       end do
 
 !$OMP end parallel
 

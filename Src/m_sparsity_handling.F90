@@ -968,10 +968,10 @@ contains
     n_nzs = nnzs(A_2Ds(1))
 
     ! figure out the sparsity dimension
-!$OMP parallel do default(shared), &
-!$OMP&private(j,io,i,y), collapse(2)
+!$OMP parallel default(shared), private(j,io,i,y)
+    
     do j = 1 , dim2
-
+!$OMP do
        do io = 1 , n_nzs
           
           ! Copy over 
@@ -979,14 +979,13 @@ contains
              y(i) = array(i)%v(io,j)
           end do
 
-          call interp_spline(N,x,y,x0, &
-               array(1)%v(io,j))
+          call interp_spline(N,x,y,x0, array(1)%v(io,j))
           
        end do
-
+!$OMP end do nowait
     end do
-!$OMP end parallel do
-    
+!$OMP end parallel
+
   end subroutine dSpData2D_interp
 
 end module m_sparsity_handling

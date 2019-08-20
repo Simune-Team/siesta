@@ -235,7 +235,7 @@ C Find eigenvalues .........................................
         do ispin = 1,nspin
 !$OMP parallel default(shared), 
 !$OMP&private(iuo,juo,io,j,ind,jo,kxij,ckxij,skxij)
-!$OMP do collapse(2)
+!$OMP do
           do iuo = 1,nuog
             do juo = 1,nuotot
               Saux(1,juo,iuo) = 0.0d0
@@ -309,7 +309,7 @@ C Find weights for local density of states ............................
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
-!$OMP do collapse(3)
+!$OMP do
         do ik = 1,nk
           do ispin = 1,nspin
             do io = 1,nuotot
@@ -439,7 +439,7 @@ C Global operation to form new density matrix
               enddo
 !$OMP end do
               ee = qo(ie,ispin,ik) * eo(ie,ispin,ik)
-!$OMP do collapse(2)
+!$OMP do
               do iuo = 1,nuog
                 do juo = 1,nuotot
                   pipj1 = aux(1,iuo) * aux(1,juo) +
