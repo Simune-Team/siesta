@@ -616,10 +616,10 @@ C 7) PHIATM with IO = 0 is strictly equivalent to VNA_SUB
 
       real(dp) rmod, phir, dphidr
       real(dp) rly(max_ilm), grly(3,max_ilm)
-      integer i, l, m, ik, ilm
+      integer l, m, ik, ilm
 
-      phi=0.0_dp
-      grphi(1:3)=0.0_dp
+      phi = 0.0_dp
+      grphi(1:3) = 0.0_dp
 
       spp => species(is)
       if (io.gt.0) then
@@ -654,10 +654,9 @@ C 7) PHIATM with IO = 0 is strictly equivalent to VNA_SUB
          ilm = l*l + l + m + 1
          call rlylm( l, r, rly, grly )
          phi = phir * rly(ilm)
-!GCC$ unroll 3
-         do i = 1,3
-            grphi(i)=dphidr*rly(ilm)*r(i)/rmod+phir*grly(i,ilm)
-         enddo
+         grphi(1)=dphidr*rly(ilm)*r(1)/rmod+phir*grly(1,ilm)
+         grphi(2)=dphidr*rly(ilm)*r(2)/rmod+phir*grly(2,ilm)
+         grphi(3)=dphidr*rly(ilm)*r(3)/rmod+phir*grly(3,ilm)
 
       endif
 
