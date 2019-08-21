@@ -48,7 +48,7 @@ FPPFLAGS += -UMPI
 # NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 readwf: readwf.o
 	$(FC) $(LDFLAGS) -o $@ $<  
-readwfx: readwfx.o m_getopts.o
+readwfx: readwfx.o m_getopts.o f2kcli.o
 	$(FC) $(LDFLAGS) -o $@ $<  m_getopts.o f2kcli.o
 wfs2wfsx: wfs2wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $<  

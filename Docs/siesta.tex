@@ -212,7 +212,7 @@
  
 \vspace{0.5cm}
 
-\siesta\ is Copyright \copyright\ 1996-2018 by The Siesta Group
+\siesta\ is Copyright \copyright\ 1996-2019 by The Siesta Group
 
 \end{center}
 
@@ -11636,9 +11636,28 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 
   Specify atoms that will be removed in the \tsiesta\ SCF. They are
   not considered in the calculation and may be used to improve the
-  initial guess for the Hamiltonian. Their main usage is to extend
-  electrodes in their semi-infinite directions.
+  initial guess for the Hamiltonian.
 
+
+  An intended use for buffer atoms is to ensure a bulk behavior in the
+  electrode regions when electrodes are different. As an example: a 2
+  electrode calculation with left consisting of Au atoms and the right
+  consisting of Pt atoms. In such calculations one cannot create a
+  periodic geometry along the transport direction. One needs to add
+  vacuum between the Au and Pt atoms that comprise the
+  electrodes. However, this creates an artificial edge of the
+  electrostatic environment for the electrodes since in \siesta\ there
+  is vacuum, whereas in \tsiesta\ the effective Hamiltonian sees a
+  bulk environment. To ensure that \siesta\ also exhibits a bulk
+  environment on the electrodes we add \emph{buffer} atoms towards the
+  vacuum region to screen off the electrode region. These
+  \emph{buffer} atoms is thus a technicality that has no influence on
+  the \tsiesta\ calculation but they are necessary to ensure the
+  electrode bulk properties.
+
+  The above discussion is even more important when doing $N$-electrode
+  calculations.
+  
   \note all lines are additive for the buffer atoms and the input
   method is similar to that of \fdf{Geometry!Constraints} for the
   \fdf*{atom} line(s).
