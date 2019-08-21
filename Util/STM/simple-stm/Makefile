@@ -18,12 +18,16 @@ all: plstm plsts
 include ../../../$(OBJDIR)/arch.make
 vpath %.F90 ../../Grid
 
-INCFLAGS += $(NETCDF_INCFLAGS)
-LIBS = $(NETCDF_LIBS)
 #
 # This is needed on some systems to avoid loading the parallel libraries, which
 # sometimes force running on queuing systems
-#
+# However, it breaks compatibility since we can't be sure
+# that users define NETCDF_LIBS.
+# For now we will remove this but let users know that
+# they can revert changes by uncommenting out the following
+# two lines:
+#INCFLAGS += $(NETCDF_INCFLAGS)
+#LIBS = $(NETCDF_LIBS)
 
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
