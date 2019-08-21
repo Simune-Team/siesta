@@ -104,7 +104,7 @@ MOD_OBJS=precision.o parallel.o debugmpi.o m_io.o alloc.o memoryinfo.o listsc.o 
          schecomm.o sparse_matrices.o interpolation.o\
          files.o pseudopotential.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o lenstr.o \
-         spatial.o timer_local.o m_getopts.o
+         spatial.o timer_local.o m_getopts.o f2kcli.o
 
 # Additional class objects
 CLS_OBJS = m_uuid.o object_debug.o class_Sparsity.o \
