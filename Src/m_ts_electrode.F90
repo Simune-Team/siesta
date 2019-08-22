@@ -806,20 +806,10 @@ contains
 
     ! We show them in units of reciprocal lattice vectors
     do i = 1 , 3
-       if ( El%Bloch%B(i) > 1 ) then
-          write(*,'(3(a,i0),a)') ' Bloch expansion k-points in A_',i, &
-               ' direction [b_',i,'] (w=1/',nq,'):'
-          if ( El%Bloch%B(i) <= 3 ) then
-             write(*,'(5x)',advance='no')
-             do j = 1 , El%Bloch%B(i) - 1
-                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Bloch%B(i),', '
-             end do
-             write(*,'(i0,a,i0)') El%Bloch%B(i)-1,'/',El%Bloch%B(i)
-          else
-             write(*,'(5x,6(i0,a))') 0,'/',El%Bloch%B(i),', ',1,'/',El%Bloch%B(i),', ... , ', &
-                  El%Bloch%B(i)-1,'/',El%Bloch%B(i)
-          end if
-       end if
+      if ( El%Bloch%B(i) > 1 ) then
+        write(*,'(3(a,i0))') ' Bloch expansion k-points in A_',i, &
+            ' direction [b_',i,']: ',El%Bloch%B(i)
+      end if
     end do
 
     write(*,'(2a)') ' Saving surface Green functions in: ',trim(El%GFfile)

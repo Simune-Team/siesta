@@ -67,7 +67,7 @@ contains
     use m_ts_global_vars,only: TSrun
     use m_ts_electype, only : copy_DM
     use m_ts_options, only : TS_analyze
-    use m_ts_options, only : N_Elec, Elecs, DM_bulk
+    use m_ts_options, only : N_Elec, Elecs
     use m_ts_method
     use m_energies, only: Ef
 
@@ -228,7 +228,7 @@ contains
        ! If the Fermi-level has not been
        ! set, we initialize it to the mean of the
        ! electrode chemical potentials
-       if ( DM_bulk > 0 ) then
+       if ( any(Elecs(:)%DM_init > 0) ) then
 
           set_Ef = abs(Ef) < 0.00001_dp .and. &
                (.not. fdf_defined('TS.Fermi.Initial') ) 
@@ -254,20 +254,33 @@ contains
             ! Not in buffer
             na_a = 0
             do iElec = 1 , na_u
-              if ( a_isElec(iElec) ) na_a = na_a + 1
+              if ( a_isElec(iElec) ) then
+                if ( Elecs(atom_type(iElec))%DM_init > 0 ) then
+                  na_a = na_a + 1
+                end if
+              end if
             end do
             allocate(allowed_a(na_a))
             na_a = 0 
             do iElec = 1 , na_u
               if ( a_isElec(iElec) ) then
-                na_a = na_a + 1
-                allowed_a(na_a) = iElec
+                if ( Elecs(atom_type(iElec))%DM_init > 0 ) then
+                  na_a = na_a + 1
+                  allowed_a(na_a) = iElec
+                end if
               end if
             end do
           end if
 
           do iElec = 1 , N_Elec
 
+            ! We shift the mean by one fraction of the electrode
+            if ( set_Ef ) then
+              Ef = Ef + Elecs(iElec)%Ef / N_Elec
+            end if
+
+            if ( Elecs(iElec)%DM_init == 0 ) cycle
+            
             if ( IONode ) then
               write(*,'(/,2a)') 'transiesta: Reading in electrode TSDE for ', &
                   trim(Elecs(iElec)%Name)
@@ -278,11 +291,6 @@ contains
             ! will be equivalent at Ef == 0
             call copy_DM(Elecs(iElec),na_u,xa,lasto,nsc,isc_off, &
                 ucell, DM_2D, EDM_2D, na_a, allowed_a)
-            
-            ! We shift the mean by one fraction of the electrode
-            if ( set_Ef ) then
-              Ef = Ef + Elecs(iElec)%Ef / N_Elec
-            end if
             
           end do
 

@@ -84,6 +84,12 @@ module m_ts_electype
      !   == 1 pre-expand only the surface Green function
      !   == 2 pre-expand surface Green function, H and S
      integer :: pre_expand = 2
+     ! Flag to signal how the DM should be initialized
+     !   == 0 'diagon', use DM from Siesta
+     !   == 1 'bulk' from the bulk DM electrode files
+     ! This should default to 1 IFF the DM/TSDE files are
+     ! present.
+     integer :: DM_init = 1
      ! chemical potential of the electrode
      type(ts_mu), pointer :: mu => null()
      ! infinity direction
@@ -269,6 +275,7 @@ contains
     use parallel, only : IONode
 
     use fdf
+    use units, only: eV
     use intrinsic_missing, only: VNORM
     use m_os, only : file_exist
     use m_ts_io, only : ts_read_TSHS_opt
@@ -289,11 +296,12 @@ contains
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    logical :: info(5)
+    logical :: info(6)
     integer :: i, j, Bloch(3)
     integer :: cidx_a 
     real(dp) :: rcell(3,3), fmin, fmax, rc
 
+    logical :: is_volt
     character(len=FILE_LEN) :: bName, name, ln, tmp
 
     info(:) = .false.
@@ -328,7 +336,7 @@ contains
           info(3) = .true.
           exit
        end if
-    end do
+     end do
     ! If there is only one chemical potential
     ! then, of course, they are associated.
     if ( N_mu == 1 ) then
@@ -336,7 +344,12 @@ contains
        info(3) = .true.
     end if
 
-    
+    ! Check for bias
+    is_volt = .false.
+    do i = 1 , N_mu
+      is_volt = is_volt .or. abs(mus(i)%mu)/eV > 0.000001_dp
+    end do
+
     ! Figure out if we should return immediately
     found = fdf_block(trim(bName),bfdf)
     if ( .not. found ) return
@@ -549,6 +562,20 @@ contains
              call die('DM-update: unrecognized option: '//trim(tmp))
           end if
           info(5) = .true.
+
+        else if ( leqi(ln,'DM-init') ) then
+          
+          tmp = fdf_bnames(pline,2)
+          if ( leqi(tmp,'diagon') ) then
+             this%DM_init = 0
+          else if ( leqi(tmp,'bulk') ) then
+             this%DM_init = 1
+          else if ( leqi(tmp,'force-bulk') ) then
+             this%DM_init = 2
+          else
+             call die('DM-init: unrecognized option: '//trim(tmp))
+          end if
+          info(6) = .true.
 
        else if ( leqi(ln,'V-fraction') ) then
 
@@ -856,17 +883,45 @@ contains
     ! In case the user has not supplied a DM file for the
     ! electrode we might as well try and guess one... :)
     if ( len_trim(this%DEfile) == 0 ) then
-       i = len_trim(this%HSfile)
+      i = len_trim(this%HSfile)
 #ifdef NCDF_4
-       ! If the TSHS file is a netcdf file we re-use it
-       if ( this%HSfile(i-1:i) == 'nc' ) then
-          this%DEfile = this%HSfile
-       else
-          this%DEfile = this%HSfile(1:i-4)//'TSDE'
-       end if
+      ! If the TSHS file is a netcdf file we re-use it
+      if ( this%HSfile(i-1:i) == 'nc' ) then
+        this%DEfile = this%HSfile
+      else
+        this%DEfile = this%HSfile(1:i-4)//'TSDE'
+      end if
 #else
-       this%DEfile = this%HSfile(1:i-4)//'TSDE'
+      this%DEfile = this%HSfile(1:i-4)//'TSDE'
 #endif
+    end if
+    
+    ! Check that the DE file exists (if the user requested
+    ! this)
+    if ( this%DM_init == 1 ) then
+      ! We have a basic request for specifying the initialization
+      ! of the DM
+      if ( file_exist(this%DEfile, Bcast = .true.) ) then
+        ! The file has been found! Great!
+      else if ( info(6) ) then ! the user has explicitly requested this!
+        call die('Requested initialization of the DM, however the DM/TSDE file &
+            &does not exist!')
+      end if
+      ! We do not allow the DM file to be written if the chemical potential
+      ! is not 0.
+      if ( is_volt ) &
+          this%DM_init = 0
+
+    else if ( this%DM_init == 2 ) then
+      ! User has forcefully requested an initialization
+      if ( file_exist(this%DEfile, Bcast = .true.) ) then
+        ! The file has been found! Great!
+      else if ( info(6) ) then ! the user has explicitly requested this!
+        call die('Forcefully requested initialization of the DM, however the DM/TSDE &
+            &file does not exist!')
+      end if
+      ! Signal we should read
+      this%DM_init = 1
     end if
 
   end function fdf_Elec
@@ -2333,6 +2388,12 @@ contains
     write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
     write(*,f1)  '  Gamma-only electrode', this%is_gamma
     write(*,f1)  '  Bulk H, S in electrode region', this%Bulk
+    select case ( this%DM_init ) 
+    case ( 0 ) 
+      write(*,f10) '  Initial DM for electrodes','diagon'
+    case ( 1 )
+      write(*,f10) '  Initial DM for electrodes','bulk DM'
+    end select
     if ( this%Bloch%size() > 1 .and. this%out_of_core ) then
        if ( this%pre_expand == 0 ) then
           chars = 'none'
