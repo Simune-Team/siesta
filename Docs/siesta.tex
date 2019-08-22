@@ -3386,7 +3386,7 @@ enddo
 
 \subsubsection{Input from a FIFO file}
 
-See the ``Forces'' option in \fdf{MD!TypeOfRun}. Note that
+See the ``Forces'' option in \fdf{MD.TypeOfRun}. Note that
 \fdf{ChemicalSpeciesLabel} is still mandatory in the fdf file.
 
 \subsubsection{Precedence issues in structural input}
@@ -9502,18 +9502,20 @@ misleading but kept for historical reasons.
 \end{fdfentry}
 
 \begin{fdfentry}{MD.Steps}[integer]<0>
+  \fdfindex*{MD.NumCGsteps}
   \fdfdepend{MD.NumCGsteps}
   
   Maximum number of steps in a minimization routine
   (the minimization will stop if tolerance is reached before; see
   \fdf{MD.MaxForceTol} below).
 
-  \note The old flag \fdf*{MD.NumCGsteps} will remain for historical
+  \note The old flag \fdf{MD.NumCGsteps} will remain for historical
   reasons.
 
 \end{fdfentry}
 
 \begin{fdfentry}{MD.MaxDispl}[length]<$0.2\,\mathrm{Bohr}$>
+  \fdfindex*{MD.MaxCGDispl}
   \fdfdepend{MD.MaxCGDispl}
   
   Maximum atomic displacements in an optimization move.
@@ -9525,7 +9527,7 @@ misleading but kept for historical reasons.
 
   Note that there are Zmatrix-specific options that override this option.
 
-  \note The old flag \fdf*{MD.MaxCGDispl} will remain for historical
+  \note The old flag \fdf{MD.MaxCGDispl} will remain for historical
   reasons.
 
 \end{fdfentry}
@@ -9537,7 +9539,7 @@ misleading but kept for historical reasons.
   same footing as the coordinates. For good efficiency, this length
   should make the scale of energy variation with strain similar to the
   one due to atomic displacements. It is also used for the application
-  of the \fdf{MD.MaxCGDispl} value to the strain components.
+  of the \fdf{MD.MaxDispl} value to the strain components.
 
 \end{fdfentry}
 
@@ -10617,7 +10619,7 @@ end
     \note \program{siesta.state == siesta.FORCES}.
 
     \option[Move]%
-    This state will \emph{only} be reached if \fdf{MD!TypeOfRun} is
+    This state will \emph{only} be reached if \fdf{MD.TypeOfRun} is
     \fdf*{lua}.
 
     If one does not return updated atomic coordinates \siesta\ will
@@ -10647,7 +10649,7 @@ end
   \end{codeexample}
   which is the most minimal example of using the L-BFGS algorithm for
   geometry relaxation. Note that \program{flos} reads the parameters
-  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol} through \siesta\
+  \fdf{MD.MaxDispl} and \fdf{MD.MaxForceTol} through \siesta\
   automatically. 
 
   \note The number of available variables continues to grow and to
@@ -11963,6 +11965,7 @@ electrodes in a generic input format.
 
     \option[Bulk]%
     \fdfindex*{TS!Elec.<>!Bulk}%
+    \fdfindex*{TS!Elec.<>!Bulk:false}%
     Logical controlling whether the Hamiltonian of the electrode
     region in the scattering region is enforced \emph{bulk} or whether
     the Hamiltonian is taken from the scattering region elements. If
@@ -11979,6 +11982,16 @@ electrodes in a generic input format.
     scattering region are updated.
 
     If \fdf{TS!Elec.<>!Bulk:false} this is forced to \fdf*{all}.
+
+    \option[DM-init]%
+    \fdfindex*{TS!Elec.<>!DM-init}%
+    \fdfdepend{TS!Elecs!DM.Init}%
+    String of values \fdf*{bulk}, \fdf*{diagon} or \fdf*{force-bulk}
+    which controls whether the DM is initially overwritten by the DM
+    from the bulk electrode calculation.
+    This requires the DM file to be present.
+    By default \tsiesta\ will try and read in the DM for $0$ bias
+    calculations.
 
     \option[Gf]%
     \fdfindex*{TS!Elec.<>!Gf}%
@@ -12181,7 +12194,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Elecs!DM.Init}[string]<bulk|diagon>
+\begin{fdfentry}{TS!Elecs!DM.Init}[string]<bulk|diagon|force-bulk>
 
   The density matrix elements in the electrodes may be forcefully set
   to the bulk values by reading in the DM of the corresponding
@@ -12195,10 +12208,13 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   be effective in the bias calculation.
 
   \note this will automatically be set to \fdf*{diagon} for
-  non-equilibrium calculations. If bulk density matrix elements are
-  wanted in the electrodes it is vital to have this option set to
-  \fdf*{bulk} when performing the equilibrium calculation.
-  
+  non-equilibrium calculations (unless \fdf*{force-bulk} is set). If
+  bulk density matrix elements are wanted in the electrodes it is
+  vital to have this option set to \fdf*{bulk} when performing the
+  equilibrium calculation.
+
+  See \fdf{TS!Elec.<>!DM-init}.
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!Elecs!Coord.EPS}[length]<$0.001\,\mathrm{Ang}$>

@@ -52,11 +52,7 @@ module m_ts_options
   integer :: N_mu = 0
   type(ts_mu), allocatable, target :: mus(:)
 
-  ! Controls how the initial guess for the density matrix will be formed
-  ! Either it can be 'diagon' == 0, or 'transiesta' == 1 where the 
-  ! latter is reading in the electrode DM and EDM
   integer :: TS_scf_mode = 0
-  integer :: DM_bulk = 0
 
   ! Flag to control whether we should update the forces (i.e. calculate energy-density matrix)
   logical :: Calc_Forces = .true.
@@ -373,66 +369,37 @@ contains
     ! To determine the same coordinate nature of the electrodes
     Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',0.001_dp*Ang, 'Bohr')
 
-    ! Whether we should always set the DM to bulk
-    ! values (by reading in from electrode DM)
-    if ( TS_scf_mode == 1 .or. .not. IsVolt ) then
-       chars = 'bulk'
-    else
-       chars = 'diagon'
-    end if
-    chars = fdf_get('TS.Elecs.DM.Init',trim(chars))
-    DM_bulk = 0
-    if ( leqi(chars,'bulk') ) then
-      DM_bulk = 1
-    !else if ( leqi(chars,'scf') ) then
-    !   DM_bulk = 2
-    end if
-    if ( IsVolt ) then
-      if ( DM_bulk /= 0 .and. IONode) then
-        if ( IONode ) then
-          c = '(''transiesta: *** '',a,/)'
-          write(*,c)'Will not read in electrode DM, only applicable for V = 0 calculations'
-        end if
-      end if
-      DM_bulk = 0
-    end if
-    if ( leqi(chars,'force-bulk') ) then
-      DM_bulk = 1
-    !else if ( leqi(chars,'scf') ) then
-    !   DM_bulk = 2
-    end if
-
     ! detect how many electrodes we have
     N_Elec = fdf_nElec('TS',Elecs)
     if ( N_Elec < 1 ) then
-       ! We initialize to 2 electrodes (Left/Right)
-       N_Elec = 2
-       allocate(Elecs(N_Elec))
-       Elecs(1)%name = 'Left'
-       Elecs(1)%ID = 1
-       Elecs(2)%name = 'Right'
-       Elecs(2)%ID = 2
-       ! if they do-not exist, the user will be told
-       if ( IONode ) then
-          c = '(''transiesta: *** '',a,/)'
-          write(*,c)'No electrode names were found, default Left/Right are expected'
-       end if
+      ! We initialize to 2 electrodes (Left/Right)
+      N_Elec = 2
+      allocate(Elecs(N_Elec))
+      Elecs(1)%name = 'Left'
+      Elecs(1)%ID = 1
+      Elecs(2)%name = 'Right'
+      Elecs(2)%ID = 2
+      ! if they do-not exist, the user will be told
+      if ( IONode ) then
+        c = '(''transiesta: *** '',a,/)'
+        write(*,c)'No electrode names were found, default Left/Right are expected'
+      end if
     end if
-
+    
     ! If only one electrode you are not allowed to move the Fermi-level
     ! of the electrode. That should be done by other means (i.e. use NetCharge)
     if ( N_Elec == 1 ) then
-       ! Notice that below the chemical potential gets corrected
-       ! EVEN if the user supplied a bias.
-       if ( IsVolt .and. IONode ) then
-          c = '(''transiesta: *** '',a)'
-          write(*,c) 'Single electrode calculations does not allow shifting the chemical potential.'
-          write(*,c) 'You should do that by changing the states filled in the system.'
-          write(*,c) 'Consult the manual on how to do this.'
-          call die('Please set the chemical potential to zero for your one electrode')
-       end if
+      ! Notice that below the chemical potential gets corrected
+      ! EVEN if the user supplied a bias.
+      if ( IsVolt .and. IONode ) then
+        c = '(''transiesta: *** '',a)'
+        write(*,c) 'Single electrode calculations does not allow shifting the chemical potential.'
+        write(*,c) 'You should do that by changing the states filled in the system.'
+        write(*,c) 'Consult the manual on how to do this.'
+        call die('Please set the chemical potential to zero for your one electrode')
+      end if
     end if
-
+    
     ! Setup default parameters for the electrodes
     ! first electrode is the "left"
     ! last electrode is the "right"
@@ -444,23 +411,54 @@ contains
     Elecs(:)%Eta  = fdf_get('TS.Elecs.Eta',0.001_dp*eV,'Ry')
     Elecs(:)%Bulk = fdf_get('TS.Elecs.Bulk',.true.) ! default everything to bulk electrodes
     if ( Elecs(1)%Bulk ) then
-       ! Default is cross-terms if we use bulk electrodes
-       chars = 'cross-terms'
+      ! Default is cross-terms if we use bulk electrodes
+      chars = 'cross-terms'
     else
-       ! For non-bulk systems, we default to all
-       chars = 'all'
+      ! For non-bulk systems, we default to all
+      chars = 'all'
     end if
     c = fdf_get('TS.Elecs.DM.Update',trim(chars))
     if ( leqi(c,'none') ) then
-       Elecs(:)%DM_update = 0
+      Elecs(:)%DM_update = 0
     else if ( leqi(c,'cross-terms') .or. &
-         leqi(c,'cross-term') ) then
-       Elecs(:)%DM_update = 1
+        leqi(c,'cross-term') ) then
+      Elecs(:)%DM_update = 1
     else if ( leqi(c,'all') ) then
-       Elecs(:)%DM_update = 2
+      Elecs(:)%DM_update = 2
     else
-       call die('TS.Elecs.DM.Update [cross-terms,none,all]: &
-            &unrecognized option: '//trim(c))
+      call die('TS.Elecs.DM.Update [cross-terms,none,all]: &
+          &unrecognized option: '//trim(c))
+    end if
+
+    ! Whether we should always set the DM to bulk
+    ! values (by reading in from electrode DM)
+    if ( TS_scf_mode == 1 .or. .not. IsVolt ) then
+      chars = 'bulk'
+    else
+      chars = 'diagon'
+    end if
+    chars = fdf_get('TS.Elecs.DM.Init',trim(chars))
+    if ( leqi(chars,'diagon') ) then
+      Elecs(:)%DM_init = 0
+    else if ( leqi(chars,'bulk') ) then
+      Elecs(:)%DM_init = 1
+    else if ( leqi(chars,'force-bulk') ) then
+      Elecs(:)%DM_init = 2
+    else
+      call die('TS.Elecs.DM.Init unknown value [diagon,bulk,force-bulk]')
+    end if
+    if ( IsVolt ) then
+      if ( Elecs(1)%DM_init == 1 .and. IONode) then
+        if ( IONode ) then
+          c = '(''transiesta: *** '',a,/)'
+          write(*,c)'Will default to not read in electrode DM, only applicable for V = 0 calculations'
+        end if
+      end if
+      Elecs(:)%DM_init = 0
+    end if
+    ! Reset to 1
+    if ( Elecs(1)%DM_init == 2 ) then
+      Elecs(:)%DM_init = 1
     end if
 
     ! Whether we should try and re-use the surface Green function 
@@ -980,12 +978,6 @@ contains
        write(*,f10) 'Initialize DM by','diagon'
     case ( 1 )
        write(*,f10) 'Initialize DM by','transiesta'
-    end select
-    select case ( DM_bulk ) 
-    case ( 0 ) 
-       write(*,f10) 'Initial DM for electrodes','this'
-    case ( 1 )
-       write(*,f10) 'Initial DM for electrodes','bulk DM'
     end select
     if ( IsVolt ) then
        if ( len_trim(Hartree_fname) > 0 ) then
@@ -1532,12 +1524,13 @@ contains
     ! If the user has requested to initialize using transiesta
     ! and the user does not utilize the bulk DM, they should be
     ! warned
-    if ( TS_scf_mode == 1 .and. DM_bulk == 0 ) then
+    if ( TS_scf_mode == 1 .and. any(Elecs(:)%DM_init == 0) ) then
        write(*,'(a)') 'You are not initializing the electrode DM/EDM. &
             &This may result in very wrong electrostatic potentials close to &
             &the electrode/device boundary region.'
        if ( IsVolt ) then
          write(*,'(a)') '    This warning is only applicable for V == 0 calculations!'
+         write(*,'(a)') '    I give this warning because it is not clear how your V = 0 calcualtion was done.'
        end if
        warn = .true.
     end if
@@ -1615,13 +1608,13 @@ contains
 
        ! In case DM_bulk is requested we assert that the file exists
        ltmp = file_exist(Elecs(i)%DEfile)
-       if ( DM_bulk == 1 .and. .not. ltmp ) then
+       if ( Elecs(i)%DM_init > 0 .and. .not. ltmp ) then
           write(*,'(a,/,a)') 'Electrode '//trim(Elecs(i)%name)//' TSDE &
                &file cannot be located in: '//trim(Elecs(i)%DEfile)//'.', &
                '  Please add TS.DE.Save T to the electrode calculation or &
                &specify the exact file position using ''TSDE-file'' in the&
                & TS.Elec block.'
-          warn = .true.
+          err = .true.
        end if
 
     end do

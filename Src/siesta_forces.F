@@ -692,7 +692,6 @@
       use m_ts_global_vars,      only: ts_print_transiesta
       use m_ts_method
       use m_ts_options,          only: N_Elec, Elecs
-      use m_ts_options,          only: DM_bulk
       use m_ts_options,          only: val_swap
       use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
@@ -769,7 +768,7 @@
       ! In case we ask for initialization of the DM in bulk
       ! we read in the DM files from the electrodes and 
       ! initialize the bulk to those values
-      if ( DM_bulk > 0 ) then
+      if ( any(Elecs(:)%DM_init > 0) ) then
          
         if ( IONode ) then
           write(*,'(/,2a)') 'transiesta: ',
@@ -783,50 +782,51 @@
         EDM => val(EDM_2D)
         iEl = size(DM)
         call daxpy(iEl,-Ef,DM(1,1),1,EDM(1,1),1)
-         
-         na_a = 0
-         do iEl = 1 , na_u
-            if ( .not. a_isDev(iEl) ) na_a = na_a + 1
-         end do
-         allocate(allowed_a(na_a))
-         na_a = 0 
-         do iEl = 1 , na_u
-            ! We allow the buffer atoms as well (this will even out the
-            ! potential around the back of the electrode)
-            if ( .not. a_isDev(iEl) ) then
-               na_a = na_a + 1
-               allowed_a(na_a) = iEl
-            end if
-         end do
+        
+        na_a = 0
+        do iEl = 1 , na_u
+          if ( .not. a_isDev(iEl) ) na_a = na_a + 1
+        end do
+        allocate(allowed_a(na_a))
+        na_a = 0 
+        do iEl = 1 , na_u
+          ! We allow the buffer atoms as well (this will even out the
+          ! potential around the back of the electrode)
+          if ( .not. a_isDev(iEl) ) then
+            na_a = na_a + 1
+            allowed_a(na_a) = iEl
+          end if
+        end do
           
-         do iEl = 1 , N_Elec
-             
-            if ( IONode ) then
-               write(*,'(/,2a)') 'transiesta: ',
-     &              'Reading in electrode DM for '//
-     &              trim(Elecs(iEl)%Name)
-            end if
-
-            ! Copy over the DM in the lead
-            ! Notice that the EDM matrix that is copied over
-            ! will be equivalent at Ef == 0
-            call copy_DM(Elecs(iEl),na_u,xa,lasto,nsc,isc_off, 
-     &           ucell, DM_2D, EDM_2D, na_a, allowed_a)
-
-         end do
-
-         ! Clean-up
-         deallocate(allowed_a)
-
-         if ( IONode ) then
-            write(*,*) ! new-line
-         end if
-
-         ! The electrode EDM is aligned at Ef == 0
-         ! We need to align the energy matrix
-         iEl = size(DM)
-         call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
-
+        do iEl = 1 , N_Elec
+          if ( Elecs(iEl)%DM_init == 0 ) cycle
+          
+          if ( IONode ) then
+            write(*,'(/,2a)') 'transiesta: ',
+     &          'Reading in electrode DM for '//
+     &          trim(Elecs(iEl)%Name)
+          end if
+          
+          ! Copy over the DM in the lead
+          ! Notice that the EDM matrix that is copied over
+          ! will be equivalent at Ef == 0
+          call copy_DM(Elecs(iEl),na_u,xa,lasto,nsc,isc_off, 
+     &        ucell, DM_2D, EDM_2D, na_a, allowed_a)
+           
+        end do
+        
+        ! Clean-up
+        deallocate(allowed_a)
+        
+        if ( IONode ) then
+          write(*,*) ! new-line
+        end if
+        
+        ! The electrode EDM is aligned at Ef == 0
+        ! We need to align the energy matrix
+        iEl = size(DM)
+        call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
+        
       end if
 
       end subroutine transiesta_switch
