@@ -456,10 +456,6 @@ contains
       end if
       Elecs(:)%DM_init = 0
     end if
-    ! Reset to 1
-    if ( Elecs(1)%DM_init == 2 ) then
-      Elecs(:)%DM_init = 1
-    end if
 
     ! Whether we should try and re-use the surface Green function 
     ! files
