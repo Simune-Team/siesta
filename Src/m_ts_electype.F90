@@ -352,8 +352,8 @@ contains
 
     ! Figure out if we should return immediately
     found = fdf_block(trim(bName),bfdf)
+    ! Outside of this routine we die since information *needs* specified
     if ( .not. found ) return
-
     
     cidx_a = 0
 
@@ -906,6 +906,9 @@ contains
       else if ( info(6) ) then ! the user has explicitly requested this!
         call die('Requested initialization of the DM, however the DM/TSDE file &
             &does not exist!')
+      else
+        ! disable reading the DM file, it does not exist
+        this%DM_init = 0
       end if
       ! We do not allow the DM file to be written if the chemical potential
       ! is not 0.
