@@ -1129,6 +1129,7 @@ contains
     use parallel, only : IONode
     use units, only : Pi, Ang
     use intrinsic_missing, only : VNORM, VEC_PROJ_SCA
+    use m_os, only: file_exist
 
     use m_ts_io, only: ts_read_TSHS_opt
 
@@ -1347,6 +1348,40 @@ contains
     else
       
       call ts_read_TSHS_opt(this%HSfile, Gamma=Gamma, Bcast=.true.)
+      
+    end if
+
+    ! Ensure the user has requested a GF file for real-space SE
+    if ( this%t_dir > 3 ) then
+      ! Ensure a GF file is requested and present
+      if ( .not. this%ReUseGF ) then
+        er = .true.
+        if ( IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' uses real-space SE, &
+              &but a re-use of the GF file has not been requested.'
+        end if
+      end if
+
+      if ( .not. this%out_of_core ) then
+        er = .true.
+        if ( IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' uses real-space SE, &
+              &but in-core SE calculations are requested'
+          write(*,'(a)') '   In-core self-energy calculations is currently not implemented'
+          write(*,'(a)') '   Please use sisl to create the TBTGF file.'
+        end if
+      end if
+
+      ! And check that the GF file exists
+      if ( .not. file_exist(this%GFfile, Bcast = .true.) ) then
+        er = .true.
+        if ( IONode ) then
+          write(*,'(a)') 'Electrode: '//trim(this%name)//' uses real-space SE, &
+              &but the GF file is not present!'
+          write(*,'(a)') '   In-core self-energy calculations is currently not implemented'
+          write(*,'(a)') '   Please use sisl to create the TBTGF file.'
+        end if
+      end if
       
     end if
 
@@ -2391,12 +2426,14 @@ contains
     write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
     write(*,f1)  '  Gamma-only electrode', this%is_gamma
     write(*,f1)  '  Bulk H, S in electrode region', this%Bulk
+#ifndef TBTRANS
     select case ( this%DM_init ) 
     case ( 0 ) 
       write(*,f10) '  Initial DM for electrodes','diagon'
     case ( 1 )
       write(*,f10) '  Initial DM for electrodes','bulk DM'
     end select
+#endif
     if ( this%Bloch%size() > 1 .and. this%out_of_core ) then
        if ( this%pre_expand == 0 ) then
           chars = 'none'
