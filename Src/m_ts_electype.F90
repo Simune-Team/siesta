@@ -2355,16 +2355,16 @@ contains
 
     integer :: nq
     real(dp) :: contrib, cell(3,3)
-    character(len=100) :: chars
-    character(len=60) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15, f3, f16
+    character(len=128) :: chars
+    character(len=64) :: f1, f5, f20, f6, f7, f8, f9, f10, f11, f15, f3, f16
 
     if ( Node /= 0 ) return
     
     ! Write out the settings
     ! First create the different out-put options
     f1  = '('''//trim(prefix)//': '',a,t53,''='',4x,l1)'
-    f3  = '('''//trim(prefix)//': '',a,t53,''= { '',2(e12.5,'','',tr1),e12.5,''}'',a)'
-    f5  = '('''//trim(prefix)//': '',a,t53,''='',i5,a)'
+    f3  = '('''//trim(prefix)//': '',a,t53,''= { '',2(e12.5,'','',tr1),e12.5,''}'',tr1,a)'
+    f5  = '('''//trim(prefix)//': '',a,t53,''='',i5,tr1,a)'
     f20 = '('''//trim(prefix)//': '',a,t53,''= '',i0,'' -- '',i0)'
     f6  = '('''//trim(prefix)//': '',a,t53,''='',f10.4,tr1,a)'
     f7  = '('''//trim(prefix)//': '',a,t53,''='',f12.6,tr1,a)'
@@ -2422,8 +2422,8 @@ contains
       end if
     end if
     write(*,f10) '  Semi-infinite direction for electrode', trim(chars)
-    write(*,f7)  '  Chemical shift', this%mu%mu/eV,'eV'
-    write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin,'K'
+    write(*,f7)  '  Chemical shift', this%mu%mu/eV, 'eV'
+    write(*,f7)  '  Electronic temperature', this%mu%kT/Kelvin, 'K'
     write(*,f1)  '  Gamma-only electrode', this%is_gamma
     write(*,f1)  '  Bulk H, S in electrode region', this%Bulk
 #ifndef TBTRANS
@@ -2453,7 +2453,7 @@ contains
        write(*,f11)  '  Cross-terms and electrode region are updated'
     end if
 #endif
-    write(*,f8)  '  Manual delta-Ef shift', this%delta_Ef
+    write(*,f7)  '  Manual delta-Ef shift', this%delta_Ef, 'eV'
     if ( abs(this%mu%mu) > 1.e-10_dp ) then
        write(*,f8)  '  Hamiltonian E-C bias fractional shift', this%V_frac_CT
     end if
@@ -2467,23 +2467,23 @@ contains
     else
 #ifdef TBTRANS
 # ifdef TBT_PHONON
-      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV**2,' eV**2'
+      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV**2, 'eV**2'
 # else
-      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
+      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV, 'eV'
 # endif
 #else
-      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV,' eV'
+      write(*,f9)  '  Electrode self-energy imaginary Eta', this%Eta/eV, 'eV'
 #endif
     end if
-    write(*,f9)  '  Electrode self-energy accuracy', this%accu/eV,' eV'
-    write(*,f6)  '  Electrode inter-layer distance (semi-inf)', this%dINF_layer/Ang,' Ang'
+    write(*,f9)  '  Electrode self-energy accuracy', this%accu/eV, 'eV'
+    write(*,f6)  '  Electrode inter-layer distance (semi-inf)', this%dINF_layer/Ang, 'Ang'
 
 
 #ifndef TBTRANS
     if ( present(plane) ) then
     if ( plane ) then
        write(*,f11) '  Hartree fix plane:'
-       write(*,f3)  '    plane origo',this%p%c / Ang, ' Ang'
+       write(*,f3)  '    plane origo',this%p%c / Ang, 'Ang'
        write(*,f3)  '    plane normal vector',this%p%n
     end if
     end if
@@ -2495,10 +2495,10 @@ contains
         contrib = real(this%na_used,dp) / real(this%na_u,dp)
         cell(:,this%t_dir) = cell(:,this%t_dir) * contrib
       end if
-      write(*,f3)  '    box origo',this%box%c / Ang, ' Ang'
-      write(*,f3)  '    box v1', cell(:,1) / Ang, ' Ang'
-      write(*,f3)  '    box v2', cell(:,2) / Ang, ' Ang'
-      write(*,f3)  '    box v3', cell(:,3) / Ang, ' Ang'
+      write(*,f3)  '    box origo',this%box%c / Ang, 'Ang'
+      write(*,f3)  '    box v1', cell(:,1) / Ang, 'Ang'
+      write(*,f3)  '    box v2', cell(:,2) / Ang, 'Ang'
+      write(*,f3)  '    box v3', cell(:,3) / Ang, 'Ang'
     end if
     end if
 #endif
