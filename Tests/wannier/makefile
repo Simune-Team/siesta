@@ -2,6 +2,6 @@
 # Single-test makefile
 #
 name=wannier
-EXTRAFILES=wannier.nnkp
+EXTRAFILES=wannier.nnkp wannier.win
 #
 include ../test.mk
