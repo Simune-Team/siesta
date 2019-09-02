@@ -75,7 +75,7 @@
 \section*{Contributors to \tbtrans}
 \addcontentsline{toc}{section}{Contributors to \tbtrans}
 
-\tbtrans\ is Copyright \copyright\ 2016-2018 by Nick R. Papior. The
+\tbtrans\ is Copyright \copyright\ 2016-2019 by Nick R. Papior. The
 original \tbtrans\ code was implemented by Mads Brandbyge, Jose
 L. Mozos, Jeremy Taylor, Pablo Ordejon and Kurt Stokbro. The current
 \tbtrans\ is implemented by the following contributors:
@@ -177,6 +177,31 @@ A list of the currently implemented features are:
   \cite{sisl}.
 
 \end{itemize}
+
+
+\subsection{\phtrans}
+
+The NEGF formalism also applies to phonons via some simple
+differences. Here is a list of some of the differences:
+\begin{itemize}
+  \item For \phtrans\ all options are \emph{still} prefixed with \fdf*{TBT}!
+  
+  \item The Green function calculation looks like:
+  \begin{equation}
+    \label{eq:PHT:Gf}
+    \mathbf G_{\mathbf q} = [(\omega^2 +i\eta^2)\mathbf I -\mathbf
+    D_{\mathbf q} -\boldsymbol\Sigma_{\mathbf q}(\omega)]^{-1},
+  \end{equation}
+  where $\omega$ is referred to as \emph{energy} in the remaining
+  document.
+  
+  \item Calculating density matrices (\fdf{TBT.DM!Gf},
+  \fdf{TBT.COOP!Gf}, \fdf{TBT.COHP!Gf}) are prefactored with $2\omega$
+  which is currently empirically done.
+\end{itemize}
+
+\note \phtrans\ is not as tested as \tbtrans. Any feedback on all
+parts are most welcome!
 
 
 
@@ -853,7 +878,7 @@ $\mathrm{LDOS}(E)$ profiles using \sisl.
   Calculate the energy and $k$-resolved density matrix for the Green
   function. The density matrix may be used to construct 
   real-space LDOS profiles.
-  
+
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{TBT.DM!A}
@@ -862,7 +887,7 @@ $\mathrm{LDOS}(E)$ profiles using \sisl.
   Calculate the energy and $k$-resolved density matrix for the
   electrode spectral functions. The density matrix may be used to
   construct real-space LDOS profiles.
-  
+
 \end{fdflogicalF}
 
 
@@ -1611,7 +1636,12 @@ is no need to specify the chemical potential
     \option[semi-inf-direction|semi-inf-dir|semi-inf]%
     \fdfindex*{TBT.Elec.<>!semi-inf-direction}%
     The semi-infinite direction of the electrode with respect to the
-    electrode unit-cell. 
+    electrode unit-cell.
+
+    It may be one of \fdf*{[-+][abc]}, \fdf*{[-+]A[123]}, \fdf*{ab},
+    \fdf*{ac}, \fdf*{bc} or \fdf*{abc}. The latter four all describe a
+    real-space self-energy as described in \cite{1905.11113}.
+
 
     \note this has nothing to do with the scattering region unit cell,
     \tbtrans\ will figure out the alignment of the electrode unit-cell
@@ -1734,6 +1764,36 @@ is no need to specify the chemical potential
     %
     If this is \fdffalse\ the surface Green function file is deleted
     and re-created upon start.
+
+    
+    \option[delta-Ef]%
+    \fdfindex*{TBT!Elec.<>!delta-Ef}%
+    Specify an offset for the Fermi-level of the electrode. This will
+    directly be added to the Fermi-level found in the electrode file.
+    
+    \note this option only makes sense for semi-conducting electrodes
+    since it shifts the entire electronic structure. This is because
+    the Fermi-level may be arbitrarily placed anywhere in the band
+    gap. It is the users responsibility to define a value which does
+    not introduce a potential drop between the electrode and device
+    region.
+
+    \option[V-fraction]%
+    \fdfindex*{TBT!Elec.<>!V-fraction}%
+
+    Specify the fraction of the chemical potential shift in the
+    electrode-device coupling region. This corresponds to:
+    \begin{equation}
+      \mathbf H_{\mathfrak eD} \leftarrow \mathbf H_{\mathfrak eD} +
+      \mu_{\mathfrak e} \mathrm{V}_f \mathbf S_{\mathfrak eD}
+    \end{equation}
+    in the coupling region. Consequently the value \emph{must} be
+    between $0$ and $1$.
+
+    \note this option may be used for tight-binding calculations as an
+    empirical applied bias (with the potential drop at the
+    electrode/device interface).
+
 
     \option[check-kgrid]%
     \fdfindex*{TBT.Elec.<>!check-kgrid}%

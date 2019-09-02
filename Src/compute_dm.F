@@ -24,8 +24,8 @@
      &                    qtot, Qtots, no_l
       use sys, only: die, bye
       use kpoint_scf_m, only: kpoint_scf, gamma_scf
-      use m_energies,   only: Ebs, Ecorrec, Entropy, DE_NEGF
-      use m_energies,   only: Ef, Efs, Ebs
+      use m_energies,   only: Ebs, Ecorrec, Entropy
+      use m_energies,   only: Ef, Efs
       use m_rmaxh
       use m_eo
       use m_spin,   only: spin
@@ -54,7 +54,6 @@
 #ifdef SIESTA__CHESS
       use m_chess, only: CheSS_wrapper
 #endif
-      use m_energies,   only: DE_NEGF
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
       use m_transiesta,     only : transiesta
       
@@ -288,7 +287,7 @@ c$$$     &           S, 'S.matrix')
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        no_u == no_s, ucell, nsc, isc_off, no_u, na_u,
      &        lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot, .false., DE_NEGF )
+     &        H, S, Dscf, Escf, Ef, Qtot, .false.)
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

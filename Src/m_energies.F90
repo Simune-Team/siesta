@@ -47,7 +47,17 @@ module m_energies
   real(dp):: Eldau      
   real(dp):: DEldau
 
-  real(dp) :: DE_NEGF  ! NEGF total energy contribution = - e * \sum_i N_i \mu_i
+  real(dp) :: NEGF_DE  ! NEGF total energy contribution = - e * \sum_i N_i \mu_i
+  ! Generally we should only calculate energies in the regions where we are updating elements
+  ! As such we need a specific energy for the NEGF part
+  ! Their meaning is directly transferable to the above listed energies (in the updating regions)
+  real(dp) :: NEGF_Ebs
+  real(dp) :: NEGF_Ekin
+  real(dp) :: NEGF_Enl
+  real(dp) :: NEGF_DEharr
+  real(dp) :: NEGF_Eharrs
+  real(dp) :: NEGF_Etot
+  real(dp) :: NEGF_FreeE
 
 contains
 
@@ -85,7 +95,16 @@ contains
     Eso = 0._dp
     Eldau = 0._dp      
     DEldau = 0._dp
-    DE_NEGF = 0._dp
+
+    ! NEGF part
+    NEGF_DE = 0._dp
+    NEGF_Ebs = 0._dp
+    NEGF_Ekin = 0._dp
+    NEGF_Enl = 0._dp
+    NEGF_DEharr = 0._dp
+    NEGF_Eharrs = 0._dp
+    NEGF_Etot = 0._dp
+    NEGF_FreeE = 0._dp
 
   end subroutine init_Energies
 
@@ -102,26 +121,35 @@ contains
   subroutine update_E0()
 
     E0 = Ena + Ekin + Enl + Eso - Eions
-    
+
   end subroutine update_E0
   
   subroutine update_Etot()
+    use m_ts_global_vars, only: TSrun
     
     ! DUext (external electric field) -- should it be in or out?
     Etot = Ena + Ekin + Enl + Eso - Eions + &
-         DEna + DUscf + DUext + Exc + &
-         Ecorrec + Emad + Emm + Emeta + Eldau
-    ! Commented out the NEGF contribution to the total energy
-    ! We know it is wrong, but we estimate it. See output
-    !    Etot = Etot + DE_NEGF
+        DEna + DUscf + DUext + Exc + &
+        Ecorrec + Emad + Emm + Emeta + Eldau
 
+    if ( TSrun ) then
+      NEGF_Etot = Ena + NEGF_Ekin + NEGF_Enl - Eions + &
+          DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm + Emeta + &
+          Eldau + NEGF_DE
+    end if
+    
   end subroutine update_Etot
 
   !> @param kBT the temperature in energy
   subroutine update_FreeE( kBT )
+    use m_ts_global_vars, only: TSrun
     real(dp), intent(in) :: kBT
 
     FreeE = Etot - kBT * Entropy
+
+    if ( TSrun ) then
+      NEGF_FreeE = NEGF_Etot - kBT * Entropy
+    end if
 
   end subroutine update_FreeE
 

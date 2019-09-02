@@ -89,7 +89,6 @@ contains
 #endif
     use m_check_walltime
 
-    use m_energies, only: DE_NEGF
     use m_ts_options, only : N_Elec
     use m_ts_method
     use m_ts_global_vars,      only: TSmode, TSinit, TSrun
@@ -398,7 +397,7 @@ contains
                 call transiesta(iscf,spin%H, &
                      block_dist, sparse_pattern, Gamma_Scf, ucell, nsc, &
                      isc_off, no_u, na_u, lasto, xa, maxnh, H, S, &
-                     Dscf, Escf, Ef, Qtot, .true., DE_NEGF)
+                     Dscf, Escf, Ef, Qtot, .true.)
 
                 ! We will not have not converged as we have just
                 ! changed the Fermi-level
@@ -734,7 +733,6 @@ contains
       use m_ts_global_vars,      only: ts_print_transiesta
       use m_ts_method
       use m_ts_options,          only: N_Elec, Elecs
-      use m_ts_options,          only: DM_bulk
       use m_ts_options,          only: val_swap
       use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
@@ -758,13 +756,13 @@ contains
 
       ! If transiesta should stop immediately
       if ( ts_siesta_stop ) then
-
-         if ( IONode ) then
-            write(*,'(a)') 'ts: Stopping transiesta (user option)!'
-         end if
-
-         return
-
+         
+        if ( IONode ) then
+          write(*,'(a)') 'ts: Stopping transiesta (user option)!'
+        end if
+        
+        return
+         
       end if
 
       ! Reduce memory requirements
@@ -801,9 +799,9 @@ contains
       scf_mix => ts_scf_mixs(1)
 #ifdef SIESTA__FLOOK
       if ( .not. mix_charge ) then
-         call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
-         call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
-         call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
+        call dict_variable_add('SCF.Mixer.Weight',scf_mix%w)
+        call dict_variable_add('SCF.Mixer.Restart',scf_mix%restart)
+        call dict_variable_add('SCF.Mixer.Iterations',scf_mix%n_itt)
       end if
 #endif
 
@@ -813,7 +811,7 @@ contains
       ! In case we ask for initialization of the DM in bulk
       ! we read in the DM files from the electrodes and
       ! initialize the bulk to those values
-      if ( DM_bulk > 0 ) then
+      if ( any(Elecs(:)%DM_init > 0) ) then
 
         if ( IONode ) then
             write(*,'(/,2a)') 'transiesta: ', &
@@ -823,54 +821,63 @@ contains
         ! The electrode EDM is aligned at Ef == 0
         ! We need to align the energy matrix to Ef == 0, then we switch
         ! it back later.
-        DM  => val(DM_2D)
+        DM => val(DM_2D)
         EDM => val(EDM_2D)
         iEl = size(DM)
         call daxpy(iEl,-Ef,DM(1,1),1,EDM(1,1),1)
-         
-         na_a = 0
-         do iEl = 1 , na_u
-            if ( .not. a_isDev(iEl) ) na_a = na_a + 1
-         end do
-         allocate(allowed_a(na_a))
-         na_a = 0
-         do iEl = 1 , na_u
-            ! We allow the buffer atoms as well (this will even out the
-            ! potential around the back of the electrode)
-            if ( .not. a_isDev(iEl) ) then
-               na_a = na_a + 1
-               allowed_a(na_a) = iEl
-            end if
-         end do
-
-         do iEl = 1 , N_Elec
-
-            if ( IONode ) then
-               write(*,'(/,2a)') 'transiesta: ', &
-                    'Reading in electrode TSDE for '// &
-                    trim(Elecs(iEl)%Name)
-            end if
-
-            ! Copy over the DM in the lead
-            ! Notice that the EDM matrix that is copied over
-            ! will be equivalent at Ef == 0
-            call copy_DM(Elecs(iEl),na_u,xa,lasto,nsc,isc_off, &
-                 ucell, DM_2D, EDM_2D, na_a, allowed_a)
-
-         end do
-
-         ! Clean-up
-         deallocate(allowed_a)
-
-         if ( IONode ) then
-            write(*,*) ! new-line
-         end if
-
-         ! The electrode EDM is aligned at Ef == 0
-         ! We need to align the energy matrix
-         iEl = size(DM)
-         call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
-
+        
+        na_a = 0
+        do iEl = 1 , na_u
+          if ( a_isBuffer(iEl) ) then
+            na_a = na_a + 1
+          else if ( a_isDev(iEl) ) then
+            ! do nothing, not allowed overwriting
+          else if ( Elecs(atom_type(iEl))%DM_init > 0 ) then
+            na_a = na_a + 1
+          end if
+        end do
+        allocate(allowed_a(na_a))
+        na_a = 0 
+        do iEl = 1 , na_u
+          if ( a_isBuffer(iEl) ) then
+            na_a = na_a + 1
+            allowed_a(na_a) = iEl
+          else if ( a_isDev(iEl) ) then
+            ! do nothing, not allowed overwriting
+          else if ( Elecs(atom_type(iEl))%DM_init > 0 ) then
+            na_a = na_a + 1
+            allowed_a(na_a) = iEl
+          end if
+        end do
+        
+        do iEl = 1 , N_Elec
+          if ( Elecs(iEl)%DM_init == 0 ) cycle
+          
+          if ( IONode ) then
+            write(*,'(/,3a)') 'transiesta: ', &
+                'Reading in electrode DM for ',trim(Elecs(iEl)%Name)
+          end if
+          
+          ! Copy over the DM in the lead
+          ! Notice that the EDM matrix that is copied over
+          ! will be equivalent at Ef == 0
+          call copy_DM(Elecs(iEl),na_u,xa,lasto,nsc,isc_off, &
+              ucell, DM_2D, EDM_2D, na_a, allowed_a)
+           
+        end do
+        
+        ! Clean-up
+        deallocate(allowed_a)
+        
+        if ( IONode ) then
+          write(*,*) ! new-line
+        end if
+        
+        ! The electrode EDM is aligned at Ef == 0
+        ! We need to align the energy matrix
+        iEl = size(DM)
+        call daxpy(iEl,Ef,DM(1,1),1,EDM(1,1),1)
+        
       end if
 
     end subroutine transiesta_switch

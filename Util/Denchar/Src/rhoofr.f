@@ -6,7 +6,7 @@
 ! See Docs/Contributors.txt for a list of contributors.
 ! ---
 
-      SUBROUTINE RHOOFR( NA, NO, NUO, MAXND, MAXNA, NSPIN, 
+      SUBROUTINE RHOOFR( NA, NO, NUO, MAXND, MAXNA, NSPIN_in, 
      .                   ISA, IPHORB, INDXUO, LASTO, 
      .                   XA, CELL, NUMD, LISTD, LISTDPTR, DSCF, DATM, 
      .                   IDIMEN, IOPTION, XMIN, XMAX, YMIN, YMAX, 
@@ -31,7 +31,7 @@ C **********************************************************************
 
       INTEGER, INTENT(IN) ::
      .  NA, NO, NUO, IOPTION, NPX, NPY, NPZ, ISCALE, IUNITCD,
-     .  IDIMEN, MAXND, NSPIN, MAXNA,
+     .  IDIMEN, MAXND, NSPIN_in, MAXNA,
      .  ISA(NA), IPHORB(NO), INDXUO(NO), LASTO(0:NA),
      .  NUMD(NUO), LISTDPTR(NUO), LISTD(MAXND)
 
@@ -40,9 +40,8 @@ C **********************************************************************
      .  COORPO(3,3), NORMAL(3), DIRVER1(3), DIRVER2(3), ARMUNI,
      .  RMAXO
 
-      real(dp), INTENT(IN) ::
-     . CELL(3,3), DSCF(MAXND,NSPIN),
-     . DATM(NO)
+      real(dp), INTENT(IN) :: CELL(3,3), DATM(NO)
+      real(dp), INTENT(INOUT) :: DSCF(MAXND,NSPIN_in)
 
 C ****** INPUT *********************************************************
 C INTEGER NA               : Total number of atoms in Supercell
@@ -52,8 +51,8 @@ C INTEGER MAXND            : Maximum number
 C                            of basis orbitals interacting, either directly
 C                            or through a KB projector, with any orbital
 C INTEGER MAXNA            : Maximum number of neighbours of any atom
-C INTEGER NSPIN            : Number of different spin polarizations
-C                            Nspin = 1 => unpolarized, Nspin = 2 => polarized
+C INTEGER NSPIN_IN         : Number of different spin polarizations
+C                            1: unpolarized, 2: polarized, 4: non-collinear, 8:SOC
 C INTEGER ISA(NA)          : Species index of each atom
 C INTEGER IPHORB(NO)       : Orital index of each orbital in its atom
 C INTEGER INDXUO(NO)       : Equivalent orbital in unit cell
@@ -71,7 +70,7 @@ C                            elements of a row there is no need to shift by
 C                            minus one.
 C INTEGER LISTD(MAXND)     : Control vector of Density Matrix
 C                            (list of non-zero elements of each row)
-C REAL*8  DSCF(MAXND,NSPIN): Density Matrix
+C REAL*8  DSCF(MAXND,NSPIN_IN): Density Matrix
 C REAL*8  DATM(NO)          : Neutral atom charge density of each orbital
 C INTEGER IDIMEN           : Specify if the run is to plot quantities
 C                            in a plane or in a 3D grid (2 or 3, respect)
@@ -101,6 +100,8 @@ C REAL*8  ARMUNI           : Conversion factor for the charge density
 C REAL*8  RMAXO            : Maximum range of basis orbitals
 C **********************************************************************
 
+      integer :: nspin          ! local: 1, 2, or 4 (nspin_in could be up to 8)
+      
       INTEGER
      .  NPLAMAX, NAPLA, NAINCELL
 
@@ -110,8 +111,8 @@ C **********************************************************************
       REAL, DIMENSION(:,:), allocatable :: RHO
       REAL, DIMENSION(:), allocatable   :: DRHO
 
-      real(dp), DIMENSION(:), ALLOCATABLE ::
-     .   R2IJ, DISCF, DIATM, DIUP, DIDOWN
+      real(dp), DIMENSION(:), ALLOCATABLE ::  R2IJ, DIATM
+      real(dp), dimension(:,:), allocatable ::  DI
 
       real(dp), DIMENSION(:,:), ALLOCATABLE ::
      .   PLAPO, POINRE, XAPLA, XIJ, XAINCELL
@@ -128,8 +129,7 @@ C **********************************************************************
      .  XVEC2(3), PHIMU, PHINU, GRPHIMU(3), GRPHINU(3), 
      .  OCELL(3,3)
 
-      real(dp)
-     .  DENCHAR, DENCHAR0, DENUP, DENDOWN
+      real(dp) :: DENCHAR, DENCHAR0, DENUP, DENDOWN
 
       LOGICAL FIRST
 
@@ -172,35 +172,25 @@ C                            in real space
 C INTEGER IZA(NA)          : Atomic number of each atom
 C **********************************************************************
 
-C Allocate some variables ---------------------------------------------
+      ! Hermitify DM in SOC case
+      nspin = nspin_in
+      if (nspin == 8) then
+         dscf(:,3) = 0.5_dp * ( dscf(:,3) + dscf(:,7) )
+         dscf(:,4) = 0.5_dp * ( dscf(:,4) + dscf(:,8) )
+         nspin = 4
+      endif
+      
+      ALLOCATE(DI(NO,nspin))
+      ALLOCATE(DIATM(NO))
+
       NPLAMAX = NPX * NPY * NPZ
 
       ALLOCATE(PLAPO(NPLAMAX,3))
-      CALL MEMORY('A','D',3*NPLAMAX,'rhoofr')
-
       ALLOCATE(POINRE(NPLAMAX,3))
-      CALL MEMORY('A','D',3*NPLAMAX,'rhoofr')
-
       ALLOCATE(INDICES(NA))
-      CALL MEMORY('A','I',NA,'rhoofr')
-
       ALLOCATE(XAPLA(3,NA))
-      CALL MEMORY('A','D',3*NA,'rhoofr')
-
       ALLOCATE(XAINCELL(3,NA))
-      CALL MEMORY('A','D',3*NA,'rhoofr')
 
-      ALLOCATE(DISCF(NO))
-      CALL MEMORY('A','D',NO,'rhoofr')
-
-      ALLOCATE(DIATM(NO))
-      CALL MEMORY('A','D',NO,'rhoofr')
-
-      ALLOCATE(DIUP(NO))
-      CALL MEMORY('A','D',NO,'rhoofr')
-
-      ALLOCATE(DIDOWN(NO))
-      CALL MEMORY('A','D',NO,'rhoofr')
 
 C Build the plane ------------------------------------------------------
           CALL PLANE( NA, NPLAMAX, IDIMEN, IOPTION, 
@@ -217,23 +207,17 @@ C Initialize neighbour subroutine --------------------------------------
       RMAX = RMAXO
       NNA  = MAXNA
       IF (ALLOCATED(JNA)) THEN
-        CALL MEMORY('D','I',SIZE(JNA),'rhoofr')
         DEALLOCATE(JNA)
       ENDIF
       IF (ALLOCATED(R2IJ)) THEN
-        CALL MEMORY('D','D',SIZE(R2IJ),'rhoofr')
         DEALLOCATE(R2IJ)
       ENDIF
       IF (ALLOCATED(XIJ)) THEN
-        CALL MEMORY('D','D',SIZE(XIJ),'rhoofr')
         DEALLOCATE(XIJ)
       ENDIF
       ALLOCATE(JNA(MAXNA))
-      CALL MEMORY('A','I',MAXNA,'rhoofr')
       ALLOCATE(R2IJ(MAXNA))
-      CALL MEMORY('A','D',MAXNA,'rhoofr')
       ALLOCATE(XIJ(3,MAXNA))
-      CALL MEMORY('A','D',3*MAXNA,'rhoofr')
 
       FIRST = .TRUE.
       DO I = 1,3
@@ -261,7 +245,8 @@ C Open files to store charge density -----------------------------------
           OPEN(UNIT = UNIT2, FILE = FNAMEDEL, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNIT2)
-        ELSEIF (IDIMEN .EQ. 3) THEN
+
+       ELSEIF (IDIMEN .EQ. 3) THEN
           FNAMESCF = TRIM(SNAME)//'.RHO.cube'
           FNAMEDEL = TRIM(SNAME)//'.DRHO.cube'
           CALL IO_ASSIGN(UNIT1)
@@ -273,6 +258,7 @@ C Open files to store charge density -----------------------------------
      .         FORM = 'FORMATTED')
           REWIND(UNIT2)
         ENDIF
+
       ELSEIF (NSPIN .EQ. 2) THEN
         IF (IDIMEN .EQ. 2) THEN
           FNAMESCF = TRIM(SNAME)//'.CON.MAG'
@@ -295,7 +281,8 @@ C Open files to store charge density -----------------------------------
           OPEN(UNIT = UNIT4, FILE = FNAMEDOWN, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNIT4)
-        ELSE IF (IDIMEN .EQ. 3) THEN
+
+       ELSE IF (IDIMEN .EQ. 3) THEN
           FNAMEUP = TRIM(SNAME)//'.RHO.UP.cube'
           FNAMEDOWN = TRIM(SNAME)//'.RHO.DOWN.cube'
           FNAMEDEL = TRIM(SNAME)//'.DRHO.cube'
@@ -322,10 +309,37 @@ C Open files to store charge density -----------------------------------
      .         FORM = 'FORMATTED')
           REWIND(u_sum3d)
         ENDIF
+
+
+      ELSEIF (NSPIN .EQ. 4) THEN
+        IF (IDIMEN .EQ. 2) THEN
+          FNAMESCF = TRIM(SNAME)//'.CON.SCF'
+          FNAMEDEL = TRIM(SNAME)//'.CON.DEL'
+          CALL IO_ASSIGN(UNIT1)
+          OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
+     .         FORM = 'FORMATTED')
+          REWIND(UNIT1)
+          CALL IO_ASSIGN(UNIT2)
+          OPEN(UNIT = UNIT2, FILE = FNAMEDEL, STATUS = 'UNKNOWN',
+     .         FORM = 'FORMATTED')
+          REWIND(UNIT2)
+
+        ELSE IF (IDIMEN .EQ. 3) THEN
+          FNAMESCF = TRIM(SNAME)//'.RHO.cube'
+          FNAMEDEL = TRIM(SNAME)//'.DRHO.cube'
+          CALL IO_ASSIGN(UNIT1)
+          OPEN(UNIT = UNIT1, FILE = FNAMESCF, STATUS = 'UNKNOWN',
+     .         FORM = 'FORMATTED')
+          REWIND(UNIT1)
+          CALL IO_ASSIGN(UNIT2)
+          OPEN(UNIT = UNIT2, FILE = FNAMEDEL, STATUS = 'UNKNOWN',
+     .         FORM = 'FORMATTED')
+          REWIND(UNIT2)
+        ENDIF
       ELSE
         WRITE(6,*)'BAD NUMBER NSPIN IN RHOOFR.F'
         WRITE(6,*)'NSPIN = ',NSPIN
-        WRITE(6,*)'IT MUST BE 1 => NON POLARIZED, OR 2 = > POLARIZED'
+        WRITE(6,*)'IT MUST BE 1, 2, or 4'
         STOP
       ENDIF
 
@@ -362,80 +376,21 @@ C   so that only they will be printed
           ENDDO
 90        CONTINUE
         ENDDO
+
         IF (NSPIN .EQ. 1) THEN
-          WRITE(UNIT1,*) FNAMESCF
-          WRITE(UNIT1,*) FNAMESCF
-          WRITE(UNIT1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-          WRITE(UNIT1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-          WRITE(UNIT1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-          WRITE(UNIT1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-          DO IA = 1,NAINCELL
-          WRITE(UNIT1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                               (XAINCELL(IX,IA),IX=1,3)
-          ENDDO
-          WRITE(UNIT2,*) FNAMEDEL
-          WRITE(UNIT2,*) FNAMEDEL
-          WRITE(UNIT2,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-          WRITE(UNIT2,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-          WRITE(UNIT2,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-          WRITE(UNIT2,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-          DO IA = 1,NAINCELL
-          WRITE(UNIT2,'(i5,4f12.6)') IZA(IA),0.0,
-     .                               (XAINCELL(IX,IA),IX=1,3)
-          ENDDO
+          call write_cube_header(unit1,fnamescf)
+          call write_cube_header(unit2,fnamedel)
+
         ELSE IF (NSPIN .EQ. 2) THEN
-          WRITE(UNIT1,*) FNAMEUP
-          WRITE(UNIT1,*) FNAMEUP
-          WRITE(UNIT1,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-          WRITE(UNIT1,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-          WRITE(UNIT1,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-          WRITE(UNIT1,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-          DO IA = 1,NAINCELL
-            WRITE(UNIT1,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                 (XAINCELL(IX,IA),IX=1,3)
-          ENDDO
-          WRITE(UNIT2,*) FNAMEDOWN
-          WRITE(UNIT2,*) FNAMEDOWN
-          WRITE(UNIT2,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-          WRITE(UNIT2,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-          WRITE(UNIT2,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-          WRITE(UNIT2,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-          DO IA = 1,NAINCELL
-            WRITE(UNIT2,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                 (XAINCELL(IX,IA),IX=1,3)
-          ENDDO
-          WRITE(UNIT3,*) FNAMEDEL
-          WRITE(UNIT3,*) FNAMEDEL
-          WRITE(UNIT3,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-          WRITE(UNIT3,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-          WRITE(UNIT3,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-          WRITE(UNIT3,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-          DO IA = 1,NAINCELL
-            WRITE(UNIT3,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                 (XAINCELL(IX,IA),IX=1,3)
-          ENDDO
+          call write_cube_header(unit1,fnameup)
+          call write_cube_header(unit2,fnamedown)
+          call write_cube_header(unit3,fnamedel)
+          call write_cube_header(u_mag3d,fname_mag3d)
+          call write_cube_header(u_sum3d,fname_sum3d)
 
-          WRITE(U_MAG3D,*) trim(fname_mag3d)
-          WRITE(U_MAG3D,*) trim(fname_mag3d)
-          WRITE(U_MAG3D,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-          WRITE(U_MAG3D,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-          WRITE(U_MAG3D,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-          WRITE(U_MAG3D,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-          DO IA = 1,NAINCELL
-            WRITE(U_MAG3D,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                 (XAINCELL(IX,IA),IX=1,3)
-          ENDDO
-
-          WRITE(U_SUM3D,*) trim(fname_sum3d)
-          WRITE(U_SUM3D,*) trim(fname_sum3d)
-          WRITE(U_SUM3D,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
-          WRITE(U_SUM3D,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
-          WRITE(U_SUM3D,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
-          WRITE(U_SUM3D,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
-          DO IA = 1,NAINCELL
-            WRITE(U_SUM3D,'(i5,4f12.6)') IZA(IA),0.0,
-     .                                 (XAINCELL(IX,IA),IX=1,3)
-          ENDDO
+        ELSE IF (NSPIN .EQ. 4) THEN
+          call write_cube_header(unit1,fnamescf)
+          call write_cube_header(unit2,fnamedel)
         ENDIF
       ENDIF
 
@@ -455,14 +410,13 @@ C   so that only they will be printed
 
 C Allocate space for density in 3D-grid
 
+      ! Future expansion to sx, sy, sz...
        ALLOCATE(RHO(NPX*NPY*NPZ,NSPIN))
-       CALL MEMORY('A','S',NPX*NPY*NPZ*NSPIN,'RHOOFR')
        ALLOCATE(DRHO(NPX*NPY*NPZ))
-       CALL MEMORY('A','S',NPX*NPY*NPZ,'RHOOFR')
 
       
 C Loop over all points in real space -----------------------------------
-C      DO 100 NPO = 1, NPX*NPY*NPZ
+
       NPO = 0
       DO 102 NZ = 1,NPZ
       DO 101 NY = 1,NPY
@@ -508,28 +462,17 @@ C Copy full row IUO of Density Matrix to DI(j) --------------------------
                DO 130 IN = 1, NUMD(IUO)
                  IND = IN + LISTDPTR(IUO)
                  J = LISTD(IND)
-                 IF (NSPIN .EQ. 1) THEN
-                   DISCF(J) = DSCF(IND,1)
-                 ELSEIF (NSPIN .EQ. 2) THEN
-                   DIUP(J)   = DSCF(IND,1)
-                   DIDOWN(J) = DSCF(IND,2)
-                 ENDIF
+                 DI(J,1:nspin) = DSCF(ind,1:nspin)
  130           ENDDO
              ELSE
                DO 135 IN = 1, NUMD(IUO)
                  IND = IN + LISTDPTR(IUO)
                  J = LISTSC( IO, IUO, LISTD(IND) )
-                 IF (NSPIN .EQ. 1) THEN
-                   DISCF(J) = DSCF(IND,1)
-                 ELSEIF (NSPIN .EQ. 2) THEN
-                   DIUP(J)   = DSCF(IND,1)
-                   DIDOWN(J) = DSCF(IND,2)
-                 ENDIF
+                 DI(J,1:nspin) = DSCF(ind,1:nspin)
  135           ENDDO
              ENDIF
 
              DENCHAR0 = DENCHAR0 + PHIMU*PHIMU*DATM(IUO)
-C            WRITE(6,*) IO,DATM(IO)
 
 C Loop again over neighbours -------------------------------------------
              DO 140 IAT2 = 1, NNA
@@ -544,10 +487,15 @@ C Loop again over neighbours -------------------------------------------
                  CALL PHIATM( IS2, IPHI2, XVEC2, PHINU, GRPHINU )
                  
                  IF ( NSPIN .EQ. 1 ) THEN
-                   DENCHAR  = DENCHAR  + PHINU*PHIMU*DISCF(JO)
+                   DENCHAR  = DENCHAR  + PHINU*PHIMU*DI(JO,1)
                  ELSEIF (NSPIN .EQ. 2) THEN 
-                   DENUP    = DENUP    + PHINU*PHIMU*DIUP(JO)
-                   DENDOWN  = DENDOWN  + PHINU*PHIMU*DIDOWN(JO)
+                   DENUP    = DENUP    + PHINU*PHIMU*DI(JO,1)
+                   DENDOWN  = DENDOWN  + PHINU*PHIMU*DI(JO,2)
+                 ELSEIF (NSPIN .EQ. 4) THEN 
+                    DENCHAR = DENCHAR + PHINU*PHIMU *(DI(JO,1)+DI(JO,2))
+                    ! m_x: 2*DI(JO,3)
+                    ! m_y: 2*DI(JO,4)
+                    ! m_z: DI(JO,1)-DI(JO,2)
                  ENDIF
                  
  150           ENDDO
@@ -560,18 +508,31 @@ C Loop again over neighbours -------------------------------------------
            IF ( NSPIN .EQ. 1 ) THEN
              WRITE(UNIT1,'(3F12.5)')
      .            PLAPO(NPO,1),PLAPO(NPO,2),DENCHAR*ARMUNI
+             IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit1,*)
              WRITE(UNIT2,'(3F12.5)')
      .            PLAPO(NPO,1),PLAPO(NPO,2),(DENCHAR-DENCHAR0)*ARMUNI 
+             IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit2,*)
            ELSEIF ( NSPIN .EQ. 2 ) THEN
              WRITE(UNIT1,'(3F12.5)')
      .            PLAPO(NPO,1),PLAPO(NPO,2),(DENUP-DENDOWN)*ARMUNI
+             IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit1,*)
              WRITE(UNIT2,'(3F12.5)')
      .            PLAPO(NPO,1),PLAPO(NPO,2),
      .            (DENUP+DENDOWN-DENCHAR0)*ARMUNI
+             IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit2,*)
              WRITE(UNIT3,'(3F12.5)')
      .            PLAPO(NPO,1),PLAPO(NPO,2),DENUP*ARMUNI
+             IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit3,*)
              WRITE(UNIT4,'(3F12.5)')
      .            PLAPO(NPO,1),PLAPO(NPO,2),DENDOWN*ARMUNI
+             IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit4,*)
+           ELSEIF (NSPIN == 4) THEN
+              WRITE(UNIT1,'(3F12.5)')
+     .             PLAPO(NPO,1),PLAPO(NPO,2),DENCHAR*ARMUNI
+              IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit1,*)
+              WRITE(UNIT2,'(3F12.5)')
+     .             PLAPO(NPO,1),PLAPO(NPO,2),(DENCHAR-DENCHAR0)*ARMUNI 
+              IF ( MOD(NPO,NPX) .EQ. 0 ) write(unit2,*)
            ENDIF
          ELSE IF (IDIMEN .EQ. 3) THEN
            IF (NSPIN .EQ. 1) THEN
@@ -581,26 +542,12 @@ C Loop again over neighbours -------------------------------------------
              RHO(NPO,1) = DENUP*ARMUNI
              RHO(NPO,2) = DENDOWN*ARMUNI
              DRHO(NPO) = (DENUP+DENDOWN-DENCHAR0)*ARMUNI
+           ELSE IF (NSPIN .EQ. 4) THEN
+             RHO(NPO,1) = DENCHAR*ARMUNI
+             DRHO(NPO) = (DENCHAR-DENCHAR0)*ARMUNI
+             ! RHO(NPO,2:3:4) for spin components x, y, z ?
            ENDIF
          ENDIF
-
-
-
-         IF (IDIMEN .EQ. 2) THEN
-           IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
-CC-AG        Use * for single line separation,
-CC-AG        since (/) gives two...
-CC-AG             WRITE(UNIT1,'(/)')
-CC-AG             WRITE(UNIT2,'(/)')
-                  WRITE(UNIT1,*)
-                  WRITE(UNIT2,*)
-             IF ( NSPIN .EQ. 2 ) THEN
-               WRITE(UNIT3,*)
-               WRITE(UNIT4,*)
-             ENDIF
-           ENDIF
-         ENDIF
-
 
 C End x loop
  100  ENDDO  
@@ -642,6 +589,15 @@ C End y and z loops
 
             ENDDO
           ENDDO
+        ELSE IF (NSPIN .EQ. 4) THEN
+          DO NX=1,NPX
+            DO NY=1,NPY
+              WRITE(UNIT1,'(6e13.5)')
+     .          (RHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+              WRITE(UNIT2,'(6e13.5)')
+     .          (DRHO(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY),NZ=1,NPZ)
+            ENDDO
+          ENDDO
         ENDIF
       ENDIF
 
@@ -658,6 +614,9 @@ C End y and z loops
         WRITE(6,'(A,A)') '   ',FNAMEDOWN
         IF (IDIMEN .EQ. 3) WRITE(6,'(A,A)') '   ',FNAME_MAG3D
         IF (IDIMEN .EQ. 3) WRITE(6,'(A,A)') '   ',FNAME_SUM3D
+      ELSE IF (NSPIN .EQ. 4) THEN
+        WRITE(6,'(A,A)') '   ',FNAMESCF
+        WRITE(6,'(A,A)') '   ',FNAMEDEL
       ENDIF
 
 
@@ -673,5 +632,25 @@ C End y and z loops
       IF (IDIMEN .EQ. 3 .AND. NSPIN .EQ. 2) CALL IO_CLOSE(u_sum3d)
      
           
-      RETURN    
+      RETURN
+
+      CONTAINS
+
+      subroutine write_cube_header(lun,fname)
+       integer, intent(in) :: lun
+       character(len=*), intent(in) :: fname
+       ! rest by host association
+      
+            WRITE(LUN,*) FNAME
+            WRITE(LUN,*) FNAME
+            WRITE(LUN,'(i5,4f12.6)') NAINCELL, XMIN, YMIN, ZMIN
+            WRITE(LUN,'(i5,4f12.6)') NPX,(OCELL(1,J)/(NPX-1),J=1,3)
+            WRITE(LUN,'(i5,4f12.6)') NPY,(OCELL(2,J)/(NPY-1),J=1,3)
+            WRITE(LUN,'(i5,4f12.6)') NPZ,(OCELL(3,J)/(NPZ-1),J=1,3)
+            DO IA = 1,NAINCELL
+              WRITE(LUN,'(i5,4f12.6)') IZA(IA),0.0,
+     .                                   (XAINCELL(IX,IA),IX=1,3)
+            ENDDO
+       end subroutine write_cube_header
+
       END

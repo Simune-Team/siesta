@@ -212,7 +212,7 @@
  
 \vspace{0.5cm}
 
-\siesta\ is Copyright \copyright\ 1996-2018 by The Siesta Group
+\siesta\ is Copyright \copyright\ 1996-2019 by The Siesta Group
 
 \end{center}
 
@@ -278,6 +278,7 @@ Micael Oliveira,
 Magnus Paulsson,
 Oscar Paz,
 Andrei Postnikov,
+Roberto Robles,
 Tristana Sondon,
 Rafi Ullah,
 Andrew Walker,
@@ -1728,7 +1729,8 @@ two ways for \siesta\ and \program{Gen-basis} to generate them: $(i)$
 Use atomic PAO's of higher angular momentum with suitable confinement,
 and $(ii)$ solve the pseudoatom in the presence of an electric field
 and obtain the $l+1$ orbitals from the perturbation of the $l$
-orbitals by the field.
+orbitals by the field. Experience shows that method $(i)$ tends to
+give better results.
 
 So-called diffuse orbitals, that might be important in the description
 of open systems such as surfaces, can be simply added by specifying
@@ -3439,7 +3441,7 @@ enddo
 
 \subsubsection{Input from a FIFO file}
 
-See the ``Forces'' option in \fdf{MD!TypeOfRun}. Note that
+See the ``Forces'' option in \fdf{MD.TypeOfRun}. Note that
 \fdf{ChemicalSpeciesLabel} is still mandatory in the fdf file.
 
 \subsubsection{Precedence issues in structural input}
@@ -3491,7 +3493,8 @@ See the ``Forces'' option in \fdf{MD!TypeOfRun}. Note that
 
 These are options for the $k$-point grid used in the SCF cycle. For
 other specialized grids, see Secs.~\ref{sec:macroscopic-polarization}
-and \ref{sec:dos}.
+and \ref{sec:dos}. The order of the following keywords
+is equivalent to their precedence.
 
 \begin{fdfentry}{kgrid!MonkhorstPack}[block/list]<$\Gamma$-point>
   
@@ -3577,7 +3580,7 @@ and \ref{sec:dos}.
     4 0.3 0.3 0.3 0.25
   \end{shellexample}
   The first integer specifies the total number of $k$-points in the
-  file.  The first column is an index; the next 3 columns are the
+  file. The first column is an index; the next 3 columns are the
   $k$-point specification for each of the reciprocal lattice vectors
   while the fifth column is the weight for the $k$-point.
 
@@ -4252,12 +4255,47 @@ by potentially saving many self-consistency steps in production runs.
 
 \begin{fdflogicalT}{SCF.Mix!First}
   \fdfindex*{DM.MixSCF1}[|see SCF.Mix.First]
-
-  Whether the first SCF should be mixed or it uses the output as input
-  in the next SCF step. It is generally advised to set this to true,
-  at least when restarting calculations.
+  \fdfdepend{SCF.Mix!First.Force}%
   
+  This flag is used to decide whether mixing (of the DM or H) should
+  be done in the first SCF step. If mixing is not performed the output
+  DM or H generated in the first SCF step is used as input in the next
+  SCF step. When mixing the DM, this ``reset'' has the effect of
+  avoiding potentially undesirable memory effects: for example, a DM
+  read from file which corresponds to a different structure might not
+  satisfy the correct symmetry, and mixing will not fix it. On the
+  other hand, when reusing a DM for a restart of an interrupted
+  calculation, a full reset might not be advised.
+  
+  The value of this flag is one of the ingredients used by \siesta\ to
+  decide what to do. If \fdftrue\ (the default), mixing will be
+  performed in all cases, except when a DM has been read from file and
+  the sparsity pattern of the DM on file is different from the current
+  one. To ensure that a first-step mixing is done even in this case,
+  \fdf{SCF.Mix!First.Force} should be set to \fdftrue.
+  
+  If the flag is \fdffalse, no mixing in the first step will be
+  performed, except if overridden by \fdf{SCF.Mix!First.Force}.
+  
+  \note that the default value for this flag has changed from the old
+  (pre-version 4) setting in \siesta. The new setting is most
+  appropriate for the case of restarting calculations. On the other
+  hand, it means that mixing in the first SCF step will also be
+  performed for the standard case in which the initial DM is built as
+  a (diagonal) superposition of atomic orbital occupation values. In
+  some cases (e.g. spin-orbit calculations) better results might be
+  obtained by avoiding this mixing.
+
 \end{fdflogicalT}
+
+\begin{fdflogicalF}{SCF.Mix!First.Force}
+
+  Force the mixing (of DM or H) in the first SCF step, regardless of
+  what \siesta\ may heuristically decide.
+
+  This overrules \fdf{SCF.Mix!First}.
+  
+\end{fdflogicalF}
 
 
 In the following the density matrix ($\DM$) will be used in the
@@ -8818,11 +8856,6 @@ or interpolation of bands), can be downloaded from
   This will default to \fdftrue\ if an external field is applied to a
   slab calculation, otherwise it will default to \fdffalse.
 
-  For \tsiesta\ calculations an additional step is added. For more
-  than 1 electrode, the dipole moments along the semi-infinite
-  directions are removed. Otherwise, for 1 electrode, the dipole is
-  \emph{only} allowed along the semi-infinite direction.
-
 \end{fdflogicalF}
 
 
@@ -9902,18 +9935,20 @@ misleading but kept for historical reasons.
 \end{fdfentry}
 
 \begin{fdfentry}{MD.Steps}[integer]<0>
+  \fdfindex*{MD.NumCGsteps}
   \fdfdepend{MD.NumCGsteps}
   
   Maximum number of steps in a minimization routine
   (the minimization will stop if tolerance is reached before; see
   \fdf{MD.MaxForceTol} below).
 
-  \note The old flag \fdf*{MD.NumCGsteps} will remain for historical
+  \note The old flag \fdf{MD.NumCGsteps} will remain for historical
   reasons.
 
 \end{fdfentry}
 
 \begin{fdfentry}{MD.MaxDispl}[length]<$0.2\,\mathrm{Bohr}$>
+  \fdfindex*{MD.MaxCGDispl}
   \fdfdepend{MD.MaxCGDispl}
   
   Maximum atomic displacements in an optimization move.
@@ -9925,7 +9960,7 @@ misleading but kept for historical reasons.
 
   Note that there are Zmatrix-specific options that override this option.
 
-  \note The old flag \fdf*{MD.MaxCGDispl} will remain for historical
+  \note The old flag \fdf{MD.MaxCGDispl} will remain for historical
   reasons.
 
 \end{fdfentry}
@@ -9937,7 +9972,7 @@ misleading but kept for historical reasons.
   same footing as the coordinates. For good efficiency, this length
   should make the scale of energy variation with strain similar to the
   one due to atomic displacements. It is also used for the application
-  of the \fdf{MD.MaxCGDispl} value to the strain components.
+  of the \fdf{MD.MaxDispl} value to the strain components.
 
 \end{fdfentry}
 
@@ -11176,7 +11211,7 @@ end
     \note \program{siesta.state == siesta.FORCES}.
 
     \option[Move]%
-    This state will \emph{only} be reached if \fdf{MD!TypeOfRun} is
+    This state will \emph{only} be reached if \fdf{MD.TypeOfRun} is
     \fdf*{lua}.
 
     If one does not return updated atomic coordinates \siesta\ will
@@ -11206,7 +11241,7 @@ end
   \end{codeexample}
   which is the most minimal example of using the L-BFGS algorithm for
   geometry relaxation. Note that \program{flos} reads the parameters
-  \fdf{MD.MaxCGDispl} and \fdf{MD.MaxForceTol} through \siesta\
+  \fdf{MD.MaxDispl} and \fdf{MD.MaxForceTol} through \siesta\
   automatically. 
 
   \note The number of available variables continues to grow and to
@@ -11221,6 +11256,12 @@ end
   If there are any variables you require which are not in the list,
   please contact the developers.
 
+  If you want to stop \siesta\ from Lua you can use the following:
+  \begin{codeexample}
+    siesta.Stop = true
+    siesta.send({"Stop"})
+  \end{codeexample}
+  which will abort \siesta.
 
   Remark that since \emph{anything} may be changed via Lua one may
   easily make \siesta\ crash due to inconsistencies in the internal
@@ -11487,6 +11528,12 @@ the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
   in a \tbtrans\ calculation to achieve a converged transmission
   function.
 
+  \item%
+  Energies from \tsiesta\ are \emph{not} to be trusted since the open
+  boundaries complicates the energy calculation. Therefore you cannot
+  compare energies between different calculations and/or different
+  bias'.
+
 \end{itemize}
 
 \subsection{Electrodes}
@@ -11735,9 +11782,28 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 
   Specify atoms that will be removed in the \tsiesta\ SCF. They are
   not considered in the calculation and may be used to improve the
-  initial guess for the Hamiltonian. Their main usage is to extend
-  electrodes in their semi-infinite directions.
+  initial guess for the Hamiltonian.
 
+
+  An intended use for buffer atoms is to ensure a bulk behavior in the
+  electrode regions when electrodes are different. As an example: a 2
+  electrode calculation with left consisting of Au atoms and the right
+  consisting of Pt atoms. In such calculations one cannot create a
+  periodic geometry along the transport direction. One needs to add
+  vacuum between the Au and Pt atoms that comprise the
+  electrodes. However, this creates an artificial edge of the
+  electrostatic environment for the electrodes since in \siesta\ there
+  is vacuum, whereas in \tsiesta\ the effective Hamiltonian sees a
+  bulk environment. To ensure that \siesta\ also exhibits a bulk
+  environment on the electrodes we add \emph{buffer} atoms towards the
+  vacuum region to screen off the electrode region. These
+  \emph{buffer} atoms is thus a technicality that has no influence on
+  the \tsiesta\ calculation but they are necessary to ensure the
+  electrode bulk properties.
+
+  The above discussion is even more important when doing $N$-electrode
+  calculations.
+  
   \note all lines are additive for the buffer atoms and the input
   method is similar to that of \fdf{Geometry!Constraints} for the
   \fdf*{atom} line(s).
@@ -12482,7 +12548,11 @@ electrodes in a generic input format.
     \option[semi-inf-direction|semi-inf-dir|semi-inf]%
     \fdfindex*{TS!Elec.<>!semi-inf-direction}%
     The semi-infinite direction of the electrode with respect to the
-    electrode unit-cell. 
+    electrode unit-cell.
+
+    It may be one of \fdf*{[-+][abc]}, \fdf*{[-+]A[123]}, \fdf*{ab},
+    \fdf*{ac}, \fdf*{bc} or \fdf*{abc}. The latter four all describe a
+    real-space self-energy as described in \cite{1905.11113}.
 
     \note this direction is \emph{not} with respect to the scattering
     region unit cell. It is with respect to the electrode unit
@@ -12515,6 +12585,7 @@ electrodes in a generic input format.
 
     \option[Bulk]%
     \fdfindex*{TS!Elec.<>!Bulk}%
+    \fdfindex*{TS!Elec.<>!Bulk:false}%
     Logical controlling whether the Hamiltonian of the electrode
     region in the scattering region is enforced \emph{bulk} or whether
     the Hamiltonian is taken from the scattering region elements. If
@@ -12531,6 +12602,16 @@ electrodes in a generic input format.
     scattering region are updated.
 
     If \fdf{TS!Elec.<>!Bulk:false} this is forced to \fdf*{all}.
+
+    \option[DM-init]%
+    \fdfindex*{TS!Elec.<>!DM-init}%
+    \fdfdepend{TS!Elecs!DM.Init}%
+    String of values \fdf*{bulk}, \fdf*{diagon} or \fdf*{force-bulk}
+    which controls whether the DM is initially overwritten by the DM
+    from the bulk electrode calculation.
+    This requires the DM file to be present.
+    By default \tsiesta\ will try and read in the DM for $0$ bias
+    calculations.
 
     \option[Gf]%
     \fdfindex*{TS!Elec.<>!Gf}%
@@ -12622,6 +12703,34 @@ electrodes in a generic input format.
     Setting this to \fdffalse\ will heavily degrade performance and
     it is highly discouraged!
 
+    \option[delta-Ef]%
+    \fdfindex*{TS!Elec.<>!delta-Ef}%
+    Specify an offset for the Fermi-level of the electrode. This will
+    directly be added to the Fermi-level found in the electrode file.
+    
+    \note this option only makes sense for semi-conducting electrodes
+    since it shifts the entire electronic structure. This is because
+    the Fermi-level may be arbitrarily placed anywhere in the band
+    gap. It is the users responsibility to define a value which does
+    not introduce a potential drop between the electrode and device
+    region.
+
+    \option[V-fraction]%
+    \fdfindex*{TS!Elec.<>!V-fraction}%
+
+    Specify the fraction of the chemical potential shift in the
+    electrode-device coupling region. This corresponds to:
+    \begin{equation}
+      \mathbf H_{\mathfrak eD} \leftarrow \mathbf H_{\mathfrak eD} +
+      \mu_{\mathfrak e} \mathrm{V-fraction} \mathbf S_{\mathfrak eD}
+    \end{equation}
+    in the coupling region. Consequently the value \emph{must} be
+    between $0$ and $1$.
+
+    \note this option \emph{only} makes sense for
+    \fdf{TS!Elec.<>!DM-update:none} since otherwise the electrostatic
+    potential will be incorporated in the Hamiltonian.
+
     \option[check-kgrid]%
     \fdfindex*{TS!Elec.<>!check-kgrid}%
     For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
@@ -12705,18 +12814,27 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Elecs!DM.Init}[string]<diagon|bulk>
+\begin{fdfentry}{TS!Elecs!DM.Init}[string]<bulk|diagon|force-bulk>
 
   The density matrix elements in the electrodes may be forcefully set
   to the bulk values by reading in the DM of the corresponding
-  electrode. This may be set to \fdf*{bulk} to forcefully set the bulk
-  values.
+  electrode. This is by default \fdf*{bulk} for non-bias calculation,
+  and otherwise defaults to \fdf*{diagon}.
+
+  This step is only required once since the DM will be constant in the
+  electrode regions and thus it will be propagated through the
+  \sysfile{TSDE} files without having to re-do this step.
+  If this is done (by default) in the 0 bias calculation it will also
+  be effective in the bias calculation.
 
   \note this will automatically be set to \fdf*{diagon} for
-  non-equilibrium calculations. If bulk density matrix elements are
-  wanted in the electrodes it is vital to have this option set to
-  \fdf*{bulk} when performing the equilibrium calculation.
-  
+  non-equilibrium calculations (unless \fdf*{force-bulk} is set). If
+  bulk density matrix elements are wanted in the electrodes it is
+  vital to have this option set to \fdf*{bulk} when performing the
+  equilibrium calculation.
+
+  See \fdf{TS!Elec.<>!DM-init}.
+
 \end{fdfentry}
 
 \begin{fdfentry}{TS!Elecs!Coord.EPS}[length]<$0.001\,\mathrm{Ang}$>

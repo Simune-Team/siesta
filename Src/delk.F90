@@ -386,7 +386,7 @@ contains
                    r2sp = sum(dxsp**2)
                    if ( r2sp < r2cut(is) ) then
 !$OMP critical
-                      call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
+                      call all_phi( is, +1, dxsp, maxoa, nphiloc, phia(:,isp) )
 !$OMP end critical
                    else
                       phia(:,isp) = 0.0_dp
@@ -500,6 +500,8 @@ contains
     end do
 !$OMP end do nowait
 
+!$OMP barrier
+    
 !   Add final Vlocal to delkmat
     if ( ParallelLocal .and. last > 0 ) then
 
@@ -589,16 +591,17 @@ contains
 !$OMP barrier
 
     if ( ParallelLocal .and. NTH > 1 ) then
-!$OMP do collapse(2)
        do irealim = 1, 2
+!$OMP do
           do ind = 1, nvmaxl
              do ii = 2, NTH
                 t_DscfL(ind,irealim,1) = t_DscfL(ind,irealim,1) + &
                      t_DscfL(ind,irealim,ii)
              end do
           end do
+!$OMP end do nowait
        end do
-!$OMP end do
+!$OMP barrier
     else if ( NTH > 1 ) then
 !$OMP do
        do ind = 1, nvmax

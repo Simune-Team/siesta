@@ -417,8 +417,14 @@ subroutine read_options( na, ns, nspin )
   mix_scf_first = fdf_get('DM.MixSCF1', &
        .not. compat_pre_v4_DM_H)
   mix_scf_first = fdf_get('SCF.Mix.First', mix_scf_first)
+  mix_scf_first_force = fdf_get('SCF.Mix.First.Force', .false.)
+  if ( mix_scf_first_force ) then
+    ! Also set this, to note the user of mixing first SCF regardless
+    ! of flag.
+    mix_scf_first = .true.
+  end if
   if (ionode) then
-     write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
+    write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif
 
   if (cml_p) then
@@ -443,9 +449,9 @@ subroutine read_options( na, ns, nspin )
 
   ! Density Matrix Mixing  (proportion of output DM in new input DM)
   wmix = fdf_get('DM.MixingWeight',0.25_dp)
-  if (ionode) then
-     write(6,6) 'redata: New DM Mixing Weight',wmix
-  endif
+!!$  if (ionode) then
+!!$     write(6,6) 'redata: New DM Mixing Weight',wmix
+!!$  endif
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML,name='DM.MixingWeight', &

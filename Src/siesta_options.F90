@@ -28,6 +28,7 @@ MODULE siesta_options
   logical :: compat_pre_v4_dynamics      ! General switch
 
   logical :: mix_scf_first ! Mix first SCF step?
+  logical :: mix_scf_first_force ! Mix first SCF step? and force it!
   logical :: mix_charge    ! New: mix fourier components of rho
   logical :: mixH          ! Mix H instead of DM
   logical :: h_setup_only  ! H Setup only

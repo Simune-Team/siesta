@@ -296,7 +296,7 @@
       use units
       use m_energies 
       use m_spin
-      use m_ts_global_vars, only: TSinit, TSrun
+      use m_ts_global_vars, only: TSrun
       implicit none
 
       integer, intent(in) :: iscf
@@ -304,16 +304,10 @@
       real(dp), intent(in) :: dHmax ! Max. change in H elements
 
       character(len=64) :: fmt
-      character(len=6)  :: scf_name
-      character(len=17) :: enl_str, eso_str
+      character(len=16) :: enl_str, eso_str
 
       logical              :: first_scf_step
       integer              :: i
-
-      scf_name = 'scf'
-      if ( TSrun ) then
-         scf_name = 'ts-scf'
-      end if
 
       if (spin%SO .and. (.not. split_sr_so)) then
          Enl = Enl + Eso 
@@ -340,7 +334,6 @@
      .     'siesta: DEna    =', DEna/eV,
      .     'siesta: DUscf   =', DUscf/eV,
      .     'siesta: DUext   =', DUext/eV,
-     .     'siesta: Enegf   =', DE_NEGF/eV,
      .     'siesta: Exc     =', Exc/eV,
      .     'siesta: eta*DQ  =', Ecorrec/eV,
      .     'siesta: Emadel  =', Emad/eV,
@@ -350,6 +343,17 @@
      .     'siesta: Eharris =', (Eharrs+Ekinion)/eV,
      .     'siesta: Etot    =', (Etot+Ekinion)/eV,
      .     'siesta: FreeEng =', (FreeE+Ekinion)/eV
+        if ( TSrun ) then
+        write(6,'(a,f17.6)')
+     .     'transiesta: E-dN      =', NEGF_DE/eV,
+     .     'transiesta: Band Stru =', NEGF_Ebs/eV,
+     .     'transiesta: Kinetic   =', NEGF_Ekin/eV,
+     .     'transiesta: Ion-elec  =', (Enascf+NEGF_Enl+DUscf-
+     .      Uscf-Uatm)/eV,
+     .     'transiesta: Eharris   =', (NEGF_Eharrs+Ekinion)/eV,
+     .     'transiesta: Etot      =', (NEGF_Etot+Ekinion)/eV,
+     .     'transiesta: FreeEng   =', (NEGF_FreeE+Ekinion)/eV
+        end if
         if (cml_p) then
           call cmlStartPropertyList(mainXML,
      .         title='Energy Decomposition')
@@ -383,9 +387,6 @@
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r6')
-          call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
-     .         units='siestaUnits:eV', 
-     .         dictref='siesta:Enegf', fmt='r6')
           call cmlAddProperty(xf=mainXML, value=Exc/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r6')
@@ -413,6 +414,29 @@
           call cmlAddProperty(xf=mainXML, value=(FreeE+Ekinion)/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:FreeEK', fmt='r6')
+
+          if ( TSrun ) then
+          ! NEGF energies
+          call cmlAddProperty(xf=mainXML, value=NEGF_DE/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:EdN-GF', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=NEGF_Ebs/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ebs-GF', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=NEGF_Ekin/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ekin-GF', fmt='r6')
+          call cmlAddProperty(xf=mainXML,
+     .         value=(NEGF_Eharrs+Ekinion)/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:EharrsK-GF', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=(NEGF_Etot+Ekinion)/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:EtotK-GF', fmt='r6')
+          call cmlAddProperty(xf=mainXML, value=(NEGF_FreeE+Ekinion)/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:FreeEK-GF', fmt='r6')
+          end if
           call cmlEndPropertyList(mainXML)
         endif
       endif
@@ -425,6 +449,11 @@
           call cmlAddProperty(xf=mainXML, value=Eharrs/eV, 
      .         units="siestaUnits:eV", 
      .         dictRef="siesta:Eharrs", fmt="r7")
+          if ( TSrun ) then
+          call cmlAddProperty(xf=mainXML, value=NEGF_Eharrs/eV, 
+     .         units="siestaUnits:eV", 
+     .         dictRef="siesta:Eharrs-GF", fmt="r7")
+          end if
           if ( .not. harrisfun ) then
              ! store dDmax and dHmax
              call cmlAddProperty(xf=mainXML, value=dDmax, 
@@ -452,6 +481,14 @@
              call cmlAddProperty(xf=mainXML, value=FreeE/eV, 
      .             units="siestaUnits:eV", 
      .             dictRef="siesta:FreeE", fmt="r7")
+             if ( TSrun ) then
+             call cmlAddProperty(xf=mainXML, value=NEGF_Etot/eV, 
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:Etot-GF", fmt="r7")
+             call cmlAddProperty(xf=mainXML, value=NEGF_FreeE/eV, 
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:FreeE-GF", fmt="r7")
+             end if
              if ( fixspin ) then
                 call cmlAddProperty(xf=mainXML, value=Efs(1)/eV, 
      .               units="siestaUnits:eV", 
@@ -469,25 +506,49 @@
              end if
           endif
 
-          if ( fixspin ) then
-             if ( (iscf == 1) .or. muldeb ) then
+          if ( TSrun ) then
+            if ( fixspin ) then
+              if ( (iscf == 1) .or. muldeb ) then
                 write(6,'(/,a12,3a16,4a10)')
-     .           'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
-     .           'dDmax', 'Ef_up', 'Ef_dn(eV)','dHmax(eV)'
-             end if
-             write(6,'(a8,i4,3f16.6,4f10.6)')
-     .  trim(scf_name)//': ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
-     .           dDmax, Efs(1:2)/eV, dHmax/eV
-          else                  ! fixspin
-             if ( (iscf == 1) .or. muldeb ) then
+     .              'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)',
+     .              'dDmax', 'Ef_up', 'Ef_dn(eV)','dHmax(eV)'
+              end if
+              write(6,'(a8,i4,3f16.6,4f10.6)')
+     .            'ts-scf: ',iscf, NEGF_Eharrs/eV, NEGF_Etot/eV,
+     .            NEGF_FreeE/eV,
+     &            dDmax, Efs(1:2)/eV, dHmax/eV
+            else                ! fixspin
+              if ( (iscf == 1) .or. muldeb ) then
                 write(6,'(/,a12,3a16,3a10)')
-     .           'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
-     .           'dDmax','Ef(eV)','dHmax(eV)'
-             end if
-             write(6,'(a8,i4,3f16.6,3f10.6)')
-     .  trim(scf_name)//': ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
-     .           dDmax, Ef      /eV, dHmax/eV
-          end if                ! fixspin
+     .              'iscf', 'Eharris(eV)', 'E_KS(eV)','FreeEng(eV)',
+     .              'dDmax','Ef(eV)','dHmax(eV)'
+              end if
+              write(6,'(a8,i4,3f16.6,3f10.6)')
+     .            'ts-scf: ',iscf, NEGF_Eharrs/eV, NEGF_Etot/eV,
+     .            NEGF_FreeE/eV,
+     &            dDmax, Ef /eV, dHmax/eV
+            end if              ! fixspin
+          else ! not NEGF
+            if ( fixspin ) then
+              if ( (iscf == 1) .or. muldeb ) then
+                write(6,'(/,a12,3a16,4a10)')
+     .              'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
+     .              'dDmax', 'Ef_up', 'Ef_dn(eV)','dHmax(eV)'
+              end if
+              write(6,'(a8,i4,3f16.6,4f10.6)')
+     .            'scf: ',iscf, Eharrs/eV, Etot/eV,
+     &            FreeE/eV,dDmax, Efs(1:2)/eV, dHmax/eV
+            else                ! fixspin
+              if ( (iscf == 1) .or. muldeb ) then
+                write(6,'(/,a12,3a16,3a10)')
+     .              'iscf', 'Eharris(eV)', 'E_KS(eV)', 'FreeEng(eV)', 
+     .              'dDmax','Ef(eV)','dHmax(eV)'
+              end if
+              write(6,'(a8,i4,3f16.6,3f10.6)')
+     .            'scf: ',iscf, Eharrs/eV, Etot/eV,
+     &            FreeE/eV,dDmax, Ef      /eV, dHmax/eV
+            end if              ! fixspin
+          end if
           
        elseif ((isolve==SOLVE_ORDERN) .or. (isolve==SOLVE_MINIM)) then
           
@@ -524,12 +585,20 @@
      .    'siesta: ',      'Eldau   =', Eldau/eV,
      .    'siesta: ',      eso_str    , Eso/eV,
      .    'siesta: ',   'Ext. field =', DUext/eV,
-     .    'siesta: ',      'Enegf   =', DE_NEGF/eV,
      .    'siesta: ',  'Exch.-corr. =', Exc/eV,
      .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
      .    'siesta: ',      'Ion-ion =', (Ena+Uatm-Enaatm-Eions)/eV,
      .    'siesta: ',      'Ekinion =', Ekinion/eV,
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
+        if ( TSrun ) then
+        write(6,'(a,a15,f15.6)')
+     .    'transiesta: ',    'E-dN  =', NEGF_DE/eV,
+     .    'transiesta: ','Band Stru =', NEGF_Ebs/eV,
+     .    'transiesta: ',  'Kinetic =', NEGF_Ekin/eV,
+     .    'transiesta: ', 'Ion-elec =', (Enascf+NEGF_Enl+DUscf-
+     .      Uscf-Uatm)/eV,
+     .    'transiesta: ',    'Total =', (NEGF_Etot+Ekinion)/eV
+        end if
         if ( fixspin ) then
            write(6,'(a,a15,f15.6)')
      .          'siesta: ', 'Fermi_up =', Efs(1)/eV,
@@ -558,9 +627,6 @@
           call cmlAddProperty(xf=mainXML, value=DUext/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='r7')
-          call cmlAddProperty(xf=mainXML, value=DE_NEGF/eV, 
-     .         units='siestaUnits:eV', 
-     .         dictref='siesta:Enegf', fmt='r7')
           call cmlAddProperty(xf=mainXML, value=Exc/eV,   
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='r7')
@@ -578,6 +644,26 @@
           call cmlAddProperty(xf=mainXML, value=(Etot+Ekinion)/eV,
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Etot', fmt='r7')
+
+          if ( TSrun ) then
+          ! NEGF energies
+          call cmlAddProperty(xf=mainXML, value=NEGF_DE/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:EdN-GF', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=NEGF_Ebs/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ebs-GF', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=NEGF_Ekin/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Ekin-GF', fmt='r7')
+          call cmlAddProperty(xf=mainXML, 
+     .         value=(Enascf+NEGF_Enl+DUscf-Uscf-Uatm)/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:I-e-GF', fmt='r7')
+          call cmlAddProperty(xf=mainXML, value=(NEGF_Etot+Ekinion)/eV,
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Etot-GF', fmt='r7')
+          end if
           call cmlEndPropertyList(mainXML)
         endif !cml_p
       endif !final

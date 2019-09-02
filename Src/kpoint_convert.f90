@@ -43,9 +43,9 @@ subroutine kpoint_convert(ucell,kin,kout,iopt)
   real(dp), dimension(3,3) :: rcell
   
   if ( iopt == 1 ) then
-     kout(1) = sum(ucell(:,1) * kin(:) * 0.5_dp / Pi)
-     kout(2) = sum(ucell(:,2) * kin(:) * 0.5_dp / Pi)
-     kout(3) = sum(ucell(:,3) * kin(:) * 0.5_dp / Pi)
+     kout(1) = sum(ucell(:,1) * kin(:)) * 0.5_dp / Pi
+     kout(2) = sum(ucell(:,2) * kin(:)) * 0.5_dp / Pi
+     kout(3) = sum(ucell(:,3) * kin(:)) * 0.5_dp / Pi
   else if ( iopt == -1 ) then
      call reclat(ucell,rcell,1)
      kout(1) = sum(rcell(1,:) * kin(:))
@@ -56,7 +56,7 @@ subroutine kpoint_convert(ucell,kin,kout,iopt)
      kout(2) = sum(ucell(2,:) * kin(:))
      kout(3) = sum(ucell(3,:) * kin(:))
   else
-     call die("Wrong option for kpoint_convert! Only 1 or -1 allowed.")
+     call die("Wrong option for kpoint_convert! Only 1, -1 or -2 allowed.")
   end if
 
 end subroutine kpoint_convert
