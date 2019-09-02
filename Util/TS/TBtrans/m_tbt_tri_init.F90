@@ -490,7 +490,7 @@ contains
     call attach(tmpSp1, n_col = ncol, list_ptr = l_ptr, &
          list_col = l_col , nrows_g = no , nnzs = n_nzs )
     ! Check whether we are dealing with a 1-orbital system
-    one_orb = no == lasto(na_u)
+    one_orb = no == na_u
 
     fmethod = 'orb+none'
     if ( IONode ) write(*,fmt) 'orb','none'
@@ -508,8 +508,8 @@ contains
        if ( one_orb ) then
           ! Same as 'atom'
           corb = 'atom'
-       else
-          if ( leqi(fdf_get('TBT.BTD.Analyze','atom'),'atom') ) cycle
+        else
+          if ( leqi(fdf_get('TBT.BTD.Analyze','atom'),'atom') ) cycle orb_atom_switch
        end if
 
        call rgn_copy(r_pvt,full)
@@ -702,7 +702,7 @@ contains
        call tri(r_El)
     end if
 
-
+#if defined(TS_PVT_GGPS) || defined(TBT_PVT_GGPS)
     fmethod = trim(corb)//'+GGPS'
     if ( IONode ) write(*,fmt) trim(corb),'GGPS'
     call sp_pvt(n,tmpSp2,r_tmp, PVT_GGPS, sub = full)
@@ -742,6 +742,7 @@ contains
        call rgn_atom2orb(r_tmp,na_u,lasto,r_El)
        call tri(r_El)
     end if
+#endif
 
     end do orb_atom_switch
 
