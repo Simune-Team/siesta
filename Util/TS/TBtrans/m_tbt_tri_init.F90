@@ -483,7 +483,7 @@ contains
 
     min_mem = huge(1._dp)
 
-    call rgn_orb2atom(r_pvt, na_u, lasto, r_apvt)
+    call rgn_Orb2Atom(r_pvt, na_u, lasto, r_apvt)
 
     ! Attach the sparsity pattern of the orbitals
     ! later (tmpSp2) may be atom
@@ -553,7 +553,7 @@ contains
           call rgn_copy(Elecs(iEl)%o_inD, start)
        else
           ! transfer to atom
-          call rgn_orb2atom(Elecs(iEl)%o_inD,na_u,lasto,start)
+          call rgn_Orb2Atom(Elecs(iEl)%o_inD,na_u,lasto,start)
        end if
 
        fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)

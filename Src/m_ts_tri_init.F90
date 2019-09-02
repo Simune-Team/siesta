@@ -444,7 +444,7 @@ contains
           call rgn_copy(Elecs(iEl)%o_inD, start)
        else
           ! transfer to atom
-          call rgn_orb2atom(Elecs(iEl)%o_inD,na_u,lasto,start)
+          call rgn_Orb2Atom(Elecs(iEl)%o_inD,na_u,lasto,start)
        end if
 
        fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)
