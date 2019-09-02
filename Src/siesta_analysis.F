@@ -46,8 +46,7 @@
       use m_energies
       use m_steps, only: final
       use m_ntm
-      use m_spin,         only: nspin, spinor_dim, h_spin_dim
-      use m_spin,         only: SpOrb, NonCol, SPpol, NoMagn
+      use m_spin,         only: spin
       use m_dipol
       use m_eo
       use m_forces,          only: fa
@@ -68,15 +67,15 @@
 
       real(dp)          :: dummy_str(3,3)
       real(dp)          :: dummy_strl(3,3)
-      real(dp)          :: qspin(4)         ! Local
+      real(dp)          :: qspin(spin%Grid)         ! Local
 
-      real(dp)          :: polxyz(3,nspin)  ! Autom., small
-      real(dp)          :: polR(3,nspin)    ! Autom., small
+      real(dp)          :: polxyz(3,spin%Grid)  ! Autom., small
+      real(dp)          :: polR(3,spin%Grid)    ! Autom., small
       real(dp)          :: qaux
       real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
       integer           :: j, ix, ind, ik, io, ispin
-      integer           :: wfs_band_min, wfs_band_max
+      integer           :: wfs_band_min, wfs_band_max, max_n_states
       real(dp)          :: g2max, current_ef
       type(filesOut_t)  :: filesOut  ! blank output file names
 
@@ -127,7 +126,7 @@
 
       if (fdf_get("Read-H-from-file",.false.)) then
          if (SIESTA_worker) then
-            call read_spmatrix(maxnh, no_l, h_spin_dim, numh,
+            call read_spmatrix(maxnh, no_l, spin%H, numh,
      .           listhptr, listh, H, found, userfile="H_IN")
             if (.not. found) call die("Could not find H_IN")
             current_ef = ef
@@ -137,7 +136,7 @@
 
 #ifdef SIESTA__PEXSI
       if (fdf_get("PEXSI.DOS",.false.)) then
-         call pexsi_dos(no_u, no_l, spinor_dim,
+         call pexsi_dos(no_u, no_l, spin%spinor,
      $        maxnh, numh, listhptr, listh, H, S, qtot, ef)
          
       endif
@@ -263,6 +262,17 @@
 !        latest DM, although this is probably too much).
 !        See the logic in siesta_forces.
 
+!     Setup the number of states depending on the used method
+!     For polarized calculations we use no_u and separate spin-channels.
+!     For NC/SO we have mixed spin-channels and separating makes no
+!     sense.
+      if ( spin%Grid == 4 ) then
+!       We are NC/SO
+        max_n_states = no_u * 2
+      else
+        max_n_states = no_u
+      end if
+
 !     Find and print wavefunctions at selected k-points
 !**   This uses H,S, and xa
       if (nwk.gt.0) then
@@ -270,7 +280,7 @@
         if (IONode) print "(a)",
      $              "Writing WFSX for selected k-points in "
      $                           // trim(wfs_filename)
-        call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+        call wwave( no_s, spin, no_u, no_l, maxnh, 
      &              nwk,
      &              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      &              gamma_wavefunctions, nwk, wfk, no_u, occtol )
@@ -278,20 +288,20 @@
 
 
 !**   This uses H,S, and xa
-      if (write_coop) then
+      if ( write_coop ) then
         ! Output the wavefunctions for the kpoints in the SCF set
         ! Note that we allow both a band number and an energy range
         ! The user is responsible for using appropriate values.
         wfs_band_min = fdf_get("WFS.BandMin",1)
-        wfs_band_max = fdf_get("WFS.BandMax",no_u)
-        call setup_wfs_list(kpoint_scf%N,no_u,
-     &                      wfs_band_min,wfs_band_max,
+        wfs_band_max = fdf_get("WFS.BandMax",max_n_states)
+        call setup_wfs_list(kpoint_scf%N,max_n_states,
+     $                      wfs_band_min,wfs_band_max,
      $                      use_scf_weights=.true.,
      $                      use_energy_window=.true.)
          wfs_filename = trim(slabel)//".fullBZ.WFSX"
          if (IONode) print "(a)", "Writing WFSX for COOP/COHP in " 
      $                           // trim(wfs_filename)
-         call wwave( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+         call wwave( no_s, spin, no_u, no_l, maxnh, 
      .        kpoint_scf%N,
      .        numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .        gamma_scf, kpoint_scf%N, kpoint_scf%k, no_u, occtol)
@@ -300,83 +310,102 @@
 !     Compute bands
 !**   This uses H,S, and xa
       nullify( ebk )
-      call re_alloc( ebk, 1, no_u, 1, spinor_dim, 1, maxbk,
-     &               'ebk', 'siesta_analysis' )
-
-      if (nbk.gt.0) then
+      if ( spin%Grid == 4 ) then
+        call re_alloc( ebk, 1, no_u*2, 1, 1, 1, maxbk,
+     &      'ebk', 'siesta_analysis' )
+      else
+        call re_alloc( ebk, 1, no_u, 1, spin%spinor, 1, maxbk,
+     &      'ebk', 'siesta_analysis' )
+      end if
+      
+      if ( nbk > 0 ) then
         if (IONode) print "(a)", "Computing bands..."
         getPSI = fdf_get('WFS.Write.For.Bands', .false.)
         if (getPSI) then
-           wfs_filename = trim(slabel)//".bands.WFSX"
-         if (IONode) print "(a)", "Writing WFSX for bands in "
-     $                           // trim(wfs_filename)
-           wfs_band_min = fdf_get("WFS.BandMin",1)
-           wfs_band_max = fdf_get("WFS.BandMax",no_u)
-           call setup_wfs_list(nbk,no_u,wfs_band_min,wfs_band_max,
-     $          use_scf_weights=.false.,
-     $          use_energy_window=.false.)
-        endif
-        call bands( no_s, h_spin_dim, spinor_dim, no_u, no_l, maxnh, 
+          wfs_filename = trim(slabel)//".bands.WFSX"
+          if (IONode) print "(a)", "Writing WFSX for bands in "
+     $        // trim(wfs_filename)
+          wfs_band_min = fdf_get("WFS.BandMin",1)
+          wfs_band_max = fdf_get("WFS.BandMax",max_n_states)
+          call setup_wfs_list(nbk,max_n_states,
+     $        wfs_band_min,wfs_band_max,
+     $        use_scf_weights=.false.,
+     $        use_energy_window=.false.)
+        end if
+        call bands( no_s, spin, no_u, no_l, maxnh, 
      .              maxbk,
      .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     .              .true., nbk, bk, ebk, occtol, getPSI )
-        if (IOnode) then
+     .      .true., nbk, bk, ebk, occtol, getPSI )
+
+        if ( IOnode ) then
           if ( writbk ) then
-            write(6,'(/,a,/,a4,a12)')
-     &       'siesta: Band k vectors (Bohr**-1):', 'ik', 'k'
+            write(6,'(/,a,/,a4,tr1,a12)')
+     &          'siesta: Band k vectors (Bohr**-1):', 'ik', 'k'
             do ik = 1,nbk
-              write(6,'(i4,3f12.6)') ik, (bk(ix,ik),ix=1,3)
-            enddo
-          endif
+              write(6,'(i4,3(tr1,f12.6))') ik, (bk(ix,ik),ix=1,3)
+            end do
+          end if
         
           if ( writb ) then
-            write(6,'(/,a,/,a4,a3,a7)')
-     &       'siesta: Band energies (eV):', 'ik', 'is', 'eps'
-            do ispin = 1, spinor_dim
+            if ( spin%Grid == 4 ) then
+              write(6,'(/,a,/,a4,tr1,a9)')
+     &            'siesta: Band energies (eV):', 'ik', 'eps'
               do ik = 1,nbk
-                write(6,'(i4,i3,10f7.2)')
-     &            ik, ispin, (ebk(io,ispin,ik)/eV,io=1,min(10,no_u))
-                if (no_u.gt.10) write(6,'(7x,10f7.2)')
-     &              (ebk(io,ispin,ik)/eV,io=11,no_u)
+                write(6,'(i4,10(tr1,f9.4))')
+     &              ik, (ebk(io,1,ik)/eV,io=1,min(10,2*no_u))
+                if ( 2*no_u > 10 ) write(6,'(4x,10(tr1,f9.4))')
+     &              (ebk(io,1,ik)/eV,io=11,no_u*2)
+              end do
+
+            else
+              write(6,'(/,a,/,a4,a3,tr1,a9)')
+     &            'siesta: Band energies (eV):', 'ik', 'is', 'eps'
+              do ispin = 1, spin%spinor
+                do ik = 1,nbk
+                  write(6,'(i4,i3,10(tr1,f9.4))')
+     &                ik, ispin, (ebk(io,ispin,ik)/eV,io=1,min(10,no_u))
+                  if ( no_u > 10 ) write(6,'(7x,10(tr1,f9.4))')
+     &                (ebk(io,ispin,ik)/eV,io=11,no_u)
+                enddo
               enddo
-            enddo
+            end if
           endif
+          
         endif
       endif
 
 !     Print eigenvalues
-      if (IOnode .and. writeig) then
-        if ((isolve.eq.SOLVE_DIAGON .or.
-     &       ((isolve.eq.SOLVE_MINIM) .and. minim_calc_eigenvalues))
-     &      .and. no_l.lt.1000) then
-          if ( h_spin_dim <= 2 ) then
-            write(6,'(/,a,/,a4,a3,a7)')
-     &       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
-            do ik = 1,kpoint_scf%N
-              do ispin = 1,spinor_dim
-                write(6,'(i4,i3,10f7.2)')
+      if ( IOnode .and. writeig .and. no_l < 1000 .and. 
+     &    (isolve.eq.SOLVE_DIAGON .or.
+     &    (isolve.eq.SOLVE_MINIM .and. minim_calc_eigenvalues)) ) then
+
+        if ( spin%Grid == 4 ) then
+          write(6,'(/,a)') 'siesta: Eigenvalues (eV):'
+          do ik = 1,kpoint_scf%N
+            write(6,'(a,i6)') 'ik =', ik
+            write(6,'(10(tr1,f9.4))') (eo(io,1,ik)/eV,io=1,2*neigwanted)
+          end do
+
+        else
+          write(6,'(/,a,/,a4,a3,tr1,a9)')
+     &        'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
+          do ik = 1,kpoint_scf%N
+            do ispin = 1, spin%spinor
+              write(6,'(i4,i3,10(tr1,f9.4))')
      &            ik,ispin,(eo(io,ispin,ik)/eV,io=1,min(10,neigwanted))
-                if (no_u.gt.10) write(6,'(7x,10f7.2)')
+              if (no_u.gt.10) write(6,'(7x,10(tr1,f9.4))')
      &            (eo(io,ispin,ik)/eV,io=11,neigwanted)
-              enddo
-            enddo
-          else
-            write(6,'(/,a)') 'siesta: Eigenvalues (eV):'
-            do ik = 1,kpoint_scf%N
-              write(6,'(a,i6)') 'ik =', ik
-              write(6,'(10f7.2)')
-     &          ((eo(io,ispin,ik)/eV,io=1,neigwanted),ispin=1,2)
-            enddo
-          endif
-          write(6,'(a,f15.6,a)') 'siesta: Fermi energy =', ef/eV, ' eV'
-        endif
+            end do
+          end do
+        end if
+        write(6,'(a,f15.6,a)') 'siesta: Fermi energy =', ef/eV, ' eV'
       endif
 
       if (((isolve.eq.SOLVE_DIAGON).or.
      &     ((isolve.eq.SOLVE_MINIM).and.minim_calc_eigenvalues))
      &     .and.IOnode)
-     &    call ioeig(eo,ef,neigwanted,nspin,kpoint_scf%N,
-     &     no_u,spinor_dim,
+     &    call ioeig(eo,ef,neigwanted,spin%H,kpoint_scf%N,
+     &     no_u,spin%spinor,
      &     kpoint_scf%N, kpoint_scf%k, kpoint_scf%w)
 
 
@@ -432,7 +461,7 @@
 !     Calculation of the bulk polarization using the Berry phase
 !     formulas by King-Smith and Vanderbilt
       if (nkpol.gt.0 .and. .not.bornz) then
-        if (NonCol .or. SpOrb) then
+        if ( spin%NCol .or. spin%SO ) then
           if (IOnode) then
             write(6,'(/a)')
      .       'siesta_analysis: bulk polarization implemented only for'
@@ -441,7 +470,7 @@
           endif
         else
          call KSV_pol(na_u, na_s, xa_last, rmaxo, scell_last, 
-     &               ucell_last,no_u, no_l, no_s, nspin, qspin, 
+     &               ucell_last,no_u, no_l, no_s, spin%Grid, qspin, 
      &               maxnh, nkpol, numh, listhptr, listh, 
      &               H, S, xijo, indxuo, isa, iphorb, 
      &               iaorb, lasto, shape,
@@ -451,7 +480,7 @@
 
 !     Calculation of the optical conductivity
       call optical(na_u, na_s, xa_last, scell_last, ucell_last,
-     &             no_u, no_l, no_s, nspin, qspin,
+     &             no_u, no_l, no_s, spin%Grid, qspin,
      &             maxnh, numh, listhptr, listh, H, S, xijo,
      $             indxuo, ebk, ef, temp,
      &             isa, iphorb, iphKB, lasto, lastkb, shape )
@@ -481,7 +510,7 @@
         g2max = g2cut
         dummy_str  = 0.0
         dummy_strl = 0.0
-        call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+        call dhscf( spin%Grid, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa_last, indxua, 
      &              ntm, 0, 0, 0, filesOut, 
      &              maxnh, numh, listhptr, listh, Dscf, Datm,

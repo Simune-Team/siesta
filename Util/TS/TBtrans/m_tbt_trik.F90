@@ -200,6 +200,7 @@ contains
     real(dp), allocatable :: pDOS(:,:,:)
     real(dp), allocatable :: bTk(:,:), bTkeig(:,:,:)
     type(dSpData1D) :: dev_M
+    real(dp), pointer :: val_dev_M(:)
 #endif
 ! ************************************************************
 
@@ -719,7 +720,8 @@ contains
       iEl = 1
     end if
     if ( iEl == 1 ) then
-       call newdSpData1D(sp_dev_sc,fdist,dev_M,name='TBT sparse')
+      call newdSpData1D(sp_dev_sc,fdist,dev_M,name='TBT sparse')
+      val_dev_M => val(dev_M)
     end if
 #endif
 
@@ -1086,21 +1088,30 @@ contains
 #ifdef NCDF_4
              if ( calc_DM_Gf ) then
                call Gf_DM(TSHS%sc_off,kpt,phase,Gf_tri,zwork_tri,r_oDev,pvt, dev_M)
+#ifdef TBT_PHONON
+               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M)
              end if
              if ( calc_COOP_Gf ) then
-                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
-                     TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
-                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M)
+               call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
+                   TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
+#ifdef TBT_PHONON
+               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
+               call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M)
              end if
              if ( calc_COHP_Gf ) then
-                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
-                     TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
-                if ( dH%lvl > 0 ) then
-                   call GF_COHP_add_dH(dH%d, TSHS%sc_off, kpt, &
-                       phase, Gf_tri, zwork_tri, r_oDev, dev_M, pvt)
-                end if
-                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M)
+               call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
+                   TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
+               if ( dH%lvl > 0 ) then
+                 call GF_COHP_add_dH(dH%d, TSHS%sc_off, kpt, &
+                     phase, Gf_tri, zwork_tri, r_oDev, dev_M, pvt)
+               end if
+#ifdef TBT_PHONON
+               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
+               call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M)
              end if
 #endif
 
@@ -1186,25 +1197,34 @@ contains
                 
 #ifdef NCDF_4
                 if ( calc_DM_A ) then
-                   call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
-                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M, &
-                         Elecs(iEl))
+                  call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
+#ifdef TBT_PHONON
+                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
+                  call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M, &
+                      Elecs(iEl))
                 end if
                 if ( calc_COOP_A ) then
-                   call A_COP(r_oDev,zwork_tri,pvt, &
-                        TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
-                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M, &
-                        Elecs(iEl))
+                  call A_COP(r_oDev,zwork_tri,pvt, &
+                      TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
+#ifdef TBT_PHONON
+                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
+                  call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M, &
+                      Elecs(iEl))
                 end if
                 if ( calc_COHP_A ) then
-                   call A_COP(r_oDev,zwork_tri,pvt, &
-                        TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
-                   if ( dH%lvl > 0 ) then
-                      call A_COHP_add_dH(dH%d, TSHS%sc_off, &
-                           kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
-                   end if
-                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M, &
-                        Elecs(iEl))
+                  call A_COP(r_oDev,zwork_tri,pvt, &
+                      TSHS%sp,H,TSHS%sc_off, kpt, phase, dev_M)
+                  if ( dH%lvl > 0 ) then
+                    call A_COHP_add_dH(dH%d, TSHS%sc_off, &
+                        kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
+                  end if
+#ifdef TBT_PHONON
+                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
+                  call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M, &
+                      Elecs(iEl))
                 end if
                 
                 if ( calc_orb_current ) then
@@ -1416,11 +1436,17 @@ contains
 #ifdef NCDF_4
                if ( calc_proj_DM_A ) then
                  call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
+#ifdef TBT_PHONON
+                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'DM', p_E, dev_M)
                end if
                if ( calc_proj_COOP_A ) then
                  call A_COP(r_oDev,zwork_tri,pvt, &
                      TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
+#ifdef TBT_PHONON
+                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COOP', p_E, dev_M)
                end if
                if ( calc_proj_COHP_A ) then
@@ -1430,6 +1456,9 @@ contains
                    call A_COHP_add_dH(dH%d, TSHS%sc_off, &
                        kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                  end if
+#ifdef TBT_PHONON
+                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+#endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COHP', p_E, dev_M)
                end if
                

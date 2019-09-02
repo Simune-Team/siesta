@@ -361,7 +361,12 @@ C     Initialise MPI and set processor number
       else
          use_parallel_timer = fdf_get('UseParallelTimer', .true.)
          use_tree_timer = fdf_get('UseTreeTimer', .false.)
+
       end if
+      ! Enable tree-timer for this case
+      if (fdf_get("timing-split-scf-steps",.false.)) then
+         use_tree_timer = fdf_get('UseTreeTimer', .true.)
+      endif
       use_walltime = fdf_get('use-walltime', use_tree_timer)
 
 !     Start time counter

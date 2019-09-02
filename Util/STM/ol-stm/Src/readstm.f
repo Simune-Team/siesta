@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016       The SIESTA group
+! Copyright (C) 1996-2016	The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -7,16 +7,17 @@
 ! ---
 
       SUBROUTINE READSTM(VOLUME, 
-     .      IUNITCD, NPX, NPY, NPZ, ZREF, ZREF2, ZMIN, ZMAX, EMAX, EMIN,
-     .      NSCX, NSCY, ARMUNI ) 
+     .      IUNITCD, NPX, NPY, NPZ, ZREF, ZMIN, ZMAX, EMAX, EMIN,
+     .      ARMUNI ) 
 
 C **********************************************************************
-C Read the data file with the input for the STM calculation
+C Read the data file with the input for the STM/STS calculation
 C
 C Coded by P. Ordejon, November 2004
 C Based on readpla. (by Junquera and Ordejon)
 C
 C Modified by N. Lorente, August 2005
+C Modified by A. Garcia, March-June 2019
 C **********************************************************************
 
       USE FDF
@@ -27,10 +28,10 @@ C **********************************************************************
      .  VOLUME
 
       INTEGER, INTENT(OUT) ::
-     .  NPX, NPY, NPZ, IUNITCD, NSCX, NSCY
+     .  NPX, NPY, NPZ, IUNITCD
      
       DOUBLE PRECISION, INTENT(OUT) ::
-     .  ZREF, zref2, ZMIN, ZMAX, ARMUNI, EMIN, EMAX
+     .  ZREF, ZMIN, ZMAX, ARMUNI, EMIN, EMAX
 
 
 C ****** INPUT *********************************************************
@@ -42,26 +43,23 @@ C                          IUNITCD = 2 => Ele/(Ang)**3
 C                          IUNITCD = 3 => Ele/(unitcell)
 C INTEGER NPX, NPY, NPZ  : Number of points generated along x, y and z
 C REAL*8 ZREF            : Position of reference plane for wf. extrapol.(Bohr)
-C REAL*8 ZREF2            : Position of second reference plane.(Bohr)
 C REAL*8  ZMIN, ZMAX     : Limits of the z-direction (in Bohr)
-C INTEGER NSCX, NSCY     : Number of cells in x and y direction to plot
-C                          in cube file
-C REAL*8  EMAX, EMIN     : Energy limits for STM scan (en eV!!!)
+C REAL*8  EMAX, EMIN     : Energy limits for STM scan (in eV!!!)
 C REAL*8  ARMUNI         : Conversion factors for the charge density
 C **********************************************************************
 
 C Internal variables ---------------------------------------------------
 
       CHARACTER 
-     .  UCD*22, UCD_DEFECT*22
+     .  UCD*22, UCD_DEFAULT*22
 
       INTEGER
-     .  NPX_DEFECT, NPY_DEFECT, NPZ_DEFECT
+     .  IUNIT, NPX_DEFAULT, NPY_DEFAULT, NPZ_DEFAULT
 
 C READ UNITS OF CHARGE DENSITY TO USE
 
-      UCD_DEFECT = 'Ele/bohr**3'
-      UCD = FDF_STRING('STM.DensityUnits',UCD_DEFECT)
+      UCD_DEFAULT = 'Ele/bohr**3'
+      UCD = FDF_STRING('STM.DensityUnits',UCD_DEFAULT)
       IF (LEQI(UCD,'ele/bohr**3')) then
         IUNITCD = 1
       ELSEIF (LEQI(UCD,'ele/ang**3')) then
@@ -79,12 +77,12 @@ C READ UNITS OF CHARGE DENSITY TO USE
        STOP
       ENDIF
 
-      NPX_DEFECT = 50
-      NPY_DEFECT = 50
-      NPZ_DEFECT = 50
-      NPX = FDF_INTEGER('STM.NumberPointsX',NPX_DEFECT)
-      NPY = FDF_INTEGER('STM.NumberPointsY',NPY_DEFECT)
-      NPZ = FDF_INTEGER('STM.NumberPointsZ',NPZ_DEFECT)
+      NPX_DEFAULT = 50
+      NPY_DEFAULT = 50
+      NPZ_DEFAULT = 50
+      NPX = FDF_INTEGER('STM.NumberPointsX',NPX_DEFAULT)
+      NPY = FDF_INTEGER('STM.NumberPointsY',NPY_DEFAULT)
+      NPZ = FDF_INTEGER('STM.NumberPointsZ',NPZ_DEFAULT)
 
       IF ((2*(NPX/2) .NE. NPX) .OR. (NPX .LT. 2)) THEN
        WRITE(6,'(A)')' readstm: ERROR   NPX must be positive and even'
@@ -96,11 +94,13 @@ C READ UNITS OF CHARGE DENSITY TO USE
        STOP
       ENDIF
 
+      ! Energy window (used both for STM and STS)
+      ! For an STM simulation, it will typically be "small"
+      !
       EMIN = FDF_PHYSICAL('STM.Emin',-1.0d10,'eV')
       EMAX = FDF_PHYSICAL('STM.Emax',1.0d10,'eV')
 
       ZREF = FDF_PHYSICAL('STM.RefZ',1.0d40,'Bohr')
-      ZREF2 = FDF_PHYSICAL('STM.RefZ2',ZREF,'Bohr')
       ZMIN = FDF_PHYSICAL('STM.MinZ',1.0d40,'Bohr')
       ZMAX = FDF_PHYSICAL('STM.MaxZ',1.0d40,'Bohr')
 
@@ -116,10 +116,6 @@ C READ UNITS OF CHARGE DENSITY TO USE
         WRITE(6,*) 'ERROR: You must specify STM.MAXZ in input'
         STOP
       ENDIF
-
-C Number of cells to plot in cube file in x and y directions
-      NSCX = FDF_INTEGER('STM.NumberCellsX',1)
-      NSCY = FDF_INTEGER('STM.NumberCellsY',1)
 
 C Units of Charge Density
 C   Iunitcd = 1 => Do nothing

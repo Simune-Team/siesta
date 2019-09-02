@@ -31,6 +31,45 @@ Release notes for PSML-enabled version of SIESTA, Mark R1
 B                             B
 E            SIESTA           E
 #             4.1             #
+T             b-5             T
+A                             A
+#BETA#BETA#BETA#BETA#BETA#BETA#
+
+Release notes for siesta 4.1-b5 beta version
+
+--- Default changes:
+    TranSiesta/TBtrans eta values are now default to 1meV
+    TranSiesta equilibrium contours now default to using the "right" scheme
+
+--- Allowed Mesh.Sizes as list input so users can specify their own Mesh size
+
+--- Fixed *.nc writes, fixes lp:1810279.
+
+--- Fixes polarization issue with Bessel orbitals
+
+--- Removed BSC_CELLXC since the BSC distribution could result in better
+    performance. It is now part of the SiestaXC code.
+
+--- Lots of updates for documentation
+
+--- TranSiesta/TBtrans changes:
+
+-- Much faster Bloch expansions in transiesta/tbtrans calculations
+   Using tiling will now result in extremely fast self-energy calculations
+
+-- Allowed complex contours in tbtrans calculations via negative eta values
+   and user defined energy contours, the precision of outputted contours
+   is also increased to the maximum field width.
+
+-- Changed Eta defaults in electrodes
+
+-- Enabled usage of external truly infinite electrodes
+
+
+#BETA#BETA#BETA#BETA#BETA#BETA#
+B                             B
+E            SIESTA           E
+#             4.1             #
 T             b-4             T
 A                             A
 #BETA#BETA#BETA#BETA#BETA#BETA#

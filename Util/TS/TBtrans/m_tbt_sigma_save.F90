@@ -142,7 +142,7 @@ contains
 
   ! Save the self-energies of the electrodes and
   subroutine init_Sigma_save(fname, TSHS, r, btd, ispin, &
-      N_Elec, Elecs, raEl, &
+      N_Elec, Elecs, raEl, roElpd, btd_El, &
       nkpt, kpt, wkpt, NE, Eta, &
       a_Dev, a_Buf)
 
@@ -169,7 +169,7 @@ contains
     integer, intent(in) :: ispin
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    type(tRgn), intent(in) :: raEl(N_Elec)
+    type(tRgn), intent(in) :: raEl(N_Elec), roElpd(N_Elec), btd_El(N_Elec)
     integer, intent(in) :: nkpt
     real(dp), intent(in) :: kpt(3,nkpt), wkpt(nkpt)
     integer, intent(in) :: NE
@@ -311,9 +311,10 @@ contains
     call ncdf_def_dim(ncdf,'nkpt',nkpt) ! Even for Gamma, it makes files unified
     call ncdf_def_dim(ncdf,'xyz',3)
     call ncdf_def_dim(ncdf,'one',1)
-    call ncdf_def_dim(ncdf,'ne',NE)
     call ncdf_def_dim(ncdf,'na_d',a_Dev%n)
     call ncdf_def_dim(ncdf,'no_d',r%n)
+    call ncdf_def_dim(ncdf,'ne',NE)
+    call ncdf_def_dim(ncdf,'n_s',product(TSHS%nsc))
     call ncdf_def_dim(ncdf,'n_btd',btd%n)
     if ( a_Buf%n > 0 ) then
       call ncdf_def_dim(ncdf,'na_b',a_Buf%n) ! number of buffer-atoms
@@ -346,6 +347,8 @@ contains
     dic = ('info'.kv.'Last orbitals of the equivalent atom')
     call ncdf_def_var(ncdf,'lasto',NF90_INT,(/'na_u'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, TSHS%na_u)
+
     dic = dic//('info'.kv.'Unit cell')
     dic = dic//('unit'.kv.'Bohr')
     call ncdf_def_var(ncdf,'cell',NF90_DOUBLE,(/'xyz','xyz'/), &
@@ -354,23 +357,38 @@ contains
     call ncdf_def_var(ncdf,'xa',NF90_DOUBLE,(/'xyz ','na_u'/), &
         atts = dic)
     call delete(dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u + 3)
 
+    dic = ('info'.kv.'Supercell offsets')
+    call ncdf_def_var(ncdf,'isc_off',NF90_INT,(/'xyz', 'n_s'/), &
+        atts = dic)
+    mem = mem + calc_mem(NF90_INT, 3, product(TSHS%nsc))
+    
+    dic = dic//('info'.kv.'Number of supercells in each direction')
+    call ncdf_def_var(ncdf,'nsc',NF90_INT,(/'xyz'/), &
+        atts = dic)
+    mem = mem + calc_mem(NF90_INT, 3)
+    
     dic = ('info'.kv.'Device region orbital pivot table')
     call ncdf_def_var(ncdf,'pivot',NF90_INT,(/'no_d'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, r%n)
 
     dic = dic // ('info'.kv.'Blocks in BTD for the pivot table')
     call ncdf_def_var(ncdf,'btd',NF90_INT,(/'n_btd'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, btd%n)
 
     dic = dic//('info'.kv.'Index of device atoms')
     call ncdf_def_var(ncdf,'a_dev',NF90_INT,(/'na_d'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_INT, a_Dev%n)
 
     if ( a_Buf%n > 0 ) then
       dic = dic//('info'.kv.'Index of buffer atoms')
       call ncdf_def_var(ncdf,'a_buf',NF90_INT,(/'na_b'/), &
           atts = dic)
+      mem = mem + calc_mem(NF90_INT, a_Buf%n)
     end if
 
     dic = dic//('info'.kv.'k point')//('unit'.kv.'b')
@@ -380,6 +398,7 @@ contains
     dic = dic//('info'.kv.'k point weights')
     call ncdf_def_var(ncdf,'wkpt',NF90_DOUBLE,(/'nkpt'/), &
         atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt)
 
 #ifdef TBT_PHONON
     dic = dic//('info'.kv.'Frequency')//('unit'.kv.'Ry')
@@ -387,28 +406,27 @@ contains
     dic = dic//('info'.kv.'Energy')//('unit'.kv.'Ry')
 #endif
     call ncdf_def_var(ncdf,'E',NF90_DOUBLE,(/'ne'/), atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, NE)
 
     dic = dic//('info'.kv.'Imaginary part for device')
 #ifdef TBT_PHONON
     dic = dic//('unit'.kv.'Ry**2')
 #endif
     call ncdf_def_var(ncdf,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+    mem = mem + calc_mem(NF90_DOUBLE, 1)
 
     call delete(dic)
 
+    call ncdf_put_var(ncdf,'nsc',TSHS%nsc)
+    call ncdf_put_var(ncdf,'isc_off',TSHS%isc_off)
     call ncdf_put_var(ncdf,'pivot',r%r)
-    mem = mem + calc_mem(NF90_INT, r%n)
     call ncdf_put_var(ncdf,'cell',TSHS%cell)
     call ncdf_put_var(ncdf,'xa',TSHS%xa)
-    mem = mem + calc_mem(NF90_DOUBLE, 3, TSHS%na_u)
     call ncdf_put_var(ncdf,'lasto',TSHS%lasto(1:TSHS%na_u))
-    mem = mem + calc_mem(NF90_INT, TSHS%na_u)
     call rgn_copy(a_Dev, r_tmp)
     call rgn_sort(r_tmp)
     call ncdf_put_var(ncdf,'a_dev',r_tmp%r)
-    mem = mem + calc_mem(NF90_INT, r_tmp%n)
     call ncdf_put_var(ncdf,'btd',btd%r)
-    mem = mem + calc_mem(NF90_INT, btd%n)
     call rgn_delete(r_tmp)
     if ( a_Buf%n > 0 ) then
       call ncdf_put_var(ncdf,'a_buf',a_Buf%r)
@@ -423,7 +441,6 @@ contains
     call ncdf_put_var(ncdf,'kpt',r2)
     call ncdf_put_var(ncdf,'wkpt',wkpt)
     deallocate(r2)
-    mem = mem + calc_mem(NF90_DOUBLE, 4, nkpt)
 
     call ncdf_put_var(ncdf,'eta',Eta)
 
@@ -439,7 +456,7 @@ contains
       call rgn_range(r_tmp, ELecs(iEl)%idx_a, ELecs(iEl)%idx_a + i - 1)
       call ncdf_def_var(grp,'a',NF90_INT,(/'na'/), atts = dic)
       call ncdf_put_var(grp,'a',r_tmp%r)
-       mem = mem + calc_mem(NF90_INT, r_tmp%n)
+      mem = mem + calc_mem(NF90_INT, r_tmp%n)
       call rgn_delete(r_tmp)
 
       call ncdf_def_dim(grp,'na_down',raEl(iEl)%n)
@@ -447,11 +464,34 @@ contains
       call ncdf_def_var(grp,'a_down',NF90_INT,(/'na_down'/), atts = dic)
       call ncdf_put_var(grp,'a_down',raEl(iEl)%r)
       mem = mem + calc_mem(NF90_INT, raEl(iEl)%n)
-      
+
       ! Save generic information about electrode
       dic = dic//('info'.kv.'Bloch expansion')
       call ncdf_def_var(grp,'bloch',NF90_INT,(/'xyz'/), atts = dic)
-      call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch)
+      call ncdf_put_var(grp,'bloch',Elecs(iEl)%Bloch%B)
+      mem = mem + calc_mem(NF90_INT, 3)
+
+      call ncdf_def_dim(grp,'no_down',roElpd(iEl)%n)
+
+      dic = dic//('info'.kv.'Downfolding region orbital pivot table')
+      call ncdf_def_var(grp,'pivot_down',NF90_INT,(/'no_down'/), atts = dic)
+      call ncdf_put_var(grp,'pivot_down',roElpd(iEl)%r)
+      mem = mem + calc_mem(NF90_INT, roElpd(iEl)%n)
+
+      call ncdf_def_dim(grp,'n_btd',btd_El(iEl)%n)
+      
+      dic = dic//('info'.kv.'Blocks in BTD downfolding for the pivot_down table')
+      call ncdf_def_var(grp,'btd',NF90_INT,(/'n_btd'/), atts = dic)
+      call ncdf_put_var(grp,'btd',btd_El(iEl)%r)
+      mem = mem + calc_mem(NF90_INT, btd_El(iEl)%n)
+
+      no_e = Elecs(iEl)%o_inD%n
+      call ncdf_def_dim(grp,'no_e',no_e)
+
+      dic = ('info'.kv.'Orbital pivot table for self-energy')
+      call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
+      call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
+      mem = mem + calc_mem(NF90_INT, no_e)
 
       dic = dic//('info'.kv.'Chemical potential')//('unit'.kv.'Ry')
       call ncdf_def_var(grp,'mu',NF90_DOUBLE,(/'one'/), atts = dic)
@@ -470,16 +510,14 @@ contains
       dic = dic//('unit'.kv.'Ry**2')
 #endif
       call ncdf_def_var(grp,'eta',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
 
       dic = dic//('info'.kv.'Accuracy of the self-energy')//('unit'.kv.'Ry')
       call ncdf_def_var(grp,'Accuracy',NF90_DOUBLE,(/'one'/), atts = dic)
+      call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
       call delete(dic)
 
-      no_e = Elecs(iEl)%o_inD%n
-      call ncdf_def_dim(grp,'no_e',no_e)
-
-      dic = ('info'.kv.'Orbital pivot table for self-energy')
-      call ncdf_def_var(grp,'pivot',NF90_INT,(/'no_e'/), atts = dic)
+      mem = mem + calc_mem(NF90_DOUBLE, 4) ! mu, kT, eta, Accuracy
 
       dic = dic//('info'.kv.'Downfolded self-energy')
 #ifdef TBT_PHONON
@@ -493,12 +531,8 @@ contains
           atts = dic , chunks = (/no_e,no_e,1,1/) )
       call delete(dic)
 
-      call ncdf_put_var(grp,'eta',Elecs(iEl)%Eta)
-      call ncdf_put_var(grp,'Accuracy',Elecs(iEl)%accu)
-      call ncdf_put_var(grp,'pivot',Elecs(iEl)%o_inD%r)
-
-      mem = mem + calc_mem(NF90_INT, no_e)
       if ( prec_Sigma ) then
+        ! real + imag
         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt) * 2
       else
         mem = mem + calc_mem(NF90_DOUBLE, no_e, no_e, NE, nkpt)

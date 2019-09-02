@@ -24,9 +24,9 @@
 VPATH:=$(shell pwd)/../../Src
 OBJDIR=Obj
 
-default: mprop fat
+default: mprop fat spin_texture
 
-all: mprop dm_creator fat
+all: mprop dm_creator fat spin_texture
 
 MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
@@ -51,6 +51,7 @@ DEF_OBJS += main_vars.o
 MPROP_OBJS = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o handlers.o
 FAT_OBJS   = $(SIESTA_OBJS) $(DEF_OBJS) read_curves.o orbital_set.o handlers.o
 DM_OBJS    = $(SIESTA_OBJS) $(DEF_OBJS) iodm_netcdf.o write_dm.o handlers.o
+TEXTURE_OBJS  = $(SIESTA_OBJS) $(DEF_OBJS) handlers.o
 
 # 2. By whether they are in VPATH or in the local directory (for deps processing)
 DEP_OBJS = $(SIESTA_OBJS)
@@ -73,9 +74,11 @@ fat: $(FAT_OBJS) fat.o
 	$(FC) -o $@ $(LDFLAGS) $(FAT_OBJS) fat.o
 dm_creator: $(DM_OBJS) dm_creator.o
 	$(FC) -o $@ $(LDFLAGS) $(DM_OBJS) dm_creator.o $(NETCDF_LIBS)
+spin_texture: $(TEXTURE_OBJS) spin_texture.o
+	$(FC) -o $@ $(LDFLAGS) $(TEXTURE_OBJS) spin_texture.o
 
 clean:
-	rm -f *.o *.mod mprop dm_creator fat
+	rm -f *.o *.mod mprop dm_creator fat spin_texture
 
 # DO NOT DELETE THIS LINE - used by make depend
 io.o: m_io.o

@@ -871,7 +871,7 @@ contains
           Ns = size(mols(i)%proj)
           ! step calculated DOS for molecule
           im = im + 1
-!$OMP parallel do default(shared), private(j,ip,ii), collapse(2)
+!$OMP parallel do default(shared), private(j,ip,ii)
           do j = 1 , step_o
             ! Calculate the projection matrix on these column
             ! indices
@@ -2032,13 +2032,13 @@ contains
     integer, intent(in) :: off1, off2
 
     ! local variables
-    integer :: j, je, i, ie, no
+    integer :: j, je, i, ie, no, idx
 
 #ifdef TBTRANS_TIMING
     call timer('insert-SE',1)
 #endif
 
-    El%idx_o = El%idx_o - 1
+    idx = El%idx_o - 1
     no = TotUsedOrbs(El)
 
     ! We are dealing with the intrinsic electrode
@@ -2050,11 +2050,11 @@ contains
     if ( El%Bulk ) then
 !$OMP parallel do default(shared), private(j,je,i,ie)
       do j = 1 , n2
-        je = r%r(off2+j) - El%idx_o
+        je = r%r(off2+j) - idx
         if ( 1 <= je .and. je <= no ) then
           je = (je - 1) * no
           do i = 1 , n1
-            ie = r%r(off1+i) - El%idx_o
+            ie = r%r(off1+i) - idx
             if ( ie < 1 ) cycle
             if ( no < ie ) cycle
              
@@ -2067,11 +2067,11 @@ contains
     else
 !$OMP parallel do default(shared), private(j,je,i,ie)
       do j = 1 , n2
-        je = r%r(off2+j) - El%idx_o
+        je = r%r(off2+j) - idx
         if ( 1 <= je .and. je <= no ) then
           je = (je - 1) * no
           do i = 1 , n1
-            ie = r%r(off1+i) - El%idx_o
+            ie = r%r(off1+i) - idx
             if ( ie < 1 ) cycle
             if ( no < ie ) cycle
 
@@ -2082,8 +2082,6 @@ contains
       end do
 !$OMP end parallel do
     end if
-    
-    El%idx_o = El%idx_o + 1
 
 #ifdef TBTRANS_TIMING
     call timer('insert-SE',2)

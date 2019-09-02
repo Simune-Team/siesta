@@ -11,10 +11,39 @@ module m_normalize_dm
 
   private
   
-  public :: normalize_dm
+  public :: normalize_dm, dm_norm
 
 contains
+  subroutine dm_norm(qsol)
+    use precision, only: dp
+    use sparse_matrices, only: Dscf, maxnh, S
+    use m_spin,   only: spin
+#ifdef MPI
+    use m_mpi_utils, only: globalize_sum
+#endif
 
+    real(dp), intent(out) :: qsol
+
+    integer :: is, io
+#ifdef MPI
+    real(dp):: buffer1
+#endif
+    
+    qsol = 0.0_dp
+!$OMP parallel do default(shared), private(is,io), reduction(+:qsol)
+    do is = 1 , spin%spinor
+       do io = 1 , maxnh
+          qsol = qsol + Dscf(io,is) * S(io)
+       end do
+    end do
+!$OMP end parallel do
+    
+#ifdef MPI
+    call globalize_sum(qsol, buffer1)
+    qsol = buffer1
+#endif
+  end subroutine dm_norm
+  
   subroutine normalize_dm( first )
     
     use precision, only: dp
@@ -26,9 +55,6 @@ contains
     use parallel, only: IOnode
     use sys,      only: die
     use m_spin,   only: spin
-#ifdef MPI
-    use m_mpi_utils, only: globalize_sum
-#endif
     
     ! Whether the SCF step is the first
     ! In this case a different tolerance is used...
@@ -41,27 +67,10 @@ contains
     ! Scaling for normalization
     real(dp):: scale
     character(len=132) :: msg
-#ifdef MPI
-    real(dp):: buffer1
-#endif
 
     ! Normalize density matrix to exact charge
+    call dm_norm(qsol)
     
-    qsol = 0.0_dp
-!$OMP parallel do default(shared), collapse(2), &
-!$OMP& private(is,io), reduction(+:qsol)
-    do is = 1 , spin%spinor
-       do io = 1 , maxnh
-          qsol = qsol + Dscf(io,is) * S(io)
-       end do
-    end do
-!$OMP end parallel do
-    
-#ifdef MPI
-    call globalize_sum(qsol, buffer1)
-    qsol = buffer1
-#endif
-
     ! Calculate the relative difference from the total charge
     scale = abs(qsol / qtot - 1._dp)
     
@@ -104,21 +113,21 @@ contains
        
 !$OMP parallel default(shared), private(is,io)
        
-!$OMP do collapse(2)
        do is = 1 , spin%DM
-          do io = 1 , maxnh
+!$OMP do
+         do io = 1 , maxnh
              Dscf(io,is) = Dscf(io,is) * scale
           end do
-       end do
 !$OMP end do nowait
+       end do
 
-!$OMP do collapse(2)
        do is = 1 , spin%EDM
+!$OMP do
           do io = 1 , maxnh
              Escf(io,is) = Escf(io,is) * scale
           end do
-       end do
 !$OMP end do nowait
+       end do
 
 !$OMP end parallel
 

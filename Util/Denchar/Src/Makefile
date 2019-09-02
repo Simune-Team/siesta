@@ -96,7 +96,7 @@ SIESTA_OBJS += precision.o parallel.o debugmpi.o m_io.o alloc.o listsc.o  \
          schecomm.o sparse_matrices.o\
          files.o interpolation.o chemical.o xml.o \
          domain_decom.o printmatrix.o qsort.o mmio.o pspltm1.o \
-         spatial.o 
+         spatial.o m_getopts.o f2kcli.o
 
 # Additional class objects
 SIESTA_OBJS += m_uuid.o object_debug.o class_Sparsity.o \
@@ -109,10 +109,10 @@ SIESTA_OBJS += m_uuid.o object_debug.o class_Sparsity.o \
 	class_Pair_Geometry_SpData2D.o \
 	class_Fstack_Pair_Geometry_SpData2D.o
 
-LOCAL_OBJS= atompla.o colinear.o denchar.o itochar.o length.o \
+LOCAL_OBJS= atompla.o colinear.o denchar.o length.o \
             local_die.o local_reinit.o local_sys.o matvect.o neighb.o \
-            planed.o ranger.o readpla.o readsts.o readwaves.o \
-            readwavesx.o redata_denchar.o rhoofr.o stsofr.o \
+            planed.o ranger.o readpla.o \
+            redata_denchar.o rhoofr.o \
 	    timer_local.o wavofr.o wrout.o alloc_handlers.o
 
 ALL_OBJS_DENCHAR= $(SIESTA_OBJS) $(LOCAL_OBJS)
@@ -199,6 +199,8 @@ iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 iodm.o: alloc.o files.o local_sys.o parallel.o parallelsubs.o precision.o
 listsc.o: alloc.o
 listsc.o: alloc.o
+m_getopts.o: f2kcli.o
+m_getopts.o: f2kcli.o
 memory.o: memory_log.o parallel.o
 memory.o: memory_log.o parallel.o
 memory_log.o: m_io.o parallel.o precision.o
@@ -231,8 +233,8 @@ atompla.o: local_sys.o precision.o
 atompla.o: local_sys.o precision.o
 colinear.o: precision.o
 colinear.o: precision.o
-denchar.o: basis_io.o listsc.o parallel.o precision.o
-denchar.o: basis_io.o listsc.o parallel.o precision.o
+denchar.o: basis_io.o listsc.o m_getopts.o parallel.o precision.o
+denchar.o: basis_io.o listsc.o m_getopts.o parallel.o precision.o
 length.o: precision.o
 length.o: precision.o
 local_reinit.o: files.o
@@ -247,20 +249,12 @@ ranger.o: precision.o
 ranger.o: precision.o
 readpla.o: precision.o
 readpla.o: precision.o
-readsts.o: precision.o
-readsts.o: precision.o
-readwaves.o: precision.o
-readwaves.o: precision.o
-readwavesx.o: precision.o
-readwavesx.o: precision.o
 redata_denchar.o: precision.o
 redata_denchar.o: precision.o
 rhoofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
 rhoofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
-stsofr.o: atmfuncs.o chemical.o listsc.o precision.o
-stsofr.o: atmfuncs.o chemical.o listsc.o precision.o
-wavofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
-wavofr.o: atmfuncs.o chemical.o listsc.o planed.o precision.o
+wavofr.o: atmfuncs.o chemical.o planed.o precision.o
+wavofr.o: atmfuncs.o chemical.o planed.o precision.o
 wrout.o: precision.o
 wrout.o: precision.o
 class_ddata1d.o: class_Data1D.o

@@ -23,7 +23,7 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-all: readwf readwfx info_wfsx wfs2wfsx wfsx2wfs wfsnc2wfsx
+all: readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
 #
 OBJDIR=Obj
 VPATH=../../Src
@@ -48,10 +48,8 @@ FPPFLAGS += -UMPI
 # NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
 readwf: readwf.o
 	$(FC) $(LDFLAGS) -o $@ $<  
-readwfx: readwfx.o
-	$(FC) $(LDFLAGS) -o $@ $<  
-info_wfsx: info_wfsx.o
-	$(FC) $(LDFLAGS) -o $@ $<  
+readwfx: readwfx.o m_getopts.o f2kcli.o
+	$(FC) $(LDFLAGS) -o $@ $<  m_getopts.o f2kcli.o
 wfs2wfsx: wfs2wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $<  
 wfsx2wfs: wfsx2wfs.o
@@ -60,7 +58,12 @@ wfsnc2wfsx: wfsnc2wfsx.o
 	$(FC) $(LDFLAGS) -o $@ $< $(NETCDF_LIBS)
 
 clean: 
-	rm -f *.o  *.*d readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx info_wfsx
+	rm -f *.o  *.*d readwf readwfx wfs2wfsx wfsx2wfs wfsnc2wfsx
+#
+readwfx.o: m_getopts.o
+m_getopts.o: f2kcli.o
+
+
 
 
 

@@ -306,7 +306,8 @@ C  Generate or retrieve phi values for all orbitals up to nc
                 dxsp(:) = xdsp(:,isp) + xdop(:,iop) - dxa(:,ia)
                 r2sp = sum(dxsp**2)
                 if (r2sp.lt.r2cut(is)) then
-                  call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
+                  call all_phi( is, +1, dxsp, maxoa,
+     &                nphiloc, phia(:,isp) )
                 else
                   phia(:,isp) = 0.0_dp
                 endif

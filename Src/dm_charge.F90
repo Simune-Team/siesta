@@ -57,7 +57,7 @@ contains
     ! Initialize the total charge
     Q = 0._dp
 
-!$OMP parallel do default(shared), collapse(2), &
+!$OMP parallel do default(shared), &
 !$OMP& private(is,ir,ind), reduction(+:Q)
     do is = 1, spin%spinor
        do ir = 1, lnr

@@ -76,6 +76,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
   !                                                 6   = CheSS
+  !                                                10   = Dummy
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
   ! real*8  total_spin       : Total spin of the system
@@ -415,8 +416,14 @@ subroutine read_options( na, ns, nspin )
   mix_scf_first = fdf_get('DM.MixSCF1', &
        .not. compat_pre_v4_DM_H)
   mix_scf_first = fdf_get('SCF.Mix.First', mix_scf_first)
+  mix_scf_first_force = fdf_get('SCF.Mix.First.Force', .false.)
+  if ( mix_scf_first_force ) then
+    ! Also set this, to note the user of mixing first SCF regardless
+    ! of flag.
+    mix_scf_first = .true.
+  end if
   if (ionode) then
-     write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
+    write(6,1) 'redata: Mix DM in first SCF step',mix_scf_first
   endif
 
   if (cml_p) then
@@ -441,9 +448,9 @@ subroutine read_options( na, ns, nspin )
 
   ! Density Matrix Mixing  (proportion of output DM in new input DM)
   wmix = fdf_get('DM.MixingWeight',0.25_dp)
-  if (ionode) then
-     write(6,6) 'redata: New DM Mixing Weight',wmix
-  endif
+!!$  if (ionode) then
+!!$     write(6,6) 'redata: New DM Mixing Weight',wmix
+!!$  endif
 
   if (cml_p) then
      call cmlAddParameter( xf=mainXML,name='DM.MixingWeight', &
@@ -665,7 +672,13 @@ subroutine read_options( na, ns, nspin )
           value=method, dictRef='siesta:SCFmethod' )
   endif
 
-  if (leqi(method,'matrix')) then
+  if (leqi(method,'dummy')) then
+     isolve = SOLVE_DUMMY
+     if (ionode)  then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
+             'Dummy (For testing)'
+     endif
+  else if (leqi(method,'matrix')) then
      isolve = MATRIX_WRITE
      if (ionode)  then
         write(*,3) 'redata: Method of Calculation', 'Matrix write only'
@@ -736,7 +749,7 @@ subroutine read_options( na, ns, nspin )
 #ifdef SIESTA__PEXSI
           'PEXSI, '//&
 #endif
-          'OrderN, OMM, Diagon or Transiesta' )
+          'OrderN, OMM, Diagon, Transiesta, or Dummy' )
   endif
 
 #ifdef DEBUG

@@ -164,7 +164,7 @@ contains
     do iEl = 1 , N_Elec
 
        ! Calculate number of Bloch expansion k-points
-       nq(iEl) = product(Elecs(iEl)%Bloch)
+       nq(iEl) = Elecs(iEl)%Bloch%size()
 
        ! Allocate the electrode quantities
        nullify(Elecs(iEl)%HA,Elecs(iEl)%SA,Elecs(iEl)%Gamma)
@@ -180,6 +180,8 @@ contains
 
        ! If we using bulk electrodes, we need not the Hamiltonian, 
        ! nor the overlap...
+       ! This is because we are downfolding the self-energies and thus the
+       ! Gamma is constructed in the device sub-region.
        if ( .not. Elecs(iEl)%Bulk ) then
           call re_alloc(Elecs(iEl)%HA,1,no_used,1,no_used,1,nq(iEl),routine='tbtrans')
           call re_alloc(Elecs(iEl)%SA,1,no_used,1,no_used,1,nq(iEl),routine='tbtrans')
@@ -298,23 +300,24 @@ contains
        if ( ('proj-only'.nin.save_DATA).and.('Sigma-only'.nin.save_DATA) ) then
 
           ! Initialize data files
-         call name_save( ispin, TSHS%nspin,cdf_fname, end = 'nc')
+         call name_save( ispin, TSHS%nspin, cdf_fname, end = 'nc')
          call init_cdf_save(cdf_fname,TSHS,r_oDev,DevTri,ispin, &
              N_Elec, Elecs, r_aEl, r_oElpd, ElTri, &
              nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
 
        end if
        
-       call name_save( ispin, TSHS%nspin,cdf_fname_sigma, end = 'SE.nc')
+       call name_save( ispin, TSHS%nspin, cdf_fname_sigma, end = 'SE.nc')
        call init_Sigma_save(cdf_fname_sigma,TSHS,r_oDev,DevTri,ispin, &
-           N_Elec, Elecs, r_aEl, &
+           N_Elec, Elecs, r_aEl, r_oElpd, ElTri, &
            nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf )
 
        if ( ('Sigma-only'.nin.save_DATA) ) then
        
           call name_save( ispin, TSHS%nspin, cdf_fname_proj, end = 'Proj.nc' )
-          call init_Proj_save( cdf_fname_proj,TSHS,r_oDev,DevTri,ispin, N_Elec, Elecs, &
-               nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
+          call init_Proj_save( cdf_fname_proj,TSHS,r_oDev,DevTri,ispin, &
+              N_Elec, Elecs, r_aEl, r_oElpd, ElTri, &
+              nkpt, kpt, wkpt, NEn, tbt_Eta, r_aDev, r_aBuf, sp_dev_sc, save_DATA )
        end if
 
        if ( n_k /= 0 ) then

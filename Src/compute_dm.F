@@ -23,7 +23,7 @@
       use atomlist, only: qa, lasto, no_u, no_s, indxuo, 
      &                    qtot, Qtots, no_l
       use kpoint_scf_m, only: kpoint_scf, gamma_scf
-      use m_energies,   only: Ebs, Ecorrec, Entropy, DE_NEGF
+      use m_energies,   only: Ebs, Ecorrec, Entropy
       use m_energies,   only: Ef, Efs
       use m_rmaxh
       use m_eo
@@ -46,11 +46,10 @@
       use m_zminim,        only : zminim
       use m_ordern,        only : ordern
       use m_steps,         only : istp
-      use m_normalize_dm,  only : normalize_dm
+      use m_normalize_dm,  only : normalize_dm, dm_norm
 #ifdef SIESTA__CHESS
       use m_chess, only: CheSS_wrapper
 #endif
-      use m_energies,   only: DE_NEGF
       use m_ts_global_vars, only : TSmode, TSinit, TSrun
       use m_transiesta,     only : transiesta
       
@@ -66,7 +65,7 @@
 
       ! e1>e2 to signal that we do not want DOS weights
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
-      real(dp)            :: buffer1
+      real(dp)            :: buffer1, qsol
       integer             :: mpierr
 
       external            :: die, bye
@@ -151,7 +150,19 @@
         endif
       endif
 
-      if (isolve .eq. MATRIX_WRITE) then
+      if (isolve .eq. SOLVE_DUMMY) then
+         !
+         ! Return a slightly perturbed DM
+         Dscf = Dold
+         call random_number(Escf)
+         Dscf = Dscf + 0.01 * (Escf - 0.5_dp)
+         call dm_norm(qsol)
+         ! Normalize Tr(DM*S) to total number of electrons
+         ! Normalize Tr(EDM*S) to band-structure energy
+         Dscf = Dscf * (qtot/qsol)
+         Escf = Dscf * (Ebs/qtot)
+         
+      else if (isolve .eq. MATRIX_WRITE) then
 !             write(indexstr,'(I15)') iscf
 !             write(filename,fnameform) 'H_', trim(adjustl(indexstr)), 
 !      &                                '.matrix'
@@ -253,7 +264,7 @@ c$$$     &           S, 'S.matrix')
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        no_u == no_s, ucell, nsc, isc_off, no_u, na_u,
      &        lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot, .false., DE_NEGF )
+     &        H, S, Dscf, Escf, Ef, Qtot, .false.)
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

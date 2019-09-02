@@ -48,7 +48,7 @@ contains
        sp_dist, sparse_pattern, &
        no_aux_cell, ucell, nsc, isc_off, no_u, na_u, lasto, xa, n_nzs, &
        H, S, DM, EDM, Ef, &
-       Qtot, Fermi_correct, DE_NEGF)
+       Qtot, Fermi_correct)
 
     use units, only : eV
     use alloc, only : re_alloc, de_alloc
@@ -75,6 +75,8 @@ contains
     use m_ts_gf, only : read_Green
     use m_interpolate
 
+    use m_energies, only: NEGF_DE
+
 ! ********************
 ! * INPUT variables  *
 ! ********************
@@ -94,7 +96,6 @@ contains
     real(dp), intent(in) :: Qtot
     real(dp), intent(inout) :: Ef
     logical, intent(in) :: Fermi_correct
-    real(dp), intent(inout) :: DE_NEGF
 
 ! ******************** IO descriptors ************************
     integer, allocatable :: uGF(:)
@@ -127,7 +128,7 @@ contains
     ! Note that this will *only* be updated in case V /= 0.
     ! This energy corresponds to the non-equilibrium energies:
     !   e \sum_i N_i * \mu_i
-    DE_NEGF = 0._dp
+    NEGF_DE = 0._dp
 
     if ( TSiscf == 1 ) then
        ! We need to initialize TRANSIESTA
@@ -185,7 +186,7 @@ contains
     do iEl = 1 , N_Elec
 
        ! Calculate number of Bloch expansion k-points
-       nq(iEl) = product(Elecs(iEl)%Bloch)
+       nq(iEl) = Elecs(iEl)%Bloch%size()
 
        ! Allocate the electrode quantities
        nullify(Elecs(iEl)%HA,Elecs(iEl)%SA,Elecs(iEl)%Gamma)
@@ -256,14 +257,14 @@ contains
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, DE_NEGF)
+                  H, S, DM, EDM, Ef, NEGF_DE)
           else
              call ts_fullk(N_Elec,Elecs, &
                   nq, uGF, &
                   ucell, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, DE_NEGF)
+                  H, S, DM, EDM, Ef, NEGF_DE)
           end if
        else if ( ts_method == TS_BTD ) then
           if ( ts_gamma_scf ) then
@@ -271,14 +272,14 @@ contains
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, DE_NEGF)
+                  H, S, DM, EDM, Ef, NEGF_DE)
           else
              call ts_trik(N_Elec,Elecs, &
                   nq, uGF, &
                   ucell, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, DE_NEGF)
+                  H, S, DM, EDM, Ef, NEGF_DE)
           end if
 #ifdef SIESTA__MUMPS
        else if ( ts_method == TS_MUMPS ) then
@@ -287,14 +288,14 @@ contains
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, DE_NEGF)
+                  H, S, DM, EDM, Ef, NEGF_DE)
           else
              call ts_mumpsk(N_Elec,Elecs, &
                   nq, uGF, &
                   ucell, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, DE_NEGF)
+                  H, S, DM, EDM, Ef, NEGF_DE)
           end if
 #endif
        else

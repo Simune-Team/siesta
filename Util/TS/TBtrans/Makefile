@@ -48,7 +48,7 @@ SIESTA_OBJS= bye.o precision.o m_io.o alloc.o memory_log.o memory.o pxf.o \
              reclat.o idiag.o minvec.o \
              parallel.o io.o files.o cellsubs.o sorting.o \
 	     kpoint_convert.o timestamp.o m_wallclock.o m_spin.o \
-             diag.o diag_option.o \
+             diag.o diag_option.o bloch_unfold.o \
 	     debugmpi.o find_kgrid.o units.o m_cite.o posix_calls.o
 
 # Siesta timings
@@ -335,7 +335,7 @@ dep:
 $(DEP_OBJS): $(FDF)
 
 # DO NOT DELETE THIS LINE - used by make depend
-cellsubs.o: precision.o
+bloch_unfold.o: units.o
 cellsubs.o: precision.o
 class_Data1D.o: alloc.o
 class_Data2D.o: alloc.o
@@ -492,18 +492,18 @@ m_ts_electrode.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o
 m_ts_electrode.o: geom_helper.o intrinsic_missing.o local_sys.o m_iterator.o
 m_ts_electrode.o: m_mat_invert.o m_pivot_array.o m_ts_elec_se.o m_ts_electype.o
 m_ts_electrode.o: parallel.o precision.o units.o
-m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_electype.o: intrinsic_missing.o m_char.o m_geom_box.o m_geom_plane.o
-m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
-m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
-m_ts_electype.o: units.o
-m_ts_electype.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-m_ts_electype.o: class_Sparsity.o create_Sparsity_SC.o geom_helper.o
-m_ts_electype.o: intrinsic_missing.o m_char.o m_geom_box.o m_geom_plane.o
-m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
-m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
-m_ts_electype.o: units.o
+m_ts_electype.o: bloch_unfold.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_electype.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
+m_ts_electype.o: geom_helper.o intrinsic_missing.o m_char.o m_geom_box.o
+m_ts_electype.o: m_geom_plane.o m_handle_sparse.o m_iodm.o m_os.o m_region.o
+m_ts_electype.o: m_ts_chem_pot.o m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o
+m_ts_electype.o: parallel.o precision.o units.o
+m_ts_electype.o: bloch_unfold.o class_OrbitalDistribution.o class_SpData1D.o
+m_ts_electype.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
+m_ts_electype.o: geom_helper.o intrinsic_missing.o m_char.o m_geom_box.o
+m_ts_electype.o: m_geom_plane.o m_handle_sparse.o m_iodm.o m_os.o m_region.o
+m_ts_electype.o: m_ts_chem_pot.o m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o
+m_ts_electype.o: parallel.o precision.o units.o
 m_ts_gf.o: local_sys.o m_os.o m_ts_cctype.o m_ts_contour_eq.o
 m_ts_gf.o: m_ts_contour_neq.o m_ts_electrode.o m_ts_electype.o parallel.o
 m_ts_gf.o: precision.o units.o
@@ -772,6 +772,7 @@ tbt_reinit.o: m_verbosity.o parallel.o
 tbt_reinit.o: m_verbosity.o parallel.o
 tbtrans.o: m_tbt_hs.o m_tbt_options.o m_tbtrans.o
 tbtrans.o: m_tbt_hs.o m_tbt_options.o m_tbtrans.o
+bloch_unfold_m.o: bloch_unfold.o
 class_ctrimat.o: class_TriMat.o
 class_ddata1d.o: class_Data1D.o
 class_ddata2d.o: class_Data2D.o

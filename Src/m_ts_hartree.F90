@@ -198,13 +198,13 @@ contains
         select case ( Elecs(iE)%t_dir )
         case ( 1 )
           call cross(Elecs(iE)%cell(:,2), Elecs(iE)%cell(:,3), r3)
-          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+          tmp = VNORM(r3) * Elecs(iE)%Bloch%size()
         case ( 2 )
           call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,3), r3)
-          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+          tmp = VNORM(r3) * Elecs(iE)%Bloch%size()
         case ( 3 )
           call cross(Elecs(iE)%cell(:,1), Elecs(iE)%cell(:,2), r3)
-          tmp = VNORM(r3) * product(Elecs(iE)%Bloch)
+          tmp = VNORM(r3) * Elecs(iE)%Bloch%size()
         case ( 4 ) ! B-C
           ! Here there are two planes possible, the plane for the non-semi-infinite
           ! direction and B, C, respectively.
@@ -234,7 +234,7 @@ contains
       else
         
         ! We check with volume of electrode
-        tmp = Elecs(iE)%na_used / real(Elecs(iE)%na_u, dp) * product(Elecs(iE)%Bloch)
+        tmp = Elecs(iE)%na_used / real(Elecs(iE)%na_u, dp) * Elecs(iE)%Bloch%size()
         tmp = VOLCEL(Elecs(iE)%cell) * tmp
         
       end if
@@ -478,11 +478,11 @@ contains
     use m_mesh_node, only : offset_i, offset_r, dMesh, dL
 
     integer, intent(in) :: nmesh(3), nmeshl(3)
-    real(grid_p), intent(inout) :: Vscf(:)
+    real(grid_p), intent(inout) :: Vscf(nmeshl(1),nmeshl(2),nmeshl(3))
 
     ! Internal variables
     integer :: i1 , i2 , i3, i
-    integer :: imesh, nlp
+    integer :: nlp
     integer :: i10, i20, i30
 #ifdef MPI
     integer :: MPIerror
@@ -503,51 +503,46 @@ contains
 
     ! Initialize counters
     nlp   = 0
-    imesh = 0
 
     select case ( TS_HA )
     case ( TS_HA_PLANE )
-       
-       ! Calculate index
-       i = ha_idx - offset_i(ts_tidx)
-       if ( ts_tidx == 1 .and. &
-            0 < i .and. i <= nmeshl(1) ) then
-          ! jump to correct X
-          imesh = i
-          do i3 = 1 , nmeshl(3)
-             do i2 = 1 , nmeshl(2)
-                nlp  = nlp + 1
-                Vtot = Vtot + Vscf(imesh)
-                ! skip X box
-                imesh = imesh + nmeshl(1)
-             end do
-          end do
-       else if ( ts_tidx == 2 .and. &
-            0 < i .and. i <= nmeshl(2) ) then
-          ! offset to first Y index
-          imesh = (i-1)*nmeshl(1)
-          do i3 = 1 , nmeshl(3)
-             do i1 = 1 , nmeshl(1)
-                nlp  = nlp + 1
-                imesh = imesh + 1
-                Vtot = Vtot + Vscf(imesh)
-             end do
-             ! jump entire X and Y box to get the next Z
-             ! position with the correct Y offset
-             ! Note -1 because we already have passed one Y
-             ! block
-             imesh = imesh + (nmeshl(2)-1)*nmeshl(1)
-          end do
-       else if ( ts_tidx == 3 .and. &
-            0 < i .and. i <= nmeshl(3) ) then
-          imesh = (i-1)*nmeshl(1)*nmeshl(2)
+      
+      ! Calculate index
+      i = ha_idx - offset_i(ts_tidx)
+      
+      if ( ts_tidx == 1 .and. &
+          0 < i .and. i <= nmeshl(1) ) then
+
+        do i3 = 1 , nmeshl(3)
           do i2 = 1 , nmeshl(2)
-             do i1 = 1 , nmeshl(1)
-                nlp  = nlp + 1
-                imesh = imesh + 1
-                Vtot = Vtot + Vscf(imesh)
-             end do
+            Vtot = Vtot + Vscf(i,i2,i3)
           end do
+        end do
+
+        nlp = nmeshl(3) * nmeshl(2)
+
+       else if ( ts_tidx == 2 .and. &
+           0 < i .and. i <= nmeshl(2) ) then
+
+         do i3 = 1 , nmeshl(3)
+           do i1 = 1 , nmeshl(1)
+             Vtot = Vtot + Vscf(i1,i,i3)
+           end do
+         end do
+
+         nlp = nmeshl(3) * nmeshl(1)
+         
+       else if ( ts_tidx == 3 .and. &
+           0 < i .and. i <= nmeshl(3) ) then
+         
+         do i2 = 1 , nmeshl(2)
+           do i1 = 1 , nmeshl(1)
+             Vtot = Vtot + Vscf(i1,i2,i)
+           end do
+         end do
+
+         nlp = nmeshl(2) * nmeshl(1)
+         
        else if ( ts_tidx < 1 .or. 3 < ts_tidx ) then
           call die('Unknown ts_idx direction, option erronous')
        end if
@@ -555,16 +550,15 @@ contains
     case ( TS_HA_ELEC )
        
        ! This is an electrode averaging...
-       do i3 = 0 , nmeshl(3) - 1
-          llZ(:) = offset_r(:) + i3*dL(:,3)
-          do i2 = 0 , nmeshl(2) - 1
+       do i3 = 1 , nmeshl(3)
+          llZ(:) = offset_r(:) + (i3-1)*dL(:,3) - dL(:,2) - dL(:,1)
+          do i2 = 1 , nmeshl(2)
              llYZ(:) = i2*dL(:,2) + llZ(:)
-             do i1 = 0 , nmeshl(1) - 1
+             do i1 = 1 , nmeshl(1)
                 ll(:) = i1*dL(:,1) + llYZ(:)
-                imesh = imesh + 1
                 if ( in_basal_Elec(El%p,ll,dMesh) ) then
                    nlp  = nlp + 1
-                   Vtot = Vtot + Vscf(imesh)
+                   Vtot = Vtot + Vscf(i1,i2,i3)
                 end if
              end do
           end do
@@ -580,8 +574,7 @@ contains
        
        ! Loop the indices, and figure out whether
        ! each of them lies in the local grid
-!$OMP parallel do default(shared), private(i1,i2,i3,idx,imesh), &
-!$OMP&collapse(3), reduction(+:nlp)
+!$OMP parallel do default(shared), private(i1,i2,i3,idx), reduction(+:nlp)
        do i3 = imin(3) , imax(3)
         do i2 = imin(2) , imax(2)
          do i1 = imin(1) , imax(1)
@@ -596,14 +589,12 @@ contains
             ! in the current node
             idx(1) = idx(1) - offset_i(1)
             if ( 0 < idx(1) .and. idx(1) <= nmeshl(1) ) then
-             idx(2) = idx(2) - offset_i(2) - 1 ! one more for factor
-             if ( 0 <= idx(2) .and. idx(2) < nmeshl(2) ) then
-              idx(3) = idx(3) - offset_i(3) - 1 ! one more for factor
-              if ( 0 <= idx(3) .and. idx(3) < nmeshl(3) ) then
+             idx(2) = idx(2) - offset_i(2)
+             if ( 0 < idx(2) .and. idx(2) <= nmeshl(2) ) then
+              idx(3) = idx(3) - offset_i(3)
+              if ( 0 < idx(3) .and. idx(3) <= nmeshl(3) ) then
                  ! Calculate position in local mesh
-                 imesh = idx(1) + idx(2)*nmeshl(1)
-                 imesh = imesh + idx(3)*nmeshl(1)*nmeshl(2)
-                 Vtot = Vtot + Vscf(imesh)
+                 Vtot = Vtot + Vscf(idx(1),idx(2),idx(3))
                  nlp = nlp + 1
               end if
              end if
@@ -614,7 +605,7 @@ contains
 !$OMP end parallel do
        
     case default
-       call die('Something went extremely wrong...Hartree Fix')
+       call die('Something went extremely wrong... Hartree Fix')
     end select
     
     ! Scale the contribution
@@ -624,9 +615,9 @@ contains
     call MPI_AllReduce(Vtot,Vav,1,MPI_double_precision,MPI_Sum, &
          MPI_Comm_World,MPIerror)
     Vtot = Vav
-    call MPI_AllReduce(nlp,i1,1,MPI_integer,MPI_Sum, &
+    call MPI_AllReduce(nlp,i,1,MPI_integer,MPI_Sum, &
          MPI_Comm_World,MPIerror)
-    nlp = i1
+    nlp = i
 #endif
 
     if ( nlp == 0 ) then
@@ -642,7 +633,7 @@ contains
     
     ! Align potential
 !$OMP parallel workshare default(shared)
-    Vscf(:) = Vscf(:) - Vav
+    Vscf(:,:,:) = Vscf(:,:,:) - Vav
 !$OMP end parallel workshare
 
 #ifdef TRANSIESTA_DEBUG

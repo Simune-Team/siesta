@@ -47,7 +47,7 @@ contains
     
     max_diff = 0.0_dp
 !$OMP parallel do default(shared), private(i2,i1), &
-!$OMP& reduction(max:max_diff), collapse(2)
+!$OMP& reduction(max:max_diff)
     do i2 = 1 , n2
        do i1 = 1 , n1
           max_diff = max(max_diff, abs(X1(i1,i2) - X2(i1,i2)) )

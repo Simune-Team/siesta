@@ -37,6 +37,7 @@ OBJDIR=Obj
 .SUFFIXES: .f .F .o .a .f90 .F90
 
 VPATH:=$(shell pwd)/../../../../Src
+VPATH_GRID:=$(shell pwd)/../../../../Util/Grid
 
 default: what stm
 
@@ -102,9 +103,9 @@ $(FDF):
                           "ARCH_MAKE=$(ARCH_MAKE)" \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
 
-LOCAL_OBJS = atompla.o fftw3_mymod.o extrapolate.o \
-        mainstm.o matvect.o m_wfsx.o neighb.o ranger.o \
-        readstm.o redata.o  reinitstm.o stm.o \
+LOCAL_OBJS = fftw3_mymod.o extrapolate.o \
+        mainstm.o neighb.o ranger.o \
+        readstm.o redata.o  reinitstm.o stm.o sts.o \
 	vacpot.o handlers.o local_sys.o
 
 SIESTA_OBJS= bessph.o chkdim.o dismin.o dot.o io.o iodm.o memory.o \
@@ -116,9 +117,11 @@ SIESTA_OBJS +=precision.o parallel.o m_io.o alloc.o listsc.o  \
          domain_decom.o schecomm.o printmatrix.o qsort.o mmio.o pspltm1.o \
          sparse_matrices.o interpolation.o m_fft_gpfa.o \
          files.o   chemical.o xml.o \
-         parallelsubs.o spatial.o memory_log.o
+         parallelsubs.o spatial.o memory_log.o m_gridfunc.o units.o
 
 # Additional class objects
+# These are just needed because sparse_matrices has "delete" operations for
+# some pieces of data. (And sparse_matrices is needed because of the index arrays)
 SIESTA_OBJS += m_uuid.o object_debug.o class_Sparsity.o \
 	class_OrbitalDistribution.o \
 	class_Data1D.o class_Data2D.o \
@@ -130,6 +133,10 @@ SIESTA_OBJS += m_uuid.o object_debug.o class_Sparsity.o \
 	class_Fstack_Pair_Geometry_SpData2D.o
 
 ALL_OBJS_STM= $(SIESTA_OBJS) $(LOCAL_OBJS)
+
+m_gridfunc.o: $(VPATH_GRID)/m_gridfunc.F90
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
+vacpot.o: m_gridfunc.o
 
 stm: $(FDF)  $(NCPS) $(ALL_OBJS_STM)
 	$(FC) -o stm \
@@ -232,22 +239,25 @@ spatial.o: precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o local_sys.o precision.o
 spher_harm.o: alloc.o local_sys.o precision.o
+units.o: precision.o
+units.o: precision.o
 xml.o: precision.o
 xml.o: precision.o
-atompla.o: local_sys.o precision.o
-atompla.o: local_sys.o precision.o
 extrapolate.o: fftw3_mymod.o precision.o
 extrapolate.o: fftw3_mymod.o precision.o
 handlers.o: memory_log.o
 handlers.o: memory_log.o
-mainstm.o: basis_io.o listsc.o m_wfsx.o parallel.o precision.o
-mainstm.o: basis_io.o listsc.o m_wfsx.o parallel.o precision.o
+mainstm.o: basis_io.o listsc.o precision.o sts.o
+mainstm.o: basis_io.o listsc.o precision.o sts.o
 ranger.o: precision.o
 ranger.o: precision.o
 stm.o: atmfuncs.o chemical.o precision.o
 stm.o: atmfuncs.o chemical.o precision.o
-vacpot.o: precision.o
-vacpot.o: precision.o
+sts.o: atmfuncs.o chemical.o precision.o
+sts.o: atmfuncs.o chemical.o precision.o
+vacpot.o: precision.o units.o
+vacpot.o: precision.o units.o
+broadening.o: sts.o
 class_ddata1d.o: class_Data1D.o
 class_ddata2d.o: class_Data2D.o
 class_dspdata1d.o: class_SpData1D.o

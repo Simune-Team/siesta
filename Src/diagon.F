@@ -266,7 +266,7 @@ C Call apropriate routine
        if (gamma) then
         call diag2g( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
-     .               H, S, getD, qtot, temp, e1, e2, eo, qo, 
+     .               H, S, getD, getPSI, qtot, temp, e1, e2, eo, qo, 
      .               Dnew, Enew, ef, Entropy,
      .               Haux, Saux, psi, aux,
      .               nuotot, occtol, iscf, neigwanted )
@@ -281,7 +281,7 @@ C Call apropriate routine
        else
         call diag2k( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
-     .               H, S, getD, qtot, temp, e1, e2, xij,
+     .               H, S, getD, getPsi, qtot, temp, e1, e2, xij,
      .               indxuo, nk, kpoint, wk, eo, qo, Dnew,
      .               Enew, ef, Entropy, 
      .               Haux, Saux, psi, Haux, Saux, aux,
@@ -289,7 +289,7 @@ C Call apropriate routine
        endif
       elseif ( spin%SO ) then
         if (gamma) then
-          call diag3g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
+          call diag3g( nuo, no, maxnh, maxnd, maxo, numh,
      .                 listhptr, listh, numd, listdptr, listd,
      .                 H, S, getD, getPSI, qtot, temp, e1, e2, eo, qo,
      .                 Dnew, Enew, ef, Entropy, 

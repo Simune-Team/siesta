@@ -388,7 +388,7 @@ C
       call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, BlockSizeYMax, 1, n3l,
      &               name='ftmp2', routine='redistribXZ' )
 
-!$OMP parallel do default(shared), private(i,j,k), collapse(3)
+!$OMP parallel do default(shared), private(i,j,k)
       do i = 1,n3l
         do j = 1,BlockSizeYMax
           do k = 1,n1lmax
@@ -654,7 +654,7 @@ C
       call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, n2l, 1, BlockSizeZMax,
      &               name='ftmp2', routine='redistribXY' )
 
-!$OMP parallel do default(shared), private(i,j,k), collapse(3)
+!$OMP parallel do default(shared), private(i,j,k)
       do i = 1,BlockSizeZMax
         do j = 1,n2l
           do k = 1,n1lmax

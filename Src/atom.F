@@ -3369,6 +3369,7 @@ C
         do l = 0,lmxo 
               
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
               write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
@@ -3852,6 +3853,7 @@ C
         do l=0,lmxo
 
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
               write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
@@ -4431,6 +4433,7 @@ C
         do l=0,lmxo
 
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
               write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
@@ -4677,6 +4680,7 @@ C
         do l=0,lmxo
 
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
               write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
@@ -5026,6 +5030,7 @@ C
         do l=0,lmxo
 
            if (l .gt. lmax_ps) then
+              write(6,"(a,i2)") "*Note: V_local used for l=", l
               Vpot => vlocal
               write(6,'(/A,i2)') '** Using vlocal for PAOs with L=',l 
            else
@@ -5877,6 +5882,8 @@ C Calculate the soft-confinement potential for the polarization orbitals
                   endif
                  
                   if (lpol .gt. lmax_ps) then
+                     write(6,"(a,i2)")
+     $                "*Note: V_local used for lpol=", lpol
                      Vpot => vlocal
                      write(6,'(/A,i2)')
      $                    '** Using vlocal for PAOs with L=',lpol
@@ -6491,6 +6498,8 @@ C
                 lpol = l + 1
               endif
               if (lpol .gt. lmax_ps) then
+                 write(6,"(a,i2)")
+     $                "*Note: V_local used for lpol=", lpol
                  Vpot => vlocal
                  write(6,'(/A,i2)')
      $                '** Using vlocal for PAOs with L=',lpol

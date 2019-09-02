@@ -91,7 +91,7 @@ C
       use m_spin,        only : spinor_dim, e_spin_dim
       use alloc
       use intrinsic_missing, only: MODP
-
+      use iso_c_binding, only : c_f_pointer, c_loc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -117,10 +117,9 @@ C
      &  qo(maxo,spinor_dim), qtot, qs(spinor_dim), S(maxnh), temp, 
      &  efs(spinor_dim), occtol
      
-      real(dp)
-     &  Haux(nuotot,nuo), Saux(nuotot,nuo), 
-     &  psi(nuotot,maxuo,spinor_dim) 
-
+      real(dp) Haux(nuotot,nuo), Saux(nuotot,nuo)
+      real(dp), target :: psi(nuotot,maxuo,spinor_dim) 
+      real(dp), pointer :: psi_real_1d(:)
       real(dp), dimension(1), parameter :: wk = (/ 1.0_dp /)
       integer, parameter                :: nk = 1
 
@@ -203,8 +202,11 @@ C Repeat diagonalisation with increased memory to handle clustering
           do ix = 1,3
             k(ix) = 0.0d0
           enddo
+          call c_f_pointer(c_loc(psi(:,:,ispin)),psi_real_1d,
+     $                     [size(psi,1)*size(psi,2)])
           call writew(nuotot,nuo,1,k,ispin,
-     &                eo(1,ispin),psi(1,1,ispin),.true.)
+     &                eo(1,ispin),psi_real_1d,gamma=.true.,
+     $                non_coll=.false.,blocksize=BlockSize)
         endif
 
       enddo
@@ -225,7 +227,6 @@ C Find new Fermi energy and occupation weights ........................
      &               eo, temp, qtot, qo, ef, Entropy )
       endif
 
-!$OMP parallel default(shared), private(t,rt,ispin,io,nd)
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -233,7 +234,7 @@ C Find weights for local density of states ............................
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
         rt = 1.0d0/t
-!$OMP do collapse(2)
+!$OMP parallel do default(shared), private(ispin,io)
         do ispin = 1,spinor_dim
           do io = 1,nuotot
             qo(io,ispin) = ( stepf((eo(io,ispin)-e2)*rt) -
@@ -241,18 +242,15 @@ C Find weights for local density of states ............................
      &                       2.0d0/dble(spinor_dim)
           enddo
         enddo
-!$OMP end do
+!$OMP end parallel do
       endif
       
       if (nuo.gt.0) then
 C New density and energy-density matrices of unit-cell orbitals .......
         nd = listdptr(nuo) + numd(nuo)
-!$OMP workshare
         Dnew(1:nd,1:h_spin_dim) = 0.0d0
         Enew(1:nd,1:e_spin_dim) = 0.0d0
-!$OMP end workshare
       endif
-!$OMP end parallel
 
       call timer( 'r-buildD', 1 )
 C Global operation to form new density matrix

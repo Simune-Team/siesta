@@ -789,7 +789,7 @@ contains
 
     if ( .not. IONode ) return
 
-    nq = product(El%Bloch)
+    nq = El%Bloch%size()
     pre_expand = El%pre_expand > 0 .and. nq > 1
 
     write(*,'(/,2a)') 'Calculating all surface Green functions for: ',trim(name(El))
@@ -806,20 +806,10 @@ contains
 
     ! We show them in units of reciprocal lattice vectors
     do i = 1 , 3
-       if ( El%Bloch(i) > 1 ) then
-          write(*,'(3(a,i0),a)') ' Bloch expansion k-points in A_',i, &
-               ' direction [b_',i,'] (w=1/',nq,'):'
-          if ( El%Bloch(i) <= 3 ) then
-             write(*,'(5x)',advance='no')
-             do j = 1 , El%Bloch(i) - 1
-                write(*,'(2(i0,a))',advance='no') j-1,'/',El%Bloch(i),', '
-             end do
-             write(*,'(i0,a,i0)') El%Bloch(i)-1,'/',El%Bloch(i)
-          else
-             write(*,'(5x,6(i0,a))') 0,'/',El%Bloch(i),', ',1,'/',El%Bloch(i),', ... , ', &
-                  El%Bloch(i)-1,'/',El%Bloch(i)
-          end if
-       end if
+      if ( El%Bloch%B(i) > 1 ) then
+        write(*,'(3(a,i0))') ' Bloch expansion k-points in A_',i, &
+            ' direction [b_',i,']: ',El%Bloch%B(i)
+      end if
     end do
 
     write(*,'(2a)') ' Saving surface Green functions in: ',trim(El%GFfile)
@@ -907,7 +897,7 @@ contains
 ! * LOCAL variables     *
 ! ***********************
     ! Array for holding converted k-points
-    real(dp) :: bkpt(3), kpt(3), kq(3), wq
+    real(dp) :: bkpt(3), kpt(3), kq(3), wq, rcell(3,3)
     real(dp), allocatable :: lDOS(:)
     
     ! Dimensions
@@ -980,7 +970,7 @@ contains
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion k-points (weight of q-points)
-    nq     = product(El%Bloch)
+    nq     = El%Bloch%size()
     wq     = 1._dp / real(nq,dp)
     ! We also need to invert to get the contribution in the
     reduce_size = nuo_E /= nuou_E
@@ -1099,6 +1089,8 @@ contains
     call itt_init  (it2,end1=nspin,end2=nkpnt)
     call itt_attach(it2,cur1=ispin,cur2=ikpt)
 
+    call reclat(El%cell,rcell,1)
+
     ! do spin and k-point loop in one go...
     do while ( .not. itt_step(it2) )
        
@@ -1126,7 +1118,7 @@ contains
           ! init qpoint in reciprocal lattice vectors
           kpt = bkpt(:) + q_exp(El,iqpt)
           ! Convert to 1/Bohr
-          call kpoint_convert(El%cell,kpt,kq,-1)
+          call kpoint_convert(rcell,kpt,kq,-2)
 
           ! Setup the transfer matrix and the intra cell at the k-point and q-point
           ! Calculate transfer matrices @Ef (including the chemical potential)
@@ -1283,19 +1275,24 @@ contains
 #ifdef MPI
           call MPI_Reduce(iters(1,1,1,1), iters(1,1,1,2), nq*NEn*nkpnt, &
                MPI_Integer, MPI_Sum, 0, MPI_Comm_World, MPIerror)
+!$OMP parallel default(shared), private(j,i,iqpt)
 #else
-!$OMP parallel workshare
+!$OMP parallel default(shared), private(j,i,iqpt)
+
+!$OMP workshare
           iters(:,:,:,2) = iters(:,:,:,1)
-!$OMP end parallel workshare
+!$OMP end workshare
 #endif
           if ( IONode ) then
-!$OMP parallel workshare default(shared)
+!$OMP workshare
              i_mean = sum(iters(:,:,:,2)) / real(nq*NEn*nkpnt,dp)
-!$OMP end parallel workshare
+!$OMP end workshare
+
+!$OMP single
              i_std = 0._dp
-!$OMP parallel do default(shared), &
-!$OMP&private(j,i,iqpt), collapse(3), &
-!$OMP&reduction(+:i_std)
+!$OMP end single ! keep barrier
+
+!$OMP do reduction(+:i_std)
              do j = 1 , nkpnt
              do i = 1 , NEn
              do iqpt = 1 , nq
@@ -1303,15 +1300,19 @@ contains
              end do
              end do
              end do
-!$OMP end parallel do
+!$OMP end do
+
+!$OMP master
              i_std = sqrt(i_std/real(NEn*nq*nkpnt,dp))
              ! TODO if new surface-Green function scheme is implemented, fix here
              write(*,'(1x,a,f10.4,'' / '',f10.4)') 'Lopez Sancho, Lopez Sancho & Rubio: &
                   &Mean/std iterations: ', i_mean             , i_std
              write(*,'(1x,a,i10,'' / '',i10)')     'Lopez Sancho, Lopez Sancho & Rubio: &
                   &Min/Max iterations : ', minval(iters(:,:,:,2)) , maxval(iters(:,:,:,2))
+!$OMP end master
              
           end if
+!$OMP end parallel
        end if
 
     end do
@@ -1428,7 +1429,7 @@ contains
       write(uGF) El%na_u, El%no_u
       write(uGF) El%na_used, El%no_used
       write(uGF) El%xa_used, El%lasto_used
-      write(uGF) El%repeat, El%Bloch(:), El%pre_expand
+      write(uGF) El%repeat, El%Bloch%B(:), El%pre_expand
       write(uGF) El%mu%mu
       
       ! Write out explicit information about this content
@@ -1780,7 +1781,7 @@ contains
     ! * LOCAL variables     *
     ! ***********************
     integer  :: iq
-    real(dp) :: kpt(3), kq(3)
+    real(dp) :: kpt(3), kq(3), rcell(3,3)
     
     ! Dimensions
     integer :: nq, nw
@@ -1818,7 +1819,7 @@ contains
     nuou_E = El%no_used
     nuS    = nuou_E ** 2
     ! create expansion k-points
-    nq     = product(El%Bloch)
+    nq     = El%Bloch%size()
     ! We also need to invert to get the contribution in the
     ! reduced region
     reduce_size = nuo_E /= nuou_E
@@ -1842,10 +1843,11 @@ contains
     same_k = same_k .and. abs( bkpt(2) - El%bkpt_cur(2) ) < 1.e-8_dp
     same_k = same_k .and. abs( bkpt(3) - El%bkpt_cur(3) ) < 1.e-8_dp
     if ( .not. same_k ) then
-       El%bkpt_cur = bkpt
-       ! In case we do not need the hamiltonian
-       ! This will be the case for non-bias points and when using bulk electrode
-       same_k = .not. associated(El%HA)
+      El%bkpt_cur(:) = bkpt
+
+      ! In case we do not need the hamiltonian
+      ! This will be the case for non-bias points and when using bulk electrode
+      same_k = .not. associated(El%HA)
     end if
 
     ! determine whether there is room enough
@@ -1938,13 +1940,16 @@ contains
     ! create the offset to be used for copying over elements
     off = nuo_E - nuou_E + 1
 
+    call reclat(El%cell,rcell,1)
+
     ! loop over the repeated cell...
     q_loop: do iq = 1 , nq
 
        ! init qpoint in reciprocal lattice vectors
        kpt(:) = bkpt(:) + q_exp(El,iq)
+      
        ! Convert to 1/Bohr
-       call kpoint_convert(El%cell,kpt,kq,-1)
+       call kpoint_convert(rcell,kpt,kq,-2)
 
        ! Calculate transfer matrices @Ef (including the chemical potential)
        call set_HS_Transfer(ispin, El, n_s,sc_off, kq, &
@@ -2025,7 +2030,7 @@ contains
       if ( is_left ) then
          ! Left, we use the last orbitals
          ioff = 1 - off ! ioff is private in OMP orphaned routines
-!$OMP do private(j,i), collapse(2)
+!$OMP do private(j,i)
          do j = off , fS
             do i = off , fS
                to(ioff+i,ioff+j) = from(i,j)
@@ -2034,7 +2039,7 @@ contains
 !$OMP end do nowait
       else
          ! Right, the first orbitals
-!$OMP do private(j,i), collapse(2)
+!$OMP do private(j,i)
          do j = 1 , tS
             do i = 1 , tS
                to(i,j) = from(i,j)
