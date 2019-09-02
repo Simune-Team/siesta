@@ -593,10 +593,10 @@ contains
        call tri(r_El)
     end if
 
-#ifndef TS_PVT_NO_GGPS
+#ifdef TS_PVT_GGPS
     ! Above pre-processor:
-    ! Rather undocumented feature, however the GGPS is ridicously
-    ! slow, so it could be useful to disable it.
+    ! Undocumented feature, however the GGPS is ridicously
+    ! slow. So we have it disabled.
 
     fmethod = trim(corb)//'+GGPS'
     if ( IONode ) write(*,fmt) trim(corb),'GGPS'

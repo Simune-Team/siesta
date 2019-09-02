@@ -1410,7 +1410,7 @@ contains
     if ( present(start) ) then
       call level_structure(n, nnzs, n_col, l_ptr, l_col, level_s, start, skip, priority=priority)
     else
-      idx = idx_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col, sub, priority = priority)
+      idx = idx_degree(D_LOW_SUM,n,nnzs,n_col,l_ptr,l_col, sub, priority = priority)
       !   (ii/iii) -- search for deepest level structure in these peripherals
 #ifdef PVT_DEBUG
       write(*,fmt_debug2_ai) 'initial V level structure [from]', sub%r(idx)
@@ -1433,7 +1433,7 @@ contains
 #endif
 
       !  (v) -- sort by the degree of the nodes (lowest to highest)
-      call sort_degree(D_LOW,n,nnzs,n_col,l_ptr,l_col, st, pvt)
+      call sort_degree(D_LOW_SUM,n,nnzs,n_col,l_ptr,l_col, st, pvt)
       call rgn_copy(pvt, st)
       call rgn_delete(pvt)
 
@@ -1459,7 +1459,10 @@ contains
         ! the largest level)
         if ( width2 < width .or. depth2 > depth ) then
 #ifdef PVT_DEBUG
-          write(*,fmt_debug3_ai) ' FOUND deeper/narrower level structure [size]', i
+          write(*,fmt_debug3_a, advance='NO') ' FOUND '
+          if ( width2 < width ) write(*,'(a)', advance='NO') 'narrower '
+          if ( depth2 > depth ) write(*,'(a)', advance='NO') 'deeper '
+          write(*,'(a,tr1,i8)') 'level structure [size]', i
 #endif
           idx = i
 
@@ -1964,28 +1967,29 @@ contains
     integer :: nel
     integer :: i, ptr, el, eln
 
+#ifdef PVT_DEBUG
+    write(*,fmt_debug2_a) 'BFS START'
+#endif
+    ! NOT FUNCTIONAL YET
+
     if ( present(skip) ) then
-
-      ! Speed up searches in the skipped elements
-      call rgn_copy(skip, sskip)
-      call rgn_uniq(sskip)
-
+      call rgn_init_consecutive(n, sskip, skip)
+    else
+      call rgn_init_consecutive(n, sskip)
     end if
 
     ! Actual number of elements in the level
     nel = n - rgn_size(sskip)
 
-    ! Ensure the queue has the correct size.
+    ! Pre-allocate the full queue
     call rgn_init(queue, nel)
     queue%n = 0
 
     ! Start queue by adding all start elements
-    do i = 1, rgn_size(start)
-      el = start%r(i)
-      if ( .not. rgn_push(queue, el) ) call die('Error in BFS -- 1')
-    end do
+    if ( .not. rgn_push(queue, start) ) call die('Error in BFS -- 1')
+    call rgn_consecutive_insert(sskip, start)
 
-    ! Initialize
+    ! Initialize the resulting breadth-first-search table
     call rgn_init(bfs, nel)
     bfs%n = 0
 
@@ -2012,6 +2016,9 @@ contains
             if ( in_rgn(queue, el) ) cycle
           end if
 
+#ifdef PVT_DEBUG
+          write(*,fmt_debug2_ai) 'adding to queue (non-connected) [element]', el
+#endif
           if ( .not. rgn_push(queue, el) ) call die('Error in BFS -- 2')
           exit
 
@@ -3181,7 +3188,8 @@ contains
     end select
     select case ( method ) 
     case ( D_LOW_SUM , D_HIGH_SUM )
-      ! initialize for graph_connect (needs to be allocated)
+      ! initialize for graph_connect
+      ! Allocating for maximum spots is much faster than growing everytime
       call rgn_init(self,n)
     end select
 
@@ -3206,7 +3214,7 @@ contains
       cdeg = degree(method,n,nnzs,n_col,l_ptr,l_col,etr,self)
 
       select case ( method )
-      case ( D_LOW )
+      case ( D_LOW , D_LOW_SUM )
         if ( cdeg < deg ) then
           idx = i
           deg = cdeg
@@ -3216,27 +3224,7 @@ contains
             idx = i
           end if
         end if
-      case ( D_HIGH )
-        if ( deg < cdeg ) then
-          idx = i
-          deg = cdeg
-        else if ( cdeg == deg .and. present(priority) ) then
-          ! ** this should never happen if idx == 0
-          if ( priority(sub%r(idx)) < priority(etr) ) then
-            idx = i
-          end if
-        end if
-      case ( D_LOW_SUM )
-        if ( cdeg < deg ) then
-          idx = i
-          deg = cdeg
-        else if ( cdeg == deg .and. present(priority) ) then
-          ! ** this should never happen if idx == 0
-          if ( priority(sub%r(idx)) < priority(etr) ) then
-            idx = i
-          end if
-        end if
-      case ( D_HIGH_SUM )
+      case ( D_HIGH , D_HIGH_SUM )
         if ( deg < cdeg ) then
           idx = i
           deg = cdeg
