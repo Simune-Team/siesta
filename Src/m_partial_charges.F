@@ -67,11 +67,10 @@ C
       integer ::   ia, ispin, ns, ispec, is
 
 #ifdef MPI
-      integer
-     .  MPIerror
+      integer :: MPIerror
+      real(dp), dimension(:), allocatable :: qtmp
 #endif
-
-      real(dp), dimension(:), allocatable       :: q, qtmp
+      real(dp), dimension(:), allocatable :: q
 
       character(len=20) ::  atm_label
 
@@ -90,8 +89,10 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
       allocate(q(na_u))
       call memory('A','D',na_u,'hirsh')
+#ifdef MPI
       allocate(qtmp(na_u))
       call memory('A','D',na_u,'hirsh')
+#endif
 
 C ----------------------------------------------------------------------
 C Find Hirshfeld charges
@@ -146,8 +147,10 @@ C ----------------------------------------------------------------------
         endif
       endif
 
+#ifdef MPI
       call memory('D','D',size(qtmp),'hirsh')
       deallocate(qtmp)
+#endif
       call memory('D','D',size(q),'hirsh')
       deallocate(q)
 

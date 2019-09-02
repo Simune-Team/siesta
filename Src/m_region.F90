@@ -543,8 +543,6 @@ contains
 
     integer :: i
 
-    if ( vr%n == 0 ) return
-
     ! Insert all elements
     do i = 1, vr%n
       call rgn_consecutive_insert(r, vr%r(i))
@@ -581,8 +579,6 @@ contains
     type(tRgn), intent(in) :: vr
 
     integer :: i
-
-    if ( vr%n == 0 ) return
 
     do i = 1, vr%n
        call rgn_consecutive_remove(r, vr%r(i))
