@@ -139,7 +139,7 @@
       real(dp)                      :: dummyef=0.0, dummyqtot=0.0
       type(Sparsity) :: g_Sp
 #ifdef NCDF_4
-      type(dict) :: d_sav
+      type(dictionary_t) :: d_sav
 #ifdef MPI
       integer :: MPIerror
 #endif

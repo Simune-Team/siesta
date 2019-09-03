@@ -49,7 +49,7 @@ contains
     use dictionary
     use fdf
 
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
 #ifdef NCDF_4
 
@@ -84,7 +84,7 @@ contains
     use parallel, only: IONode
     use dictionary
 
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
     character(len=*), parameter :: f1 ='(''tbt: '',a,t53,''='',tr4,l1)'
     character(len=*), parameter :: f12='(''tbt: '',a,t53,''='',tr2,i0)'
@@ -181,7 +181,7 @@ contains
     type(tRgn), intent(in) :: a_Buf
 
     type(hNCDF) :: ncdf, grp
-    type(dict) :: dic
+    type(dictionary_t) :: dic
     type(tRgn) :: r_tmp
 
     logical :: prec_Sigma
@@ -713,7 +713,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
 
-    type(dict) :: dic
+    type(dictionary_t) :: dic
     type(hNCDF) :: ncdf, grp
     integer :: iEl, iE, ikpt
     integer :: NE, nkpt, no_e

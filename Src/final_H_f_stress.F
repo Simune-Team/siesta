@@ -103,7 +103,7 @@
       logical :: not_using_auxcell
 #ifdef CDF
 #ifdef NCDF_4
-      type(dict) :: dic_save
+      type(dictionary_t) :: dic_save
 #endif
 #endif
 !------------------------------------------------------------------------- BEGIN

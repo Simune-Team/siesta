@@ -66,7 +66,7 @@ module netcdf_ncdf
   integer, private, parameter :: sp = selected_real_kind(p=6)
   integer, private, parameter :: dp = selected_real_kind(p=15)
   ! The IONode setting
-  logical, save :: IONode = .true.
+  logical, save :: IONode = .false.
   private :: IONode
   ! Local routines
   private :: ncdf_def_var_generic
@@ -277,6 +277,7 @@ contains
     this%comp_lvl = 0
   end subroutine h_reset
   subroutine ncdf_init(this,name,mode,parallel,comm,overwrite,compress_lvl)
+    use mpi
     type(hNCDF), intent(inout) :: this
     character(len=*), optional, intent(in) :: name
     integer, optional, intent(in) :: mode
@@ -286,6 +287,7 @@ contains
     integer, optional, intent(in) :: compress_lvl
     integer :: format
     logical :: exist
+    integer :: MPIerror
     call h_reset(this)
     if ( present(name) ) this%name = name
     if ( present(compress_lvl) ) this%comp_lvl = compress_lvl
@@ -327,6 +329,18 @@ contains
         ! If the communicator is negative we
         ! must assume that it is not parallel
         this%comm = comm
+      else
+        ! If the communicator is present,
+        ! so must the parallel execution...
+        this%parallel = .true.
+        this%comm = comm
+        ! We cannot ask for no parallel access and supply a communicator (makes no sense)
+        if ( present(parallel) ) then
+          if ( .not. parallel ) then
+            call ncdf_die("You cannot supply a communicator and request "//&
+                "NO parallel access. Please correct.")
+          end if
+        end if
       end if
     end if
     ! Define whether it should not be clobbered
@@ -339,6 +353,7 @@ contains
   end subroutine ncdf_init
   subroutine ncdf_create(this,filename,mode,overwrite,parallel,comm, &
       compress_lvl)
+    use mpi, only : MPI_INFO_NULL
     type(hNCDF), intent(inout) :: this
     character(len=*), intent(in) :: filename
     integer, optional, intent(in) :: mode
@@ -368,7 +383,9 @@ contains
           "Please delete the file (or request overwriting).")
     end if
     if ( this%parallel .and. this%comm >= 0 ) then
-      call ncdf_err(-100,"Not compiled with communicater parallel")
+      call ncdf_err(nf90_create(filename, this%mode , this%f_id, &
+          comm = this%comm, info=MPI_INFO_NULL), &
+          "Creating file: "//this//" with communicator")
     else if ( this%parallel ) then
       call ncdf_err(nf90_create(filename, this%mode , this%f_id), &
           "Creating file: "//this//" in parallel")
@@ -381,6 +398,7 @@ contains
     this%id = this%f_id
   end subroutine ncdf_create
   subroutine ncdf_open(this,filename,group,mode,parallel,comm,compress_lvl)
+    use mpi, only : MPI_INFO_NULL
     type(hNCDF), intent(inout) :: this
     character(len=*), intent(in) :: filename
     character(len=*), optional, intent(in) :: group
@@ -411,7 +429,9 @@ contains
       this%mode = IOR(this%mode,NF90_NOWRITE)
     end if
     if ( this%parallel .and. this%comm >= 0 ) then
-      call ncdf_err(-100,"Code not compiled with NCDF_PARALLEL")
+      call ncdf_err(nf90_open(filename, this%mode , this%f_id, &
+          comm = this%comm, info=MPI_INFO_NULL), &
+          "Opening file: "//this//" with communicator")
     else if ( this%parallel ) then
       call ncdf_err(nf90_open(filename, this%mode , this%f_id), &
           "Opening file: "//this//" in parallel")
@@ -619,6 +639,34 @@ contains
     type(hNCDF), intent(inout) :: this
     character(len=*), intent(in), optional :: name
     integer, intent(in), optional :: access
+    integer :: i,N
+    character(len=NF90_MAX_NAME) :: lname
+    if ( .not. ncdf_participate(this) ) return
+    if ( .not. present(access) ) return
+    ! We will only allow a change of the variable
+    ! access if the netcdf-file is parallel.
+    if ( .not. this%parallel ) then
+      return
+    end if
+    if ( present(name) ) then
+      call var_par(name,access)
+    else
+      call ncdf_inq(this,vars=N)
+      do i = 1 , N
+        call ncdf_err(nf90_inquire_variable(this%id, i, name=lname))
+        call ncdf_err(nf90_var_par_access(this%id, i, access), &
+            'Changing par-access (VAR) '//trim(lname)//' in file: '//this)
+      end do
+    end if
+  contains
+    subroutine var_par(name,access)
+      character(len=*), intent(in) :: name
+      integer, intent(in) :: access
+      integer :: id
+      call ncdf_inq_var(this,name,id=id)
+      call ncdf_err(nf90_var_par_access(this%id, id, access), &
+          'Changing par-access (VAR) '//trim(name)//' in file: '//this)
+    end subroutine var_par
   end subroutine ncdf_par_access
   subroutine ncdf_close(this)
     type(hNCDF), intent(inout) :: this
@@ -2884,12 +2932,18 @@ end subroutine get_var_i3_name
     IONode = IO_Node
   end subroutine ncdf_IONode
   subroutine ncdf_print(this)
+    use mpi
     type(hNCDF), intent(inout) :: this
     integer :: ndims,nvars,ngatts,file_format,ngrps
     integer :: Node,Nodes
+    integer :: MPIerror
     if ( .not. ncdf_participate(this) ) return
     Node = 0
     Nodes = 1
+    if ( this%comm >= 0 ) then
+      call MPI_Comm_rank(this%comm,Node,MPIerror)
+      call MPI_Comm_size(this%comm,Nodes,MPIerror)
+    end if
     ! This will fail if it is not the 0th Node in the communicator
     ! For instance a subgroup in the Comm_World...
     if ( Node == 0 ) then
@@ -2952,14 +3006,25 @@ end subroutine get_var_i3_name
           write(*,"(a20,a)") "NetCDF mode:        ","NF90_NETCDF4"
       if ( iand(NF90_CLASSIC_MODEL,this%mode) == NF90_CLASSIC_MODEL ) &
           write(*,"(a20,a)") "NetCDF mode:        ","NF90_CLASSIC_MODEL"
+      if ( iand(NF90_MPIIO,this%mode) == NF90_MPIIO ) &
+          write(*,"(a20,a)") "NetCDF mode:        ","NF90_MPIIO"
+      if ( iand(NF90_MPIPOSIX,this%mode) == NF90_MPIPOSIX ) &
+          write(*,"(a20,a)") "NetCDF mode:        ","NF90_MPIPOSIX"
+      if ( iand(NF90_PNETCDF,this%mode) == NF90_PNETCDF ) &
+          write(*,"(a20,a)") "NetCDF mode:        ","NF90_PNETCDF"
     end if
   end subroutine ncdf_print
   ! A standard die routine... It is not pretty... But it works...
   ! Recommended to be adapted!
   subroutine ncdf_die(str)
+    use mpi
     character(len=*), intent(in) :: str
+    integer :: Node, MPIerror
     write(0,"(2a)") 'ncdf: ',trim(str)
     write(6,"(2a)") 'ncdf: ',trim(str)
-    stop
+    call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+    write(0,"(a,i0)") 'ncdf-Node ',Node
+    write(6,"(a,i0)") 'ncdf-Node ',Node
+    call MPI_Abort(MPI_Comm_World,1,MPIerror)
   end subroutine ncdf_die
 end module netcdf_ncdf

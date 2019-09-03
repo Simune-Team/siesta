@@ -63,7 +63,7 @@ contains
     
 #ifdef CDF
 #ifdef NCDF_4
-    type(dict) :: dic_save
+    type(dictionary_t) :: dic_save
 #endif
 #endif
 #ifdef TIMING_IO
