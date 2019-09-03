@@ -432,12 +432,12 @@ contains
     use variable
     use dictionary
     type(hNCDF), intent(inout) :: this
-    type(dict), intent(inout) :: dic
+    type(dictionary_t), intent(inout) :: dic
     ! Local dictionary keys and variables
     type(hNCDF) :: grp
-    type(dict) :: d, d_var, dv, atts
-    type(var) :: v
-    character(len=DICT_KEY_LENGTH) :: key
+    type(dictionary_t) :: d, d_var, dv, atts
+    type(variable_t) :: v
+    character(len=DICTIONARY_KEY_LENGTH) :: key
     character(len=NF90_MAX_NAME) :: name, char
     character(len=64), allocatable :: dims(:)
     integer, pointer :: chunks(:) => null()
@@ -591,9 +591,9 @@ contains
   ! for NetCDF files.
   recursive subroutine ncdf_crt_delete(dic)
     use dictionary
-    type(dict), intent(inout) :: dic
-    type(dict) :: ld, v_dic, att_dic
-    character(len=DICT_KEY_LENGTH) :: key
+    type(dictionary_t), intent(inout) :: dic
+    type(dictionary_t) :: ld, v_dic, att_dic
+    character(len=DICTIONARY_KEY_LENGTH) :: key
     ! Delete all entries
     ld = .first. dic
     do while ( .not. (.empty.ld) )
@@ -635,7 +635,7 @@ contains
     integer, optional, intent(out) :: dims, vars, atts, format, grps
     logical, optional, intent(out) :: exist
     ! possibly obtain all attributes, dimensions
-    type(dict), optional, intent(inout) :: dict_dim, dict_att
+    type(dictionary_t), optional, intent(inout) :: dict_dim, dict_att
     integer :: ldims, lvars, latts, lformat, lgrps, val, i
     integer, allocatable :: grp_id(:)
     character(len=NF90_MAX_NAME) :: key
@@ -693,7 +693,7 @@ contains
     integer, optional, intent(out) :: dims, vars, atts, format, grps
     logical, optional, intent(out) :: exist
     ! possibly obtain all attributes, dimensions
-    type(dict), optional, intent(inout) :: dict_dim, dict_att
+    type(dictionary_t), optional, intent(inout) :: dict_dim, dict_att
     type(hNCDF) :: this
     ! A file-check has been requested...
     if ( present(exist) ) then
@@ -718,7 +718,7 @@ contains
     logical, optional, intent(out) :: exist
     integer, optional, intent(out) :: dims, vars, atts, format, grps
     ! possibly obtain all attributes, dimensions
-    type(dict), optional, intent(inout) :: dict_dim, dict_att
+    type(dictionary_t), optional, intent(inout) :: dict_dim, dict_att
     integer :: ldims, lvars, latts, lformat, lgrps, val, i
     integer, allocatable :: grp_id(:)
     character(len=NF90_MAX_NAME) :: key
@@ -761,18 +761,18 @@ contains
     use dictionary
     type(hNCDF), intent(inout) :: this
     logical, intent(out) :: assert
-    type(dict), intent(in), optional :: dims, vars
-    type(dict), intent(in), optional :: has_dims, has_vars
+    type(dictionary_t), intent(in), optional :: dims, vars
+    type(dictionary_t), intent(in), optional :: has_dims, has_vars
     real(sp), intent(in), optional :: s_EPS
     real(dp), intent(in), optional :: d_EPS
     ! We currently do not check attributes.
     ! This is a little more tricky as strings, chars, etc... :(
     ! It just needs to be done...
     ! We can currently only check integers :(
-    character(len=DICT_KEY_LENGTH) :: key
-    character(len=VAR_TYPE_LENGTH) :: t
-    type(dict) :: dic ! local loop dictionary...
-    type(var) :: ivar
+    character(len=DICTIONARY_KEY_LENGTH) :: key
+    character(len=VARIABLE_TYPE_LENGTH) :: t
+    type(dictionary_t) :: dic ! local loop dictionary...
+    type(variable_t) :: ivar
     logical :: success
     integer, pointer :: i1(:), i2(:,:)
     integer, allocatable :: i1a(:), i2a(:,:)
@@ -992,7 +992,7 @@ contains
     integer, intent(in) :: type
     character(len=*), intent(in) :: dims(:)
     integer, intent(out) :: id
-    type(dict), optional :: atts
+    type(dictionary_t), optional :: atts
     integer, intent(in), optional :: compress_lvl
     logical, intent(in), optional :: shuffle
     integer, intent(in), optional :: access, chunks(:)
@@ -1020,7 +1020,7 @@ contains
     character(len=*), intent(in) :: name
     integer, intent(in) :: type
     character(len=*), intent(in) :: dims(:)
-    type(dict), optional :: atts
+    type(dictionary_t), optional :: atts
     integer, intent(in), optional :: compress_lvl
     logical, intent(in), optional :: shuffle, fill
     integer, intent(in), optional :: access, chunks(:)
@@ -1056,7 +1056,7 @@ contains
     character(len=*), intent(in) :: name
     logical, intent(in) :: type
     character(len=*), intent(in) :: dims(:)
-    type(dict), optional :: atts
+    type(dictionary_t), optional :: atts
     integer, intent(in), optional :: compress_lvl
     logical, intent(in), optional :: shuffle, fill
     integer, intent(in), optional :: access, chunks(:)
@@ -1120,7 +1120,7 @@ contains
     logical, optional, intent(out) :: exist
     integer, optional, intent(out) :: id
     integer, optional, intent(out) :: size(:)
-    type(dict), optional, intent(inout) :: atts
+    type(dictionary_t), optional, intent(inout) :: atts
     integer :: iret ! We need to retain any error message...
     integer :: lid, nids, i
     integer :: ldids(10) ! In case the user only wishes to read a sub-part of the size
@@ -1225,8 +1225,8 @@ contains
     use variable
     type(hNCDF), intent(inout) :: this
     character(len=*), optional, intent(in) :: name
-    type(var), optional, intent(inout) :: att
-    type(dict), optional, intent(inout) :: atts
+    type(variable_t), optional, intent(inout) :: att
+    type(dictionary_t), optional, intent(inout) :: atts
     if ( .not. ncdf_participate(this) ) return
     if ( present(name) .and. present(att) ) then
       call put_att_id(this,NF90_GLOBAL,trim(name),att)
@@ -1242,8 +1242,8 @@ contains
     use variable
     type(hNCDF), intent(inout) :: this
     character(len=*), optional, intent(in) :: name
-    type(var), optional, intent(inout) :: att
-    type(dict), optional, intent(inout) :: atts
+    type(variable_t), optional, intent(inout) :: att
+    type(dictionary_t), optional, intent(inout) :: atts
     if ( .not. ncdf_participate(this) ) return
     if ( present(name) .and. present(att) ) then
       call get_att_id(this,NF90_GLOBAL,trim(name),att)
@@ -1256,12 +1256,12 @@ contains
   end subroutine get_gatt
   subroutine put_att(this,var,name,att,atts)
     use dictionary
-    use variable, vvar => var
+    use variable
     type(hNCDF), intent(inout) :: this
     character(len=*), intent(in) :: var
     character(len=*), optional, intent(in) :: name
-    type(vvar), optional, intent(inout) :: att
-    type(dict), optional, intent(inout) :: atts
+    type(variable_t), optional, intent(inout) :: att
+    type(dictionary_t), optional, intent(inout) :: atts
     integer :: ID
     if ( .not. ncdf_participate(this) ) return
     call ncdf_inq_var(this,var,id=ID)
@@ -1276,12 +1276,12 @@ contains
   end subroutine put_att
   subroutine get_att(this,var,name,att,atts)
     use dictionary
-    use variable, vvar => var
+    use variable
     type(hNCDF), intent(inout) :: this
     character(len=*), intent(in) :: var
     character(len=*), optional, intent(in) :: name
-    type(vvar), optional, intent(inout) :: att
-    type(dict), optional, intent(inout) :: atts
+    type(variable_t), optional, intent(inout) :: att
+    type(dictionary_t), optional, intent(inout) :: atts
     integer :: ID
     if ( .not. ncdf_participate(this) ) return
     call ncdf_inq_var(this,var,id=ID)
@@ -1299,9 +1299,9 @@ contains
     use variable
     type(hNCDF), intent(inout) :: this
     integer, intent(in) :: ID
-    type(dict), intent(inout) :: atts
-    type(dict) :: att
-    type(var) :: at_var
+    type(dictionary_t), intent(inout) :: atts
+    type(dictionary_t) :: att
+    type(variable_t) :: at_var
     character(len=NF90_MAX_NAME) :: key
     if ( len(atts) == 0 ) return
     att = .first. atts
@@ -1330,7 +1330,7 @@ contains
     type(hNCDF), intent(inout) :: this
     integer, intent(in) :: ID
     character(len=*), intent(in) :: name
-    type(var), intent(inout) :: att
+    type(variable_t), intent(inout) :: att
     integer :: iret
     character(len=NF90_MAX_NAME) :: tmp
     integer(ih), pointer :: h0, h1(:)
@@ -1378,10 +1378,10 @@ contains
     use variable
     type(hNCDF), intent(inout) :: this
     integer, intent(in) :: ID
-    type(dict), intent(inout) :: atts
+    type(dictionary_t), intent(inout) :: atts
     integer :: i, nAtts
     character(len=NF90_MAX_NAME) :: name
-    type(var) :: att
+    type(variable_t) :: att
     if ( id == NF90_GLOBAL ) then
       call ncdf_err(nf90_inquire(this%id, nAttributes=nAtts), &
           "Retrieving number of associated attributes in inquire for file: "//this)
@@ -1404,7 +1404,7 @@ contains
     type(hNCDF), intent(inout) :: this
     integer, intent(in) :: ID
     character(len=*), intent(in) :: name
-    type(var), intent(inout) :: att
+    type(variable_t), intent(inout) :: att
     integer :: xtype, att_len
     character(len=512) :: att_char
     real(sp), allocatable :: a_sp(:)
@@ -1556,7 +1556,7 @@ subroutine inq_var_h0(this, name,fill_val,exist,id,size,atts,fill)
   logical, intent(out), optional :: exist
   integer, intent(out), optional :: id
   integer, intent(out), optional :: size(:)
-  type(dict), intent(inout), optional :: atts
+  type(dictionary_t), intent(inout), optional :: atts
   integer, intent(out), optional :: fill
   integer :: lid, lfill
   integer :: tmp_lr
@@ -1740,7 +1740,7 @@ subroutine inq_var_s0(this, name,fill_val,exist,id,size,atts,fill)
   logical, intent(out), optional :: exist
   integer, intent(out), optional :: id
   integer, intent(out), optional :: size(:)
-  type(dict), intent(inout), optional :: atts
+  type(dictionary_t), intent(inout), optional :: atts
   integer, intent(out), optional :: fill
   integer :: lid, lfill
   integer :: tmp_lr
@@ -1964,7 +1964,7 @@ subroutine inq_var_d0(this, name,fill_val,exist,id,size,atts,fill)
   logical, intent(out), optional :: exist
   integer, intent(out), optional :: id
   integer, intent(out), optional :: size(:)
-  type(dict), intent(inout), optional :: atts
+  type(dictionary_t), intent(inout), optional :: atts
   integer, intent(out), optional :: fill
   integer :: lid, lfill
   integer :: tmp_lr
@@ -2153,7 +2153,7 @@ subroutine inq_var_c0(this, name,fill_val,exist,id,size,atts,fill)
   logical, intent(out), optional :: exist
   integer, intent(out), optional :: id(2)
   integer, intent(out), optional :: size(:)
-  type(dict), intent(inout), optional :: atts
+  type(dictionary_t), intent(inout), optional :: atts
   integer, intent(out), optional :: fill
   integer :: lid, lfill
   integer :: tmp_lr
@@ -2362,7 +2362,7 @@ subroutine inq_var_z0(this, name,fill_val,exist,id,size,atts,fill)
   logical, intent(out), optional :: exist
   integer, intent(out), optional :: id(2)
   integer, intent(out), optional :: size(:)
-  type(dict), intent(inout), optional :: atts
+  type(dictionary_t), intent(inout), optional :: atts
   integer, intent(out), optional :: fill
   integer :: lid, lfill
   integer :: tmp_lr
@@ -2606,7 +2606,7 @@ subroutine inq_var_i0(this, name,fill_val,exist,id,size,atts,fill)
   logical, intent(out), optional :: exist
   integer, intent(out), optional :: id
   integer, intent(out), optional :: size(:)
-  type(dict), intent(inout), optional :: atts
+  type(dictionary_t), intent(inout), optional :: atts
   integer, intent(out), optional :: fill
   integer :: lid, lfill
   integer :: tmp_lr

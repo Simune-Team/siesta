@@ -171,7 +171,7 @@ contains
     integer, intent(in) :: na_u
     integer, intent(in) :: lasto(0:na_u)
     type(tRgn), intent(in) :: a_Dev, o_Dev
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
     ! Local variables
     type(block_fdf) :: bfdf
@@ -647,7 +647,7 @@ contains
 
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
     character(len=100) :: char
     type(block_fdf) :: bfdf
@@ -1289,7 +1289,7 @@ contains
     type(tRgn), intent(in) :: a_Dev
     type(tRgn), intent(in) :: a_Buf
     type(Sparsity), intent(inout) :: sp_dev_sc
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
     type(hNCDF) :: ncdf, grp, grp2, grp3
     type(tRgn) :: r_tmp
@@ -1298,7 +1298,7 @@ contains
     integer :: it, ipt
     logical :: exist, is_same, isGamma, save_state
     logical :: debug_state, sme
-    type(dict) :: dic
+    type(dictionary_t) :: dic
     character(len=NF90_MAX_NAME) :: tmp
     ! Create allocatables, they are easier to maintain
     integer :: iLUMO, mol_nkpt
@@ -2432,7 +2432,7 @@ contains
   contains
 
     subroutine check(dic,same,msg,dealloc)
-      type(dict), intent(inout) :: dic
+      type(dictionary_t), intent(inout) :: dic
       logical, intent(inout) :: same
       character(len=*), intent(in) :: msg
       logical, intent(in), optional :: dealloc
@@ -2518,7 +2518,7 @@ contains
     real(dp), intent(in) :: T(:,:)
     integer, intent(in) :: N_eigen
     real(dp), intent(in) :: Teig(:,:,:)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     type(hNCDF) :: gmol, gproj, gEl
     integer :: ipt, ip, iE, i, iN
@@ -3204,7 +3204,7 @@ contains
     character(len=*), intent(in) :: fname
     integer, intent(in) :: N_proj_T
     type(tProjT), intent(in) :: proj_T(N_proj_T)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
   end subroutine proj_cdf2ascii
 
@@ -3349,7 +3349,7 @@ contains
 
     use dictionary
 
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
     ! Local variables
     type(block_fdf) :: bfdf
@@ -3449,7 +3449,7 @@ contains
     use parallel, only: IONode
     use dictionary
     
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
     character(len=*), parameter :: f1 ='(''tbt-proj: '',a,t53,''='',tr4,l1)'
 
@@ -3469,12 +3469,12 @@ contains
   
   subroutine read_proj_options( save_DATA )
     use dictionary
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
   end subroutine read_proj_options
   
   subroutine print_proj_options( save_DATA )
     use dictionary
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
   end subroutine print_proj_options
 #endif
 

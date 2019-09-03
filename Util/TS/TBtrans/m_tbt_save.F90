@@ -357,11 +357,11 @@ contains
     ! The device sparsity pattern
     type(Sparsity), intent(inout) :: sp_dev_sc
     ! Options read from tbt_options
-    type(dict), intent(inout) :: save_DATA
+    type(dictionary_t), intent(inout) :: save_DATA
 
     character(len=50) :: tmp
     type(hNCDF) :: ncdf, grp
-    type(dict) :: dic
+    type(dictionary_t) :: dic
     logical :: exist, sme, isGamma
     integer :: iEl, jEl, i, nnzs_dev, N_eigen, no_e
     integer :: prec_DOS, prec_T, prec_Teig, prec_J, prec_COOP, prec_DM
@@ -1228,7 +1228,7 @@ contains
     real(dp), intent(in) :: T(N_Elec+1,N_Elec)
     integer, intent(in) :: N_eigen
     real(dp), intent(in) :: Teig(N_eigen,N_Elec,N_Elec)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     type(hNCDF) :: grp
     integer :: iEl, jEl, NDOS, iN, idx(2), cnt(2)
@@ -1411,7 +1411,7 @@ contains
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     real(dp), intent(in) :: DOS(:,:), T(N_Elec)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     type(hNCDF) :: grp
     integer :: iEl
@@ -1650,7 +1650,7 @@ contains
     integer, intent(in) :: N_E
     ! This quantity is the dE weight, with dE in Ry units
     real(dp), intent(in) :: rW(N_E)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     character(len=256) :: ascii_file, tmp
     type(hNCDF) :: ncdf, grp
@@ -2248,7 +2248,7 @@ contains
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     integer, intent(in) :: N_eigen
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     character(len=128) :: ascii_file, tmp
     integer :: iu, cu
@@ -2395,7 +2395,7 @@ contains
     integer, intent(in)    :: ispin, nspin
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     character(len=128) :: ascii_file, tmp
     integer :: iu, cu
@@ -2532,7 +2532,7 @@ contains
     real(dp), intent(in)   :: DOS(:,:), T(:,:)
     integer, intent(in)    :: N_eigen
     real(dp), intent(in)   :: Teig(N_eigen,N_Elec,N_Elec)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     integer :: cu
     integer :: iEl, jEl, N
@@ -2654,7 +2654,7 @@ contains
     integer, intent(in)    :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     real(dp), intent(in)   :: DOS(:,:), T(N_Elec)
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     integer :: cu, N
     integer :: iEl
