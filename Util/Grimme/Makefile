@@ -322,8 +322,8 @@ ldau_specs.o: parallel.o precision.o pseudopotential.o radial.o units.o
 listsc.o: alloc.o
 local_DOS.o: alloc.o atomlist.o dhscf.o diagon.o files.o kpoint_ldos.o
 local_DOS.o: kpoint_scf.o local_sys.o m_energies.o m_eo.o m_forces.o m_ntm.o
-local_DOS.o: m_spin.o parallel.o precision.o siesta_geom.o siesta_options.o
-local_DOS.o: sparse_matrices.o units.o
+local_DOS.o: m_partial_charges.o m_spin.o parallel.o precision.o siesta_geom.o
+local_DOS.o: siesta_options.o sparse_matrices.o units.o
 m_broyddj.o: alloc.o local_sys.o m_mpi_utils.o parallel.o precision.o
 m_broyddj_nocomm.o: alloc.o local_sys.o parallel.o precision.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o

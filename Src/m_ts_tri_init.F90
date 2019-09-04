@@ -83,7 +83,8 @@ contains
     type(Sparsity) :: tmpSp1, tmpSp2
 
     integer :: idx, no
-    integer :: i, io, els, iEl, no_u_TS
+    integer :: i, io, iEl, no_u_TS
+    integer(i8b) :: els
     character(len=NAME_LEN) :: csort
     
     ! Regions used for sorting the device region
@@ -235,9 +236,9 @@ contains
 
     
     ! Calculate size of the tri-diagonal matrix
-    els = nnzs_tri(c_Tri%n,c_Tri%r)
+    els = nnzs_tri_i8b(c_Tri%n,c_Tri%r)
     ! check if there are overflows
-    if ( els < int(nnzs_tri_dp(c_Tri%n, c_Tri%r)) ) then
+    if ( els > huge(1) ) then
        call die('transiesta: Memory consumption is too large')
     end if
     
@@ -772,11 +773,12 @@ contains
       end if
 
       ! Calculate size of the tri-diagonal matrix
-      els = nnzs_tri(ctri%n,ctri%r)
+      els = nnzs_tri_i8b(ctri%n,ctri%r)
       ! check if there are overflows
-      if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
-         call die('transiesta: Memory consumption is too large, &
-              &try another pivoting scheme.')
+      if ( els > huge(1) ) then
+        write(*,'(tr3,a,i0,'' / '',i0)')'*** Number of elements exceeds integer limits [elements / max]', &
+            els, huge(1)
+        write(*,'(tr3,a)')'*** Will not be able to use this pivoting scheme!'
       end if
       
       total = real(no_u_ts, dp) ** 2
