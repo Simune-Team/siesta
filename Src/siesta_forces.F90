@@ -128,7 +128,7 @@ contains
 
     real(dp) :: Qcur
 #ifdef NCDF_4
-    type(dict) :: d_sav
+    type(dictionary_t) :: d_sav
 #endif
 #ifdef MPI
     integer :: MPIerror
