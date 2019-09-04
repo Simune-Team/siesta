@@ -5149,6 +5149,40 @@ The Density matrix can be:
   
 \end{fdflogicalF}
 
+\begin{fdfentry}{DM!Init}<atomic>
+  \index{spin!initialization}%
+
+  Specify the initial density matrix composition. All these methods
+  also obey \fdf{DM!InitSpin!AF}.
+
+  \begin{fdfoptions}
+    
+    \option[atomic]%
+    \fdfindex*{DM!Init!atomic}
+
+    Only initialize the diagonal (on-site) density matrices according
+    to the initial charges on the atomic orbital.
+
+
+    \option[atomic-state]%
+    \fdfindex*{DM!Init!atomic-state}
+
+    Determine the initial density matrix from initial atomic states
+    with coefficients only on the orbitals with initial charge.
+
+    This method and \fdf{DM!Init!atomic} are only different when the
+    following two conditions are met: 1) an auxiliary supercell is
+    used, and 2) when some orbitals (with atomic charges) overlaps
+    with its own supercell image.
+
+    For some systems this initial density matrix \emph{may} create
+    faster convergence.
+
+  \end{fdfoptions}
+
+\end{fdfentry}
+
+
 \begin{fdflogicalF}{DM!InitSpin!AF}
   \index{spin!initialization}%
   \index{ferromagnetic initial DM}%
@@ -5204,6 +5238,23 @@ The Density matrix can be:
   This block has precedence over \fdf{DM!InitSpin!AF}.
 
 \end{fdfentry}
+
+\begin{fdfentry}{DM!Init.RandomStates}[integer]<0>
+
+  Randomize $N$ number of states in the initial density-matrix. This
+  may be useful to give the system an initial kick. The randomized
+  states only has coefficients where the initial atomic charges are
+  non-zero. This prohibits initial charges in high-lying shells.
+
+  This only has an effect if the density matrix is started from an
+  atomic density and/or when using \fdf{DM!InitSpin}.
+
+  \note this is currently experimental since the randomized states are
+  not ensured orthogonal. This flag may be removed in later
+  revisions with some super seeding functions.
+
+\end{fdfentry}
+
 
 \begin{fdflogicalT}{DM!AllowReuse}
 
