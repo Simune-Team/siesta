@@ -138,7 +138,7 @@ contains
 
     use m_ts_rgn2trimat
     use m_ts_tri_common, only : ts_pivot_tri_sort_El
-    use m_ts_tri_common, only : nnzs_tri_i8b, nnzs_tri_dp
+    use m_ts_tri_common, only : nnzs_tri_i8b
     use m_ts_electype
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -293,9 +293,11 @@ contains
        ! Print out memory estimate
        els = nnzs_tri_i8b(DevTri%n,DevTri%r)
        ! check if there are overflows
-       if ( els < int(nnzs_tri_dp(DevTri%n, DevTri%r), i8b) ) then
-          call die('tbt: Memory consumption is too large, try &
-               &another pivoting scheme.')
+       if ( els > huge(1) ) then
+         write(*,'(a,i0)') 'Elements: ', els
+         write(*,'(a,i0)') 'Max: ', huge(1)
+         call die('tbt: Memory consumption is too large, try &
+             &another pivoting scheme.')
        end if
        write(*,'(a,i0)') 'tbt: Matrix elements in BTD: ', els
 
@@ -805,11 +807,12 @@ contains
       end if
 
       ! Calculate size of the tri-diagonal matrix
-      els = nnzs_tri(ctri%n,ctri%r)
+      els = nnzs_tri_i8b(ctri%n,ctri%r)
       ! check if there are overflows
-      if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
-        call die('transiesta: Memory consumption is too large, &
-            &try another pivoting scheme.')
+      if ( els > huge(1) ) then
+        write(*,'(tr3,a,i0,'' / '',i0)')'*** Number of elements exceeds integer limits [elements / max]', &
+            els, huge(1)
+        write(*,'(tr3,a)')'*** Will not be able to use this pivoting scheme!'
       end if
 
       if ( IONode ) then

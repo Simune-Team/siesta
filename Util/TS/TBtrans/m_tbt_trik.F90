@@ -1695,12 +1695,17 @@ contains
       real(dp) :: mem
       character(len=2) :: unit
 
-      if ( .not. IONode ) return
-      if ( verbosity < 5 ) return
-
       ! Total number of elements
       nsize = nnzs_tri_i8b(DevTri%n,DevTri%r)
       nsize = nsize + padding
+
+      if ( nsize > huge(1) ) then
+        call die('tbt_trik: required contiguous allocated space requires long &
+            &integers. Currently not supported.')
+      end if
+
+      if ( .not. IONode ) return
+      if ( verbosity < 5 ) return
 
       unit = 'KB'
       mem = real(nsize, dp) * 16._dp / 1024._dp
