@@ -37,6 +37,7 @@
       use m_spin,         only: spinor_dim 
       use m_diagon,       only: diagon
       use m_dhscf,        only: dhscf
+      use m_partial_charges, only: want_partial_charges
       implicit none
 
       integer :: dummy_iscf = 1
@@ -48,7 +49,8 @@
       real(dp)  :: dummy_dipol(3)
 
       real(dp)  :: factor, g2max, dummy_Entrop
-      logical   :: genlogic   ! Generate local density of states?
+      logical :: genlogic ! Generate local density of states?
+      logical :: want_partial_charges_save ! to skip Voronoi/Hirshfeld in LDOS calculation
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -61,6 +63,9 @@
       genlogic = fdf_block('LocalDensityOfStates',bfdf)
 
       if ( genlogic ) then
+
+        want_partial_charges_save = want_partial_charges
+        want_partial_charges = .false.
 
 ! Find the desired energy range
         if (.not. fdf_bline(bfdf,pline))
@@ -99,6 +104,8 @@
           if (IOnode)  write(6,*)
      .       'siesta: ERROR: LDOS implemented only with diagon'
         endif
+
+        want_partial_charges = want_partial_charges_save
 
       endif ! genlogic
 
