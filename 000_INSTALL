@@ -10,6 +10,7 @@ https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.4.tar.gz
 https://launchpad.net/libpsml/trunk/1.1/+download/libpsml-1.1.7.tgz
 https://launchpad.net/libgridxc/trunk/0.8/+download/libgridxc-0.8.5.tgz
 
+(and soon from https://gitlab.com/siesta-project)
 
 NOTE: You need version 1.5.4 of the xmlf90 library,
       at least version 0.8.5 of the libgridxc library, and
@@ -31,7 +32,8 @@ NOTE: You need version 1.5.4 of the xmlf90 library,
 NOTE: The structure of the arch.make file has changed a bit. MPI and NETCDF
       functionality is now requested by setting WITH_MPI and WITH_NETCDF,
       respectively, and there must be specific FC_SERIAL and FC_PARALLEL
-      symbols for the Fortran compiler.
+      symbols for the Fortran compiler. See the examples in Obj/gfortran-config.make
+      and Obj/gfortran-multiconfig.make.
       
     
 

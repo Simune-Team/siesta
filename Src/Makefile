@@ -1472,6 +1472,9 @@ class_zspdata3d.o: class_SpData3D.o
 class_ztrimat.o: class_TriMat.o
 f90sockets.o: fsockets.o
 fsiesta.o: fsiesta_sockets.o
+gpfa_core_dp.o: m_fft_gpfa.o
+gpfa_core_sp.o: m_fft_gpfa.o
+gpfa_fft.o: m_fft_gpfa.o
 kpoint_dos_m.o: kpoint_dos.o
 kpoint_ldos_m.o: kpoint_ldos.o
 kpoint_pdos_m.o: kpoint_pdos.o

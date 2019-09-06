@@ -30,7 +30,7 @@ C Modules --------------------------------------------------------------
       USE DEFS_BASIS
       USE DEFS_COMMON
       use interpolation, only: spline, splint
-      use m_fft_gpfa,only : fft_gpfa_ez
+      use gpfa_fft,only : fft_gpfa_ez
 
       IMPLICIT NONE
 

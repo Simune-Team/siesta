@@ -15,7 +15,7 @@
       use radial
       use atmfuncs, only: floating, zvalfis, psch
       use interpolation, only: polint ! polynomial interpolation
-      use m_fft_gpfa, only: nfft
+      use gpfa_fft, only: nfft
       use m_radfft
       use sys, only: die
       use m_bessph, only: bessph   ! Spherical Bessel functions

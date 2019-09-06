@@ -204,6 +204,9 @@ gen-basis.o: basis_types.o chemical.o ldau_specs.o local_sys.o m_spin.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 aux_proj.o: atom.o
+gpfa_core_dp.o: m_fft_gpfa.o
+gpfa_core_sp.o: m_fft_gpfa.o
+gpfa_fft.o: m_fft_gpfa.o
 m_bessph.o: bessph.o
 m_hamann.o: hamann.o
 m_radfft.o: radfft.o

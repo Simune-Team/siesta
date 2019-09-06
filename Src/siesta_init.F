@@ -393,8 +393,7 @@ C     Initialise MPI and set processor number
 !     Initialise exchange-correlation functional information
       call read_xc_info()
 #ifdef MPI
-      call gridxc_init(comm=MPI_Comm_World,
-     $     time_mpi_calls=fdf_get('gridxc-time-mpi-calls',.false.))
+      call gridxc_init(comm=MPI_Comm_World)
 #else
       call gridxc_init()
 #endif
