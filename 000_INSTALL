@@ -4,7 +4,11 @@ xmlf90
 libPSML
 libGridXC (optionally with libxc)
 
-These can be downloaded from Launchpad:
+which are also part of the ESL bundle
+(https://gitlab.com/ElectronicStructureLibrary/esl-bundle).
+Note that you need version 0.4 of the ESL bundle.
+
+Alternatively, the tarballs for the libraries can be downloaded from Launchpad:
 
 https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.4.tar.gz
 https://launchpad.net/libpsml/trunk/1.1/+download/libpsml-1.1.7.tgz
@@ -17,6 +21,15 @@ NOTE: You need version 1.5.4 of the xmlf90 library,
       at least version 1.1.7 of the libpsml library.
 
 ** Steps in detail
+
+* With the ESL bundle:
+
+-  Build and install the bundle following the instructions provided.
+
+-  Use as starting point for your arch.make the file
+   Obj/gfortran-esl-bundle.make.
+
+* If manually compiling the required libraries:
 
 - Dowload and unpack the library tarballs
 
@@ -32,8 +45,8 @@ NOTE: You need version 1.5.4 of the xmlf90 library,
 NOTE: The structure of the arch.make file has changed a bit. MPI and NETCDF
       functionality is now requested by setting WITH_MPI and WITH_NETCDF,
       respectively, and there must be specific FC_SERIAL and FC_PARALLEL
-      symbols for the Fortran compiler. See the examples in Obj/gfortran-config.make
-      and Obj/gfortran-multiconfig.make.
+      symbols for the Fortran compiler. See the examples in Obj/*.make.
+
       
     
 
