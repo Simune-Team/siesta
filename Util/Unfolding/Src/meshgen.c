@@ -1,10 +1,12 @@
-// Generates the UnfoldedBandLines block for a 2D qpoint mesh
-// Reads the input from a 'meshgen.dat' file with the format:
+// Generates the UnfoldedBandLines block for a squared 2D 
+// q-point mesh. Reads the input from the 'meshgen.dat' 
+// file, with format:
 //    ne   emin   emax
-//    nx   ny
-//    x0   xend
-//    y0   yend
-// and writes the formated output 'meshgen.fdf'
+//    nx   x0   xend
+//    ny   y0   yend
+// and writes the formated output 'meshgen.fdf'.
+// After running unfold, plot the output files with 
+// 'plotmesh.m'.
 //
 // April 2019 
 
@@ -29,9 +31,8 @@ int i;
 double xi, dx;
 
 fscanf(dat, "%d %lf %lf", &ne, &emin, &emax);
-fscanf(dat, "%d %d", &nx, &ny);
-fscanf(dat, "%lf %lf", &x0, &xend);
-fscanf(dat, "%lf %lf", &y0, &yend);
+fscanf(dat, "%d %lf %lf", &nx, &x0, &xend);
+fscanf(dat, "%d %lf %lf", &ny, &y0, &yend);
 
 xi = x0;
 dx = (xend - x0)/(nx - 1.0);

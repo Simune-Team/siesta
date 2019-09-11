@@ -1,0 +1,62 @@
+  SystemName		diamond
+  SystemLabel		diamond
+  NumberOfAtoms		2
+  NumberOfSpecies	1
+
+  %block ChemicalSpeciesLabel
+   1	6    C
+  %endblock ChemicalSpeciesLabel
+
+  LatticeConstant	3.57 Ang
+
+  %block LatticeVectors
+   0.000   0.500   0.500
+   0.500   0.000   0.500
+   0.500   0.500   0.000
+  %endblock LatticeVectors
+
+  AtomicCoordinatesFormat	ScaledCartesian
+  %block AtomicCoordinatesAndAtomicSpecies
+  -0.125  -0.125  -0.125   1  C
+   0.125   0.125   0.125   1  C
+  %endblock AtomicCoordinatesAndAtomicSpecies
+
+  XC.functional		GGA
+  XC.authors		PBE
+
+  PAO.BasisSize  	DZP
+  DM.MixingWeight	0.15  
+  DM.UseSaveDM		.true.
+  DM.Tolerance		0.0001
+
+#  MeshCutoff    300.0 Ry
+  %block MeshSizes
+    32   32   32
+  %endblock MeshSizes
+
+  %block kgrid.MonkhorstPack
+    8   0   0   0.5
+    0   8   0   0.5
+    0   0   8   0.5
+  %endblock kgrid.MonkhorstPack
+
+  BandLinesScale	pi/a
+  SaveHS		.true.
+
+  %block UnfoldedBandLines
+    500  -26.0  24.0  eV
+      1  -2.0 -2.0 -2.0  \Gamma
+     85  -1.0 -1.0 -1.0  L
+     85   0.0  0.0  0.0  \Gamma
+    100   2.0  0.0  0.0  X
+     35   2.0  0.5  0.5  U
+    105   2.0  2.0  2.0  \Gamma
+  %endblock UnfoldedBandLines
+
+  RefoldingGcutoff	20.0 Ry
+  %block RefoldingLatticeVectors
+   0.000  0.500  0.500
+   0.500  0.000  0.500
+   0.500  0.500  0.000
+  %endblock RefoldingLatticeVectors
+
