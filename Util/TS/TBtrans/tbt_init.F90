@@ -158,8 +158,8 @@ subroutine tbt_init()
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    if ( itmp == 1 ) then
 !$     ! this is the default scheduling, probably the user
-!$     ! have not set the value, predefine it to 16
-!$     itmp = 16
+!$     ! have not set the value, predefine it to 32
+!$     itmp = 32
 !$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    end if
 !$    case ( OMP_SCHED_GUIDED ) 

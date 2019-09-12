@@ -1990,6 +1990,18 @@ TBT.BTD.Pivot.Device atom+GGPS
 \end{fdflogicalF}
 
 
+\begin{fdfentry}{TBT.BTD!Optimize}[string]<speed|memory>
+
+  When selecting the smallest blocks for the BTD matrix there are
+  certain criteria that may change the size of each block. For very
+  memory consuming jobs one may choose the \fdf*{memory}. 
+
+  \note often both methods provide \emph{exactly} the same BTD matrix
+  due to constraints on the matrix.
+  
+\end{fdfentry}
+
+
 \begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{largest
       overlapping electrode}>
 

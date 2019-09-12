@@ -365,6 +365,7 @@ contains
 
     ! Initialize the min_mem
     min_mem = huge(1._dp)
+    min_mem_method = 'TOO LARGE'
 
     ! Make a copy
     tmpSp1 = tmpSp2
@@ -719,12 +720,17 @@ contains
        write(*,'(a)') ' **********'
        write(*,'(a)') ' *  NOTE  *'
        write(*,'(a)') ' **********'
-       write(*,'(a)') ' This minimum memory pivoting scheme may not necessarily be the'
-       write(*,'(a)') ' best performing algorithm!'
-       write(*,'(a,/)') ' You should analyze the pivoting schemes!'
-       write(*,'(a)') ' Minimum memory required pivoting scheme:'
-       write(*,'(a,a)') '  TS.BTD.Pivot ', trim(min_mem_method)
-       write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
+       if ( trim(min_mem_method) == 'TOO LARGE' ) then
+         write(*,'(a)') ' All pivoting methods requires more elements than can be allocated'
+         write(*,'(a)') ' Therefore you cannot run your simulation using TranSiesta'
+       else
+         write(*,'(a)') ' This minimum memory pivoting scheme may not necessarily be the'
+         write(*,'(a)') ' best performing algorithm!'
+         write(*,'(a,/)') ' You should analyze the pivoting schemes!'
+         write(*,'(a)') ' Minimum memory required pivoting scheme:'
+         write(*,'(a,a)') '  TS.BTD.Pivot ', trim(min_mem_method)
+         write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
+       end if
        write(*,*) ! new-line
     end if
 
@@ -742,6 +748,7 @@ contains
       integer :: bw, i
       ! Possibly very large numbers
       integer(i8b) :: prof, els, pad, work
+      logical :: is_suitable
       type(tRgn) :: ctri
       character(len=132) :: fname
       real(dp) :: total
@@ -776,9 +783,12 @@ contains
       els = nnzs_tri_i8b(ctri%n,ctri%r)
       ! check if there are overflows
       if ( els > huge(1) ) then
-        write(*,'(tr3,a,i0,'' / '',i0)')'*** Number of elements exceeds integer limits [elements / max]', &
+        write(*,'(tr3,a,i0,'' / '',i0)')'*** Number of elements exceeds integer limits [elements / max] ', &
             els, huge(1)
         write(*,'(tr3,a)')'*** Will not be able to use this pivoting scheme!'
+        is_suitable = .false.
+      else
+        is_suitable = .true.
       end if
       
       total = real(no_u_ts, dp) ** 2
@@ -814,7 +824,7 @@ contains
          write(*,'(tr3,a,t39,en11.3,a)') 'Rough estimation of MEMORY: ', &
               total,' GB'
       end if
-      if ( total < min_mem ) then
+      if ( total < min_mem .and. is_suitable ) then
          min_mem = total
          min_mem_method = fmethod
       end if
