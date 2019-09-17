@@ -49,6 +49,7 @@
       use extrae_eventllist, only : writeList, deleteList, eventlist
 #endif
       use m_io,            only : io_assign, io_close
+      use m_cite, only: announce_citations
 
       implicit none
 
@@ -58,6 +59,8 @@
 #endif
 !------------------------------------------------------------------------- BEGIN
       if (SIESTA_worker) then
+
+      if ( ionode ) call announce_citations()
 
 #ifdef SIESTA__FLOOK
       ! Clean up the lua environment

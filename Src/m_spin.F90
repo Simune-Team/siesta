@@ -327,6 +327,7 @@ contains
   ! Print out spin-configuration options
   subroutine print_spin_options( )
     use parallel, only: IONode
+    use m_cite, only : add_citation
 
     character(len=32) :: opt
 
@@ -334,7 +335,7 @@ contains
 
     if ( spin%SO ) then
        opt = 'spin-orbit'
-
+       call add_citation("10.1088/0953-8984/19/19/489001")
     else if ( spin%NCol ) then
        opt = 'non-collinear'
     else if ( spin%Col ) then
