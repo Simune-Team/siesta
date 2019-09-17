@@ -279,8 +279,10 @@ contains
       ! new transiesta article
       cit%comment = "TranSiesta N-electrode"
       cit%journal = "Computer Physics Communications"
-      cit%title = "Improvements on non-equilibrium and transport Green function techniques: The next-generation TranSiesta"
-      cit%author = "Papior, N. and Lorente, N. and Frederiksen, T. and Garcia, A. and Brandbyge, M"
+      cit%title = "Improvements on non-equilibrium and transport &
+          & Green function techniques: The next-generation TranSiesta"
+      cit%author = "Papior, N. and Lorente, N. and Frederiksen, T. &
+          & and Garcia, A. and Brandbyge, M"
       cit%doi = "10.1016/j.cpc.2016.09.022"
       cit%journal = "Computer Physics Communications"
       cit%year = 2017
@@ -308,8 +310,10 @@ contains
     case ( 9 )
       ! On-site SOC
       cit%comment = "Spin-orbit coupling (on-site approximation)"
-      cit%title = "On-site approximation for spin–orbit coupling inlinear combination of atomic orbitals densityfunctional methods"
-      cit%author = "Fernandez-Seivane, L. and Oliveira, M. A. and Sanvito, S. and Ferrer, J."
+      cit%title = "On-site approximation for spin–orbit coupling inlinear &
+          &combination of atomic orbitals densityfunctional methods"
+      cit%author = "Fernandez-Seivane, L. and Oliveira, M. A. and &
+          &Sanvito, S. and Ferrer, J."
       cit%journal = "Journal of Physics: Condensed Matter"
       cit%year = 2006
       cit%volume = "18"
@@ -320,7 +324,8 @@ contains
     case ( 10 )
       ! Off-site SOC
       cit%comment = "Spin-orbit coupling (off-site approximation)"
-      cit%title = "Fully relativistic pseudopotential formalism under an atomic orbital basis: spin–orbit splittings and magnetic anisotropies"
+      cit%title = "Fully relativistic pseudopotential formalism under &
+          &an atomic orbital basis: spin–orbit splittings and magnetic anisotropies"
       cit%author = "Cuadrado, R. and Cerda, J. I."
       cit%journal = "Journal of Physics: Condensed Matter"
       cit%year = 2012
@@ -403,7 +408,8 @@ contains
 
     ! Notify the user about which citations needs to be taken care of
     write(*,'(/a)') 'cite: Articles that needs to be cited in a published work'
-    write(*,'(3a)')'cite: Please see "', trim(cite_file), '" for an exhaustive BiBTeX file.'
+    write(*,'(3a)')'cite: Please see "', trim(cite_file), &
+        '" for an exhaustive BiBTeX file.'
     write(*,'(a)') 'cite: This calculation has made use of the following articles:'
 
     do ID = 1, N_citations
