@@ -5163,21 +5163,6 @@ The Density matrix can be:
     Only initialize the diagonal (on-site) density matrices according
     to the initial charges on the atomic orbital.
 
-
-    \option[atomic-state]%
-    \fdfindex*{DM!Init!atomic-state}
-
-    Determine the initial density matrix from initial atomic states
-    with coefficients only on the orbitals with initial charge.
-
-    This method and \fdf{DM!Init!atomic} are only different when the
-    following two conditions are met: 1) an auxiliary supercell is
-    used, and 2) when some orbitals (with atomic charges) overlaps
-    with its own supercell image.
-
-    For some systems this initial density matrix \emph{may} create
-    faster convergence.
-
   \end{fdfoptions}
 
 \end{fdfentry}
@@ -5249,9 +5234,14 @@ The Density matrix can be:
   This only has an effect if the density matrix is started from an
   atomic density and/or when using \fdf{DM!InitSpin}.
 
+  In case it is used together with \fdf{DM!InitSpin} it also
+  randomizes the spin-configuration which may be undesirable.
+
   \note this is currently experimental since the randomized states are
   not ensured orthogonal. This flag may be removed in later
-  revisions with some super seeding functions.
+  revisions with some super seeding functions. If testing this, start
+  with a value of $1$ to see if it has an effect, any higher numbers
+  will probably be worse.
 
 \end{fdfentry}
 

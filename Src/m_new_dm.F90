@@ -936,7 +936,7 @@ contains
     ! *** Local variables
     type(block_fdf) :: bfdf
     character(len=32) :: method
-    integer :: i_method ! 1 == atomic, 2 == atomic-state
+    integer :: i_method ! 1 == atomic
     logical :: init_spin_block
     type(dData2D) :: arr_2D
     ! The pointers for the sparse pattern
@@ -948,10 +948,8 @@ contains
     method = fdf_get('DM.Init', 'atomic')
     if ( leqi(method, 'atomic') ) then
       i_method = 1
-    else if ( leqi(method, 'atomic-state') ) then
-      i_method = 2
     else
-      call die('m_new_dm: erroneous option: DM.Init [atomic/atomic-state]')
+      call die('m_new_dm: erroneous option: DM.Init [atomic]')
     end if
     
     ! First we need to figure out the options
@@ -978,8 +976,6 @@ contains
       call init_user()
     else if ( i_method == 1 ) then
       call init_atomic()
-    else if ( i_method == 2 ) then
-      call init_atomic_state()
     end if
 
     ! We have initialized with atomic information. Correct in case we
@@ -1081,108 +1077,6 @@ contains
       end if
 
     end subroutine init_atomic
-
-    subroutine init_atomic_state()
-
-      use parallel, only: Node
-      use geom_helper, only: ucorb
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      integer :: io, gio, i, ind, jo, i1, i2
-      real(dp) :: rs(spin%spinor)
-      real(dp) :: q_state(spin%spinor)
-#ifdef MPI
-      integer :: ierr
-#endif
-
-      ! Populate according to a state with only elements
-      ! on the diagonal orbital parts.
-
-      ! This method obeys the anti_ferro flag
-      
-      ! Initialize to 0
-      do i2 = 1 , spin%DM
-        do i1 = 1 , nnz
-          DM(i1,i2) = 0._dp
-        end do
-      end do
-
-      ! Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro
-      do io = 1, no_l
-         
-        ! Retrieve global orbital index
-        gio = index_local_to_global(dit, io)
-
-        ! Ensure we don't do normalization for infty!
-        ! This should always be roughly equivalent to zero, but
-        ! for safety reasons we don't handle DM with less than 0.000001 electrons!
-        if ( abs(DM_atom(gio)) <= 1.e-6_dp ) cycle
-
-        ! Initialize a fictitious state with eigenstate
-        ! only located on this orbital
-        if ( spin%spinor == 2 ) then
-          rs(1) = min(DM_atom(gio), 1._dp)
-          rs(2) = DM_atom(gio) - rs(1)
-        else
-          rs(1) = DM_atom(gio)
-        end if
-          
-        ! Calculate inner product to rescale for 1 electron for this state
-        q_state(:) = 0._dp
-        do ind = ptr(io) + 1 , ptr(io) + ncol(io)
-          ! *any* io -> IO connection
-          if ( ucorb(col(ind), no_u) /= gio ) cycle
-          q_state(:) = q_state(:) + rs(:) * S(ind) * rs(:)
-        end do
-
-        ! To account for partial DM_atom charges we have
-        ! to normalize for DM_atom charges per state
-        do ind = 1 , spin%spinor
-          if ( q_state(ind) <= 1.e-6_dp ) then
-            q_state(ind) = 0._dp
-            rs(ind) = 0._dp
-          else
-            q_state(ind) = q_state(ind) / rs(ind)
-            ! Rescale diagonal *state* for correct charge
-            rs(ind) = rs(ind) / sqrt(q_state(ind))
-          end if
-        end do
-
-        do ind = ptr(io) + 1 , ptr(io) + ncol(io)
-          if ( ucorb(col(ind), no_u) /= gio ) cycle
-
-          if ( spin%DM == 1 ) then
-            
-            DM(ind,1) = rs(1) * rs(1)
-            
-          else
-
-            i1 = 1
-            i2 = 2
-            ! Check for anti_ferro to swap indices
-            if ( anti_ferro ) then
-              if ( mod(iaorb(gio),2) == 0 ) then
-                i1 = 2
-                i2 = 1
-              end if
-            end if
-
-            DM(ind,i1) = rs(1) * rs(1)
-            DM(ind,i2) = rs(2) * rs(2)
-
-          end if
-          
-        end do
-      end do
-      
-      if ( IONode ) then
-        write(*,'(a)') "DM filled with atomic-state data:"
-        call print_type(DM_2D)
-      end if
-      
-    end subroutine init_atomic_state
 
     subroutine init_user()
 
