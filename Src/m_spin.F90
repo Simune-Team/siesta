@@ -354,10 +354,10 @@ contains
 
     if ( spin%SO ) then
        write(*,'(a)') repeat('#',60)
-       write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
-       write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
        call message("WARNING","This spin-orbit implementation uses a local approximation.")
-       call message("WARNING","You are strongly advised to use the newer version.")
+       call message("WARNING","From 4.2 and onwards the full non-local &
+           &approximation is implemented")
+       call message("WARNING","You are strongly adviced to use >=4.2 versions!")
        write(*,'(a)') repeat('#',60)
     end if
 
