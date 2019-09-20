@@ -11,6 +11,10 @@ Release notes for siesta 4.1-b5 beta version
 --- Default changes:
     TranSiesta/TBtrans eta values are now default to 1meV
     TranSiesta equilibrium contours now default to using the "right" scheme
+    Maximum l for KB projectors is now automatically set to the highest l
+       in the PS file. This may result in slight changes.
+
+--- Added citation information to output (end of run)
 
 --- Allowed Mesh.Sizes as list input so users can specify their own Mesh size
 
@@ -23,6 +27,13 @@ Release notes for siesta 4.1-b5 beta version
 
 --- Lots of updates for documentation
 
+--- Precision problem in the vibra utility is fixed, lp:1816719
+
+--- Added wavefunction tools for spin-orbit calculations.
+    Now denchar and stm utilities can process spin-orbit output.
+
+--- Removed *ALL* OMP collapse statements, Intel 2019 is buggy.
+
 --- TranSiesta/TBtrans changes:
 
 -- Much faster Bloch expansions in transiesta/tbtrans calculations
@@ -34,7 +45,19 @@ Release notes for siesta 4.1-b5 beta version
 
 -- Changed Eta defaults in electrodes
 
--- Enabled usage of external truly infinite electrodes
+-- Enabled usage of external truly infinite electrodes (real-space self-energies)
+
+-- Fixed contour file output which is now usable for various post-processing
+   utilities.
+
+-- Fixed tbtrans command line arguments, lp:1829974
+
+-- Added delta-Ef to the electrode block to specify off-set in electrodes.
+   Mainly useful for semi-conducting electrodes.
+
+-- Added separate energies for NEGF calculation, now the TranSiesta energies
+   are more divided and should be more comperable since they are calculated
+   on the updated sub-set.
 
 
 #BETA#BETA#BETA#BETA#BETA#BETA#
