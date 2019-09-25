@@ -11305,20 +11305,43 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   \end{output}
   % 
   The extra output corresponds to fine details in the integration
-  scheme; \texttt{ts-err-D} refers to the difference between the
-  different integrals of the density matrix for the various chemical
-  potentials, see e.g. Eq.~(12) in \cite{Papior2017}. \texttt{ij(..,
-      ..)} refers to which matrix element it is (orbital indices),
-  \texttt{M} is the final weighted matrix element
-  $\sum_{\elec}w_\elec\DM^\elec$, \texttt{ew} is the maximum difference
-  between $\sum_{\elec}w_\elec\DM^\elec-\DM^\elec$ for all
-  $\elec$. \texttt{em} is the maximum difference between any two
-  $\DM^\elec$ and finally, \texttt{avg\_em} is average of the sum of all
-  $\DM^\elec-\DM^{\elec'}$ which tends to smooth out and be very close
-  to zero.
-  % 
-  The \texttt{ts-w-q} data shows the charges from the different
-  chemical potentials as $\Tr[w_\elec\DM^\elec\SO]$.
+  scheme.
+  \begin{description}[labelindent=3em, leftmargin=4.5em]
+    \itemsep 10pt
+    \parsep 0pt
+    
+    \item[\texttt{ts-err-*}] are estimated error outputs from the
+    different integrals, for the density matrix (\texttt{D}) and the
+    energy density matrix (\texttt{E}), see Eq.~(12) in
+    \cite{Papior2017}. All values (except \texttt{avg\_em}) are for
+    the given orbital site
+
+    \begin{description}
+      \itemsep 4pt
+      \parsep 0pt
+
+      \item[\texttt{ij(A,B)}] refers to the matrix element between orbital
+      \texttt{A} and \texttt{B}
+
+      \item[\texttt{M}] is the weighted matrix element value,
+      $\sum_{\elec}w_\elec\DM^\elec$
+
+      \item[\texttt{ew}] is the maximum difference between
+      $\sum_{\elec}w_\elec\DM^\elec-\DM^\elec$ for all $\elec$.
+
+      \item[\texttt{em}] is the maximum difference between
+      $\DM^{\elec'}-\DM^\elec$ for all combinations of $\elec$ and
+      $\elec'$.
+
+      \item[\texttt{avg\_em}] is the averaged difference of \texttt{em} for all
+      orbital sites.
+
+    \end{description}
+
+    \item[\texttt{ts-w-q}] is the Mulliken charge from the different
+    integrals: $\Tr[w_\elec\DM^\elec\SO]$
+    
+  \end{description}
 
   \begin{fdfoptions}
 
