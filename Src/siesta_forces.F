@@ -70,6 +70,7 @@
       use m_forces,              only: fa
       use units,                 only: eV, Ang
       use write_subs,            only: siesta_write_forces
+      use write_subs,            only: transiesta_write_forces
       use write_subs,            only: siesta_write_stress_pressure
 #ifdef NCDF_4
       use m_ncdf_siesta, only : cdf_save_settings
@@ -593,10 +594,13 @@
          deallocate(Hsave)
       end if
       if (ionode) then
-         print *, "Max diff in force (eV/Ang): ",
-     $        maxval(abs(fa-fa_old))*Ang/eV
-         call siesta_write_forces(-1)
-         call siesta_write_stress_pressure()
+        write(6,'(a,f11.6)') "Max diff in force (eV/Ang): ",
+     $      maxval(abs(fa-fa_old))*Ang/eV
+        call siesta_write_forces(-1)
+        if ( TSrun ) then
+          call transiesta_write_forces()
+        end if
+        call siesta_write_stress_pressure()
       endif
       deallocate(fa_old)
 

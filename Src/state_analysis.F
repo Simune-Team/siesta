@@ -36,6 +36,7 @@
       use m_forces
       use m_energies, only: update_FreeE, update_FreeEHarris
       use m_intramol_pressure, only: remove_intramol_pressure
+      use m_ts_global_vars, only: TSrun
 
 #ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_FORCES
@@ -162,6 +163,9 @@
 !     Force output 
       if (IOnode) then
         call siesta_write_forces(istep)
+        if ( TSrun ) then
+          call transiesta_write_forces()
+        end if
         call siesta_write_stress_pressure()
         call wallclock('--- end of geometry step')
       endif
