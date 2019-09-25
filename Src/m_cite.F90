@@ -354,8 +354,8 @@ contains
     ! Add initial comment if this is the first time
     ! being called.
     if ( sum(used) == 1 ) then
-      write(iu, '(a)') '# This file contains the papers &
-          &that you should cite in case of publishing a paper.'
+      write(iu, '(a)') '# This file contains articles &
+          &we encourage you to cite in case of publishing a paper.'
       write(iu, '(a)') '# Each entry corresponds to using a &
           &feature that has been enabled via FDF-flags'
       write(iu, '(a)') '# and which is based on a development &
@@ -407,10 +407,10 @@ contains
     integer :: ID
 
     ! Notify the user about which citations needs to be taken care of
-    write(*,'(/a)') 'cite: Articles that needs to be cited in a published work'
-    write(*,'(3a)')'cite: Please see "', trim(cite_file), &
+    write(*,'(/,3a)')'cite: Please see "', trim(cite_file), &
         '" for an exhaustive BiBTeX file.'
-    write(*,'(a)') 'cite: This calculation has made use of the following articles:'
+    write(*,'(a)') 'cite: This calculation has made use of the following articles.'
+    write(*,'(a)') 'cite: Articles are encouraged to be cited in a published work.'
 
     do ID = 1, N_citations
       if ( used(ID) == 1 ) then ! has been used

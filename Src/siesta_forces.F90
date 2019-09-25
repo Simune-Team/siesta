@@ -612,11 +612,14 @@ contains
          deallocate(Hsave)
       end if
       if (ionode) then
-         print *, "Max diff in force (eV/Ang): ", &
-              maxval(abs(fa-fa_old))*Ang/eV
-         call siesta_write_forces(-1)
-         call siesta_write_stress_pressure()
-      endif
+        write(6,'(a,f11.6)') "Max diff in force (eV/Ang): ", &
+            maxval(abs(fa-fa_old))*Ang/eV
+        call siesta_write_forces(-1)
+        if ( TSrun ) then
+          call transiesta_write_forces()
+        end if
+        call siesta_write_stress_pressure()
+      end if
       deallocate(fa_old)
 
     end subroutine compute_forces

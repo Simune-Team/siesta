@@ -20,7 +20,8 @@ by:
   TSHS files output from TranSIESTA.
 
   It also reads NetCDF4 files created by the community utility:
-    github.com/zerothi/sids
+
+    www.github.com/zerothi/sisl
 
 
 - ts2ts
@@ -48,7 +49,5 @@ by:
 - Tight-binding
   To use tight-binding parameters compatible with TBtrans
   you can use the utility created here:
-     github.com/zerothi/sisl
 
-  For an older implementation (roughly equivalent, see TB
-  directory).
+     www.github.com/zerothi/sisl
