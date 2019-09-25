@@ -407,10 +407,10 @@ contains
     integer :: ID
 
     ! Notify the user about which citations needs to be taken care of
-    write(*,'(3a)')'cite: Please see "', trim(cite_file), &
+    write(*,'(/,3a)')'cite: Please see "', trim(cite_file), &
         '" for an exhaustive BiBTeX file.'
     write(*,'(a)') 'cite: This calculation has made use of the following articles.'
-    write(*,'(/a)') 'cite: Articles are encouraged to be cited in a published work.'
+    write(*,'(a)') 'cite: Articles are encouraged to be cited in a published work.'
 
     do ID = 1, N_citations
       if ( used(ID) == 1 ) then ! has been used
