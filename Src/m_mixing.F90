@@ -1978,7 +1978,7 @@ contains
       end if
 
 
-!$OMP parallel default(shared), private(i, j, res, rres)
+!$OMP parallel default(shared), private(i, j)
 
       !  x^opt[i+1] = x[i] + G F[i]
 !$OMP do
@@ -1991,8 +1991,10 @@ contains
       
          !  res == x[j] - x[j-1]
          ! rres == F[j+1] - F[j]
-         res => getstackval(mix, 1, j)
-         rres => getstackval(mix, 2, j)
+!$OMP single
+        res => getstackval(mix, 1, j)
+        rres => getstackval(mix, 2, j)
+!$OMP end single ! implicit barrier
 
          !  x^opt[i+1] = x^opt[i+1] +
          !       alpha_j ( x[j] - x[j-1] + G (F[j+1] - F[j]) )
@@ -2050,7 +2052,7 @@ contains
       end if
 
 
-!$OMP parallel default(shared), private(i, j, res, rres)
+!$OMP parallel default(shared), private(i, j)
 
       !  x^opt[i+1] = x[i] + G F[i]
 !$OMP do
@@ -2063,8 +2065,10 @@ contains
       
          !  res == x[j] - x[j-1]
          ! rres == F[j+1] - F[j]
+!$OMP single
          res => getstackval(mix, 1, j)
          rres => getstackval(mix, 2, j)
+!$OMP end single ! implicit barrier
 
          !  x^opt[i+1] = x^opt[i+1] +
          !       alpha_j ( x[j] - x[j-1] + G (F[j+1] - F[j]) )

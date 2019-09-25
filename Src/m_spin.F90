@@ -356,19 +356,22 @@ end subroutine init_spin
   ! Print out spin-configuration options
   subroutine print_spin_options( )
     use parallel, only: IONode
+    use m_cite, only : add_citation
 
     character(len=32) :: opt
 
     if ( .not. IONode ) return
 
     if ( spin%SO ) then
-       if ( spin%SO_offsite ) then
-          opt = 'spin-orbit+offsite'
-       else if (spin%SO_onsite) then
-          opt = 'spin-orbit+onsite'
-       else
-          call die("Inconsistent SO option")
-       end if
+      if ( spin%SO_offsite ) then
+        opt = 'spin-orbit+offsite'
+        call add_citation("10.1088/0953-8984/24/8/086005")
+      else if (spin%SO_onsite) then
+        opt = 'spin-orbit+onsite'
+        call add_citation("10.1088/0953-8984/19/19/489001")
+      else
+        call die("Inconsistent SO option")
+      end if
     else if ( spin%NCol ) then
        opt = 'non-collinear'
     else if ( spin%Col ) then
@@ -385,14 +388,10 @@ end subroutine init_spin
        write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
     end if
 
-    if ( spin%SO ) then
-       write(*,'(a)') repeat('#',60)
-       write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
-       write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
-       if ( spin%SO_onsite ) then
-          call message("WARNING","Using a local approximation to spin-orbit coupling.")
-       end if
-       write(*,'(a)') repeat('#',60)
+    if ( spin%SO .and. spin%SO_onsite ) then
+      write(*,'(a)') repeat('#',60)
+      call message("WARNING","Using a local approximation for spin-orbit coupling.")
+      write(*,'(a)') repeat('#',60)
     end if
 
   end subroutine print_spin_options

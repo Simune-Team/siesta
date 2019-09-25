@@ -74,7 +74,7 @@ module m_cite
   ! Increment this after having added a new
   ! citation!
   ! OTHERWISE YOU WILL EXPERIENCE A SEG-FAULT.
-  integer, parameter :: N_citations = 9
+  integer, parameter :: N_citations = 10
 
   private
 
@@ -91,18 +91,19 @@ module m_cite
   integer, parameter :: LEN_ISSUE = 32
 
   type citation
-     character(len=LEN_COMMENT) :: comment = STR_NULL
+    character(len=LEN_COMMENT) :: comment = STR_NULL
 
-     ! regular bib-tex entry table data
-     character(len=LEN_TYPE) :: type = 'article'
-     character(len=LEN_AUTHOR) :: author = STR_NULL
-     character(len=LEN_TITLE) :: title = STR_NULL
-     character(len=LEN_JOURNAL) :: journal = STR_NULL
-     integer :: year = 0
-     character(len=LEN_VOLUME) :: volume = STR_NULL
-     character(len=LEN_ISSUE) :: issue = STR_NULL
-     character(len=LEN_CITEKEY) :: cite_key = STR_NULL
-     character(len=LEN_DOI) :: doi = STR_NULL
+    ! regular bib-tex entry table data
+    character(len=LEN_TYPE) :: type = 'article'
+    character(len=LEN_AUTHOR) :: author = STR_NULL
+    character(len=LEN_TITLE) :: title = STR_NULL
+    character(len=LEN_JOURNAL) :: journal = STR_NULL
+    integer :: year = 0
+    character(len=LEN_VOLUME) :: volume = STR_NULL
+    character(len=LEN_ISSUE) :: issue = STR_NULL
+    character(len=LEN_CITEKEY) :: cite_key = STR_NULL
+    character(len=LEN_DOI) :: doi = STR_NULL
+    integer :: ID = 0
 
   end type citation
 
@@ -113,8 +114,8 @@ module m_cite
   integer, parameter :: INT_KIND = selected_int_kind(r=1)
   integer(INT_KIND), save :: used(N_citations) = 0
 
-  public :: init_citation, add_citation
-  
+  public :: init_citation, add_citation, announce_citations
+
 contains
 
   function get_unit() result(u)
@@ -124,12 +125,12 @@ contains
     u = 99
     opened = .true.
     do while ( opened )
-       u = u + 1
-       inquire( unit=u , opened = opened )
+      u = u + 1
+      inquire( unit=u , opened = opened )
     end do
-    
+
   end function get_unit
-    
+
 
   subroutine init_citation(pre, delete)
     character(len=*), intent(in) :: pre
@@ -144,200 +145,281 @@ contains
     iu = get_unit()
 
     if ( .not. ldelete ) return
-    
+
     ! Be sure to have an "empty" citation file
     open( iu , file = cite_file, &
-         form = 'formatted', &
-         position = 'APPEND')
+        form = 'formatted', &
+        position = 'APPEND')
 
     ! delete file
     close( iu, status='DELETE' )
-         
+
   end subroutine init_citation
 
   ! Adds a citation
   ! The `key` is first searched in the doi targets
   ! and then subsequently 
-  subroutine add_citation(key)
-    character(len=*), intent(in) :: key
+  subroutine add_citation(doi)
+    character(len=*), intent(in) :: doi
     type(citation) :: cit
-    integer :: ID
 
-    ID = 0
-
-    select case ( key )
-
-    case ( "10.1088/0953-8984/14/11/302" )
-       ! Siesta paper
-       cit%comment = "Primary SIESTA paper"
-       cit%doi = "10.1088/0953-8984/14/11/302"
-       cit%journal = "Journal of Physics: Condensed Matter"
-       cit%year = 2002
-       cit%volume = "14"
-       cit%issue = "11"
-       cit%cite_key = "Soler2002"
-       ID = 1
-       
-    case ( "10.1103/PhysRevB.65.165401" )
-       ! transiesta paper
-       cit%comment = "Primary TranSiesta paper"
-       cit%doi = "10.1103/PhysRevB.65.165401"
-       cit%journal = "Physical Review B"
-       cit%year = 2002
-       cit%volume = "65"
-       cit%issue = "16"
-       cit%cite_key = "Brandbyge2002"
-       ID = 2
-       
-    case ( "10.1103/PhysRevB.59.12301" )
-       ! slap dipole correction
-       cit%comment = "Slab-dipole correction"
-       cit%doi = "10.1103/PhysRevB.59.12301"
-       cit%journal = "Physical Review B"
-       cit%year = 1999
-       cit%volume = "59"
-       cit%issue = "16"
-       cit%cite_key = "Bengtsson1999"
-       ID = 3
-
-    case ( "10.1103/PhysRevB.57.1505" )
-       ! implementation specific LDA+U
-       cit%comment = "LDA+U implementation"
-       cit%doi = "10.1103/PhysRevB.57.1505"
-       cit%journal = "Physical Review B"
-       cit%year = 1998
-       cit%volume = "57"
-       cit%issue = "3"
-       cit%cite_key = "Dudarev1998"
-       ID = 4
-
-    case ( "10.1039/C5CP04613K" )
-       ! charge/hartree gate
-       cit%comment = "Charge/Hartree gate model"
-       cit%doi = "10.1039/C5CP04613K"
-       cit%journal = "Phys. Chem. Chem. Phys."
-       cit%year = 2016
-       cit%volume = "18"
-       cit%issue = "2"
-       cit%cite_key = "Papior2016A"
-       ID = 5
-
-    case ( "10.1016/j.cpc.2016.09.022" )
-       ! new transiesta article
-       cit%comment = "TranSiesta N-electrode"
-       cit%doi = "10.1016/j.cpc.2016.09.022"
-       cit%journal = "Computer Physics Communications"
-       cit%year = 2017
-       cit%volume = "212"
-       cit%cite_key = "Papior2017"
-       ID = 6
-
-    case ( "10.1088/0953-8984/26/30/305503" )
-       ! PEXSI-siesta
-       cit%comment = "SIESTA-PEXSI"
-       cit%doi = "10.1088/0953-8984/26/30/305503"
-       cit%journal = "Journal of Physics: Condensed Matter"
-       cit%year = 2014
-       cit%volume = "26"
-       cit%issue = "30"
-       cit%cite_key = "Lin2014"
-       ID = 7
-
-    case ( "10.1088/0953-8984/24/8/086005" )
-       ! Off-Site Spin-Orbit 
-       cit%comment = "Off-Site Spin-Orbit Implementation"
-       cit%doi = "10.1088/0953-8984/24/8/086005"
-       cit%journal = "Journal of Physics: Condensed Matter"
-       cit%year = 2012
-       cit%volume = "24"
-       cit%issue = "8"
-       cit%cite_key = "Cuadrado2012"
-       ID = 8
-       
-    case ( "10.1088/0953-8984/18/34/012")
-       ! On-Site Spin-Orbit 
-       cit%comment = "On-Site Spin-Orbit Implementation"
-       cit%doi = "10.1088/0953-8984/18/34/012"
-       cit%journal = "Journal of Physics: Condensed Matter"
-       cit%year = 2006
-       cit%volume = "18"
-       cit%issue = "0"
-       cit%cite_key = "FernandezSeivane2006"
-       ID = 9
-
-    end select
+    ! Retrieve citation from DOI
+    call get_citation(cit, doi=doi)
 
     ! probably we should error out...
     ! but...
-    if ( ID == 0 ) return
-    
+    if ( cit%ID == 0 ) return
+
     ! Actually create citation
-    if ( used(ID) == 0 ) then
-       used(ID) = 1
-       call write_citation(cit)
+    if ( used(cit%ID) == 0 ) then
+      used(cit%ID) = 1
+      call write_citation(cit)
     end if
 
   end subroutine add_citation
 
+  subroutine get_citation(cit, ID, doi)
+    type(citation), intent(out) :: cit
+    integer, intent(in), optional :: ID
+    character(len=*), intent(in), optional :: doi
+    integer :: lID
+
+    if ( present(doi) ) then
+
+      ! Transfer DOI to ID
+      select case ( doi )
+      case ( "10.1088/0953-8984/14/11/302" )
+        ! Siesta paper
+        lID = 1
+      case ( "10.1103/PhysRevB.65.165401" )
+        ! transiesta paper
+        lID = 2
+      case ( "10.1103/PhysRevB.59.12301" )
+        ! slap dipole correction
+        lID = 3
+      case ( "10.1103/PhysRevB.57.1505" )
+        ! implementation specific LDA+U
+        lID = 4
+      case ( "10.1039/C5CP04613K" )
+        ! charge/hartree gate
+        lID = 5
+      case ( "10.1016/j.cpc.2016.09.022" )
+        ! new transiesta article
+        lID = 6
+      case ( "10.1088/0953-8984/26/30/305503" )
+        ! PEXSI-siesta
+        lID = 7
+      case ( "arXiv:1905.11113" )
+        ! Real-space self-energy
+        lID = 8
+      case ( "10.1088/0953-8984/19/19/489001" )
+        ! On-site SOC
+        lID = 9
+      case ( "10.1088/0953-8984/24/8/086005" )
+        ! Off-site SOC
+        lID = 10
+      end select
+
+    end if
+    if ( present(ID) ) lID = ID
+
+    cit%ID = lID
+    select case ( lID )
+    case ( 1 )
+      ! Siesta paper
+      cit%comment = "Primary SIESTA paper"
+      cit%doi = "10.1088/0953-8984/14/11/302"
+      cit%journal = "Journal of Physics: Condensed Matter"
+      cit%year = 2002
+      cit%volume = "14"
+      cit%issue = "11"
+      cit%cite_key = "Soler2002"
+
+    case ( 2 )
+      ! transiesta paper
+      cit%comment = "Primary TranSiesta paper"
+      cit%doi = "10.1103/PhysRevB.65.165401"
+      cit%journal = "Physical Review B"
+      cit%year = 2002
+      cit%volume = "65"
+      cit%issue = "16"
+      cit%cite_key = "Brandbyge2002"
+
+    case ( 3 )
+      ! slap dipole correction
+      cit%comment = "Slab-dipole correction"
+      cit%doi = "10.1103/PhysRevB.59.12301"
+      cit%journal = "Physical Review B"
+      cit%year = 1999
+      cit%volume = "59"
+      cit%issue = "16"
+      cit%cite_key = "Bengtsson1999"
+
+    case ( 4 )
+      ! implementation specific LDA+U
+      cit%comment = "LDA+U implementation"
+      cit%doi = "10.1103/PhysRevB.57.1505"
+      cit%journal = "Physical Review B"
+      cit%year = 1998
+      cit%volume = "57"
+      cit%issue = "3"
+      cit%cite_key = "Dudarev1998"
+
+    case ( 5 )
+      ! charge/hartree gate
+      cit%comment = "Charge/Hartree gate model"
+      cit%doi = "10.1039/C5CP04613K"
+      cit%journal = "Phys. Chem. Chem. Phys."
+      cit%year = 2016
+      cit%volume = "18"
+      cit%issue = "2"
+      cit%cite_key = "Papior2016A"
+
+    case ( 6 )
+      ! new transiesta article
+      cit%comment = "TranSiesta N-electrode"
+      cit%journal = "Computer Physics Communications"
+      cit%title = "Improvements on non-equilibrium and transport &
+          & Green function techniques: The next-generation TranSiesta"
+      cit%author = "Papior, N. and Lorente, N. and Frederiksen, T. &
+          & and Garcia, A. and Brandbyge, M"
+      cit%doi = "10.1016/j.cpc.2016.09.022"
+      cit%journal = "Computer Physics Communications"
+      cit%year = 2017
+      cit%volume = "212"
+      cit%cite_key = "Papior2017"
+
+    case ( 7 )
+      ! PEXSI-siesta
+      cit%comment = "SIESTA-PEXSI"
+      cit%doi = "10.1088/0953-8984/26/30/305503"
+      cit%journal = "Journal of Physics: Condensed Matter"
+      cit%year = 2014
+      cit%volume = "26"
+      cit%issue = "30"
+      cit%cite_key = "Lin2014"
+
+    case ( 8 )
+      ! real-space self-energy
+      cit%comment = "Real-space self-energies for TranSiesta"
+      cit%author = "Papior, N. and Calogero, G. and Leitherer, S and Brandbyge, M"
+      cit%journal = "Physical Review B"
+      cit%year = 2019
+      cit%cite_key = "Papior2019A"
+
+    case ( 9 )
+      ! On-site SOC
+      cit%comment = "Spin-orbit coupling (on-site approximation)"
+      cit%title = "On-site approximation for spin–orbit coupling inlinear &
+          &combination of atomic orbitals densityfunctional methods"
+      cit%author = "Fernandez-Seivane, L. and Oliveira, M. A. and &
+          &Sanvito, S. and Ferrer, J."
+      cit%journal = "Journal of Physics: Condensed Matter"
+      cit%year = 2006
+      cit%volume = "18"
+      cit%issue = "7999"
+      cit%cite_key = "FernandezSeivane2006"
+      cit%doi = "10.1088/0953-8984/19/19/489001"
+
+    case ( 10 )
+      ! Off-site SOC
+      cit%comment = "Spin-orbit coupling (off-site approximation)"
+      cit%title = "Fully relativistic pseudopotential formalism under &
+          &an atomic orbital basis: spin–orbit splittings and magnetic anisotropies"
+      cit%author = "Cuadrado, R. and Cerda, J. I."
+      cit%journal = "Journal of Physics: Condensed Matter"
+      cit%year = 2012
+      cit%volume = "24"
+      cit%issue = "086005"
+      cit%cite_key = "Cuadrado2012"
+      cit%doi = "10.1088/0953-8984/24/8/086005"
+
+    case default
+      ! Not found
+      cit%ID = 0
+    end select
+
+  end subroutine get_citation
+
   subroutine write_citation(cit)
     type(citation), intent(in) :: cit
     integer :: iu
-    
+
     iu = get_unit()
-    
+
     open( iu , file = cite_file, &
-         form = 'formatted', &
-         position = 'APPEND')
+        form = 'formatted', &
+        position = 'APPEND')
 
     ! Add initial comment if this is the first time
     ! being called.
     if ( sum(used) == 1 ) then
-       write(iu, '(a)') '# This file contains the papers &
-            &that you should cite in case of publishing a paper.'
-       write(iu, '(a)') '# Each entry corresponds to using a &
-            &feature that has been enabled via FDF-flags'
-       write(iu, '(a)') '# and which is based on a development &
-            &paper as indicated.'
-       write(iu, *)
+      write(iu, '(a)') '# This file contains the papers &
+          &that you should cite in case of publishing a paper.'
+      write(iu, '(a)') '# Each entry corresponds to using a &
+          &feature that has been enabled via FDF-flags'
+      write(iu, '(a)') '# and which is based on a development &
+          &paper as indicated.'
+      write(iu, *)
     end if
 
     if ( cit%comment /= STR_NULL ) then
-       write(iu, '(2a)') '# ', trim(cit%comment)
+      write(iu, '(2a)') '# ', trim(cit%comment)
     end if
     write(iu, '(5a)') '@',trim(cit%type),'{',trim(cit%cite_key),','
     if ( cit%author /= STR_NULL ) then
-       write(iu, '(t3,3a)') &
-            'author = {{',trim(cit%author),'}},'
+      write(iu, '(t3,3a)') &
+          'author = {{',trim(cit%author),'}},'
     end if
     if ( cit%title /= STR_NULL ) then
-       write(iu, '(t3,3a)') &
-            'title = {{',trim(cit%title),'}},'
+      write(iu, '(t3,3a)') &
+          'title = {{',trim(cit%title),'}},'
     end if
     if ( cit%journal /= STR_NULL ) then
-       write(iu, '(t3,3a)') &
-            'journal = {{',trim(cit%journal),'}},'
+      write(iu, '(t3,3a)') &
+          'journal = {{',trim(cit%journal),'}},'
     end if
     if ( cit%year /= 0 ) then
-       write(iu, '(t3,a,i0,a)') &
-            'year = {',cit%year,'},'
+      write(iu, '(t3,a,i0,a)') &
+          'year = {',cit%year,'},'
     end if
     if ( cit%volume /= STR_NULL ) then
-       write(iu, '(t3,3a)') &
-            'volume = {',trim(cit%volume),'},'
+      write(iu, '(t3,3a)') &
+          'volume = {',trim(cit%volume),'},'
     end if
     if ( cit%issue /= STR_NULL ) then
-       write(iu, '(t3,3a)') &
-            'issue = {',trim(cit%issue),'},'
+      write(iu, '(t3,3a)') &
+          'issue = {',trim(cit%issue),'},'
     end if
     if ( cit%doi /= STR_NULL ) then
-       write(iu, '(t3,3a)') &
-            'doi = {',trim(cit%doi),'},'
+      write(iu, '(t3,3a)') &
+          'doi = {',trim(cit%doi),'},'
     end if
     write(iu, '(a)') '}'
     write(iu, *) !
 
     close( iu )
-    
+
   end subroutine write_citation
-  
+
+  subroutine announce_citations()
+    type(citation) :: cit
+    integer :: ID
+
+    ! Notify the user about which citations needs to be taken care of
+    write(*,'(/a)') 'cite: Articles that needs to be cited in a published work'
+    write(*,'(3a)')'cite: Please see "', trim(cite_file), &
+        '" for an exhaustive BiBTeX file.'
+    write(*,'(a)') 'cite: This calculation has made use of the following articles:'
+
+    do ID = 1, N_citations
+      if ( used(ID) == 1 ) then ! has been used
+        call get_citation(cit, ID=ID)
+        write(*,'(tr8,a,/,tr10,2a)') trim(cit%comment), 'DOI: www.doi.org/', cit%DOI
+      end if
+    end do
+    write(*,*) ! new-line
+
+  end subroutine announce_citations
+
 end module m_cite

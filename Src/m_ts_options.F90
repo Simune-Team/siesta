@@ -321,6 +321,7 @@ contains
     use m_ts_electype, only : init_Elec_sim
 
     use m_ts_method, only : ts_init_electrodes, a_isBuffer
+    use m_cite, only : add_citation
 
     implicit none
     
@@ -523,6 +524,12 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     if ( any(Elecs(:)%t_dir > 3) ) then
       ts_tidx = - N_Elec
+
+      ! We add the real-space self-energy article
+      if ( IONode ) then
+        call add_citation("arXiv:1905.11113")
+      end if
+
     else
       select case ( N_Elec )
       case ( 1 )
