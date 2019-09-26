@@ -1403,7 +1403,7 @@ contains
     if ( ts_tidx < 1 ) then
 
        write(*,'(a)') '*** TranSiesta semi-infinite directions are individual ***'
-       write(*,'(a)') '*** It is heavily adviced to have any electrodes with no &
+       write(*,'(a)') '*** It is heavily advised to have any electrodes with no &
             &periodicity'
        write(*,'(a)') '    in the transverse directions be located as far from any &
             &cell-boundaries'
@@ -1637,7 +1637,7 @@ contains
           write(*,'(a,/,a)') 'The pivoting table for the electrode unit-cell, &
                &onto the simulation unit-cell is not unique: '//trim(Elecs(iEl)%name), &
                '  Please check your electrode and device cell parameters!'
-          write(*,'(a)') '  Combining this with electric fields or dipole-corrections is ill-adviced!'
+          write(*,'(a)') '  Combining this with electric fields or dipole-corrections is NOT advised!'
           warn = .true.
        end if
     end do
