@@ -1889,7 +1889,7 @@ Speeded up tbtrans saving of the data, parallel writes
   as opening a netcdf file in parallel is _very_ time
   consuming.
 
-  The user is also adviced if TBtrans has been compiled
+  The user is also advised if TBtrans has been compiled
   accordingly.
 
   This even on my local machine speeds up the saving
@@ -16842,7 +16842,7 @@ Diverged the SpMatrix class to separate Dimension classes
   I.e. we locate all other atoms with respect to the first
   electrode-atom in a TranSIESTA cycle.
 * Added GF checks in the m_ts_options routine:
-  - Generally it will be adviced that non-bias runs
+  - Generally it will be advised that non-bias runs
     with the same electrodes on the left- and right-hand
     side use the same GF (for computational efficiency)
   - Hence we do the following checks:

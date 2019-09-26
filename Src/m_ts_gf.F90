@@ -23,7 +23,7 @@ module m_ts_GF
 ! entities exists. This routine should only be called by IONode!
 !
 ! A call to read_Green will read in the header of the GF file and do "basic"
-! checks against array sizes. Thus a call to check_green is adviced before 
+! checks against array sizes. Thus a call to check_green is advised before 
 ! read_Green!
 ! This routine will also distribute the arrays in an MPI run.
 

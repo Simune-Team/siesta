@@ -357,7 +357,7 @@ contains
        call message("WARNING","This spin-orbit implementation uses a local approximation.")
        call message("WARNING","From 4.2 and onwards the full non-local &
            &approximation is implemented")
-       call message("WARNING","You are strongly adviced to use >=4.2 versions!")
+       call message("WARNING","You are strongly advised to use >=4.2 versions!")
        write(*,'(a)') repeat('#',60)
     end if
 
