@@ -121,7 +121,7 @@ integer, parameter :: sp = selected_real_kind(5,10)
   read(wfs_u) nk, gamma
 
   read(wfs_u) wfs_spin_flag   !  1, 2, or 4 
-  non_coll = (wfs_spin_flag == 4)
+  non_coll = (wfs_spin_flag >= 4)
   read(wfs_u) nuotot
   read(wfs_u)        !! Symbols, etc
 

@@ -264,7 +264,7 @@ C Read Density Matrix from files ---------------------------------------
 
       ! Non-collinear or SOC files have a single "spin" block as opposed to collinear-spin
       ! files, which contain two spin blocks per k section.
-      non_coll = (nspin_wfsx == 4)
+      non_coll = (nspin_wfsx >= 4)
       nspin_blocks = nspin_wfsx
       if (non_coll) nspin_blocks = 1
 

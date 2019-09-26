@@ -158,7 +158,7 @@ C Calculate unit cell vectors
 
       ! Non-collinear or SOC files have a single "spin" block as opposed to collinear-spin
       ! files, which contain two spin blocks per k section.
-      non_coll = (nspin == 4)
+      non_coll = (nspin >= 4)
       nspin_blocks = nspin
       if (non_coll) nspin_blocks = 1
 

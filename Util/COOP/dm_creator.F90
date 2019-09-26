@@ -78,13 +78,18 @@ program dm_creator
   allocate (wk(nkp), pk(3,nkp))
 
   read(wfs_u) nsp
-  non_coll = (nsp == 4)
   read(wfs_u) nao
   read(wfs_u)        !! Symbols, etc
   if (debug) print *, "WFSX read: nkp, nsp, nnao: ", nkp, nsp, nao
 
-  if (non_coll) then
-     nspin_blocks = 1
+  if ( nsp == 8 ) then
+    if (debug) print *, "WFSX from spin-orbit calculation"
+    nspin_blocks = 1
+    non_coll = .true.
+  else if ( nsp == 4 ) then
+    if (debug) print *, "WFSX from non-collinear calculation"
+    nspin_blocks = 1
+    non_coll = .true.
   else
      nspin_blocks = nsp
   endif

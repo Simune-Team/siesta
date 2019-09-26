@@ -61,7 +61,7 @@
      .            symfio(j), j=1,nuotot)
 
         do iik = 1,nk
-          do iispin = 1,nspin
+          do iispin = 1,min(4,nspin)
 
           read(iu) ik,k(1),k(2),k(3)
           write(io) ik,k(1),k(2),k(3)

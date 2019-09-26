@@ -50,6 +50,8 @@
         rewind (iu)
         read(iu) nk
         read(iu) nspin
+        ! WFS files predate the new conventions to support NC/SOC files
+        if (nspin > 2) STOP "This utility does not work for nspin>2"
         read(iu) nuotot
 
         allocate(wk(nk))
@@ -75,7 +77,7 @@
         orb_info_written = .false.
 
         do iik = 1,nk
-          do iispin = 1,nspin
+          do iispin = 1,min(4,nspin)
 
           read(iu) ik,k(1),k(2),k(3)
           if (ik .ne. iik) stop 'error in index of k-point'

@@ -58,6 +58,10 @@
         call check( nf90_open('WFS.nc',NF90_NOWRITE,ncid))
         call check( nf90_inq_dimid(ncid,'nspin',nspin_id) )
         call check( nf90_inquire_dimension(ncid, dimid=nspin_id, len=nspin) )
+        ! The (original)WFS.nc file predates the new convention to support NC/SOC files
+        ! Remove this check if its format is updated.
+        if (nspin > 2) STOP "This utility does not work for nspin>2"
+
         call check( nf90_inq_dimid(ncid,'norbs',norbs_id) )
         call check( nf90_inquire_dimension(ncid, dimid=norbs_id, len=nuotot) )
         call check( nf90_inq_dimid(ncid,'nk',nk_id) )
@@ -103,7 +107,7 @@
                  symfio(j), j=1,nuotot)
 
         do iik = 1,nk
-          do iispin = 1,nspin
+          do iispin = 1,min(4,nspin)
 
              write(io) iik,kp(1:3,iik), wk(iik)
              write(io) iispin

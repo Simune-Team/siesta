@@ -120,7 +120,7 @@ program fatband
   allocate (wk(nkp), pk(3,nkp))
 
   read(wfs_u) nsp
-  non_coll = (nsp == 4)
+  non_coll = (nsp >= 4)
   read(wfs_u) nao
   read(wfs_u)        !! Symbols, etc
   if (debug) print *, "WFSX read: nkp, nsp, nnao: ", nkp, nsp, nao
@@ -273,10 +273,12 @@ program fatband
      enddo
   enddo
 
-  if (non_coll) then
-     write(stt_u,"(/'SPIN (non-coll): ',i2)") nspin_blocks
+  if ( nsp == 8 ) then
+    write(stt_u,"(/'SPIN (spin-orbit): ',i2)") nspin_blocks
+  else if ( nsp == 4 ) then
+    write(stt_u,"(/'SPIN (non-coll): ',i2)") nspin_blocks
   else
-     write(stt_u,"(/'SPIN: ',i2)") nspin_blocks
+    write(stt_u,"(/'SPIN: ',i2)") nspin_blocks
   endif
   
   write(stt_u,"(/'AO LIST:')")
