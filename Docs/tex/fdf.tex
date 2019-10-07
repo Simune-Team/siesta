@@ -111,6 +111,24 @@
     \egroup%
 }
 
+\NewDocumentCommand{\fdfreplace}{ m }
+{%
+    \bgroup%
+    \scriptsize%
+    \hfill%
+    \emph{replaces:}~%
+    % This construct maps each entry onto the 
+    % fdf command
+    % First create a sequence from a list
+    \seq_set_from_clist:Nn \l_tmpa_seq { #1 }%
+    % Map on each entry in the sequence
+    \seq_set_map:NNn \l_tmpb_seq \l_tmpa_seq { \exp_not:n { \fdf{##1} } }%
+    \seq_use:Nn \l_tmpb_seq { ,~ }%
+    \setlength{\parskip}{2pt}%
+    \par%
+    \egroup%
+}
+
 \ExplSyntaxOff
 
 

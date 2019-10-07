@@ -87,6 +87,8 @@
 %  \end{fdfentry}
 % will create additional information in the PDF with 
 % proper dependencies and hyperlinks to the fdf-flags.
+% To document a flag has replaced another flag, use
+%  \fdfreplace{...} in the same manner as \fdfdepend{...}.
 %
 %
 % !!!IMPORTANT!!!
@@ -1157,29 +1159,42 @@ substitute spaces by \fdf*{:}.
 \begin{fdfoptions}
 
   \option[-h]%
+  \fdfindex*{Command line options:-h}%
   print a help instruction and quit
 
   \option[-L]%
+  \fdfindex*{Command line options:-L}%
   Override, temporarily, the \fdf{SystemLabel} flag. 
 
   \shell{siesta -L Hello}.
 
   \option[-out|-o]%
+  \fdfindex*{Command line options:-out}%
+  \fdfindex*{Command line options:-o}%
   Specify the output file (instead of printing to the terminal).
 
   \shell{siesta -out RUN.out}.
 
   \option[-electrode|-elec]%
-  \fdfdepend{TS!HS.Save,TS!DE.Save}
+  \fdfindex*{Command line options:-electrode}%
+  \fdfindex*{Command line options:-elec}%
+  \fdfreplace{TS!HS.Save,TS!DE.Save}
   denote this as an electrode calculation which forces the
   \sysfile{TSHS} and \sysfile{TSDE} files to be saved.
 
+  \note This is equivalent to specifying \fdf{TS!HS.Save:true} and
+  \fdf{TS!DE.Save:true} in the input file.
+
   \option[-V]%
-  \fdfdepend{TS.Voltage}
+  \fdfindex*{Command line options:-V}%
+  \fdfreplace{TS!Voltage}
   specify the bias for the current \tsiesta\ run.
 
   \shell{siesta -V 0.25:eV} or \shell{siesta -V "0.25 eV"}
   which sets the applied bias to $0.25\,\mathrm{eV}$.
+
+  \note This is equivalent to specifying \fdf{TS!Voltage} in the input
+  file.
 
 \end{fdfoptions}
 
@@ -4102,8 +4117,9 @@ by potentially saving many self-consistency steps in production runs.
 
 \begin{fdflogicalT}{SCF.Mix!First}
   \fdfindex*{DM.MixSCF1}[|see SCF.Mix.First]
+  \fdfreplace{DM.MixSCF1}%
   \fdfdepend{SCF.Mix!First.Force}%
-  
+
   This flag is used to decide whether mixing (of the DM or H) should
   be done in the first SCF step. If mixing is not performed the output
   DM or H generated in the first SCF step is used as input in the next
@@ -4259,7 +4275,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 \end{fdfentry}
 
 \begin{fdfentry}{SCF.Mixer!Weight}[real]<0.25>%
-  \fdfdepend{DM!MixingWeight}%
+  \fdfreplace{DM!MixingWeight}%
   \fdfindex*{DM!MixingWeight}[|see SCF.Mixer.Weight]
 
   The mixing weight used to mix the quantity.
@@ -4277,7 +4293,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 
 
 \begin{fdfentry}{SCF.Mixer!History}[integer]<2>%
-  \fdfdepend{DM.NumberPulay,DM.NumberBroyden}%
+  \fdfreplace{DM.NumberPulay,DM.NumberBroyden}%
   \fdfindex*{DM.NumberPulay}[|see SCF.Mixer.History]%
   \fdfindex*{DM.NumberBroyden}[|see SCF.Mixer.History]
 
@@ -9503,7 +9519,7 @@ misleading but kept for historical reasons.
 
 \begin{fdfentry}{MD.Steps}[integer]<0>
   \fdfindex*{MD.NumCGsteps}
-  \fdfdepend{MD.NumCGsteps}
+  \fdfreplace{MD.NumCGsteps}
   
   Maximum number of steps in a minimization routine
   (the minimization will stop if tolerance is reached before; see
@@ -9516,7 +9532,7 @@ misleading but kept for historical reasons.
 
 \begin{fdfentry}{MD.MaxDispl}[length]<$0.2\,\mathrm{Bohr}$>
   \fdfindex*{MD.MaxCGDispl}
-  \fdfdepend{MD.MaxCGDispl}
+  \fdfreplace{MD.MaxCGDispl}
   
   Maximum atomic displacements in an optimization move.
 
@@ -11197,6 +11213,9 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   while for $N\neq2$ this is a reference bias. In the latter case it
   \emph{must} be equivalent to the maximum difference between the
   chemical potential of any two electrodes.
+
+  \note Specifying \shell{-V}\fdfindex{Command line options:-V} on the
+  command-line overwrites the value in the fdf file.
   
 \end{fdfentry}
 
@@ -11514,6 +11533,7 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
 \end{fdfentry}
 
 \begin{fdflogicalT}{TS!HS.Save}
+  \fdfindex*{TS!HS.Save:true}
 
   Must be \fdftrue\ for saving the Hamiltonian (\sysfile{TSHS}). Can only be set if
   \fdf{SolutionMethod} is not \fdf*{transiesta}.
@@ -11525,6 +11545,7 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
 \end{fdflogicalT}  
 
 \begin{fdflogicalT}{TS!DE.Save}
+  \fdfindex*{TS!DE.Save:true}
 
   Must be \fdftrue\ for saving the density and energy density matrix
   for continuation runs (\sysfile{TSDE}). Can only be set if
@@ -12384,10 +12405,15 @@ potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
 
   \end{fdfoptions}
 
-  It is important to realize that the parameterization of the voltage
-  into the chemical potentials enables one to have a \emph{single}
-  input file which is never required to be changed, even when changing
-  the applied bias.
+  \note It is important to realize that the parametrization in 4.1 of
+  the voltage into the chemical potentials enables one to have a
+  \emph{single} input file which is never required to be changed, even
+  when changing the applied bias (if using the command line options
+  for specifying the applied bias).
+  %
+  This is different from 4.0 and prior versions since one had to
+  manually change the \fdf*{TS.biasContour.NumPoints} for each applied
+  bias.
 
 \end{fdfentry}
 
