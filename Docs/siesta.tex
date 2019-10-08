@@ -1148,8 +1148,8 @@ is
 \end{shellexample}
 which uses a \emph{pipe} statement. 
 %
-Since 4.1 \siesta\ does not require one to pipe in the input file and
-the input file may instead be specified on the command line.
+\siesta\ 4.1 and later does not require one to pipe in the input file
+and the input file may instead be specified on the command line.
 \begin{shellexample}
   siesta RUN.fdf > RUN.out
 \end{shellexample}
@@ -10947,7 +10947,7 @@ $N\ge1$ setups\cite{Papior2017}.
   The default algorithm for matrix inversion is the BTD method, before
   starting a \tsiesta\ calculation please run with the analyzation
   step \fdf{TS!Analyze} (note this is very fast and can be done on any
-  desktop computer, regardless of system size.
+  desktop computer, regardless of system size).
 
   \item%
   Importantly(!) the $k$-point sampling need typically be much higher
@@ -10969,6 +10969,10 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
 \end{output}
 Always ensure the last column (\code{dQ}) is a very small fraction of
 the total number of electrons. Ideally this should be $0$.
+
+  \item%
+  Do \emph{not} perform \tsiesta\ calculations using semi-conducting
+  electrodes.
 
 \end{itemize}
 
@@ -11606,7 +11610,7 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   the pivoting scheme that uses the least amount of memory. However,
   one should also choose the method with the largest block-size being
   as small as possible. As an example:
-  \begin{shellexample}
+  \begin{output}[fontsize=\footnotesize]
 TS.BTD.Pivot atom+GPS
 ...
     BTD partitions (7): 
@@ -11621,7 +11625,7 @@ TS.BTD.Pivot atom+GGPS
     BTD matrix block size [max] / [average]: 2916 /   1989.667
     BTD matrix elements in % of full matrix:   48.62867 %
 
-  \end{shellexample}
+  \end{output}
   Although the GPS method uses the least amount of memory, the GGPS
   will likely perform better as the largest block in GPS is $4050$
   vs. $2916$ for the GGPS method. 
@@ -11843,7 +11847,7 @@ intricate and important detail.
 
     The file should contain something similar to this output
     (\code{ncdump -h}):
-    \begin{shellexample}
+    \begin{output}[fontsize=\footnotesize]
 netcdf <file> {
 dimensions:
 	one = 1 ;
@@ -11858,7 +11862,7 @@ variables:
 	double V(c, b, a) ;
 		V:unit = "Ry" ;
 }
-    \end{shellexample}
+    \end{output}
     Note that the units should be in Ry. \code{Vmax}/\code{Vmin}
     should contain the maximum/minimum fixed boundary conditions in
     the Poisson solution. This is used internally by \tsiesta\ to
