@@ -5274,6 +5274,27 @@ The Density matrix can be:
   
 \end{fdflogicalF}
 
+\begin{fdfentry}{DM!Init}<atomic>
+  \index{spin!initialization}%
+
+  Specify the initial density matrix composition. Methods are 
+  compatible with a possible specification of \fdf{DM!InitSpin!AF}.
+  Only a single option is available now, but more could be
+  implemented. See also \fdf{DM!Init!RandomStates}.
+  
+  \begin{fdfoptions}
+    
+    \option[atomic]%
+    \fdfindex*{DM!Init!atomic}
+
+    Only initialize the diagonal (on-site) elements of the density matrix according
+    to the atomic ground-state populations of the atomic orbitals.
+
+  \end{fdfoptions}
+
+\end{fdfentry}
+
+
 \begin{fdflogicalF}{DM!InitSpin!AF}
   \index{spin!initialization}%
   \index{ferromagnetic initial DM}%
@@ -5329,6 +5350,34 @@ The Density matrix can be:
   This block has precedence over \fdf{DM!InitSpin!AF}.
 
 \end{fdfentry}
+
+\begin{fdfentry}{DM!Init.RandomStates}[integer]<0>
+
+The program will 'remove' $N$ electrons from the initial density
+matrix and add $N$ electrons in randomized 'states' (i.e., $N$ random
+vectors which are normalized according to the S metric are used as
+``synthetic states''). These extra states are not orthogonal to the
+occupied manifold. The orbital coefficients of these states are scaled
+with the atomic charges, to avoid populating high-lying shells.
+
+This procedure is wholly experimental and meant to provide a kick to
+the DM. It is inspired by the ``random-wavefunction'' initialization
+used in some plane-wave codes. It is turned off by default.
+
+This option only has an effect if the density matrix is initialized from an
+atomic density and/or when using \fdf{DM!InitSpin}.
+
+In case it is used together with \fdf{DM!InitSpin} it also randomizes
+the spin-configuration, which may be undesirable.
+
+\note This option is currently experimental since the randomized states are
+not ensured to be orthogonal. This flag may be removed in later
+revisions or superseded by other options. If testing this, start with
+a value of $1$ to see if it has an effect; any higher numbers will
+probably be worse.
+
+\end{fdfentry}
+
 
 \begin{fdflogicalT}{DM!AllowReuse}
 
