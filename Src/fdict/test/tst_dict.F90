@@ -9,8 +9,8 @@ program tst_dict
   real :: a, b(2),c(2,2)
   real, pointer :: d => null()
   integer :: i
-  type(var) :: v
-  type(dict) :: dic, tmp
+  type(variable_t) :: v
+  type(dictionary_t) :: dic, tmp
 
   a = 1.
   b = 2.
@@ -36,9 +36,9 @@ program tst_dict
   tmp = .first. dic
   i = 0
   do while ( .not. .empty. tmp )
-     call assign(v,.val.tmp)
-     tmp = .next. tmp
-     i = i + 1
+    v = .val. tmp
+    tmp = .next. tmp
+    i = i + 1
   end do
   if ( i /= 10 ) stop 9
 

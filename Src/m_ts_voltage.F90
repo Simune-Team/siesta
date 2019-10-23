@@ -679,7 +679,7 @@ contains
     integer, intent(in) :: nmesh(3)
 
     type(hNCDF) :: ncdf
-    type(dict) :: dic
+    type(dictionary_t) :: dic
     character(len=3), parameter :: XYZ = 'ABC'
     integer :: lnmesh(3), i
     logical :: found

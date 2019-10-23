@@ -65,7 +65,7 @@ contains
 
     ! Local variables
     type(hNCDF) :: ncdf, grp, grp2
-    type(dict) :: dic, d
+    type(dictionary_t) :: dic, d
     integer :: n_nzs, tmp, i, chks(3), iEl
     integer, allocatable :: ibuf(:)
     logical :: lis_fc
@@ -420,7 +420,7 @@ contains
     type(hNCDF) :: ncdf, grp
     integer :: prec, chks(3)
     character(len=64) :: key
-    type(dict) :: dic
+    type(dictionary_t) :: dic
 
     ! We always re-write the file...
     call ncdf_open(ncdf,fname, &
@@ -585,7 +585,7 @@ contains
 
     character(len=*), intent(in) :: fname
     ! Dictionary containing keys that we will save
-    type(dict), intent(in) :: dic_save
+    type(dictionary_t), intent(in) :: dic_save
     type(hNCDF) :: ncdf, grp
 
     call timer('CDF',1)
@@ -711,9 +711,9 @@ contains
     type(rad_func), pointer :: p
 
     type(hNCDF) :: nf, ncdf, grp
-    type(dict) :: dic, d
-    character(len=DICT_KEY_LENGTH) :: key
-    type(var) :: v
+    type(dictionary_t) :: dic, d
+    character(len=DICTIONARY_KEY_LENGTH) :: key
+    type(variable_t) :: v
     integer :: is, i
 
     ! Used for saving variables
@@ -891,7 +891,7 @@ contains
 
       character(len=*), intent(in) :: name
       type(rad_func), intent(in) :: rfunc
-      type(dict) :: dic
+      type(dictionary_t) :: dic
 
       ! Only create it if it exists in the pseudo
       if ( rfunc%n <= 0 ) return

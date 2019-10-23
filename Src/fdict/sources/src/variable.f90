@@ -4,7 +4,7 @@
 module variable
   !! A type-free variable module to contain _any_ data in fortran.
   !!
-  !! This module implements a generic variable-type (`type(var)`)
+  !! This module implements a generic variable-type (`type(variable_t)`)
   !! which may contain _any_ data-type (even user-derived type constructs).
   !!
   !! Its basic usage is somewhat different than the regular assignment
@@ -16,7 +16,7 @@ module variable
   !! real :: r
   !! real :: ra(10)
   !! real, target :: rb(10)
-  !! type(var) :: v
+  !! type(variable_t) :: v
   !! call assign(v, r) ! v now contains value of r
   !! call assign(v, ra) ! v now contains array with values of ra
   !! call delete(v) ! delete content
@@ -26,6 +26,11 @@ module variable
   !!
   !! The assignment routine behaves like `=` (delete old value)
   !! whereas the associate routine behaves like `=>` (nullify old value).
+  !!
+  !! The data-types allowed in this type is *not* limited by this
+  !! module, but we currently allow integers, reals, complex and C-pointers.
+  ! Load the iso_c_binding for containing a C-pointer
+  use, intrinsic :: iso_c_binding
   implicit none
   private
   integer, parameter :: ih = selected_int_kind(4)
@@ -39,8 +44,8 @@ module variable
   ! Internal variable to hold the size of the "type" switch
   !> Maximum character length of the type specifier in the variable, no
   !! unique identifier may be longer than this.
-  integer, parameter, public :: VAR_TYPE_LENGTH = 4
-  type :: var
+  integer, parameter, public :: VARIABLE_TYPE_LENGTH = 4
+  type :: variable_t
      !! Container for _any_ fortran data-type, intrinsically handles all
      !! from fortran and any external type may be added via external routines.
      !!
@@ -48,13 +53,13 @@ module variable
      !! to the data and transfer the type to a character array via encoding.
      !! This enables one to retrieve the pointer position later and thus enables
      !! pointer assignments and easy copying of data.
-     character(len=VAR_TYPE_LENGTH) :: t = '    '
+     character(len=VARIABLE_TYPE_LENGTH) :: t = '    '
      ! The encoding placement of all data
      character(len=1), dimension(:), allocatable :: enc
-  end type var
-  public :: var
+  end type variable_t
+  public :: variable_t
   interface which
-     !! Type of content stored in the variable (`character(len=VAR_TYPE_LENGTH)`)
+     !! Type of content stored in the variable (`character(len=VARIABLE_TYPE_LENGTH)`)
      module procedure which_
   end interface
   public :: which
@@ -207,6 +212,14 @@ module procedure assign_get_l2
 module procedure assign_set_l2
 module procedure assign_get_l3
 module procedure assign_set_l3
+module procedure assign_get_cp0
+module procedure assign_set_cp0
+module procedure assign_get_cp1
+module procedure assign_set_cp1
+module procedure assign_get_fp0
+module procedure assign_set_fp0
+module procedure assign_get_fp1
+module procedure assign_set_fp1
 end interface
 public :: assign
 interface associate
@@ -277,6 +290,14 @@ module procedure associate_get_l2
 module procedure associate_set_l2
 module procedure associate_get_l3
 module procedure associate_set_l3
+module procedure associate_get_cp0
+module procedure associate_set_cp0
+module procedure associate_get_cp1
+module procedure associate_set_cp1
+module procedure associate_get_fp0
+module procedure associate_set_fp0
+module procedure associate_get_fp1
+module procedure associate_set_fp1
 end interface
 public :: associate
 interface associatd
@@ -346,20 +367,28 @@ module procedure associatd_l_l2
 module procedure associatd_r_l2
 module procedure associatd_l_l3
 module procedure associatd_r_l3
+module procedure associatd_l_cp0
+module procedure associatd_r_cp0
+module procedure associatd_l_cp1
+module procedure associatd_r_cp1
+module procedure associatd_l_fp0
+module procedure associatd_r_fp0
+module procedure associatd_l_fp1
+module procedure associatd_r_fp1
 end interface
 public :: associatd
 contains
   subroutine print_(this)
-    type(var), intent(in) :: this
+    type(variable_t), intent(in) :: this
     write(*,'(t2,a)') this%t
   end subroutine print_
   elemental function which_(this) result(t)
-    type(var), intent(in) :: this
-    character(len=VAR_TYPE_LENGTH) :: t
+    type(variable_t), intent(in) :: this
+    character(len=VARIABLE_TYPE_LENGTH) :: t
     t = this%t
   end function which_
   subroutine delete_(this,dealloc)
-    type(var), intent(inout) :: this
+    type(variable_t), intent(inout) :: this
     logical, intent(in), optional :: dealloc
     logical :: ldealloc
 type :: pta1
@@ -494,6 +523,22 @@ type :: ptl3
  integer(il), pointer :: p(:,:,:) => null()
 end type ptl3
 type(ptl3) :: pl3
+type :: ptcp0
+ type(c_ptr), pointer :: p => null()
+end type ptcp0
+type(ptcp0) :: pcp0
+type :: ptcp1
+ type(c_ptr), pointer :: p(:) => null()
+end type ptcp1
+type(ptcp1) :: pcp1
+type :: ptfp0
+ type(c_funptr), pointer :: p => null()
+end type ptfp0
+type(ptfp0) :: pfp0
+type :: ptfp1
+ type(c_funptr), pointer :: p(:) => null()
+end type ptfp1
+type(ptfp1) :: pfp1
 type :: pta_
  type(pta__), pointer :: p(:) => null()
 end type pta_
@@ -637,6 +682,22 @@ if (this%t == 'l3') then
   pl3 = transfer(this%enc,pl3)
   deallocate(pl3%p)
 end if
+if (this%t == 'cp0') then
+  pcp0 = transfer(this%enc,pcp0)
+  deallocate(pcp0%p)
+end if
+if (this%t == 'cp1') then
+  pcp1 = transfer(this%enc,pcp1)
+  deallocate(pcp1%p)
+end if
+if (this%t == 'fp0') then
+  pfp0 = transfer(this%enc,pfp0)
+  deallocate(pfp0%p)
+end if
+if (this%t == 'fp1') then
+  pfp1 = transfer(this%enc,pfp1)
+  deallocate(pfp1%p)
+end if
        if ( this%t == 'a-' ) then
           pa_ = transfer(this%enc,pa_)
           do i = 1 , size(pa_%p)
@@ -648,7 +709,7 @@ end if
     call nullify(this)
   end subroutine delete_
   elemental subroutine nullify_(this)
-    type(var), intent(inout) :: this
+    type(variable_t), intent(inout) :: this
     this%t = '  '
     if ( allocated(this%enc) ) deallocate(this%enc)
   end subroutine nullify_
@@ -661,7 +722,7 @@ end if
   ! If the size of the returning enc is not
   ! big enough it will be reset to ' '
   subroutine enc_(this,enc)
-    type(var), intent(in) :: this
+    type(variable_t), intent(in) :: this
     character(len=1), intent(out) :: enc(:)
     integer :: i
     if ( this%t == '  ' ) then
@@ -677,7 +738,7 @@ end if
     end if
   end subroutine enc_
   function size_enc_(this) result(len)
-    type(var), intent(in) :: this
+    type(variable_t), intent(in) :: this
     integer :: len
     if ( this%t == '  ' ) then
        len = 0
@@ -701,7 +762,7 @@ end if
   ! We cannot know for sure whether the encoding actually terminates
   ! in a bit corresponding to char(' ')!
   subroutine associate_type_(this,enc,dealloc)
-    type(var), intent(inout) :: this
+    type(variable_t), intent(inout) :: this
     character(len=1), intent(in) :: enc(:)
     logical, intent(in), optional :: dealloc
     logical :: ldealloc
@@ -715,9 +776,9 @@ end if
     end if
     this%t = 'USER'
     allocate(this%enc(size(enc)))
-    this%enc(:) = enc
+    this%enc(:) = enc(:)
   end subroutine associate_type_
-  function cpack_(c) result(car)
+  pure function cpack_(c) result(car)
     character(len=*), intent(in) :: c
     character(len=1) :: car(len(c))
     integer :: i
@@ -725,7 +786,7 @@ end if
        car(i) = c(i:i)
     end do
   end function cpack_
-  function cunpack_(car) result(c)
+  pure function cunpack_(car) result(c)
     character(len=1), intent(in) :: car(:)
     character(len=size(car)) :: c
     integer :: i
@@ -733,9 +794,14 @@ end if
        c(i:i) = car(i)
     end do
   end function cunpack_
+  subroutine assignment_(this,rhs)
+    type(variable_t), intent(inout) :: this
+    type(variable_t), intent(in) :: rhs
+    call assign(this,rhs)
+  end subroutine assignment_
   subroutine assign_var(this,rhs,dealloc)
-    type(var), intent(inout) :: this
-    type(var), intent(in) :: rhs
+    type(variable_t), intent(inout) :: this
+    type(variable_t), intent(in) :: rhs
     logical, intent(in), optional :: dealloc
     logical :: ldealloc
     integer :: i
@@ -871,6 +937,22 @@ type :: ptl3
  integer(il), pointer :: p(:,:,:) => null()
 end type ptl3
 type(ptl3) :: pl3_1, pl3_2
+type :: ptcp0
+ type(c_ptr), pointer :: p => null()
+end type ptcp0
+type(ptcp0) :: pcp0_1, pcp0_2
+type :: ptcp1
+ type(c_ptr), pointer :: p(:) => null()
+end type ptcp1
+type(ptcp1) :: pcp1_1, pcp1_2
+type :: ptfp0
+ type(c_funptr), pointer :: p => null()
+end type ptfp0
+type(ptfp0) :: pfp0_1, pfp0_2
+type :: ptfp1
+ type(c_funptr), pointer :: p(:) => null()
+end type ptfp1
+type(ptfp1) :: pfp1_1, pfp1_2
 type :: pta_
  type(pta__), pointer :: p(:) => null()
 end type pta_
@@ -998,6 +1080,20 @@ elseif ( this%t == 'l3' ) then
 pl3_2 = transfer(rhs%enc,pl3_2)
 allocate(pl3_1%p(size(pl3_2%p,1),size(pl3_2%p,2),size(pl3_2%p,3)))
 endif
+if ( this%t == 'cp0' ) then
+pcp0_2 = transfer(rhs%enc,pcp0_2)
+allocate(pcp0_1%p)
+elseif ( this%t == 'cp1' ) then
+pcp1_2 = transfer(rhs%enc,pcp1_2)
+allocate(pcp1_1%p(size(pcp1_2%p)))
+endif
+if ( this%t == 'fp0' ) then
+pfp0_2 = transfer(rhs%enc,pfp0_2)
+allocate(pfp0_1%p)
+elseif ( this%t == 'fp1' ) then
+pfp1_2 = transfer(rhs%enc,pfp1_2)
+allocate(pfp1_1%p(size(pfp1_2%p)))
+endif
     if ( this%t == 'a-' ) then ! character(len=*)
        pa__2 = transfer(rhs%enc, pa__2)
        allocate(pa__1%p(size(pa__2%p)))
@@ -1007,156 +1103,215 @@ endif
        end do
        allocate(this%enc(size(transfer(pa__1, local_enc_type))))
        this%enc(:) = transfer(pa__1, local_enc_type)
+       do i = 1 , size(pa__1%p)
+         nullify(pa__1%p(i)%p)
+       end do
+       nullify(pa__1%p)
     end if
     ! copy over RHS and Save encoding
 if ( this%t == 'a1' ) then
 pa1_1%p = pa1_2%p
 allocate(this%enc(size(transfer(pa1_1, local_enc_type))))
 this%enc(:) = transfer(pa1_1, local_enc_type)
+nullify(pa1_1%p)
 endif
 if ( this%t == 's0' ) then
 ps0_1%p = ps0_2%p
 allocate(this%enc(size(transfer(ps0_1, local_enc_type))))
 this%enc(:) = transfer(ps0_1, local_enc_type)
+nullify(ps0_1%p)
 elseif ( this%t == 's1' ) then
 ps1_1%p = ps1_2%p
 allocate(this%enc(size(transfer(ps1_1, local_enc_type))))
 this%enc(:) = transfer(ps1_1, local_enc_type)
+nullify(ps1_1%p)
 elseif ( this%t == 's2' ) then
 ps2_1%p = ps2_2%p
 allocate(this%enc(size(transfer(ps2_1, local_enc_type))))
 this%enc(:) = transfer(ps2_1, local_enc_type)
+nullify(ps2_1%p)
 elseif ( this%t == 's3' ) then
 ps3_1%p = ps3_2%p
 allocate(this%enc(size(transfer(ps3_1, local_enc_type))))
 this%enc(:) = transfer(ps3_1, local_enc_type)
+nullify(ps3_1%p)
 endif
 if ( this%t == 'd0' ) then
 pd0_1%p = pd0_2%p
 allocate(this%enc(size(transfer(pd0_1, local_enc_type))))
 this%enc(:) = transfer(pd0_1, local_enc_type)
+nullify(pd0_1%p)
 elseif ( this%t == 'd1' ) then
 pd1_1%p = pd1_2%p
 allocate(this%enc(size(transfer(pd1_1, local_enc_type))))
 this%enc(:) = transfer(pd1_1, local_enc_type)
+nullify(pd1_1%p)
 elseif ( this%t == 'd2' ) then
 pd2_1%p = pd2_2%p
 allocate(this%enc(size(transfer(pd2_1, local_enc_type))))
 this%enc(:) = transfer(pd2_1, local_enc_type)
+nullify(pd2_1%p)
 elseif ( this%t == 'd3' ) then
 pd3_1%p = pd3_2%p
 allocate(this%enc(size(transfer(pd3_1, local_enc_type))))
 this%enc(:) = transfer(pd3_1, local_enc_type)
+nullify(pd3_1%p)
 endif
 if ( this%t == 'c0' ) then
 pc0_1%p = pc0_2%p
 allocate(this%enc(size(transfer(pc0_1, local_enc_type))))
 this%enc(:) = transfer(pc0_1, local_enc_type)
+nullify(pc0_1%p)
 elseif ( this%t == 'c1' ) then
 pc1_1%p = pc1_2%p
 allocate(this%enc(size(transfer(pc1_1, local_enc_type))))
 this%enc(:) = transfer(pc1_1, local_enc_type)
+nullify(pc1_1%p)
 elseif ( this%t == 'c2' ) then
 pc2_1%p = pc2_2%p
 allocate(this%enc(size(transfer(pc2_1, local_enc_type))))
 this%enc(:) = transfer(pc2_1, local_enc_type)
+nullify(pc2_1%p)
 elseif ( this%t == 'c3' ) then
 pc3_1%p = pc3_2%p
 allocate(this%enc(size(transfer(pc3_1, local_enc_type))))
 this%enc(:) = transfer(pc3_1, local_enc_type)
+nullify(pc3_1%p)
 endif
 if ( this%t == 'z0' ) then
 pz0_1%p = pz0_2%p
 allocate(this%enc(size(transfer(pz0_1, local_enc_type))))
 this%enc(:) = transfer(pz0_1, local_enc_type)
+nullify(pz0_1%p)
 elseif ( this%t == 'z1' ) then
 pz1_1%p = pz1_2%p
 allocate(this%enc(size(transfer(pz1_1, local_enc_type))))
 this%enc(:) = transfer(pz1_1, local_enc_type)
+nullify(pz1_1%p)
 elseif ( this%t == 'z2' ) then
 pz2_1%p = pz2_2%p
 allocate(this%enc(size(transfer(pz2_1, local_enc_type))))
 this%enc(:) = transfer(pz2_1, local_enc_type)
+nullify(pz2_1%p)
 elseif ( this%t == 'z3' ) then
 pz3_1%p = pz3_2%p
 allocate(this%enc(size(transfer(pz3_1, local_enc_type))))
 this%enc(:) = transfer(pz3_1, local_enc_type)
+nullify(pz3_1%p)
 endif
 if ( this%t == 'b0' ) then
 pb0_1%p = pb0_2%p
 allocate(this%enc(size(transfer(pb0_1, local_enc_type))))
 this%enc(:) = transfer(pb0_1, local_enc_type)
+nullify(pb0_1%p)
 elseif ( this%t == 'b1' ) then
 pb1_1%p = pb1_2%p
 allocate(this%enc(size(transfer(pb1_1, local_enc_type))))
 this%enc(:) = transfer(pb1_1, local_enc_type)
+nullify(pb1_1%p)
 elseif ( this%t == 'b2' ) then
 pb2_1%p = pb2_2%p
 allocate(this%enc(size(transfer(pb2_1, local_enc_type))))
 this%enc(:) = transfer(pb2_1, local_enc_type)
+nullify(pb2_1%p)
 elseif ( this%t == 'b3' ) then
 pb3_1%p = pb3_2%p
 allocate(this%enc(size(transfer(pb3_1, local_enc_type))))
 this%enc(:) = transfer(pb3_1, local_enc_type)
+nullify(pb3_1%p)
 endif
 if ( this%t == 'h0' ) then
 ph0_1%p = ph0_2%p
 allocate(this%enc(size(transfer(ph0_1, local_enc_type))))
 this%enc(:) = transfer(ph0_1, local_enc_type)
+nullify(ph0_1%p)
 elseif ( this%t == 'h1' ) then
 ph1_1%p = ph1_2%p
 allocate(this%enc(size(transfer(ph1_1, local_enc_type))))
 this%enc(:) = transfer(ph1_1, local_enc_type)
+nullify(ph1_1%p)
 elseif ( this%t == 'h2' ) then
 ph2_1%p = ph2_2%p
 allocate(this%enc(size(transfer(ph2_1, local_enc_type))))
 this%enc(:) = transfer(ph2_1, local_enc_type)
+nullify(ph2_1%p)
 elseif ( this%t == 'h3' ) then
 ph3_1%p = ph3_2%p
 allocate(this%enc(size(transfer(ph3_1, local_enc_type))))
 this%enc(:) = transfer(ph3_1, local_enc_type)
+nullify(ph3_1%p)
 endif
 if ( this%t == 'i0' ) then
 pi0_1%p = pi0_2%p
 allocate(this%enc(size(transfer(pi0_1, local_enc_type))))
 this%enc(:) = transfer(pi0_1, local_enc_type)
+nullify(pi0_1%p)
 elseif ( this%t == 'i1' ) then
 pi1_1%p = pi1_2%p
 allocate(this%enc(size(transfer(pi1_1, local_enc_type))))
 this%enc(:) = transfer(pi1_1, local_enc_type)
+nullify(pi1_1%p)
 elseif ( this%t == 'i2' ) then
 pi2_1%p = pi2_2%p
 allocate(this%enc(size(transfer(pi2_1, local_enc_type))))
 this%enc(:) = transfer(pi2_1, local_enc_type)
+nullify(pi2_1%p)
 elseif ( this%t == 'i3' ) then
 pi3_1%p = pi3_2%p
 allocate(this%enc(size(transfer(pi3_1, local_enc_type))))
 this%enc(:) = transfer(pi3_1, local_enc_type)
+nullify(pi3_1%p)
 endif
 if ( this%t == 'l0' ) then
 pl0_1%p = pl0_2%p
 allocate(this%enc(size(transfer(pl0_1, local_enc_type))))
 this%enc(:) = transfer(pl0_1, local_enc_type)
+nullify(pl0_1%p)
 elseif ( this%t == 'l1' ) then
 pl1_1%p = pl1_2%p
 allocate(this%enc(size(transfer(pl1_1, local_enc_type))))
 this%enc(:) = transfer(pl1_1, local_enc_type)
+nullify(pl1_1%p)
 elseif ( this%t == 'l2' ) then
 pl2_1%p = pl2_2%p
 allocate(this%enc(size(transfer(pl2_1, local_enc_type))))
 this%enc(:) = transfer(pl2_1, local_enc_type)
+nullify(pl2_1%p)
 elseif ( this%t == 'l3' ) then
 pl3_1%p = pl3_2%p
 allocate(this%enc(size(transfer(pl3_1, local_enc_type))))
 this%enc(:) = transfer(pl3_1, local_enc_type)
+nullify(pl3_1%p)
+endif
+if ( this%t == 'cp0' ) then
+pcp0_1%p = pcp0_2%p
+allocate(this%enc(size(transfer(pcp0_1, local_enc_type))))
+this%enc(:) = transfer(pcp0_1, local_enc_type)
+nullify(pcp0_1%p)
+elseif ( this%t == 'cp1' ) then
+pcp1_1%p = pcp1_2%p
+allocate(this%enc(size(transfer(pcp1_1, local_enc_type))))
+this%enc(:) = transfer(pcp1_1, local_enc_type)
+nullify(pcp1_1%p)
+endif
+if ( this%t == 'fp0' ) then
+pfp0_1%p = pfp0_2%p
+allocate(this%enc(size(transfer(pfp0_1, local_enc_type))))
+this%enc(:) = transfer(pfp0_1, local_enc_type)
+nullify(pfp0_1%p)
+elseif ( this%t == 'fp1' ) then
+pfp1_1%p = pfp1_2%p
+allocate(this%enc(size(transfer(pfp1_1, local_enc_type))))
+this%enc(:) = transfer(pfp1_1, local_enc_type)
+nullify(pfp1_1%p)
 endif
 if ( this%t == 'USER' ) then
 write(*,'(a)') 'var: Cannot assign a UT, USE call associate(..)'
 end if
   end subroutine assign_var
   subroutine associate_var(this,rhs,dealloc,success)
-    type(var), intent(inout) :: this
-    type(var), intent(in) :: rhs
+    type(variable_t), intent(inout) :: this
+    type(variable_t), intent(in) :: rhs
     logical, intent(in), optional :: dealloc
     logical, intent(out), optional :: success
     logical :: ldealloc
@@ -1174,11 +1329,11 @@ end if
     ! Association is done by copying the encoding
     this%t = rhs%t
     allocate(this%enc(size(rhs%enc)))
-    this%enc(:) = rhs%enc
+    this%enc(:) = rhs%enc(:)
   end subroutine associate_var
   pure function associatd_var(this,rhs) result(ret)
-    type(var), intent(in) :: this
-    type(var), intent(in) :: rhs
+    type(variable_t), intent(in) :: this
+    type(variable_t), intent(in) :: rhs
     logical :: ret
 type :: pta1
  character(len=1), pointer :: p(:) => null()
@@ -1312,6 +1467,22 @@ type :: ptl3
  integer(il), pointer :: p(:,:,:) => null()
 end type ptl3
 type(ptl3) :: pl3_1, pl3_2
+type :: ptcp0
+ type(c_ptr), pointer :: p => null()
+end type ptcp0
+type(ptcp0) :: pcp0_1, pcp0_2
+type :: ptcp1
+ type(c_ptr), pointer :: p(:) => null()
+end type ptcp1
+type(ptcp1) :: pcp1_1, pcp1_2
+type :: ptfp0
+ type(c_funptr), pointer :: p => null()
+end type ptfp0
+type(ptfp0) :: pfp0_1, pfp0_2
+type :: ptfp1
+ type(c_funptr), pointer :: p(:) => null()
+end type ptfp1
+type(ptfp1) :: pfp1_1, pfp1_2
 type :: pta_
  type(pta__), pointer :: p(:) => null()
 end type pta_
@@ -1462,6 +1633,24 @@ pl3_1 = transfer(this%enc,pl3_1)
 pl3_2 = transfer(rhs%enc,pl3_2)
 ret = associated(pl3_1%p,pl3_2%p)
 endif
+if ( this%t == 'cp0' ) then
+pcp0_1 = transfer(this%enc,pcp0_1)
+pcp0_2 = transfer(rhs%enc,pcp0_2)
+ret = associated(pcp0_1%p,pcp0_2%p)
+elseif ( this%t == 'cp1' ) then
+pcp1_1 = transfer(this%enc,pcp1_1)
+pcp1_2 = transfer(rhs%enc,pcp1_2)
+ret = associated(pcp1_1%p,pcp1_2%p)
+endif
+if ( this%t == 'fp0' ) then
+pfp0_1 = transfer(this%enc,pfp0_1)
+pfp0_2 = transfer(rhs%enc,pfp0_2)
+ret = associated(pfp0_1%p,pfp0_2%p)
+elseif ( this%t == 'fp1' ) then
+pfp1_1 = transfer(this%enc,pfp1_1)
+pfp1_2 = transfer(rhs%enc,pfp1_2)
+ret = associated(pfp1_1%p,pfp1_2%p)
+endif
 if ( this%t == 'USER' ) then
 ret = all(this%enc == rhs%enc)
 end if
@@ -1475,7 +1664,7 @@ end if
   ! This ensures that it can be retrieved (via associate)
   ! and mangled through another variable type
   subroutine assign_set_a0_0(this,rhs,dealloc)
-    type(var), intent(inout) :: this
+    type(variable_t), intent(inout) :: this
     character(len=*), intent(in) :: rhs
     logical, intent(in), optional :: dealloc
     character(len=1), pointer :: c(:) => null()
@@ -1490,7 +1679,7 @@ end if
   end subroutine assign_set_a0_0
   subroutine assign_get_a0_0(lhs,this,success)
     character(len=*), intent(out) :: lhs
-    type(var), intent(inout) :: this
+    type(variable_t), intent(inout) :: this
     logical, intent(out), optional :: success
     character(len=1), pointer :: c(:) => null()
     logical :: lsuccess
@@ -1505,7 +1694,7 @@ end if
     end do
   end subroutine assign_get_a0_0
 subroutine assign_set_a1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   character(len=1), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1533,7 +1722,7 @@ subroutine assign_set_a1(this,rhs,dealloc)
 end subroutine assign_set_a1
 subroutine assign_get_a1(lhs,this,success)
   character(len=1), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -1553,7 +1742,7 @@ subroutine assign_get_a1(lhs,this,success)
 end subroutine assign_get_a1
 subroutine associate_get_a1(lhs,this,dealloc,success)
   character(len=1), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -1576,7 +1765,7 @@ subroutine associate_get_a1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_a1
 subroutine associate_set_a1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   character(len=1), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1599,7 +1788,7 @@ subroutine associate_set_a1(this,rhs,dealloc)
 end subroutine associate_set_a1
 pure function associatd_l_a1(lhs,this) result(ret)
   character(len=1), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     character(len=1), pointer , dimension(:) :: p
@@ -1613,7 +1802,7 @@ pure function associatd_l_a1(lhs,this) result(ret)
   endif
 end function associatd_l_a1
 pure function associatd_r_a1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   character(len=1), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -1629,7 +1818,7 @@ pure function associatd_r_a1(this,rhs) result(ret)
 end function associatd_r_a1
 ! All boolean functions
 subroutine assign_set_s0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1657,7 +1846,7 @@ subroutine assign_set_s0(this,rhs,dealloc)
 end subroutine assign_set_s0
 subroutine assign_get_s0(lhs,this,success)
   real(sp), intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -1672,7 +1861,7 @@ subroutine assign_get_s0(lhs,this,success)
 end subroutine assign_get_s0
 subroutine associate_get_s0(lhs,this,dealloc,success)
   real(sp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -1695,7 +1884,7 @@ subroutine associate_get_s0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_s0
 subroutine associate_set_s0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1718,7 +1907,7 @@ subroutine associate_set_s0(this,rhs,dealloc)
 end subroutine associate_set_s0
 pure function associatd_l_s0(lhs,this) result(ret)
   real(sp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(sp), pointer :: p
@@ -1732,7 +1921,7 @@ pure function associatd_l_s0(lhs,this) result(ret)
   endif
 end function associatd_l_s0
 pure function associatd_r_s0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(sp), pointer :: rhs
   logical :: ret
   type :: pt
@@ -1748,7 +1937,7 @@ pure function associatd_r_s0(this,rhs) result(ret)
 end function associatd_r_s0
 ! All boolean functions
 subroutine assign_set_s1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1776,7 +1965,7 @@ subroutine assign_set_s1(this,rhs,dealloc)
 end subroutine assign_set_s1
 subroutine assign_get_s1(lhs,this,success)
   real(sp), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -1796,7 +1985,7 @@ subroutine assign_get_s1(lhs,this,success)
 end subroutine assign_get_s1
 subroutine associate_get_s1(lhs,this,dealloc,success)
   real(sp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -1819,7 +2008,7 @@ subroutine associate_get_s1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_s1
 subroutine associate_set_s1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1842,7 +2031,7 @@ subroutine associate_set_s1(this,rhs,dealloc)
 end subroutine associate_set_s1
 pure function associatd_l_s1(lhs,this) result(ret)
   real(sp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(sp), pointer , dimension(:) :: p
@@ -1856,7 +2045,7 @@ pure function associatd_l_s1(lhs,this) result(ret)
   endif
 end function associatd_l_s1
 pure function associatd_r_s1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(sp), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -1872,7 +2061,7 @@ pure function associatd_r_s1(this,rhs) result(ret)
 end function associatd_r_s1
 ! All boolean functions
 subroutine assign_set_s2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1900,7 +2089,7 @@ subroutine assign_set_s2(this,rhs,dealloc)
 end subroutine assign_set_s2
 subroutine assign_get_s2(lhs,this,success)
   real(sp), intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -1920,7 +2109,7 @@ subroutine assign_get_s2(lhs,this,success)
 end subroutine assign_get_s2
 subroutine associate_get_s2(lhs,this,dealloc,success)
   real(sp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -1943,7 +2132,7 @@ subroutine associate_get_s2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_s2
 subroutine associate_set_s2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -1966,7 +2155,7 @@ subroutine associate_set_s2(this,rhs,dealloc)
 end subroutine associate_set_s2
 pure function associatd_l_s2(lhs,this) result(ret)
   real(sp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(sp), pointer , dimension(:,:) :: p
@@ -1980,7 +2169,7 @@ pure function associatd_l_s2(lhs,this) result(ret)
   endif
 end function associatd_l_s2
 pure function associatd_r_s2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(sp), pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -1996,7 +2185,7 @@ pure function associatd_r_s2(this,rhs) result(ret)
 end function associatd_r_s2
 ! All boolean functions
 subroutine assign_set_s3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2024,7 +2213,7 @@ subroutine assign_set_s3(this,rhs,dealloc)
 end subroutine assign_set_s3
 subroutine assign_get_s3(lhs,this,success)
   real(sp), intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2044,7 +2233,7 @@ subroutine assign_get_s3(lhs,this,success)
 end subroutine assign_get_s3
 subroutine associate_get_s3(lhs,this,dealloc,success)
   real(sp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2067,7 +2256,7 @@ subroutine associate_get_s3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_s3
 subroutine associate_set_s3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(sp), intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2090,7 +2279,7 @@ subroutine associate_set_s3(this,rhs,dealloc)
 end subroutine associate_set_s3
 pure function associatd_l_s3(lhs,this) result(ret)
   real(sp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(sp), pointer , dimension(:,:,:) :: p
@@ -2104,7 +2293,7 @@ pure function associatd_l_s3(lhs,this) result(ret)
   endif
 end function associatd_l_s3
 pure function associatd_r_s3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(sp), pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -2120,7 +2309,7 @@ pure function associatd_r_s3(this,rhs) result(ret)
 end function associatd_r_s3
 ! All boolean functions
 subroutine assign_set_d0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2148,7 +2337,7 @@ subroutine assign_set_d0(this,rhs,dealloc)
 end subroutine assign_set_d0
 subroutine assign_get_d0(lhs,this,success)
   real(dp), intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2163,7 +2352,7 @@ subroutine assign_get_d0(lhs,this,success)
 end subroutine assign_get_d0
 subroutine associate_get_d0(lhs,this,dealloc,success)
   real(dp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2186,7 +2375,7 @@ subroutine associate_get_d0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_d0
 subroutine associate_set_d0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2209,7 +2398,7 @@ subroutine associate_set_d0(this,rhs,dealloc)
 end subroutine associate_set_d0
 pure function associatd_l_d0(lhs,this) result(ret)
   real(dp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(dp), pointer :: p
@@ -2223,7 +2412,7 @@ pure function associatd_l_d0(lhs,this) result(ret)
   endif
 end function associatd_l_d0
 pure function associatd_r_d0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(dp), pointer :: rhs
   logical :: ret
   type :: pt
@@ -2239,7 +2428,7 @@ pure function associatd_r_d0(this,rhs) result(ret)
 end function associatd_r_d0
 ! All boolean functions
 subroutine assign_set_d1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2267,7 +2456,7 @@ subroutine assign_set_d1(this,rhs,dealloc)
 end subroutine assign_set_d1
 subroutine assign_get_d1(lhs,this,success)
   real(dp), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2287,7 +2476,7 @@ subroutine assign_get_d1(lhs,this,success)
 end subroutine assign_get_d1
 subroutine associate_get_d1(lhs,this,dealloc,success)
   real(dp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2310,7 +2499,7 @@ subroutine associate_get_d1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_d1
 subroutine associate_set_d1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2333,7 +2522,7 @@ subroutine associate_set_d1(this,rhs,dealloc)
 end subroutine associate_set_d1
 pure function associatd_l_d1(lhs,this) result(ret)
   real(dp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(dp), pointer , dimension(:) :: p
@@ -2347,7 +2536,7 @@ pure function associatd_l_d1(lhs,this) result(ret)
   endif
 end function associatd_l_d1
 pure function associatd_r_d1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(dp), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -2363,7 +2552,7 @@ pure function associatd_r_d1(this,rhs) result(ret)
 end function associatd_r_d1
 ! All boolean functions
 subroutine assign_set_d2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2391,7 +2580,7 @@ subroutine assign_set_d2(this,rhs,dealloc)
 end subroutine assign_set_d2
 subroutine assign_get_d2(lhs,this,success)
   real(dp), intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2411,7 +2600,7 @@ subroutine assign_get_d2(lhs,this,success)
 end subroutine assign_get_d2
 subroutine associate_get_d2(lhs,this,dealloc,success)
   real(dp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2434,7 +2623,7 @@ subroutine associate_get_d2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_d2
 subroutine associate_set_d2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2457,7 +2646,7 @@ subroutine associate_set_d2(this,rhs,dealloc)
 end subroutine associate_set_d2
 pure function associatd_l_d2(lhs,this) result(ret)
   real(dp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(dp), pointer , dimension(:,:) :: p
@@ -2471,7 +2660,7 @@ pure function associatd_l_d2(lhs,this) result(ret)
   endif
 end function associatd_l_d2
 pure function associatd_r_d2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(dp), pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -2487,7 +2676,7 @@ pure function associatd_r_d2(this,rhs) result(ret)
 end function associatd_r_d2
 ! All boolean functions
 subroutine assign_set_d3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2515,7 +2704,7 @@ subroutine assign_set_d3(this,rhs,dealloc)
 end subroutine assign_set_d3
 subroutine assign_get_d3(lhs,this,success)
   real(dp), intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2535,7 +2724,7 @@ subroutine assign_get_d3(lhs,this,success)
 end subroutine assign_get_d3
 subroutine associate_get_d3(lhs,this,dealloc,success)
   real(dp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2558,7 +2747,7 @@ subroutine associate_get_d3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_d3
 subroutine associate_set_d3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   real(dp), intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2581,7 +2770,7 @@ subroutine associate_set_d3(this,rhs,dealloc)
 end subroutine associate_set_d3
 pure function associatd_l_d3(lhs,this) result(ret)
   real(dp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     real(dp), pointer , dimension(:,:,:) :: p
@@ -2595,7 +2784,7 @@ pure function associatd_l_d3(lhs,this) result(ret)
   endif
 end function associatd_l_d3
 pure function associatd_r_d3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   real(dp), pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -2611,7 +2800,7 @@ pure function associatd_r_d3(this,rhs) result(ret)
 end function associatd_r_d3
 ! All boolean functions
 subroutine assign_set_c0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2639,7 +2828,7 @@ subroutine assign_set_c0(this,rhs,dealloc)
 end subroutine assign_set_c0
 subroutine assign_get_c0(lhs,this,success)
   complex(sp), intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2654,7 +2843,7 @@ subroutine assign_get_c0(lhs,this,success)
 end subroutine assign_get_c0
 subroutine associate_get_c0(lhs,this,dealloc,success)
   complex(sp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2677,7 +2866,7 @@ subroutine associate_get_c0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_c0
 subroutine associate_set_c0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2700,7 +2889,7 @@ subroutine associate_set_c0(this,rhs,dealloc)
 end subroutine associate_set_c0
 pure function associatd_l_c0(lhs,this) result(ret)
   complex(sp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(sp), pointer :: p
@@ -2714,7 +2903,7 @@ pure function associatd_l_c0(lhs,this) result(ret)
   endif
 end function associatd_l_c0
 pure function associatd_r_c0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(sp), pointer :: rhs
   logical :: ret
   type :: pt
@@ -2730,7 +2919,7 @@ pure function associatd_r_c0(this,rhs) result(ret)
 end function associatd_r_c0
 ! All boolean functions
 subroutine assign_set_c1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2758,7 +2947,7 @@ subroutine assign_set_c1(this,rhs,dealloc)
 end subroutine assign_set_c1
 subroutine assign_get_c1(lhs,this,success)
   complex(sp), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2778,7 +2967,7 @@ subroutine assign_get_c1(lhs,this,success)
 end subroutine assign_get_c1
 subroutine associate_get_c1(lhs,this,dealloc,success)
   complex(sp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2801,7 +2990,7 @@ subroutine associate_get_c1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_c1
 subroutine associate_set_c1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2824,7 +3013,7 @@ subroutine associate_set_c1(this,rhs,dealloc)
 end subroutine associate_set_c1
 pure function associatd_l_c1(lhs,this) result(ret)
   complex(sp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(sp), pointer , dimension(:) :: p
@@ -2838,7 +3027,7 @@ pure function associatd_l_c1(lhs,this) result(ret)
   endif
 end function associatd_l_c1
 pure function associatd_r_c1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(sp), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -2854,7 +3043,7 @@ pure function associatd_r_c1(this,rhs) result(ret)
 end function associatd_r_c1
 ! All boolean functions
 subroutine assign_set_c2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2882,7 +3071,7 @@ subroutine assign_set_c2(this,rhs,dealloc)
 end subroutine assign_set_c2
 subroutine assign_get_c2(lhs,this,success)
   complex(sp), intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -2902,7 +3091,7 @@ subroutine assign_get_c2(lhs,this,success)
 end subroutine assign_get_c2
 subroutine associate_get_c2(lhs,this,dealloc,success)
   complex(sp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -2925,7 +3114,7 @@ subroutine associate_get_c2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_c2
 subroutine associate_set_c2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -2948,7 +3137,7 @@ subroutine associate_set_c2(this,rhs,dealloc)
 end subroutine associate_set_c2
 pure function associatd_l_c2(lhs,this) result(ret)
   complex(sp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(sp), pointer , dimension(:,:) :: p
@@ -2962,7 +3151,7 @@ pure function associatd_l_c2(lhs,this) result(ret)
   endif
 end function associatd_l_c2
 pure function associatd_r_c2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(sp), pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -2978,7 +3167,7 @@ pure function associatd_r_c2(this,rhs) result(ret)
 end function associatd_r_c2
 ! All boolean functions
 subroutine assign_set_c3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3006,7 +3195,7 @@ subroutine assign_set_c3(this,rhs,dealloc)
 end subroutine assign_set_c3
 subroutine assign_get_c3(lhs,this,success)
   complex(sp), intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3026,7 +3215,7 @@ subroutine assign_get_c3(lhs,this,success)
 end subroutine assign_get_c3
 subroutine associate_get_c3(lhs,this,dealloc,success)
   complex(sp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3049,7 +3238,7 @@ subroutine associate_get_c3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_c3
 subroutine associate_set_c3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(sp), intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3072,7 +3261,7 @@ subroutine associate_set_c3(this,rhs,dealloc)
 end subroutine associate_set_c3
 pure function associatd_l_c3(lhs,this) result(ret)
   complex(sp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(sp), pointer , dimension(:,:,:) :: p
@@ -3086,7 +3275,7 @@ pure function associatd_l_c3(lhs,this) result(ret)
   endif
 end function associatd_l_c3
 pure function associatd_r_c3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(sp), pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -3102,7 +3291,7 @@ pure function associatd_r_c3(this,rhs) result(ret)
 end function associatd_r_c3
 ! All boolean functions
 subroutine assign_set_z0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3130,7 +3319,7 @@ subroutine assign_set_z0(this,rhs,dealloc)
 end subroutine assign_set_z0
 subroutine assign_get_z0(lhs,this,success)
   complex(dp), intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3145,7 +3334,7 @@ subroutine assign_get_z0(lhs,this,success)
 end subroutine assign_get_z0
 subroutine associate_get_z0(lhs,this,dealloc,success)
   complex(dp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3168,7 +3357,7 @@ subroutine associate_get_z0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_z0
 subroutine associate_set_z0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3191,7 +3380,7 @@ subroutine associate_set_z0(this,rhs,dealloc)
 end subroutine associate_set_z0
 pure function associatd_l_z0(lhs,this) result(ret)
   complex(dp), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(dp), pointer :: p
@@ -3205,7 +3394,7 @@ pure function associatd_l_z0(lhs,this) result(ret)
   endif
 end function associatd_l_z0
 pure function associatd_r_z0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(dp), pointer :: rhs
   logical :: ret
   type :: pt
@@ -3221,7 +3410,7 @@ pure function associatd_r_z0(this,rhs) result(ret)
 end function associatd_r_z0
 ! All boolean functions
 subroutine assign_set_z1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3249,7 +3438,7 @@ subroutine assign_set_z1(this,rhs,dealloc)
 end subroutine assign_set_z1
 subroutine assign_get_z1(lhs,this,success)
   complex(dp), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3269,7 +3458,7 @@ subroutine assign_get_z1(lhs,this,success)
 end subroutine assign_get_z1
 subroutine associate_get_z1(lhs,this,dealloc,success)
   complex(dp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3292,7 +3481,7 @@ subroutine associate_get_z1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_z1
 subroutine associate_set_z1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3315,7 +3504,7 @@ subroutine associate_set_z1(this,rhs,dealloc)
 end subroutine associate_set_z1
 pure function associatd_l_z1(lhs,this) result(ret)
   complex(dp), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(dp), pointer , dimension(:) :: p
@@ -3329,7 +3518,7 @@ pure function associatd_l_z1(lhs,this) result(ret)
   endif
 end function associatd_l_z1
 pure function associatd_r_z1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(dp), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -3345,7 +3534,7 @@ pure function associatd_r_z1(this,rhs) result(ret)
 end function associatd_r_z1
 ! All boolean functions
 subroutine assign_set_z2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3373,7 +3562,7 @@ subroutine assign_set_z2(this,rhs,dealloc)
 end subroutine assign_set_z2
 subroutine assign_get_z2(lhs,this,success)
   complex(dp), intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3393,7 +3582,7 @@ subroutine assign_get_z2(lhs,this,success)
 end subroutine assign_get_z2
 subroutine associate_get_z2(lhs,this,dealloc,success)
   complex(dp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3416,7 +3605,7 @@ subroutine associate_get_z2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_z2
 subroutine associate_set_z2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3439,7 +3628,7 @@ subroutine associate_set_z2(this,rhs,dealloc)
 end subroutine associate_set_z2
 pure function associatd_l_z2(lhs,this) result(ret)
   complex(dp), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(dp), pointer , dimension(:,:) :: p
@@ -3453,7 +3642,7 @@ pure function associatd_l_z2(lhs,this) result(ret)
   endif
 end function associatd_l_z2
 pure function associatd_r_z2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(dp), pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -3469,7 +3658,7 @@ pure function associatd_r_z2(this,rhs) result(ret)
 end function associatd_r_z2
 ! All boolean functions
 subroutine assign_set_z3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3497,7 +3686,7 @@ subroutine assign_set_z3(this,rhs,dealloc)
 end subroutine assign_set_z3
 subroutine assign_get_z3(lhs,this,success)
   complex(dp), intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3517,7 +3706,7 @@ subroutine assign_get_z3(lhs,this,success)
 end subroutine assign_get_z3
 subroutine associate_get_z3(lhs,this,dealloc,success)
   complex(dp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3540,7 +3729,7 @@ subroutine associate_get_z3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_z3
 subroutine associate_set_z3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   complex(dp), intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3563,7 +3752,7 @@ subroutine associate_set_z3(this,rhs,dealloc)
 end subroutine associate_set_z3
 pure function associatd_l_z3(lhs,this) result(ret)
   complex(dp), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     complex(dp), pointer , dimension(:,:,:) :: p
@@ -3577,7 +3766,7 @@ pure function associatd_l_z3(lhs,this) result(ret)
   endif
 end function associatd_l_z3
 pure function associatd_r_z3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   complex(dp), pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -3593,7 +3782,7 @@ pure function associatd_r_z3(this,rhs) result(ret)
 end function associatd_r_z3
 ! All boolean functions
 subroutine assign_set_b0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3621,7 +3810,7 @@ subroutine assign_set_b0(this,rhs,dealloc)
 end subroutine assign_set_b0
 subroutine assign_get_b0(lhs,this,success)
   logical, intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3636,7 +3825,7 @@ subroutine assign_get_b0(lhs,this,success)
 end subroutine assign_get_b0
 subroutine associate_get_b0(lhs,this,dealloc,success)
   logical, pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3659,7 +3848,7 @@ subroutine associate_get_b0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_b0
 subroutine associate_set_b0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3682,7 +3871,7 @@ subroutine associate_set_b0(this,rhs,dealloc)
 end subroutine associate_set_b0
 pure function associatd_l_b0(lhs,this) result(ret)
   logical, pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     logical, pointer :: p
@@ -3696,7 +3885,7 @@ pure function associatd_l_b0(lhs,this) result(ret)
   endif
 end function associatd_l_b0
 pure function associatd_r_b0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, pointer :: rhs
   logical :: ret
   type :: pt
@@ -3712,7 +3901,7 @@ pure function associatd_r_b0(this,rhs) result(ret)
 end function associatd_r_b0
 ! All boolean functions
 subroutine assign_set_b1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3740,7 +3929,7 @@ subroutine assign_set_b1(this,rhs,dealloc)
 end subroutine assign_set_b1
 subroutine assign_get_b1(lhs,this,success)
   logical, intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3760,7 +3949,7 @@ subroutine assign_get_b1(lhs,this,success)
 end subroutine assign_get_b1
 subroutine associate_get_b1(lhs,this,dealloc,success)
   logical, pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3783,7 +3972,7 @@ subroutine associate_get_b1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_b1
 subroutine associate_set_b1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3806,7 +3995,7 @@ subroutine associate_set_b1(this,rhs,dealloc)
 end subroutine associate_set_b1
 pure function associatd_l_b1(lhs,this) result(ret)
   logical, pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     logical, pointer , dimension(:) :: p
@@ -3820,7 +4009,7 @@ pure function associatd_l_b1(lhs,this) result(ret)
   endif
 end function associatd_l_b1
 pure function associatd_r_b1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -3836,7 +4025,7 @@ pure function associatd_r_b1(this,rhs) result(ret)
 end function associatd_r_b1
 ! All boolean functions
 subroutine assign_set_b2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3864,7 +4053,7 @@ subroutine assign_set_b2(this,rhs,dealloc)
 end subroutine assign_set_b2
 subroutine assign_get_b2(lhs,this,success)
   logical, intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -3884,7 +4073,7 @@ subroutine assign_get_b2(lhs,this,success)
 end subroutine assign_get_b2
 subroutine associate_get_b2(lhs,this,dealloc,success)
   logical, pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -3907,7 +4096,7 @@ subroutine associate_get_b2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_b2
 subroutine associate_set_b2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3930,7 +4119,7 @@ subroutine associate_set_b2(this,rhs,dealloc)
 end subroutine associate_set_b2
 pure function associatd_l_b2(lhs,this) result(ret)
   logical, pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     logical, pointer , dimension(:,:) :: p
@@ -3944,7 +4133,7 @@ pure function associatd_l_b2(lhs,this) result(ret)
   endif
 end function associatd_l_b2
 pure function associatd_r_b2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -3960,7 +4149,7 @@ pure function associatd_r_b2(this,rhs) result(ret)
 end function associatd_r_b2
 ! All boolean functions
 subroutine assign_set_b3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -3988,7 +4177,7 @@ subroutine assign_set_b3(this,rhs,dealloc)
 end subroutine assign_set_b3
 subroutine assign_get_b3(lhs,this,success)
   logical, intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4008,7 +4197,7 @@ subroutine assign_get_b3(lhs,this,success)
 end subroutine assign_get_b3
 subroutine associate_get_b3(lhs,this,dealloc,success)
   logical, pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4031,7 +4220,7 @@ subroutine associate_get_b3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_b3
 subroutine associate_set_b3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   logical, intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4054,7 +4243,7 @@ subroutine associate_set_b3(this,rhs,dealloc)
 end subroutine associate_set_b3
 pure function associatd_l_b3(lhs,this) result(ret)
   logical, pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     logical, pointer , dimension(:,:,:) :: p
@@ -4068,7 +4257,7 @@ pure function associatd_l_b3(lhs,this) result(ret)
   endif
 end function associatd_l_b3
 pure function associatd_r_b3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -4084,7 +4273,7 @@ pure function associatd_r_b3(this,rhs) result(ret)
 end function associatd_r_b3
 ! All boolean functions
 subroutine assign_set_h0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4112,7 +4301,7 @@ subroutine assign_set_h0(this,rhs,dealloc)
 end subroutine assign_set_h0
 subroutine assign_get_h0(lhs,this,success)
   integer(ih), intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4127,7 +4316,7 @@ subroutine assign_get_h0(lhs,this,success)
 end subroutine assign_get_h0
 subroutine associate_get_h0(lhs,this,dealloc,success)
   integer(ih), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4150,7 +4339,7 @@ subroutine associate_get_h0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_h0
 subroutine associate_set_h0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4173,7 +4362,7 @@ subroutine associate_set_h0(this,rhs,dealloc)
 end subroutine associate_set_h0
 pure function associatd_l_h0(lhs,this) result(ret)
   integer(ih), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(ih), pointer :: p
@@ -4187,7 +4376,7 @@ pure function associatd_l_h0(lhs,this) result(ret)
   endif
 end function associatd_l_h0
 pure function associatd_r_h0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(ih), pointer :: rhs
   logical :: ret
   type :: pt
@@ -4203,7 +4392,7 @@ pure function associatd_r_h0(this,rhs) result(ret)
 end function associatd_r_h0
 ! All boolean functions
 subroutine assign_set_h1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4231,7 +4420,7 @@ subroutine assign_set_h1(this,rhs,dealloc)
 end subroutine assign_set_h1
 subroutine assign_get_h1(lhs,this,success)
   integer(ih), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4251,7 +4440,7 @@ subroutine assign_get_h1(lhs,this,success)
 end subroutine assign_get_h1
 subroutine associate_get_h1(lhs,this,dealloc,success)
   integer(ih), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4274,7 +4463,7 @@ subroutine associate_get_h1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_h1
 subroutine associate_set_h1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4297,7 +4486,7 @@ subroutine associate_set_h1(this,rhs,dealloc)
 end subroutine associate_set_h1
 pure function associatd_l_h1(lhs,this) result(ret)
   integer(ih), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(ih), pointer , dimension(:) :: p
@@ -4311,7 +4500,7 @@ pure function associatd_l_h1(lhs,this) result(ret)
   endif
 end function associatd_l_h1
 pure function associatd_r_h1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(ih), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -4327,7 +4516,7 @@ pure function associatd_r_h1(this,rhs) result(ret)
 end function associatd_r_h1
 ! All boolean functions
 subroutine assign_set_h2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4355,7 +4544,7 @@ subroutine assign_set_h2(this,rhs,dealloc)
 end subroutine assign_set_h2
 subroutine assign_get_h2(lhs,this,success)
   integer(ih), intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4375,7 +4564,7 @@ subroutine assign_get_h2(lhs,this,success)
 end subroutine assign_get_h2
 subroutine associate_get_h2(lhs,this,dealloc,success)
   integer(ih), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4398,7 +4587,7 @@ subroutine associate_get_h2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_h2
 subroutine associate_set_h2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4421,7 +4610,7 @@ subroutine associate_set_h2(this,rhs,dealloc)
 end subroutine associate_set_h2
 pure function associatd_l_h2(lhs,this) result(ret)
   integer(ih), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(ih), pointer , dimension(:,:) :: p
@@ -4435,7 +4624,7 @@ pure function associatd_l_h2(lhs,this) result(ret)
   endif
 end function associatd_l_h2
 pure function associatd_r_h2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(ih), pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -4451,7 +4640,7 @@ pure function associatd_r_h2(this,rhs) result(ret)
 end function associatd_r_h2
 ! All boolean functions
 subroutine assign_set_h3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4479,7 +4668,7 @@ subroutine assign_set_h3(this,rhs,dealloc)
 end subroutine assign_set_h3
 subroutine assign_get_h3(lhs,this,success)
   integer(ih), intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4499,7 +4688,7 @@ subroutine assign_get_h3(lhs,this,success)
 end subroutine assign_get_h3
 subroutine associate_get_h3(lhs,this,dealloc,success)
   integer(ih), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4522,7 +4711,7 @@ subroutine associate_get_h3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_h3
 subroutine associate_set_h3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(ih), intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4545,7 +4734,7 @@ subroutine associate_set_h3(this,rhs,dealloc)
 end subroutine associate_set_h3
 pure function associatd_l_h3(lhs,this) result(ret)
   integer(ih), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(ih), pointer , dimension(:,:,:) :: p
@@ -4559,7 +4748,7 @@ pure function associatd_l_h3(lhs,this) result(ret)
   endif
 end function associatd_l_h3
 pure function associatd_r_h3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(ih), pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -4575,7 +4764,7 @@ pure function associatd_r_h3(this,rhs) result(ret)
 end function associatd_r_h3
 ! All boolean functions
 subroutine assign_set_i0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4603,7 +4792,7 @@ subroutine assign_set_i0(this,rhs,dealloc)
 end subroutine assign_set_i0
 subroutine assign_get_i0(lhs,this,success)
   integer(is), intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4618,7 +4807,7 @@ subroutine assign_get_i0(lhs,this,success)
 end subroutine assign_get_i0
 subroutine associate_get_i0(lhs,this,dealloc,success)
   integer(is), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4641,7 +4830,7 @@ subroutine associate_get_i0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_i0
 subroutine associate_set_i0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4664,7 +4853,7 @@ subroutine associate_set_i0(this,rhs,dealloc)
 end subroutine associate_set_i0
 pure function associatd_l_i0(lhs,this) result(ret)
   integer(is), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(is), pointer :: p
@@ -4678,7 +4867,7 @@ pure function associatd_l_i0(lhs,this) result(ret)
   endif
 end function associatd_l_i0
 pure function associatd_r_i0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(is), pointer :: rhs
   logical :: ret
   type :: pt
@@ -4694,7 +4883,7 @@ pure function associatd_r_i0(this,rhs) result(ret)
 end function associatd_r_i0
 ! All boolean functions
 subroutine assign_set_i1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4722,7 +4911,7 @@ subroutine assign_set_i1(this,rhs,dealloc)
 end subroutine assign_set_i1
 subroutine assign_get_i1(lhs,this,success)
   integer(is), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4742,7 +4931,7 @@ subroutine assign_get_i1(lhs,this,success)
 end subroutine assign_get_i1
 subroutine associate_get_i1(lhs,this,dealloc,success)
   integer(is), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4765,7 +4954,7 @@ subroutine associate_get_i1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_i1
 subroutine associate_set_i1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4788,7 +4977,7 @@ subroutine associate_set_i1(this,rhs,dealloc)
 end subroutine associate_set_i1
 pure function associatd_l_i1(lhs,this) result(ret)
   integer(is), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(is), pointer , dimension(:) :: p
@@ -4802,7 +4991,7 @@ pure function associatd_l_i1(lhs,this) result(ret)
   endif
 end function associatd_l_i1
 pure function associatd_r_i1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(is), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -4818,7 +5007,7 @@ pure function associatd_r_i1(this,rhs) result(ret)
 end function associatd_r_i1
 ! All boolean functions
 subroutine assign_set_i2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4846,7 +5035,7 @@ subroutine assign_set_i2(this,rhs,dealloc)
 end subroutine assign_set_i2
 subroutine assign_get_i2(lhs,this,success)
   integer(is), intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4866,7 +5055,7 @@ subroutine assign_get_i2(lhs,this,success)
 end subroutine assign_get_i2
 subroutine associate_get_i2(lhs,this,dealloc,success)
   integer(is), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -4889,7 +5078,7 @@ subroutine associate_get_i2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_i2
 subroutine associate_set_i2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4912,7 +5101,7 @@ subroutine associate_set_i2(this,rhs,dealloc)
 end subroutine associate_set_i2
 pure function associatd_l_i2(lhs,this) result(ret)
   integer(is), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(is), pointer , dimension(:,:) :: p
@@ -4926,7 +5115,7 @@ pure function associatd_l_i2(lhs,this) result(ret)
   endif
 end function associatd_l_i2
 pure function associatd_r_i2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(is), pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -4942,7 +5131,7 @@ pure function associatd_r_i2(this,rhs) result(ret)
 end function associatd_r_i2
 ! All boolean functions
 subroutine assign_set_i3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -4970,7 +5159,7 @@ subroutine assign_set_i3(this,rhs,dealloc)
 end subroutine assign_set_i3
 subroutine assign_get_i3(lhs,this,success)
   integer(is), intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -4990,7 +5179,7 @@ subroutine assign_get_i3(lhs,this,success)
 end subroutine assign_get_i3
 subroutine associate_get_i3(lhs,this,dealloc,success)
   integer(is), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -5013,7 +5202,7 @@ subroutine associate_get_i3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_i3
 subroutine associate_set_i3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(is), intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5036,7 +5225,7 @@ subroutine associate_set_i3(this,rhs,dealloc)
 end subroutine associate_set_i3
 pure function associatd_l_i3(lhs,this) result(ret)
   integer(is), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(is), pointer , dimension(:,:,:) :: p
@@ -5050,7 +5239,7 @@ pure function associatd_l_i3(lhs,this) result(ret)
   endif
 end function associatd_l_i3
 pure function associatd_r_i3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(is), pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -5066,7 +5255,7 @@ pure function associatd_r_i3(this,rhs) result(ret)
 end function associatd_r_i3
 ! All boolean functions
 subroutine assign_set_l0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5094,7 +5283,7 @@ subroutine assign_set_l0(this,rhs,dealloc)
 end subroutine assign_set_l0
 subroutine assign_get_l0(lhs,this,success)
   integer(il), intent(out) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -5109,7 +5298,7 @@ subroutine assign_get_l0(lhs,this,success)
 end subroutine assign_get_l0
 subroutine associate_get_l0(lhs,this,dealloc,success)
   integer(il), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -5132,7 +5321,7 @@ subroutine associate_get_l0(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_l0
 subroutine associate_set_l0(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5155,7 +5344,7 @@ subroutine associate_set_l0(this,rhs,dealloc)
 end subroutine associate_set_l0
 pure function associatd_l_l0(lhs,this) result(ret)
   integer(il), pointer :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(il), pointer :: p
@@ -5169,7 +5358,7 @@ pure function associatd_l_l0(lhs,this) result(ret)
   endif
 end function associatd_l_l0
 pure function associatd_r_l0(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(il), pointer :: rhs
   logical :: ret
   type :: pt
@@ -5185,7 +5374,7 @@ pure function associatd_r_l0(this,rhs) result(ret)
 end function associatd_r_l0
 ! All boolean functions
 subroutine assign_set_l1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in), dimension(:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5213,7 +5402,7 @@ subroutine assign_set_l1(this,rhs,dealloc)
 end subroutine assign_set_l1
 subroutine assign_get_l1(lhs,this,success)
   integer(il), intent(out), dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -5233,7 +5422,7 @@ subroutine assign_get_l1(lhs,this,success)
 end subroutine assign_get_l1
 subroutine associate_get_l1(lhs,this,dealloc,success)
   integer(il), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -5256,7 +5445,7 @@ subroutine associate_get_l1(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_l1
 subroutine associate_set_l1(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in), dimension(:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5279,7 +5468,7 @@ subroutine associate_set_l1(this,rhs,dealloc)
 end subroutine associate_set_l1
 pure function associatd_l_l1(lhs,this) result(ret)
   integer(il), pointer , dimension(:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(il), pointer , dimension(:) :: p
@@ -5293,7 +5482,7 @@ pure function associatd_l_l1(lhs,this) result(ret)
   endif
 end function associatd_l_l1
 pure function associatd_r_l1(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(il), pointer , dimension(:) :: rhs
   logical :: ret
   type :: pt
@@ -5309,7 +5498,7 @@ pure function associatd_r_l1(this,rhs) result(ret)
 end function associatd_r_l1
 ! All boolean functions
 subroutine assign_set_l2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in), dimension(:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5337,7 +5526,7 @@ subroutine assign_set_l2(this,rhs,dealloc)
 end subroutine assign_set_l2
 subroutine assign_get_l2(lhs,this,success)
   integer(il), intent(out), dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -5357,7 +5546,7 @@ subroutine assign_get_l2(lhs,this,success)
 end subroutine assign_get_l2
 subroutine associate_get_l2(lhs,this,dealloc,success)
   integer(il), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -5380,7 +5569,7 @@ subroutine associate_get_l2(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_l2
 subroutine associate_set_l2(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in), dimension(:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5403,7 +5592,7 @@ subroutine associate_set_l2(this,rhs,dealloc)
 end subroutine associate_set_l2
 pure function associatd_l_l2(lhs,this) result(ret)
   integer(il), pointer , dimension(:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(il), pointer , dimension(:,:) :: p
@@ -5417,7 +5606,7 @@ pure function associatd_l_l2(lhs,this) result(ret)
   endif
 end function associatd_l_l2
 pure function associatd_r_l2(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(il), pointer , dimension(:,:) :: rhs
   logical :: ret
   type :: pt
@@ -5433,7 +5622,7 @@ pure function associatd_r_l2(this,rhs) result(ret)
 end function associatd_r_l2
 ! All boolean functions
 subroutine assign_set_l3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in), dimension(:,:,:) :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5461,7 +5650,7 @@ subroutine assign_set_l3(this,rhs,dealloc)
 end subroutine assign_set_l3
 subroutine assign_get_l3(lhs,this,success)
   integer(il), intent(out), dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(out), optional :: success
   logical :: lsuccess
   type :: pt
@@ -5481,7 +5670,7 @@ subroutine assign_get_l3(lhs,this,success)
 end subroutine assign_get_l3
 subroutine associate_get_l3(lhs,this,dealloc,success)
   integer(il), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical, intent(in), optional :: dealloc
   logical, intent(out), optional :: success
   logical :: ldealloc, lsuccess
@@ -5504,7 +5693,7 @@ subroutine associate_get_l3(lhs,this,dealloc,success)
   lhs => p%p
 end subroutine associate_get_l3
 subroutine associate_set_l3(this,rhs,dealloc)
-  type(var), intent(inout) :: this
+  type(variable_t), intent(inout) :: this
   integer(il), intent(in), dimension(:,:,:), target :: rhs
   logical, intent(in), optional :: dealloc
   logical :: ldealloc
@@ -5527,7 +5716,7 @@ subroutine associate_set_l3(this,rhs,dealloc)
 end subroutine associate_set_l3
 pure function associatd_l_l3(lhs,this) result(ret)
   integer(il), pointer , dimension(:,:,:) :: lhs
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   logical :: ret
   type :: pt
     integer(il), pointer , dimension(:,:,:) :: p
@@ -5541,7 +5730,7 @@ pure function associatd_l_l3(lhs,this) result(ret)
   endif
 end function associatd_l_l3
 pure function associatd_r_l3(this,rhs) result(ret)
-  type(var), intent(in) :: this
+  type(variable_t), intent(in) :: this
   integer(il), pointer , dimension(:,:,:) :: rhs
   logical :: ret
   type :: pt
@@ -5555,5 +5744,491 @@ pure function associatd_r_l3(this,rhs) result(ret)
      ret = associated(p%p,rhs)
   endif
 end function associatd_r_l3
+! All boolean functions
+subroutine assign_set_cp0(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_ptr), intent(in) :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_ptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSIGNMENT in fortran is per default destructive
+  ldealloc = .true.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  ! With pointer transfer we need to deallocate
+  ! else bounds might change...
+  this%t = "cp0"
+  allocate(p%p) ! allocate space
+  p%p = rhs ! copy data over
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+  ! We already have shipped it
+  nullify(p%p)
+end subroutine assign_set_cp0
+subroutine assign_get_cp0(lhs,this,success)
+  type(c_ptr), intent(out) :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(out), optional :: success
+  logical :: lsuccess
+  type :: pt
+    type(c_ptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "cp0"
+  if (present(success)) success = lsuccess
+  if (.not. lsuccess) return
+  p = transfer(this%enc,p) ! retrieve pointer encoding
+  lhs = p%p
+end subroutine assign_get_cp0
+subroutine associate_get_cp0(lhs,this,dealloc,success)
+  type(c_ptr), pointer :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(in), optional :: dealloc
+  logical, intent(out), optional :: success
+  logical :: ldealloc, lsuccess
+  type :: pt
+    type(c_ptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "cp0"
+  if (present(success)) success = lsuccess
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  ! there is one problem, say if lhs is not nullified...
+  if (ldealloc.and.associated(lhs)) then
+     deallocate(lhs)
+     nullify(lhs)
+  end if
+  if (.not. lsuccess ) return
+  p = transfer(this%enc,p) ! retrieve pointer encoding
+  lhs => p%p
+end subroutine associate_get_cp0
+subroutine associate_set_cp0(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_ptr), intent(in), target :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_ptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  this%t = "cp0"
+  p%p => rhs
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+end subroutine associate_set_cp0
+pure function associatd_l_cp0(lhs,this) result(ret)
+  type(c_ptr), pointer :: lhs
+  type(variable_t), intent(in) :: this
+  logical :: ret
+  type :: pt
+    type(c_ptr), pointer :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "cp0"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(lhs,p%p)
+  endif
+end function associatd_l_cp0
+pure function associatd_r_cp0(this,rhs) result(ret)
+  type(variable_t), intent(in) :: this
+  type(c_ptr), pointer :: rhs
+  logical :: ret
+  type :: pt
+    type(c_ptr), pointer :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "cp0"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(p%p,rhs)
+  endif
+end function associatd_r_cp0
+! All boolean functions
+subroutine assign_set_cp1(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_ptr), intent(in), dimension(:) :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_ptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSIGNMENT in fortran is per default destructive
+  ldealloc = .true.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  ! With pointer transfer we need to deallocate
+  ! else bounds might change...
+  this%t = "cp1"
+  allocate(p%p(size(rhs))) ! allocate space
+  p%p = rhs ! copy data over
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+  ! We already have shipped it
+  nullify(p%p)
+end subroutine assign_set_cp1
+subroutine assign_get_cp1(lhs,this,success)
+  type(c_ptr), intent(out), dimension(:) :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(out), optional :: success
+  logical :: lsuccess
+  type :: pt
+    type(c_ptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "cp1"
+  if (lsuccess) then
+    p = transfer(this%enc,p) ! retrieve pointer encoding
+    lsuccess = all(shape(p%p)==shape(lhs)) !&
+     ! .and. all((lbound(p%p) == lbound(lhs))) &
+     ! .and. all((ubound(p%p) == ubound(lhs)))
+  end if
+  if (present(success)) success = lsuccess
+  if (.not. lsuccess) return
+  lhs = p%p
+end subroutine assign_get_cp1
+subroutine associate_get_cp1(lhs,this,dealloc,success)
+  type(c_ptr), pointer , dimension(:) :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(in), optional :: dealloc
+  logical, intent(out), optional :: success
+  logical :: ldealloc, lsuccess
+  type :: pt
+    type(c_ptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "cp1"
+  if (present(success)) success = lsuccess
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  ! there is one problem, say if lhs is not nullified...
+  if (ldealloc.and.associated(lhs)) then
+     deallocate(lhs)
+     nullify(lhs)
+  end if
+  if (.not. lsuccess ) return
+  p = transfer(this%enc,p) ! retrieve pointer encoding
+  lhs => p%p
+end subroutine associate_get_cp1
+subroutine associate_set_cp1(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_ptr), intent(in), dimension(:), target :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_ptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  this%t = "cp1"
+  p%p => rhs
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+end subroutine associate_set_cp1
+pure function associatd_l_cp1(lhs,this) result(ret)
+  type(c_ptr), pointer , dimension(:) :: lhs
+  type(variable_t), intent(in) :: this
+  logical :: ret
+  type :: pt
+    type(c_ptr), pointer , dimension(:) :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "cp1"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(lhs,p%p)
+  endif
+end function associatd_l_cp1
+pure function associatd_r_cp1(this,rhs) result(ret)
+  type(variable_t), intent(in) :: this
+  type(c_ptr), pointer , dimension(:) :: rhs
+  logical :: ret
+  type :: pt
+    type(c_ptr), pointer , dimension(:) :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "cp1"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(p%p,rhs)
+  endif
+end function associatd_r_cp1
+! All boolean functions
+subroutine assign_set_fp0(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_funptr), intent(in) :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_funptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSIGNMENT in fortran is per default destructive
+  ldealloc = .true.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  ! With pointer transfer we need to deallocate
+  ! else bounds might change...
+  this%t = "fp0"
+  allocate(p%p) ! allocate space
+  p%p = rhs ! copy data over
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+  ! We already have shipped it
+  nullify(p%p)
+end subroutine assign_set_fp0
+subroutine assign_get_fp0(lhs,this,success)
+  type(c_funptr), intent(out) :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(out), optional :: success
+  logical :: lsuccess
+  type :: pt
+    type(c_funptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "fp0"
+  if (present(success)) success = lsuccess
+  if (.not. lsuccess) return
+  p = transfer(this%enc,p) ! retrieve pointer encoding
+  lhs = p%p
+end subroutine assign_get_fp0
+subroutine associate_get_fp0(lhs,this,dealloc,success)
+  type(c_funptr), pointer :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(in), optional :: dealloc
+  logical, intent(out), optional :: success
+  logical :: ldealloc, lsuccess
+  type :: pt
+    type(c_funptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "fp0"
+  if (present(success)) success = lsuccess
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  ! there is one problem, say if lhs is not nullified...
+  if (ldealloc.and.associated(lhs)) then
+     deallocate(lhs)
+     nullify(lhs)
+  end if
+  if (.not. lsuccess ) return
+  p = transfer(this%enc,p) ! retrieve pointer encoding
+  lhs => p%p
+end subroutine associate_get_fp0
+subroutine associate_set_fp0(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_funptr), intent(in), target :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_funptr), pointer :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  this%t = "fp0"
+  p%p => rhs
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+end subroutine associate_set_fp0
+pure function associatd_l_fp0(lhs,this) result(ret)
+  type(c_funptr), pointer :: lhs
+  type(variable_t), intent(in) :: this
+  logical :: ret
+  type :: pt
+    type(c_funptr), pointer :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "fp0"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(lhs,p%p)
+  endif
+end function associatd_l_fp0
+pure function associatd_r_fp0(this,rhs) result(ret)
+  type(variable_t), intent(in) :: this
+  type(c_funptr), pointer :: rhs
+  logical :: ret
+  type :: pt
+    type(c_funptr), pointer :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "fp0"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(p%p,rhs)
+  endif
+end function associatd_r_fp0
+! All boolean functions
+subroutine assign_set_fp1(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_funptr), intent(in), dimension(:) :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_funptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSIGNMENT in fortran is per default destructive
+  ldealloc = .true.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  ! With pointer transfer we need to deallocate
+  ! else bounds might change...
+  this%t = "fp1"
+  allocate(p%p(size(rhs))) ! allocate space
+  p%p = rhs ! copy data over
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+  ! We already have shipped it
+  nullify(p%p)
+end subroutine assign_set_fp1
+subroutine assign_get_fp1(lhs,this,success)
+  type(c_funptr), intent(out), dimension(:) :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(out), optional :: success
+  logical :: lsuccess
+  type :: pt
+    type(c_funptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "fp1"
+  if (lsuccess) then
+    p = transfer(this%enc,p) ! retrieve pointer encoding
+    lsuccess = all(shape(p%p)==shape(lhs)) !&
+     ! .and. all((lbound(p%p) == lbound(lhs))) &
+     ! .and. all((ubound(p%p) == ubound(lhs)))
+  end if
+  if (present(success)) success = lsuccess
+  if (.not. lsuccess) return
+  lhs = p%p
+end subroutine assign_get_fp1
+subroutine associate_get_fp1(lhs,this,dealloc,success)
+  type(c_funptr), pointer , dimension(:) :: lhs
+  type(variable_t), intent(in) :: this
+  logical, intent(in), optional :: dealloc
+  logical, intent(out), optional :: success
+  logical :: ldealloc, lsuccess
+  type :: pt
+    type(c_funptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  lsuccess = this%t == "fp1"
+  if (present(success)) success = lsuccess
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  ! there is one problem, say if lhs is not nullified...
+  if (ldealloc.and.associated(lhs)) then
+     deallocate(lhs)
+     nullify(lhs)
+  end if
+  if (.not. lsuccess ) return
+  p = transfer(this%enc,p) ! retrieve pointer encoding
+  lhs => p%p
+end subroutine associate_get_fp1
+subroutine associate_set_fp1(this,rhs,dealloc)
+  type(variable_t), intent(inout) :: this
+  type(c_funptr), intent(in), dimension(:), target :: rhs
+  logical, intent(in), optional :: dealloc
+  logical :: ldealloc
+  type :: pt
+    type(c_funptr), pointer , dimension(:) :: p => null()
+  end type
+  type(pt) :: p
+  ! ASSOCIATION in fortran is per default non-destructive
+  ldealloc = .false.
+  if(present(dealloc))ldealloc = dealloc
+  if (ldealloc) then
+     call delete(this)
+  else
+     call nullify(this)
+  end if
+  this%t = "fp1"
+  p%p => rhs
+  allocate(this%enc(size(transfer(p, local_enc_type)))) ! allocate encoding
+  this%enc(:) = transfer(p, local_enc_type) ! transfer pointer type to the encoding
+end subroutine associate_set_fp1
+pure function associatd_l_fp1(lhs,this) result(ret)
+  type(c_funptr), pointer , dimension(:) :: lhs
+  type(variable_t), intent(in) :: this
+  logical :: ret
+  type :: pt
+    type(c_funptr), pointer , dimension(:) :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "fp1"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(lhs,p%p)
+  endif
+end function associatd_l_fp1
+pure function associatd_r_fp1(this,rhs) result(ret)
+  type(variable_t), intent(in) :: this
+  type(c_funptr), pointer , dimension(:) :: rhs
+  logical :: ret
+  type :: pt
+    type(c_funptr), pointer , dimension(:) :: p
+  end type
+  type(pt) :: p
+  ret = this%t == "fp1"
+  if (ret) then
+     nullify(p%p)
+     p = transfer(this%enc,p)
+     ret = associated(p%p,rhs)
+  endif
+end function associatd_r_fp1
 ! All boolean functions
 end module variable

@@ -1547,17 +1547,17 @@ contains
       nh = n_items(mix%stack(2))
 
       lreturn = .false.
-
+      
       ! Easy check for initial step...
       select case ( mix%v )
       case ( 0 , 2 ) ! Stable Pulay
-         
-         lreturn = ns == 1
-         
+
+        lreturn = ns == 1
+
       case ( 1 , 3 ) ! Guaranteed Pulay
-         
-         lreturn = mod(current_itt(mix), 2) == 1
-         
+
+        lreturn = mod(current_itt(mix), 2) == 1
+
       end select
 
       ! In case we return we are actually doing
@@ -1567,9 +1567,9 @@ contains
       
       ! Print out number of currently used history steps
       if ( debug_mix ) &
-           write(*,'(a,2(a,i0))') trim(debug_msg), &
-           ' n_hist = ',ns, ' / ',nmax
-      
+          write(*,'(a,2(a,i0))') trim(debug_msg), &
+          ' n_hist = ',ns, ' / ',nmax
+
       ! Allocate arrays for calculating the
       ! coefficients
       allocate(A(nh,nh), Ainv(nh,nh))
@@ -1577,31 +1577,31 @@ contains
       
       ! Calculate A_ij coefficients for inversion
       do i = 1 , nh
-         
-         ! Get RRes[i] array
-         rres1 => getstackval(mix, 2, i)
-         
-         do j = 1 , i - 1
-            
-            ! Get RRes[j] array
-            rres2 => getstackval(mix, 2, j)
-            
-            ! A(i,j) = A(j,i) = norm(RRes[i],RRes[j])
-            A(i,j) = norm(n, rres1, rres2)
-            A(j,i) = A(i,j)
-            
-         end do
+        
+        ! Get RRes[i] array
+        rres1 => getstackval(mix, 2, i)
 
-         ! Diagonal
-         A(i,i) = norm(n, rres1, rres1)
+        do j = 1 , i - 1
+
+          ! Get RRes[j] array
+          rres2 => getstackval(mix, 2, j)
+
+          ! A(i,j) = A(j,i) = norm(RRes[i],RRes[j])
+          A(i,j) = norm(n, rres1, rres2)
+          A(j,i) = A(i,j)
+
+        end do
+
+        ! Diagonal
+        A(i,i) = norm(n, rres1, rres1)
 
       end do
 
 #ifdef MPI
       ! Global operations, but only for the non-extended entries
       call MPI_AllReduce(A(1,1),Ainv(1,1),nh*nh, &
-           MPI_double_precision, MPI_Sum, &
-           mix%Comm, i)
+          MPI_double_precision, MPI_Sum, &
+          mix%Comm, i)
       ! copy over reduced arrays
       A(:,:) = Ainv(:,:)
 #endif
@@ -1609,25 +1609,26 @@ contains
       ! Get inverse of matrix
       select case ( mix%v )
       case ( 0 , 1 )
-         
-         call inverse(nh, A, Ainv, info)
 
-         if ( info /= 0 ) then
-            
-            ! only inform if we should not use SVD per default
-            if ( IONode ) &
-                 write(*,'(2a)') trim(debug_msg), &
-                 ' Pulay -- inversion failed, > SVD'
-            
-            ! We will first try the SVD routine
-            call svd(nh, A, Ainv, mix%rv(I_SVD_COND), info)
-            
-         end if
-         
+        call inverse(nh, A, Ainv, info)
+
+        if ( info /= 0 ) then
+
+          ! We will first try the SVD routine
+          call svd(nh, A, Ainv, mix%rv(I_SVD_COND), j, info)
+
+          ! only inform if we should not use SVD per default
+          if ( IONode ) &
+              write(*,'(2a,i0,a,i0)') trim(debug_msg), &
+              ' Pulay -- inversion failed, > SVD [rank/size] ', &
+              j, ' / ', nh
+
+        end if
+
       case ( 2 , 3 )
 
-         ! We forcefully use the SVD routine
-         call svd(nh, A, Ainv, mix%rv(I_SVD_COND), info)
+        ! We forcefully use the SVD routine
+        call svd(nh, A, Ainv, mix%rv(I_SVD_COND), j, info)
 
       end select
 
@@ -1640,45 +1641,45 @@ contains
 
       ! Initialize the coefficients
       do i = 1 , nh
-         coeff(i) = 0._dp
+        coeff(i) = 0._dp
       end do
 
       if ( info == 0 ) then
+        
+        ! Calculate the coefficients on all processors
+        do j = 1 , nh
 
-         ! Calculate the coefficients on all processors
-         do j = 1 , nh
+          ! res  == F[i]
+          ! rres == F[j+1] - F[j]
+          rres => getstackval(mix, 2, j)
+          dnorm = norm(n, rres, res)
 
-            ! res  == F[i]
-            ! rres == F[j+1] - F[j]
-            rres => getstackval(mix, 2, j)
-            dnorm = norm(n, rres, res)
-            
-            do i = 1 , nh
-               coeff(i) = coeff(i) - Ainv(i,j) * dnorm
-            end do
-            
-         end do
-            
+          do i = 1 , nh
+            coeff(i) = coeff(i) - Ainv(i,j) * dnorm
+          end do
+
+        end do
+
 #ifdef MPI
-         ! Reduce the coefficients
-         call MPI_AllReduce(coeff(1),A(1,1),nh, &
-              MPI_double_precision, MPI_Sum, &
-              mix%Comm, i)
-         do i = 1 , nh
-            coeff(i) = A(i,1)
-         end do
+        ! Reduce the coefficients
+        call MPI_AllReduce(coeff(1),A(1,1),nh, &
+            MPI_double_precision, MPI_Sum, &
+            mix%Comm, i)
+        do i = 1 , nh
+          coeff(i) = A(i,1)
+        end do
 #endif
-         
+
       else
 
-         info = 0
-         
-         ! reset to linear mixing
-         write(*,'(2a)') trim(debug_msg), &
-              ' Pulay -- inversion failed, SVD failed, > linear'
-         
+        info = 0
+
+        ! reset to linear mixing
+        write(*,'(2a)') trim(debug_msg), &
+            ' Pulay -- inversion failed, SVD failed, > linear'
+
       end if
-      
+
       ! Clean up memory
       deallocate(A, Ainv)
             
@@ -1803,7 +1804,7 @@ contains
       end do
 
 #ifdef MPI
-      call MPI_AllReduce(A(1,1),Ainv(1,1),nh*nh, &
+      call MPI_AllReduce(A(1,1), Ainv(1,1), nh*nh, &
            MPI_double_precision, MPI_Sum, &
            mix%Comm, i)
       A(:,:) = Ainv(:,:)
@@ -1820,15 +1821,16 @@ contains
       call inverse(nh, A, Ainv, info)
 
       if ( info /= 0 ) then
-         
+                  
+         ! We will first try the SVD routine
+         call svd(nh, A, Ainv, mix%rv(I_SVD_COND), j, info)
+
          ! only inform if we should not use SVD per default
          if ( IONode ) &
-              write(*,'(2a)') trim(debug_msg), &
-              ' Broyden -- inversion failed, > SVD'
-         
-         ! We will first try the SVD routine
-         call svd(nh, A, Ainv, mix%rv(I_SVD_COND), info)
-         
+             write(*,'(2a,i0,a,i0)') trim(debug_msg), &
+             ' Broyden -- inversion failed, > SVD [rank/size] ', &
+             j, ' / ', nh
+
       end if
 
       do i = 1 , nh
@@ -1978,7 +1980,7 @@ contains
       end if
 
 
-!$OMP parallel default(shared), private(i, j, res, rres)
+!$OMP parallel default(shared), private(i, j)
 
       !  x^opt[i+1] = x[i] + G F[i]
 !$OMP do
@@ -1991,8 +1993,10 @@ contains
       
          !  res == x[j] - x[j-1]
          ! rres == F[j+1] - F[j]
-         res => getstackval(mix, 1, j)
-         rres => getstackval(mix, 2, j)
+!$OMP single
+        res => getstackval(mix, 1, j)
+        rres => getstackval(mix, 2, j)
+!$OMP end single ! implicit barrier
 
          !  x^opt[i+1] = x^opt[i+1] +
          !       alpha_j ( x[j] - x[j-1] + G (F[j+1] - F[j]) )
@@ -2050,7 +2054,7 @@ contains
       end if
 
 
-!$OMP parallel default(shared), private(i, j, res, rres)
+!$OMP parallel default(shared), private(i, j)
 
       !  x^opt[i+1] = x[i] + G F[i]
 !$OMP do
@@ -2063,8 +2067,10 @@ contains
       
          !  res == x[j] - x[j-1]
          ! rres == F[j+1] - F[j]
+!$OMP single
          res => getstackval(mix, 1, j)
          rres => getstackval(mix, 2, j)
+!$OMP end single ! implicit barrier
 
          !  x^opt[i+1] = x^opt[i+1] +
          !       alpha_j ( x[j] - x[j-1] + G (F[j+1] - F[j]) )
@@ -2496,7 +2502,7 @@ contains
 
     subroutine lapack_inv()
 
-      B = A
+      B(:, :) = A(:, :)
 
       call dgetrf(n,n,B,n,ipiv,info)
       if ( info /= 0 ) return
@@ -2515,7 +2521,7 @@ contains
       integer :: k
       
       ! Copy over A
-      B = A
+      B(:, :) = A(:, :)
       
       do i = 1 , n
          if ( B(i,i) == 0._dp ) then
@@ -2575,24 +2581,30 @@ contains
 
   ! Calculate the svd of a matrix
   ! With   ||(Ax - b)|| <<
-  subroutine svd(n, A, B, cond, info )
+  subroutine svd(n, A, B, cond, rank, info)
 
     integer, intent(in) :: n
     real(dp), intent(in)  :: A(n,n)
     real(dp), intent(out) :: B(n,n)
     real(dp), intent(in) :: cond
-    integer, intent(out) :: info
+    integer, intent(out) :: rank, info
 
     ! Local arrays
-    integer :: rank, i
-    character(len=50) :: fmt
+    integer :: i
+    character(len=64) :: fmt
     real(dp) :: AA(n,n), S(n), work(n*5)
 
+    if ( n == 1 ) then
+      ! Simple scheme
+      B(1,1) = 1._dp / A(1,1)
+      return
+    end if
+
     ! Copy A matrix
-    AA = A
+    AA(:, :) = A(:, :)
     ! setup pseudo inverse solution for minimizing
     ! constraints
-    B = 0._dp
+    B(:, :) = 0._dp
     do i = 1 , n
        B(i,i) = 1._dp
     end do
@@ -2600,20 +2612,38 @@ contains
     
     ! if debugging print out the different variables
     if ( debug_mix ) then
-       ! also mark the rank
-       
-       if ( rank == n ) then
-          ! complete rank
-          write(*,'(2a,100(tr1,e10.4))') &
-               trim(debug_msg),' SVD singular = ',S
-       else
-          ! this prints the location of the SVD rank, if not full
-          write(fmt,'(i0,2a)') rank, '(tr1,e10.4),'' >'',100(tr1,e10.4)'
-          write(*,'(2a,'//trim(fmt)//')') &
-               trim(debug_msg),' SVD singular = ',S
-       end if
+      ! also mark the rank
+      
+      if ( rank == n ) then
+        ! complete rank
+        write(*,'(2a,100(tr1,e10.4))') &
+            trim(debug_msg),' SVD singular = ',S
+      else
+        ! this prints the location of the SVD rank, if not full
+        write(fmt,'(i0,2a)') rank, '(tr1,e10.4),'' >'',100(tr1,e10.4)'
+        write(*,'(2a,'//trim(fmt)//')') &
+            trim(debug_msg),' SVD singular = ',S
+      end if
     end if
-    
+
+    ! One could potentially search a smaller part of the iterations
+    ! for a complete satisfactory SVD solution.
+    ! However, typically the singular values are because the
+    ! two latest iterations which means that one will end up with
+    ! the linear mixing scheme with only a coefficient for the latest
+    ! iteration.
+    ! This, is per see not a bad choice since it forces a linear mixing
+    ! in the end. However, the SVD solution seems better if one tries to
+    ! really push the tolerances.
+
+    ! One could do this (which requires the routine to be recursive)
+    ! if ( rank < n ) then
+    !   call svd(n-1,A(1:n-1,1:n-1), B(1:n-1, 1:n-1), cond, rank, info)
+    !   ! zero out everything else
+    !   B(n,:) = 0._dp
+    !   B(:,n) = 0._dp
+    ! end if
+
   end subroutine svd
 
 

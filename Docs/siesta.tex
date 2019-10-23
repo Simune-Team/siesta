@@ -818,7 +818,7 @@ libraries
   \index{NetCDF format}%
   \index{External library!NetCDF}%
   \index{compile!pre-processor!-DCDF}
-  It is adviced to compile NetCDF in CDF4 compliant mode (thus
+  It is advised to compile NetCDF in CDF4 compliant mode (thus
   also linking with HDF5) as this enables more advanced IO. If you
   only link against a CDF3 compliant library you will not get the
   complete feature set of \siesta.
@@ -5302,6 +5302,27 @@ The Density matrix can be:
   
 \end{fdflogicalF}
 
+\begin{fdfentry}{DM!Init}<atomic>
+  \index{spin!initialization}%
+
+  Specify the initial density matrix composition. Methods are 
+  compatible with a possible specification of \fdf{DM!InitSpin!AF}.
+  Only a single option is available now, but more could be
+  implemented. See also \fdf{DM!Init!RandomStates}.
+  
+  \begin{fdfoptions}
+    
+    \option[atomic]%
+    \fdfindex*{DM!Init!atomic}
+
+    Only initialize the diagonal (on-site) elements of the density matrix according
+    to the atomic ground-state populations of the atomic orbitals.
+
+  \end{fdfoptions}
+
+\end{fdfentry}
+
+
 \begin{fdflogicalF}{DM!InitSpin!AF}
   \index{spin!initialization}%
   \index{ferromagnetic initial DM}%
@@ -5357,6 +5378,34 @@ The Density matrix can be:
   This block has precedence over \fdf{DM!InitSpin!AF}.
 
 \end{fdfentry}
+
+\begin{fdfentry}{DM!Init.RandomStates}[integer]<0>
+
+The program will 'remove' $N$ electrons from the initial density
+matrix and add $N$ electrons in randomized 'states' (i.e., $N$ random
+vectors which are normalized according to the S metric are used as
+``synthetic states''). These extra states are not orthogonal to the
+occupied manifold. The orbital coefficients of these states are scaled
+with the atomic charges, to avoid populating high-lying shells.
+
+This procedure is wholly experimental and meant to provide a kick to
+the DM. It is inspired by the ``random-wavefunction'' initialization
+used in some plane-wave codes. It is turned off by default.
+
+This option only has an effect if the density matrix is initialized from an
+atomic density and/or when using \fdf{DM!InitSpin}.
+
+In case it is used together with \fdf{DM!InitSpin} it also randomizes
+the spin-configuration, which may be undesirable.
+
+\note This option is currently experimental since the randomized states are
+not ensured to be orthogonal. This flag may be removed in later
+revisions or superseded by other options. If testing this, start with
+a value of $1$ to see if it has an effect; any higher numbers will
+probably be worse.
+
+\end{fdfentry}
+
 
 \begin{fdflogicalT}{DM!AllowReuse}
 
@@ -11400,7 +11449,7 @@ set of modules whose file names begin with \texttt{m\_ts} or
 \subsection{Compilation}
 
 Prior to \siesta\ 4.1 \tsiesta\ was a separate executable. Now
-\tsiesta\ is fully incorporated into \siesta. Hence simply compile
+\tsiesta\ is fully incorporated into \siesta. \emph{Only} compile
 \siesta\ and the full functionality is present.
 Sec.~\ref{sec:compilation} for details on compiling \siesta.
 
@@ -11409,7 +11458,7 @@ Sec.~\ref{sec:compilation} for details on compiling \siesta.
 The \tsiesta\ method is a procedure to solve the electronic
 structure of an open system formed by a finite structure sandwiched
 between semi-infinite metallic leads. A finite bias can be applied
-between both leads, to drive a finite current. The method is described
+between leads, to drive a finite current. The method is described
 in detail in \citet{Brandbyge2002,Papior2017}. In practical terms,
 calculations using \tsiesta\ involve the solution of the
 electronic density from the DFT Hamiltonian using Greens functions
@@ -11436,10 +11485,11 @@ added by Nick R. Papior during 2012.
 
 The current \tsiesta\ module has been completely rewritten by Nick
 R. Papior and encompass highly advanced inversion algorithms as well
-as allowing $N$ electrode setups among many new features. Furthermore,
-the utility \tbtrans\ has also been fully re-coded (by Nick R. Papior)
-to be a generic tight-binding code capable of analyzing physics from
-the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
+as allowing $N\geq1$ electrode setups among many new
+features. Furthermore, the utility \tbtrans\ has also been fully
+re-coded (by Nick R. Papior) to be a generic tight-binding code
+capable of analyzing physics from the Greens function perspective in
+$N\ge1$ setups\cite{Papior2017}.
 
 
 \begin{itemize}
@@ -11447,14 +11497,14 @@ the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
   Transport calculations involve \emph{electrode} (EL) calculations,
   and subsequently the Scattering Region (SR) calculation. The
   \emph{electrode} calculations are usual \siesta\ calculations, but
-  where a file \sysfile{TSHS} is generated. These files contain the
-  information necessary for calculation of the self-energies. If any
-  electrodes have identical structures (see below) the same
-  \sysfile{TSHS} file can be used to describe those. In general,
+  where files \sysfile{TSHS}/\sysfile{TSDE} are generated. These files
+  contain the information necessary for calculation of the
+  self-energies. If any electrodes have identical structures (see
+  below) the same files can be used to describe those. In general,
   however, electrodes can be different and therefore two different
   \sysfile{TSHS} files must be generated. The location of these
-  electrode files must be specified in the \fdflib\ input file of the SR
-  calculation.
+  electrode files must be specified in the \fdflib\ input file of the
+  SR calculation.
 
   \item %
   For the SR, \tsiesta\ starts with the usual \siesta\ procedure,
@@ -11488,15 +11538,15 @@ the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
   \item %
   As in the case of \siesta\ calculations, what \tsiesta\ does is to
   obtain a converged DM, but for open boundary conditions and possibly
-  a finite bias applied between the electrodes. The corresponding
+  a finite bias applied between electrodes. The corresponding
   Hamiltonian matrix (once self consistency is achieved) of the SR is
   also stored in a \sysfile{TSHS} file. Subsequently, transport
   properties are obtained in a post-processing procedure using the
   \tbtrans\ code (located in the \program{Util/TS/TBtrans}
-  directory). It is to be noted that the \sysfile{TSHS} files contain
-  all the needed structural information (atomic positions, matrix
-  elements, \ldots), and so this kind of parameters will not be
-  changed by input (fdf) flags once a \sysfile{TSHS} file is read.
+  directory). We note that the \sysfile{TSHS} files contain all the
+  needed structural information (atomic positions, matrix elements,
+  \ldots), and so the input (fdf) flags for the geometry and basis
+  have no influence of the subsequent \tbtrans\ calculations.
 
   \item %
   When the non-equilibrium calculation uses different electrodes one
@@ -11514,14 +11564,15 @@ the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
 
   \item%
   \tsiesta\ assumes periodic boundary conditions in directions
-  orthogonal to the electrodes semi-infinite directions. If $N>2$
+  orthogonal to the electrodes semi-infinite directions. If $N\neq2$
   \tsiesta\ does not assume anything and one is required to specify
   the periodicity (via $k$-points) separately.
 
   \item%
   The default algorithm for matrix inversion is the BTD method, before
   starting a \tsiesta\ calculation please run with the analyzation
-  step \fdf{TS!Analyze}.
+  step \fdf{TS!Analyze} (note this is very fast and can be done on any
+  desktop computer, regardless of system size.
 
   \item%
   Importantly(!) the $k$-point sampling need typically be much higher
@@ -11530,9 +11581,19 @@ the Greens function perspective in $N\ge1$ setups\cite{Papior2017}.
 
   \item%
   Energies from \tsiesta\ are \emph{not} to be trusted since the open
-  boundaries complicates the energy calculation. Therefore you cannot
-  compare energies between different calculations and/or different
-  bias'.
+  boundaries complicates the energy calculation. Therefore care needs
+  to be taken when comparing energies between different calculations
+  and/or different bias'.
+
+  \item%
+  Always ensure that charges are preserved in the scattering region
+  calculation. Doing the SCF an output like the following will be shown:
+  \begin{output}[fontsize=\footnotesize]
+ts-q:         D        E1        C1        E2        C2        dQ
+ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
+\end{output}
+Always ensure the last column (\code{dQ}) is a very small fraction of
+the total number of electrons. Ideally this should be $0$.
 
 \end{itemize}
 
@@ -11570,7 +11631,8 @@ To run an electrode calculation one should do:
 \end{shellexample}
 or define these options in the electrode fdf files:
 \fdf{TS!HS.Save} and \fdf{TS!DE.Save} to \fdf*{true} (the above
-\code{--electrode} is a shorthand for setting the two options).
+\code{--electrode} is a shorthand to forcefully define the two options).
+
 
 \subsubsection{Matching coordinates}
 
@@ -11593,7 +11655,7 @@ the device file. I.e. if an electrode input option is given by:
 \end{fdfexample}
 then the atoms from $10$ to $10+4*3-1$ must coincide with the atoms of
 the calculation performed in the \program{../elec-<>/}
-subdirectory. The above options will be discussed in the coming
+subdirectory. The above options will be discussed in the following
 section.
 
 When using the Bloch expansion (highly recommended if your system
@@ -11621,6 +11683,13 @@ electrode. Generally this expansion should be preferred over the
   end do
 \end{fdfexample}
 
+By using \sisl\cite{sisl} one can achieve the tiling scheme
+by using the following command-line utility on an input
+\program{ELEC.fdf} structure with the minimal electrode:
+\begin{codeexample}
+  sgeom -tx 1 -ty 3 -tz 1 ELEC.fdf DEVICE_ELEC.fdf
+\end{codeexample}
+
 \paragraph{Repeat} \fdfindex{TS!Elec.<>!Bloch}%
 Here the atoms are copied individually. Generally
 this expansion should \emph{not} be used.
@@ -11641,17 +11710,13 @@ this expansion should \emph{not} be used.
   end do
 \end{fdfexample}
 
-As a help if the electrode coordinates does not coincide, \tsiesta\
-prints out the expected coordinates as though the first device atom
-coincides with the first electrode atom. Another means to create this
-is using the \sisl\cite{sisl} program and this command line:
-\begin{fdfexample}
-  sgeom -tx 1 -ty 3 -tz 1 ELEC.fdf DEVICE_ELEC.fdf # Tile
-  sgeom -rz 1 -ry 3 -rx 1 ELEC.fdf DEVICE_ELEC.fdf # Repeat
-\end{fdfexample}
-and then shift the coordinates according to the placement in the
-device region. Note how repeating has different argument order of
-tiling.
+By using \sisl\cite{sisl} one can achieve the repeating scheme by
+using the following command-line utility on an input
+\program{ELEC.fdf} structure with the minimal electrode:
+\begin{codeexample}
+  sgeom -rz 1 -ry 3 -rx 1 ELEC.fdf DEVICE_ELEC.fdf
+\end{codeexample}
+
 
 
 \subsubsection{Principal layer interactions} %
@@ -11881,20 +11946,43 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   \end{output}
   % 
   The extra output corresponds to fine details in the integration
-  scheme; \texttt{ts-err-D} refers to the difference between the
-  different integrals of the density matrix for the various chemical
-  potentials, see e.g. Eq.~(12) in \cite{Papior2017}. \texttt{ij(..,
-      ..)} refers to which matrix element it is (orbital indices),
-  \texttt{M} is the final weighted matrix element
-  $\sum_{\elec}w_\elec\DM^\elec$, \texttt{ew} is the maximum difference
-  between $\sum_{\elec}w_\elec\DM^\elec-\DM^\elec$ for all
-  $\elec$. \texttt{em} is the maximum difference between any two
-  $\DM^\elec$ and finally, \texttt{avg\_em} is average of the sum of all
-  $\DM^\elec-\DM^{\elec'}$ which tends to smooth out and be very close
-  to zero.
-  % 
-  The \texttt{ts-w-q} data shows the charges from the different
-  chemical potentials as $\Tr[w_\elec\DM^\elec\SO]$.
+  scheme.
+  \begin{description}[labelindent=3em, leftmargin=4.5em]
+    \itemsep 10pt
+    \parsep 0pt
+    
+    \item[\texttt{ts-err-*}] are estimated error outputs from the
+    different integrals, for the density matrix (\texttt{D}) and the
+    energy density matrix (\texttt{E}), see Eq.~(12) in
+    \cite{Papior2017}. All values (except \texttt{avg\_em}) are for
+    the given orbital site
+
+    \begin{description}
+      \itemsep 4pt
+      \parsep 0pt
+
+      \item[\texttt{ij(A,B)}] refers to the matrix element between orbital
+      \texttt{A} and \texttt{B}
+
+      \item[\texttt{M}] is the weighted matrix element value,
+      $\sum_{\elec}w_\elec\DM^\elec$
+
+      \item[\texttt{ew}] is the maximum difference between
+      $\sum_{\elec}w_\elec\DM^\elec-\DM^\elec$ for all $\elec$.
+
+      \item[\texttt{em}] is the maximum difference between
+      $\DM^{\elec'}-\DM^\elec$ for all combinations of $\elec$ and
+      $\elec'$.
+
+      \item[\texttt{avg\_em}] is the averaged difference of \texttt{em} for all
+      orbital sites.
+
+    \end{description}
+
+    \item[\texttt{ts-w-q}] is the Mulliken charge from the different
+    integrals: $\Tr[w_\elec\DM^\elec\SO]$
+    
+  \end{description}
 
   \begin{fdfoptions}
 
@@ -11985,6 +12073,17 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   Control whether the forces are calculated. If \emph{not} \tsiesta\
   will use slightly less memory and the performance slightly
   increased, however the final forces shown are incorrect.
+
+  If this is \fdftrue\ the file \sysfile{TSFA} (and possibly the
+  \sysfile{TSFAC}) will be created. They contain forces for the atoms
+  that are having updated density-matrix elements
+  (\fdf{TS!Elec.<>!DM-update:all}). 
+
+  Generally one should not expect good forces close to the
+  electrode/device interface since this typically has some
+  electrostatic effects that are inherent to the \tsiesta\ method.
+  Forces on atoms \emph{far} from the electrode can safely be
+  analyzed.
 
 \end{fdflogicalT}
 
@@ -12295,7 +12394,7 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
 
 \begin{fdfentry}{TS!BTD!Spectral}[string]<propagation|column>
 
-  How to compute the spectral function ($G\Gamma G^\dagger$). 
+  How to compute the spectral function ($G\Gamma G^\dagger$).
 
   For $N<4$ this defaults to \fdf*{propagation} which should be the
   fastest.
@@ -12586,12 +12685,16 @@ electrodes in a generic input format.
     \option[Bulk]%
     \fdfindex*{TS!Elec.<>!Bulk}%
     \fdfindex*{TS!Elec.<>!Bulk:false}%
-    Logical controlling whether the Hamiltonian of the electrode
+    Control whether the Hamiltonian of the electrode
     region in the scattering region is enforced \emph{bulk} or whether
-    the Hamiltonian is taken from the scattering region elements. If
+    the Hamiltonian is taken from the scattering region elements.
+    
+    Generally one should use the default (\fdftrue) option.
 
     \option[DM-update]%
-    \fdfindex*{TS!Elec.<>!DM-Update}%
+    \fdfindex*{TS!Elec.<>!DM-update}%
+    \fdfindex*{TS!Elec.<>!DM-update:none}%
+    \fdfindex*{TS!Elec.<>!DM-update:all}%
     \fdfdepend{TS!Elec.<>!Bulk}%
     String of values \fdf*{none}, \fdf*{cross-terms} or \fdf*{all}
     which controls which part of the electrode density matrix elements
@@ -12601,7 +12704,10 @@ electrodes in a generic input format.
     only the coupling elements between the electrode and the
     scattering region are updated.
 
-    If \fdf{TS!Elec.<>!Bulk:false} this is forced to \fdf*{all}.
+    If \fdf{TS!Elec.<>!Bulk:false} this is forced to \fdf*{all} and
+    cannot be altered.
+
+    Generally one should use the default (\fdf*{cross-terms}) option.
 
     \option[DM-init]%
     \fdfindex*{TS!Elec.<>!DM-init}%
@@ -12610,15 +12716,20 @@ electrodes in a generic input format.
     which controls whether the DM is initially overwritten by the DM
     from the bulk electrode calculation.
     This requires the DM file to be present.
-    By default \tsiesta\ will try and read in the DM for $0$ bias
-    calculations.
+
+    This is defaulted to \fdf*{bulk} for $0$ bias calculations.
+    For bias calculations this is defaulted to \fdf*{diagon}.
+
+    Using the truly bulk DM will force a bulk-like charge density in
+    the electrode region. If one uses \fdf{TS!Elec.<>!Bulk:false} it
+    may be advantageous to set this to \fdf*{diagon}, always.
 
     \option[Gf]%
     \fdfindex*{TS!Elec.<>!Gf}%
-    String with filename of the surface Green function data. This may
-    be used to place a common surface Green function file in a top
-    directory which may then be used in all calculations using the
-    same electrode and the same contour. 
+    String with filename of the surface Green function data
+    (\sysfile{TSGF*}). This may be used to place a common surface
+    Green function file in a top directory which may then be used in
+    all calculations using the same electrode and the same contour.
     %
     If many calculations are performed this will heavily increase
     performance at the cost of disk-space.
@@ -12676,6 +12787,9 @@ electrodes in a generic input format.
     This is denoted ``Bloch'' because it is an expansion based on
     Bloch waves.
 
+    \note Using symmetries such as periodicity will greatly increase
+    performance.
+
     \option[Bloch-A/a1|B/a2|C/a3]%
     \fdfindex{TS!Elec.<>!Bloch}%
     Specific Bloch expansions in each of the electrode unit-cell
@@ -12692,7 +12806,10 @@ electrodes in a generic input format.
     expands the surface Green function. Finally \fdf*{none} may be
     passed to reduce the file size to the bare minimum.
     %
-    For performance reasons \fdf*{all} is preferred. 
+    For performance reasons \fdf*{all} is preferred.
+
+    If disk-space is a limited resource and the \sysfile{TSGF*} files
+    are really big, try \fdf*{none}.
 
     \option[out-of-core]%
     \fdfindex*{TS!Elec.<>!Out-of-core}%
@@ -12713,7 +12830,8 @@ electrodes in a generic input format.
     the Fermi-level may be arbitrarily placed anywhere in the band
     gap. It is the users responsibility to define a value which does
     not introduce a potential drop between the electrode and device
-    region.
+    region. Please do not use unless you really know what you are
+    doing.
 
     \option[V-fraction]%
     \fdfindex*{TS!Elec.<>!V-fraction}%
@@ -12737,7 +12855,7 @@ electrodes in a generic input format.
     not be equivalent for the electrodes and the device region
     calculations. However, \tsiesta\ requires that the device and
     electrode $\mathbf k$ samplings are commensurate. This flag
-    controls whether this check is enforced.
+    controls whether this check is enforced for a given electrode.
 
     \note only use if fully aware of the implications!
 
@@ -12810,7 +12928,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   This globally controls which parts of the electrode density matrix
   gets updated. 
   %
-  See \fdf{TS!Elec.<>!DM-Update}.
+  See \fdf{TS!Elec.<>!DM-update}.
   
 \end{fdfentry}
 
@@ -13240,7 +13358,7 @@ should change accordingly. Note that here \fdf*{kT} refers to
   density matrix. During a \tsiesta\ run, the \sysfile{DM} values are
   used for the density matrix in the buffer (if used) and electrode
   regions. The coupling terms may or may not be updated in a \tsiesta\
-  run, see \fdf{TS!Elec.<>!DM-Update}.
+  run, see \fdf{TS!Elec.<>!DM-update}.
   
   \item[\sysfile{TSHS}]: The Hamiltonian corresponding to
   \sysfile{TSDE}. This file also contains geometry information
@@ -13248,6 +13366,9 @@ should change accordingly. Note that here \fdf*{kT} refers to
 
   \item[\sysfile{TS.KP}]: The $k$-points used in the \tsiesta\ calculation. See
   \siesta\ \sysfile{KP} file for formatting information.
+
+  \item[\sysfile{TSFA}]: Forces only on atoms in the device
+  region. See \fdf{TS!Forces} for details.
 
   \item[\sysfile{TSCCEQ*}]: The equilibrium complex contour integration paths.
 

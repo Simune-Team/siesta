@@ -1,0 +1,73 @@
+  SystemName		a-Si with 216 atoms
+  SystemLabel		a-Si-216
+  NumberOfAtoms		216
+  NumberOfSpecies	1
+
+  %block ChemicalSpeciesLabel
+   1	14   Si
+  %endblock ChemicalSpeciesLabel
+
+  LatticeConstant	16.2813 Ang
+  %block LatticeVectors
+   1.000   0.000   0.000
+   0.000   1.000   0.000
+   0.000   0.000   1.000
+  %endblock LatticeVectors
+
+  AtomicCoordinatesFormat	Ang
+  %include			a-Si-216.coord.fdf
+
+  XC.functional		GGA
+  XC.authors		PBE
+  PAO.BasisSize  	DZ
+
+  MaxSCFIterations	200
+  DM.MixingWeight	0.02 
+  DM.NumberPulay 	3	
+  DM.Tolerance		0.0001
+  DM.UseSaveDM		.true.
+  ElectronicTemperature 0.15 eV
+
+#  MeshCutoff		300.0 Ry
+  %block MeshSizes
+    180  180  180
+  %endblock MeshSizes
+
+  %block kgrid.MonkhorstPack
+    2    0    0    0.5
+    0    2    0    0.5
+    0    0    2    0.5
+  %endblock kgrid.MonkhorstPack
+
+  BandLinesScale	pi/a
+  SaveHS		.true.
+
+  %block UnfoldedBandLines
+    700  -20.0  15.0  eV
+      1  -6.0 -6.0 -6.0  \Gamma      #  Labels refer to positions
+     86  -3.0 -3.0 -3.0  L           #  in the FCC lattice
+     86   0.0  0.0  0.0  \Gamma
+    100   6.0  0.0  0.0  X
+     35   6.0  1.5  1.5  U
+    106   6.0  6.0  6.0  \Gamma
+  %endblock UnfoldedBandLines
+
+#  %block UnfoldedBandLines
+#    700  -20.0  15.0  eV
+#      1 -12.0 -12.0 -12.0  L
+#     86  -8.0  -8.0  -8.0  \Gamma
+#     86  -4.0  -4.0  -4.0  L
+#     86   0.0   0.0   0.0  \Gamma
+#    100   8.0   0.0   0.0  X
+#    100  16.0   0.0   0.0  \Gamma
+#    100  24.0   0.0   0.0  X
+#  %endblock UnfoldedBandLines
+
+  RefoldingGcutoff	18.0 Ry
+  %block RefoldingLatticeVectors
+   0.000         0.166666667   0.166666667    # FCC vectors scaled to
+   0.166666667   0.000         0.166666667    # the a-Si LatticeConstant
+   0.166666667   0.166666667   0.000
+  %endblock RefoldingLatticeVectors
+
+

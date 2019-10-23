@@ -45,7 +45,9 @@ ALL_SOURCES=$(SIESTA_SOURCES) $(LOCAL_SRCS)
 libSiestaXC.a: $(ALL_OBJS)
 	$(AR) $(ARFLAGS_EXTRA) cru libSiestaXC.a $(ALL_OBJS) 
 	@if [ ! -z "$(MPI_INTERFACE)" ] ; then \
-            $(AR) $(ARFLAGS_EXTRA) cru libSiestaXC.a ../MPI/*.o ; fi
+           mkdir Tmp ; cd Tmp ; ar -x ../../MPI/libmpi_f90.a ; cd .. ;\
+           $(AR) $(ARFLAGS_EXTRA) cru libSiestaXC.a Tmp/*.o ;\
+           rm -rf Tmp ; fi
 	-$(RANLIB) libSiestaXC.a
 #
 OTHER_FILES=lib-makefile lib-arch.make mpi-makefile lib-00-README test-makefile

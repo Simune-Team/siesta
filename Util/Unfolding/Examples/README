@@ -1,0 +1,58 @@
+ --- GUIDE OF EXAMPLES ---
+
+ This folder contains a number of example systems to test the unfolding tool.
+ Run SIESTA to generate the .EIG, .HSX and .ion files, then run unfold to obtain
+ the fully unfolded or refolded bands.
+ 
+ Some Matlab routines are available in Src/ to plot the outputs (notice that examples
+ of graphene generate a collection of files to be plotted with 'plotmesh.m').
+
+ A brief description of the examples can be found below. For further details 
+ see: https://arxiv.org/abs/1812.03925
+
+ * Si:
+ 
+  FCC bulk:  cubic supercell with 8 atoms. The example is trivial, refolding recovers
+             the FCC bands. As the result is a density of states, band degeneracies are
+             reflected in the plot.
+
+  vacancy:   one atom is removed from the trivial supercell. A comparison with the 
+             bulk bands reveals changes in the states.
+
+  amorphous: extreme case of disorder. Full unfolding yields the effect of atomic 
+             potential in the free e- dispersion relation. Refolding into the FCC
+             vectors, a resemblance in the degeneracy distribution appears.
+             ( a-Si coordinates ref: 
+                      Igram et at., J. Non-Cryst. Solids 2018, 492, 27-32 )
+
+  * C:
+  
+  diamond:  analogous to Si FCC bulk.
+
+  graphene(**):
+
+    585 divacancy: different supercell sizes yield very different conventional bands, 
+                   whereas refolding into graphene lattice vectors reveals qualitatively
+                   equivalent band behaviour. 
+   
+    rotated graphene bilayer: the fully unfolded bands show the interaction between
+                   the states of both sublattices, their positions being rotated one 
+                   with respect to the other. In particular, a saddle point emerges
+                   from the interaction between the Dirac cones.
+                   Refolding is meaningless, as there are two periodicities in the 
+                   system and neither is prevalent over the other. However, the
+                   RefoldingLatticeVector is present in the .fdf file as:
+                      A1*1e-5
+                      A2*1e-5
+                      A3
+                   then A1, A2 <<  => B1, B2 >>, so, in practice, the refolding vectors
+                   in the x and y directions will be excluded by the RefoldingGcutoff.
+                   Vector A3 is unaltered, which means that we refold over the periodic
+                   images of the bilayer that were artificially introduced to perform
+                   the DFT calculation. The actual fully unfolded bands will be those
+                   stored in the .RefoldedBands files.
+
+
+
+  (**) To test these examples, compile and run 'meshgen.c' before running unfold.
+

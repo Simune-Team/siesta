@@ -345,14 +345,14 @@
      .     'siesta: FreeEng =', (FreeE+Ekinion)/eV
         if ( TSrun ) then
         write(6,'(a,f17.6)')
-     .     'transiesta: E-dN      =', NEGF_DE/eV,
-     .     'transiesta: Band Stru =', NEGF_Ebs/eV,
-     .     'transiesta: Kinetic   =', NEGF_Ekin/eV,
-     .     'transiesta: Ion-elec  =', (Enascf+NEGF_Enl+DUscf-
+     .     'ts: E-dN      =', NEGF_DE/eV,
+     .     'ts: Band Stru =', NEGF_Ebs/eV,
+     .     'ts: Kinetic   =', NEGF_Ekin/eV,
+     .     'ts: Ion-elec  =', (Enascf+NEGF_Enl+DUscf-
      .      Uscf-Uatm)/eV,
-     .     'transiesta: Eharris   =', (NEGF_Eharrs+Ekinion)/eV,
-     .     'transiesta: Etot      =', (NEGF_Etot+Ekinion)/eV,
-     .     'transiesta: FreeEng   =', (NEGF_FreeE+Ekinion)/eV
+     .     'ts: Eharris   =', (NEGF_Eharrs+Ekinion)/eV,
+     .     'ts: Etot      =', (NEGF_Etot+Ekinion)/eV,
+     .     'ts: FreeEng   =', (NEGF_FreeE+Ekinion)/eV
         end if
         if (cml_p) then
           call cmlStartPropertyList(mainXML,
@@ -592,12 +592,12 @@
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
         if ( TSrun ) then
         write(6,'(a,a15,f15.6)')
-     .    'transiesta: ',    'E-dN  =', NEGF_DE/eV,
-     .    'transiesta: ','Band Stru =', NEGF_Ebs/eV,
-     .    'transiesta: ',  'Kinetic =', NEGF_Ekin/eV,
-     .    'transiesta: ', 'Ion-elec =', (Enascf+NEGF_Enl+DUscf-
+     .    'ts: ',    'E-dN  =', NEGF_DE/eV,
+     .    'ts: ','Band Stru =', NEGF_Ebs/eV,
+     .    'ts: ',  'Kinetic =', NEGF_Ekin/eV,
+     .    'ts: ', 'Ion-elec =', (Enascf+NEGF_Enl+DUscf-
      .      Uscf-Uatm)/eV,
-     .    'transiesta: ',    'Total =', (NEGF_Etot+Ekinion)/eV
+     .    'ts: ',    'Total =', (NEGF_Etot+Ekinion)/eV
         end if
         if ( fixspin ) then
            write(6,'(a,a15,f15.6)')
@@ -682,7 +682,8 @@
 
       private
       public :: siesta_write_forces, siesta_write_stress_pressure,
-     &          siesta_write_energies, siesta_write_positions
+     &    siesta_write_energies, siesta_write_positions
+      public :: transiesta_write_forces
       CONTAINS
       
       subroutine siesta_write_forces(istep)
@@ -693,7 +694,8 @@
       use units,      only : Ang, eV
       use m_forces
       use m_steps, only: final, inicoor
-      use alloc,      only : re_alloc, de_alloc
+      use iofa_m, only: iofa
+      
       implicit none
       integer, intent(in) :: istep
       integer :: ia, ix
@@ -703,11 +705,8 @@
 #ifdef DEBUG
       call write_debug( '    PRE siesta_write_forces' )
 #endif
-      fmax = maxval(abs(fa))
-      ftot = sum(fa, dim=2)
-      cfmax = maxval(abs(cfa))
-      cftot = sum(cfa, dim=2)
-      fres = sqrt( sum(fa**2) / (na_u*3.0_dp))
+      call analyze_force(na_u, cfa, cfmax, cftot, fres)
+      call analyze_force(na_u, fa, fmax, ftot, fres)
 
       ! Almost the same forces output whether during simulation
       ! or at the end. Unfortunately not quite, therefore slightly
@@ -731,19 +730,18 @@
      .         dictref='siesta:cfmax', units='siestaUnits:evpa')
           call cmlEndPropertyList(mainXML)
         endif
-
+        
         write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
         if (writef) then
           write(6,'(i6,3f12.6)')(ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
         endif
 
-        ! Always write forces to .FA file
-        call iofa( na_u, fa , .false.)
+        call iofa(na_u, fa , 'FA')
         if ( any(fa/=cfa) ) then
-           ! if any one constraint is not the same
-           ! as the real forces, the FAC file 
-           ! will also be created
-           call iofa( na_u, cfa , .true. )
+          ! if any one constraint is not the same
+          ! as the real forces, the FAC file 
+          ! will also be created
+          call iofa(na_u, cfa , 'FAC')
         end if
 
         write(6,'(40("-"),/,a6,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
@@ -811,5 +809,189 @@
 #endif
 
       end subroutine siesta_write_forces
+
+      subroutine transiesta_write_forces()
+      USE siesta_options
+      use siesta_geom
+      use siesta_cml
+      use units,      only : Ang, eV
+      use m_forces
+      use m_steps, only: final
+      use iofa_m, only: iofa
+      use m_ts_options, only: Calc_forces
+      
+      implicit none
+      integer :: ia, ix, ts_na
+      real(dp) :: fmax, fres, ftot(3)
+      real(dp) :: cfmax, cftot(3)
+      real(dp), allocatable :: ts_fa(:,:,:)
+
+!     If transiesta does not calculate forces, then we can't write
+!     out this information.
+      if ( .not. Calc_forces ) return
+
+#ifdef DEBUG
+      call write_debug( '    PRE transiesta_write_forces' )
+#endif
+      
+      ! Copy data
+      allocate(ts_fa(3,na_u,2))
+      call create_ts_forces(na_u, fa, ts_fa(:,:,1), ts_na)
+      call create_ts_forces(na_u, cfa, ts_fa(:,:,2), ts_na)
+
+      call analyze_force(na_u, ts_fa(:,:,2), cfmax, cftot, fres)
+      call analyze_force(na_u, ts_fa(:,:,1), fmax, ftot, fres)
+      ! Correct residual for uncounted atoms
+      fres = fres * na_u / ts_na 
+      
+      ! Almost the same forces output whether during simulation
+      ! or at the end. Unfortunately not quite, therefore slightly
+      ! tortuous logic below. If we are content to change format
+      ! of output file slightly, this can be simplified.
+      if (.not.final) then
+        ! print forces to xml every step. 
+        ! output forces to stdout depending on writef
+        if (cml_p) then
+          call cmlStartPropertyList(mainXML, title='TranSiesta Forces')
+          call cmlAddComment(mainXML,"Output: matrix fa(1:3,1:na_u)") 
+          call cmlAddProperty(xf=mainXML, value=ts_fa(:,:,1)*Ang/eV,
+     .         dictref='siesta:forces', units='siestaUnits:evpa')
+          call cmlAddProperty(xf=mainXML, value=ftot*Ang/eV,
+     .         dictref='siesta:ftot', units='siestaUnits:evpa')
+          call cmlAddProperty(xf=mainXML, value=fmax*Ang/eV, 
+     .         dictref='siesta:fmax', units='siestaUnits:evpa')
+          call cmlAddProperty(xf=mainXML, value=fres*Ang/eV,
+     .         dictref='siesta:fres', units='siestaUnits:evpa')
+          call cmlAddProperty(xf=mainXML, value=cfmax*Ang/eV, 
+     .         dictref='siesta:cfmax', units='siestaUnits:evpa')
+          call cmlEndPropertyList(mainXML)
+        endif
+
+        call iofa(na_u, ts_fa(:,:,1) , 'TSFA')
+        if ( any( ts_fa(:,:,1) /= ts_fa(:,:,2) ) ) then
+          call iofa(na_u, ts_fa(:,:,2) , 'TSFAC')
+        end if
+
+        write(6,'(/,a)') 'ts: Atomic forces (eV/Ang):'
+        if (writef) then
+          write(6,'(i6,3f12.6)')(ia,(ts_fa(ix,ia,1)*Ang/eV,ix=1,3),ia=1
+     &        ,na_u)
+        end if
+          
+        write(6,'(40("-"),/,a6,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
+        write(6,'(40("-"),/,a6, f12.6)') 'Max',fmax*Ang/eV
+        write(6,'(a6,f12.6,a)')'Res',fres*Ang/eV,
+     .       '    sqrt( Sum f_i^2 / 3N )'
+        write(6,'(40("-"),/,a6, f12.6,a)') 'Max',cfmax*Ang/eV, 
+     .       '    constrained'
+
+      else !not final
+! In finalization, only print forces if sufficiently large.
+        if (fmax .gt. ftol) then
+          write(6,'(/,a)') 'ts: Atomic forces (eV/Ang):'
+          write(6,'(a,i6,3f12.6)')
+     .         ('ts: ', ia,(ts_fa(ix,ia,1)*Ang/eV,ix=1,3),ia=1,na_u)
+          write(6,'(a,40("-"),/,a,a6,3f12.6)')
+     .         'ts: ','ts: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
+          if (cml_p) then
+            call cmlStartPropertyList(mainXML,
+     .          title='TranSiesta Force Summary')
+            call cmlAddComment(mainXML,"Output: matrix fa(1:3,1:na_u)") 
+            call cmlAddProperty(xf=mainXML, value=ts_fa(:,:,1)*Ang/eV,
+     .           dictref='siesta:forces', units='siestaUnits:evpa')
+            call cmlAddProperty(xf=mainXML, value=ftot*Ang/eV, 
+     .           dictref='siesta:ftot', units='siestaUnits:evpa')
+            call cmlEndPropertyList(mainXML)
+          endif !cml_p
+        endif
+        if (Any(ts_fa(:,:,1) /= ts_fa(:,:,2))) then
+          if (cfmax .gt. ftol) then
+            write(6,'(/,a)') 'ts: Constrained forces (eV/Ang):'
+            write(6,'(a,i6,3f12.6)')
+     .           ('ts: ',ia,(ts_fa(ix,ia,2)*Ang/eV,ix=1,3),ia=1,na_u)
+            write(6,'(a,40("-"),/,a,a4,3f12.6)')
+     .           'ts: ','ts: ','Tot',(cftot(ix)*Ang/eV,ix=1,3)
+            if (cml_p) then
+              call cmlStartPropertyList(mainXML,
+     .             title='TranSiesta Constrained Force Summary')
+              call cmlAddComment(mainXML,
+     $             "Output: matrix cfa(1:3,1:na_u)") 
+              call cmlAddProperty(xf=mainXML, value=ts_fa(:,:,2)*Ang/eV, 
+     .             dictref='siesta:cforces', units='siestaUnits:evpa')
+              call cmlAddProperty(xf=mainXML, value=cftot*Ang/eV, 
+     .             dictref='siesta:cftot', units='siestaUnits:evpa')
+              call cmlEndPropertyList(mainXML)
+            endif !cml_p
+          endif
+        endif
+      endif !final for forces
+
+      deallocate(ts_fa)
+#ifdef DEBUG
+      call write_debug( '    POS transiesta_write_forces' )
+#endif
+
+      contains
+
+      subroutine create_ts_forces(na_u, fa, ts_fa, na)
+      use m_ts_method, only: r_aBuf
+      use m_ts_options, only: N_Elec, Elecs
+      use m_region, only: rgn_size
+      use m_ts_electype, only: TotUsedAtoms
+
+      integer, intent(in) :: na_u
+      real(dp), intent(in) :: fa(3,na_u)
+      real(dp), intent(out) :: ts_fa(3,na_u)
+      integer, intent(out) :: na
+      integer :: ia, iE
+
+      ! Copy data
+      ts_fa(:,:) = fa(:,:)
+      
+      ! Zero out buffer atoms
+      na = na_u - rgn_size(r_aBuf)
+      do ia = 1, rgn_size(r_aBuf)
+        ts_fa(:, r_aBuf%r(ia)) = 0._dp
+      end do
+      ! Zero out electrode atoms where bulk is false
+      do iE = 1, N_elec
+        if ( Elecs(iE)%DM_update < 2 ) then
+          na = na_u - TotUsedAtoms(Elecs(iE))
+          do ia = 1, TotUsedAtoms(Elecs(iE))
+            ts_fa(:, Elecs(iE)%idx_a+ia-1) = 0._dp
+          end do
+        end if
+      end do
+
+      end subroutine create_ts_forces
+
+      end subroutine transiesta_write_forces
+
+      subroutine analyze_force(na_u, fa, fmax, ftot, fres)
+      use precision, only: dp
+
+      integer, intent(in) :: na_u
+      real(dp), intent(in) :: fa(3,na_u)
+      ! Maximum force component for any direction
+      real(dp), intent(out) :: fmax
+      ! Sum of forces for each cartesian direction
+      real(dp), intent(out) :: ftot(3)
+      ! Residual of the forces.
+      real(dp), intent(out) :: fres
+
+      integer :: ia, ix
+
+      fmax = 0._dp
+      ftot = 0._dp
+      fres = 0._dp
+      do ia = 1, na_u
+        do ix = 1, 3
+          fmax = max(fmax, abs(fa(ix,ia)))
+          ftot(ix) = ftot(ix) + fa(ix,ia)
+          fres = fres + fa(ix,ia) ** 2
+        end do
+      end do
+      fres = sqrt(fres) / (na_u * 3)
+      end subroutine analyze_force
 
       End Module write_subs

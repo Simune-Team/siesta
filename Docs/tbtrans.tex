@@ -1990,6 +1990,18 @@ TBT.BTD.Pivot.Device atom+GGPS
 \end{fdflogicalF}
 
 
+\begin{fdfentry}{TBT.BTD!Optimize}[string]<speed|memory>
+
+  When selecting the smallest blocks for the BTD matrix there are
+  certain criteria that may change the size of each block. For very
+  memory consuming jobs one may choose the \fdf*{memory}. 
+
+  \note often both methods provide \emph{exactly} the same BTD matrix
+  due to constraints on the matrix.
+  
+\end{fdfentry}
+
+
 \begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{largest
       overlapping electrode}>
 
@@ -2639,20 +2651,20 @@ obtained if compiled with the NetCDF4 library and via the use of
 This will calculate the transport using all these equations
 \begin{align}
   \label{eq:T:proj:1}
-  T_{\ket{H_1},\ket{H_2}} &=\Tr\big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\kb{H_2}\Gam_R\kb{H_2}\big]
+  T_{\ket{H_1},\ket{H_2}} &=\Tr\big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\kb{H_2}{H_2}\Gam_R\kb{H_2}{H_2}\big]
   \\
   \label{eq:T:proj:2}
-  T_{\ket{H_1},\ket{L_2}} &=\Tr\big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\kb{L_2}\Gam_R\kb{L_2}\big]
+  T_{\ket{H_1},\ket{L_2}} &=\Tr\big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\kb{L_2}{L_2}\Gam_R\kb{L_2}{L_2}\big]
   \\
   \label{eq:T:two:one}
   T_{\ket{H_1},\ket{H_2}+\ket{L_2}}
-  &=\Tr\Big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\big(\kb{H_2}+\kb{L_2}\big)\Gam_R\big(\kb{H_2}+\kb{L_2}\big)\Big]
+  &=\Tr\Big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\big(\kb{H_2}{H_2}+\kb{L_2}{L_2}\big)\Gam_R\big(\kb{H_2}{H_2}+\kb{L_2}{L_2}\big)\Big]
   \\
   \label{eq:T:single:one}
-  T_{\ket{H_1},R} &=\Tr\Big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\Gam_R\Big]
+  T_{\ket{H_1},R} &=\Tr\Big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\Gam_R\Big]
   \\
   \label{eq:T:proj:5}
-  T_{\ket{L_1},\ket{L_2}} &=\Tr\big[\Gf\kb{L_1}\Gam_L\kb{L_1}\Gf^\dagger\kb{L_2}\Gam_R\kb{L_2}\big]
+  T_{\ket{L_1},\ket{L_2}} &=\Tr\big[\Gf\kb{L_1}{L_1}\Gam_L\kb{L_1}{L_1}\Gf^\dagger\kb{L_2}{L_2}\Gam_R\kb{L_2}{L_2}\big]
 \end{align}
 \egroup %
 Notice that \ref{eq:T:two:one} is equivalent to \ref{eq:T:single:one}

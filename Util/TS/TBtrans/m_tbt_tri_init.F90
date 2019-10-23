@@ -138,7 +138,7 @@ contains
 
     use m_ts_rgn2trimat
     use m_ts_tri_common, only : ts_pivot_tri_sort_El
-    use m_ts_tri_common, only : nnzs_tri_i8b, nnzs_tri_dp
+    use m_ts_tri_common, only : nnzs_tri_i8b
     use m_ts_electype
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -293,9 +293,11 @@ contains
        ! Print out memory estimate
        els = nnzs_tri_i8b(DevTri%n,DevTri%r)
        ! check if there are overflows
-       if ( els < int(nnzs_tri_dp(DevTri%n, DevTri%r), i8b) ) then
-          call die('tbt: Memory consumption is too large, try &
-               &another pivoting scheme.')
+       if ( els > huge(1) ) then
+         write(*,'(a,i0)') 'Elements: ', els
+         write(*,'(a,i0)') 'Max: ', huge(1)
+         call die('tbt: Memory consumption is too large, try &
+             &another pivoting scheme.')
        end if
        write(*,'(a,i0)') 'tbt: Matrix elements in BTD: ', els
 
@@ -482,8 +484,9 @@ contains
     tmpSp1 = sp
 
     min_mem = huge(1._dp)
+    min_mem_method = 'TOO LARGE'
 
-    call rgn_orb2atom(r_pvt, na_u, lasto, r_apvt)
+    call rgn_Orb2Atom(r_pvt, na_u, lasto, r_apvt)
 
     ! Attach the sparsity pattern of the orbitals
     ! later (tmpSp2) may be atom
@@ -553,7 +556,7 @@ contains
           call rgn_copy(Elecs(iEl)%o_inD, start)
        else
           ! transfer to atom
-          call rgn_orb2atom(Elecs(iEl)%o_inD,na_u,lasto,start)
+          call rgn_Orb2Atom(Elecs(iEl)%o_inD,na_u,lasto,start)
        end if
 
        fmethod = trim(corb)//'+'//trim(Elecs(iEl)%name)
@@ -757,12 +760,19 @@ contains
        write(*,'(a)') ' **********'
        write(*,'(a)') ' *  NOTE  *'
        write(*,'(a)') ' **********'
-       write(*,'(a)') ' This minimum memory pivoting scheme may not necessarily be the'
-       write(*,'(a)') ' best performing algorithm!'
-       write(*,'(a,/)') ' You should analyze the pivoting schemes!'
-       write(*,'(a)') ' Minimum memory required pivoting scheme:'
-       write(*,'(a,a)') '  TBT.BTD.Pivot.Device ', trim(min_mem_method)
-       write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
+       if ( trim(min_mem_method) == 'TOO LARGE' ) then
+         write(*,'(a)') ' All pivoting methods requires more elements than can be allocated'
+         write(*,'(a)') ' Therefore you cannot run your simulation using TBtrans'
+         write(*,'(a)') ' If you could reduce the device region [TBT.Atoms.Device] you'
+         write(*,'(a)') ' may be able to run this system.'
+       else
+         write(*,'(a)') ' This minimum memory pivoting scheme may not necessarily be the'
+         write(*,'(a)') ' best performing algorithm!'
+         write(*,'(a,/)') ' You should analyze the pivoting schemes!'
+         write(*,'(a)') ' Minimum memory required pivoting scheme:'
+         write(*,'(a,a)') '  TBT.BTD.Pivot.Device ', trim(min_mem_method)
+         write(*,'(a,en11.3,a)') '  Memory: ', min_mem, ' GB'
+       end if
        write(*,*) ! new-line
     end if
     
@@ -781,6 +791,7 @@ contains
       integer :: bw
       ! Possibly very large numbers
       integer(i8b) :: prof, els
+      logical :: is_suitable
       real(dp) :: total
 
       call rgn_copy(r_pvt, cur)
@@ -805,11 +816,15 @@ contains
       end if
 
       ! Calculate size of the tri-diagonal matrix
-      els = nnzs_tri(ctri%n,ctri%r)
+      els = nnzs_tri_i8b(ctri%n,ctri%r)
       ! check if there are overflows
-      if ( els < int(nnzs_tri_dp(ctri%n, ctri%r)) ) then
-        call die('transiesta: Memory consumption is too large, &
-            &try another pivoting scheme.')
+      if ( els > huge(1) ) then
+        write(*,'(tr3,a,i0,'' / '',i0)')'*** Number of elements exceeds integer limits [elements / max] ', &
+            els, huge(1)
+        write(*,'(tr3,a)')'*** Will not be able to use this pivoting scheme!'
+        is_suitable = .false.
+      else
+        is_suitable = .true.
       end if
 
       if ( IONode ) then
@@ -831,7 +846,7 @@ contains
         write(*,'(tr3,a,t39,en11.3,a)') 'Rough estimation of MEMORY: ', &
             total,' GB'
       end if
-      if ( total < min_mem ) then
+      if ( total < min_mem .and. is_suitable ) then
         min_mem = total
         min_mem_method = fmethod
       end if

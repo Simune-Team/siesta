@@ -1,0 +1,16 @@
+#
+# This file specifies who watches which files of the source tree
+#
+
+# Files required by the GNU Autotools
+/AUTHORS @garalb @pouillon
+/COPYING @garalb @pouillon
+#/ChangeLog @garalb @pouillon
+#/INSTALL @garalb @pouillon
+#/NEWS @garalb @pouillon
+/README @garalb @pouillon
+
+# Package maintenance
+/.gitignore @garalb @pouillon
+/.gitlab/ @garalb @pouillon
+/version.info @garalb

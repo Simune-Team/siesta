@@ -15,8 +15,6 @@ module m_ncdf_io
   use m_io_s, only: count_consecutive, count_blocks
 
 #ifdef NCDF_4
-  use variable
-  use dictionary
   use netcdf_ncdf, ncdf_parallel => parallel
 #endif
 #ifdef MPI

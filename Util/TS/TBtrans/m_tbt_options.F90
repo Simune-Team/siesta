@@ -53,7 +53,7 @@ module m_tbt_options
   ! if ( 'DOS-Gf' .in. save_DATA ) then
   !   calculate DOS of Gf
   ! end fi
-  type(dict) :: save_DATA
+  type(dictionary_t) :: save_DATA
 
   ! Number of eigenchannels to calculate
   integer :: N_eigen = 0

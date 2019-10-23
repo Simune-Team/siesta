@@ -321,6 +321,7 @@ contains
     use m_ts_electype, only : init_Elec_sim
 
     use m_ts_method, only : ts_init_electrodes, a_isBuffer
+    use m_cite, only : add_citation
 
     implicit none
     
@@ -523,6 +524,12 @@ contains
     ! Hence we use this as an error-check (also for N_Elec == 1)
     if ( any(Elecs(:)%t_dir > 3) ) then
       ts_tidx = - N_Elec
+
+      ! We add the real-space self-energy article
+      if ( IONode ) then
+        call add_citation("arXiv:1905.11113")
+      end if
+
     else
       select case ( N_Elec )
       case ( 1 )
@@ -1396,7 +1403,7 @@ contains
     if ( ts_tidx < 1 ) then
 
        write(*,'(a)') '*** TranSiesta semi-infinite directions are individual ***'
-       write(*,'(a)') '*** It is heavily adviced to have any electrodes with no &
+       write(*,'(a)') '*** It is heavily advised to have any electrodes with no &
             &periodicity'
        write(*,'(a)') '    in the transverse directions be located as far from any &
             &cell-boundaries'
@@ -1630,7 +1637,7 @@ contains
           write(*,'(a,/,a)') 'The pivoting table for the electrode unit-cell, &
                &onto the simulation unit-cell is not unique: '//trim(Elecs(iEl)%name), &
                '  Please check your electrode and device cell parameters!'
-          write(*,'(a)') '  Combining this with electric fields or dipole-corrections is ill-adviced!'
+          write(*,'(a)') '  Combining this with electric fields or dipole-corrections is NOT advised!'
           warn = .true.
        end if
     end do
