@@ -715,7 +715,7 @@ subroutine read_options( na, ns, nspin )
      isolve = SOLVE_PEXSI
      if (ionode) then
         call add_citation("10.1088/0953-8984/26/30/305503")
-        write(*,3) 'redata: Method of Calculation', 'PEXSI'
+        write(*,3) 'redata: Method of Calculation', 'PEXSI-builtin'
      endif
 #else
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
@@ -724,8 +724,8 @@ subroutine read_options( na, ns, nspin )
 #ifdef SIESTA__ELSI
      isolve = SOLVE_ELSI
      if (ionode) then
-        call add_citation("ELSI PAPER***")
-        write(*,3) 'redata: Method of Calculation', 'ELSI'
+        call add_citation("10.1016/j.cpc.2017.09.007")
+        write(*,3) 'redata: Method of Calculation', 'ELSI solvers'
      endif
 #else
      call die("ELSI solver is not compiled in. Use -DSIESTA__ELSI")
