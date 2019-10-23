@@ -616,12 +616,15 @@ C     Initialise MPI and set processor number
         not_using_auxcell = not_using_auxcell .and. gamma_ldos
       endif
 
-      ! Read in diagonalization routines
-      ! Note that only the sampled BZ is responsible for
-      ! ParallelOverK option, the remaning options are
-      ! taking care of this option
+      ! Read in diagonalization options
+      ! Note that only the sampled BZ determines the value of
+      ! ParallelOverK. Oother routines performing diagonalization
+      ! (i.e., pdos, bands...) might reset this option.
       call read_diag(Gamma_scf, spin%H)
-      call print_diag()
+
+      ! Do not print option values now unless we are using diagonalization
+      ! as the ground-state solver
+      if (isolve == SOLVE_DIAGON) call print_diag()
 
       nullify(eo,qo)
       call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 'eo', 

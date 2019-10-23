@@ -452,7 +452,7 @@ C
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
-      use m_diag_option, only: Serial, ParallelOverK
+      use m_diag_option, only: Serial, ParallelOverK, print_diag
       use m_diag, only: diag_init
 
       implicit          none
@@ -565,6 +565,7 @@ C Call appropriate diagonalization routine
 
       if ( spin%Grid <= 2 ) then
        if (gamma) then
+         call print_diag()
          call diagg( spin%H, nuo, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
@@ -584,7 +585,7 @@ C Handle parallel over K points option which is not allowed for here
              Serial = (Nodes == 1)
              call diag_init()
           end if
-
+         call print_diag()
          call diagk( spin%H, nuo, no, spin%spinor, maxnh, maxnh,
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
@@ -600,6 +601,7 @@ C Handle parallel over K points option which is not allowed for here
        endif
 
       elseif ( spin%NCol) then
+        call print_diag()
         if (gamma) then
           call diag2g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
@@ -617,6 +619,7 @@ C Handle parallel over K points option which is not allowed for here
      .                 nuotot, occtol, 1, nuotot )
         endif
       elseif ( spin%SO ) then
+        call print_diag()
         if (gamma) then
           call diag3g( nuo, no, maxnh, maxnh, maxo, numh,
      .                 listhptr, listh, numh, listhptr, listh,
