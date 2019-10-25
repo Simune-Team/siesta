@@ -92,6 +92,7 @@ subroutine amn( ispin )
                                                     !   with the global indices 
                                                     !   of the radial functions 
                                                     !   as inputs
+  use matel_mod,          only: init_matel_wannier  ! Table initializer
   use atmfuncs,           only: orb_gindex          ! Subroutine that gives
                                                     !   the global index of an
                                                     !   atomic orbital
