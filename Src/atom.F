@@ -2907,6 +2907,8 @@ C
       integer    :: l, ikb, nrc, nscalar, nkbl, nlj, ir
       integer    :: lmxkb, n_pjnl
       integer, allocatable  :: idx(:), idxl(:), idxshell(:)
+      integer, allocatable  :: idx_j(:)
+      integer    :: n_j, idx_single
       real(dp), allocatable :: proj(:)
       real(dp)   :: ekb, rc
       
@@ -3027,10 +3029,15 @@ C
 
        allocate(proj(nrval))
 
+       ! Loop over l values. There might be several KB projectors
+       ! with the same l, due to:
+       !                  -- The generation of several projectors per channel (e.g., in ONCVPSP)
+       !                  -- For fully relativistic lj projectors, j=l-1/2 an j=l+1/2
        do l = 0, lmxkb
           call ps_Projector_Filter(ps,indexes_in=idx,l=l,
      $         indexes=idxl,number=nkbl)
 
+          ! Different 'shells' of KB projectors for this l have 'seq'uence numbers starting at 1
           ! Find out how many shells for this l
           nshells = 0
           do ikb = 1, nkbl
@@ -3040,36 +3047,68 @@ C
 
           ikb = 0
           do seq = 1, nshells
+
+             ! Get the list of ids of KBs  in this shell (idxshell(:))
              call ps_Projector_Filter(ps,indexes_in=idxl,seq=seq,
      $            indexes=idxshell,number=n_within_shell)
-             ! This loop would be effectively over different js
-             ! for the lj case, or will have extent one for the normal case.
+
+             ! This loop would be effectively over different js (up to 2)
+             ! for the lj case, or will have extent one for the normal case
+             ! (and l=0 for the lj case)
+
              do ij = 1, n_within_shell
 
+                if (lj_projs) then
+                   if (l == 0) then
+                      jstr = " "
+                      jk = 1    ! special case
+                      if (n_within_shell /= 1) then
+                         call die("multiple j for l=0")
+                      endif
+                      idx_single = idxshell(1)
+                   else
+                      ! This is very important to maintain compatibility with the 
+                      ! SOC code, as the first block of lj projs must be j-, then j+.
+                      ! We request (via the 'filter' call) to have j- first.
+                      if (ij == 1) then
+                         j = l - 0.5_dp
+                         jk = 1
+                         jstr = "j-"
+                      else if (ij == 2) then
+                         j = l + 0.5_dp
+                         jk = 2
+                         jstr = "j+"
+                      else
+                         call die("too many j values for a given l")
+                      endif
+                      call ps_Projector_Filter(ps,indexes_in=idxshell,  ! from this list
+     $                     seq=seq,    ! select this sequence number
+     $                     j=j,        ! and this j
+     $                     indexes=idx_j,  ! to build this list
+     $                     number=n_j)     ! of this length
+                      if (n_j /= 1) then
+                         call die("multiple projectors for j in shell")
+                      endif
+                      idx_single = idx_j(1)
+                   endif
+                else
+                   if (n_within_shell /= 1) then
+                      call die("too many projectors for non-lj case")
+                   endif
+                   jstr = " "
+                   idx_single = idxshell(1)
+                endif
+                
                 ikb = ikb + 1   ! Update counter
 
-                call ps_Projector_Get(ps,idxshell(ij),ekb=ekb)
+                ! idx_single is the index of the KB to process in this iteration
+                
+                call ps_Projector_Get(ps,idx_single,ekb=ekb)
                 ekb = 2.0_dp * ekb
-
-                jstr = " "
-                if (lj_projs) then
-                   call ps_Projector_Get(ps,idxshell(ij),j=j)
-                   pjk = nint(2*(j-l)) !  -1 for l-1/2; +1 for l+1/2
-                   jk = 1 + ( pjk + 1 ) / 2 ! 1 or 2
-                   if (jk == 1) then
-                      jstr = "j-"
-                   elseif (jk == 2) then
-                      jstr = "j+"
-                   endif
-                   if (l==0) then
-                      jk = 1    ! special case
-                      jstr = " "
-                   endif
-                endif
 
                 do ir = 2, nrval
                    proj(ir) =
-     $                  ps_Projector_Value(ps,idxshell(ij),rofi(ir))
+     $                  ps_Projector_Value(ps,idx_single,rofi(ir))
                 enddo
 
                 call get_normalized_proj(l,nrc,rc,proj)
