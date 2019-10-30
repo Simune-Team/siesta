@@ -62,7 +62,7 @@ contains
 
   subroutine read_contour_eq_options(N_mu, mus, Volt)
 
-    use units, only : Pi, Kelvin
+    use units, only : Pi, Kelvin, eV
     use fdf
 
     integer, intent(in)        :: N_mu
@@ -76,11 +76,10 @@ contains
     integer :: cur
     integer, allocatable :: idx(:)
     logical :: isStart, isTail
-    real(dp) :: r1, r2, Ry2eV
+    real(dp) :: r1, r2
 
     call fdf_obsolete('TS.ComplexContour.NPoles')
 
-    Ry2eV = fdf_convfac('Ry', 'eV')
 
     ! We only allow the user to either use the old input format, or the new
     ! per-electrode input
@@ -209,12 +208,12 @@ contains
              write(Eq_io(i)%cN,'(i0)') Eq_io(i)%N
              if ( tmp_one(4:4) == 'l' ) then ! left
                 Eq_io(i)%ca = '-40. eV + V/2'
-                Eq_io(i)%a = - 40._dp / Ry2eV + Volt * .5_dp
+                Eq_io(i)%a = - 40._dp * eV + Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT + V/2'
                 Eq_io(i)%b = -10._dp * mus(c_mu)%kT + Volt * .5_dp
              else ! must be right
                 Eq_io(i)%ca = '-40. eV - V/2'
-                Eq_io(i)%a = - 40._dp / Ry2eV - Volt * .5_dp
+                Eq_io(i)%a = - 40._dp * eV - Volt * .5_dp
                 Eq_io(i)%cb = '-10 kT - V/2'
                 Eq_io(i)%b = -10._dp * mus(c_mu)%kT - Volt * .5_dp
              end if
@@ -249,7 +248,7 @@ contains
           Eq_io(i)%part = 'cont-frac'
           Eq_io(i)%method = 'continued-fraction'
           ! Currently this is just a very high number
-          Eq_io(i)%a = 1.e10_dp / Ry2eV ! the continued fraction infinity point
+          Eq_io(i)%a = 1.e10_dp * eV ! the continued fraction infinity point
        else
           Eq_io(i)%part = 'pole'
           Eq_io(i)%method = 'residual'
@@ -1731,7 +1730,8 @@ contains
 
   subroutine io_contour_eq_mu(mu,slabel,suffix)
     use parallel, only : IONode
-    use fdf, only : leqi, fdf_convfac
+    use fdf, only : leqi
+    use units, only: eV, Kelvin
     type(ts_mu), intent(in) :: mu
     character(len=*), intent(in) :: slabel
     character(len=*), intent(in), optional :: suffix
@@ -1739,15 +1739,12 @@ contains
 ! *********************
 ! * LOCAL variables   *
 ! *********************
-    character(len=200) :: fname
+    character(len=256) :: fname
     integer :: i, unit, idx
     type(ts_c_idx) :: cidx
-    real(dp) :: Ry2eV
     
     if ( .not. IONode ) return
 
-    Ry2eV = fdf_convfac('Ry', 'eV')
-    
     if ( present(suffix) ) then
        fname = trim(slabel)//trim(suffix)
     else
@@ -1758,8 +1755,14 @@ contains
     open( unit, file=fname, status='unknown' )
     write(unit,'(a)') '# Contour path for the equilibrium contour segment.'
     write(unit,'(a)') '# This segment belongs to the chemical potential: '//trim(Name(mu))
-    write(unit,'(a)') '# It has the chemical potential:'
-    write(unit,'(a,tr1,f10.5,tr1,a)') '#',mu%mu*Ry2eV,'eV'
+    write(unit,'(a)') '# Chemical potential:'
+    if ( mu%mu < 0._dp ) then
+      write(unit, '(a,g10.4,a)')'# - ', -mu%mu / eV, ' eV'
+    else
+      write(unit, '(a,g10.4,a)')'# + ', mu%mu / eV, ' eV'
+    end if
+    write(unit,'(a)') '# Electronic temperature:'
+    write(unit, '(a,g10.4,a)')'# ', mu%kT / Kelvin, ' K'
     write(unit,'(a,a24,3(tr1,a25))') '#','Re(c) [eV]','Im(c) [eV]','Re(w) [eV]','Im(w) [eV]'
 
     cidx%idx(1) = CONTOUR_EQ
@@ -1785,8 +1788,8 @@ contains
 ! Write out the contour to a contour file
   subroutine io_contour_c(unit,cidx,idx)
     use parallel, only : IONode
-    use units, only : Pi
-    use fdf, only: leqi, fdf_convfac
+    use units, only : Pi, eV
+    use fdf, only: leqi
     integer, intent(in) :: unit
     type(ts_c_idx), intent(inout) :: cidx
     integer, intent(in) :: idx
@@ -1798,22 +1801,20 @@ contains
     logical :: is_cont_frac
     type(ts_cw), pointer :: c
     complex(dp) :: W, ZW
-    real(dp) :: Ry2eV
 
     if ( .not. IONode ) return
     c => Eq_c(cidx%idx(2))
 
     is_cont_frac = leqi(c%c_io%part,'cont-frac')
-    Ry2eV = fdf_convfac('Ry', 'eV')
     
     do i = 1 , size(c%c)
        cidx%e = c%c(i)
        cidx%idx(3) = i
        call c2weight_eq(cidx,idx,1._dp,W,ZW)
        if ( is_cont_frac ) then
-          write(unit,'(4(e25.17,tr1))') c%c(i)*Ry2eV, W*Ry2eV/ Pi
+          write(unit,'(4(e25.17,tr1))') c%c(i)/eV, W/(eV*Pi)
        else
-          write(unit,'(4(e25.17,tr1))') c%c(i)*Ry2eV, W*Ry2eV
+          write(unit,'(4(e25.17,tr1))') c%c(i)/eV, W/eV
        end if
     end do
     
