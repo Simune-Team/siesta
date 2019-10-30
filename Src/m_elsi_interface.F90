@@ -66,6 +66,9 @@ module m_elsi_interface
   real(dp) :: illcond_tol
   
   integer :: elpa_flavor
+  integer :: elpa_gpu
+  integer :: elpa_n_single
+  integer :: elpa_autotune
 
   integer  :: omm_flavor
   integer  :: omm_n_elpa
@@ -231,6 +234,9 @@ subroutine elsi_get_opts()
   illcond_tol          = fdf_get("ELSI-Ill-Condition-Tolerance", 1.0e-5_dp )
   
   elpa_flavor          = fdf_get("ELSI-ELPA-Flavor", 2)
+  elpa_gpu             = fdf_get("ELSI-ELPA-GPU", 0)
+  elpa_n_single        = fdf_get("ELSI-ELPA-N-single-precision", 0)
+  elpa_autotune        = fdf_get("ELSI-ELPA-Autotune", 0)
 
   omm_flavor           = fdf_get("ELSI-OMM-Flavor", 0)
   omm_n_elpa           = fdf_get("ELSI-OMM-ELPA-Steps", 3)
@@ -394,6 +400,10 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
     ! Solver settings
     call elsi_set_elpa_solver(elsi_h, elpa_flavor)
+    call elsi_set_elpa_n_single(elsi_h, elpa_n_single)
+    call elsi_set_elpa_autotune(elsi_h, elpa_autotune)
+    call elsi_set_elpa_gpu(elsi_h, elpa_gpu)
+    call elsi_set_elpa_gpu_kernels(elsi_h, elpa_gpu)
 
     call elsi_set_omm_flavor(elsi_h, omm_flavor)
     call elsi_set_omm_n_elpa(elsi_h, omm_n_elpa)
@@ -1358,6 +1368,10 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
     ! Solver settings
     call elsi_set_elpa_solver(elsi_h, elpa_flavor)
+    call elsi_set_elpa_n_single(elsi_h, elpa_n_single)
+    call elsi_set_elpa_autotune(elsi_h, elpa_autotune)
+    call elsi_set_elpa_gpu(elsi_h, elpa_gpu)
+    call elsi_set_elpa_gpu_kernels(elsi_h, elpa_gpu)
 
     call elsi_set_omm_flavor(elsi_h, omm_flavor)
     call elsi_set_omm_n_elpa(elsi_h, omm_n_elpa)

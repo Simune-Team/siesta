@@ -7105,6 +7105,23 @@ ELSI manual:
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!ELPA!Flavor}[integer]<2>
+  Use the two-stage (banded then tridiagonal conversion) of the ELPA
+  solver by default.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!NSinglePrecision}[integer]<0>
+  Number of initial scf steps carried out in single precision (if
+  supported by the compiled version of the ELPA library)
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!Autotune}[integer]<0>
+  Use the auto-tune feature (if supported by the compiled version of
+  the ELPA library)
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!GPU}[integer]<0>
+  Request use of GPU acceleration (if supported by the compiled
+  version of the ELPA library)
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!OMM!Flavor}[integer]<0>
