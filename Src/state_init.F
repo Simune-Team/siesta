@@ -751,7 +751,6 @@
         end if
       end if
       
-!     If onlyS, Save overlap matrix and exit
       if ( onlyS ) then
          fname = fname_TSHS(slabel, onlyS = .true. )
          ! We include H as S, well-knowing that we only write one of
@@ -763,8 +762,8 @@
      &        xa, lasto, 
      &        H_2D, S_1D, indxuo, 
      &        dummyEf, dummyQtot, Temp,0,0)
-         call bye( 'Save overlap matrix and exit' ) ! Exit siesta
-         
+         call timer( 'state_init', 2 )
+         return
       endif 
 
 #ifdef CDF
