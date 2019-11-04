@@ -33,6 +33,8 @@ module m_elsi_interface
 #if SIESTA__ELSI
 
   use precision, only: dp
+  use parallel, only: ionode
+  use units, only:    eV
   use elsi
 
   implicit none
@@ -92,6 +94,8 @@ module m_elsi_interface
 
   real(dp), allocatable :: v_old(:,:)    ! For mu update in PEXSI solver
   real(dp), allocatable :: delta_v(:,:)   ! For mu update in PEXSI solver
+  real(dp)  :: dv_min, dv_max             ! For mu update in PEXSI solver
+  real(dp)  :: mu_min, mu_max
 
   public :: elsi_getdm
   public :: elsi_finalize_scfloop
@@ -422,12 +426,6 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_pexsi_np_symbo(elsi_h, pexsi_tasks_symbolic)
     call elsi_set_pexsi_temp(elsi_h, temp)
 
-!    call elsi_set_pexsi_gap(elsi_h, gap)
-!    call elsi_set_pexsi_delta_e(elsi_h, delta_e)
-
-    call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
-    call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
-
 ! --- SIPs
     
     if (sips_n_slice /= ELSI_NOT_SET) then
@@ -442,7 +440,30 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_ntpoly_filter(elsi_h, ntpoly_filter)
     call elsi_set_ntpoly_tol(elsi_h, ntpoly_tol)
 
+ endif
+
+ if (which_solver == PEXSI_SOLVER) then
+ ! Set the proper bounds for the chemical potential
+ if (iscf == 1) then
+    call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
+    call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
+ else
+    call elsi_get_pexsi_mu_min(elsi_h, mu_min)
+    call elsi_get_pexsi_mu_max(elsi_h, mu_max)
+      if (ionode) then
+         print *, "*-- solver mu_min, mu_max:", mu_min/eV, mu_max/eV
+      endif
+      mu_min = mu_min+dv_min
+      mu_max = mu_max+dv_max
+      ! Adjust chemical potential range for PEXSI
+      call elsi_set_pexsi_mu_min(elsi_h, mu_min)
+      call elsi_set_pexsi_mu_max(elsi_h, mu_max)
+      if (ionode) then
+         print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
+      endif
+
  endif   ! iscf == 1
+ end if
 
     if (n_spin == 1) then
 
@@ -1097,14 +1118,55 @@ subroutine elsi_finalize_scfloop()
 
 end subroutine elsi_finalize_scfloop
 
-! Save Hartree + XC potential and find minimum and maximum change of it between
-! two SCF iterations.
+! This is a routine that is meant to be called by dhscf after
+! computing the total potential V_scf.
+! 
+! It will find its minimum and maximum change between two invocations
+! of dhscf (that is, between two buildings of the Hamiltonian from a DM: DM->H)
 !
+! When mixing the DM, the change in H between two solver steps (H->DM
+! operation) (Delta_H below) is indeed related directly to the
+! Delta_Vscf (see Lin Lin's paper).
+! iscf = 1 DM(0) -> H(0) -> DM_out(1) -~> DM_mix(1)  
+! iscf = 2 DM_mix(1) -> H(1) -> DM_out(2) -~> DM_mix(2)  
+! Delta_H = H(1) - H(0) = (Delta_Vscf)
+
+! When mixing H there is an extra mixing step that destroys this correspondence.
+! iscf = 1 DM(0) -> H(0) -> DM_out(1) -> H_out(1) -~> H_mix(1)  
+! iscf = 2 H_mix(1) -> DM_out(2) -> H_out(2) -~> H_mix(2)  
+! Delta_H = H_mix(1) - H(0) /= (Delta_Vscf)
+! However, for the simple case of linear mixing:
+! H_mix(1) = alpha*H_out(1) + (1-alpha)*H(0), it can be seen that
+! Delta_H = H_mix(1) - H(0) = alpha*(H_out(1)-H(0))
+! so Delta_H in this case is a "damped" (Delta_Vscf)
+! 
+! It is then heuristically useful to employ the (Delta_Vscf)
+! bracketing shifts, as described in the paper, for both cases. In the
+! case of mixing H, the bracketing shift will be more conservative.
+! (Could there be "Pulay" mixing sequences for which this does not
+! hold?)
+
+! Regarding the mechanics: For now this is confined to a single
+! scf loop. At iscf=1, the v_old and delta_v arrays are allocated,
+! and V_old is simply filled with the current V. In the corresponding
+! solver step, we still do not need to re-bracket mu, and we use
+! an initial bracket.
+! For subsequent scf steps, Delta_V and dv_min=min(Delta_V) and
+! dv_max=max(Delta_V) are computed with dhscf data. The solver calls
+! check the shifts and update the bracket.
+! At the end of the scf loop, the cleaning operations include the
+! deallocation of V_old and delta_V.
+
+! The two operations (computation of Delta_V and re-bracketing) are
+! now decoupled, and this routine could be passed directly to dhscf as
+! "things to do after computing V_scf", a possible general handler
+! that could serve many other cases.  (the check for PEXSI_SOLVER
+! below could be elided if the routine is enabled as handler only in
+! that case)
+
 subroutine elsi_save_potential(n_pts, n_spin, v_scf, comm)
 
   use m_mpi_utils, only: globalize_min, globalize_max
-  use parallel, only: ionode, node
-  use units, only:    eV
 
   integer,  intent(in) :: n_pts
   integer,  intent(in) :: n_spin
@@ -1112,53 +1174,34 @@ subroutine elsi_save_potential(n_pts, n_spin, v_scf, comm)
   integer , intent(in) :: comm  ! The Siesta communicator used for grid operations
                                 ! since this routine is called from dhscf...
 
-  real(dp) :: mu_min
-  real(dp) :: mu_max
-  real(dp) :: dv_min
-  real(dp) :: dv_max
   real(dp) :: tmp
 
   if (which_solver == PEXSI_SOLVER) then
+
     if (.not. allocated(v_old)) then
       allocate(v_old(n_pts,n_spin))
       allocate(delta_v(n_pts,n_spin))
 
       v_old = v_scf
 
-      mu_min = -10.0_dp
-      mu_max = 10.0_dp
     else
-      call elsi_get_pexsi_mu_min(elsi_h, mu_min)
-      call elsi_get_pexsi_mu_max(elsi_h, mu_max)
-      if (ionode) then
-         print *, "*-- solver mu_min, mu_max:", mu_min/eV, mu_max/eV
-      endif
 
       delta_v = v_scf - v_old
       v_old = v_scf
 
       ! Get minimum and maximum of change of total potential
       tmp = minval(delta_v)
-
       call globalize_min(tmp, dv_min, comm=comm)
 
       tmp = maxval(delta_v)
-
       call globalize_max(tmp, dv_max, comm=comm)
+
       if (ionode) then
-         print *, " *---- min and max Delta-V: ", dv_min/eV, dv_max/eV
+         print *, " * (dhscf) min and max Delta-V: ", dv_min/eV, dv_max/eV
       endif
 
-      mu_min = mu_min+dv_min
-      mu_max = mu_max+dv_max
     end if
 
-    ! Adjust chemical potential range for PEXSI
-    call elsi_set_pexsi_mu_min(elsi_h, mu_min)
-    call elsi_set_pexsi_mu_max(elsi_h, mu_max)
-    if (ionode) then
-       print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
-    endif
   end if
 
 end subroutine elsi_save_potential
@@ -1388,12 +1431,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
     call elsi_set_pexsi_np_symbo(elsi_h, pexsi_tasks_symbolic)
     call elsi_set_pexsi_temp(elsi_h, temp)
 
-!    call elsi_set_pexsi_gap(elsi_h, gap)
-!    call elsi_set_pexsi_delta_e(elsi_h, delta_e)
-
-    call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
-    call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
-
     if (sips_n_slice /= ELSI_NOT_SET) then
       call elsi_set_sips_n_slice(elsi_h, sips_n_slice)
     end if
@@ -1407,6 +1444,29 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
     call elsi_set_ntpoly_tol(elsi_h, ntpoly_tol)
 
  endif   ! iscf == 1
+
+ if (which_solver == PEXSI_SOLVER) then
+ ! Set the proper bounds for the chemical potential
+ if (iscf == 1) then
+    call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
+    call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
+ else
+    call elsi_get_pexsi_mu_min(elsi_h, mu_min)
+    call elsi_get_pexsi_mu_max(elsi_h, mu_max)
+      if (ionode) then
+         print *, "*-- solver mu_min, mu_max:", mu_min/eV, mu_max/eV
+      endif
+      mu_min = mu_min+dv_min
+      mu_max = mu_max+dv_max
+      ! Adjust chemical potential range for PEXSI
+      call elsi_set_pexsi_mu_min(elsi_h, mu_min)
+      call elsi_set_pexsi_mu_max(elsi_h, mu_max)
+      if (ionode) then
+         print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
+      endif
+
+ endif   ! iscf == 1
+endif
 
       !print *, global_rank, "| ", " Entering elsi_complex_solver"
 
