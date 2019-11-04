@@ -189,7 +189,6 @@ C     Reset data if necessay
 
       distr => meshDistr(oDistr)
 C     Allocate memory for the current distribution
-      nullify( distr%box )
       call re_alloc( distr%box, 1, 2, 1, 3, 1, Nodes,
      &               'distr%box', moduName )
 
@@ -1756,7 +1755,6 @@ C         Count the number of communications needed by the current process
 C         Store the ordered list of communications needed by the current
 C         process to send/receive the extencil.
           if (Lcom.gt.0) then
-            nullify( mcomm%src, mcomm%dst )
             call re_alloc( mcomm%src, 1, Lcom, 'mcomm%src',
      &                     'moreMeshSubs' )
             call re_alloc( mcomm%dst, 1, Lcom, 'mcomm%dst',
@@ -2638,7 +2636,7 @@ C ==================================================================
 C     Passed arguments
       integer,      intent(in)      :: Nodes, Node, nm(3), wload(*)
       type(meshDisType),intent(in)  :: iDistr
-      type(meshDisType),intent(out) :: oDistr
+      type(meshDisType),intent(inout) :: oDistr
 C     Local variables
       character(len=*), parameter :: myName = moduName//'splitwload '
       character(len=*), parameter :: errMsg = myName//'ERROR: '
@@ -2979,7 +2977,7 @@ C ==================================================================
       implicit none
 C     Passed arguments
       type(meshDisType),   intent(in) :: distr1
-      type(meshDisType),  intent(out) :: distr2
+      type(meshDisType),  intent(inout) :: distr2
 C     Local variables
       integer                         :: P1, P2, P3, Lbox(2,3), II, I1,
      &                                   PermI
@@ -3097,7 +3095,7 @@ C ==================================================================
       implicit none
 C     Passed arguments
       type(meshDisType),   intent(in) :: distr1
-      type(meshDisType),  intent(out) :: distr2
+      type(meshDisType),  intent(inout) :: distr2
 C     Local variables
       integer                         :: P1, P2, I1, I2, J1, J2, J3,
      &                                   K1, K2, K3, NN, NB, NM, SI,
@@ -3235,7 +3233,7 @@ C ==================================================================
       implicit none
 C     Passed arguments
       type(meshDisType),   intent(in) :: distr1, distr2
-      type(meshCommType), intent(out) :: mcomm
+      type(meshCommType), intent(inout) :: mcomm
 
 C     Local variables
       integer                         :: P1, P2, ncom, Gcom, Lcom,
@@ -3288,7 +3286,6 @@ C     Count the number of communications of the current process
 
 C     Allocate memory to store data of the communications of the
 C     current process.
-      nullify( mcomm%src, mcomm%dst )
       call re_alloc( mcomm%src, 1, Lcom, 'mcomm%src', 'moreMeshSubs' )
       call re_alloc( mcomm%dst, 1, Lcom, 'mcomm%dst', 'moreMeshSubs' )
 

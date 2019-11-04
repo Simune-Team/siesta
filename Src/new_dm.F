@@ -540,17 +540,15 @@ C Internal variables and arrays
       data epsilon / 1.d-8 /
 
 C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
+      nullify(list_tmp,D_tmp,num_tmp,listptr_tmp)
+#ifdef TRANSIESTA
+      nullify(EDM_tmp)
+#endif /* TRANSIESTA */
 
       if (try_dm_from_file) then
 
-         nullify(list_tmp,D_tmp,num_tmp,listptr_tmp)
          call re_alloc(num_tmp,1,no_l)
          call re_alloc(listptr_tmp,1,no_l)
-
-#ifdef TRANSIESTA
-         nullify(EDM_tmp)
-#endif /* TRANSIESTA */
-
 
 #ifndef TRANSIESTA
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
@@ -598,14 +596,6 @@ C If found, check and update, otherwise initialize with neutral atoms
      $        "WARNING: Falling back to atomic initialization of DM."
            endif
            found = .false.
-	   call de_alloc(num_tmp,name='num_tmp',routine=myName)
-           call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
-           call de_alloc(list_tmp,name='listd',
-     .                   routine='read_dynamic_dm')
-           call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
-#ifdef TRANSIESTA
-           if(ts_found) call de_alloc(EDM_tmp)
-#endif /* TRANSIESTA */
         endif
       endif
       
@@ -644,15 +634,7 @@ C If found, check and update, otherwise initialize with neutral atoms
                
 #endif /* TRANSIESTA */
            enddo
-           call de_alloc(num_tmp,name='num_tmp',routine=myName)
-           call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
-           call de_alloc(list_tmp,name='listd',
-     .                   routine='read_dynamic_dm')
-           call de_alloc(D_tmp,name='dm',routine='read_dynamic_dm')
            call de_alloc(work)  ! Allocated by change_sparsity
-#ifdef TRANSIESTA
-           if(ts_found) call de_alloc(EDM_tmp)
-#endif /* TRANSIESTA */
         endif
 
 
@@ -923,6 +905,20 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
          enddo
 
       endif
+
+      if ( associated(num_tmp) )
+     &    call de_alloc(num_tmp,name='num_tmp',routine=myName)
+      if ( associated(listptr_tmp) )
+     &    call de_alloc(listptr_tmp,name='listptr_tmp',routine=myName)
+      if ( associated(list_tmp) )
+     &    call de_alloc(list_tmp,name='listd')
+      if ( associated(D_tmp) )
+     &    call de_alloc(D_tmp,name='dm')
+#ifdef TRANSIESTA
+      if ( associated(EDM_tmp) )
+     &    call de_alloc(EDM_tmp)
+#endif /* TRANSIESTA */
+
 
       end subroutine initdm
 
