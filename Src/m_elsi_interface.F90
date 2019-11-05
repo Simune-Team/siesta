@@ -1,8 +1,8 @@
 !
-! Alberto Garcia, February-July 2018
-! Modified by Victor M. Garcia-Suarez. January 2019
+! Alberto Garcia, February-July 2018, 2019-
+!   Modified by Victor M. Garcia-Suarez. January 2019
 !   (Introduction of an extra flag to only get the EDM instead of carrying
-!    out a full computation --- to be refactored)
+!   out a full computation --- to be refactored)
 !
 ! ELSI DM-based interface to Siesta. It uses the sparse matrices from Siesta,
 ! and obtains the DM (and optionally the EDM) matrices in sparse form.
@@ -13,11 +13,11 @@
 !
 ! The structure of the solver routine is such that it will detect when it is
 ! called for the first scf step, so it can perform any needed initialization.
-! The same idea can be used for the diagonalization mode, with (more extensive)
-! appropriate changes.
 !
 ! The module also exports the "elsi_finalize_scfloop" routine, to be called from
 ! the appropriate place. Some variables are kept at the module level for this.
+!
+! This interface has been tested with ELSI-v2.0.2 --> 2.3.1 
 !
 ! Usage: Compile Siesta with -DSIESTA__ELSI
 !        Define
@@ -352,7 +352,6 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer :: my_nnz
   integer, pointer  :: my_row_ptr2(:) => null()
   integer  :: i, ih, ispin, spin_rank
-  real(dp) :: ets_spin
 
   integer, pointer  :: my_col_idx(:)
   real(dp), pointer :: my_S(:)
@@ -587,26 +586,13 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
      endif
   else
      ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
-     ! Energy is already summed over spins
+     ! Energy and entropy are already summed over spins
      if (.not.Get_EDM_Only) then
        call elsi_dm_real_sparse(elsi_h, my_H, my_S, my_DM, energy)
-       call elsi_get_entropy(elsi_h, ets_spin)
+       call elsi_get_entropy(elsi_h, ets)
      else
        call elsi_get_edm_real_sparse(elsi_h, my_EDM)
      endif
-#ifdef SIESTA__ELSI__OLD_SPIN_CONVENTION
-     ! NOTE**
-     ! For ELSI versions before 2018-08-17 we still need to sum the entropy over spins
-     ! ... but to figure out the version is not trivial, as the relevant routines changed...
-     call globalize_sum(ets_spin, ets, comm=elsi_Spin_comm)
-#else
-     ! If this gives an error, then your version of ELSI is old, and you should
-     ! be using the pre-processor symbol above
-     ! (This works because 'elsi_get_datestamp' was added just
-     ! around the same time as the spin-reduction-convention change) (Aug 17 vs Aug 21, 2018...)
-     ! If you are unlucky enough to have an ELSI version in between, get rid of it.
-     call elsi_get_datestamp(date_stamp)
-#endif
   endif
 
   call elsi_get_mu(elsi_h, ef)
@@ -1362,7 +1348,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   integer :: my_nnz
   integer, pointer  :: my_row_ptr2(:) => null()
   integer  :: i, ih, ispin, spin_rank, global_rank
-  real(dp) :: ets_spin
 
   integer, pointer  :: my_col_idx(:)
   complex(dp), pointer :: my_S(:)
@@ -1583,7 +1568,6 @@ endif
 
   call timer("elsi-solver", 1)
 
-  !print *, global_rank, "| ", "About to call elsi_dm"
   if (n_spin == 1) then
      if (.not.Get_EDM_Only) then
        call elsi_dm_complex_sparse(elsi_h, ham, ovlp, DM, energy)
@@ -1593,28 +1577,13 @@ endif
      endif
   else
      ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
-     ! Energy is already summed over spins
+     ! Energy and entropy already summed over spins
      if (.not.Get_EDM_Only) then
        call elsi_dm_complex_sparse(elsi_h, my_H, my_S, my_DM, energy)
-     !... but we still need to sum the entropy over spins
-       call elsi_get_entropy(elsi_h, ets_spin)
+       call elsi_get_entropy(elsi_h, ets)
      else
        call elsi_get_edm_complex_sparse(elsi_h, my_EDM)
      endif
-#ifdef SIESTA__ELSI__OLD_SPIN_CONVENTION
-     ! NOTE**
-     ! For ELSI versions before 2018-08-17 we still need to sum the entropy over spins
-     ! ... but to figure out the version is not trivial, as the relevant routines changed...
-     call globalize_sum(ets_spin, ets, comm=elsi_Spin_comm)
-#else
-     ! If this gives an error, then your version of ELSI is old, and you should
-     ! be using the pre-processor symbol above
-     ! (This works because 'elsi_get_datestamp' was added just
-     ! around the same time as the spin-reduction-convention change) (Aug 17 vs Aug 21, 2018...)
-     ! If you are unlucky enough to have an ELSI version in between, get rid of it.
-     call elsi_get_datestamp(date_stamp)
-#endif
-     ! And over kpoints??  -- not necessary, ever
   endif
 
   call elsi_get_mu(elsi_h, ef)
@@ -1623,7 +1592,6 @@ endif
   ! Ef, energy, and ets are known to all nodes
 
   call timer("elsi-solver", 2)
-  !print *, global_rank, "| ", "Done elsi_dm"
 
   if ( n_spin == 2) then
      ! Now we need to redistribute back
