@@ -1,8 +1,6 @@
 !
-! Alberto Garcia, February-July 2018, 2019-
-!   Modified by Victor M. Garcia-Suarez. January 2019
-!   (Introduction of an extra flag to only get the EDM instead of carrying
-!   out a full computation --- to be refactored)
+! Alberto Garcia, 2018-
+! with help by Victor Yu and Victor M. Garcia-Suarez
 !
 ! ELSI DM-based interface to Siesta. It uses the sparse matrices from Siesta,
 ! and obtains the DM (and optionally the EDM) matrices in sparse form.
@@ -23,11 +21,7 @@
 !        Define
 !           SolutionMethod ELSI
 !        in the fdf file
-! TODO:
-!        -  MPI.Nprocs.SIESTA is not working -- maybe we will remove that feature
-!        -  Add more documentation
-!        -  Maybe refactor a few things
-!
+
 module m_elsi_interface
 
 #if SIESTA__ELSI
@@ -46,13 +40,16 @@ module m_elsi_interface
   integer, parameter :: PEXSI_SOLVER      = 3 ! solver
   integer, parameter :: SIPS_SOLVER       = 5 ! solver
   integer, parameter :: NTPOLY_SOLVER     = 6 ! solver
+
   integer, parameter :: MULTI_PROC        = 1 ! parallel_mode
   integer, parameter :: SIESTA_CSC        = 2 ! distribution
+
   integer, parameter :: GAUSSIAN          = 0 ! broadening
   integer, parameter :: FERMI             = 1 ! broadening
   integer, parameter :: METHFESSEL_PAXTON = 2 ! broadening
   integer, parameter :: CUBIC             = 3 ! broadening
   integer, parameter :: COLD              = 4 ! broadening
+
   integer, parameter :: ELSI_NOT_SET      = -910910
 
   type(elsi_handle) :: elsi_h
@@ -308,7 +305,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 #endif
   use class_Distribution
   use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
-  use alloc
+  use alloc, only: de_alloc  ! To deallocate some pointers in transfer matrices
 
   implicit none
 
@@ -348,13 +345,13 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer :: my_no_l
   integer :: my_nnz_l
   integer :: my_nnz
-  integer, pointer  :: my_row_ptr2(:) => null()
+  integer, allocatable :: my_row_ptr2(:)
   integer  :: i, ih, ispin, spin_rank
 
   integer, pointer  :: my_col_idx(:)
   real(dp), pointer :: my_S(:)
   real(dp), pointer :: my_H(:)
-  real(dp), pointer :: my_DM(:) => null()
+  real(dp), allocatable, target :: my_DM(:) 
 
   integer :: date_stamp
 
@@ -539,7 +536,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
              my_nnz_l    = pkg_spin%nnzl
              call MPI_AllReduce(my_nnz_l,my_nnz,1,MPI_integer,MPI_sum,elsi_Spatial_Comm,ierr)
              ! generate off-by-one row pointer
-             call re_alloc(my_row_ptr2,1,my_no_l+1,"my_row_ptr2","elsi_solver")
+             allocate(my_row_ptr2(my_no_l+1))
              my_row_ptr2(1) = 1
              do ih = 1,my_no_l
                 my_row_ptr2(ih+1) = my_row_ptr2(ih) + pkg_spin%numcols(ih)
@@ -549,7 +546,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
              my_S => pkg_spin%vals(1)%data
              my_H => pkg_spin%vals(2)%data
 
-             call re_alloc(my_DM,1,my_nnz_l,"my_DM","elsi_solver")
+             allocate(my_DM(my_nnz_l))
           endif
 
           ! Clean pkg_global
@@ -562,7 +559,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
        enddo
 
        call elsi_set_csc(elsi_h, my_nnz, my_nnz_l, my_no_l, my_col_idx, my_row_ptr2)
-       call de_alloc(my_row_ptr2,"my_row_ptr2","elsi_solver")
+       deallocate(my_row_ptr2)
 
        call elsi_set_csc_blk(elsi_h, BlockSize)
        call elsi_set_spin(elsi_h, n_spin, my_spin)
@@ -625,7 +622,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
         ! Clean pkg_spin
         if (my_spin == ispin) then
            ! Each team deallocates during "its" spin cycle
-           call de_alloc(my_DM, "my_DM", "elsi_solver")
+           deallocate(my_DM)
 
            nullify(pkg_spin%vals(1)%data)    ! formerly pointing to DM
            deallocate(pkg_spin%vals)
@@ -680,7 +677,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
   use parallel, only: blocksize
   use class_Distribution
     use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
-    use alloc
+    use alloc, only: de_alloc  ! To deallocate some pointers in transfer matrices
 
   !
   ! K-point redistribution, Hk and Sk building, and call to complex ELSI solver
@@ -723,7 +720,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       integer :: my_no_l, my_nnz_l
       integer, pointer :: my_numh(:)
       integer, pointer :: my_listh(:)
-      integer, pointer :: my_listhptr(:) => null()
+      integer, allocatable :: my_listhptr(:)
       real(dp), allocatable :: my_S(:)
       real(dp), allocatable :: my_H(:,:)
       real(dp), pointer :: buffer(:)  ! for unpacking help
@@ -888,7 +885,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
           deallocate(xijo_transp)  ! Auxiliary array used for sending
 
           ! generate listhptr for folding/unfolding operations
-          call re_alloc(my_listhptr,1,my_no_l,"my_listhptr","elsi_solver")
+          allocate(my_listhptr(my_no_l))
           my_listhptr(1) = 0
           do ih = 2,my_no_l
              my_listhptr(ih) = my_listhptr(ih-1) + my_numh(ih-1)
@@ -965,6 +962,8 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             enddo
          enddo
       enddo
+
+      deallocate(my_listhptr)
 
       ! Apply the k-point weight to the (apparently normalized) DM and EDM that
       ! come out of ELSI
@@ -1280,7 +1279,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 #endif
   use class_Distribution
   use m_redist_spmatrix, only: aux_matrix, redistribute_spmatrix
-  use alloc
+  use alloc, only: de_alloc  ! to deallocate some pointers in transfer matrices
   use m_mpi_utils, only: globalize_sum
 
   implicit none
@@ -1326,13 +1325,13 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   integer :: my_no_l
   integer :: my_nnz_l
   integer :: my_nnz
-  integer, pointer  :: my_row_ptr2(:) => null()
+  integer, allocatable  :: my_row_ptr2(:)
   integer  :: i, ih, ispin, spin_rank, global_rank
 
   integer, pointer  :: my_col_idx(:)
   complex(dp), pointer :: my_S(:)
   complex(dp), pointer :: my_H(:)
-  complex(dp), pointer :: my_DM(:) => null()
+  complex(dp), allocatable, target :: my_DM(:)
 
   integer :: date_stamp
 
@@ -1509,7 +1508,7 @@ endif
              my_nnz_l    = pkg_spin%nnzl
              call MPI_AllReduce(my_nnz_l,my_nnz,1,MPI_integer,MPI_sum,elsi_Spatial_Comm,ierr)
              ! generate off-by-one row pointer
-             call re_alloc(my_row_ptr2,1,my_no_l+1,"my_row_ptr2","elsi_solver")
+             allocate(my_row_ptr2(my_no_l+1))
              my_row_ptr2(1) = 1
              do ih = 1,my_no_l
                 my_row_ptr2(ih+1) = my_row_ptr2(ih) + pkg_spin%numcols(ih)
@@ -1519,7 +1518,7 @@ endif
              my_S => pkg_spin%complex_vals(1)%data
              my_H => pkg_spin%complex_vals(2)%data
 
-             call re_alloc(my_DM,1,my_nnz_l,"my_DM","elsi_solver")
+             allocate(my_DM(my_nnz_l))
           endif
 
           ! Clean pkg_global
@@ -1534,7 +1533,7 @@ endif
        !print *, global_rank, "| ", "spin ", my_spin, "Done spin transfers"
 
        call elsi_set_csc(elsi_h, my_nnz, my_nnz_l, my_no_l, my_col_idx, my_row_ptr2)
-       call de_alloc(my_row_ptr2,"my_row_ptr2","elsi_solver")
+       deallocate(my_row_ptr2)
 
        call elsi_set_csc_blk(elsi_h, BlockSize)
        call elsi_set_spin(elsi_h, n_spin, my_spin)
@@ -1598,7 +1597,7 @@ endif
         ! Clean pkg_spin
         if (my_spin == ispin) then
            ! Each team deallocates during "its" spin cycle
-           call de_alloc(my_DM, "my_DM", "elsi_solver")
+           deallocate(my_DM)
 
            nullify(pkg_spin%complex_vals(1)%data)    ! formerly pointing to DM
            deallocate(pkg_spin%complex_vals)

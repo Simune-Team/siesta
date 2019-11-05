@@ -47,8 +47,8 @@ module m_redist_spmatrix
     integer, pointer :: numcols(:) => null()
     integer, pointer :: cols(:)    => null()
     ! arrays of 1D pointers
-    type(dp_pointer), dimension(:), pointer :: vals(:) => null()
-    type(complex_dp_pointer), dimension(:), pointer :: complex_vals(:) => null()
+    type(dp_pointer), allocatable :: vals(:)
+    type(complex_dp_pointer), allocatable :: complex_vals(:)
  end type aux_matrix
 
  
@@ -172,12 +172,12 @@ CONTAINS
    ! We need to tell the processes in set 2 how many
    ! "vals" to expect.
    if (proc_in_set1) then
-      if (associated(m1%vals)) then
+      if (allocated(m1%vals)) then
          nvals = size(m1%vals)
       else
          nvals = 0
       endif
-      if (associated(m1%complex_vals)) then
+      if (allocated(m1%complex_vals)) then
          nvals_complex = size(m1%complex_vals)
       else
          nvals_complex = 0
