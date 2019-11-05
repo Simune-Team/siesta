@@ -55,7 +55,6 @@
       type(Pair_Geometry_dSpData2D)  :: pair
       type(Geometry)                :: geom
 
-      real(dp), allocatable :: Dscf_dummy(:,:)
       real(dp)              :: ef_dummy
       real(dp)              :: Entropy_dummy
       
@@ -69,7 +68,6 @@
       
 #ifdef SIESTA__ELSI
       if (isolve .eq. SOLVE_ELSI) then
-         allocate(Dscf_dummy(maxnh,spin%DM))
          ! Note that we do not care about the content of H and S
          ! Only that the appropriate elsi_h handle is still active
          ! and allows us to get the appropriate EDM
@@ -79,9 +77,8 @@
      &              H, S, qtot, temp, 
      &              xijo,
      &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
-     &              eo, qo, Dscf_dummy, Escf, ef_dummy, Entropy_dummy,
+     &              eo, qo, Escf, ef_dummy, Entropy_dummy,
      &              occtol, neigwanted, Get_EDM_Only=.true.)
-         deallocate(Dscf_dummy)
       endif
       if (.not. SIESTA_worker) RETURN
 #endif

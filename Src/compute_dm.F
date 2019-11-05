@@ -85,7 +85,7 @@
 !$OMP parallel default(shared)
          if ( converge_EDM ) then
 !$OMP workshare
-            Eold(:,:) = Escf(:,:)
+            Eold(:,:) = Escf(:,:)  ! Not for all solvers ***FIXME
             Dold(:,:) = Dscf(:,:)
 !$OMP end workshare
          else
@@ -154,7 +154,7 @@
      &              H, S, qtot, temp, 
      &              xijo,
      &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
-     &              eo, qo, Dscf, Escf, ef, Entropy,
+     &              eo, qo, Dscf, ef, Entropy,
      &              occtol, neigwanted, Get_EDM_Only=.false.)
          Ecorrec = 0.0_dp
       endif

@@ -106,7 +106,7 @@ CONTAINS
 subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      numh, listhptr, listh, H, S, qtot, temp, &
      xijo, nkpnt, kpoint, kweight,    &
-     eo, qo, Dscf, Escf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
+     eo, qo, Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
 
   !
   ! Analogous to 'diagon', it dispatches ELSI solver routines as needed
@@ -125,7 +125,7 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      integer, intent(in) ::  listh(maxnh), numh(no_l), listhptr(no_l)
      real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
-      real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Escf(maxnh,nspin), Entropy
+      real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Entropy
       real(dp), intent(out) ::  eo(no_u,nspin,nkpnt), qo(no_u,nspin,nkpnt)
 
       ! Interim flag to just get the EDM
@@ -140,7 +140,7 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       integer, allocatable :: ind2ind_u(:)
 
       !
-      real(dp), allocatable, dimension(:,:)  :: Dscf_u, Escf_u, H_u
+      real(dp), allocatable, dimension(:,:)  :: Dscf_u, H_u
       real(dp), allocatable, dimension(:)    :: S_u
 
       integer :: iuo, ispin, j, ind, ind_u, nnz_u
@@ -156,7 +156,7 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
             call elsi_real_solver(iscf, no_u, no_l, nspin, &
                      maxnh, listhptr, listh, qtot, temp, &
-                     H, S, Dscf, Escf, ef, Entropy, Get_EDM_Only)
+                     H, S, Dscf, ef, Entropy, Get_EDM_Only)
 
          else
 
@@ -187,11 +187,11 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
                enddo
 
             ! We can now call the standard real solver routine
-            allocate(Dscf_u(nnz_u,nspin), Escf_u(nnz_u,nspin))
+            allocate(Dscf_u(nnz_u,nspin))
 
             call elsi_real_solver(iscf, no_u, no_l, nspin, &
                      nnz_u, listhptr_u, listh_u, qtot, temp, &
-                     H_u, S_u, Dscf_u, Escf_u, ef, Entropy, Get_EDM_Only)
+                     H_u, S_u, Dscf_u, ef, Entropy, Get_EDM_Only)
 
             deallocate(H_u, S_u)
             deallocate(numh_u, listhptr_u, listh_u)
@@ -204,11 +204,10 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
                   ind_u = ind2ind_u(ind)
                   do ispin = 1, nspin
                      Dscf(ind,ispin) = Dscf_u(ind_u,ispin)
-                     Escf(ind,ispin) = Escf_u(ind_u,ispin)
                   enddo
                enddo
             enddo
-            deallocate(Dscf_u, Escf_u)
+            deallocate(Dscf_u)
             deallocate(ind2ind_u)
 
          endif  ! using auxiliary supercell with Gamma sampling
@@ -219,7 +218,7 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
          call elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
               numh, listhptr, listh, H, S, qtot, temp, &
               xijo, nkpnt, kpoint, kweight,    &
-              eo, qo, Dscf, Escf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
+              eo, qo, Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
 
       endif
 
@@ -299,7 +298,7 @@ end subroutine elsi_get_opts
 ! operations.
 !
 subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
-  col_idx, qtot, temp, ham, ovlp, dm, edm, ef, ets, Get_EDM_Only)
+  col_idx, qtot, temp, ham, ovlp, DM, ef, ets, Get_EDM_Only)
 
   use fdf,         only: fdf_get
   use m_mpi_utils, only: globalize_sum
@@ -324,8 +323,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   real(dp), intent(in)    :: temp
   real(dp), intent(inout), target :: ham(nnz_l,n_spin)
   real(dp), intent(inout), target :: ovlp(nnz_l)
-  real(dp), intent(out)   :: dm(nnz_l,n_spin)
-  real(dp), intent(out)   :: edm(nnz_l,n_spin)
+  real(dp), intent(out)   :: DM(nnz_l,n_spin)    ! It can be the DM or the EDM
   real(dp), intent(out)   :: ef        ! Fermi energy
   real(dp), intent(out)   :: ets       ! Entropy/k, dimensionless
 
@@ -357,7 +355,6 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   real(dp), pointer :: my_S(:)
   real(dp), pointer :: my_H(:)
   real(dp), pointer :: my_DM(:) => null()
-  real(dp), pointer :: my_EDM(:) => null()
 
   integer :: date_stamp
 
@@ -553,11 +550,10 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
              my_H => pkg_spin%vals(2)%data
 
              call re_alloc(my_DM,1,my_nnz_l,"my_DM","elsi_solver")
-             call re_alloc(my_EDM,1,my_nnz_l,"my_EDM","elsi_solver")
           endif
 
           ! Clean pkg_global
-          nullify(pkg_global%vals(1)%data)
+          nullify(pkg_global%vals(1)%data)   ! They were just pointing
           nullify(pkg_global%vals(2)%data)
           deallocate(pkg_global%vals)
           nullify(pkg_global%numcols)
@@ -582,7 +578,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
        call elsi_dm_real_sparse(elsi_h, ham, ovlp, DM, energy)
        call elsi_get_entropy(elsi_h, ets)
      else
-       call elsi_get_edm_real_sparse(elsi_h, EDM)
+       call elsi_get_edm_real_sparse(elsi_h, DM)
      endif
   else
      ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
@@ -591,7 +587,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
        call elsi_dm_real_sparse(elsi_h, my_H, my_S, my_DM, energy)
        call elsi_get_entropy(elsi_h, ets)
      else
-       call elsi_get_edm_real_sparse(elsi_h, my_EDM)
+       call elsi_get_edm_real_sparse(elsi_h, my_DM)
      endif
   endif
 
@@ -613,9 +609,10 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
            ! Deallocate my_S and my_H
            call de_alloc(pkg_spin%vals(1)%data,"pkg_spin%vals(1)%data","elsi_solver")
            call de_alloc(pkg_spin%vals(2)%data,"pkg_spin%vals(2)%data","elsi_solver")
+           deallocate(pkg_spin%vals)
+           allocate(pkg_spin%vals(1))
 
            pkg_spin%vals(1)%data => my_DM(1:my_nnz_l)
-           pkg_spin%vals(2)%data => my_EDM(1:my_nnz_l)
 
         endif
 
@@ -629,10 +626,8 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
         if (my_spin == ispin) then
            ! Each team deallocates during "its" spin cycle
            call de_alloc(my_DM, "my_DM", "elsi_solver")
-           call de_alloc(my_EDM,"my_EDM","elsi_solver")
 
            nullify(pkg_spin%vals(1)%data)    ! formerly pointing to DM
-           nullify(pkg_spin%vals(2)%data)    ! formerly pointing to EDM
            deallocate(pkg_spin%vals)
            ! allocated in the direct transfer
            call de_alloc(pkg_spin%numcols,"pkg_spin%numcols","elsi_solver")
@@ -640,11 +635,10 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
         endif
 
 
-        ! In future, pkg_global%vals(1,2) could be pointing to DM and EDM,
+        ! In future, pkg_global%vals could be pointing to DM (or EDM)
         ! and the 'redistribute' routine check whether the vals arrays are
         ! associated, to use them instead of allocating them.
         DM(:,ispin)  = pkg_global%vals(1)%data(:)
-        EDM(:,ispin) = pkg_global%vals(2)%data(:)
         ! Check no_l
         if (n_basis_l /= pkg_global%no_l) then
            call die("Mismatch in no_l")
@@ -661,7 +655,7 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
         call de_alloc(pkg_global%cols,   "pkg_global%cols",   "elsi_solver")
 
         call de_alloc(pkg_global%vals(1)%data,"pkg_global%vals(1)%data","elsi_solver")
-        call de_alloc(pkg_global%vals(2)%data,"pkg_global%vals(2)%data","elsi_solver")
+        if (size(pkg_global%vals) /= 1) call die("pkg_global has two vals fields...")
         deallocate(pkg_global%vals)
 
      enddo
@@ -679,7 +673,7 @@ end subroutine elsi_real_solver
 subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      numh, listhptr, listh, H, S, qtot, temp, &
      xijo, nkpnt, kpoint, kweight,    &
-     eo, qo, Dscf, Escf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
+     eo, qo, Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
 
   use mpi_siesta, only: mpi_comm_dft
   use mpi
@@ -705,7 +699,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      integer, intent(in) ::  listhptr(no_l)
      integer, intent(in), target ::  listh(maxnh), numh(no_l)
 
-      real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Escf(maxnh,nspin), Entropy
+      real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Entropy
       real(dp), intent(out) ::  eo(no_u,nspin,nkpnt), qo(no_u,nspin,nkpnt)
       real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
@@ -734,13 +728,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       real(dp), allocatable :: my_H(:,:)
       real(dp), pointer :: buffer(:)  ! for unpacking help
 
-      real(dp), allocatable :: my_Escf(:,:)
       real(dp), allocatable :: my_Dscf(:,:)
-      real(dp), allocatable, target :: my_Escf_reduced(:,:)
       real(dp), allocatable, target :: my_Dscf_reduced(:,:)
 
       complex(dp), allocatable :: DM_k(:,:)
-      complex(dp), allocatable :: EDM_k(:,:)
       complex(dp), allocatable :: Hk(:,:)
       complex(dp), allocatable :: Sk(:)
 
@@ -761,7 +752,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       ! Re-distribute H and S to the k-point (and spin) teams
       ! Generate Hk, Sk
       ! Call elsi_complex_solver
-      ! Construct and re-distribute global DM and EDM
+      ! Construct and re-distribute global DM (or EDM)
 
         ! Global communicator is a duplicate of passed communicator
       call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
@@ -942,10 +933,9 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       !print *, mpirank, "| ", "k-point ", my_kpt_n, " Done folding"
       ! Prepare arrays for holding results
       allocate(DM_k(nnz_u,nspin))
-      allocate(EDM_k(nnz_u,nspin))
 
       call elsi_complex_solver(iscf, no_u, my_no_l, nspin, nnz_u, numh_u, listhptr_u, &
-                               listh_u, qtot, temp, Hk, Sk, DM_k, EDM_k, Ef, Entropy,  &
+                               listh_u, qtot, temp, Hk, Sk, DM_k, Ef, Entropy,  &
                                nkpnt, my_kpt_n, kpoint(:,my_kpt_n), kweight(my_kpt_n),    &
                                kpt_Comm, Get_EDM_Only )
 
@@ -953,13 +943,12 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       deallocate(listhptr_u, numh_u, listh_u)
       deallocate(Hk,Sk)
 
-      ! Re-create DM and EDM:
+      ! Re-create DM (or EDM):
       ! Unfold within a given k
       ! Add up all the k contributions with the appropriate phases
 
       ! Prepare arrays for holding results: Note sizes: these are folded out
       allocate(my_Dscf(my_nnz_l,nspin))
-      allocate(my_Escf(my_nnz_l,nspin))
 
       do iuo = 1, my_no_l
          do j = 1, my_numh(iuo)
@@ -973,7 +962,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
             do ispin = 1, nspin
                my_Dscf(ind,ispin) = real( DM_k(ind_u,ispin) * kphs, kind=dp )
-               my_Escf(ind,ispin) = real( EDM_k(ind_u,ispin) * kphs, kind=dp )
             enddo
          enddo
       enddo
@@ -982,33 +970,28 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       ! come out of ELSI
 
       my_Dscf = kweight(my_kpt_n) * my_Dscf
-      my_Escf = kweight(my_kpt_n) * my_Escf
 
       !print *, mpirank, "| ", "k-point ", my_kpt_n, " Done generating my_Dscf"
       deallocate(my_xij)
       deallocate(ind2ind_u)
-      deallocate(DM_k,EDM_k)
+      deallocate(DM_k)
 
       if (my_kpt_n == 1 ) then
          ! Prepare arrays for holding reduced data
          allocate(my_Dscf_reduced(my_nnz_l,nspin))
-         allocate(my_Escf_reduced(my_nnz_l,nspin))
          if (kcolrank /= 0) call die("Rank 0 in kpt_comm not doing kpt 1")
       else
          ! These should not be referenced
          allocate(my_Dscf_reduced(1,1))
-         allocate(my_Escf_reduced(1,1))
       endif
 
       ! Use k-point column communicator, and reduce to rank 0,
       ! which *should* correspond to kpt=1... (checked above)
       call MPI_Reduce( my_Dscf, my_Dscf_reduced, nspin*my_nnz_l, MPI_Double_Precision, &
            MPI_Sum, 0, kpt_col_comm, ierr )
-      call MPI_Reduce( my_Escf, my_Escf_reduced, nspin*my_nnz_l, MPI_Double_Precision, &
-           MPI_Sum, 0, kpt_col_comm, ierr )
 
       !print *, mpirank, "| ", "k-point ", my_kpt_n, " Done reducing my_Dscf"
-      deallocate(my_Dscf, my_Escf)
+      deallocate(my_Dscf)
 
       ! redistribute to global distribution, only from the first k-point
 
@@ -1021,11 +1004,10 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
          ! pkg_k%numcols => my_numh
          ! pkg_k%cols    => my_listh
 
-         nvals = 2*nspin   ! DM, EDM
+         nvals = nspin   ! DM (or EDM)
          allocate(pkg_k%vals(nvals))
          do ispin = 1, nspin
             pkg_k%vals(ispin)%data => my_Dscf_reduced(:,ispin)
-            pkg_k%vals(nspin+ispin)%data => my_Escf_reduced(:,ispin)
          enddo
 
       endif
@@ -1038,7 +1020,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       call timer("redist_dm-edm_bck", 2)
 
       ! Deallocate aux arrays
-      deallocate(my_Dscf_reduced, my_Escf_reduced)
+      deallocate(my_Dscf_reduced)
       if (my_kpt_n == 1) then
          !Clean pkg_k in sender
          deallocate(pkg_k%vals)   ! just pointers
@@ -1056,7 +1038,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
         ! associated, to use them instead of allocating them.
          do ispin = 1, nspin
             Dscf(:,ispin)  = pkg_global%vals(ispin)%data(:)
-            Escf(:,ispin) = pkg_global%vals(nspin+ispin)%data(:)
          enddo
         ! Check no_l
         if (no_l /= pkg_global%no_l) then
@@ -1288,7 +1269,7 @@ end subroutine get_spin_comms_and_dists
 #if SIESTA__ELSI || SIESTA__PEXSI
 
 subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, row_ptr, &
-     col_idx, qtot, temp, ham, ovlp, dm, edm, ef, ets, &
+     col_idx, qtot, temp, ham, ovlp, DM, ef, ets, &
      nkpnt, kpt_n, kpt, weight, kpt_comm, Get_EDM_Only)
 
   use fdf,         only: fdf_get
@@ -1317,7 +1298,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   complex(dp), intent(inout), target :: ham(nnz_l,n_spin)
   complex(dp), intent(inout), target :: ovlp(nnz_l)
   complex(dp), intent(out)   :: dm(nnz_l,n_spin)
-  complex(dp), intent(out)   :: edm(nnz_l,n_spin)
   real(dp), intent(out)   :: ef        ! Fermi energy
   real(dp), intent(out)   :: ets       ! Entropy/k, dimensionless
   integer,  intent(in)    :: nkpnt     ! number of k-points
@@ -1353,7 +1333,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
   complex(dp), pointer :: my_S(:)
   complex(dp), pointer :: my_H(:)
   complex(dp), pointer :: my_DM(:) => null()
-  complex(dp), pointer :: my_EDM(:) => null()
 
   integer :: date_stamp
 
@@ -1541,7 +1520,6 @@ endif
              my_H => pkg_spin%complex_vals(2)%data
 
              call re_alloc(my_DM,1,my_nnz_l,"my_DM","elsi_solver")
-             call re_alloc(my_EDM,1,my_nnz_l,"my_EDM","elsi_solver")
           endif
 
           ! Clean pkg_global
@@ -1573,7 +1551,7 @@ endif
        call elsi_dm_complex_sparse(elsi_h, ham, ovlp, DM, energy)
        call elsi_get_entropy(elsi_h, ets)
      else
-       call elsi_get_edm_complex_sparse(elsi_h, EDM)
+       call elsi_get_edm_complex_sparse(elsi_h, DM)
      endif
   else
      ! Solve DM, and get (at every step for now) EDM, Fermi energy, and entropy
@@ -1582,7 +1560,7 @@ endif
        call elsi_dm_complex_sparse(elsi_h, my_H, my_S, my_DM, energy)
        call elsi_get_entropy(elsi_h, ets)
      else
-       call elsi_get_edm_complex_sparse(elsi_h, my_EDM)
+       call elsi_get_edm_complex_sparse(elsi_h, my_DM)
      endif
   endif
 
@@ -1605,8 +1583,9 @@ endif
            call de_alloc(pkg_spin%complex_vals(1)%data,"pkg_spin%vals(1)%data","elsi_solver")
            call de_alloc(pkg_spin%complex_vals(2)%data,"pkg_spin%vals(2)%data","elsi_solver")
 
+           deallocate(pkg_spin%complex_vals)
+           allocate(pkg_spin%complex_vals(1))
            pkg_spin%complex_vals(1)%data => my_DM(1:my_nnz_l)
-           pkg_spin%complex_vals(2)%data => my_EDM(1:my_nnz_l)
 
         endif
 
@@ -1620,10 +1599,8 @@ endif
         if (my_spin == ispin) then
            ! Each team deallocates during "its" spin cycle
            call de_alloc(my_DM, "my_DM", "elsi_solver")
-           call de_alloc(my_EDM,"my_EDM","elsi_solver")
 
            nullify(pkg_spin%complex_vals(1)%data)    ! formerly pointing to DM
-           nullify(pkg_spin%complex_vals(2)%data)    ! formerly pointing to EDM
            deallocate(pkg_spin%complex_vals)
            ! allocated in the direct transfer
            call de_alloc(pkg_spin%numcols,"pkg_spin%numcols","elsi_solver")
@@ -1631,11 +1608,10 @@ endif
         endif
 
 
-        ! In future, pkg_global%vals(1,2) could be pointing to DM and EDM,
+        ! In future, pkg_global%vals(1) could be pointing to DM (or EDM),
         ! and the 'redistribute' routine check whether the vals arrays are
         ! associated, to use them instead of allocating them.
         DM(:,ispin)  = pkg_global%complex_vals(1)%data(:)
-        EDM(:,ispin) = pkg_global%complex_vals(2)%data(:)
         ! Check no_l
         if (n_basis_l /= pkg_global%no_l) then
            call die("Mismatch in no_l")
@@ -1652,7 +1628,6 @@ endif
         call de_alloc(pkg_global%cols,   "pkg_global%cols",   "elsi_solver")
 
         call de_alloc(pkg_global%complex_vals(1)%data,"pkg_global%vals(1)%data","elsi_solver")
-        call de_alloc(pkg_global%complex_vals(2)%data,"pkg_global%vals(2)%data","elsi_solver")
         deallocate(pkg_global%complex_vals)
 
      enddo
