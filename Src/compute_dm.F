@@ -156,7 +156,7 @@
      &              H, S, qtot, temp, 
      &              xijo,
      &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
-     &              eo, qo, Dscf, ef, Entropy,
+     &              Dscf, ef, Entropy,
      &              occtol, neigwanted, Get_EDM_Only=.false.)
          Ecorrec = 0.0_dp
       endif

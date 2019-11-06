@@ -5,6 +5,9 @@
 ! ELSI DM-based interface to Siesta. It uses the sparse matrices from Siesta,
 ! and obtains the DM (and optionally the EDM) matrices in sparse form.
 !
+! This interface does not generate eigenvalues nor eigenvectors, even if
+! a diagonalization-based ELSI solver (i.e., ELPA) is used.
+!
 ! The elsi_getdm routine is in principle able to perform (spin-polarized)
 ! calculations for real matrices (i.e., at the Gamma point), and periodic
 ! calculations for complex matrices (i.e., multiple k-points), including spin.
@@ -103,17 +106,13 @@ CONTAINS
 subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      numh, listhptr, listh, H, S, qtot, temp, &
      xijo, nkpnt, kpoint, kweight,    &
-     eo, qo, Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
+     Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
 
   !
   ! Analogous to 'diagon', it dispatches ELSI solver routines as needed
   !
 
   use m_fold_auxcell, only: fold_sparse_arrays ! Could be called in state_init
-
-! Missing for now
-!  eo(no_u,nspin,nk)  : Eigenvalues
-!  qo(no_u,nspin,nk)  : Occupations of eigenstates
 
 
      real(dp), intent(inout) :: H(:,:), S(:)    ! Note: we might overwrite these
@@ -123,7 +122,6 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
       real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Entropy
-      real(dp), intent(out) ::  eo(no_u,nspin,nkpnt), qo(no_u,nspin,nkpnt)
 
       ! Interim flag to just get the EDM
       ! Note that, if .true., the DM is NOT obtained
@@ -215,7 +213,7 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
          call elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
               numh, listhptr, listh, H, S, qtot, temp, &
               xijo, nkpnt, kpoint, kweight,    &
-              eo, qo, Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
+              Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
 
       endif
 
@@ -670,7 +668,7 @@ end subroutine elsi_real_solver
 subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      numh, listhptr, listh, H, S, qtot, temp, &
      xijo, nkpnt, kpoint, kweight,    &
-     eo, qo, Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
+     Dscf, ef, Entropy, occtol, neigwanted, Get_EDM_Only)
 
   use mpi_siesta, only: mpi_comm_dft
   use mpi
@@ -685,11 +683,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
   use m_fold_auxcell, only: fold_sparse_arrays ! Could be called in state_init
 
-! Missing for now
-!  eo(no_u,nspin,nk)  : Eigenvalues
-!  qo(no_u,nspin,nk)  : Occupations of eigenstates
-
-
      real(dp), intent(in), target :: H(:,:), S(:)    ! Note that now we do not change them
      integer, intent(in) ::  iscf, maxnh, no_u, no_l, no_s, nkpnt
      integer, intent(in) ::  neigwanted, nspin
@@ -697,7 +690,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
      integer, intent(in), target ::  listh(maxnh), numh(no_l)
 
       real(dp), intent(out) ::  Dscf(maxnh,nspin), ef, Entropy
-      real(dp), intent(out) ::  eo(no_u,nspin,nkpnt), qo(no_u,nspin,nkpnt)
       real(dp), intent(in)  ::  kpoint(3,nkpnt), qtot, temp, kweight(nkpnt), occtol,xijo(3,maxnh)
 
 

@@ -77,7 +77,7 @@
      &              H, S, qtot, temp, 
      &              xijo,
      &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
-     &              eo, qo, Escf, ef_dummy, Entropy_dummy,
+     &              Escf, ef_dummy, Entropy_dummy,
      &              occtol, neigwanted, Get_EDM_Only=.true.)
       endif
       if (.not. SIESTA_worker) RETURN
