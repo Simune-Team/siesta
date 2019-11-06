@@ -723,12 +723,16 @@ subroutine read_options( na, ns, nspin )
   else if (leqi(method,"elsi")) then
 #ifdef SIESTA__ELSI
      isolve = SOLVE_ELSI
+     if (converge_EDM) then
+        write(6,"(a)") "**Warning: Cannot monitor EDM convergence with ELSI"
+        converge_EDM = .false.
+     endif
      if (ionode) then
         call add_citation("10.1016/j.cpc.2017.09.007")
         write(*,3) 'redata: Method of Calculation', 'ELSI solvers'
      endif
 #else
-     call die("ELSI solver is not compiled in. Use -DSIESTA__ELSI")
+     call die("ELSI library is not compiled in. Use -DSIESTA__ELSI")
 #endif
 
 #ifdef SIESTA__CHESS

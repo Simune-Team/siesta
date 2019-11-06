@@ -85,7 +85,9 @@
 !$OMP parallel default(shared)
          if ( converge_EDM ) then
 !$OMP workshare
-            Eold(:,:) = Escf(:,:)  ! Not for all solvers ***FIXME
+            ! Not all solvers handle Escf during the SCF cycle
+            ! For those, converge_EDM should be disabled
+            Eold(:,:) = Escf(:,:)  
             Dold(:,:) = Dscf(:,:)
 !$OMP end workshare
          else
