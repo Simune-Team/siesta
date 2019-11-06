@@ -27,19 +27,17 @@
     % create the hypertarget
     \bgroup%
     \StrSubstitute{#2}{!}{.}[\@tmp]%
+    \StrSubstitute{#2}{:}{!}[\@@tmp]%
     \IfBooleanT{#1}{%
         \expandafter\cleanedhypertarget\expandafter{\@tmp}{{}}%
-        \expandafter\label\expandafter{\@tmp}%
+        \expandafter\label\expandafter{\@@tmp}%
+    }%
+    \IfNoValueTF{#3}{%
+        \sindex[sfdf]{\@@tmp}%
+    }{%
+        \sindex[sfdf]{\@@tmp#3}%
     }%
     \egroup%
-    \StrSubstitute{#2}{:}{!}[\@tmp]%
-    \IfNoValueTF{#3}{%
-        %\index{#1@\fdf*{#1}}%
-        \sindex[sfdf]{\@tmp}%
-    }{%
-        %\index{#1@\fdf*{#1}#2}%
-        \sindex[sfdf]{\@tmp#3}%
-    }%
 }
 
 % Create shorthand commands for file-indices
