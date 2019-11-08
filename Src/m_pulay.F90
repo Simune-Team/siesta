@@ -296,16 +296,18 @@ CONTAINS
 
     ! Perform linear mixing if iscf = N x nkick
     !
-    if (nkick > 0 .AND. mod(iscf,nkick).eq.0) then
-       ! Reset the history information
-       if (Node == 0) then
+    if ( nkick > 0 ) then
+      if ( mod(iscf,nkick).eq.0) then
+        ! Reset the history information
+        if (Node == 0) then
           write(6,"(a,i4)") "Applying kick at iscf: ", iscf
           write(6,"(a,i4)") "Re-setting Pulay history"
-       endif
-       n_records_saved = 0
-
-       call linear_mixing(alphakick)
-       RETURN
+        endif
+        n_records_saved = 0
+        
+        call linear_mixing(alphakick)
+        RETURN
+      end if
     endif
 
 
