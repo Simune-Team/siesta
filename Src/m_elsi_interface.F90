@@ -81,6 +81,8 @@ module m_elsi_interface
   integer :: pexsi_n_mu
   integer :: pexsi_tasks_symbolic
   real(dp) :: pexsi_inertia_tol
+  real(dp) :: pexsi_initial_mu_min
+  real(dp) :: pexsi_initial_mu_max
 
   integer :: sips_n_slice
   integer :: sips_n_elpa
@@ -245,6 +247,9 @@ subroutine elsi_get_opts()
   pexsi_n_pole         = fdf_get("ELSI-PEXSI-Number-Of-Poles", 20)
   pexsi_n_mu           = fdf_get("ELSI-PEXSI-Number-Of-Mu-Points", 2)
   pexsi_inertia_tol    = fdf_get("ELSI-PEXSI-Inertia-Tolerance", 0.05_dp)
+  pexsi_initial_mu_min = fdf_get("ELSI-PEXSI-Initial-Mu-Min", -1.0_dp, 'Ry')
+  pexsi_initial_mu_max = fdf_get("ELSI-PEXSI-Initial-Mu-Max", 0.0_dp, 'Ry')
+
 
   sips_n_slice         = fdf_get("ELSI-SIPS-Slices", ELSI_NOT_SET)
   sips_n_elpa          = fdf_get("ELSI-SIPS-ELPA-Steps", 2)
@@ -436,13 +441,13 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
  if (which_solver == PEXSI_SOLVER) then
  ! Set the proper bounds for the chemical potential
  if (iscf == 1) then
-    call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
-    call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
+    call elsi_set_pexsi_mu_min(elsi_h, pexsi_initial_mu_min)
+    call elsi_set_pexsi_mu_max(elsi_h, pexsi_initial_mu_max)
  else
     call elsi_get_pexsi_mu_min(elsi_h, mu_min)
     call elsi_get_pexsi_mu_max(elsi_h, mu_max)
       if (ionode) then
-         print *, "*-- solver mu_min, mu_max:", mu_min/eV, mu_max/eV
+         print *, "*-- current mu_min, mu_max:", mu_min/eV, mu_max/eV
       endif
       mu_min = mu_min+dv_min
       mu_max = mu_max+dv_max
@@ -1403,8 +1408,8 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
  if (which_solver == PEXSI_SOLVER) then
  ! Set the proper bounds for the chemical potential
  if (iscf == 1) then
-    call elsi_set_pexsi_mu_min(elsi_h, -10.0_dp)
-    call elsi_set_pexsi_mu_max(elsi_h, 10.0_dp)
+    call elsi_set_pexsi_mu_min(elsi_h, pexsi_initial_mu_min)
+    call elsi_set_pexsi_mu_max(elsi_h, pexsi_initial_mu_max)
  else
     call elsi_get_pexsi_mu_min(elsi_h, mu_min)
     call elsi_get_pexsi_mu_max(elsi_h, mu_max)
