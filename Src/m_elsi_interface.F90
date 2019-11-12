@@ -438,27 +438,28 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
  endif
 
- if (which_solver == PEXSI_SOLVER) then
- ! Set the proper bounds for the chemical potential
- if (iscf == 1) then
-    call elsi_set_pexsi_mu_min(elsi_h, pexsi_initial_mu_min)
-    call elsi_set_pexsi_mu_max(elsi_h, pexsi_initial_mu_max)
- else
-    call elsi_get_pexsi_mu_min(elsi_h, mu_min)
-    call elsi_get_pexsi_mu_max(elsi_h, mu_max)
-      if (ionode) then
-         print *, "*-- current mu_min, mu_max:", mu_min/eV, mu_max/eV
-      endif
-      mu_min = mu_min+dv_min
-      mu_max = mu_max+dv_max
-      ! Adjust chemical potential range for PEXSI
-      call elsi_set_pexsi_mu_min(elsi_h, mu_min)
-      call elsi_set_pexsi_mu_max(elsi_h, mu_max)
-      if (ionode) then
-         print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
-      endif
+ if ( (which_solver == PEXSI_SOLVER) .and. &
+      .not. Get_EDM_only) then
+    ! Set the proper bounds for the chemical potential
+    if (iscf == 1) then
+       call elsi_set_pexsi_mu_min(elsi_h, pexsi_initial_mu_min)
+       call elsi_set_pexsi_mu_max(elsi_h, pexsi_initial_mu_max)
+    else
+       call elsi_get_pexsi_mu_min(elsi_h, mu_min)
+       call elsi_get_pexsi_mu_max(elsi_h, mu_max)
+       if (ionode) then
+          print *, "*-- current mu_min, mu_max:", mu_min/eV, mu_max/eV
+       endif
+       mu_min = mu_min+dv_min
+       mu_max = mu_max+dv_max
+       ! Adjust chemical potential range for PEXSI
+       call elsi_set_pexsi_mu_min(elsi_h, mu_min)
+       call elsi_set_pexsi_mu_max(elsi_h, mu_max)
+       if (ionode) then
+          print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
+       endif
 
- endif   ! iscf == 1
+    endif   ! iscf == 1
  end if
 
     if (n_spin == 1) then
@@ -1405,28 +1406,29 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
  endif   ! iscf == 1
 
- if (which_solver == PEXSI_SOLVER) then
- ! Set the proper bounds for the chemical potential
- if (iscf == 1) then
-    call elsi_set_pexsi_mu_min(elsi_h, pexsi_initial_mu_min)
-    call elsi_set_pexsi_mu_max(elsi_h, pexsi_initial_mu_max)
- else
-    call elsi_get_pexsi_mu_min(elsi_h, mu_min)
-    call elsi_get_pexsi_mu_max(elsi_h, mu_max)
-      if (ionode) then
-         print *, "*-- solver mu_min, mu_max:", mu_min/eV, mu_max/eV
-      endif
-      mu_min = mu_min+dv_min
-      mu_max = mu_max+dv_max
-      ! Adjust chemical potential range for PEXSI
-      call elsi_set_pexsi_mu_min(elsi_h, mu_min)
-      call elsi_set_pexsi_mu_max(elsi_h, mu_max)
-      if (ionode) then
-         print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
-      endif
+ if ( (which_solver == PEXSI_SOLVER) .and. &
+      .not. Get_EDM_only) then
+    ! Set the proper bounds for the chemical potential
+    if (iscf == 1) then
+       call elsi_set_pexsi_mu_min(elsi_h, pexsi_initial_mu_min)
+       call elsi_set_pexsi_mu_max(elsi_h, pexsi_initial_mu_max)
+    else
+       call elsi_get_pexsi_mu_min(elsi_h, mu_min)
+       call elsi_get_pexsi_mu_max(elsi_h, mu_max)
+       if (ionode) then
+          print *, "*-- current mu_min, mu_max:", mu_min/eV, mu_max/eV
+       endif
+       mu_min = mu_min+dv_min
+       mu_max = mu_max+dv_max
+       ! Adjust chemical potential range for PEXSI
+       call elsi_set_pexsi_mu_min(elsi_h, mu_min)
+       call elsi_set_pexsi_mu_max(elsi_h, mu_max)
+       if (ionode) then
+          print *, "*-- updated mu_min, mu_max:", mu_min/eV, mu_max/eV
+       endif
 
- endif   ! iscf == 1
-endif
+    endif   ! iscf == 1
+ end if
 
       !print *, global_rank, "| ", " Entering elsi_complex_solver"
 
