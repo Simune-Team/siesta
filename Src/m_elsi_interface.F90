@@ -58,6 +58,7 @@ module m_elsi_interface
   type(elsi_handle) :: elsi_h
 
   integer :: elsi_global_comm    ! Used by all routines. Freed at end of scf loop
+  integer :: kpt_comm ! Freed at end of scf loop
 
   integer :: which_solver
   integer :: which_broad
@@ -703,7 +704,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       integer :: mpirank, kcolrank, npGlobal
       integer :: npPerK, color, my_kpt_n
 
-      integer :: kpt_comm, kpt_col_comm
+      integer :: kpt_col_comm
       integer :: Global_Group, kpt_Group
 
       integer, allocatable :: ranks_in_world(:), ranks_in_world_AllK(:,:)
@@ -761,7 +762,9 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
       ! Options for split: As many groups as nkpnt, so numbering is trivial
       color = mpirank/npPerK !  :  color 0: 0,1,2,3  ; color 1: 4,5,6,7
-      call MPI_Comm_Split(elsi_global_comm, color, mpirank, kpt_Comm, ierr)
+      if (iscf == 1) then
+        call MPI_Comm_Split(elsi_global_comm, color, mpirank, kpt_Comm, ierr)
+      endif
       my_kpt_n = 1 + color   !       1 + mpirank/npPerK
       ! Column communicator
       color = mod(mpirank, npPerK) ! :  color 0: 0,4  1: 1,5  2: 2,6  3: 3,7
@@ -1058,7 +1061,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
         ! Reduction of entropy over kpt_col_comm is not necessary
 
-     call MPI_Comm_Free(kpt_comm, ierr)
      call MPI_Comm_Free(kpt_col_comm, ierr)
 
 end subroutine elsi_kpoints_dispatcher
@@ -1080,6 +1082,7 @@ subroutine elsi_finalize_scfloop()
   call elsi_finalize(elsi_h)
 
   call MPI_Comm_Free(elsi_global_comm, ierr)
+  call MPI_Comm_Free(kpt_comm, ierr)
 
 end subroutine elsi_finalize_scfloop
 
