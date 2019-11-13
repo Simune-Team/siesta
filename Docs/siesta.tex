@@ -6046,32 +6046,41 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 \end{fdfentry}
 
 
-\begin{fdflogicalF}{Diag!UseNewDiagk}
+\begin{fdfentry}{Diag!WFS.Cache}[string]<none|cdf>
+  \fdfreplace{UseNewDiagk}
 
-  Selects whether a more efficient diagonalization routine (with
-  intermediate storage of eigenvectors in NetCDF format) is used for
-  the case of k-point sampling.
+  Specify whether \siesta\ should cache wavefunctions in the
+  diagonalization routine. Without a cache, a standard two-pass
+  procedure is used. First eigenvalues are obtained to determine the
+  Fermi level, and then the wavefunctions are computed to build the
+  density matrix.
 
-  In order to use the new routine, netCDF support should be compiled
-  in.  Specifying a number of eigenvectors to store is possible
-  through the symbol \fdf{NumberOfEigenStates} (see above). Note that for
-  now, for safety, all eigenvectors for a given k-point and spin are
-  computed by the diagonalization routine, but only that number
-  specified by the user are stored. If they are insufficient, the
-  program stops.  A rule of thumb to select the number of eigenvectors
-  to store is to count the number of electrons and divide by two, and
-  then apply a ``safety factor'' of around 1.1-1.2 to take into account
-  fractional occupations and band overlaps.
+  Using a cache one can do everything in one go. However, this
+  requires substantial IO and performance may vary.
 
-  A new file \file{OCCS} is produced with information about the number
-  of states occupied.
+  \begin{fdfoptions}
 
-  This is an experimental feature. 
+    \option[none]%
+    \fdfindex*{Diag!WFS.Cache!none}%
 
-  \note It is not compatible with the \fdf{Diag!ParallelOverK}
-  option.
+    The wavefunctions will not be cached and the standard two-pass
+    diagonalization method is used.
 
-\end{fdflogicalF}
+    \option[cdf]%
+    \fdfindex*{Diag!WFS.Cache!cdf}%
+
+    The wavefunctions are stored in \file{WFS.nc} (NetCDF format) and
+    created from a single root node. This requires NetCDF support, see
+    Sec.~\ref{sec:libs}.
+
+    \note This is an experimental feature.
+
+    \note It is not compatible with the \fdf{Diag!ParallelOverK}
+    option.
+
+  \end{fdfoptions}
+
+\end{fdfentry}
 
 
 \begin{fdflogicalT}{Diag!Use2D}
@@ -6368,7 +6377,7 @@ Secs.~\ref{sec:band-structure} and~\ref{sec:wf-output-user}, respectively.
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to a NetCDF file
-\file{WFS.nc} if the \fdf{Diag!UseNewDiagk} option is in effect.
+\file{WFS.nc} if the \fdf{Diag!WFS.Cache:cdf} option is in effect.
 
 The complete set of wavefunctions obtained during the last
 iteration of the SCF loop will be written to \sysfile{fullBZ.WFSX}
