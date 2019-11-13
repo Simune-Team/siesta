@@ -385,9 +385,11 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
       qtot, n_state)
 
     ! Output
-    call elsi_set_output(elsi_h, out_level)
-    call elsi_set_output_log(elsi_h, out_json)
-    call elsi_set_write_unit(elsi_h, 6)
+    if (ionode) then
+      call elsi_set_output(elsi_h, out_level)
+      call elsi_set_output_log(elsi_h, out_json)
+      call elsi_set_write_unit(elsi_h, 6)
+    endif
 
     ! Possible ill-conditioning of S
     call elsi_set_illcond_check(elsi_h, illcond_check)
@@ -403,7 +405,6 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_elpa_n_single(elsi_h, elpa_n_single)
     call elsi_set_elpa_autotune(elsi_h, elpa_autotune)
     call elsi_set_elpa_gpu(elsi_h, elpa_gpu)
-    call elsi_set_elpa_gpu_kernels(elsi_h, elpa_gpu)
 
     call elsi_set_omm_flavor(elsi_h, omm_flavor)
     call elsi_set_omm_n_elpa(elsi_h, omm_n_elpa)
@@ -1357,9 +1358,11 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
       qtot, n_state)
 
     ! Output
-    call elsi_set_output(elsi_h, out_level)
-    call elsi_set_output_log(elsi_h, out_json)
-    call elsi_set_write_unit(elsi_h, 6)
+    if (ionode) then
+      call elsi_set_output(elsi_h, out_level)
+      call elsi_set_output_log(elsi_h, out_json)
+      call elsi_set_write_unit(elsi_h, 6)
+    endif
 
     ! Possible ill-conditioning of S
     call elsi_set_illcond_check(elsi_h, illcond_check)
@@ -1375,7 +1378,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
     call elsi_set_elpa_n_single(elsi_h, elpa_n_single)
     call elsi_set_elpa_autotune(elsi_h, elpa_autotune)
     call elsi_set_elpa_gpu(elsi_h, elpa_gpu)
-    call elsi_set_elpa_gpu_kernels(elsi_h, elpa_gpu)
 
     call elsi_set_omm_flavor(elsi_h, omm_flavor)
     call elsi_set_omm_n_elpa(elsi_h, omm_n_elpa)
