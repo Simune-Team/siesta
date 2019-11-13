@@ -256,7 +256,6 @@ C Call apropriate routine
      .              nuotot, occtol, iscf, neigwanted )
 
            endif
-           call output_kpoint_occupation()
 #ifdef MPI
         endif
 #endif
@@ -314,44 +313,6 @@ C Free local arrays
 
 C Stop time counter
       call timer( 'diagon', 2 )
-
-      CONTAINS
-      
-      subroutine output_kpoint_occupation() ! CC RC It seems ok for osSO
-      !  Creates the OCCS file. This was formerly
-      !  done in diagk and diagk_file
-
-      ! Variables seen by host-association
-      
-      integer :: noccs, iu, ie, ik, ispin
-      real(dp) :: qe
-      external :: io_assign, io_close
-
-      if (Node .eq. 0) then
-         call io_assign(iu)
-         open(iu,file="OCCS",form="formatted",status="unknown",
-     $        action="write",position="rewind")
-      endif
-
-      do ik = 1, nk
-         do ispin = 1, nspin
-            noccs = 0
-            ie = nuotot
-            do while (ie.gt.0.and.noccs.eq.0)
-               qe = qo(ie,ispin,ik)
-               if (abs(qe).gt.occtol) noccs = ie
-               ie = ie - 1
-            enddo
-            if (Node .eq. 0) then
-               write(iu,"(i6,i3,f12.8,i8)")
-     $              ik, ispin, wk(ik), noccs
-            endif
-         enddo
-      enddo
-      if (Node .eq. 0) then
-         call io_close(iu)
-      endif
-      end subroutine output_kpoint_occupation
 
       end subroutine diagon
    
