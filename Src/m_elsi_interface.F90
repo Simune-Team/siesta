@@ -33,6 +33,7 @@ module m_elsi_interface
   use parallel, only: ionode
   use units, only:    eV
   use elsi
+  use class_Distribution
 
   implicit none
 
@@ -57,8 +58,17 @@ module m_elsi_interface
 
   type(elsi_handle) :: elsi_h
 
+  logical :: have_kpoints = .false.
+  logical :: have_spin = .false.
+
   integer :: elsi_global_comm    ! Used by all routines. Freed at end of scf loop
   integer :: kpt_comm ! Freed at end of scf loop
+  integer :: elsi_Spatial_comm ! Freed at end of scf loop
+  integer :: elsi_spin_comm ! Freed at end of scf loop
+
+  type(distribution) :: dist_global
+  type(distribution) :: dist_spin(2)
+  type(distribution), allocatable :: dist_k(:)
 
   integer :: which_solver
   integer :: which_broad
@@ -148,8 +158,14 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       gamma = ((nkpnt == 1) .and. (sum(abs(kpoint(:,1))) == 0.0_dp))
       using_aux_cell =  (no_s /= no_u)
 
-      if (gamma) then
+      if (nspin == 1) then
+         have_spin = .false.
+      else if (nspin == 2) then
+         have_spin = .true.
+      endif
 
+      if (gamma) then
+         have_kpoints = .false.
          if  (.not. using_aux_cell) then
 
             call elsi_real_solver(iscf, no_u, no_l, nspin, &
@@ -212,6 +228,7 @@ subroutine elsi_getdm(iscf, no_s, nspin, no_l, maxnh, no_u,  &
 
       else
 
+         have_kpoints = .true.
          ! We need more preparation
          call elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
               numh, listhptr, listh, H, S, qtot, temp, &
@@ -337,10 +354,6 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   integer, allocatable, dimension(:) :: row_ptr2
   integer, allocatable, dimension(:), target :: numh
 
-  integer :: elsi_Spatial_comm, elsi_Spin_comm
-
-  type(distribution) :: dist_global
-  type(distribution) :: dist_spin(2)
 
   type(aux_matrix) :: pkg_global, pkg_spin   ! Packages for transfer
 
@@ -367,13 +380,14 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
   call die("This ELSI solver interface needs MPI")
 #endif
 
-  ! Global communicator is a duplicate of passed communicator
-  call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
 
   call timer("elsi", 1)
 
   ! Initialization
   if (iscf == 1) then
+
+     ! Global communicator is a duplicate of passed communicator
+     call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
 
     ! Get ELSI options
     call elsi_get_opts()
@@ -491,12 +505,14 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
        enddo
        numh(n_basis_l) = nnz_l - row_ptr(n_basis_l)
 
-       ! Split the communicator in spins and get distribution objects
-       ! for the data redistribution needed
-       ! Note that dist_spin is an array
-       call get_spin_comms_and_dists(elsi_global_comm,elsi_global_comm, &
-            blocksize, n_spin, &
-            dist_global,dist_spin, elsi_spatial_comm, elsi_spin_comm)
+       if (iscf == 1) then
+          ! Split the communicator in spins and get distribution objects
+          ! for the data redistribution needed
+          ! Note that dist_spin is an array
+          call get_spin_comms_and_dists(elsi_global_comm,elsi_global_comm, &
+               blocksize, n_spin, &
+               dist_global,dist_spin, elsi_spatial_comm, elsi_spin_comm)
+       endif
 
        ! Find out which spin team we are in, and tag the spin we work on
        call mpi_comm_rank( elsi_Spin_Comm, spin_rank, ierr )
@@ -663,8 +679,8 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
 
      enddo
 
-     call MPI_Comm_Free(elsi_Spatial_comm, ierr)
-     call MPI_Comm_Free(elsi_Spin_comm, ierr)
+     !     call MPI_Comm_Free(elsi_Spatial_comm, ierr)
+     ! call MPI_Comm_Free(elsi_Spin_comm, ierr)
 
   endif
 
@@ -708,8 +724,7 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       integer :: Global_Group, kpt_Group
 
       integer, allocatable :: ranks_in_world(:), ranks_in_world_AllK(:,:)
-      type(distribution) :: dist_global
-      type(distribution), allocatable :: dist_k(:)
+      !      type(distribution) :: dist_global
 
       type(aux_matrix) :: pkg_global, pkg_k
       integer :: nvals
@@ -751,8 +766,11 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       ! Call elsi_complex_solver
       ! Construct and re-distribute global DM (or EDM)
 
-        ! Global communicator is a duplicate of passed communicator
-      call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
+      if (iscf==1) then
+         ! Global communicator is a duplicate of passed communicator
+         call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
+      endif
+
       call MPI_Comm_Rank(elsi_global_comm, mpirank, ierr)
       call MPI_Comm_Size(elsi_global_comm, npGlobal, ierr)
 
@@ -793,19 +811,21 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
             Ranks_in_World_AllK(1,1),npPerK, &
             MPI_integer,kpt_col_Comm,ierr)
 
-       allocate(dist_k(nkpnt))
-       ! Create distributions known to all nodes  (again, those in base_comm)
-       do ik = 1, nkpnt
-          call newDistribution(dist_k(ik), elsi_global_Comm, &
-               Ranks_in_World_AllK(:,ik),  &
-               TYPE_BLOCK_CYCLIC, blockSize, "kpt dist")
-       enddo
-       deallocate(ranks_in_world,Ranks_in_World_AllK)
-       call MPI_Barrier(elsi_global_Comm,ierr)
+       if (iscf==1) then
+          allocate(dist_k(nkpnt))
+          ! Create distributions known to all nodes  (again, those in base_comm)
+          do ik = 1, nkpnt
+             call newDistribution(dist_k(ik), elsi_global_Comm, &
+                  Ranks_in_World_AllK(:,ik),  &
+                  TYPE_BLOCK_CYCLIC, blockSize, "kpt dist")
+          enddo
+          deallocate(ranks_in_world,Ranks_in_World_AllK)
+          call MPI_Barrier(elsi_global_Comm,ierr)
 
-      call newDistribution(dist_global,elsi_global_Comm, (/ (i, i=0, npGlobal-1) /), &
-           TYPE_BLOCK_CYCLIC,BlockSize,"global dist")
-      call MPI_Barrier(elsi_global_Comm,ierr)
+          call newDistribution(dist_global,elsi_global_Comm, (/ (i, i=0, npGlobal-1) /), &
+               TYPE_BLOCK_CYCLIC,BlockSize,"global dist")
+          call MPI_Barrier(elsi_global_Comm,ierr)
+       endif
 
       ! Redistribute arrays
 
@@ -1069,7 +1089,7 @@ end subroutine elsi_kpoints_dispatcher
 !
 subroutine elsi_finalize_scfloop()
 
-  integer :: ierr
+  integer :: ierr, ik
 
   ! Make which_solver invalid
   which_solver = ELSI_NOT_SET
@@ -1082,7 +1102,17 @@ subroutine elsi_finalize_scfloop()
   call elsi_finalize(elsi_h)
 
   call MPI_Comm_Free(elsi_global_comm, ierr)
-  call MPI_Comm_Free(kpt_comm, ierr)
+  if (have_kpoints) then
+     call MPI_Comm_Free(kpt_comm, ierr)
+     do ik = 1, size(dist_k)
+        call delete(dist_k(ik))
+     enddo
+     deallocate(dist_k)
+  endif
+  if (have_spin) then
+     call MPI_Comm_Free(elsi_Spatial_comm, ierr)
+     call MPI_Comm_Free(elsi_spin_comm, ierr)
+  endif
 
 end subroutine elsi_finalize_scfloop
 
@@ -1315,11 +1345,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
   integer, allocatable, dimension(:) :: row_ptr2
 
-  integer :: elsi_Spatial_comm, elsi_Spin_comm
-
-  type(distribution) :: dist_global
-  type(distribution) :: dist_spin(2)
-
   type(aux_matrix) :: pkg_global, pkg_spin   ! Packages for transfer
 
   integer :: my_spin
@@ -1460,12 +1485,14 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
        ! MPI logic for spin polarization
 
-       ! Split the communicator in spins and get distribution objects
-       ! for the data redistribution needed
-       ! Note that dist_spin is an array
-       call get_spin_comms_and_dists(kpt_comm,kpt_comm, &  !! **** kpt_comm as global?
-            blocksize, n_spin, &
-            dist_global,dist_spin, elsi_spatial_comm, elsi_spin_comm)
+       if (iscf == 1) then
+          ! Split the communicator in spins and get distribution objects
+          ! for the data redistribution needed
+          ! Note that dist_spin is an array
+          call get_spin_comms_and_dists(kpt_comm,kpt_comm, &  !! **** kpt_comm as global?
+               blocksize, n_spin, &
+               dist_global,dist_spin, elsi_spatial_comm, elsi_spin_comm)
+       endif
 
        ! Find out which spin team we are in, and tag the spin we work on
        call mpi_comm_rank( elsi_Spin_Comm, spin_rank, ierr )
@@ -1579,6 +1606,8 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
      do ispin = 1, n_spin
 
+        print "(a,i3,i3)", 'ispin, rank:', ispin, global_rank
+
         if (my_spin == ispin) then
            ! Prepare pkg_spin to transfer the right spin information
            ! The other fields (numcols, cols) are the same and are still there
@@ -1635,13 +1664,14 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
      enddo
 
-     call MPI_Comm_Free(elsi_Spatial_comm, ierr)
-     call MPI_Comm_Free(elsi_Spin_comm, ierr)
+     !     call MPI_Comm_Free(elsi_Spatial_comm, ierr)
+     ! call MPI_Comm_Free(elsi_Spin_comm, ierr)
 
   else    ! n_spin == 1
 
        ! Nothing else to do
   endif
+  if (ionode) print *, "Done elsi-complex-solver"
 
   call timer("elsi-complex-solver", 2)
 
