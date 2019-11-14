@@ -61,14 +61,15 @@ module m_elsi_interface
   logical :: have_kpoints = .false.
   logical :: have_spin = .false.
 
-  integer :: elsi_global_comm    ! Used by all routines. Freed at end of scf loop
-  integer :: kpt_comm ! Freed at end of scf loop
-  integer :: elsi_Spatial_comm ! Freed at end of scf loop
-  integer :: elsi_spin_comm ! Freed at end of scf loop
+  integer, save :: elsi_global_comm    ! Used by all routines. Freed at end of scf loop
+  integer, save :: kpt_comm ! Freed at end of scf loop
+  integer, save :: elsi_Spatial_comm ! Freed at end of scf loop
+  integer, save :: elsi_spin_comm ! Freed at end of scf loop
 
-  type(distribution) :: dist_global
-  type(distribution) :: dist_spin(2)
-  type(distribution), allocatable :: dist_k(:)
+  type(distribution), save :: dist_global
+  type(distribution), save :: dist_global_k
+  type(distribution), save :: dist_spin(2)
+  type(distribution), allocatable, save :: dist_k(:)
 
   integer :: which_solver
   integer :: which_broad
@@ -765,6 +766,13 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       ! Generate Hk, Sk
       ! Call elsi_complex_solver
       ! Construct and re-distribute global DM (or EDM)
+
+      if (ionode) then
+         print *, "Entering kpoint_dispatcher"
+         print *, "EDM only:", get_EDM_only
+         print *, "size of dist_k:", size(dist_k)
+         print *, "iscf:", iscf
+      endif
 
       if (iscf==1) then
          ! Global communicator is a duplicate of passed communicator
@@ -1491,7 +1499,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
           ! Note that dist_spin is an array
           call get_spin_comms_and_dists(kpt_comm,kpt_comm, &  !! **** kpt_comm as global?
                blocksize, n_spin, &
-               dist_global,dist_spin, elsi_spatial_comm, elsi_spin_comm)
+               dist_global_k,dist_spin, elsi_spatial_comm, elsi_spin_comm)
        endif
 
        ! Find out which spin team we are in, and tag the spin we work on
@@ -1527,7 +1535,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
           ! 'idle' (in the receiving side) in each pass, as the dist_spin(ispin) distribution
           ! does not involve them.
 
-          call redistribute_spmatrix(n_basis,pkg_global,dist_global, &
+          call redistribute_spmatrix(n_basis,pkg_global,dist_global_k, &
                                              pkg_spin,dist_spin(ispin),kpt_Comm)
 
           call timer("redist_orbs_fwd", 2)
@@ -1624,7 +1632,7 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
         ! pkg_global is clean now
         call timer("redist_orbs_bck", 1)
         call redistribute_spmatrix(n_basis,pkg_spin,dist_spin(ispin) &
-                                          ,pkg_global,dist_global,kpt_Comm)
+                                          ,pkg_global,dist_global_k,kpt_Comm)
         call timer("redist_orbs_bck", 2)
 
         ! Clean pkg_spin
