@@ -12,38 +12,49 @@ module m_normalize_dm
   private
   
   public :: normalize_dm, dm_norm
+  public :: trace_with_S
 
 contains
-  subroutine dm_norm(qsol)
+
+  subroutine trace_with_S(Mat,val)
     use precision, only: dp
-    use sparse_matrices, only: Dscf, maxnh, S
+    use sparse_matrices, only:  maxnh, S
     use m_spin,   only: spin
 #ifdef MPI
     use m_mpi_utils, only: globalize_sum
 #endif
 
-    real(dp), intent(out) :: qsol
-
+    real(dp), intent(out) :: val
+    real(dp), intent(in)  :: Mat(:,:)
     integer :: is, io
 #ifdef MPI
     real(dp):: buffer1
 #endif
     
-    qsol = 0.0_dp
+    val = 0.0_dp
 !$OMP parallel do default(shared), private(is,io), reduction(+:qsol)
     do is = 1 , spin%spinor
        do io = 1 , maxnh
-          qsol = qsol + Dscf(io,is) * S(io)
+          val = val + Mat(io,is) * S(io)
        end do
     end do
 !$OMP end parallel do
     
 #ifdef MPI
-    call globalize_sum(qsol, buffer1)
-    qsol = buffer1
+    call globalize_sum(val, buffer1)
+    val = buffer1
 #endif
+  end subroutine trace_with_S
+
+  subroutine dm_norm(qsol)
+    use precision, only: dp
+    use sparse_matrices, only: Dscf
+
+    real(dp), intent(out) :: qsol
+
+    call trace_with_S(Dscf,qsol)
   end subroutine dm_norm
-  
+
   subroutine normalize_dm( first )
     
     use precision, only: dp
