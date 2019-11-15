@@ -115,7 +115,7 @@ C
       use m_diag_option, only: ParallelOverK
       use mpi_siesta
 #endif
-      use siesta_options, only: new_diagk
+      use siesta_options, only: diag_wfs_cache
 
       implicit none
 
@@ -223,17 +223,17 @@ C Call apropriate routine
         else
 #endif
 #ifndef CDF
-           if (new_diagk) then
+           if ( diag_wfs_cache == 1 ) then
               if (Node == 0) then
                  write(6,"(a)")
      $           "** Cannot use new diagk without netCDF support"
                  write(6,"(a)")
      $           "** Falling back to standard diagk routine"
               endif
-              new_diagk = .false.
+              diag_wfs_cache = 0
            endif
 #endif
-           if (new_diagk) then
+           if ( diag_wfs_cache == 1 ) then
 #ifdef CDF
               ! Use new routine with file storage
               call diagk_file(spin%H, nuo, no, nspin,
