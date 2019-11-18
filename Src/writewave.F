@@ -540,12 +540,12 @@ C Open file
           write(6,'(a)') 'writewave: Wave Functions Coefficients'
           write(6,*)
           write(6,'(a26,2x,i6)') 'Number of k-points = ', nk
-          write(6,'(a26,2x,i6)') 'Number of Spins = ', spin%Grid
+          write(6,'(a26,2x,i6)') 'Number of Spins = ', spin%H
           write(6,'(a26,2x,i6)') 'Number of basis orbs = ',nuotot
           write(6,*)
         endif
         write(iu) nk, gamma
-        write(iu) spin%Grid   ! This will be 1, 2, or 4
+        write(iu) spin%H   ! This will be 1, 2, 4 or 8 (to tell NC from SOC)
         write(iu) nuotot
         write(iu) (iaorb(j),labelfis(isa(iaorb(j))),
      .            iphorb(j), cnfigfio(isa(iaorb(j)),iphorb(j)),
@@ -741,7 +741,7 @@ C First print the index and value of k-point
           write(6,*)
           write(6,'(a22,2x,i6,2x,3f10.6)') 'k-point = ',ik, k(1:3)
           if (non_coll) then
-             write(6,'(a22,2x,i6)') 'Spin component (non-collinear)= ',0
+             write(6,'(a22,2x)') 'Spinors have mixed spins'
           else
              write(6,'(a22,2x,i6)') 'Spin component = ',ispin
           endif

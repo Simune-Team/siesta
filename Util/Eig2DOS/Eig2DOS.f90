@@ -56,12 +56,12 @@ program Eig2DOS
   real(dp) :: emin        = -huge(1.0_dp)
   real(dp) :: emax        =  huge(1.0_dp)
   real(dp) :: smear       = 0.2_dp
+  real(dp) :: smear2
   logical  :: loren       = .false.
   logical  :: emin_given  = .false.
   logical  :: emax_given  = .false.
   logical  :: using_weights = .false.
   logical  :: shift_efermi = .false.
-  logical  :: non_coll
   integer  :: min_band = 0
   integer  :: max_band = 0
 
@@ -155,13 +155,18 @@ program Eig2DOS
        action="read")
   read(1,*) Ef
   read(1,*) nband, nspin, nk
-  non_coll = (nspin == 4)
 
-  if (non_coll) then
-     nspin_blocks = 1
-  else
-     nspin_blocks = nspin
-  endif
+  nspin_blocks = 1
+  if ( nspin == 8 ) then
+    write(*,"(a)") "# Eigenvalues calculated from a spin-orbit calculation"
+  else if ( nspin == 4 ) then
+    write(*,"(a)") "# Eigenvalues calculated from a non-collinear calculation"
+  else if ( nspin == 2 ) then
+    write(*,"(a)") "# Eigenvalues calculated from a spin-polarized calculation"
+    nspin_blocks = nspin
+  else if ( nspin == 1 ) then
+    write(*,"(a)") "# Eigenvalues calculated from a non-polarized calculation"
+  end if
   
   write(*,"(a)") "# Eigenvalues read from " // trim(eig_file)
   if ( debug ) print *, "Ef, nband, nspin, nk:", Ef, nband, nspin, nk
@@ -197,6 +202,7 @@ program Eig2DOS
   endif
 
 
+  smear2 = smear * smear
   write(*,"(a,f8.4)") "# Using smearing parameter: ", smear
   write(*,"(a,i0,a)") "# Using ", npts_energy, " points in the energy range"
   write(*,"(2(a,i0))") "# Selected bands: ", min_band ," to: ", max_band
@@ -253,9 +259,9 @@ program Eig2DOS
            do ie = 1, npts_energy
               x = emin + (ie-1)*eincr - e
               if (loren) then
-                 DOS(ie,is) = DOS(ie,is) + weight * smear / (smear*smear + x*x) 
+                 DOS(ie,is) = DOS(ie,is) + weight * smear / (smear2 + x*x) 
               else
-                 DOS(ie,is) = DOS(ie,is) + weight * exp( - x*x/(smear*smear) )
+                 DOS(ie,is) = DOS(ie,is) + weight * exp( - x*x/smear2 )
               end if
            end do
         end do
