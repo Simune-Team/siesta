@@ -1,0 +1,154 @@
+The new ELSI interface in Siesta offers unified access to various
+solvers, with a number of performance-enhancement options.
+
+(Please read the ELSI manual for a full description of the options)
+
+The suggested recipe involves downloading version 2.4.1 of the ELSI library from
+
+    https://wordpress.elsi-interchange.org/index.php/download/
+
+and version 2019.05.002 of the ELPA library from
+
+    https://elpa.mpcdf.mpg.de/elpa-tar-archive
+
+Using an external ELPA library enables the use of the single-precision option, the auto-tune feature, and
+some GPU offloading support. For a different level of GPU support, the MAGMA solver in ELSI can be used (see below).
+
+
+* Compilation of the external ELPA library
+
+ELPA uses an auto-tools-based building system. Create a 'build' subdirectory and execute the following script in it (This is
+appropriate to the Intel development environment. Change paths appropriately).
+
+#!/bin/sh
+
+FC=mpiifort CC=mpiicc FCFLAGS="-O3 -ip" CFLAGS="-O3 -ip" \
+LDFLAGS="-L${MKLROOT}/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core" \
+../configure --disable-legacy-interface --disable-sse-assembly --disable-sse \
+             --enable-single-precision --prefix=$HOME/lib/prace/ifort-17.4/elpa-2019.05.002
+	     
+
+* Compilation of the ELSI library
+
+ELSI uses a CMAKE-based building system. A convenient way to encode the system's particulars is through the use of a "toolchain file".
+A file appropriate for the Intel compiler, including the PEXSI solver, the tests, and an external ELPA library (as compiled above) is:
+
+#---------------------------------------------------------------------------------------------------------------
+
+SET(CMAKE_INSTALL_PREFIX "$ENV{HOME}/lib/prace/ifort-17.4/elsi-ext-elpa/2.4.1" CACHE STRING "Installation dir")
+SET(CMAKE_Fortran_COMPILER "mpiifort" CACHE STRING "MPI Fortran compiler")
+SET(CMAKE_C_COMPILER "mpiicc" CACHE STRING "MPI C compiler")
+SET(CMAKE_CXX_COMPILER "mpiicpc" CACHE STRING "MPI C++ compiler")
+
+SET(CMAKE_Fortran_FLAGS "-O3 -fp-model precise" CACHE STRING "Fortran flags")
+SET(CMAKE_C_FLAGS "-O3 -fp-model precise -std=c99" CACHE STRING "C flags")
+SET(CMAKE_CXX_FLAGS "-O3 -fp-model precise -std=c++11" CACHE STRING "C++ flags")
+
+SET(USE_EXTERNAL_ELPA ON CACHE BOOL "Use external ELPA")
+SET(ENABLE_PEXSI ON CACHE BOOL "Enable PEXSI")
+SET(ENABLE_TESTS ON CACHE BOOL "Enable Fortran tests")
+SET(ENABLE_C_TESTS ON CACHE BOOL "Enable C tests")
+SET(ELPA2_KERNEL "AVX" CACHE STRING "Use ELPA AVX kernel")
+
+SET(INC_PATHS "$ENV{HOME}/lib/prace/ifort-17.4/elpa-2019.05.002/include/elpa-2019.05.002/modules" CACHE STRING "External library include paths")
+SET(LIB_PATHS "$ENV{MKLROOT}/lib/intel64 $ENV{HOME}/lib/prace/ifort-17.4/elpa-2019.05.002/lib" CACHE STRING "External library paths")
+SET(LIBS "elpa mkl_scalapack_lp64 mkl_blacs_intelmpi_lp64 mkl_intel_lp64 mkl_sequential mkl_core" CACHE STRING "External libraries")
+
+#-----------------------------------------------------------------------------------------------------------------
+
+(Change paths appropriately)
+
+Again, create a 'build' subdirectory, and execute the following commands in it:
+
+cmake -DCMAKE_TOOLCHAIN_FILE=/path/to/the/toolchain/file/above ..
+
+make
+make test
+make install
+
+
+* Building Siesta with ELSI and an external ELPA library.
+
+The appropriate incantations needed can be seen in the example arch.make file Obj/mn4.elsi-ext-elpa.make, appropriate
+for MareNostrum IV at BSC, but easily adaptable to any system by changing the paths to the libraries and the compiler
+names.
+
+* Using the ELSI solvers for increased performance in large HPC systems.
+
+A first noteworthy feature common in principle to all solvers is that the SIESTA-ELSI interface is fully parallelized
+over k-points and spins (no support yet for non-collinear spin). This means that these calculations can use two extra
+levels of parallelization (in addition to the standard one of parallelization over orbitals and real-space grid).
+
+-- ELPA solver in single-precision mode
+
+When compiled as an external library (as described above), the ELPA solver can be used in "single-precision" mode.
+This can lead to substantial savings in CPU time. To enable this mode, include in the fdf file:
+
+  solution-method ELSI
+  elsi-solver ELPA
+  elsi-elpa-n-single-precision N
+  dm-normalization-tolerance 0.001   # (To avoid too stringent an intermediate check)
+
+where N is the number of scf steps to be run in single-precision.
+
+It has been found empirically that most scf steps can be run in single-precision, and just the final one or two
+in double precision, to reproduce the results of a full-double run.
+
+-- ELPA solver with GPU support
+
+When compiled appropriately as an external library (with CUDA options
+in addition to those described above --see the ELPA documentation), the ELPA
+solver has some limited support for GPU offloading.  To enable this
+feature, use the flag:
+
+  elsi-elpa-gpu 1
+
+
+-- PEXSI solver
+
+This solver has reduced scaling (at most O(N^2) for dense systems, and O(N) for quasi-one-dimensional systems)
+and *two* extra levels of parallelization: over poles, and over trial points for chemical-potential bracketing.
+It can be used for large systems with very high numbers of processors.
+
+   solution-method elsi
+   elsi-solver pexsi
+   elsi-pexsi-tasks-per-pole  Npp     
+   elsi-number-of-mu-points Nmu       (default 2)
+   elsi-number-of-poles     Npoles    (default 20) 
+
+The total number of processors used must be a multiple of Npp*Nmu*Nkpoints*Nspins
+For complete parallelization, number of processors =  Npp*Nmu*Nkpoints*Nspins*Npoles
+
+-- MAGMA solver
+n
+It uses an externally compiled MAGMA library from
+
+     https://icl.cs.utk.edu/magma/
+
+and offers (multiple) GPU support. Please see the MAGMA documentation for compilation and execution options.
+It needs the extra Siesta preprocessor option -DSIESTA__ELSI_2_4_SOLVERS
+
+-- EigenExa solver
+
+It needs an externally compiled EigenExa library from
+
+    https://www.r-ccs.riken.jp/labs/lpnctrt/en/projects/eigenexa/
+
+It uses a novel algorithm for diagonalization of penta-diagonal matrices, with favorable
+scaling. It can compute a full set of eigenvectors or none, which reduces somewhat its
+usefulness.
+
+It needs the extra Siesta preprocessor option -DSIESTA__ELSI_2_4_SOLVERS
+
+-- NTPoly solver
+
+(Built-in in ELSI)
+It uses density-matrix purification algorithms to achieve linear scaling for suitably gapped systems.
+See the manual for the tolerance options involved.
+
+
+
+
+
+
+

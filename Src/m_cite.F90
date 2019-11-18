@@ -74,7 +74,7 @@ module m_cite
   ! Increment this after having added a new
   ! citation!
   ! OTHERWISE YOU WILL EXPERIENCE A SEG-FAULT.
-  integer, parameter :: N_citations = 10
+  integer, parameter :: N_citations = 11
 
   private
 
@@ -218,6 +218,9 @@ contains
       case ( "10.1088/0953-8984/24/8/086005" )
         ! Off-site SOC
         lID = 10
+      case ( "10.1016/j.cpc.2017.09.007" )
+        ! ELSI
+        lID = 11
       end select
 
     end if
@@ -334,6 +337,18 @@ contains
       cit%cite_key = "Cuadrado2012"
       cit%doi = "10.1088/0953-8984/24/8/086005"
 
+    case ( 11 )
+      ! ELSI paper
+      cit%comment = "ELSI library interface"
+      cit%title = "ELSI: A unified software interface for Kohn–Sham electronic structure solvers"
+      cit%author = "Victor Yu et al"
+      cit%journal = "Computer Physics Communications"
+      cit%year = 2018
+      cit%volume = "222"
+      cit%issue = "267"
+      cit%cite_key = "Yu2018"
+      cit%doi = "10.1016/j.cpc.2017.09.007"
+      
     case default
       ! Not found
       cit%ID = 0

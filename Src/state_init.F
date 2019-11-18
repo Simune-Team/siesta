@@ -811,6 +811,10 @@
 #endif
       call timer( 'state_init', 2 )
 
+!     Call BLACS setup here if needed (all solvers except PEXSI)
+!     Setup S in 2d Scalapack distribution if needed (ELSI ELPA solver)
+!     Initialize ELSI
+
       END subroutine state_init
 
       subroutine check_cohp()

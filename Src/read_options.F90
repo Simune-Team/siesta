@@ -76,6 +76,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
   !                                                 6   = CheSS
+  !                                                 7   = ELSI
   !                                                10   = Dummy
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
@@ -714,10 +715,24 @@ subroutine read_options( na, ns, nspin )
      isolve = SOLVE_PEXSI
      if (ionode) then
         call add_citation("10.1088/0953-8984/26/30/305503")
-        write(*,3) 'redata: Method of Calculation', 'PEXSI'
+        write(*,3) 'redata: Method of Calculation', 'PEXSI-builtin'
      endif
 #else
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
+#endif
+  else if (leqi(method,"elsi")) then
+#ifdef SIESTA__ELSI
+     isolve = SOLVE_ELSI
+     if (converge_EDM) then
+        write(6,"(a)") "**Warning: Cannot monitor EDM convergence with ELSI"
+        converge_EDM = .false.
+     endif
+     if (ionode) then
+        call add_citation("10.1016/j.cpc.2017.09.007")
+        write(*,3) 'redata: Method of Calculation', 'ELSI solvers'
+     endif
+#else
+     call die("ELSI library is not compiled in. Use -DSIESTA__ELSI")
 #endif
 
 #ifdef SIESTA__CHESS

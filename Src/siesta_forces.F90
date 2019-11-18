@@ -84,6 +84,9 @@ contains
 #ifdef SIESTA__PEXSI
     use m_pexsi, only: pexsi_finalize_scfloop
 #endif
+#ifdef SIESTA__ELSI
+    use m_elsi_interface, only: elsi_finalize_scfloop
+#endif
     use m_check_walltime
 
     use m_ts_options, only : N_Elec
@@ -140,10 +143,10 @@ contains
     call write_debug( '    PRE siesta_forces' )
 #endif
 
-#ifdef SIESTA__PEXSI
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
     ! Broadcast relevant things for program logic
     ! These were set in read_options, called only by "SIESTA_workers".
-    call broadcast(nscf, comm=true_MPI_Comm_World)
+    call broadcast(nscf, comm=mpi_comm_dft)
 #endif
 
     if ( SIESTA_worker )  then
@@ -490,9 +493,9 @@ contains
           
        end if
 
-#ifdef SIESTA__PEXSI
-       call broadcast(iscf, comm=true_MPI_Comm_World)
-       call broadcast(SCFconverged, comm=true_MPI_Comm_World)
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
+       call broadcast(iscf, comm=mpi_comm_dft)
+       call broadcast(SCFconverged, comm=mpi_comm_dft)
 #endif
 
        ! Exit if converged
@@ -506,8 +509,8 @@ contains
     end if
 #endif
 
-    if ( .not. SIESTA_worker ) return
-
+    if ( SIESTA_worker ) then
+!===
     call end_of_cycle_save_operations(SCFconverged)
 
     if ( .not. SCFconverged ) then
@@ -544,11 +547,18 @@ contains
     ! Clean-up here to limit memory usage
     call mixers_scf_history_init( )
     
+!===
+    endif  ! Siesta_Worker
+
     ! End of standard SCF loop.
     ! Do one more pass to compute forces and stresses
     
     ! Note that this call will no longer overwrite H while computing the
     ! final energies, forces and stresses...
+
+    ! If we want to preserve the "Siesta_Worker" subset implementation for ELSI,
+    ! this block needs to be executed by everybody
+    ! as it contains a call to the ELSI interface to get the EDM
     
     if ( fdf_get("compute-forces",.true.) ) then
        call post_scf_work( istep, iscf , SCFconverged )
@@ -556,6 +566,15 @@ contains
        if (ionode) call memory_snapshot("after post_scf_work")
 #endif
     end if
+
+#ifdef SIESTA__ELSI
+    ! Recall that there could be an extra call after the scf loop to get the EDM
+    if ( isolve == SOLVE_ELSI ) then
+       call elsi_finalize_scfloop()
+    end if
+#endif
+
+    if (.not. Siesta_Worker) RETURN
     
     ! ... so H at this point is the latest generator of the DM, except
     ! if mixing H beyond self-consistency or terminating the scf loop

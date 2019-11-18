@@ -73,7 +73,7 @@ C **********************************************************************
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
-      use m_diag_option, only: ParallelOverK, Serial
+      use m_diag_option, only: ParallelOverK, Serial, print_diag
 
       implicit none
 
@@ -185,6 +185,7 @@ C Initialize the projected density of states ---------------------------
       enddo
 
 C  Call appropiate routine ----------------------------------------------
+      call print_diag()
       if (nspin.le.2 .and. gamma) then
         call pdosg( nspin, NUO, NO, maxspn, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,

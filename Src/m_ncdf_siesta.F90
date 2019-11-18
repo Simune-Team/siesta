@@ -51,6 +51,7 @@ contains
     use siesta_options, only: SOLVE_DIAGON, SOLVE_ORDERN
     use siesta_options, only: SOLVE_MINIM, SOLVE_TRANSI
     use siesta_options, only: SOLVE_PEXSI
+    use siesta_options, only: SOLVE_ELSI
     use siesta_options, only: savehs
     use siesta_options, only: fixspin, total_spin
     use siesta_options, only: ia1, ia2, dx ! FC information
@@ -361,6 +362,8 @@ contains
        dic = dic//('method'.kv.'transiesta')
     else if ( isolve == SOLVE_PEXSI ) then
        dic = dic//('method'.kv.'pexsi')
+    else if ( isolve == SOLVE_ELSI ) then
+       dic = dic//('method'.kv.'elsi')
     end if
 
     ! Attributes are collective

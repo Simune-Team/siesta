@@ -197,6 +197,7 @@ MODULE fsiesta
                                                               ! MPI_COMM_WORLD
   use mpi_siesta, only: MPI_Comm_Siesta => MPI_Comm_World ! What siesta uses
                                                           ! as MPI_Comm_World
+  use mpi_siesta, only: MPI_Comm_DFT          ! Siesta-instance (dft-calc)
   use mpi_siesta, only: MPI_Integer           ! Integer data type
   use mpi_siesta, only: MPI_Character         ! Character data type
   use mpi_siesta, only: MPI_Double_Precision  ! Real double precision type
@@ -371,6 +372,9 @@ subroutine siesta_launch( label, nNodes, mpi_comm, launcher, localhost )
     call system('cp -n *.fdf *.vps *.psf *.ion ' &
                 // trim(label) // ' 2> /dev/null')
   endif
+
+  ! Set the whole-siesta-instance (dft calc) communicator
+  MPI_Comm_DFT = MPI_Comm_Siesta
 
 #endif
 

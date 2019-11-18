@@ -955,6 +955,44 @@ libraries
   LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
 \end{shellexample}
 
+  \item[\href{http://elsi-interchange.org}{ELSI}]%
+  \index{ELSI}%
+  \index{External library!ELSI}%
+  The ELSI library may be used with \siesta\ for access to a range of
+  solvers, see Sec.~\ref{SolverELSI}. Currently the interface is
+  implemented (tested) for ELSI 2.2.0 to 2.4.1 (avoid 2.4.0, as it is buggy). If
+  newer versions retain the same interface they may also be used.
+
+  (This description applies to the standard ELSI library without
+  external libraries. For a fuller description of compilation options,
+  see the \texttt{README\_ELSI} file in the top directory of the
+  \siesta\ distribution.)
+  
+  Add these flags to your \file{arch.make} file to enable ELSI
+\begin{shellexample}
+  INCFLAGS += -I/opt/elsi/include
+  LIBS += -L/opt/elsi/lib <>
+  FPPFLAGS += -DSIESTA__ELSI
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_ELSI}
+  \index{compile!pre-processor!-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}
+  where \shell{<>} represents the appropriate ELSI libraries (see the
+  ELSI installation instructions). Support for the EigenExa and
+  MAGMA solvers is not compiled-in by default. To enable it, add the
+  flag
+\begin{shellexample}
+  FPPFLAGS += -DSIESTA__ELSI_2_4_SOLVERS
+\end{shellexample}
+  %
+  If one experiences linker failures, one possible solution that may
+  help is
+\begin{shellexample}
+  LIBS += -lmpi_cxx -lstdc++
+\end{shellexample}
+  which is due to ELSI containing some parts written in C++, while the
+  linking is done by the Fortran compiler. The exact library name for
+  your MPI vendor may vary.
+
 
   \item[CheSS]%
   \index{CheSS}%
@@ -6170,6 +6208,11 @@ pole expansion of the Fermi-Dirac function and the direct computation
 of the density matrix via an efficient scheme of selected
 inversion (see Sec~\ref{SolverPEXSI}).
 
+Additionally, \siesta\ can use the ELSI library (see
+Sec.~\ref{SolverELSI}) of solvers (which provides its own versions of OMM
+and PEXSI, in addition to diagonalization and other solvers), and the new linear-scaling
+CheSS library (see Sec.~\ref{SolverCheSS})
+
 The calculation of the H and S matrix elements is always done with an
 O(N) method. The actual scaling is not linear for small systems, but
 it becomes O(N) when the system dimensions are larger than the scale
@@ -6193,12 +6236,12 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   Character string to choose among diagonalization (\fdf*{diagon}),
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
   solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
-  PEXSI method (\fdf*{PEXSI}) or the \fdf*{CheSS} solver.
+  PEXSI method (\fdf*{PEXSI}), ELSI family of solvers (\fdf*{ELSI}) or the \fdf*{CheSS} solver.
   In addition, the \fdf*{Dummy} solver will just return a
   slightly perturbed density-matrix without actually solving for
   the electronic structure. This is useful for timing other routines.
 
-  
+
 \end{fdfentry}
 
 
@@ -7029,6 +7072,176 @@ necessary.
 
 \end{fdflogicalF}
 
+\subsection{The ELSI solver family}
+\label{SolverELSI}
+\index{ELSI solvers}
+
+The ELSI library provides a unified interface to a range of solvers,
+including ELPA (diagonalization), PEXSI, OMM, density-matrix
+purification (using NTPoly), SIPS (based on spectrum
+slicing), EigenExa, and MAGMA (the latter two available after version
+2.4.0 of the ELSI library, and enabled via the preprocessor flag
+\texttt{-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}). It can be downloaded and installed freely from
+\url{http://elsi-interchange.org}.
+
+The current interface in \siesta\ is based on the ``DM'' mode in ELSI:
+sparse H and S matrices are passed to the library, and sparse DM and
+EDM matrices are returned. Internally, the library performs any extra
+operations needed.  K-points and/or spin-polarization (in collinear
+form) are also supported, in fully parallel mode. This means that
+k-points/spin-polarized calculations will be carried out splitting the
+communicator for orbital distribution into nk$\times$nspin copies,
+where nk is the number of k-points and nspin the number of spin
+components. The total number of MPI processors must be a multiple of
+nk$\times$nspin.
+
+See Sec.~\ref{sec:libs} for details on installing \siesta\ with ELSI support.
+
+\subsubsection{Input parameters}
+
+The most important parameter is the solver to be used. Most other
+options are given default values by the program which are nearly
+always appropriate.
+
+\begin{fdfentry}{ELSI!Solver}[string]<ELPA>
+  A specification of the solver wanted. Possible values are
+  \begin{itemize}
+  \item elpa
+  \item omm
+  \item pexsi
+  \item ntpoly
+  \item sips
+  \item eigenexa
+  \item magma
+  \end{itemize}
+\end{fdfentry}
+
+The EigenExa and MAGMA solvers are available after version
+2.4.1 of the ELSI library, and enabled via the preprocessor flag
+\texttt{-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}).
+
+Note that the native interface in \siesta\ for an older version of the
+PEXSI solver is still available (preprocessor flag
+\texttt{-DSIESTA\_\_PEXSI}), but it might not be possible to compile
+it at the same time as the ELSI interface, due to duplicate symbols at
+the linking stage. A similar situation arises with the native support
+for the ELPA library (preprocessor flag \texttt{-DSIESTA\_\_ELPA}),
+but in this case the ELSI interface with an external ELPA library can
+still coexist.  The native OMM interface in \siesta\ (enabled by
+default) has no coexistence problems with ELSI.
+
+\begin{fdfentry}{ELSI!Broadening!Method}[string]<''fermi''>
+The scheme for level broadening. Valid options are ``fermi'',
+``gauss'', ``mp'' (Methfessel-Paxton), ``cold''
+(Marzari-Vanderbilt cold smearing).
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Output!Level}[integer]<0>
+ The level of detail provided in the output. Possible values are 0, 1,
+ 2, and 3.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Output!Json}[integer]<1>
+  If not 0, a separate log file in JSON format will be written out.
+\end{fdfentry}
+
+Other fdf options are mapped in a direct way to the options described in the
+ELSI manual:
+
+\begin{fdfentry}{ELSI!Broadening!MPOrder}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Ill-Condition!Check}[integer]<0>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Ill-Condition!Tolerance}[real]<$10^{-5}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!Flavor}[integer]<2>
+  Use the two-stage (banded, then tridiagonal conversion) of the ELPA
+  solver by default.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!NSinglePrecision}[integer]<0>
+  Number of initial scf steps carried out in single precision (if
+  supported by the externally compiled version of the ELPA
+  library). Typically, most scf steps can be computed in single
+  precision, with only a final one or two in double precision, to
+  achieve the standard results. The use of this option increases
+  performance significantly.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!Autotune}[integer]<0>
+  Use the auto-tune feature (if supported by the externally
+  compiled version of the ELPA library). See the ELPA documentation
+  for more details.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!GPU}[integer]<0>
+  Request use of GPU acceleration (if supported by the compiled
+  version of the ELPA library).
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!Flavor}[integer]<0>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!ELPA!Steps}[integer]<3>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!Tolerance}[real]<$10^{-9}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!TasksPerPole}[integer]< {\bf no default}>
+  See the discussion on the three-level PEXSI parallelism in the ELSI manual.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!TasksSymbolic}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Number-of-Poles}[integer]<20>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Number-of-Mu-Points}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Inertia-Tolerance}[real]<$0.05$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Initial-Mu-Min}[real]<$-1.0\,\mathrm{Ry}$>
+Initial lower bound for $\mu$ at the beginning of the scf loop.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Initial-Mu-Max}[real]<$0.0\,\mathrm{Ry}$>
+Initial upper bound for $\mu$ at the beginning of the scf loop.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Method}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Filter}[real]<$10^{-9}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Tolerance}[real]<$10^{-6}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!SIPS!Slices}[integer]<{\bf no default}>
+  See the discussion in the ELSI manual.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!SIPS!ELPA!Steps}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!EigenExa!Method}[integer]<2>
+Selects between the tridiagonalization (1) and pentadiagonalization
+(2) methods. The latter is usually faster and more scalable.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!MAGMA!Solver-Method}[integer]<1>
+Selects between the 1-stage (1) and 2-stage (2) solvers in the MAGMA
+library. Please see the documentation of the MAGMA library for the
+details about compilation and support for accelerator devices.
+\end{fdfentry}
 
 \subsection{The CheSS solver}
 \label{SolverCheSS}

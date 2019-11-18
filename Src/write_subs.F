@@ -470,6 +470,7 @@
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
 !         No need for further cml output
         elseif ((isolve==SOLVE_DIAGON) .or. (isolve==SOLVE_PEXSI)
+     .                              .or. (isolve==SOLVE_ELSI)
      .                              .or. (isolve==SOLVE_CHESS)
      .                              .or. (isolve==SOLVE_DUMMY)
      .                              .or. (isolve==SOLVE_TRANSI)) then

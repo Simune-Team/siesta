@@ -36,6 +36,9 @@
 #ifdef SIESTA__PEXSI
       use m_pexsi_solver,  only: pexsi_solver
 #endif
+#ifdef SIESTA__ELSI
+      use m_elsi_interface,  only: elsi_getdm
+#endif
       use m_hsx, only      : write_hs_formatted
 #ifdef MPI
       use mpi_siesta
@@ -74,7 +77,7 @@
       if (SIESTA_worker) call timer( 'compute_dm', 1 )
 
 #ifdef MPI
-      call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
+      call MPI_Bcast(isolve,1,MPI_integer,0,MPI_Comm_DFT,mpierr)
 #endif     
 
       if (SIESTA_worker) then
@@ -82,7 +85,9 @@
 !$OMP parallel default(shared)
          if ( converge_EDM ) then
 !$OMP workshare
-            Eold(:,:) = Escf(:,:)
+            ! Not all solvers handle Escf during the SCF cycle
+            ! For those, converge_EDM should be disabled
+            Eold(:,:) = Escf(:,:)  
             Dold(:,:) = Dscf(:,:)
 !$OMP end workshare
          else
@@ -133,6 +138,27 @@
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
      $              ef, Entropy, temp, delta_Ef)
+      endif
+      if (.not. SIESTA_worker) RETURN
+#endif
+#ifdef SIESTA__ELSI
+      if (isolve .eq. SOLVE_ELSI) then
+        ! This test done in node 0 since NonCol and SpOrb
+        ! are not set for ELSI-solver-only processes
+         if (ionode) then
+            if (spin%NCol .or. spin%SO) call die(
+     $               "The ELSI solver does not implement "//
+     $               "non-coll spins or Spin-orbit yet")
+         endif
+         call elsi_getdm(iscf, no_s, spin%spinor, 
+     &              no_l, maxnh, no_u,
+     &              numh, listhptr, listh,
+     &              H, S, qtot, temp, 
+     &              xijo,
+     &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
+     &              Dscf, ef, Entropy,
+     &              occtol, neigwanted, Get_EDM_Only=.false.)
+         Ecorrec = 0.0_dp
       endif
       if (.not. SIESTA_worker) RETURN
 #endif
