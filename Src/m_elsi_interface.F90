@@ -767,13 +767,6 @@ subroutine elsi_kpoints_dispatcher(iscf, no_s, nspin, no_l, maxnh, no_u,  &
       ! Call elsi_complex_solver
       ! Construct and re-distribute global DM (or EDM)
 
-      if (ionode) then
-         print *, "Entering kpoint_dispatcher"
-         print *, "EDM only:", get_EDM_only
-         print *, "size of dist_k:", size(dist_k)
-         print *, "iscf:", iscf
-      endif
-
       if (iscf==1) then
          ! Global communicator is a duplicate of passed communicator
          call MPI_Comm_Dup(MPI_Comm_DFT, elsi_global_comm, ierr)
@@ -1614,8 +1607,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
      do ispin = 1, n_spin
 
-        print "(a,i3,i3)", 'ispin, rank:', ispin, global_rank
-
         if (my_spin == ispin) then
            ! Prepare pkg_spin to transfer the right spin information
            ! The other fields (numcols, cols) are the same and are still there
@@ -1679,7 +1670,6 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
 
        ! Nothing else to do
   endif
-  if (ionode) print *, "Done elsi-complex-solver"
 
   call timer("elsi-complex-solver", 2)
 
