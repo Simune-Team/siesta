@@ -1659,7 +1659,20 @@ subroutine read_options( na, ns, nspin )
   analyze_charge_density_only = fdf_get(    &
        'AnalyzeChargeDensityOnly' , .false.)
 
-  new_diagk              = fdf_get( 'UseNewDiagk', .false. )
+  tBool = fdf_get( 'UseNewDiagk', .false. )
+  if ( tBool ) then
+    ctmp = fdf_get('Diag.WFS.Cache', 'CDF')
+  else
+    ctmp = fdf_get('Diag.WFS.Cache', 'none')
+  end if
+  if ( leqi(ctmp, 'none') ) then
+    diag_wfs_cache = 0
+  else if ( leqi(ctmp, 'cdf') ) then
+    diag_wfs_cache = 1
+  else
+    call die('redata: ERROR: Diag.WFS.Cache must be one of none|cdf')
+  end if
+
   writb                  = fdf_get( 'WriteBands', outlng )
   writbk                 = fdf_get( 'WriteKbands', outlng )
   writeig                = fdf_get('WriteEigenvalues', outlng )

@@ -49,7 +49,7 @@ C INTEGER NA               : Total number of atoms in Supercell
 C INTEGER NO               : Total number of orbitals in Supercell
 C INTEGER NO_U             : Total number of orbitals in Unit Cell
 C INTEGER MAXNA            : Maximum number of neighbours of any atom
-C INTEGER NSPIN            : Number of different spin polarizations: 1, 2, 4
+C INTEGER NSPIN            : Number of different spin polarizations: 1, 2, 4, 8
 ! integer nspin_blocks     : blocks in WFSX file       
 ! logical non_coll         : NC/SOC wfs data?
 C INTEGER ISA(NA)          : Species index of each atom
@@ -173,6 +173,17 @@ C **********************************************************************
 C     Allocate some variables ---------------------------------------------
 
       PI = 4.0D0 * ATAN(1.0D0)
+
+      select case ( NSPIN )
+      case ( 1, 2, 4, 8 )
+! ok
+      case default
+        WRITE(6,*)'BAD NUMBER NSPIN IN WAVOFR.F'
+        WRITE(6,*)'NSPIN = ',NSPIN
+        WRITE(6,*)'IT MUST BE 1, 2, 4 or 8'
+        STOP
+      end select
+
 
       NPLAMAX = NPX * NPY * NPZ
 
@@ -343,7 +354,7 @@ C Initialize neighbour subroutine --------------------------------------
      .         FORM = 'FORMATTED')
           REWIND(UNITPH1)
 
-       ELSEIF ((NSPIN .EQ. 2) .or. (NSPIN == 4))  THEN
+       ELSE ! nspin >= 2
           ! We will reuse 'up' and 'down' for the spinor components
            IF (IDIMEN .EQ. 2) THEN
             FN_URE = TRIM(SNAME)//'.CON.K' //
@@ -405,11 +416,6 @@ C Initialize neighbour subroutine --------------------------------------
           OPEN(UNIT = UNITPH2, FILE = FN_DPH, STATUS = 'UNKNOWN',
      .         FORM = 'FORMATTED')
           REWIND(UNITPH2)
-        ELSE
-          WRITE(6,*)'BAD NUMBER NSPIN IN WAVOFR.F'
-          WRITE(6,*)'NSPIN = ',NSPIN
-          WRITE(6,*)'IT MUST BE 1, 2, or 4'
-          STOP
         ENDIF
 
         IF (IDIMEN .EQ. 2) THEN
@@ -465,16 +471,16 @@ C   Determine atoms which are within the plotting box
                 call write_cube_header(unitmo2,fn_dmo)
                 call write_cube_header(unitph2,fn_dph)
              endif
-          ELSE IF (NSPIN .EQ. 4) THEN
-                call write_cube_header(unitre1,fn_ure)
-                call write_cube_header(unitim1,fn_uim)
-                call write_cube_header(unitmo1,fn_umo)
-                call write_cube_header(unitph1,fn_uph)
-
-                call write_cube_header(unitre2,fn_dre)
-                call write_cube_header(unitim2,fn_dim)
-                call write_cube_header(unitmo2,fn_dmo)
-                call write_cube_header(unitph2,fn_dph)
+          ELSE ! 4 or 8
+            call write_cube_header(unitre1,fn_ure)
+            call write_cube_header(unitim1,fn_uim)
+            call write_cube_header(unitmo1,fn_umo)
+            call write_cube_header(unitph1,fn_uph)
+            
+            call write_cube_header(unitre2,fn_dre)
+            call write_cube_header(unitim2,fn_dim)
+            call write_cube_header(unitmo2,fn_dmo)
+            call write_cube_header(unitph2,fn_dph)
 
           ENDIF
         ENDIF
@@ -576,7 +582,7 @@ C Loop over Non-zero orbitals ------------------------------------------
                  call mod_and_phase(rwavedn,iwavedn,mwavedn,pwavedn)
               endif
 
-           ELSEIF (NSPIN .EQ. 4) THEN
+           ELSE ! 4 or 8
 
               rwaveup = real(cwave(1), dp)
               iwaveup = aimag(cwave(1))
@@ -605,19 +611,19 @@ C Loop over Non-zero orbitals ------------------------------------------
                  call write_plapo(unitmo2,mwavedn)
                  call write_plapo(unitph2,pwavedn)
                 endif
-             ELSEIF ( NSPIN .EQ. 4 ) THEN
+             ELSE ! 4 or 8
 
-                 call write_plapo(unitre1,rwaveup)
-                 call write_plapo(unitim1,iwaveup)
-                 call write_plapo(unitmo1,mwaveup)
-                 call write_plapo(unitph1,pwaveup)
-
-                 call write_plapo(unitre2,rwavedn)
-                 call write_plapo(unitim2,iwavedn)
-                 call write_plapo(unitmo2,mwavedn)
-                 call write_plapo(unitph2,pwavedn)
-
-              ENDIF
+               call write_plapo(unitre1,rwaveup)
+               call write_plapo(unitim1,iwaveup)
+               call write_plapo(unitmo1,mwaveup)
+               call write_plapo(unitph1,pwaveup)
+               
+               call write_plapo(unitre2,rwavedn)
+               call write_plapo(unitim2,iwavedn)
+               call write_plapo(unitmo2,mwavedn)
+               call write_plapo(unitph2,pwavedn)
+               
+             ENDIF
               
           ELSE IF (IDIMEN .EQ. 3) THEN
              IF (NSPIN .EQ. 1) THEN
@@ -637,17 +643,17 @@ C Loop over Non-zero orbitals ------------------------------------------
                   MWF(NPO,2) = MWAVEDN
                   PWF(NPO,2) = PWAVEDN
                endif
-             ELSE IF (NSPIN .EQ. 4) THEN
+             ELSE ! 4 or 8
 
-                RWF(NPO,1) = RWAVEUP
-                IMWF(NPO,1) = IWAVEUP
-                MWF(NPO,1) = MWAVEUP
-                PWF(NPO,1) = PWAVEUP
+               RWF(NPO,1) = RWAVEUP
+               IMWF(NPO,1) = IWAVEUP
+               MWF(NPO,1) = MWAVEUP
+               PWF(NPO,1) = PWAVEUP
 
-                RWF(NPO,2) = RWAVEDN
-                IMWF(NPO,2) = IWAVEDN
-                MWF(NPO,2) = MWAVEDN
-                PWF(NPO,2) = PWAVEDN
+               RWF(NPO,2) = RWAVEDN
+               IMWF(NPO,2) = IWAVEDN
+               MWF(NPO,2) = MWAVEDN
+               PWF(NPO,2) = PWAVEDN
 
             ENDIF
          ENDIF
@@ -668,32 +674,30 @@ C End y and z loops
            DO NX=1,NPX
               DO NY=1,NPY
 
-                 if ( (NSPIN .EQ. 1)  .or.
-     $                ((NSPIN .EQ.2).and.(ispin.eq.1)) .or. 
-     $                (NSPIN .EQ.4)  ) then
-
-                    WRITE(UNITRE1,'(6e13.5)')
-     $                   (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                    WRITE(UNITIM1,'(6e13.5)')
-     $                  (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                    WRITE(UNITMO1,'(6e13.5)')
-     $                   (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                    WRITE(UNITPH1,'(6e13.5)')
-     $                   (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
-                 endif
+                if ( NSPIN == 1 .or.
+     &              (NSPIN == 2 .and. ispin == 1 ) .or.
+     &              NSPIN >= 4 ) then
+                  WRITE(UNITRE1,'(6e13.5)')
+     $                (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                  WRITE(UNITIM1,'(6e13.5)')
+     $                (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                  WRITE(UNITMO1,'(6e13.5)')
+     $                (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                  WRITE(UNITPH1,'(6e13.5)')
+     $                (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,1),NZ=1,NPZ)
+                end if
                  
-                 if ( ((NSPIN .EQ.2).and.(ispin.eq.2)) .or. 
-     $                   (NSPIN .EQ.4)  ) then
-
-                    WRITE(UNITRE2,'(6e13.5)')
-     $                   (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                    WRITE(UNITIM2,'(6e13.5)')
-     $                  (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                    WRITE(UNITMO2,'(6e13.5)')
-     $                   (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                    WRITE(UNITPH2,'(6e13.5)')
-     $                   (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
-                 endif
+                if ( (NSPIN == 2 .and. ispin == 2) .or.
+     &              NSPIN >= 4 ) then
+                  WRITE(UNITRE2,'(6e13.5)')
+     $                (RWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                  WRITE(UNITIM2,'(6e13.5)')
+     $                (IMWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                  WRITE(UNITMO2,'(6e13.5)')
+     $                (MWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                  WRITE(UNITPH2,'(6e13.5)')
+     $                (PWF(NX+(NY-1)*NPX+(NZ-1)*NPX*NPY,2),NZ=1,NPZ)
+                end if
               ENDDO
            ENDDO
 
@@ -705,7 +709,7 @@ C End y and z loops
             WRITE(6,'(A,A)') '   ',FN_IM
             WRITE(6,'(A,A)') '   ',FN_MO
             WRITE(6,'(A,A)') '   ',FN_PH
-          ELSE IF ((NSPIN .EQ. 2) .or. (NSPIN .EQ. 4)) THEN
+          ELSE ! 2, 4 or 8
             WRITE(6,'(A,A)') '   ',FN_URE
             WRITE(6,'(A,A)') '   ',FN_UIM
             WRITE(6,'(A,A)') '   ',FN_DRE
@@ -714,7 +718,7 @@ C End y and z loops
             WRITE(6,'(A,A)') '   ',FN_UPH
             WRITE(6,'(A,A)') '   ',FN_DMO
             WRITE(6,'(A,A)') '   ',FN_DPH
-            if (nspin == 4) write(6,"(a)")
+            if (nspin >= 4) write(6,"(a)")
      $           "... up and down for spinor components"
           ENDIF
         ENDIF ! 3D

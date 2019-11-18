@@ -104,6 +104,7 @@ C **********************************************************************
  
       LOGICAL FIRST
       integer :: idummy, number_of_wfns, spinor_comps
+      integer :: nspin_rho  ! Number of components needed for rho array ("spin%Grid")
 
       CHARACTER ::  SNAME*40, FNAME*256, stm_label*60
 
@@ -168,10 +169,12 @@ C Initialize neighbour subroutine --------------------------------------
       ALLOCATE(R2IJ(MAXNA))
       ALLOCATE(XIJ(3,MAXNA))
 
+      nspin_rho = min(4,nspin)
+
       allocate(CWAVE(spinor_comps))
       ALLOCATE(CW(0:NPX-1,0:NPY-1,spinor_comps))
       ALLOCATE(CWE(0:NPX-1,0:NPY-1,0:NPZ-1,spinor_comps))
-      ALLOCATE(RHO(0:NPX-1,0:NPY-1,0:NPZ-1,nspin))
+      ALLOCATE(RHO(0:NPX-1,0:NPY-1,0:NPZ-1,nspin_rho))
 
       FIRST = .TRUE.
       DO I = 1,3
@@ -423,9 +426,9 @@ C Initialize neighbour subroutine --------------------------------------
      $              [0.0_dp, 0.0_dp, ZMIN], ! Extra info for origin
      $              [.true.,.true.,.false.] ! Periodic ?
 
-      WRITE(grid_u) NPX, NPY, NPZ, nspin 
+      WRITE(grid_u) NPX, NPY, NPZ, nspin_rho 
 
-      do ispin = 1, nspin
+      do ispin = 1, nspin_rho
          DO IZ=0,NPZ-1
             DO IY=0,NPY-1
                WRITE(grid_u) (REAL(RHO(IX,IY,IZ,ispin),sp),IX=0,NPX-1)

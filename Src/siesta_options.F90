@@ -44,7 +44,7 @@ MODULE siesta_options
   logical :: use_aux_cell  ! Force the use of the auxiliary cell
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
-  logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
+  integer :: diag_wfs_cache! WFS cache used in diagonalization routine (0=none, 1=cdf)
   logical :: outlng        ! Long output in the output file?
   logical :: pulfile       ! Use file to store Pulay info in pulayx? (Obsolete)
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
