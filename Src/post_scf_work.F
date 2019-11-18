@@ -41,6 +41,8 @@
       use m_steps,        only : istp, inicoor
       use m_compute_dm,   only : PreviousCallDiagon
       use m_eo
+      use units,          only : eV
+      use m_normalize_dm, only : trace_with_S
       use kpoint_scf_m, only: kpoint_scf, gamma_scf
 #ifdef SIESTA__ELSI
       use m_elsi_interface,  only: elsi_getdm
@@ -55,7 +57,7 @@
       type(Pair_Geometry_dSpData2D)  :: pair
       type(Geometry)                :: geom
 
-      real(dp)              :: ef_dummy
+      real(dp)              :: ef_dummy, E_bs_from_S_EDM
       real(dp)              :: Entropy_dummy
       
       call timer( 'PostSCF', 1 )
@@ -143,6 +145,11 @@
             write(6,"(/,a)")
      $      "Using DM_out to compute the final energy and forces"
          endif
+      endif
+
+      call trace_with_S(Escf, E_bs_from_S_EDM)
+      if (ionode) then
+         print *, "E_bs from EDM:", E_bs_from_S_EDM/eV
       endif
 
       call final_H_f_stress( istep , iscf , SCFconverged )
