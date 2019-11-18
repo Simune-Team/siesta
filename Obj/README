@@ -21,29 +21,40 @@ To compile utility programs (those living in Util), you can just simply
 use the provided makefiles, typing "make" as appropriate.
 
 * arch.make files
-  This directory contains several example arch.make files:
+  This directory contains several example arch.make files. The differences
+  in logic have mostly to do with the treatment of libgridxc.
 
-    gfortran-esl-bundle.make:  For use with the ESL bundle.
-                               Change as appropriate if a different compiler
-			       was used to build the bundle.
+    gridxc-0.8.5-no-autotools.make: configurable at the top for serial
+                                    and parallel operation. It
+                                    requires an installation of
+                                    libgridxc with a top-level
+                                    gridxc.mk file dispatching the
+                                    appropriate parallel or serial
+                                    symbols (this is available in
+                                    libgridxc-0.8 to 0.8.5).
+
+    gfortran-esl-bundle.make: For use with the ESL bundle (version
+                              0.4).  Change as appropriate if a
+                              different compiler was used to build the
+                              bundle.
 			       
+    gridxc-0.8.5.1-autotools.make: Intended for the gridxc-0.8.5.1
+                                   version integrated in the bundle, which
+				   is 0.8.5 with an auto-tools building system.
+				   
+
     gfortran-multiconfig.make: (for libgridxc >= 0.9.3, installed with
                                '--enable-multi-config') configurable
                                at the top for serial and parallel
                                operation, and also supporting the use
                                of single-precision grid arrays.
 
-    gfortran-config.make: configurable at the top for serial and
-                          parallel operation. It requires an
-                          installation of libgridxc with a top-level
-                          gridxc.mk file dispatching the appropriate
-                          parallel or serial symbols (this is
-                          available in libgridxc-0.8 and some later
-                          versions).
+
 			  
     Of lesser interest are:
     
     gfortran.make for old-style serial compilation of siesta using gfortran
+
     intel.make for old-style serial compilation of siesta using the ifort Intel compiler.
 
     This is still in flux.

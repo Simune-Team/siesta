@@ -73,7 +73,7 @@ Please take into account the following when using PSML files:
  -- The default perturbative scheme for polarization orbitals can fail in
     very specific cases (elements with only s and p pseudopotential channels
     and at least an 's' semicore shell). In those cases, include the species label
-    in the following block with to request a non-perturbative scheme:
+    in the following block to request a non-perturbative scheme:
 
     %block PAO.PolarizationScheme
       Mg non-perturbative           

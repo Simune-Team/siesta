@@ -1,10 +1,8 @@
 #
-SIESTA_ARCH=gfortran-gridxc-0.8.5
+SIESTA_ARCH=gfortran-gridxc-0.8.5-legacy
 #
 # NOTE: To be used with the "last" libgridxc of the 0.8 series,
-# which is scheduled to be released with the 0.4 ESL bundle,
-# and has a still-not-optimal tree organization (as compared
-# with the forthcoming 0.9 series)
+#       without auto-tools support
 #
 #--------------------------------------------------------
 # Use these symbols to request particular features
@@ -68,12 +66,8 @@ ifdef WITH_MPI
  MPI_INCLUDE=.      # Note . for no-op
  FPPFLAGS_MPI=-DMPI -DMPI_TIMING
  LIBS +=$(SCALAPACK_LIBS)
- GRIDXC_INCFLAGS:=-I $(GRIDXC_ROOT)/include/gridxc_mpi
- GRIDXC_LIBS:=-L $(GRIDXC_ROOT)/lib -lgridxc_mpi -lxcf90 -lxc
 else
  FC=$(FC_SERIAL)
- GRIDXC_INCFLAGS:=-I $(GRIDXC_ROOT)/include/gridxc
- GRIDXC_LIBS:=-L $(GRIDXC_ROOT)/lib -lgridxc -lxcf90 -lxc
 endif
 
 LIBS += $(LAPACK_LIBS) $(COMP_LIBS)
@@ -85,9 +79,9 @@ FPPFLAGS= $(FPPFLAGS_CDF) $(FPPFLAGS_GRID) $(FPPFLAGS_MPI)  -DF2003
 #---------------------------------------------
 include $(XMLF90_ROOT)/share/org.siesta-project/xmlf90.mk
 include $(PSML_ROOT)/share/org.siesta-project/psml.mk
+include $(GRIDXC_ROOT)/gridxc.mk
 #
-# GRIDXC is treated differently (see above) since we do not have
-# fully consistent .mk files for it in 0.8.5. We assume that libgridxc
+# We assume that libgridxc
 # includes libxc. If not, delete '-lxc90 -lxc' from GRIDXC_LIBS above.
 #---------------------------------------------
 #
