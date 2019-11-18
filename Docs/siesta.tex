@@ -958,7 +958,7 @@ libraries
   \index{External library!ELSI}%
   The ELSI library may be used with \siesta\ for access to a range of
   solvers, see Sec.~\ref{SolverELSI}. Currently the interface is
-  implemented (tested) for ELSI 2.2.0 to 2.3.1. If
+  implemented (tested) for ELSI 2.2.0 to 2.4.1 (avoid 2.4.0, as it is buggy). If
   newer versions retain the same interface they may also be used.
 
   Add these flags to your \file{arch.make} file to enable ELSI
@@ -968,8 +968,14 @@ libraries
   FPPFLAGS += -DSIESTA__ELSI
 \end{shellexample}
   \index{compile!pre-processor!-DSIESTA\_\_ELSI}
+  \index{compile!pre-processor!-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}
   where \shell{<>} represents the appropriate ELSI libraries (see the
-  ELSI installation instructions).
+  ELSI installation instructions). Support for the EigenExa and
+  MAGMA solvers is not compiled-in by default. To enable it, add the
+  flag
+\begin{shellexample}
+  FPPFLAGS += -DSIESTA__ELSI_2_4_SOLVERS
+\end{shellexample}
   %
   If one experiences linker failures, one possible solution that may
   help is
@@ -6183,7 +6189,7 @@ inversion (see Sec~\ref{SolverPEXSI}).
 
 Additionally, \siesta\ can use the ELSI library (see
 Sec.~\ref{SolverELSI}) of solvers (which provides its own versions of OMM
-and PEXSI, in addition to diagonalization), and the new linear-scaling
+and PEXSI, in addition to diagonalization and other solvers), and the new linear-scaling
 CheSS library (see Sec.~\ref{SolverCheSS})
 
 The calculation of the H and S matrix elements is always done with an
@@ -6209,7 +6215,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   Character string to choose among diagonalization (\fdf*{diagon}),
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
   solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
-  PEXSI method (\fdf*{PEXSI}), ELSI solver (\fdf*{ELSI}) or the \fdf*{CheSS} solver.
+  PEXSI method (\fdf*{PEXSI}), ELSI family of solvers (\fdf*{ELSI}) or the \fdf*{CheSS} solver.
   In addition, the \fdf*{Dummy} solver will just return a
   slightly perturbed density-matrix without actually solving for
   the electronic structure. This is useful for timing other routines.
@@ -7042,8 +7048,10 @@ necessary.
 
 The ELSI library provides a unified interface to a range of solvers,
 including ELPA (diagonalization), PEXSI, OMM, density-matrix
-purification (using NTPoly), and SIPS (based on spectrum
-slicing). It can be downloaded and installed freely from
+purification (using NTPoly), SIPS (based on spectrum
+slicing), EigenExa, and MAGMA (the latter two available after version
+2.4.0 of the ELSI library, and enabled via the preprocessor flag
+\texttt{-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}). It can be downloaded and installed freely from
 \url{http://elsi-interchange.org}.
 
 The current interface in \siesta\ is based on the ``DM'' mode in ELSI:
@@ -7073,8 +7081,24 @@ always appropriate.
   \item pexsi
   \item ntpoly
   \item sips
+  \item eigenexa
+  \item magma
   \end{itemize}
 \end{fdfentry}
+
+The EigenExa and MAGMA solvers are available after version
+2.4.1 of the ELSI library, and enabled via the preprocessor flag
+\texttt{-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}).
+
+Note that the native interface in \siesta\ for an older version of the
+PEXSI solver is still available (preprocessor flag
+\texttt{-DSIESTA\_\_PEXSI}), but it might not be possible to compile
+it at the same time as the ELSI interface, due to duplicate symbols at
+the linking stage. A similar situation arises with the native support
+for the ELPA library (preprocessor flag \texttt{-DSIESTA\_\_ELPA}),
+but in this case the ELSI interface with an external ELPA library can
+still coexist.  The native OMM interface in \siesta\ (enabled by
+default) has no coexistence problems with ELSI.
 
 \begin{fdfentry}{ELSI!Broadening!Method}[string]<''fermi''>
 The scheme for level broadening. Valid options are ``fermi'',
@@ -7104,23 +7128,29 @@ ELSI manual:
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!ELPA!Flavor}[integer]<2>
-  Use the two-stage (banded then tridiagonal conversion) of the ELPA
+  Use the two-stage (banded, then tridiagonal conversion) of the ELPA
   solver by default.
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!ELPA!NSinglePrecision}[integer]<0>
   Number of initial scf steps carried out in single precision (if
-  supported by the compiled version of the ELPA library)
+  supported by the externally compiled version of the ELPA
+  library). Typically, most scf steps can be computed in single
+  precision, with only a final one or two in double precision, to
+  achieve the standard results. The use of this option increases
+  performance significantly.
+  
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!ELPA!Autotune}[integer]<0>
-  Use the auto-tune feature (if supported by the compiled version of
-  the ELPA library)
+  Use the auto-tune feature (if supported by the externally
+  compiled version of the ELPA library). See the ELPA documentation
+  for more details.
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!ELPA!GPU}[integer]<0>
   Request use of GPU acceleration (if supported by the compiled
-  version of the ELPA library)
+  version of the ELPA library).
 \end{fdfentry}
 
 \begin{fdfentry}{ELSI!OMM!Flavor}[integer]<0>
@@ -7172,6 +7202,16 @@ Initial upper bound for $\mu$ at the beginning of the scf loop.
 \begin{fdfentry}{ELSI!SIPS!ELPA!Steps}[integer]<2>
 \end{fdfentry}
 
+\begin{fdfentry}{ELSI!EigenExa!Method}[integer]<2>
+Selects between the tridiagonalization (1) and pentadiagonalization
+(2) methods. The latter is usually faster and more scalable.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!MAGMA!Solver-Method}[integer]<1>
+Selects between the 1-stage (1) and 2-stage (2) solvers in the MAGMA
+library. Please see the documentation of the MAGMA library for the
+details about compilation and support for accelerator devices.
+\end{fdfentry}
 
 \subsection{The CheSS solver}
 \label{SolverCheSS}

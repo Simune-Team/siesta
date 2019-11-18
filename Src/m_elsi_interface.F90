@@ -44,7 +44,11 @@ module m_elsi_interface
   integer, parameter :: PEXSI_SOLVER      = 3 ! solver
   integer, parameter :: SIPS_SOLVER       = 5 ! solver
   integer, parameter :: NTPOLY_SOLVER     = 6 ! solver
-
+#ifdef SIESTA__ELSI_2_4_SOLVERS
+  integer, parameter :: EIGENEXA_SOLVER   = 4 ! solver
+  integer, parameter :: MAGMA_SOLVER      = 7 ! solver
+#endif
+  
   integer, parameter :: MULTI_PROC        = 1 ! parallel_mode
   integer, parameter :: SIESTA_CSC        = 2 ! distribution
 
@@ -103,6 +107,11 @@ module m_elsi_interface
   real(dp) :: ntpoly_filter
   real(dp) :: ntpoly_tol
 
+#ifdef SIESTA__ELSI_2_4_SOLVERS     
+  integer  :: eigenexa_method
+  integer  :: magma_solver_type
+#endif
+  
   character(len=6) :: solver_string
   character(len=5) :: broad_string
 
@@ -277,6 +286,11 @@ subroutine elsi_get_opts()
   ntpoly_filter        = fdf_get("ELSI-NTPOLY-Filter", 1.0e-9_dp)
   ntpoly_tol           = fdf_get("ELSI-NTPOLY-Tolerance", 1.0e-6_dp)
 
+#ifdef SIESTA__ELSI_2_4_SOLVERS     
+  eigenexa_method      = fdf_get("ELSI-EIGENEXA-Method", 2)
+  magma_solver_type    = fdf_get("ELSI-MAGMA-Solver-Type", 1)
+#endif
+  
   select case (solver_string)
   case ("elpa", "ELPA")
     which_solver = ELPA_SOLVER
@@ -288,6 +302,12 @@ subroutine elsi_get_opts()
     which_solver = SIPS_SOLVER
   case ("ntpoly", "NTPOLY", "NTPoly")
     which_solver = NTPOLY_SOLVER
+#ifdef SIESTA__ELSI_2_4_SOLVERS     
+  case ("eigenexa", "EigenExa", "EIGENEXA")
+    which_solver = EIGENEXA_SOLVER
+  case ("MAGMA", "magma")
+    which_solver = MAGMA_SOLVER
+#endif     
   case default
     which_solver = ELPA_SOLVER
   end select
@@ -453,6 +473,14 @@ subroutine elsi_real_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, row_ptr, &
     call elsi_set_ntpoly_filter(elsi_h, ntpoly_filter)
     call elsi_set_ntpoly_tol(elsi_h, ntpoly_tol)
 
+#ifdef SIESTA__ELSI_2_4_SOLVERS
+! --- EigenExa
+    call elsi_set_eigenexa_method(elsi_h, eigenexa_method)    
+
+! --- MAGMA
+    call elsi_set_magma_solver(elsi_h, magma_solver_type)    
+#endif
+    
  endif
 
  if ( (which_solver == PEXSI_SOLVER) .and. &
@@ -1435,6 +1463,14 @@ subroutine elsi_complex_solver(iscf, n_basis, n_basis_l, n_spin, nnz_l, numh, ro
     call elsi_set_ntpoly_filter(elsi_h, ntpoly_filter)
     call elsi_set_ntpoly_tol(elsi_h, ntpoly_tol)
 
+#ifdef SIESTA__ELSI_2_4_SOLVERS
+! --- EigenExa
+    call elsi_set_eigenexa_method(elsi_h, eigenexa_method)    
+
+! --- MAGMA
+    call elsi_set_magma_solver(elsi_h, magma_solver_type)    
+#endif
+    
  endif   ! iscf == 1
 
  if ( (which_solver == PEXSI_SOLVER) .and. &
