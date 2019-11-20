@@ -1,20 +1,21 @@
-#BETA#BETA#BETA#BETA#BETA#BETA#
-B                             B
-E            SIESTA           E
-#             X.Y             #
-T              Z              T
-A                             A
-#BETA#BETA#BETA#BETA#BETA#BETA#
+Notes for MaX release, November 2019
 
-Release notes for next Siesta
+*** Use of PSML pseudopotentials
+
+ * Please see the file README_PSML in the top directory for important
+   information.
+
+*** Use of ELSI library
+
+ * Please see the file README_PSML in the top directory for important
+   information.
 
 *** Backward-compatibility issues
 
  * The transiesta executable has been deprecated. Please use
       siesta --electrode 
    for electrode calculations. For regular transiesta runs, there
-   is no need for the specific executable. Details were given in the
-   4.1-b4 release.
+   is no need for the specific executable. 
 
 *** New features
 

@@ -45,17 +45,20 @@
 
       subroutine local_die(str)
 
-      use parallel, only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
-
       character(len=*), intent(in)  :: str
-      
-      external ::  io_assign, io_close
-      integer  ::  lun
+
+      integer :: Node
 #ifdef MPI
       integer MPIerror
+#endif
+      
+#ifdef MPI
+      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+#else
+      Node = 0
 #endif
 
 ! Even though formally (in MPI 1.X), only the master node
@@ -69,11 +72,6 @@
       write(0,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
       if (Node .eq. 0) then
-         call io_assign( lun )
-         open(lun,file="MESSAGES",status="unknown",
-     $        position="append",action="write")
-         write(lun,"(a)") 'FATAL: ' // trim(str)
-         call io_close(lun)
          call pxfflush(6)
          call pxfflush(0)
       endif
@@ -85,27 +83,31 @@
       call pxfabort()
 #endif
       end subroutine local_die
-      
+
+!--------------
       subroutine message(level,str)
 
-      use parallel, only : Node
+#ifdef MPI
+      use mpi_siesta
+#endif
 
       ! One of INFO, WARNING, FATAL
       character(len=*), intent(in)  :: level
-
       character(len=*), intent(in)  :: str
 
-      external ::  io_assign, io_close
-      integer  ::  lun
+      integer :: Node
+#ifdef MPI
+      integer MPIerror
+#endif
       
+#ifdef MPI
+      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+#else
+      Node = 0
+#endif
       if (Node .eq. 0) then
          write(6,'(a)') trim(str)
          write(0,'(a)') trim(str)
-         call io_assign(lun)
-         open(lun,file="MESSAGES",status="unknown",
-     $        position="append",action="write")
-         write(lun,"(a)") trim(level) // ": " // trim(str)
-         call io_close(lun)
          call pxfflush(6)
          call pxfflush(0)
       endif
@@ -116,10 +118,10 @@
       character(len=*), intent(in)  :: str
       call local_die(str)
       end subroutine die
+!--------------
 
       subroutine local_bye(str)
 
-      use parallel, only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -128,6 +130,13 @@
 
 #ifdef MPI
       integer rc
+#endif
+      integer :: Node
+      
+#ifdef MPI
+      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+#else
+      Node = 0
 #endif
 
       if (Node.eq.0) then

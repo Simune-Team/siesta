@@ -11,25 +11,22 @@
 # JM Soler, J Nara, A Garcia, E Anglada
 #
 WORK_DIR=$(shell pwd)
-SIESTA_DIR=$(WORK_DIR)/../../../..
-SRC_DIR=$(SIESTA_DIR)/Src
 OBJDIR=Obj
-OBJ_DIR=$(SIESTA_DIR)/$(OBJDIR)
 #
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
-VPATH=$(SRC_DIR)
 
 all: default
 default: protoNEB
 
-ARCH_MAKE=$(OBJ_DIR)/arch.make
+MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
-# Uncomment the following line for debugging support
+TOP_LEVEL=$(shell pwd)/../../../../Src
+VPATH:=$(TOP_LEVEL)
 #
-#FFLAGS=$(FFLAGS_DEBUG)
 #
 # Routines used by pipes version (VPATH knows where they are)
 #
@@ -37,15 +34,28 @@ include $(ARCH_MAKE)
 #
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
-XMLPARSER=libxmlparser.a
-WXML=libwxml.a
-XC=libSiestaXC.a
+#
 MS=MatrixSwitch.a
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(MS) $(XC) \
+XMLPARSER=$(XMLF90_LIBS)
+XC=$(GRIDXC_LIBS)
+PSML=$(PSML_LIBS)
+#
+NCPS=$(MAIN_OBJDIR)/ncps/src/libncps.a
+PSOP=$(MAIN_OBJDIR)/psoplib/src/libpsop.a
+#
+NCPS_INCFLAGS=-I$(MAIN_OBJDIR)/ncps/src
+PSOP_INCFLAGS=-I$(MAIN_OBJDIR)/psoplib/src
+#
+INCFLAGS:=$(NETCDF_INCFLAGS) \
+          $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
+          $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS) $(INCFLAGS)
+#
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS)  $(XC) \
+	$(NCPS) $(PSML) $(PSOP) $(MS)\
 	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
-	(cd $(OBJ_DIR) ; \
+	(cd $(MAIN_OBJDIR) ; \
 	make libSiestaForces.a ; \
 	cp -f *.a *.mod $(WORK_DIR) )
 	touch libs_collected

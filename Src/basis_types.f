@@ -23,7 +23,9 @@
 !     
 !
       use atmparams, only: lmaxd, nzetmx, nsemx, nkbmx
-      use pseudopotential, only: pseudopotential_t, pseudo_init_constant
+      use m_ncps, only: pseudopotential_t => froyen_ps_t
+      use m_ncps, only: pseudo_init_constant
+      use m_psml, only: psml_t => ps_t
       use precision, only: dp
       use sys, only : die
 
@@ -31,20 +33,24 @@
 
       type, public ::  ground_state_t
           integer                   ::  lmax_valence
-          integer                   ::  n(0:3)
-          real(dp)                  ::  occupation(0:3)
+          integer                   ::  n(0:4)
+          real(dp)                  ::  occupation(0:4)
           logical                   ::  occupied(0:4)   ! note 0..4
           real(dp)                  ::  z_valence
       end type ground_state_t
 
       type, public :: shell_t
-          integer                   ::  n          ! n quantum number
-          integer                   ::  l          ! angular momentum
-          integer                   ::  nzeta      ! Number of PAOs
-          logical                   ::  polarized  
-          integer                   ::  nzeta_pol
+          integer                   ::  n  = -1        ! n quantum number
+          integer                   ::  l  = -1         ! angular momentum
+          integer                   ::  nzeta = 0     ! Number of PAOs
+          logical                   ::  polarized = .false.
+          logical                   ::  was_polarized = .false.
+          logical                   ::  polarization_shell = .false.
+          type(shell_t), pointer    ::  shell_being_polarized => null()
+          integer                   ::  sequence_in_lshell = -1
+          integer                   ::  nzeta_pol = 0
           real(dp)                  ::  split_norm ! Split norm value
-          logical                   ::  split_norm_specified ! in a
+          logical                   ::  split_norm_specified = .false. ! in a
                                                              ! S value
                                                              ! construct
           real(dp)                  ::  rinn       ! Soft confinement
@@ -55,9 +61,13 @@
           real(dp)                  ::  qwid       ! Charge confinement
           real(dp), pointer         ::  rc(:) => null()! rc's for PAOs
           real(dp), pointer         ::  lambda(:) => null() ! Contraction factors
-          !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
       end type shell_t
 
+      type, public :: ref_container
+          ! To build an array of pointers
+          type(shell_t), pointer    :: s => null()
+      end type ref_container
+          
       type, public :: lshell_t
           integer                   ::  l          ! angular momentum
           integer                   ::  nn         ! number of n's for this l
@@ -110,6 +120,8 @@
           integer                   ::  z          ! Atomic number
           type(ground_state_t)      ::  ground_state
           type(pseudopotential_t)   ::  pseudopotential
+          type(psml_t)              ::  psml_handle
+          logical                   ::  has_psml_ps
           integer                   ::  lmxo       ! Max l for basis
           integer                   ::  lmxkb      ! Max l for KB projs
           integer                   ::  lmxldaupj  ! Max l for LDA+U projs
@@ -136,10 +148,15 @@
           integer                   ::  nldauprojs_lm    ! How many projectors
                                                          !  including angular 
                                                          !  dependencies.
+          logical                   ::  in_pao_basis_block = .false.
           integer                   ::  lmxkb_requested
           integer                   ::  lmxldaupj_requested
+          logical                   ::  non_perturbative_polorbs=.false.
+
           type(shell_t), pointer    ::  tmp_shell(:) => null()
           type(ldaushell_t), pointer::  ldaushell(:) => null()
+          type(ref_container), allocatable :: shell_of(:,:)
+
       end type basis_def_t
 
       integer, save, public              :: nsp  ! Number of species
@@ -210,6 +227,12 @@
       target%n = source%n
       target%nzeta = source%nzeta
       target%polarized = source%polarized
+      target%was_polarized = source%was_polarized
+      target%sequence_in_lshell = source%sequence_in_lshell
+      target%polarization_shell = source%polarization_shell
+      if (associated(source%shell_being_polarized)) then
+         target%shell_being_polarized => source%shell_being_polarized
+      endif
       target%nzeta_pol = source%nzeta_pol
       target%rinn = source%rinn
       target%vcte = source%vcte
@@ -233,7 +256,11 @@
       p%n = -1
       p%nzeta = 0
       p%polarized = .false.
+      p%was_polarized = .false.
+      p%polarization_shell = .false.
+      nullify(p%shell_being_polarized)
       p%nzeta_pol = 0
+      p%sequence_in_lshell = -1
       p%rinn = 0._dp
       p%vcte = 0._dp
       p%qcoe = 0._dp
@@ -281,6 +308,7 @@
 
 !-----------------------------------------------------------------------
       subroutine init_basis_def(p)
+      use m_psml, only: ps_destroy
       type(basis_def_t)          :: p
 
       p%lmxo = -1
@@ -288,6 +316,7 @@
       p%lmxldaupj = -1
       p%lmxkb_requested = -1
       p%lmxldaupj_requested = -1
+      p%non_perturbative_polorbs = .false.
       p%nkbshells = -1
       p%nldaushells = -1
       p%nldauprojs_lm = -1
@@ -300,6 +329,12 @@
       nullify(p%kbshell)
       nullify(p%tmp_shell)
       nullify(p%ldaushell)
+      if (allocated(p%shell_of)) then
+         deallocate(p%shell_of)
+      endif
+      call ps_destroy(p%psml_handle)
+      ! *** To implement
+      ! call pseudo_destroy(p%pseudopotential)
       end subroutine init_basis_def
 
 !-----------------------------------------------------------------------
@@ -343,12 +378,14 @@
 
 !-----------------------------------------------------------------------
       subroutine destroy_basis_def(p)
+      use m_psml, only: ps_destroy
       type(basis_def_t)          :: p
 
       call destroy_ldaushell(p%ldaushell)
       call destroy_lshell(p%lshell)
       call destroy_shell(p%tmp_shell)
-
+      call ps_destroy(p%psml_handle)
+      ! call pseudo_destroy(p%pseudopotential)
       end subroutine destroy_basis_def
 
 !-----------------------------------------------------------------------
@@ -513,7 +550,8 @@
             k=>basp%kbshell(l)
             nkb_max = max(nkb_max,k%nkbl)
          enddo
-
+         ! If light elements are first, this is more economical
+         allocate(basp%shell_of(0:lmax,1:nsemi_max))
       enddo
 
       lmax = max(lmax,lmaxkb)
@@ -644,6 +682,8 @@
             cnfigmx(l,isp) = 0
             do n=1,ls%nn
                s=>ls%shell(n)
+               basp%shell_of(l,n)%s => s
+               s%sequence_in_lshell = n
                cnfigmx(l,isp) = max(cnfigmx(l,isp),s%n)
                nzeta(l,n,isp) = s%nzeta
                polorb(l,n,isp) = s%nzeta_pol
@@ -682,24 +722,6 @@
      $           cnfigmx(l,isp) = basp%ground_state%n(l)
 
          enddo
-
-         ! NOTE: cnfigmx and nsemic are only initialized for l up to lmxo
-         !       in the above loop
-         !       Extend them so that we can deal properly with outer polarization states
-
-         do l=basp%lmxo+1, lmaxd
-            !     gs is only setup up to l=3 (f)
-            if (l <= 3) then
-               cnfigmx(l,isp) = basp%ground_state%n(l)
-            else
-               ! g orbitals. Use the "l+1" heuristic
-               ! For example, 5g pol orb associated to a 4f orb.
-               cnfigmx(l,isp) = l + 1
-            endif
-            nsemic(l,isp) = 0
-         enddo
-         
-
          do l=0,basp%lmxkb
             k=>basp%kbshell(l)
             nkbl(l,isp) = k%nkbl
@@ -740,12 +762,39 @@
      $        'L=', l, 'Nsemic=', nsemic(l,is),
      $        'Cnfigmx=', cnfigmx(l,is)
          do n=1,nsemic(l,is)+1
-            if (nzeta(l,n,is) == 0) exit
             nprin = cnfigmx(l,is) - nsemic(l,is) + n - 1
             write(orb_id,"(a1,i1,a1,a1)") "(",nprin, sym(l), ")"
-            write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1,2x,a4)')
-     $            'i=', n, 'nzeta=',nzeta(l,n,is),
-     $            'polorb=', polorb(l,n,is), orb_id
+            write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1,2x,a4)',
+     $                 advance="no")
+     $           'i=', n, 'nzeta=',nzeta(l,n,is),
+     $           'polorb=', polorb(l,n,is), orb_id
+
+            if (nzeta(l,n,is) == 0) then
+               ! Shell is not occupied in the GS
+               ! (see, e.g. basis_specs::autobasis)
+               ! It could be a polarization orbital with the new
+               ! convention of setting lmxo including polorbs, or just empty
+               if (l == basp%lmxo) then
+                  write(lun,'(tr2,a)')
+     $             '(perturbative polarization orbital)'
+               else   ! It is difficult to detect a polarization orbital with intermediate l.
+                  write(lun,'(tr2,a)')
+     $             '(empty shell -- could be pol. orbital)'
+               endif
+               EXIT
+               
+            else if (basp%lshell(l)%shell(n)%polarized) then
+               write(lun,'(tr2,a)')
+     $              '(to be polarized perturbatively)'
+            else if (basp%lshell(l)%shell(n)%was_polarized) then
+               write(lun,'(tr2,a)')
+     $              '(to be polarized non-perturbatively)'
+            else if (basp%lshell(l)%shell(n)%polarization_shell) then
+               write(lun,'(tr2,a)')
+     $              '(non-perturbative polarization shell)'
+            else
+               write(lun,*)  ! end record
+            endif
             if (basistype(is).eq.'filteret') then
                write(lun,'(10x,a10,2x,g12.5)') 
      $              'fcutoff:', filtercut(l,n,is)

@@ -14,7 +14,8 @@
       use atm_types, only: nspecies, species, elec_corr, npairs
       use radial
       use atmfuncs, only: floating, zvalfis, psch
-      use interpolation, only: polint  ! polynomial interpolation
+      use interpolation, only: polint ! polynomial interpolation
+      use gpfa_fft, only: nfft
       use m_radfft
       use sys, only: die
       use m_bessph, only: bessph   ! Spherical Bessel functions
@@ -90,17 +91,14 @@ C     (in Ry if lengths are in Bohr).
 C     CHERR is a small number to check the precision of the charge density
 C     integration.
 
-      integer nq, npoint
-      real(dp)            :: q2cut, cherr
-      PARAMETER ( NQ     =  512  )
+      integer nq, new_nq, npoint
+      real(dp), parameter  :: cherr = 0.05_dp
       PARAMETER ( NPOINT =  4     ) 
-      PARAMETER ( Q2CUT  =  2.5e3_dp )
-      PARAMETER ( CHERR   =  5.e-2_dp )
 
-      real(dp)
-     .     CH(0:NQ,2),VTB(NTBMAX,2),
-     .     V(0:NQ,2),
-     .     GRCH(3),RX(3),RAUX(2*NPOINT+1)
+      real(dp)            :: q2cut
+      real(dp), parameter :: q_factor = 1.24_dp  ! To enlarge Q2CUT
+      real(dp), allocatable ::  CH(:,:), V(:,:)
+      real(dp)  :: VTB(NTBMAX,2), GRCH(3),RX(3),RAUX(2*NPOINT+1)
 
 
       REAL(DP) cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
@@ -115,20 +113,40 @@ C     integration.
 C     
 C***  CUT-OFF IN REAL AND RECIPROCAL SPACE**
 C     
+      NQ =  512               ! Initial default value
+      Q2CUT  =  2.5e3_dp      ! Initial default value
+      
+      !
+      ! Adapt the cutoff and the number of points NQ dynamically
+      !
+      q_loop: DO
+
       QMAX =  SQRT( Q2CUT )
       RMAX = PI * NQ / QMAX
-      IF(RMX.GT.RMAX) THEN  
-            WRITE(6,*) 'CH_OVERLAP: THE NUMBER OF INTEGRATION',
-     .           ' POINTS MUST BE INCREASED'
+      IF(RMX.GT.RMAX) THEN
+            ! We need more points to cover the range at pi/Qmax spacing
+            ! The fft needs multiples of 2, 3, or 5...
+            ! 
             write(6,'(a,2f15.6)') 'ch_overlap: rmx,rmax =', rmx, rmax
-         call die
-      ENDIF 
+
+            new_nq = ceiling(qmax*rmx/pi)
+            call nfft(new_nq)
+            WRITE(6,*) 'CH_OVERLAP: THE NUMBER OF INTEGRATION',
+     .           ' POINTS IS INCREASED from ', NQ, ' to ',
+     $           new_nq
+            NQ = new_nq
+            RMAX = PI * NQ / QMAX
+      ENDIF
+      
       DELT=PI/QMAX
       C=4.0_DP*PI*DELT
       DLT=RMX/(NTBMAX-1)
 
       ZVAL1=ZVALFIS(IS1)
       ZVAL2=ZVALFIS(IS2)
+
+      ! Estimate the charges
+      allocate(CH(0:NQ,2),V(0:NQ,2))
 
       Z1=0.0_DP
       Z2=0.0_DP
@@ -150,20 +168,37 @@ C
          Z2=Z2-C*CH2*R*R
 
       ENDDO
-           
-      IF((ABS(Z1-ZVAL1).GT.CHERR).OR.
-     .     (ABS(Z2-ZVAL2).GT.CHERR)) THEN 
-            WRITE(6,*) 'CH_OVERLAP: THE NUMBER OF INTEGRATION',
-     .           ' POINTS MUST BE INCREASED'
-            WRITE(6,*) 'CH_OVERLAP: Z1=',Z1,' ZVAL1=',ZVAL1
-            WRITE(6,*) 'CH_OVERLAP: Z2=',Z2,' ZVAL2=',ZVAL2
-         call die
-      ENDIF
 
+      ! Normalize to exact charge
       DO IR=0,NQ
          CH(IR,1)=real(ZVAL1,dp)*CH(IR,1)/Z1
          CH(IR,2)=real(ZVAL2,dp)*CH(IR,2)/Z2
-      ENDDO 
+      ENDDO
+
+      ! Note that the default threshold cherr is quite large (0.05)
+      ! It is not advisable to make it smaller than 0.01, due to
+      ! upstream inaccuracies in chlocal, etc
+      
+      IF((ABS(Z1-ZVAL1).GT.CHERR).OR.
+     .     (ABS(Z2-ZVAL2).GT.CHERR)) THEN 
+         WRITE(6,*) 'CH_OVERLAP: THE CUTOFF',
+     .        ' MUST BE INCREASED'
+         WRITE(6,*) 'CH_OVERLAP: Z1=',Z1,' ZVAL1=',ZVAL1
+         WRITE(6,*) 'CH_OVERLAP: Z2=',Z2,' ZVAL2=',ZVAL2
+         
+         deallocate(CH,V)
+         q2cut= q2cut * q_factor
+         WRITE(6,'(a,f10.2)') 'CH_OVERLAP: New q2cut (Ry) =', q2cut
+         
+         cycle q_loop  ! Another pass
+         
+      ELSE
+         WRITE(6,*) 'CH_OVERLAP: Z1=',Z1,' ZVAL1=',ZVAL1
+         WRITE(6,*) 'CH_OVERLAP: Z2=',Z2,' ZVAL2=',ZVAL2
+         exit q_loop  ! We are done
+      ENDIF
+
+      ENDDO q_loop
 C
 C     REAL SPACE INTEGRATION OF POISSON EQUATION
 C          
@@ -232,6 +267,8 @@ C
          CORR(IR)=0.5_DP*(ENERG1+ENERG2)
 
       ENDDO 
+
+      deallocate(CH,V)
 
       END subroutine ch_overlap
 

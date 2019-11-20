@@ -22,8 +22,9 @@
 #endif
       use atm_types
       use basis_types, only: write_basis_specs, basis_parameters
-      use pseudopotential
+      use m_ncps,      only: pseudo_header_print
       use radial
+
       use xml, only: xml_dump_attribute, xml_dump_element, str
 
       implicit none

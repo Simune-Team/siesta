@@ -49,8 +49,9 @@
       use ldau_specs, only: read_ldau_specs
       use ldau_specs, only: ldau_proj_gen
       use ldau_specs, only: populate_species_info_ldau
-      use pseudopotential, only: pseudo_read
-      
+      use m_ncps, only: pseudo_read
+      use m_spin_orbit_potentials, only: valid_spin_orbit_potentials
+
       use chemical
 
       use m_spin, only: spin
@@ -111,11 +112,20 @@
           ! We still need to read the pseudopotential information
           ! because the .ion files do not contain V_so information
           write(6,'(a)') ' initatom: spin-orbit-onsite with user-basis'
-          write(6,'(a)') ' initatom: Still need to read the psf files.'
+          write(6,'(a)') ' initatom: still needs pseudopotential files'
           do is = 1 , nsp
              basp => basis_parameters(is)
              basp%label = species_label(is)
-             call pseudo_read(basp%label,basp%pseudopotential)
+             call pseudo_read(basp%label,basp%pseudopotential,
+     $            basp%psml_handle,basp%has_psml_ps)
+             if (basp%has_psml_ps) then
+                if (.not. valid_spin_orbit_potentials(basp%psml_handle))
+     $                    then
+                   call die(
+     $            "Cannot do spin-orbit 'onsite' without " //
+     $            "proper semilocal potentials in the psml file")
+                endif
+             endif
           end do
        end if
        write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
@@ -135,11 +145,11 @@
         call setup_atom_tables(nsp)
 
         lj_projs = (spin%SO_offsite)
-
+        
         allocate(species(nspecies))
         do is = 1,nsp
           call write_basis_specs(6,is)
-          basp=>basis_parameters(is)
+          basp => basis_parameters(is)
           spp => species(is)
           call ATOM_MAIN( iz(is), lmxkb(is), nkbl(0:lmaxd,is),
      &                    erefkb(1:nkbmx,0:lmaxd,is), lmxo(is),
@@ -162,6 +172,7 @@
         enddo 
 
         call prinput(nsp)
+          ! DO: call destroy(basp) !!  ?? is it safe here?
 
 !       Create the new data structures for atmfuncs.
         call populate_species_info_ldau()

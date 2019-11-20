@@ -80,7 +80,7 @@ module m_initwf
       use atomlist,        only : no_s, no_l, no_u, qtot, indxuo
       use m_spin,          only : nspin
       use alloc
-      use m_memory
+      use memory_log
       use m_fermid,      only : fermid
       use sys,           only : die
 #ifdef MPI

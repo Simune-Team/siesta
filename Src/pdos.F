@@ -59,7 +59,7 @@ C **********************************************************************
       use atomlist,     only : iphorb, iaorb
       use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
       use atmfuncs,     only : pol, izofis
-      use flib_wxml,    only : xmlf_t, xml_OpenFile, xml_NewElement, 
+      use xmlf90_wxml,  only : xmlf_t, xml_OpenFile, xml_NewElement, 
      .                         xml_AddArray, xml_AddPCData,
      $                         xml_AddAttribute,
      .                         xml_EndElement, xml_Close

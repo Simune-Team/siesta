@@ -22,7 +22,6 @@
       use siesta_geom
       use atomlist, only: qa, lasto, no_u, no_s, indxuo, 
      &                    qtot, Qtots, no_l
-      use sys, only: die, bye
       use kpoint_scf_m, only: kpoint_scf, gamma_scf
       use m_energies,   only: Ebs, Ecorrec, Entropy
       use m_energies,   only: Ef, Efs
@@ -71,6 +70,8 @@
       real(dp), parameter :: e1 = 1.0_dp, e2 = -1.0_dp
       real(dp)            :: buffer1, qsol
       integer             :: mpierr
+
+      external            :: die, bye
 
 !-------------------------------------------------------------------- BEGIN
 

@@ -17,8 +17,6 @@
 !       (C) 1996  Michael Hennecke, RZ Universitaet Karlsruhe
 !
 !
-        USE TIMER_MPI_M, only: timer_mpi
-
         IMPLICIT NONE
         PRIVATE
 

@@ -34,10 +34,11 @@ include $(ARCH_MAKE)
 
 SIESTA_LIB=libSiestaForces.a
 FDF=libfdf.a
-XMLPARSER=libxmlparser.a
-WXML=libwxml.a
-XC=libSiestaXC.a
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(WXML) $(XMLPARSER) $(XC) \
+XC=$(GRIDXC_LIBS)
+NCPS_LIBS=$(OBJ_DIR)/ncps/src/libncps.a
+PSOP_LIBS=$(OBJ_DIR)/psoplib/src/libpsop.a
+#
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS) $(XC) $(PSML_LIBS) $(NCPS_LIBS) $(PSOP_LIBS)\
 	  $(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 
 libs_collected:
@@ -47,8 +48,8 @@ libs_collected:
 	cp -f $(HSXDIR)/hsx_m.f90 $(WDIR)
 	touch libs_collected
 
-unfold.o: unfold.F90 hsx_m.f90 libs_collected
-	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F) hsx_m.f90 unfold.F90
+unfold.o: array.F90 unfold.F90 hsx_m.f90 libs_collected
+	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F) hsx_m.f90 array.F90 unfold.F90
 
 unfold: libs_collected unfold.o
 	$(FC) $(LDFLAGS) -o unfold hsx_m.o unfold.o $(ALL_LIBS)

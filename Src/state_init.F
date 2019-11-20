@@ -49,7 +49,7 @@
      &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
      &                             lastkb, lasto, superc, indxuo,
      &                             no_u, no_s, no_l, iza, qtots
-      use alloc,             only: re_alloc, de_alloc, alloc_report
+      use alloc,             only: re_alloc, de_alloc
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
       use m_supercell,       only: exact_sc_ag
@@ -78,7 +78,7 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use ldau_specs,        only: switch_ldau, ldau_init
       use fdf,               only: fdf_get
-      use sys,               only: message, die, bye
+      use sys,               only: message, die
       use m_sparse, only : xij_offset
 
       use ts_kpoint_scf_m, only: setup_ts_kpoint_scf, ts_kpoint_scf
@@ -140,7 +140,8 @@
       logical            :: diag_folding, diag_folding1
       logical            :: foundxv  ! dummy for call to ioxv
 
-      external           ::  madelung, timer
+      external           :: madelung, timer
+      external           :: bye
       real(dp), external :: volcel
 
       integer                       :: ts_kscell_file(3,3) = 0

@@ -1,0 +1,96 @@
+This directory holds a standalone program ('psop') to generate, from a
+pseudopotential file holding semilocal-potential information, a full Vnl
+operator in the classic Siesta style (special Vlocal, plus KB projectors).
+The information is produced in XML, in a form compatible with the PSML format.
+
+The program can only read .psml files. 
+
+Note that psop can produce Vlocal and KB information starting from the
+output of any program that produces semilocal potentials in .psml
+format. It is not restricted to files produced by ATOM.
+
+To build the program, type
+
+ make OBJDIR=Obj_directory 
+
+where Obj_directory is the name of the object directory in which you have
+built the rest of Siesta. If you are using the default Obj directory you
+can just type 'make'.
+
+'psop' accepts command-line options. To see the complete list, type
+ 
+  psop -h
+
+OPERATIONAL NOTES
+
+The construction of Vlocal and the KB projectors follows the defaults
+in modern versions of Siesta.
+
+* Vlocal and Chlocal
+
+For small-core systems, a ``gaussian charge'' is generated and a
+Vlocal generated from it. The cutoff for chlocal in this case is
+obtained by a ``charge criterion'', checking for smallness of
+the charge associated to chlocal: 4*pi*r^2*chlocal(rcut) < eps_charge.
+
+real(dp), parameter  :: eps_vlocal=1.0d-5  ! this is eps
+real(dp), parameter  :: eps_charge=1.0d-4  ! for charge criterion
+
+For large-core systems, Vlocal is obtained first, from a fit to the
+all-electron potential. The fit is by default done conserving up to
+the second derivative at the fitting point, unless the -3 option is
+used to force conservation of the third derivative.
+Chlocal is then computed from Vlocal using Poisson's equation.
+In this case, the cutoff for chlocal is by default computed by
+checking for smallness of  (2*Z - r*Vlocal), unless the -c option is
+specified to force the use of the ``charge'' criterion.
+
+The chlocal cutoffs are needed also to compute ``qtot'', the total
+charge associated to chlocal, which is used to rescale the function.
+
+* KB projectors
+
+The construction follows the defaults in modern versions of Siesta
+(after the changes introduced by Javier Junquera to redefine the range
+of integration for the orbitals used in the construction). This can
+be changed by using the -K option, possibly joined by the '-R rmax'
+option to specify an alternate rmax.
+
+To tell the program to build several projectors for a given l channel,
+use the option '-F proj_spec_filename'.  The file should be of the
+form
+
+  0  2   0.5
+  1  1   1.0
+  2  2   0.7
+  3  1   0.55
+
+with columns: angular momentum, number of KB for that l channel
+(maximum 2), and energy shift with respect to the first projector in
+the l channel.
+
+The energy shifts are not honored when semicore shells are present. In
+this case the program will automatically add one projector per
+semicore shell, with the appropriate energy levels as reference energies.
+
+If the file is not present, the default is to generate multiple
+projectors for semicore shells, and just one for normal shells, with
+the default reference energies used in Siesta.
+
+To generate fully relativistic KB projectors (in lj form, as needed
+for example by the new 'offsite' spin-orbit implementation in Siesta),
+use the flag '-r'. 
+
+* Other options
+
+Some programs (notably oncvpsp) produce semi-local potentials with
+``raw tails'' with numerical noise at large radii. In this case it
+might be difficult to check properly for the place at which they adopt
+the coulomb form.  The '-C Rmax_ps_check' option forces the use of
+a (smaller, typically 10 Bohr) radius to start the inward check.
+
+
+
+
+
+

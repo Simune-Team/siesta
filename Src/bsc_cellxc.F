@@ -118,8 +118,8 @@ C *******************************************************************
       use sys,          only : die
       use alloc,        only : re_alloc, de_alloc
       use mesh,         only : nsm, meshLim
-      use siestaxc,     only : ggaxc, ldaxc
-      use siestaxc,     only : getXC
+      use gridxc,       only : ggaxc=>gridxc_ggaxc, ldaxc=>gridxc_ldaxc
+      use gridxc,       only : getXC=>gridxc_getXC
 #ifdef MPI
 C  Modules
       use mesh,         only : nmeshg

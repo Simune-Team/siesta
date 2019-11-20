@@ -1,0 +1,2342 @@
+------------------------------------------------------------
+November 4, 2016  Alberto Garcia    trunk-580--psml-91
+Merge trunk-580
+
+Declare all variables
+Fixes non-colinear band calculation, fixes lp:1636100
+[merge] Merge 4.1-604
+Declare most variables
+Fixed cell constraints and the manual regarding this
+Fix electrode plane determination if Bloch expansions are used
+Fixed documentation with XML changes
+Fixed defaults for tbtrans and chemical potentials
+Updated obj_setup.sh to not mention the configure script
+Added gfortran.make and intel.make in Obj directory
+In FoX removal there was some changes that were not shipped to TS
+					
+
+(...)
+------------------------------------------------------------
+October 30, 2016  Alberto Garcia    trunk-506--psml-90
+A further step in building-system refactoring
+
+A number of changes directed at removing complexity:
+
+- Module sys is being progressively emptied of code. The rationale is
+  that the low-level routines contained in it should be stand-alone,
+  and not part of a module, to avoid compilation cascades and to better
+  adapt to a particular client code.
+
+  The 'die' interface now calls the stand-alone routine in die.F.
+  The 'bye' interface has been removed. Siesta routines formerly using it
+  now call an external routine 'bye' in bye.F
+  Any other clients (such as some in Util) will need to define a proper
+  routine or use the version in Src (as is the case for TBtrans)
+
+- Each program in Util has a 'dep' target that only updates the relevant
+  dependencies. This used (in 4.0) to be done in a convoluted way using
+  shell commands. Now a more transparent system is employed, but it needs
+  a clear specification of "local" vs "dependent (on Src code)" objects.
+  This has been already implemented in VCA, Gen-Basis, TS/TBtrans, and Grimme,
+  and it will be deployed more widely in future revisions.
+  (Thanks to Nick Papior for the updated dependency method)
+
+  Some minor extra changes were needed in some makefiles.
+
+- The 'handlers.f' files now needed in Util are being progressively made more
+  uniform. This will be completed in future revisions.
+  
+
+------------------------------------------------------------
+October 28, 2016  Alberto Garcia    trunk-506--psml-89
+Update *defaults* and building of psop in Pseudo/vnl-operator
+
+* IMPORTANT: The default behavior of psop with regard to the
+KB reference orbitals has changed to match the default (still)
+in Siesta: the old-style KB ref is used unless the -K option
+is specified.
+
+* Added files needed for libxc-siestaxc-atom translation that
+were previously in the SiestaXC tree.
+
+* Update building logic for libGridXC.
+
+added:
+  Pseudo/vnl-operator/handlers.f
+  Pseudo/vnl-operator/m_libxc_list.F90
+  Pseudo/vnl-operator/m_libxc_sxc_translation.F90
+  Pseudo/vnl-operator/m_siestaxc_list.F90
+modified:
+  Pseudo/vnl-operator/Makefile
+  Pseudo/vnl-operator/psop.f90
+	    
+------------------------------------------------------------
+October 28, 2016  Alberto Garcia    trunk-506--psml-88
+Remove wxml, xmlparser, SiestaXC. Build fixes in Util
+
+* As a note for building programs in Util:
+
+  Most of them will need a "handlers.f" file with implementations of
+  callback routines.
+
+* Move 'changes' files to branch-changes
+
+------------------------------------------------------------
+October 28, 2016  Alberto Garcia    trunk-506--psml-87
+Make kb-new-reference-orbitals .false. by default
+
+In order to match the default in the trunk at this point.
+
+modified:
+  Src/atom_options.F90
+
+------------------------------------------------------------
+October 27, 2016  Alberto Garcia    trunk-506--psml-86
+Revert addition of reduced_vlocal to .ion file
+
+This was in patch 489..490
+
+and it caused compatibility problems.
+
+modified:
+  Src/basis_io.F
+
+------------------------------------------------------------
+October 27, 2016  Alberto Garcia    trunk-506--psml-85
+REVERT: Increase radial fft parameters (for) non-smooth chlocal/vlocal
+
+This was patch 503..504:
+
+  * Vlocals from psml files might not be smooth in the fourier sense,
+    requiring a higher cutoff and number of points in the fourier
+    transforms in 'electrostatic' and 'matel'.
+
+  modified:
+    Src/electrostatic.f
+    Src/matel.f
+
+and it caused significant changes in output for normal runs.
+This has now been reverted, pending further investigation.
+  
+------------------------------------------------------------
+October 26, 2016  Alberto Garcia    trunk-506--psml-84
+Merge gridxc-integration
+
+------------------------------------------------------------
+October 25, 2016  Alberto Garcia    trunk-506--psml-83
+Add note about xmlf90 > 1.5.0 required
+    
+------------------------------------------------------------
+October 18, 2016  Alberto Garcia    trunk-506--psml-82
+Added patch file for oncvpsp-3.2.3
+
+added:
+  Pseudo/ThirdParty-Tools/ONCVPSP/oncvpsp-3.2.3--psml-43.patch
+modified:
+  Pseudo/ThirdParty-Tools/ONCVPSP/README
+  
+------------------------------------------------------------
+July 16, 2016  Alberto Garcia       trunk-506--psml-81
+Add new tests with a no-kinks vlocal
+
+* Use %define SMOOTH_TAIL_CUTOFF in ATOM to
+  remove the kink in vlocal coming from the old cutoff.
+
+* Fit Vlocal keeping the third derivative to remove
+  an extra kink. (In psop, or in Siesta itself, depending
+  on the test below)
+
+added:
+  Tests/Pseudos/Si.soft-siesta-vnl.psml
+  Tests/Pseudos/Si.soft.psml
+  Tests/si64-soft/
+  Tests/si64-soft-psml-full/
+	
+------------------------------------------------------------
+July 12, 2016  Alberto Garcia       trunk-506--psml-80
+Fix bug in psop and add docs. New psml tests
+
+* The program psop in Pseudo/vnl-operator did not process all options
+  correctly.
+  Added some notes to file README in the above directory.
+
+* Added new PSML files to Tests/Pseudos and created new tests.
+
+  Added a PSML file for Si with only semilocal potentials, and another
+  one with the full operator. The tests si64-psml-sl and si64-psml-full
+  use them. Comparison with the results of si64 (using a standard psf
+  file) reveal minor differences in the treatment of chlocal.
+
+* Removed Src/psml and Util/pseudo-xml
+
+* Updated some building macros in Util
+
+------------------------------------------------------------
+July  8, 2016  Alberto Garcia       trunk-506--psml-79
+Update and document building scheme with external libpsml and xmlf90
+
+Created file 000_INSTALL in the top directory (no manual update yet).
+
+Fixed a few issues in makefiles, and declared some variables.
+
+removed:
+  Src/Mk/psml.mk
+  Src/Mk/xmlf90.mk
+added:
+  000_INSTALL
+modified:
+  Pseudo/vnl-operator/Makefile
+  Src/Makefile
+  Src/Sys/DOCUMENTED-TEMPLATE.make
+  Src/get_kpoints_scale.f90
+  Src/m_target_stress.F
+  Src/ncps/src/libxc-compat/makefile
+  Src/write_inp_wannier.F90
+
+------------------------------------------------------------
+June 30, 2016  Alberto Garcia       trunk-506--psml-78
+Add documentation for the use of ONCVPSP
+
+Added the Pseudo/ThirdParty-Tools/ONCVPSP directory, with
+information and a patch file.
+
+added:
+  Pseudo/ThirdParty-Tools/
+  Pseudo/ThirdParty-Tools/ONCVPSP/
+  Pseudo/ThirdParty-Tools/ONCVPSP/README
+  Pseudo/ThirdParty-Tools/ONCVPSP/oncvpsp-3.2.2--psml-42.patch
+
+------------------------------------------------------------
+June 29, 2016  Alberto Garcia       trunk-506--psml-77
+First stage towards use of g-orbitals in PAO generation
+
+Two sets of changes are needed:
+
+1. When a given l is beyond the maximum l in the semi-local
+   set in the pseudopotential, the local pseudopotential is
+   used in PAO generation.
+
+2. Some data structures and routines had to be changed to support l's
+   in the range 0:4.
+
+   Note that forces and stresses are still wrong, which means that
+   more changes are necessary in other places.
+
+modified:
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/periodic_table.f
+	
+------------------------------------------------------------
+June 29, 2016  Alberto Garcia       trunk-506--psml-76
+Merge trunk-506 (after LDAU merge)
+
+
+------------------------------------------------------------
+June 29, 2016  Alberto Garcia       trunk-492--psml-76
+Merge trunk-492
+
+------------------------------------------------------------
+June 29, 2016  Alberto Garcia       trunk-485--psml-76
+Merge trunk-485 (up to GPL conversion)
+
+  Merge trunk up to GPL conversion + fix makefiles
+
+  Some GPL notices and headers remain to be inserted.
+
+  Fixed makefiles to properly support external PSML and XMLF90 libraries.
+
+  (Had to re-insert Util/pseudo-xml, which had been removed in the
+  psml branch)
+
+  (Util/pseudo-xml and Util/SiestaSubroutine building still broken)
+  
+------------------------------------------------------------
+March 9, 2016  Alberto Garcia       trunk-481--psml-76
+Cosmetic changes in .mk files and vnl-operator Makefile
+
+* Insert comment about needed symbols in Src/Sys/.mk files
+
+* Update clean target in Pseudo/vnl-operator/Makefile
+
+*** + Change of branch name to trunk-psml
+    + Consolidation of recent changelogs into psml.CHANGES
+      (follow)
+------------------------------------------------------------
+revno: 513
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Wed 2016-02-03 12:14:34 +0100
+message:
+  Read <local-charge> in Siesta. Update ATOM psml output
+  
+  * Siesta can now read chlocal from <local-charge> if this element is
+    present in the PSML file. The cutoff is assumed to be given by the
+    first non-zero value.
+    (+ filter very small values in psop for this element)
+  
+  * Update ATOM's PSML output to version 0.9, including uuids. Use
+    external xmlf90 library.
+    
+------------------------------------------------------------
+revno: 512
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Tue 2016-02-02 16:13:24 +0100
+message:
+  Update psop to handle uuids and action records
+  
+  * Psop records the uuid of the source PSML file, and stamps the new
+    PSML file with a new one. (Added Src/m_uuid.f90 from FoX)
+  
+  * Fix the informational message of the add-vnl.sh script regarding
+    the placement of psop options.
+------------------------------------------------------------
+revno: 511
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Tue 2016-02-02 11:46:12 +0100
+message:
+  Update psop to add provenance record and chlocal
+  
+  * Psop (when reading a PSML file) will add a new provenance
+  record using the new "ps_edit" functionality in libpsml.
+  
+  * The generated PSML section will have also a <local-charge> (chlocal)
+  element.
+  
+  * Updated the add-vnl.sh script (it works with PSML files only)
+------------------------------------------------------------
+revno: 510
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Mon 2016-02-01 16:34:39 +0100
+message:
+  Explicitly delete the local and nonlocal sections from input file
+  
+  Using the new "ps_Delete" functions (which actually needed an overhaul
+  of the grid handling in libpsml), the local and non-local sections of
+  the psml structure are deleted by psop itself and dumped to PSML_RUMP.
+  
+  modified:
+    Pseudo/vnl-operator/psop.f90
+    Src/ncps/src/m_ncps_translators.f90
+------------------------------------------------------------
+revno: 509
+committer: Alberto Garcia <albertog@icmab.es>
+branch nick: trunk-psml
+timestamp: Mon 2016-02-01 10:22:34 +0100
+message:
+  Start update to v0.9. External xmlf90 and libpsml.
+  
+  xmlf90 and libpsml are now external to the package (at least to psop).
+  The local potential and nonlocal-projectors are wrapped in a temporary
+  root element for XML compliance of the VNL fragment file.
+
+( -- end consolidation of recent logs)
+
+------------------------------------------------------------
+December 17, 2015  Alberto Garcia       trunk-481--ncps-75
+Rename m_io in xmlparser code to m_xml_io to avoid name collision
+
+renamed:
+  Src/xmlparser/m_io.f90 => Src/xmlparser/m_xml_io.f90
+modified:
+  Src/xmlparser/m_reader.f90
+  Src/xmlparser/makefile
+  Src/xmlparser/m_xml_io.f90
+
+------------------------------------------------------------
+November 29, 2015  Alberto Garcia       trunk-481--ncps-74
+Sync with trunk-481
+
+481: Increase the number of allowed iterations in minvec
+480: Fix bug in heapsort routine
+
+modified:
+  Src/minvec.f
+  Src/sorting.f
+  Tests/Reference/si2x1h.out
+  Tests/Reference/var_cell.out
+
+------------------------------------------------------------
+November 25, 2015  Alberto Garcia       trunk-479--ncps-74
+Sync with trunk-479. More fixes
+
+(+ Additional changes to fix compilation issues
+   in Pseudo/vnl-operator related to inclusion
+   of 'psml_handle' in 'pseudo_read', and in STM/ol-stm
+)
+
+(+ Call to pseudo_write_formatted in libncps to produce
+   a .psf file from a .psml file)
+
+479:  Assorted fixes and cleanup. Update reference outputs
+478:  Fixes: OCCS file, pdoskp, processorY
+477:  Fixes: pi/a mode in bands; low-n interpolation; others
+
+removed:
+  Tests/Reference-xml/
+  Tests/Reference/partial.out
+added:
+  Src/read_options.F90
+  Tests/Reference/TranSiesta-TBTrans/...
+  Tests/TranSiesta-TBTrans/copy_to_reference.sh
+  Tests/TranSiesta-TBTrans/run_tests.sh
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Pseudo/vnl-operator/psop.f90
+  Src/Makefile
+  Src/bands.F
+  Src/cell_broyden_optim.F
+  Src/diagk.F
+  Src/diagk_file.F
+  Src/diagon.F
+  Src/final_H_f_stress.F
+  Src/initparallel.F
+  Src/interpolation.f90
+  Src/matel_registry.F90
+  Src/ncps/src/m_ncps_reader.f
+  Src/ncps/src/makefile
+  Src/obj_setup.sh
+  Src/pdoskp.F
+  Src/projected_DOS.F
+  Src/proximity_check.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sorting.f
+  Src/sparse_matrices.F
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/write_md_record.F
+  Src/write_subs.F
+  Src/zm_broyden_optim.F
+  Src/zmatrix.F
+  Tests/Makefile
+  Tests/README
+  Tests/Reference/....
+  Tests/cmp_digest.sh
+  Tests/partial/README
+  Tests/test.mk
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/SiestaSubroutine/README
+  Util/TBTrans/Makefile
+  Util/TBTrans_rep/Makefile
+  Util/VCA/Makefile
+
+------------------------------------------------------------
+July 19, 2015  Alberto Garcia       trunk-470--ncps-74
+Sync with trunk-476
+
+(+ Additional changes to fix compilation issues
+   in Denchar, VCA, STM/ol-stm related to inclusion
+   of 'psml_handle' in 'pseudo_read' and the 'basis_def'
+   structures.
+ + Removal of dependency on 'siesta_options' in
+   'sparse_matrices')
+   
+476: Fix the geometry and DM and H logic for consistency in analysis
+475: Minor fixes and cosmetic changes after Wannier merge
+474: Merge code for interoperation with Wannier90
+473: Merge code for 'server' operation via sockets and i-PI interface
+472: Revert previous change affecting FA and FC files. FAC/FCC files.
+471: Fix SiestaXC makefile. Clarifiy docs for WriteDenchar
+
+removed:
+  Src/matel.f
+  Src/phonon.F
+added:
+  Docs/radfunc.CHANGES
+  Docs/wannier-merge.CHANGES
+  Docs/wannier.CHANGES
+  Src/amn.F90
+  Src/broadcast_projections.F
+  Src/compute_pw_matrix.F90
+  Src/delk.F
+  Src/diagonalizeHk.F90
+  Src/fsiesta_sockets.F90
+  Src/fsockets.f90
+  Src/iosockets.F90
+  Src/m_digest_nnkp.F90
+  Src/m_noccbands.f
+  Src/m_orderbands.F
+  Src/m_overkkneig.F90
+  Src/m_planewavematrix.F90
+  Src/m_planewavematrixvar.F90
+  Src/m_target_stress.F
+  Src/m_trialorbitalclass.f90
+  Src/m_writedelk.F
+  Src/matel_registry.F90
+  Src/mmn.F90
+  Src/new_matel.f
+  Src/register_rfs.F90
+  Src/reordpsi.F
+  Src/siesta2wannier90.F90
+  Src/sockets.c
+  Src/write_inp_wannier.F90
+  Tests/ipi-test/
+  Tests/ipi-test/README
+  Tests/ipi-test/h2o-init.pdb
+  Tests/ipi-test/h2o-ipi.fdf
+  Tests/ipi-test/h2o-ipi.xml
+  Tests/si2x1h-quench/
+  Tests/si2x1h-quench/makefile
+  Tests/si2x1h-quench/si2x1h-quench.fdf
+  Tests/si2x1h-quench/si2x1h-quench.pseudos
+  Tests/wannier/
+  Tests/wannier/makefile
+  Tests/wannier/wannier.fdf
+  Tests/wannier/wannier.nnkp
+  Tests/wannier/wannier.pseudos
+  Util/Denchar/Src/local_die.F
+  Util/SiestaSubroutine/SimpleTest/README
+  Util/SiestaSubroutine/SimpleTest/socket.fdf
+  Util/SiestaSubroutine/SimpleTest/sockets.sh
+  Util/Sockets/
+  Util/Sockets/Makefile
+  Util/Sockets/README
+  Util/Sockets/f2fmaster.f90
+  Util/Sockets/f2fslave.f90
+renamed:
+  Util/SiestaSubroutine/SimpleTest/Src/simple_pipes_parallel.f90 
+     => Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/alloc.F90
+  Src/atm_types.f
+  Src/atmfuncs.f
+  Src/atomlist.f
+  Src/bonds.f
+  Src/dhscf.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/final_H_f_stress.F
+  Src/fixed.F
+  Src/fsiesta_mpi.F90
+  Src/fsiesta_pipes.F90
+  Src/iofa.f
+  Src/ioxv.F
+  Src/kinefsm.f
+  Src/m_check_supercell.f
+  Src/m_mpi_utils.F
+  Src/m_pulay.F90
+  Src/mesh.F
+  Src/meshdscf.F
+  Src/meshsubs.F
+  Src/mneighb.f
+  Src/naefs.f
+  Src/new_dm.F
+  Src/nlefsm.f
+  Src/ofc.f
+  Src/overfsm.f
+  Src/overlap.f
+  Src/parallelsubs.F
+  Src/phirphi.f
+  Src/phirphi_opt.f
+  Src/post_scf_work.F
+  Src/save_density_matrix.F
+  Src/siesta_analysis.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_master.f90
+  Src/siesta_move.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F
+  Src/spher_harm.f
+  Src/state_analysis.F
+  Src/state_init.F
+  Src/struct_init.F
+  Src/write_subs.F
+  Util/Denchar/Src/Makefile
+  Util/README
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/handlers.f
+  Util/SiestaSubroutine/FmixMD/Src/para.f90
+  Util/SiestaSubroutine/README
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/h2o.fdf
+  Util/SiestaSubroutine/SimpleTest/test.sh
+  Util/VCA/fractional.f
+  Util/VCA/mixps.f
+  Util/Vibra/Docs/vibra.tex
+  Util/Vibra/Examples/si54.fdf
+  Util/Vibra/Src/fcbuild.f
+  Util/Vibra/Src/vibra.f
+  Util/SiestaSubroutine/SimpleTest/Src/simple_parallel.f90
+
+
+------------------------------------------------------------
+July 18, 2015  Alberto Garcia       trunk-470--ncps-73
+Increase radial fft parameters to support non-smooth chlocal/vlocal
+
+* Vlocals from psml files might not be smooth in the fourier sense,
+  requiring a higher cutoff and number of points in the fourier
+  transforms in 'electrostatic' and 'matel'.
+
+modified:
+  Src/electrostatic.f
+  Src/matel.f
+
+------------------------------------------------------------
+July 18, 2015  Alberto Garcia       trunk-470--ncps-72
+Enable psml-use-{vlocal,kb-projs} by default if using psml file
+
+* The psml-use-* flags default to 'true' if the element has psml data.
+  Note that a psml file might not really have an operator
+  section. Full logic will be added later.
+
+modified:
+  Src/atom.F
+
+------------------------------------------------------------
+July 10, 2015  Alberto Garcia       trunk-470--ncps-71
+Psml handles in structures. Clarify psml-use-{vlocal,kb-projs}
+
+* The 'ps' objects for PSML data are now stored in the
+  'basis_parameters' data structure, as a new field 'psml_handle'.
+
+  There is also another field 'has_psml_ps', to facilitate the logic
+  of the program.
+
+* Clarified the use of the psml-use-* flags. In future they might
+  default to 'true' if the element has psml data.
+
+modified:
+  Src/atom.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/initatom.f
+  Src/ncps/src/m_ncps_reader.f
+  Src/psml/src/m_psml_reader.F90
+
+------------------------------------------------------------
+July 10, 2015  Alberto Garcia       trunk-470--ncps-70
+NCPS: Change flib_spline->interpolation. More comments
+
+removed:
+  Src/ncps/src/flib_spline.f90
+added:
+  Src/ncps/src/interpolation.f90
+modified:
+  Src/ncps/src/m_ncps_froyen_reader.f
+  Src/ncps/src/m_ncps_translators.f90
+  Src/ncps/src/makefile
+
+------------------------------------------------------------
+July 10, 2015  Alberto Garcia       trunk-470--ncps-69
+PSML: Support systems without proc pointers. Remove nr interpolator
+
+* To allow the code to be processed by compilers without support for
+  procedure pointers (a f2003 feature), some blocks of code have
+  been surrounded by a pre-processing symbol
+
+  __NO_PROC_POINTERS__
+
+  Defining this in the arch.make will have the effect of using the
+  hardwired default interpolator (D.R. Hamann's) and removing the
+  routine 'ps_SetInterpolator' from the library. Note that the
+  interpolation order (7 by default) can still be changed with a
+  call to 'ps_SetInterpolatorQuality'.
+
+* The optional interpolator in the example program has been removed
+  due to license issues. The example program has been adapted to this 
+  change and the one above.
+
+removed:
+  Src/psml/examples/interpolate_nr.f90
+renamed:
+  Src/psml/examples/test_psml.f90 => Src/psml/examples/test_psml.F90
+  Src/psml/src/m_interp.f90 => Src/psml/src/m_interp.F90
+  Src/psml/src/m_psml_api.f90 => Src/psml/src/m_psml_api.F90
+modified:
+  Src/psml/examples/makefile
+  Src/psml/src/m_psml_reader.F90
+  Src/psml/examples/test_psml.F90
+  Src/psml/src/m_interp.F90
+  Src/psml/src/m_psml_api.F90
+
+------------------------------------------------------------
+June 12, 2015  Alberto Garcia       trunk-470--ncps-68
+Cancel multi-shell capability. Add psml example.
+
+* It turns out that the "multishell" capability (generation of pseudos
+in the presence of several shells with the same l) is harder than
+expected. The tails of the resulting pseudos are very long, as there
+is no perfect cancellation of the AE potential. 
+
+The atom program now aborts if asked to process these cases.
+
+* Added si64-psml example
+
+* Cosmetic fixes
+
+added:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/README
+  Pseudo/atom/Tutorial/PS_Generation/Ti/README
+  Tests/si64-psml/
+  Tests/si64-psml/makefile
+  Tests/si64-psml/si64-psml.fdf
+  Tests/si64-psml/si64-psml.pseudos
+modified:
+  Pseudo/atom/Tutorial/PS_Generation/Guide.txt
+  Pseudo/atom/ext.f
+  Pseudo/atom/pseudo.f
+  Src/ncps/src/m_ncps_translators.f90
+
+------------------------------------------------------------
+June 11, 2015  Alberto Garcia       trunk-470--ncps-67
+Update building of atom and vnl-operator
+
+Full autonomous support.
+
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/vnl-operator/Makefile
+
+------------------------------------------------------------
+June 11, 2015  Alberto Garcia       trunk-470--ncps-66
+More building tweaks
+
+- Save unitialized EMPTY_ASSOC_LIST in psml
+
+- Force absolute path in ARCH_MAKE in the
+  psml library.
+
+- Define AR in FoX arch.make.in, to enable
+  make to run without implicit rules and
+  variables, if needed.
+
+modified:
+  Src/FoX/arch.make.in
+  Src/psml/src/assoc_list.f90
+  Src/psml/src/makefile
+  Src/psml/src/xmlf90-sax/makefile
+
+------------------------------------------------------------
+June 10, 2015  Alberto Garcia       trunk-470--ncps-65
+Put psml in source tree. Update building system
+
+added:
+  Src/psml/
+modified:
+  Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/STM/ol-stm/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/SimpleTest/Src/Makefile
+  Util/VCA/Makefile
+  Util/test-xml/m_dom_parse.f90
+
+------------------------------------------------------------
+June 10, 2015  Alberto Garcia       trunk-470--ncps-64
+Sync with trunk for fixes in Util and elsewhere
+
+[470]
+
+removed:
+  Util/Gen-basis/psml_die.F90
+added:
+  Util/Gen-basis/local_die.F
+  Util/STM/ol-stm/Src/handlers.f
+modified:
+  Docs/CHANGES
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/mesh1d.f90
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/gen-basis.F
+  Util/STM/ol-stm/Src/Makefile
+  Util/STM/ol-stm/Src/atompla.f
+  Util/STM/ol-stm/Src/extrapolate.f
+  Util/STM/ol-stm/Src/fftw3_mymod.f90
+  Util/STM/ol-stm/Src/readstm.f
+  Util/STM/ol-stm/Src/reinitstm.f
+  Util/STM/ol-stm/Src/stm.f
+  Util/SiestaSubroutine/FmixMD/Src/Makefile
+  Util/build_all.sh*
+
+------------------------------------------------------------
+June 9, 2015  Alberto Garcia       trunk-469--ncps-64
+Sync with trunk, incl. NR code. + Update ncps and psoplib
+
+-- Merged the NR replacements from the trunk.
+
+Some targets in Util are still broken.
+
+-- Updated ncsp and psoplib
+
+More flexible makefiles to make them compatible
+with Siesta when the libraries are just dropped in.
+
+removed:
+  Src/m_recipes.f
+  Src/ran3.f
+  Util/Grid/libfft.f
+  Util/Macroave/Src/recipes.f
+added:
+  Src/errorf.f
+  Src/m_fft_gpfa.F
+  Src/psoplib/src/
+  Src/randomg.f90
+  Util/Grid/fft3d.f
+  Util/Grid/local_die.f90
+  Util/Macroave/Src/local_die.f
+missing:
+  Src/pseudopotential.f.OTHER
+renamed:
+  Src/flib_spline.f90 => Src/interpolation.f90
+  Src/psoplib/* => Src/psoplib/src/*
+modified:
+  .bzrignore
+  Docs/CHANGES
+  Docs/rc-4.0.CHANGES
+  Docs/siesta.tex
+  Src/Fstack.T90
+  Src/Makefile
+  Src/SiestaXC/lib-makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/mesh1d.f90
+  Src/SiestaXC/siestaXC.files
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/atom.F
+  Src/atomlwf.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/bonds.f
+  Src/chempot.F
+  Src/die.F
+  Src/electrostatic.f
+  Src/fermid.F
+  Src/m_convergence.f90
+  Src/m_filter.f90
+  Src/m_rhog.F90
+  Src/matel.f
+  Src/ncps/examples/makefile
+  Src/ncps/src/fortran.mk
+  Src/ncps/src/libxc-compat/makefile
+  Src/ncps/src/makefile
+  Src/radfft.f
+  Src/radial.f
+  Src/sorting.f
+  Src/vmb.F
+  Util/Denchar/Src/Makefile
+  Util/Gen-basis/Makefile
+  Util/Grid/cdf_fft.F90
+  Util/Grid/makefile
+  Util/Macroave/Src/Makefile
+  Util/Macroave/Src/macroave.f
+  Util/Macroave/Src/paste.f
+  Util/Optimizer/amoeba.f
+  Util/Optimizer/simplex.f90
+  Util/VCA/Makefile
+  Util/VCA/fractional.f
+  Util/VCA/mixps.f
+  version.info
+  Src/interpolation.f90
+  Src/psoplib/src/fortran.mk
+  Src/psoplib/src/makefile
+
+------------------------------------------------------------
+April 21, 2015  Alberto Garcia       trunk-467--ncps-63
+Optional linear grid for PSML output from psop
+
+If the option "-l" is given to psop, the <pseudopotential-operator>
+element will have a linear grid for vlocal and the projectors.  Its
+range is determined by the correct representation of vlocal (well into
+the coulomb-tail region).
+
+added:
+  Pseudo/vnl-operator/check_grid.f90
+  Pseudo/vnl-operator/dpnint.f90
+modified:
+  Pseudo/vnl-operator/Makefile
+  Pseudo/vnl-operator/local_xml.f90
+  Pseudo/vnl-operator/psop.f90
+  Pseudo/vnl-operator/write_proj_psml.f90
+
+------------------------------------------------------------
+March 16, 2015  Alberto Garcia       trunk-467--ncps-62
+Merge with trunk-467
+
+467: Fix import of idyn in save_density_matrix (rc-4.0)
+466: Fixed IO statements for molecularmechanics...
+465: Merge fix from rc-4.0: MPI tag in SiestaXC...
+464: Merge fixes from rc-4.0: constr. forces, MPI com...
+463: Added restart file for smooth continuation of annealin...
+
+added:
+  Docs/rc-4.0.CHANGES
+  Tests/anneal-cont/
+  Tests/anneal-cont/README
+  Tests/anneal-cont/makefile
+  Tests/anneal-cont/script.sh
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Src/SiestaXC/mesh3d.F90
+  Src/dynamics.f
+  Src/molecularmechanics.F90
+  Src/save_density_matrix.F
+  Src/write_subs.F
+
+------------------------------------------------------------
+March 16, 2015  Alberto Garcia       trunk-462--ncps-62
+Fix compilation of Denchar and VCA utilities. Cosmetics
+
+* Update the makefiles for Denchar and the VCA utilities.
+
+* Sanity checks in fdf psml-related keywords.
+
+* Remove obsolete file Src/pseudopotential.f.
+
+removed:
+  Src/pseudopotential.f
+  Src/store_kbproj.f
+added:
+  Util/VCA/die.f90
+  Util/VCA/psml_die.F90
+modified:
+  Src/Makefile
+  Src/atom.F
+  Util/Denchar/Src/Makefile
+  Util/VCA/Makefile
+  Util/VCA/fractional.f
+  Util/VCA/mixps.f
+
+------------------------------------------------------------
+March 12, 2015  Alberto Garcia       trunk-462--ncps-61
+Improvements in psop library. More documentation and build changes.
+
+* The ncps library, containing the utilities related to the handling
+  of the classic Froyen-style pseudopotential data structures used in
+  Siesta is now in Src/ncps, and compiled transparently when needed.
+
+* An improved version of the psop library, containing the code to generate the
+  pseudopotential operator in the classic Siesta style (vlocal, KB
+  projectors), as well as other utilities, such as a generator of
+  chlocal given an arbitrary vlocal) is now in Src/psoplib. It is used
+  by Src/atom.F and by the new code in Pseudo/vnl-operator. There have
+  been some important fixes in some of the routines.
+
+* The directory Pseudo/vnl-operator contains the stand-alone program
+  'psop' to generate Vlocal and KB projectors in the classic Siesta
+  style, previously housed in Util/Pseudo-operator. See the README
+  file for details.
+
+* A new script Pseudo/atom/Tutorial/Utils/pgvnl.sh generates a Siesta-style
+  PSML file directly from an ATOM .inp file. 
+
+* The code in Util/Gen-basis has been upgraded to the new functionality, and
+  a new example provided.
+
+* The new options for PSML handling are now mentioned briefly in the
+  Siesta manual.
+
+* Assorted fixes and documentation, including the addition of
+  'reduced_vlocal' to the .ion files for easier future reference, and
+  an updated Src/Sys/example-psml.make file.
+
+* Removed the obsolete directory Util/pseudo-xml.
+
+removed:
+  Src/psml/
+  Util/Pseudo-operator/
+  Util/pseudo-xml/
+added:
+  Pseudo/atom/Tutorial/Utils/pgvnl.sh
+  Pseudo/vnl-operator/
+  Pseudo/vnl-operator/
+  Pseudo/vnl-operator/README
+  Pseudo/vnl-operator/add-siesta-vnl.sh
+  Pseudo/vnl-operator/local_xml.f90
+  Pseudo/vnl-operator/write_proj_psml.f90
+  Src/ncps
+  Src/psoplib/
+  Src/psoplib/arw.f
+  Src/psoplib/flib_spline.f90
+  Src/psoplib/fortran.mk
+  Src/psoplib/m_interpol.F90
+  Src/psoplib/m_kbgen.F
+  Src/psoplib/m_localgen.f
+  Src/psoplib/m_psop.f90
+  Src/psoplib/makefile
+  Src/psoplib/psop_params.f
+  Src/psoplib/schrodinger.F
+  Src/store_kbproj.f
+  Util/Gen-basis/Examples/O/
+  Util/Gen-basis/Examples/Si/
+  Util/Gen-basis/die.f90
+  Util/Gen-basis/psml_die.F90
+renamed:
+  Util/Gen-basis/Examples/O.psf => Util/Gen-basis/Examples/O/O.psf
+  Util/Gen-basis/Examples/o-basis.fdf => Util/Gen-basis/Examples/O/o-basis.fdf
+  Util/Pseudo-operator/Makefile => Pseudo/vnl-operator/Makefile
+  Util/Pseudo-operator/local_die.F => Pseudo/vnl-operator/local_die.F
+  Util/Pseudo-operator/psml_die.f => Pseudo/vnl-operator/psml_die.f
+  Util/Pseudo-operator/psop.f90 => Pseudo/vnl-operator/psop.f90
+  Util/Pseudo-operator/psop_options.f90 => Pseudo/vnl-operator/psop_options.f90
+  Util/Pseudo-operator/semicore_info.F90 => Pseudo/vnl-operator/semicore_info.F90
+  Util/Pseudo-operator/semicore_info_froyen.f90 => 
+                             Pseudo/vnl-operator/semicore_info_froyen.f90
+modified:
+  Docs/Makefile
+  Docs/siesta.tex
+  Src/Makefile
+  Src/Sys/example-psml.make
+  Src/atom.F
+  Src/basis_io.F
+  Src/obj_setup.sh
+  Util/Gen-basis/Makefile
+  Util/Gen-basis/gen-basis.F
+  Util/Gen-basis/Examples/O/o-basis.fdf
+  Pseudo/vnl-operator/Makefile
+  Pseudo/vnl-operator/psop.f90
+  Pseudo/vnl-operator/semicore_info.F90
+
+------------------------------------------------------------
+March 3, 2015  Alberto Garcia        trunk-462--ncps-60
+Put the psop code into a library and use it for everything
+
+The (external) library psoplib now contains the code to generate
+vlocal and the KB projectors. 
+Some rough edges still need to be ironed out.
+
+removed:
+  Src/m_vlocal_chlocal.f
+modified:
+  Src/Makefile
+  Src/atom.F
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/psop.f90
+  Util/Pseudo-operator/psop_options.f90
+
+------------------------------------------------------------
+February 27, 2015  Alberto Garcia        trunk-462--ncps-59
+Fix KB cutoff calculation. Options for chlocal cutoff. ps tails
+
+There was a factor of r**l missing in the calculation of the
+effective cutoff for the KB projectors upon reading them from
+the PSML file.
+
+The cutoffs for chlocal are not completely consistent in the different
+parts of the code. Several options and debugging outputs have been
+introduced to explore the issue:
+
+        use-charge-cutoff-for-large-core (default .false.)
+
+will force the use of 4*pi*r*r*chlocal as the function to cutoff, instead
+of r*V_local+2*Z_val.
+
+The pseudopotential tails were cut in atom using a simple
+exp(-5*(r-rc)) function, which introduces a discontinuity in the first
+derivative of the potentials... this resulted in oscillations in
+chlocal, beyond the fitting point, when using the large-core scheme.
+A new tapering function with continuous derivatives is used instead if
+the option
+
+%define SMOOTH_TAIL_CUTOFF
+
+is given in the ATOM input file.
+
+%define DO_NOT_CUT_TAILS
+
+will do as it says.
+
+modified:
+  Pseudo/atom/wrapup.f
+  Src/atom.F
+  Src/m_vlocal_chlocal.f
+  Util/Pseudo-operator/module_pseudo.F
+
+------------------------------------------------------------
+February 27, 2015  Alberto Garcia        trunk-462--ncps-58
+Allow Siesta to read KB projectors from a PSML file
+
+First implementation, without touching the premilinary "basis_specs"
+stage (i.e., the user might specify KB options in the fdf file, but
+they will be overridden, except lmxkb, by the contents of the
+<projectors> element in the PSML file).
+
+To enable this option meaningfully, the user must specify:
+
+use-psml-vlocal T
+use-psml-kb-projectors T
+
+and there must be a SystemLabel.psml file in the working directory.
+
+Note that the PAOs are still generated by the standard procedure
+involving the semilocal potentials, which might be read from the same
+PSML file, or even from another pseudopotential file. This has to be
+made more robust and flexible.
+
+Upon reading the local pseudopotential, the program must construct the
+associated "local charge density". It does this using routines in the
+module m_vlocal_chlocal. To enable some debugging checks, some options
+formerly hardwired in this suite of routines have been made available
+to the user:
+
+	Vlocal-from-Chlocal  T
+
+will force the use of the "small core" method of construction of
+Vlocal: generation of a localized pseudo-gaussian charge density
+followed by integration of the Poisson equation. This tends to give
+smooth charges (by construction) and a smooth Vlocal. The alternative
+method, used for large-core situations, is a direct fit of Vlocal to
+match the Vl's beyond the range at which they are equal but not as far
+as the point at which they become equal to -Z/r. The fit is by default
+done maintaining the continuity of the second derivative, but the user
+can request the continuity of the third derivative by using the option
+
+        Vlocal.Fit.3derivs  T
+
+Note that this "fitting" method might lead to Vlocals with subtle
+shapes that manifest themselves more clearly in the form of
+chlocal. It is advisable to look at plots of Chlocal (the data is now
+available by default) to diagnose this effect properly. Note that when
+importing Vlocal from a "foreign" PSML file, the shape of Chlocal
+might not resemble a pseudogaussian at all. This is particularly
+noticeable when using core-corrections and high-order continuity of
+the fit involved in the construction of Vlocal, as in D.R. Hamann's
+program oncvpsp.
+
+Some operational options in 'atom.F' have changed defaults. The
+following are true by default:
+
+    write_ion_plot_files = fdf_boolean('WriteIonPlotFiles',.true.)
+    debug_kb_generation  = fdf_boolean('Atom.Debug.KB.Generation',.true.)
+    new_kb_reference_orbitals  = fdf_boolean('KB.New.Reference.Orbitals',.true.)
+
+Note in particular that the last one will turn on the new Rmax and
+nrwf defaults for the construction of KB projectors, as implemented by
+J. Junquera.
+
+An important bug fix in psop: the projectors are handled in the Siesta
+tables divided by r**(l+1). The PSML output produced by psop now
+contains the standard form, without the factor.  (A further, now
+irrelevant, fix involved the removal of a spurious factor of 0.5 in
+the old (wrong) projector output).
+
+The code for psop and that in atom.F and m_vlocal_chlocal.f should be merged
+for clarity, and to avoid the use of slightly different options between a straight
+Siesta calculation and the generation of a PSML file.
+
+modified:
+  Src/atom.F
+  Src/atom_options.F90
+  Src/m_vlocal_chlocal.f
+  Util/Pseudo-operator/module_pseudo.F
+
+------------------------------------------------------------
+February 18, 2015  Alberto Garcia        trunk-462--ncps-57
+Update atom, psop to latest psml library. pg.sh creates .psml
+
+Fix bug in length of relattrib in write_psml.
+Replace vps by slps, n by seq in proj, kind by type in vloc.
+
+Update vlocal_chlocal processing file to latest syntax.
+
+Add script for psml handling in tests. Add Si.psml test file.
+
+added:
+  Tests/Pseudos/Si.psml
+  Tests/test.psml.mk
+modified:
+  Docs/ncps.CHANGES
+  Pseudo/atom/Tutorial/Utils/pg.sh
+  Pseudo/atom/write_psml.f
+  Src/m_vlocal_chlocal.f
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
+February 15, 2015  Alberto Garcia        trunk-462--ncps-56
+Update code to PSML version 0.8. Offload ncps library
+
+Atom and Fhi2pmsl now write v0.8 PSML files.
+
+Siesta and psop process also v0.8 PSML files.
+
+The ncps library is now considered external.
+
+removed:
+  Src/m_ncps.f90
+  Src/m_ncps_froyen_ps_t.f90
+  Src/m_ncps_froyen_reader.f
+  Src/m_ncps_reader.f
+  Src/m_ncps_translators.f90
+  Src/m_ncps_writers.f90
+modified:
+  Pseudo/atom/fhi2psml.f90
+  Pseudo/atom/write_psml.f
+  Src/Makefile
+  Src/Sys/example-psml.make
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
+February 12, 2015  Alberto Garcia        trunk-462--ncps-55
+Implement reading of vlocal from PSML file
+
+(Work in progress)
+
+modified:
+  Src/atom.F
+  Src/m_vlocal_chlocal.f
+
+------------------------------------------------------------
+February 12, 2015  Alberto Garcia        trunk-462--ncps-54
+Split-off vlocal/chlocal calculation from atom.F
+
+In preparation for the use of an arbitrary vlocal, the code
+that deals with vlocal and chlocal has been split off into
+a new module m_vlocal_chlocal.f.
+
+Apart from the old relevant routines, a new one that gets chlocal 
+from an arbitrary vlocal has been prepared. There are still some
+issues to clarify, mostly dealing with the cutoff to use, and the
+comparison with the old results. (Work in progress)
+
+added:
+  Src/m_vlocal_chlocal.f
+modified:
+  Src/Makefile
+  Src/atom.F
+
+------------------------------------------------------------
+February 11, 2015  Alberto Garcia        trunk-462--ncps-53
+More functionality in psop
+
+Command line options to replicate some of the options in Siesta (notably
+the new KB generation defaults by J. Junquera).
+
+More provenance information, including a summary of the source file
+metadata.
+
+Bug fix in the format for the attribute 'l' in the <proj> element.
+
+General code refactoring, and simplification of the Makefile (the PSML
+library is now considered external)
+
+removed:
+  Util/Pseudo-operator/atom_options.F90
+  Util/Pseudo-operator/test_psml.f90
+added:
+  Util/Pseudo-operator/psml_die.f
+  Util/Pseudo-operator/psop_options.f90
+renamed:
+  Util/Pseudo-operator/atmparams.f => Util/Pseudo-operator/psop_params.f
+modified:
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/precision.F
+  Util/Pseudo-operator/psop.f90
+  Util/Pseudo-operator/schrodinger.F
+  Util/Pseudo-operator/psop_params.f
+
+------------------------------------------------------------
+February 11, 2015  Alberto Garcia        trunk-462--ncps-52
+Optionally use a shorter maximum radius for ps tail check
+
+In atom.F, routine radii_ps, there is a check for the minimum r at
+which the V_l behave as -2*Zval/r. In some datasets, numerical
+oscillations at large r might confuse the (very simple) algorithm.
+For these cases, a new fdf variable can be specified. For example:
+
+rmax-ps-check 12.0 bohr
+
+will start the check at 12 bohr instead of 80 bohr (or whatever
+(large) maximum range of the grid).
+
+modified:
+  Src/atom.F
+
+------------------------------------------------------------
+February 11, 2015  Alberto Garcia        trunk-462--ncps-51
+Take psml as an external library. Update libxc support
+
+As psml is in rapid flux and it is being separately developed,
+Siesta is now built with an external copy of the library. The
+old psml code is still kept in Src/psml for now, pending a decision
+on whether the library will be included in the source distribution when
+it is stable. (There is a new file Src/Sys/example-psml.make showing how
+to include the relevant symbols.)
+
+The libxc support in the Froyen translator has been updated.
+
+added:
+  Src/Sys/example-psml.make
+  Src/psml_die.F90
+modified:
+  Src/Makefile
+  Src/m_ncps_translators.f90
+
+------------------------------------------------------------
+February 11, 2015  Alberto Garcia        trunk-462--ncps-50
+Remove dependency on radial.f in meshsubs
+
+Use rchlocal function instead.
+
+modified:
+  Src/Makefile
+  Src/meshsubs.F
+
+------------------------------------------------------------
+January 14, 2015  Alberto Garcia        trunk-462--ncps-49
+Enhance psop and projector accessor functions
+
+* The KB generation program psop in Util/PseudoOperator has been enhanced to
+deal with shells with semicore states (to build multiple projectors), and to
+set automatically the maximum l for the projectors. It also generates a (simple
+for now) 'provenance' element under the 'pseudopotential-operator' element in
+the experimental VNL file (which is meant to be part of a PSML file).
+
+* The Ekb values are now output in Hartree to the VNL file.
+
+* The accessor functions for projectors and related information in m_psml_core
+have been modified to accept (l,n) as keys for the projectors, instead of 
+a more obscure correlative index.
+
+* The test_psml program has been updated.
+
+Still to do: 
+
+- Decide whether the core charge should be part of a "pseudo operator"
+element in the future. 
+- Provide command-line arguments to psop.
+- Provide a means to input reference energies for KB generation.
+- Provide more metadata about the kind of local potential generated.
+- Maybe allow the use of one of the V_l as local potential.
+- Write client code to allow Siesta to read fully NL pseudo info directly.
+
+added:
+  Util/Pseudo-operator/semicore_info_froyen.f90
+modified:
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_reader.F90
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+  Util/Pseudo-operator/test_psml.f90
+
+------------------------------------------------------------
+December 22, 2014  Alberto Garcia       trunk-462--ncps-48
+Extend PSML parser to deal with complete operator
+
+A new element <pseudopotential-operator> holds the local potential and
+generalized projectors. Accessor functions have been written, but no
+clients are ready yet.
+
+(Note that 'intent(out)' had to be added to the ps argument in
+psml_read, to avoid initialization bugs)
+
+modified:
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_reader.F90
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
+December 22, 2014  Alberto Garcia       trunk-462--ncps-47
+More enhancements to 'pseudooperator', renamed 'psop'
+
+Basic command-line interface and extension discovery.
+Output to XML, intended to be included in a generalized PSML.
+
+renamed:
+  Util/Pseudo-operator/pseudooperator.F => Util/Pseudo-operator/psop.f90
+modified:
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/psop.f90
+
+------------------------------------------------------------
+December 19, 2014  Alberto Garcia       trunk-462--ncps-46
+Enhance 'pseudooperator' program
+
+The program in Util/Pseudooperator can now deal with any
+pseudopotential file, in .psf, .vps, or .psml format, creating
+the KB potentials (so far with nkbl=1 and with the default options).
+
+modified:
+  Src/m_ncps_reader.f
+  Src/m_ncps_translators.f90
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/pseudooperator.F
+
+------------------------------------------------------------
+December 19, 2014  Alberto Garcia       trunk-462--ncps-45
+Detect atom log grid if present in PSML file
+
+In m_ncps_translators, check the grid annotation in the PSML
+file and re-use the atom-generated grid if present.
+
+modified:
+  Pseudo/atom/write_psml.f
+  Src/m_ncps_translators.f90
+
+------------------------------------------------------------
+December 11, 2014  Alberto Garcia       trunk-462--ncps-44
+Update fhi2psml
+
+Add libxc section. Add r=0 point to grid magnitudes.
+
+modified:
+  Pseudo/atom/fhi2psml.f90
+
+------------------------------------------------------------
+December 11, 2014  Alberto Garcia       trunk-462--ncps-43
+Cosmetic changes in experimental opaque handle implementation
+
+The file Src/psml/m_psml_opaque.F90 now implements a proof-of-concept
+of an opaque interface, with handles dispatched from a store. This
+could be used to implement C interoperability. A similar approach could
+be used for annotations.
+
+renamed:
+  Src/psml/m_psml_user.F90 => Src/psml/m_psml_opaque.F90
+modified:
+  Src/psml/m_psml_opaque.F90
+
+------------------------------------------------------------
+October 9, 2014  Alberto Garcia       trunk-462--ncps-42
+Close psml file after parsing
+
++experimental opaque handle file
+
+added:
+  Src/psml/m_psml_user.F90
+modified:
+  Src/psml/m_psml_reader.F90
+
+------------------------------------------------------------
+October 9, 2014  Alberto Garcia       trunk-462--ncps-41
+Make the ps handle into a normal variable, not a pointer
+
+Change the relationship pseudo <-> ps from pointer to
+pointee. This is more clear and can be extended to
+totally opaque handles plus a store, for C interoperability.
+The "target" attribute is still necessary for the declaration
+in the user program, until opaque handles are implemented.
+
+modified:
+  Src/m_ncps_reader.f
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_reader.F90
+
+------------------------------------------------------------
+October 9, 2014  Alberto Garcia       trunk-462--ncps-40
+Generalize annotation support
+
+* Introduced annotations in the new format for grids.
+* Export assoc_list symbols directly in m_psml for client's use.
+
+modified:
+  Pseudo/atom/write_psml.f
+  Src/m_ncps_translators.f90
+  Src/psml/assoc_list.f90
+  Src/psml/m_psml.F90
+  Src/psml/m_psml_core.f90
+
+------------------------------------------------------------
+September 25, 2014  Alberto Garcia       trunk-462--ncps-39
+Re-packaging of PSML support
+
+* New names for files.
+
+* Split-off functionality: m_interpolation, fox_extra,
+  external_interfaces...
+
+* The built-in xmlf90-sax library (name change from flib_sax) is used
+  by default, unless -DPSML_USE_FOX is defined. Note that the FoX sax
+  parser is very slow.
+
+added:
+  Src/psml/external_interfaces.f90
+  Src/psml/fox_extra.f90
+  Src/psml/m_interpolation.F90
+renamed:
+  Src/psml/m_ncps_parsing_helpers.F90 => Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_ncps_xml_ps_t.f90 => Src/psml/m_psml_core.f90
+  Src/psml/m_ncps_xmlreader.F90 => Src/psml/m_psml_reader.F90
+  Src/xmlparser/flib_sax.f90 => Src/xmlparser/xmlf90_sax.f90
+modified:
+  Src/psml/m_psml.F90
+  Src/psml/makefile
+  Src/xmlparser/makefile
+  Util/pdosxml/m_pdos.f90
+  Util/pdosxml/pdosxml.f90
+  Util/pseudo-xml/README
+  Src/psml/m_psml_parsing_helpers.F90
+  Src/psml/m_psml_core.f90
+  Src/psml/m_psml_reader.F90
+  Src/xmlparser/xmlf90_sax.f90
+
+------------------------------------------------------------
+September 23, 2014  Alberto Garcia       trunk-462--ncps-38
+Major overhaul of psml support
+
+* Support for new <exchange-correlation> element including
+full libxc interoperability and optional annotations.
+
+* New tables in SiestaXC for libxc-siestaxc-atom translation.
+
+* Split of the ncps library into "ncps" (moved to Src) and "psml".
+
+* Many other cosmetic changes.
+
+removed:
+  Pseudo/atom/SiestaXC/
+  Pseudo/atom/SiestaXC/.dummy_directory
+  Src/nc-pseudo/flib_spline.f90
+added:
+  Src/SiestaXC/m_libxc_list.F90
+  Src/SiestaXC/m_libxc_sxc_translation.F90
+  Src/SiestaXC/m_siestaxc_list.F90
+  Src/psml/assoc_list.f90
+renamed:
+  Src/nc-pseudo/ => Src/psml/
+  Src/nc-pseudo/m_ncps.f90 => Src/m_ncps.f90
+  Src/nc-pseudo/m_ncps_froyen_ps_t.f90 => Src/m_ncps_froyen_ps_t.f90
+  Src/nc-pseudo/m_ncps_froyen_reader.f => Src/m_ncps_froyen_reader.f
+  Src/nc-pseudo/m_ncps_reader.f => Src/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90 => Src/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_writers.f90 => Src/m_ncps_writers.f90
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/velect.f
+  Pseudo/atom/write_psml.f
+  Src/MPI/Makefile
+  Src/Makefile
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/flib_spline.f90
+  Src/psml/m_ncps_parsing_helpers.F90
+  Src/psml/m_ncps_xml_ps_t.f90
+  Src/psml/makefile
+  Src/m_ncps.f90
+  Src/m_ncps_reader.f
+  Src/m_ncps_translators.f90
+
+------------------------------------------------------------
+September 1, 2014  Alberto Garcia       trunk-462--ncps-37
+Refine ghost check. Allocate unconditionally psml structure in parser
+
+In some cases the ghost check is too strict, triggering a warning and
+stopping the program when the eigenvalues tested are equal within
+numerical noise. This happens particularly for some unbound
+channels. The program now accepts a "noise range" as valid.
+
+The auxiliary structure 'pseudo' in the psml parser was not given
+fresh storage for calls beyond the first, leading to errors.
+
+modified:
+  Src/atom.F
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+
+------------------------------------------------------------
+August 25, 2014  Alberto Garcia         trunk-462--ncps-36
+Some doxygen annotations. Move val_config back into header
+
+modified:
+  Pseudo/atom/fhi2psml.f90
+  Pseudo/atom/write_psml.f
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+
+------------------------------------------------------------
+July 24, 2014  Alberto Garcia           trunk-462--ncps-35
+Updated fhi2psml. Fix max_range issue in evaluator.
+
+Updated the translator from the fhi98pp output to PSML v0.7.
+Still missing: addition of r=0 to the grid and data.
+
+Attempts to evaluate functions beyond the range of their grids
+will result in the asymptotic values being returned (-Z/r for
+pseudopotentials and 0 or pswfs, rho_val, and rho_core).
+
+renamed:
+  Pseudo/atom/fhi2xml.f90 => Pseudo/atom/fhi2psml.f90
+  Pseudo/atom/pseudoXMLnew.f => Pseudo/atom/write_psml.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/wrapup.f
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Pseudo/atom/fhi2psml.f90
+  Pseudo/atom/write_psml.f
+
+------------------------------------------------------------
+July 24, 2014  Alberto Garcia           trunk-462--ncps-34
+Fix bug in r or r^2 removal. Move valence-configuration element. Some docs
+
+Fixed an off-by-one error in some of the calls to remove the r or r**2 factors.
+
+Siesta can now read V 0.7 PSML files.
+
+Initial stages of psml documentation with Doxygen.
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Src/Makefile
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_psml.F90
+
+------------------------------------------------------------
+July 22, 2014  Alberto Garcia           trunk-462--ncps-33
+Remove factor of r*r in val and core charges. Update lib and clients
+
+The valence and pseudo-core charges do not contain implicit factors
+of r^2. Some strange numerical noise is apparent.
+
+The PS library has been updated significantly. Updated the example client
+in Util/PseudoOperator.
+
+Some rough edges remain (units?)
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.F90
+
+------------------------------------------------------------
+July 15, 2014  Alberto Garcia           trunk-462--ncps-32
+Include r=0 in grid. Remove factor of r from rV and rR
+
+Make the presence of r=0 mandatory for the grid, and store V and R
+without a factor of r. This avoids extrapolations by client programs.
+
+The valence and pseudo-core charges still contain implicit factors
+of 4pi*r^2.
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+July 14, 2014  Alberto Garcia           trunk-462--ncps-31
+Hartree,bohr units. Optional core-corrs. Fix bug in pswf storage
+
+The mandatory units are hartree and bohr, as specified in the
+top 'pseudo' element.
+
+The pseudocore-charge element is not present if there are no
+core corrections.
+
+Change the name of 'grid-description' to 'grid-annotation'.
+
+Fix bug in the determination of what is a 'down' channel.
+
+modified:
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+July 14, 2014  Alberto Garcia           trunk-462--ncps-30
+Store and save all valence pseudo-wfns
+
+ATOM now performs an implicit "pseudo test" for the "down" channels for
+all the valence shells, generating the pseudo wave-functions which are
+then stored in the PSML file.
+
+added:
+  Pseudo/atom/dsolv2_save_wf.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/pseudowave.h
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+July 11, 2014  Alberto Garcia           trunk-462--ncps-29
+Update of version 0.6 generator
+
+ new element grid-description
+ updated element valence-charge (no zratio!)
+ new total-valence-charge attribute
+ new attributes for element core-charge
+
+ cosmetic changes
+
+added:
+  Pseudo/atom/corecorr.h
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/atm.f
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pseudoXMLnew.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+July 8, 2014  Alberto Garcia           trunk-462--ncps-28
+Update of m_xcnames by Jose Soler 
+
+Clarified some libxc correspondences.
+
+modified:
+ Pseudo/atom/m_xcnames.F90
+
+
+------------------------------------------------------------
+June 19, 2014  Alberto Garcia           trunk-462--ncps-27
+Cosmetic changes in atom manual and elsewhere
+
+Updated the atom manual.
+Changed some names in the phonon package.
+
+
+------------------------------------------------------------
+June 11, 2014  Alberto Garcia           trunk-462--ncps-26
+Add libxc codes to PSML file
+
+Created a 'm_xcnames' module to hold translation information.
+Some checking of libxc names is still needed.
+Error reporting and fallback need to be completed.
+
+(+ Split the 'new' (v 0.6) pseudoXML routine to a 
+   new file)
+
+added:
+  Pseudo/atom/m_xcnames.F90
+  Pseudo/atom/pseudoXMLnew.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f
+
+------------------------------------------------------------
+June 10, 2014  Alberto Garcia           trunk-462--ncps-25
+Enable writing of legacy XML format. Transiesta compilation.
+
+To support the interim (old) implementation of the PSML reading
+routines, ATOM generates a legacy-format PSML file (marked as
+<pseudo version="0.1">), in addition to a newer format.
+The files are, respectively, VPSXML and PSML.
+
+Ported new compilation symbols to the TranSiesta section.
+
+modified:
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/wrapup.f
+  Src/Makefile
+
+------------------------------------------------------------
+June 4, 2014  Alberto Garcia           trunk-462--ncps-24
+Added code to determine number of semicore shells
+
+added:
+  Util/Pseudo-operator/semicore_info.F90
+  Util/Pseudo-operator/test_psml.f90
+modified:
+  Src/nc-pseudo/makefile
+  Util/Pseudo-operator/Makefile
+
+------------------------------------------------------------
+June 4, 2014  Alberto Garcia           trunk-462--ncps-23
+Support dual FoX-xmlf90 operation in Makefiles
+
+Xmlf90 is used instead of FoX for parsing when a full FoX library is
+not available, or when -DXMLF90 is added to the pre-processor options.
+
+Some makefiles have been modified to support this properly.
+
+modified:
+  Src/Makefile
+  Src/Mk/FoX.mk
+  Src/nc-pseudo/makefile
+  Src/obj_setup.sh
+  Util/Pseudo-operator/Makefile
+
+------------------------------------------------------------
+May 31, 2014  Alberto Garcia           trunk-462--ncps-22
+Fix the range of energies in logarithmic derivative
+
+When dealing with semicore states in the presence of
+higher-lying shells with the same l, the old algorithm
+considered only an energy range appropriate for one of
+the shells. Now the full energy range for that l is
+used.
+
+The eigenvalue(s) are now indicated on the LD plots.
+
+modified:
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.semicore.inp
+  Pseudo/atom/Tutorial/Utils/subps.gplot
+  Pseudo/atom/atm.f
+  Pseudo/atom/logder.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+May 30, 2014  Alberto Garcia           trunk-462--ncps-21
+Minimal change for dealing with multi-shell configurations
+
+Instead of recomputing the whole valence complex as an implicit
+"pseudopotential test", only the non-pseudized shells are recomputed,
+leaving the charge of the pseudized shells as computed in the
+generator.
+
+added:
+  Pseudo/atom/dsolv2_single.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/orbital.h
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+May 30, 2014  Alberto Garcia           trunk-462--ncps-20
+Sync to trunk-462
+
+462:  Improved MPI version of siesta as a subroutine (J.M.Soler)
+461:  %files added to Util/JobList options (J.M.Soler)
+460:  New GGA and VDW functionals (M.Fritz & J.M.Soler)
+459:  Fix bug when reading spin-polarized deformation charge
+458:  Fixes and new features in fdf
+457:  Fix printed charges for transiesta in spin-polarized case
+456:  Bug fixes and feature changes in charge-density mixing
+455:  Charge-density mixing
+454:  Allow the handling of ghosts of synthetic atoms
+
+added:
+  Docs/fdf.CHANGES
+  Docs/gga.CHANGES
+  Docs/mixrho.CHANGES
+  Src/Fstack.T90
+  Src/Pair.T90
+  Src/SiestaXC/Testers/Reference/
+  Src/SiestaXC/Testers/Reference/test1.out
+  Src/SiestaXC/Testers/Reference/test2.out
+  Src/SiestaXC/Testers/Reference/test3.out
+  Src/SiestaXC/Testers/Reference/test4.out
+  Src/SiestaXC/Testers/test6.f90
+  Src/SiestaXC/Testers/test6.m
+  Src/basic_type.inc
+  Src/class_Fstack_Pair_Vectors.F90
+  Src/class_Pair_Vectors.F90
+  Src/class_Vector.F90
+  Src/compute_energies.F90
+  Src/compute_rhog.F
+  Src/m_diis.F90
+  Src/m_rhog.F90
+  Src/rhofft.F
+  Tests/h2o-rhog-mixing/
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.fdf
+  Tests/h2o-rhog-mixing/h2o-rhog-mixing.pseudos
+  Tests/h2o-rhog-mixing/makefile
+  Util/JobList/Examples/Ice/dummyFile
+  Util/SiestaSubroutine/ProtoNEB/
+  Util/SiestaSubroutine/ProtoNEB/NH3-point01.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point02.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3-point03.fdf
+  Util/SiestaSubroutine/ProtoNEB/NH3.fdf
+  Util/SiestaSubroutine/ProtoNEB/Src/
+  Util/SiestaSubroutine/ProtoNEB/Src/Makefile
+  Util/SiestaSubroutine/ProtoNEB/Src/protoNEB.F90
+renamed:
+  Src/SiestaXC/Testers/test2.f90 => Src/SiestaXC/Testers/test2.F90
+modified:
+  Docs/CHANGES
+  Docs/siesta.tex
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/pxf.F90
+  Pseudo/atom/velect.f
+  Pseudo/atom/version.h
+  Src/Makefile
+  Src/SiestaXC/Testers/makefile
+  Src/SiestaXC/Testers/test1.f90
+  Src/SiestaXC/Testers/test3.F90
+  Src/SiestaXC/Testers/test4.F90
+  Src/SiestaXC/Testers/test5.f90
+  Src/SiestaXC/atomxc.F90
+  Src/SiestaXC/cellxc.F90
+  Src/SiestaXC/ggaxc.f
+  Src/SiestaXC/ldaxc.f
+  Src/SiestaXC/makefile
+  Src/SiestaXC/siestaxc.F90
+  Src/SiestaXC/vdwxc.F90
+  Src/SiestaXC/vv_vdwxc.F90
+  Src/SiestaXC/xcmod.f90
+  Src/atm_transfer.f
+  Src/atom.F
+  Src/chemical.f
+  Src/compute_dm.F
+  Src/dhscf.F
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/sample.F90
+  Src/fdf/sample.fdf
+  Src/final_H_f_stress.F
+  Src/fsiesta_mpi.F90
+  Src/m_convergence.f90
+  Src/m_energies.F90
+  Src/m_mpi_utils.F
+  Src/m_ts_in_siesta.F
+  Src/periodic_table.f
+  Src/post_scf_work.F
+  Src/scfconvergence_test.F
+  Src/setup_hamiltonian.F
+  Src/siesta_end.F
+  Src/siesta_forces.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/xc.f
+  Util/JobList/Examples/Ice/iceChecks.jobs
+  Util/JobList/README
+  Util/JobList/Src/jobList.f90
+  Util/SiestaSubroutine/README
+  Src/SiestaXC/Testers/test2.F90
+
+------------------------------------------------------------
+May 28, 2014  Alberto Garcia           trunk-453--ncps-20
+Compilation fixes
+
+Improve FoX handling.
+
+(+ fix in core ref)
+
+modified:
+  Src/Makefile
+  Src/Mk/FoX.mk
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/makefile
+  Src/obj_setup.sh
+
+
+------------------------------------------------------------
+May 28, 2014  Alberto Garcia           trunk-453--ncps-19
+Add information about the ps-generation configuration to PSML file
+
+Include information about non-empty valence shells in the generation
+configuration.
+
+Done also for the fhi98pp translator.
+
+(+ add code to the "str" conversion routine in wxml to simplify the
+output format for real numbers which are in effect integers)
+
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/fhi2xml.f90
+  Pseudo/atom/pseudoXML.f
+  Pseudo/atom/wxml/m_wxml_text.f90
+
+------------------------------------------------------------
+May 27, 2014  Alberto Garcia           trunk-453--ncps-18
+Replace FoX by wxml for atom. Add translator for fhi98pp
+
+* Remove the ATOM dependency on FoX by using the small wxml directory
+from xml90-1.2g.
+
+* Added provenance element which includes a copy of the ATOM input
+file.
+
+* Add experimental translator for the fhi98pp code.
+
+added:
+  Docs/wxml.CHANGES
+  Pseudo/atom/fhi2xml.f90
+  Pseudo/atom/wxml/
+  Pseudo/atom/wxml/flib_wxml.f90
+  Pseudo/atom/wxml/m_wxml_buffer.f90
+  Pseudo/atom/wxml/m_wxml_core.f90
+  Pseudo/atom/wxml/m_wxml_dictionary.f90
+  Pseudo/atom/wxml/m_wxml_elstack.f90
+  Pseudo/atom/wxml/m_wxml_text.f90
+  Pseudo/atom/wxml/makefile
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudoXML.f
+
+------------------------------------------------------------
+May 27, 2014  Alberto Garcia           trunk-453--ncps-17
+Generalize psml interface for Siesta
+
+The experience with the prototype fhi98pp "xml generator" (to be
+merged) has resulted in a number of fixes to the interface and the
+xml2froyen translator used by Siesta.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+
+------------------------------------------------------------
+May 22, 2014  Alberto Garcia           trunk-453--ncps-16
+Fix printing of n-quantum numbers for pseudo-valence
+
+Traditionally, the program printed the "effective" n for a state based
+on the number of nodes, resulting in "n=1" for "s" states, "n=2" for
+"p" states, etc.  This was confusing and has been fixed by calling
+'orban' with the actual n quantum number.
+
+modified:
+  Pseudo/atom/dsolv2.f
+
+------------------------------------------------------------
+May 21, 2014  Alberto Garcia           trunk-453--ncps-15
+Lift the restriction on multiple l-shells for ps generation in ATOM
+
+* ATOM can now generate pseudopotentials using configurations with
+several valence shells of the same angular momentum (for example, 5s
+and 6s in Ba, when treating 5s as semicore). It is no longer needed to
+use ionized configurations for these kinds of problems. ATOM will
+pseudize the state with the lowest n for a given l. The input format
+does not change.
+
+While the pseudopotential itself would be quite similar in most cases,
+the most noticeable effect will be in the valence charge density
+generated by the program: for ionized configurations the charge is
+re-scaled to the neutral-atom number of electrons, while retaining the
+(compressed) shape. This has an influence in the shape of the PAOs
+generated by SIESTA. Now the charge generated is the full valence (in
+most cases that for the ground state).
+
+The method involves using the AE screened PS to compute the
+pseudo-wavefunctions for all the valence levels, hence obtaining a
+proper pseudized charge density for de-screening later.
+
+To preserve backward compatibility the old method for dealing with the
+valence complex is used unless there are multiple shells with the same
+l. The use of the new scheme can be forced by inserting
+ 
+   %define FORCE_MULTISHELL_METHOD
+
+in the input file. This will cause very small changes in the
+eigenvalues (and slightly larger changes in the energies) with respect
+to previous results. The effect is larger for relativistic
+calculations.
+
+* Add new input file for Ti semicore example.
+
+* The plotting of ps information is now done only for the final "down"
+pseudopotentials.  Removed the plotting of the screened
+pseudopotential.
+
+* Fix issue with gnuplot script that was preventing log-derivs to
+appear in the plots with newer versions of gnuplot. Also, change the
+syntax of the style parameters, as needed by newer versions of
+gnuplot.
+
+removed:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.test-gs-last.inp
+  Pseudo/atom/Tutorial/Utils/scrpots.gplot
+  Pseudo/atom/Tutorial/Utils/scrpots.gps
+added:
+  Docs/shells.CHANGES
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.sc-full.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.testGS.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ti/
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.sc-ionic.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.semicore.inp
+renamed:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.semicore.inp 
+   ==> Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.sc-ionic.inp
+modified:
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/Tutorial/PS_Generation/Guide.txt
+  Pseudo/atom/Tutorial/Utils/ae.gplot
+  Pseudo/atom/Tutorial/Utils/pots.gplot
+  Pseudo/atom/Tutorial/Utils/pg.sh
+  Pseudo/atom/Tutorial/Utils/pt.gplot
+  Pseudo/atom/Tutorial/Utils/subps.gplot
+  Pseudo/atom/Tutorial/Utils/vcharge.gplot
+  Pseudo/atom/Tutorial/Utils/vspin.gplot
+  Pseudo/atom/ker.f
+  Pseudo/atom/param.h
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/version.h
+  Pseudo/atom/wrapup.f
+
+------------------------------------------------------------
+March 10, 2014  Alberto Garcia           trunk-453--ncps-14
+Added new accessors and completed Abinit's support in PSML
+
+PSML library calls have been used in 'psp9in' from the Abinit
+distribution to show the new functionality. More streamlining
+is now possible.
+
+The PSML library is basically complete, with some cosmetic
+rough edges. 
+
+There remains to integrate the Vlocal and KBgen functionality to
+complete the software support for interoperability.
+
+added:
+  Src/nc-pseudo/abinit_psp9in.F90
+  Src/nc-pseudo/m_psml.F90
+  Src/nc-pseudo/psp9in.F90
+modified:
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+
+------------------------------------------------------------
+February 4, 2014  Alberto Garcia           trunk-453--ncps-13
+Parsing target is now a pointer
+
+The user program receives an allocated pointer, which
+has to be explicitly "destroyed" when not needed.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.F90
+  Src/nc-pseudo/makefile
+  Src/pseudopotential.f
+
+------------------------------------------------------------
+January 28, 2014  Alberto Garcia           trunk-453--ncps-12
+Reparametrization functionality revamped
+
+For .vps and .psf files, the reparametrization uses the
+existing technology. For .xml files, the new API is used
+to evaluate the magnitudes in the new grid.
+
+File Src/pseudopotential.f is no longer "used" in Src.
+It will be progressively deprecated for programs in Util.
+
+
+added:
+  Src/nc-pseudo/flib_spline.f90
+modified:
+  Src/Makefile
+  Src/atom.F
+  Src/basis_io.F
+  Src/basis_specs.f
+  Src/basis_types.f
+  Src/nc-pseudo/m_ncps_froyen_reader.f
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_writers.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/makefile
+  Src/pseudopotential.f
+
+------------------------------------------------------------
+January 28, 2014  Alberto Garcia           trunk-453--ncps-11
+Implementation of basic API to process XML files
+
+Accessors are now those needed by Siesta. Some refactoring might
+be carried out after considering Abinit's needs.
+
+The quality of the interpolation is not really tested yet, as the
+grid points in the client and the file are the same.
+
+The new API is used in routine "xml2froyen_new". 
+
+Note that ATOM now writes XML files with just a global grid.
+
+modified:
+  Pseudo/atom/pseudoXML.f
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_reader.f
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/pseudopotential.f
+
+------------------------------------------------------------
+January 24, 2014  Alberto Garcia           trunk-453--ncps-10
+Dual FoX-XMLF90 operation
+
+Some tricks remain to be implemented.
+Define -DXMLF90 in the arch.make to use xmlf90
+as the XML parser.
+
+XMLF90 is noticeably faster parsing pseudo xml files...
+
+renamed:
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90 => Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_xmlreader.f90 => Src/nc-pseudo/m_ncps_xmlreader.F90
+modified:
+  Src/nc-pseudo/makefile
+  Util/Pseudo-operator/Makefile
+  Src/nc-pseudo/m_ncps_parsing_helpers.F90
+  Src/nc-pseudo/m_ncps_xmlreader.F90
+
+------------------------------------------------------------
+January 24, 2014  Alberto Garcia           trunk-453--ncps-9
+Merge the .mk prototype mechanism from trunk-mk
+
+------------------------------------------------------------
+January 17, 2014  Alberto Garcia           trunk-453--ncps-8
+Added evaluator for radfuncs in XML struct
+
+Uses polynomial interpolation.
+In principle it could work for r=0, but
+since rV is stored, it is not useful.
+
+modified:
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+
+------------------------------------------------------------
+January 17, 2014  Alberto Garcia           trunk-453--ncps-7
+Added program 'semicore_info'
+
+Created Pseudo/atom/Util/Ps2Inp/semicore_info.f90
+to implement the method to determine the number of semicore shells.
+
+added:
+  Pseudo/atom/Util/Ps2Inp/semicore_info.f90
+modified:
+  Pseudo/atom/Util/Ps2Inp/makefile
+
+------------------------------------------------------------
+January 16, 2014  Alberto Garcia           trunk-453--ncps-6
+Work toward semicore handling
+
+Pseudo/atom/Util/Ps2Inp contains now new code to determine the
+ground-state valence configuration. By taking the "difference" between
+that and the ps-generation configuration, one can get information
+about which shells have semicore states.
+
+added:
+  Pseudo/atom/Util/Ps2Inp/Ba.psf
+  Pseudo/atom/Util/Ps2Inp/ground_state.f90
+  Pseudo/atom/Util/Ps2Inp/makefile
+  Pseudo/atom/Util/Ps2Inp/periodic_table.f
+modified:
+  Pseudo/atom/Util/Ps2Inp/make_ps_input.f90
+
+------------------------------------------------------------
+January 15, 2014  Alberto Garcia           trunk-427--ncps-5
+More grid_data support in ncps library
+
+Some more error checking.
+Grids with explicit data are used internally. Thus,
+any attributes but "npts" are optional. So far only
+logarithmic grids are supported.
+
+To Do: Check consistency of grid metadata and values,
+when given.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90
+
+------------------------------------------------------------
+October 10, 2013  Alberto Garcia           trunk-427--ncps-4
+Implement grid_data support in ncps library
+
+Some more error checking, and addition of a 
+global_grid element to the 'pseudo' data structure.
+
+To Do: Check consistency of grid metadata and values.
+
+modified:
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.f90
+
+------------------------------------------------------------
+September 5, 2013  Alberto Garcia          trunk-427--ncps-3
+Streamline ncps library and simplify Util/Pseudo-operator
+
+New functions added to the norm-conserving pseudo handling
+library. 
+
+Removed "sys" and "io" dependencies in Util/Pseudo-operator
+by using a simplified "die" routine without the need for
+a proper interface, and a simple "get_lun" routine.
+
+removed:
+  Util/Pseudo-operator/000_README
+  Util/Pseudo-operator/flib_spline.f90
+  Util/Pseudo-operator/io.f
+  Util/Pseudo-operator/m_io.f
+  Util/Pseudo-operator/pseudopotential.f
+  Util/Pseudo-operator/pxf.F90
+  Util/Pseudo-operator/sys.F
+added:
+  Src/nc-pseudo/m_ncps_froyen_reader.f
+  Src/nc-pseudo/m_ncps_reader.f
+  Util/Pseudo-operator/local_die.F
+modified:
+  Src/Makefile
+  Src/nc-pseudo/m_ncps.f90
+  Src/nc-pseudo/makefile
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/arw.f
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/pseudooperator.F
+  Util/Pseudo-operator/xc.F
+
+------------------------------------------------------------
+July 3, 2013  Alberto Garcia          trunk-427--ncps-2
+Import Util/Pseudo-operator by Javier Junquera
+
+Some more pruning is still needed.
+Added KBPROJ.l.index file output.
+
+added:
+  Util/Pseudo-operator/
+  Util/Pseudo-operator/000_README
+  Util/Pseudo-operator/Makefile
+  Util/Pseudo-operator/Run/
+  Util/Pseudo-operator/Run/Al.psf
+  Util/Pseudo-operator/Run/Au.psf
+  Util/Pseudo-operator/Run/Ba.psf
+  Util/Pseudo-operator/Run/Fe.psf
+  Util/Pseudo-operator/Run/Si.psf
+  Util/Pseudo-operator/arw.f
+  Util/Pseudo-operator/atmparams.f
+  Util/Pseudo-operator/atom_options.F90
+  Util/Pseudo-operator/flib_spline.f90
+  Util/Pseudo-operator/io.f
+  Util/Pseudo-operator/m_io.f
+  Util/Pseudo-operator/module_pseudo.F
+  Util/Pseudo-operator/precision.F
+  Util/Pseudo-operator/pseudooperator.F
+  Util/Pseudo-operator/pseudopotential.f
+  Util/Pseudo-operator/pxf.F90
+  Util/Pseudo-operator/schrodinger.F
+  Util/Pseudo-operator/sys.F
+  Util/Pseudo-operator/xc.F
+
+
+------------------------------------------------------------
+January 9, 2013  Alberto Garcia          trunk-427--ncps-1
+Prototype implementation of ncps library
+
+A prototype "norm-conserving pseudopotential" library functionality
+has been included in Src/nc-pseudo. It is now possible to read
+pseudo-xml files directly from Siesta.
+
+A bug in the previous implementation, having to do with the "valence
+charge density of ps generation", has been fixed.
+
+Other rough edges remain.
+
+added:
+  Src/nc-pseudo/
+  Src/nc-pseudo/m_ncps.f90
+  Src/nc-pseudo/m_ncps_froyen_ps_t.f90
+  Src/nc-pseudo/m_ncps_parsing_helpers.f90
+  Src/nc-pseudo/m_ncps_translators.f90
+  Src/nc-pseudo/m_ncps_writers.f90
+  Src/nc-pseudo/m_ncps_xml_ps_t.f90
+  Src/nc-pseudo/m_ncps_xmlreader.f90
+  Src/nc-pseudo/makefile
+modified:
+  Src/Makefile
+  Src/pseudopotential.f
+
+

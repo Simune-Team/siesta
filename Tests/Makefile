@@ -81,6 +81,10 @@ tests_mpi_max2 = h2_bessel h_chain h_chain2 \
 # SOC tests
 tests_soc = ge_soc_bands Pt_dimer_soc FePt_soc
 
+# PSML tests
+tests_psml = ge-soc-bands-psml h2o-psml si64-psml-full \
+             si64-psml-sl si64-soft-psml-full # fe-psml
+
 # Tests only applicable for LUA
 tests_lua  = lua_si111 lua_h2o
 
@@ -95,6 +99,7 @@ all: $(tests)
 # Define test specific targets:
 tests: $(tests)
 tests-soc: $(tests_soc)
+tests-psml: $(tests_psml)
 tests-lua: $(tests_lua)
 tests-flos: $(tests_flos)
 tests-proc-limit: $(tests_mpi_max2)

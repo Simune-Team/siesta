@@ -1,0 +1,68 @@
+To compile this version of Siesta you need the following libraries:
+
+xmlf90
+libPSML
+libGridXC (optionally with libxc)
+
+which are also part of the ESL bundle
+(https://gitlab.com/ElectronicStructureLibrary/esl-bundle).
+Note that you need version 0.4 of the ESL bundle.
+
+Alternatively, the tarballs for the libraries can be downloaded from Launchpad:
+
+https://launchpad.net/xmlf90/trunk/1.5/+download/xmlf90-1.5.4.tar.gz
+https://launchpad.net/libpsml/trunk/1.1/+download/libpsml-1.1.7.tgz
+https://launchpad.net/libgridxc/trunk/0.8/+download/libgridxc-0.8.5.tgz
+
+(and soon from https://gitlab.com/siesta-project)
+
+NOTE: You need version 1.5.4 of the xmlf90 library,
+      at least version 0.8.5 of the libgridxc library, and
+      at least version 1.1.7 of the libpsml library.
+
+NOTE: libpsml-1.1.8 might be easier on some compilers.
+
+** For extra performance options, you should install the ELSI library,
+with optional (recommended) external ELPA library. See README_ELSI.
+
+** Steps in detail
+
+* With the ESL bundle:
+
+-  Build and install the bundle following the instructions provided.
+
+-  Use as starting point for your arch.make the file
+   Obj/gfortran-esl-bundle.make.
+
+* If manually compiling the required libraries:
+
+- Dowload and unpack the library tarballs
+
+- Compile the xmlf90, libpsml, and libgridxc libraries (follow the
+  instructions in the appropriate packages).
+
+- Go back to the Siesta building directory, review the settings of the
+  xmlf90, libpsml, and libgridxc import lines in the arch.make file, and type
+
+    (sh ../Src/obj_setup.sh if you have not yet done so)
+    make
+
+It is suggested that the file
+
+     Obj/gridxc-0.8.5-no-auto-tools.make
+
+be used as a starting point for compilation in this case. It uses the
+legacy installation directory organization of libgridxc.
+
+
+NOTE: The structure of the arch.make file has changed a bit. MPI and NETCDF
+      functionality is now requested by setting WITH_MPI and WITH_NETCDF,
+      respectively, and there must be specific FC_SERIAL and FC_PARALLEL
+      symbols for the Fortran compiler. See the examples in Obj/*.make.
+
+      
+    
+
+    
+  
+

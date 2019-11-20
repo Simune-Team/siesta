@@ -165,7 +165,7 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large \printdate}
+{\Large June 28, 2018 }
 
 \vspace{1.5cm}
 {\Large \url{http://www.uam.es/siesta}}
@@ -306,8 +306,6 @@ which still uses many of the algorithms developed by them.
   tutorial material prepared for \siesta\ schools and workshops at
   the project's web page} \url{http://www.uam.es/siesta}.
 
-
-\textbf{NOTE: See the description of changes in the logic of the SCF loop}
 
 \siesta\index{Siesta@\siesta} (Spanish Initiative for
 Electronic Simulations with
@@ -596,11 +594,9 @@ To enable MPI in \siesta\ the compilation options are required to be
 changed accordingly, here is the most basic changes to the
 \file{arch.make} for standard binary names
 \begin{shellexample}
+  FC_PARALLEL = mpifort # or mpif90
   CC = mpicc
-  FC = mpifort # or mpif90
-  MPI_INTERFACE = libmpi_f90.a
-  MPI_INCLUDE = .
-  FPPFLAGS += -DMPI
+  WITH_MPI=1
 \end{shellexample}
 \index{compile!pre-processor!-DMPI}
 
@@ -713,6 +709,27 @@ installation scripts finishes by telling \emph{what} to add to the
 
 \begin{description}
 
+  \item[XMLF90] %
+  \index{External library!xmlf90}%
+  is required as a prerequisite for libPSML.
+  (\href{https://launchpad.net/xmlf90}). See the \texttt{000\_INSTALL} file.
+
+  \item[libPSML] %
+  \index{External library!libPSML}%
+  is required to use pseudopotentials in PSML format
+  (\href{https://launchpad.net/libPSML}) See the \texttt{000\_INSTALL} file.
+
+  \item[libGridXC] %
+  \index{External library!libGridXC}%
+  is required.
+  (\href{https://launchpad.net/libgridxc}) See the \texttt{000\_INSTALL} file.
+
+  \item[libXC] %
+  \index{External library!libXC}%
+  is optional, depending on the options used in the compilation of libGridXC.
+  (\href{https://gitlab.com/libxc/libxc})
+
+    
   \item[BLAS] %
   \index{External library!BLAS}%
   it is recommended to use a high-performance library
@@ -1600,12 +1617,46 @@ for each defined species (species defined either in block
 The name of the files should be:
 
 \textit{Chemical\_label}\texttt{.vps} (unformatted) or
-\textit{Chemical\_label}\texttt{.psf} (ASCII)
+\textit{Chemical\_label}\texttt{.psf} (ASCII) or
+{\textit{Chemical\_label}\texttt{.psml} (PSML format)
+
 
 \noindent
 where \textit{Chemical\_label} corresponds to the label defined in the
 \fdf{ChemicalSpeciesLabel} block.
 
+\index{PSML format}\index{pseudopotential!PSML format}
+Siesta can handle pseudopotential files in the PSML format
+(García, A., Verstraete, M. J., Pouillon, Y., and Junquera, J. ``The
+PSML format and library for norm-conserving pseudopotential data
+curation and interoperability'', Computer Physics Communications 227
+51-71 (2018), \url{https://doi.org/10.1016/j.cpc.2018.02.011}).
+In particular, Siesta can:
+\begin{itemize}
+\item Read the semilocal potentials from the PSML file and proceed as
+  usual, generating the PAOs, the Siesta-style local potential, and
+  the KB projectors.
+\item Read the semilocal potentials \emph{and} the local potential from
+  the PSML file, and generate the PAOs and the KB projectors. For
+  this, the option \fdf{use-psml-vlocal} must be set to \fdftrue (the default).
+\item Read the semilocal potentials \emph{and} the local potential,
+  \emph{and} the non-local projectors from
+  the PSML file. In this case, the PAOs are still generated from the
+  semi-local potentials. In the future there will be an option to
+  generate the PAOs directly from the complete pseudopotential operator. For
+  this, the options \fdf{use-psml-vlocal} and
+  \fdf{use-psml-kb-projectors} must be set to \fdftrue (the default).
+\end{itemize}
+Currently, PSML files can be produced in a form fully compatible with
+the Siesta procedures to generate the non-local pseudopotential
+operator (see directory \shell{Pseudo/vnl-operator})\index{PSML!from
+  Siesta's vnl-operator} and by suitably patched versions of
+D.R. Hamann's \texttt{oncvpsp} program (see directory
+\shell{Pseudo/Third-Party-Tools/ONCVPSP}).\index{pseudopotential!oncvpsp
+  code}\index{PSML!from oncvpsp code}.
+
+See also the file \shell{README\_PSML} in the top directory for more
+PSML-related information.
 
 \subsection{Basis set and KB projectors}
 
@@ -2010,19 +2061,25 @@ set to their problem under consideration.
     \option[DZP|standard]%
     \fdfindex*{PAO!BasisSize:DZP}
     
-    Like \fdf*{DZ} plus polarization orbitals. Polarization orbitals
-    are constructed from perturbation theory,\index{perturbative
-        polarization} and they are defined so they
-    have\index{basis!polarization} the minimum angular momentum $l$
-    such that there are not occupied orbitals with the same $l$ in the
-    valence shell of the ground-state atomic configuration. They
-    polarize the corresponding $l-1$ shell.
+    Like \fdf*{DZ} plus polarization orbitals. 
 
     \note The ground-state atomic configuration used internally by
     \siesta\ is defined in the source file
     \shell{Src/periodic\_table.f}.  For some elements (e.g., Pd), the
     configuration might not be the standard one\index{Ground-state
         atomic configuration}.
+
+    \note By default, polarization orbitals
+    are constructed from perturbation theory,\index{perturbative
+        polarization} and they are defined so they
+    have\index{basis!polarization} the minimum angular momentum $l$
+    such that there are no occupied orbitals with the same $l$ in the
+    valence shell of the ground-state atomic configuration. They
+    polarize the corresponding $l-1$ shell.
+
+    See \fdf{PAO!NonPerturbativePolarizationOrbitals} and
+    \fdf{PAO!PolarizationScheme} in Sec.~\ref{sec:non-pert-pols} for
+    options to generate polarization orbitals non-perturbatively.
     
   \end{fdfoptions}
 
@@ -2198,6 +2255,80 @@ As a summary of the above options:
   
 \end{fdfentry}
 
+\subsubsection{Polarization-orbital options}
+\label{sec:non-pert-pols}
+
+Polarization orbitals can be requested through an automatic basis-size
+specification such as DZP, or TZP, etc, or through the use of the 'P'
+shell option in the \fdf{PAO!Basis} block. 
+
+In these cases, by default, polarization orbitals are generated
+perturbatively, by formally applying an electric field to the orbital
+being polarized.
+
+Polarization shells can also be put explicitly in the \fdf{PAO!Basis}
+block. In this case, the orbitals are generated in the standard way,
+using the appropriate confinement and split-norm options.
+
+If the perturbative method is not wanted, even when using the standard
+basis specifications, the following global option
+can be used:
+
+\begin{fdflogicalF}{PAO!non-perturbative-polarization-orbitals}
+  \index{basis!polarization orbitals}
+
+  If enabled, it will promote any polarization shells to the status
+  of explicit shells, thus using the standard generation options.
+  
+\end{fdflogicalF}
+
+Also, this setting can be controlled species by species, by using
+a block
+
+\begin{fdfentry}{PAO!PolarizationScheme}[block]
+  \index{basis!polarization orbitals}
+
+  Block which allows to specify a different polarization scheme
+  for each species. For example,
+  \begin{fdfexample}
+     %block PAO.PolarizationScheme
+         Si      non-perturbative
+         H       perturbative
+     %endblock PAO.PolarizationScheme
+  \end{fdfexample}
+
+  If a species does not appear in the block, the setting of 
+  \fdf{PAO!non-perturbative-polarization-orbitals} applies.
+  The default scheme is perturbative.
+  
+\end{fdfentry}
+
+The perturbative method does not require any extra information
+regarding confinement, since the $r_c$ value for the polarization
+shell is the same as the one for the polarized shell.  If the
+perturbative method is turned off, the new explicit shell created for
+the polarization orbital will be assigned an $r_c$ equal to the one
+actually used for the polarized shell (for the 1st zeta). The only
+extra control offered at this point is a possible expansion of this
+value through the (global) option:
+
+\begin{fdfentry}{PAO!polarization-rc-expansion-factor}[real]<$1.0$>
+  \index{basis!confinement radius expansion} 
+
+  When turning off the perturbative method for the generation of
+  polarization orbitals, assign to the 1st zeta of the explicit
+  polarization shell the $r_c$ of the polarized shell multiplied by
+  this factor.
+  
+\end{fdfentry}
+
+Note that, empirically, the perturbative method seems to give better
+results (in the variational sense), so the alternative should only be
+used when the default fails for some reason, for full basis-set optimization,
+or for experimentation purposes.
+
+A proper basis-set optimization should be carried out using
+a PAO.Basis block, which allows a full set of options.
 
 
 \subsubsection{Soft-confinement options}
@@ -2236,6 +2367,13 @@ As a summary of the above options:
 
 
 \subsubsection{Kleinman-Bylander projectors}
+
+\index{PSML}{\index{Kleinman-Bylander projectors!from PSML file} NOTE:
+  {\sc Siesta} is now able to read directly the non-local projectors
+  from a PSML file. For this, the options \fdf{use-psml-vlocal} and
+  \fdf{use-psml-kb-projectors} must be set to \fdftrue, and a
+  \shell{SystemLabel.psml} file must be present. The rest of the
+  options discussed in this section will have no effect in that case.
 
 
 \begin{fdfentry}{PS!lmax}[block]
@@ -2355,7 +2493,8 @@ For full spin-orbit calculations, the program generates $lj$
 projectors using the $l+1/2$ and $l-1/2$ components of the
 (relativistic) pseudopotentials. In this case the specification of the
 reference energies for projectors is not changed: only $l$ is
-relevant.
+relevant. Fully relativistic projectors can also be read from a
+suitably generated PSML file.
 
 \end{fdfentry}  
 
@@ -2601,8 +2740,8 @@ but neither pseudopotential nor electrons are considered for that
 ghost atom. Useful for BSSE\index{basis!basis set superposition
 error (BSSE)} correction.
 
-\textit{Use:} This block is optional, except when Bessel functions or
-semicore states are present.
+\textit{Use:} This block is optional, except when Bessel functions
+are present.
 
 \textit{Default:} Basis characteristics defined by global definitions given
 above.
@@ -3675,6 +3814,11 @@ are always stored in the file \sysfile{KP}.
 \subsection{Exchange-correlation functionals}
 
 
+(Apart from the built-in functionals, \siesta\ can use the functionals
+provided by the LibXC library, if support for it is compiled-in in the
+libGridXC library. See the description of the \fdf{XC.cocktail} block
+below for the appropriate syntax. \index{LibXC library})
+
 \begin{fdfentry}{XC!Functional}[string]<LDA>
   
   Exchange-correlation functional type. May be \fdf*{LDA} (local
@@ -3816,15 +3960,11 @@ are always stored in the file \sysfile{KP}.
 \end{fdfentry}
 
 
-\begin{fdfentry}{XC!Hybrid}[block]
-  
+\begin{fdfentry}{XC!Cocktail}[block]
+
   This data block allows the user to create a ``cocktail'' functional by
   mixing the desired amounts of exchange and correlation from each of
-  the functionals described under XC.authors. Note that these ``mixed''
-  functionals do \emph{not} have the exact Hartree-Fock exchange which
-  is a key ingredient of the true ``hybrid'' functionals. The use of
-  the word ``hybrid'' in the label is unfortunate in this regard, and
-  might be deprecated in a future version.
+the functionals described under XC.authors.
 
   The first line of the block must contain the number of functionals to
   be mixed. On the subsequent lines the values of XC.functl and
@@ -3837,12 +3977,49 @@ are always stored in the file \sysfile{KP}.
   energy:
   
   \begin{fdfexample}
-     %block XC.hybrid
+     %block XC.cocktail
         2
         LDA CA  0.5 0.75
         GGA PBE 0.5 0.25
-     %endblock XC.hybrid
+     %endblock XC.cocktail
   \end{fdfexample}
+
+These blocks can also be used to request the use of LibXC functionals
+(if the version of libGridXC in use is 0.7 or later and was compiled
+with LibXC support).  \index{LibXC library} For example:
+
+\begin{fdfexample}
+     %block XC.cocktail
+     2
+     GGA LIBXC-00-GGA_X_PBE 1.0 0.0
+     GGA LIBXC-00-GGA_C_PBE 0.0 1.0
+     %endblock XC.cocktail
+\end{fdfexample}
+
+The weights reflect the ``exchange'' or ``correlation''
+character of each individual functional. In the above example we use
+mnemonic symbols for the functionals and leave the numerical
+functional id field as zero. It is also possible to use only the
+numerical id:
+
+\begin{fdfexample}
+     %block XC.cocktail
+     2
+     GGA LIBXC-101 1.0 0.0
+     GGA LIBXC-130 0.0 1.0
+     %endblock XC.cocktail
+\end{fdfexample}
+
+
+If both fields are used the information must be compatible. Also, the
+``family'' field (GGA, LDA) must be compatible with the functional
+specified.
+
+\textbf{NOTE:} In previous versions of the program this block was named,
+confusingly, \textbf{XC.Hybrid}
+
+\textit{Default value:} If the block is not present, the XC
+information is read from the fdf variables above.
 
 \end{fdfentry}
 
@@ -4045,8 +4222,10 @@ could still be difficult.
   spin-orbit interaction from zero to any positive value. It can be
   used for both the on-site and off-site SOC flavors, but only for
   debugging and testing purposes, as the only physical value is 1.0.
-  Note that this feature is implemented by modifying the SO parts of the
-  semilocal potentials read from a \code{.psf} file. Care must be
+  Note that this feature is currently implemented by modifying the SO parts of the
+  semilocal potentials read from a \code{.psf} file. It will not work
+  when reading the $lj$ projectors directly from a PSML file (or from
+  a previous run's \code{.ion} file). Care must be
   taken when re-using any \code{.ion} files produced.
   
 \end{fdfentry}

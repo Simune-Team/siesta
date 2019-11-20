@@ -39,7 +39,7 @@ C **********************************************************************
 
       use parallel,  only : nodes
       use mesh,      only : NSM, nsp, meshLim
-      use siestaXC,  only : cellXC       ! Finds xc energy and potential
+      use gridXC,    only : cellXC=>gridxc_cellXC ! Finds xc energy and potential
 
       use moreMeshSubs, only : setMeshDistr, distMeshData
       use moreMeshSubs, only: UNIFORM, LINEAR

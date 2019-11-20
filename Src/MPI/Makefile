@@ -41,17 +41,13 @@ module_built: libmpi_f90.a
 	@cp *.mod ..
 	@touch module_built
 #
-libmpi_f90.a: mpi_interfaces.o mpi__include.o Interfaces.o mpi_siesta.o timer_mpi.o
+libmpi_f90.a: mpi_interfaces.o mpi__include.o Interfaces.o mpi_siesta.o
 	@$(AR) $(ARFLAGS_EXTRA) cru libmpi_f90.a mpi_interfaces.o \
-               mpi_siesta.o mpi__include.o Interfaces.o timer_mpi.o
+               mpi_siesta.o mpi__include.o Interfaces.o
 	-$(RANLIB) libmpi_f90.a
 #
 clean:
 	@rm -f Interfaces.f90 *.o *.mod
 	@rm -f module_built *.uses kind_explorer int_explorer
 	@rm -f libmpi_f90.a
-
-mpi_siesta.o: timer_mpi.o
-Interfaces.o: timer_mpi.o
-
 

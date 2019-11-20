@@ -1,0 +1,22 @@
+------------------------------------------------------
+Jan 24 2014, Alberto Garcia  trunk-453--mk-1
+Proof of concept of .mk file: dealing with FoX library
+
+New Src/Mk directory holds .mk files that encapsulate the know-how
+for dealing with particular subsystems/libraries.
+
+Implemented an example for an external FoX library: the user only
+needs to provide the top FoX library directory in the arch.make
+file, and Mk/FoX.mk does the rest.
+
+It is worth implementing a fall-back procedure by which, in the
+absence of a precompiled FoX library, a source version included
+in the Siesta distribution can be compiled.
+
+added:
+  Src/Mk/
+  Src/Mk/FoX.mk
+modified:
+  Src/Makefile
+  Src/obj_setup.sh
+  Src/pxf.F90            (fix typo in f2003 bind(C) syntax)

@@ -13,7 +13,7 @@
 
       subroutine siesta_end( )
       use fdf,             only : fdf_shutdown
-      use alloc,           only : alloc_report
+      use memory_log,      only : memory_report
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
       use siesta_master,   only : siesta_subroutine  ! Is siesta a subroutine?
@@ -113,7 +113,7 @@
 !!      call printmemory( 6, 1 )
 
 !     Print allocation report
-      call alloc_report( printNow=.true. , shutdown=.true.)
+      call memory_report( printNow=.true. , shutdown=.true.)
 
 #ifdef DEBUG_XC
 ! Close debug outup file

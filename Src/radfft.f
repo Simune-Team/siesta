@@ -18,7 +18,7 @@ C none
 C
 C   Used module procedures:
 C use m_bessph,  only: bessph    ! Spherical Bessel functions
-C use m_fft_gpfa,only: fft_gpfa_ez ! Fourier transform
+C use gpfa_fft,only: fft_gpfa_ez ! Fourier transform
 C use alloc,     only: de_alloc  ! Deallocation routines
 C use alloc,     only: re_alloc  ! (Re)allocation routines
 C
@@ -90,7 +90,7 @@ C *********************************************************************
 
       USE precision, only: dp        ! Double precision real kind
       USE m_bessph,  only: bessph    ! Spherical Bessel functions
-      use m_fft_gpfa,only: fft_gpfa_ez     ! 1D fast Fourier transform
+      use gpfa_fft  ,only: fft_gpfa_ez     ! 1D fast Fourier transform
       USE alloc,     only: re_alloc, de_alloc
 !      USE m_timer,   only: timer_start  ! Start counting CPU time
 !      USE m_timer,   only: timer_stop   ! Stop counting CPU time
@@ -114,7 +114,7 @@ C *********************************************************************
 
       SUBROUTINE RADFFT( L, NR, RMAX, F, G )
 
-      IMPLICIT NONE
+      USE iso_c_binding, only: c_loc, c_f_pointer
 
 C Declare argument types and dimensions -----------------------------
       INTEGER, intent(in) :: L       ! Angular momentum of function
@@ -132,7 +132,9 @@ C Internal variable types and dimensions ----------------------------
       INTEGER  ::  I, IQ, IR, JR, M, MQ, N, NQ
       real(dp) ::  C, DQ, DR, FR, PI, R, RN, Q, QMAX
 !!      real(dp) ::  GG(0:2*NR), FN(2,0:2*NR), P(2,0:L,0:L)
-C -------------------------------------------------------------------
+
+      real(dp), pointer :: fn_real_1d(:)
+C-------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------
 *     CALL TIMER_START( 'RADFFT' )
@@ -221,9 +223,10 @@ C       Perform one-dimensional complex FFT
 !
 !       Only the elements from 0 to 2*NR-1 of FN are used.
 !       (a total of 2*NR). The fft routine will receive a one-dimensional
-!       array of size 2*NR.
+!       array of size 2*NR. (This is now made explicit with c_loc/c_f_pointer)
 !
-        CALL fft_gpfa_ez( FN, 2*NR, +1 )
+        call c_f_pointer(c_loc(FN(1,0)),fn_real_1d,[4*NR])
+        CALL fft_gpfa_ez( fn_real_1d, 2*NR, +1 )
 
 C       Accumulate contribution
         DO IQ = 1,NQ

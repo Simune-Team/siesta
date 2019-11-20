@@ -6,6 +6,11 @@
 # as reference when copying files.
 # 
 #
+objdir=$(
+cd -P -- "$(pwd)" &&
+pwd -P
+)
+#
 srcdir=$(
 cd -P -- "$(dirname -- "$0")" &&
 pwd -P
@@ -24,9 +29,18 @@ destdir=$(pwd)
   for i in $(find . -name \[mM\]akefile | grep -v \\./Makefile) ; do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
-    cp $relpath/*akefile ${destdir}/$relpath
+    cp -p $relpath/*akefile ${destdir}/$relpath
   done
 )
+# copy .mk files
+(cd $srcdir;
+  for i in $(find . -name 'fortran.mk'); do
+    relpath=${i%/*}
+    mkdir -p ${destdir}/$relpath
+    cp -p $relpath/fortran.mk ${destdir}/$relpath
+  done
+)
+
 # Replicate any .h files
 # This is needed in some systems with broken include file import heuristics
 # (e.g., CSCS blanc)
@@ -35,11 +49,21 @@ destdir=$(pwd)
   for i in $(find . -name '*.h' ); do
     relpath=${i%/*}
     mkdir -p ${destdir}/$relpath
-    cp -f $relpath/*.h ${destdir}/$relpath
+    cp -fp $relpath/*.h ${destdir}/$relpath
+  done
+)
+# Replicate any .inc files
+#
+(cd $srcdir;
+  for i in $(find . -name '*.inc' ); do
+    relpath=${i%/*}
+    mkdir -p ${destdir}/$relpath
+    cp -fp $relpath/*.inc ${destdir}/$relpath
   done
 )
 #
-sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
+sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile | \
+sed "s#MAIN_OBJDIR=\.#MAIN_OBJDIR=${objdir}#g" > ${destdir}/Makefile
 
 #
 # Tests directory

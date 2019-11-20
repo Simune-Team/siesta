@@ -16,8 +16,6 @@ C by SIESTA
 C
       use fdf
 
-      use precision
-      use parallel,     only : Node, Nodes, IOnode
       use basis_types, only: nsp, basis_specs_transfer, initialize
       use basis_types, only: iz, lmxkb, nkbl, 
      .           erefkb, lmxo, nzeta, rco, 
@@ -26,6 +24,7 @@ C
      .           cnfigmx, charge, smass, basistype,
      &           rinn, vcte, qcoe, qyuk, qwid, split_norm
       use basis_types, only: write_basis_specs
+      use basis_types, only: initialize
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
       use basis_io
@@ -36,6 +35,9 @@ C
       use sys,          only : die
       use atom_options, only : get_atom_options, write_ion_plot_files
       use atm_types, only: species, species_info, nspecies
+
+      use m_spin,             only: init_spin, spin
+      
       use ldau_specs, only: read_ldau_specs
       use ldau_specs, only: populate_species_info_ldau
       use ldau_specs, only: ldau_proj_gen
@@ -47,17 +49,10 @@ C
       type(basis_def_t), pointer   :: basp
       type(species_info),  pointer :: spp
 
-      external atm_transfer
-
 c Reading input for the pseudopotentials and atomic orbitals 
       integer :: narg, length
       logical :: file_exists
       
-! Reading input for the pseudopotentials and atomic orbitals 
-      Node =  0
-      Nodes = 1
-      IOnode = (Node == 0)
-
 !     Get file-name from input line
       narg = command_argument_count()
       if ( narg > 0 ) then
@@ -80,6 +75,8 @@ c Reading input for the pseudopotentials and atomic orbitals
       
       call fdf_init(filein,'gen-basis_fdf.log')
       
+         call init_spin()
+         
       call get_atom_options()
       write_ion_plot_files = .true. ! get them always
       
@@ -91,7 +88,6 @@ c Reading input for the pseudopotentials and atomic orbitals
 
       allocate(basis_parameters(nsp))
       allocate(species(nsp))
-      nspecies = nsp ! For atm_types module
       do is = 1 , nsp
         call initialize(basis_parameters(is))
       end do
@@ -121,7 +117,7 @@ c Reading input for the pseudopotentials and atomic orbitals
      &      qwid(0:,1:,is),
      $      split_norm(0:,1:,is),
      &      filtercut(0:,1:,is), basp, spp,
-     &      lj_projs=fdf_get('lj-projs', .false.))
+     &           lj_projs=spin%SO_offsite)
         
 !       Generate the projectors for the LDA+U simulations (if requested)
         call ldau_proj_gen(is)
@@ -133,7 +129,7 @@ c Reading input for the pseudopotentials and atomic orbitals
       call populate_species_info_ldau()
 
       call remove_atom_tables()
-      
+      nspecies = nsp
       call dump_basis_ascii()
       call dump_basis_netcdf()
       call dump_basis_xml()

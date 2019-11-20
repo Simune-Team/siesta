@@ -108,7 +108,7 @@ C
 
       use fdf
       use alloc
-      use m_memory
+      use memory_log
       use m_spin,       only: Spiral, qSpiral
       use m_spin,       only: spin
 #ifdef MPI

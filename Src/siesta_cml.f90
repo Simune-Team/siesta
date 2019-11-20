@@ -10,18 +10,18 @@ Module siesta_cml
   !
   ! Now using the CML module in xmlf90
   !
-  Use flib_wcml, only: cmlStartModule, cmlEndModule
-  Use flib_wcml, only: cmlNamespaceAttribute, cmlAddComment
-  Use flib_wcml, only: cmlStartStep, cmlEndStep
-  Use flib_wcml, only: cmlStartPropertyList, cmlEndPropertyList
-  Use flib_wcml, only: cmlStartParameterList, cmlEndParameterList
-  Use flib_wcml, only: cmlAddProperty, cmlAddLattice, cmlAddKPoint
-  Use flib_wcml, only: cmlAddMolecule, cmlAddParameter, cmlAddCrystal
+  Use xmlf90_cml, only: cmlStartModule, cmlEndModule
+  Use xmlf90_cml, only: cmlNamespaceAttribute, cmlAddComment
+  Use xmlf90_cml, only: cmlStartStep, cmlEndStep
+  Use xmlf90_cml, only: cmlStartPropertyList, cmlEndPropertyList
+  Use xmlf90_cml, only: cmlStartParameterList, cmlEndParameterList
+  Use xmlf90_cml, only: cmlAddProperty, cmlAddLattice, cmlAddKPoint
+  Use xmlf90_cml, only: cmlAddMolecule, cmlAddParameter, cmlAddCrystal
 
-  Use flib_wxml, only: xmlf_t  
-  Use flib_wcml, only: cmlBeginFile, cmlStartCml
-  Use flib_wcml, only: cmlStartMetadataList, cmlAddMetadata
-  Use flib_wcml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
+  Use xmlf90_wxml, only: xmlf_t  
+  Use xmlf90_cml, only: cmlBeginFile, cmlStartCml
+  Use xmlf90_cml, only: cmlStartMetadataList, cmlAddMetadata
+  Use xmlf90_cml, only: cmlEndMetadataList, cmlEndCml, cmlFinishFile
 
   Implicit None
   Logical, public      :: cml_p = .False.

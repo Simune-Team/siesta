@@ -25,8 +25,8 @@ FPPFLAGS := $(filter-out -DMPI_TIMING, $(FPPFLAGS))
 
 MPI_INTERFACE= libmpi_f90.a 
 
-pi3: $(MPI_INTERFACE) pi3.o
-	$(FC) -o pi3 $(LDFLAGS) pi3.o $(MPI_INTERFACE)
+pi3: $(MPI_INTERFACE) pi3.o handlers.o
+	$(FC) -o pi3 $(LDFLAGS) pi3.o handlers.o $(MPI_INTERFACE)
 
 newcomm:    MPI newcomm.o 
 	$(FC) -o newcomm $(LDFLAGS) newcomm.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 

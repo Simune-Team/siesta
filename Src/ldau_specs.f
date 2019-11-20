@@ -190,7 +190,7 @@
                                                 !   in the tables defining
                                                 !   orbitals, projectors and
                                                 !   local neutral-atom pseudo
-      use pseudopotential, only: pseudopotential_t ! Derived type where all
+      use m_ncps, only: pseudopotential_t => froyen_ps_t ! Derived type where all
                                                 !   the information about
                                                 !   the pseudopotential 
                                                 !   is stored
@@ -656,7 +656,8 @@
       use basis_specs, only : restricted_grid
       use basis_specs, only : rmax_radial_grid
 
-      use siestaXC,    only : atomXC
+      use gridXC,  only : setXC=>gridxc_setXC
+      use gridXC,  only : atomXC=>gridxc_atomXC
 
       integer, intent(in)   :: isp   ! Species index
 

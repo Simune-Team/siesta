@@ -30,8 +30,6 @@ MODULE MPI_SIESTA
     trueMPI_WAITALL    => MPI_WAITALL,    &
     true_MPI_Comm_World => MPI_Comm_World      ! Note
 
-    USE TIMER_MPI_M, only: timer_mpi
-
 #else /* NO_MPI_INTERFACES */
 ! Removed interfaces and timing versions of the MPI routines.
   USE MPI__INCLUDE, true_MPI_Comm_World => MPI_Comm_World

@@ -18,7 +18,6 @@ contains
 #ifdef MPI
     use mpi_siesta
 #endif
-    use sys, only : die, bye
     use precision, only: dp
     use parallel,     only : IOnode, SIESTA_worker
 

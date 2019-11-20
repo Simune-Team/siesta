@@ -15,7 +15,6 @@ Contour: grid2d: As Denchar but for any function defined in the 3D
 
 Contrib: Code contributed by Siesta users (expanding collection). See
 	 the individual documentation materials.
-
 COOP: Generation of COOP/COHP/PDOS curves for chemical analysis.
       Computation of data to generate "fatbands" plots.
 

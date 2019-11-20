@@ -50,6 +50,8 @@
       character(len=*), parameter :: debug_fmt =
      &     '('' -- dhscf : Node '',i3,tr1,a,4(tr1,e20.7))'
 
+      external :: die, bye
+      
       public :: dhscf_init, dhscf
 
       CONTAINS
@@ -65,10 +67,10 @@
       use parallel,       only : Node, Nodes
       use atmfuncs,       only : rcut, rcore
       use fdf
-      use sys,            only : die
       use mesh,           only : xdsp, nsm, nsp, meshLim
       use parsing
 
+      use gridXC, only : getXC=>gridxc_getXC   ! Returns the XC functional used
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
       use meshsubs,       only : PartialCoreOnMesh
@@ -621,7 +623,6 @@ C     Modules
       use atmfuncs,      only  : rcut, rcore
       use units,         only  : Debye, eV, Ang
       use fdf
-      use sys,           only  : die, bye
       use mesh,          only  : nsm, nsp, meshLim
       use parsing
       use m_iorho,       only  : write_rho
@@ -641,11 +642,8 @@ C     Modules
       use m_partial_charges, only: compute_partial_charges
       use m_partial_charges, only: want_partial_charges
 
-      use siestaXC, only : cellXC ! Finds xc energy and potential
-      use siestaXC, only : myMeshBox    ! Returns my processor mesh box
-      use siestaXC, only : jms_setMeshDistr => setMeshDistr
-                                        ! Sets a distribution of mesh
-                                        ! points over parallel processors
+      use gridXC, only : cellXC=>gridxc_cellXC       ! Finds xc energy and potential
+
       use m_vmat,  only  : vmat
       use m_rhoofd, only: rhoofd
 #ifdef MPI
@@ -1948,7 +1946,7 @@ C ----------------------------------------------------------------------
       !> BSC's version of cellxc, and whether we have a vdw
       !> functional
       subroutine xc_setup(need_grads,is_vdw)
-      use siestaxc, only: getxc
+      use gridxc, only: getxc=>gridxc_getxc
 
       logical, intent(out) :: need_grads
       logical, intent(out) :: is_vdw

@@ -879,7 +879,8 @@ subroutine read_options( na, ns, nspin )
   ! For SOC calculations: If .false., Enl will contain
   ! the SO part of the energy.
   if (spin%SO) then
-     split_sr_so = fdf_get('SOC.Split.SR.SO',.true.)
+     ! Avoid splitting if we are using the 'offsite' flavor of SOC
+     split_sr_so = fdf_get('SOC.Split.SR.SO',(.not. spin%SO_offsite))
      if (ionode) then
         write(6,1) 'redata: Split SR and SO contributions', split_sr_so
      endif
