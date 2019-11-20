@@ -39,7 +39,7 @@ LAPACK_LIBS=-L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_cor
 #
 # Define compiler names and flags
 #
-FC=mpiifort
+FC_PARALLEL=mpiifort
 FC_SERIAL=ifort
 #
 FC_ASIS=$(FC)
@@ -71,6 +71,8 @@ ELSI_LIB = -L$(ELSI_ROOT)/lib -lelsi \
 
 FPPFLAGS= -DF2003 
 
+LIBS=
+
 ifdef WITH_ELSI
  ifndef ELSI_ROOT
    $(error you need to define ELSI_ROOT in your arch.make)
@@ -80,7 +82,7 @@ ifdef WITH_ELSI
  endif
  INCFLAGS += $(ELSI_INCFLAGS)
  FPPFLAGS += $(FPPFLAGS_ELSI)
- LIBS +=$(ELSI_LIB)
+ LIBS +=$(ELSI_LIB) $(LIBS_CPLUS)
 endif
 
 ifdef WITH_NETCDF
