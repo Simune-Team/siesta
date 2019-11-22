@@ -127,6 +127,7 @@
 
       use m_handle_sparse, only: correct_supercell_SpD
       use m_restruct_SpData2D, only: restruct_dSpData2D
+      use matel_mod, only : init_matel
 
       implicit none
 
@@ -666,7 +667,9 @@
      &      show_warning = .false.)
       end do
 
-      
+      ! Prepare MATEL
+      call init_matel( )
+
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &    lasto, iphorb, isa, numh, listhptr, listh, S )

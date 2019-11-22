@@ -47,7 +47,7 @@ C *********************************************************************
       use alloc,        only : re_alloc, de_alloc
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb, reset_neighbour_arrays
-      use m_new_matel,  only : new_matel
+      use matel_mod,    only : new_matel
 
       implicit none
 
@@ -151,7 +151,7 @@ C Allocate local memory
       enddo
 
 C Deallocate local memory
-!      call new_MATEL('Z', 0, 0, 0, 0, xinv, Sij, grSij )
+
       call reset_neighbour_arrays( )
       call de_alloc( Si, name='Si' )
 

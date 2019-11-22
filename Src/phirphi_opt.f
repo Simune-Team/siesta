@@ -80,7 +80,7 @@ C *********************************************************************
       use sys,          only : die
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb, reset_neighbour_arrays
-      use m_new_matel,  only : new_matel
+      use matel_mod,    only : new_matel
 
       implicit none
 
@@ -466,7 +466,6 @@ C The factor of two because we use Ry for the Hamiltonian
       enddo
 
 C     Free local memory
-!      call new_MATEL( 'S', 0, 0, 0, 0, xij, Sij, grSij )
       call reset_neighbour_arrays( )
 !N      call de_alloc( calculated, 'calculated', 'phirphi_opt' )
 !N      call de_alloc( Pij,        'Pij',        'phirphi_opt' )

@@ -40,11 +40,15 @@ C
 C *********************************************************************
 
       use precision 
-      use atmfuncs,  only: izofis, vna_gindex
-      use neighbour, only: jna=>jan, xij, mneighb,
-     &                     reset_neighbour_arrays
-      use m_new_matel,   only : new_matel
-
+      use atmfuncs,    only : izofis, vna_gindex
+      use neighbour,   only : jna=>jan, xij, mneighb,
+     &                        reset_neighbour_arrays
+      use matel_mod,   only : new_matel
+      use parallel,    only : Node, Nodes
+#ifdef MPI
+      use m_mpi_inplace, only : globalize_sum
+      use mpi_siesta,  only : MPI_Comm_World
+#endif      
       implicit none
 
       integer na, nua
@@ -59,11 +63,17 @@ C *********************************************************************
 
 C Internal variables ......................................................
       integer  ia, is, ix, ja, jn, js, jx, jua, nnia, ig, jg
-
       real(dp)  fij(3), pi, vij, volcel, volume 
-      
+!      real(dp)  fij2(3), vij2
+      integer  :: div, mod, first, last
+
 C ......................
       call timer( 'naefs', 1 )
+
+      div   = nua / Nodes
+      mod   = nua - div*Nodes
+      first = 1 + Node*div + MIN(Node,mod)
+      last  = (Node+1)*div + MIN(Node+1,mod)
 
 C Initialize neighb subroutine
       call mneighb( scell, 2.d0*rmaxv, na, xa, 0, 0, nnia )
@@ -71,8 +81,8 @@ C Initialize neighb subroutine
       pi = 4.0d0 * atan(1.0d0)
       volume = nua * volcel(scell) / na
       Ena = 0.0d0
- 
-      do ia = 1,nua
+
+      do ia = first, last
 
 C Find neighbour atoms
         call mneighb( scell, 2.0d0*rmaxv, na, xa, ia, 0, nnia )
@@ -85,6 +95,9 @@ C Find neighbour atoms
             ig = vna_gindex(is)
             jg = vna_gindex(js)
             call new_MATEL( 'T', ig, jg, xij(1:3,jn), vij, fij )
+            ! We could avoid the special treatment of vna
+            ! in the matel_registry module (i.e., include Ylm(0)=1/sqrt(4pi)
+            ! in the evaluation; then we could just divide by 4 here)
             Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
                do ix = 1,3
@@ -102,8 +115,16 @@ C Find neighbour atoms
       enddo
 
 C     Free local memory
-!      call new_MATEL( 'T', 0, 0, 0, 0, xij, vij, fij )
       call reset_neighbour_arrays( )
+#ifdef MPI
+      if (Nodes.gt.1) then
+        call globalize_sum( Ena, MPI_Comm_World )
+        if (forces_and_stress) then
+          !          call globalize_sum( stress, MPI_Comm_World )
+          !          call globalize_sum( fa, MPI_Comm_World )
+        endif
+      endif
+#endif
       call timer( 'naefs', 2 )
       end subroutine naefs
       end module m_naefs
