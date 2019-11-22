@@ -84,7 +84,7 @@ C
       use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,     only : mneighb, reset_neighbour_arrays
       use alloc,         only : re_alloc, de_alloc
-      use m_new_matel,   only : new_matel
+      use matel_mod,     only : new_matel
 
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
@@ -403,7 +403,7 @@ C         Pick up contributions to H and restore Di and Vi
       endif
       
 C     Deallocate local memory
-!      call new_MATEL( 'S', 0, 0, 0, 0, xki, Ski, grSki )
+
       call reset_neighbour_arrays( )
       call de_alloc( grSki, 'grSki', 'nlefsm' )
       call de_alloc( Ski, 'Ski', 'nlefsm' )
@@ -514,7 +514,7 @@ C
       use neighbour,       only : iana=>jan, r2ki=>r2ij, xki=>xij
       use neighbour,       only : mneighb, reset_neighbour_arrays
       use alloc,           only : re_alloc, de_alloc
-      use m_new_matel,     only : new_matel
+      use matel_mod,       only : new_matel
       use atm_types,       only : species_info, species
       use sparse_matrices, only : Dscf, xijo
       use siesta_options,  only : split_sr_so

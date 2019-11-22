@@ -367,15 +367,15 @@ CONTAINS
             endif
          enddo
    
-         if (myid == 0 .and. comms_not_printed) then
-            do i = 1, ncomms
-               c => comms(i)
-!               write(6,"(a,i5,a,2i5,2i7,i5)") &
-!                    "comm: ", i, " src, dst, i1, i2, n:", &
-!                    c%src, c%dst, c%i1, c%i2, c%nitems
-            enddo
-            comms_not_printed = .false.
-         endif
+        ! if (myid == 0 .and. comms_not_printed) then
+        !    do i = 1, ncomms
+        !       c => comms(i)
+        !       write(6,"(a,i5,a,2i5,2i7,i5)") &
+        !            "comm: ", i, " src, dst, i1, i2, n:", &
+        !            c%src, c%dst, c%i1, c%i2, c%nitems
+        !    enddo
+        !    comms_not_printed = .false.
+        ! endif
    
          deallocate(p1,p2,isrc,idst)
    

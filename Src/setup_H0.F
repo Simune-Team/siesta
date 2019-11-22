@@ -14,7 +14,8 @@
       
 C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
-      
+      use parallel,  only : Node
+
       USE siesta_options,  only: g2cut, split_sr_so
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_so_on_2D, H_so_off_2D
@@ -68,6 +69,8 @@ C     and initializes data structures on the grid.
 
       logical :: ill_defined_sr_so_split
       
+      real(dp)           :: lo_time
+
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
 #endif
@@ -90,9 +93,14 @@ C     Self-energy of isolated ions
       call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &           isa, Ena, dummy_fa, dummy_stress,
      &           forces_and_stress=.false.)
+
+      call timer('dnaefs', 1)
       call dnaefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &            isa, DEna, dummy_fa, dummy_stress,
      &            forces_and_stress=.false.) 
+      call timer('dnaefs', 2)
+
+      call timer('two-body', 1)
       Ena = Ena + DEna
  
 C     Metadynamics energy
@@ -104,6 +112,7 @@ C     Metadynamics energy
 C     Add on force field contribution to energy
       call twobody( na_u,xa,isa,ucell,Emm,
      &              ifa=0,fa=dummy_fa,istr=0,stress=dummy_stress)
+      call timer('two-body', 2)
 
 !
 !     Now we compute matrix elements of the Kinetic and Non-local

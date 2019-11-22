@@ -6,32 +6,43 @@
 ! See Docs/Contributors.txt for a list of contributors.
 !
       module spher_harm
-      use precision
-      use sys
-      use alloc, only: re_alloc, de_alloc
 
       implicit none
 
-      real(dp), pointer, private :: Y(:) => null()
-      real(dp), pointer, private :: DYDR(:,:) => null()
-      INTEGER,           private :: MAX_LM=-1
+      private
 
+      integer, parameter :: dp = selected_real_kind(10,100)
+
+      !  Dimension parameters for internal variables
+
+      !> This is the key parameter
+      integer, parameter ::  MAXL = 10
+
+      integer, parameter ::  MAXLP1 = MAXL + 1
+      integer, parameter ::  MAXLM = (MAXL+1) * (MAXL+1)
+      integer, parameter ::  MAXSP = (MAXL+1) * (2*MAXL+1)
+
+      public :: get_lmax
       public :: rlylm, ylmexp, ylmylm, lofilm
-      public :: reset_spher_harm
       public :: gauleg !! for phirphi...
       interface ylmexp
         module procedure ylmexp_1, ylmexp_2
       end interface
 
-      private
-
+      external :: die
+      
       CONTAINS
 
+      !> To interrogate the module about the maximum allowed L
+      subroutine get_lmax(lmax)
+      integer, intent(out) :: lmax
+      lmax = MAXL
+      end subroutine get_lmax
+      
       subroutine rlylm( LMAX, R, RLY, GRLY )
       integer, intent(in)   :: lmax
       real(dp), intent(in)  :: r(3)
       real(dp), intent(out) :: rly(0:)
-!      real(dp), intent(out) :: grly(3,0:)   !!! Not accepted...
       real(dp), intent(out) :: grly(1:,0:)
 
 C FINDS REAL SPHERICAL HARMONICS MULTIPLIED BY R**L: RLY=R**L*YLM,
@@ -43,25 +54,22 @@ C CONSTANT AND PLM ASSOCIATED LEGENDRE POLYNOMIALS.
 C THE ORDER OF THE Y'S IS THAT IMPLICIT IN THE NESTED LOOPS
 C    DO L=0,LMAX
 C      DO M=-L,L
-C WITH A UNIFIED INDEX ILM=1,...,LMAX**2 INCREASING BY ONE UNIT IN THE
+C WITH A UNIFIED INDEX ILM=1,...,(LMAX+1)**2 INCREASING BY ONE UNIT IN THE
 C  INNER LOOP.
 C WRITTEN BY J.M.SOLER. AUG/96
 C *********** INPUT ***************************************************
 C INTEGER LMAX : Maximum angular momentum quantum number required.
 C REAL*8  R(3) : Position at which Y and GY are required.
 C *********** OUTPUT **************************************************
-C REAL*8 RLY(LMAX*LMAX)    : Real spherical harmonics times r**l,
+C REAL*8 RLY(0:(LMAX+1)*(LMAX+1)-1)    : Real spherical harmonics times r**l,
 C                             at point R, as explained above.
-C REAL*8 GRLY(3,LMAX*LMAX) : Gradient of the RLY's at point R.
+C REAL*8 GRLY(1:3,0:(LMAX+1)*(LMAX+1)-1) : Gradient of the RLY's at point R.
 C *********** UNITS ***************************************************
 C Units of R are arbitrary. Units of RLY and GRLY are related to those
 C  of R in the obvious way.
 C *********************************************************************
 
 
-C Dimension parameters for internal variables
-      INTEGER MAXL, MAXLP1
-      PARAMETER ( MAXL = 10, MAXLP1 = MAXL+1 )
 
 C Other internal parameters
       REAL(DP) TINY, ZERO, HALF, ONE, TWO, THREE, SIX
@@ -252,16 +260,12 @@ C *********************************************************************
 C Written by J.M.Soler. Feb' 96.
 C *********************************************************************
       INTEGER           I, L, LM
+      real(dp)   :: y(0:MAXLM)
+      real(dp)   :: dydr(1:3,0:MAXLM)
 
       L  = MAX( LOFILM(ILM1), LOFILM(ILM2) )
-      LM = (L+1)*(L+1)
 
-      if (LM.gt.MAX_LM) then
-
-        MAX_LM = LM
-        call re_alloc( Y, 0, MAX_LM, 'Y', 'spher_harm' )
-        call re_alloc( DYDR, 1, 3, 0, MAX_LM, 'DYDR', 'spher_harm' )
-      endif
+      if (L.gt.MAXL) call die("MAXL too small")
 
       CALL RLYLM( L, R, Y, DYDR )
 
@@ -284,12 +288,12 @@ C        ILM = ILM + 1
 C with ILM = 1,2,...,L**2
 C Written by J.M.Soler. April 1996.
 
-      INTEGER JLM, MAXL
-      PARAMETER ( MAXL = 100 )
+      integer, parameter :: lmax_loop = 100
+      INTEGER JLM
 
       if ( ILM .LE. 0 )  call die('LOFILM: ILM not allowed')
       JLM = 0
-      DO 10 LOFILM = 0,MAXL
+      DO 10 LOFILM = 0,lmax_loop
         JLM = JLM + 2*LOFILM + 1
         IF ( JLM .GE. ILM ) RETURN
    10 CONTINUE
@@ -358,13 +362,6 @@ C *******************************************************************
 C Tolerance for FLM -------------------------------------------------
       REAL(DP) FTOL
       PARAMETER ( FTOL = 1.e-12_dp )
-C -------------------------------------------------------------------
-
-C Dimension parameters for internal variables -----------------------
-      INTEGER MAXL, MAXLM, MAXSP
-      PARAMETER ( MAXL  = 8 )
-      PARAMETER ( MAXLM = (MAXL+1) * (MAXL+1) )
-      PARAMETER ( MAXSP = (MAXL+1) * (2*MAXL+1) )
 C -------------------------------------------------------------------
 
 C Declare internal variables ----------------------------------------
@@ -533,13 +530,6 @@ C Tolerance for FLM -------------------------------------------------
       PARAMETER ( FTOL = 1.e-12_dp )
 C -------------------------------------------------------------------
 
-C Dimension parameters for internal variables -----------------------
-      INTEGER MAXL, MAXLM, MAXSP
-      PARAMETER ( MAXL  = 8 )
-      PARAMETER ( MAXLM = (MAXL+1) * (MAXL+1) )
-      PARAMETER ( MAXSP = (MAXL+1) * (2*MAXL+1) )
-C -------------------------------------------------------------------
-
 C Declare internal variables ----------------------------------------
       INTEGER
      .  IM, IR, ISP, IZ, JLM, JR, JY, NLM, NSP
@@ -681,14 +671,5 @@ C -------------------------------------------------------------------
 12    CONTINUE
 
       end subroutine gauleg
-
-      SUBROUTINE RESET_SPHER_HARM( )
-      implicit none
-      if (MAX_LM.gt.0) then
-        MAX_LM = -1
-        call de_alloc( Y,    'Y', 'spher_harm' )
-        call de_alloc( DYDR, 'DYDR', 'spher_harm' )
-      endif
-      END SUBROUTINE RESET_SPHER_HARM
 
       end module spher_harm

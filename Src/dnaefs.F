@@ -44,8 +44,12 @@ C *********************************************************************
       use neighbour, only: mneighb, jna=>jan, xij, r2ij,
      &                     reset_neighbour_arrays
 
+      use parallel,    only : Node, Nodes
+#ifdef MPI
+      use m_mpi_inplace, only : globalize_sum
+      use mpi_siesta,  only : MPI_Comm_World
+#endif      
       implicit none
-
       integer  na, nua
 
       integer  indxua(na), isa(na)
@@ -61,16 +65,22 @@ C Internal variables ......................................................
 
       real(dp)
      .  dvdr, fij(3), rij, r2min, vij, volcel, volume
-       
       parameter ( r2min = 1.d-15 )
+
+      integer  :: div, mod, first, last
+
 C ......................
+      div   = nua / Nodes
+      mod   = nua - div*Nodes
+      first = 1 + Node*div + MIN(Node,mod)
+      last  = (Node+1)*div + MIN(Node+1,mod)
 
       call mneighb( scell, 2.0d0*rmaxv, na, xa, 0, 0, nnia )
 
       volume = nua * volcel(scell) / na
       DEna = 0.0d0
  
-      do ia = 1,nua
+      do ia = first, last
 
 C Find neighbour atoms
         call mneighb( scell, 2.0d0*rmaxv, na, xa, ia, 0, nnia )
@@ -100,5 +110,16 @@ C Find neighbour atoms
         enddo
       enddo
       call reset_neighbour_arrays( )
+#ifdef MPI
+      if (Nodes.gt.1) then
+        call globalize_sum( DEna, MPI_Comm_World )
+        if (forces_and_stress) then
+          ! Do not globalize, since we are adding to fal and stressl
+          !          call globalize_sum( stress, MPI_Comm_World )
+          !          call globalize_sum( fa, MPI_Comm_World )
+        endif
+      endif
+#endif
+
       end subroutine dnaefs
       end module m_dnaefs
