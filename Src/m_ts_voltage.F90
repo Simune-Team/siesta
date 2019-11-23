@@ -35,14 +35,6 @@ module m_ts_voltage
   public :: ts_voltage
   public :: ts_init_voltage
 
-  ! we set the left/right indices for the input of the voltage ramp.
-  ! This will put the voltage in between the electrodes instead of 
-  ! in the entire cell.
-  ! It should leverage some iterations as the voltage drop ensures a 
-  ! faster density convergence
-  integer, save :: left_elec_mesh_idx = 0
-  integer, save :: right_elec_mesh_idx = huge(1)
-
   ! The corresponding bias for either the left electrode
   real(dp), save :: V_low = 0._dp
   real(dp), save :: V_high = 0._dp
@@ -51,9 +43,9 @@ contains
 
   subroutine ts_init_voltage(cell, na_u, xa, nmesh)
     use parallel, only : IONode
-    use m_ts_electype, only : TotUsedAtoms
+    use m_ts_electype, only : TotUsedAtoms, Elec
     use m_ts_options, only : Elecs, N_Elec
-    use m_ts_options, only : VoltageInC, Volt, Hartree_fname
+    use m_ts_options, only : Volt, Hartree_fname
     use units, only : eV, ang
 
     use m_geom_box, only : voxel_in_box
@@ -141,32 +133,52 @@ contains
     end if
 
     ! set the left chemical potential
-    call get_elec_indices(cell, na_u, xa, iElL, iElR)
+    call get_elec_indices(Elecs, cell, na_u, xa, iElL, iElR)
 
     ! this will be the applied bias in the "lower"
     ! electrode in the unit-cell
     V_low = Elecs(iElL)%mu%mu
     V_high = Elecs(iElR)%mu%mu
 
-    if ( VoltageInC ) then
-      ! Find the electrode mesh sets
-      call init_elec_indices(cell, nmesh, na_u, xa)
-    else
-      if ( IONode ) then
-        write(*,'(a)')'ts-voltage: WARNING **************************************'
-        write(*,'(a)')'ts-voltage: Boundary conditions on full cell.'
-        write(*,'(a)')'ts-voltage: This should only be used for testing purposes!'
-        write(*,'(a)')'ts-voltage: WARNING **************************************'
+    ! Print out the coordinates of the ramp placement
+    call print_ts_voltage()
+
+  contains
+
+    subroutine get_elec_indices(Elecs, cell, na_u, xa, iElL, iElR)
+      use m_ts_electype, only : Elec_frac
+
+      ! ***********************
+      ! * INPUT variables     *
+      ! ***********************
+      type(Elec), intent(in) :: Elecs(2)
+      real(dp), intent(in) :: cell(3,3)
+      integer,  intent(in) :: na_u
+      real(dp), intent(in) :: xa(3,na_u)
+
+      ! ***********************
+      ! * OUTPUT variables    *
+      ! ***********************
+      integer, intent(out) :: iElL, iElR
+
+      ! ***********************
+      ! * LOCAL variables     *
+      ! ***********************
+      integer  :: i
+      real(dp) :: r1, r2
+
+      call Elec_frac(Elecs(1), cell, na_u, xa, ts_tidx, fmin = r1)
+      call Elec_frac(Elecs(2), cell, na_u, xa, ts_tidx, fmin = r2)
+
+      if ( r1 < r2 ) then
+        iElL = 1
+        iElR = 2
+      else
+        iElL = 2
+        iElR = 1
       end if
 
-      ! Simulate the electrodes at the ends
-      ! This leverages a double routine
-      left_elec_mesh_idx  = 1
-      right_elec_mesh_idx = nmesh(ts_tidx)
-    end if
-
-    ! Print out the coordinates of the ramp placement
-    call print_ts_voltage(cell, nmesh)
+    end subroutine get_elec_indices
 
   end subroutine ts_init_voltage
 
@@ -190,7 +202,7 @@ contains
     ! correctly to not have two routines doing the
     ! same
     if ( ts_tidx > 0 ) then
-      call ts_ramp_elec(cell, nmeshl, Vscf)
+      call ts_ramp(cell, nmesh, nmeshl, Vscf)
 #ifdef NCDF_4
     else if ( len_trim(Hartree_fname) > 0 ) then
       call ts_ncdf_Voltage(Hartree_fname, 'V', nmeshl, Vscf)
@@ -203,8 +215,8 @@ contains
 
   end subroutine ts_voltage
 
-
-  subroutine ts_ramp_elec(cell, nmeshl, Vscf)
+  ! Apply a ramp to the electrostatic potential.
+  subroutine ts_ramp(cell, nmesh, nmeshl, Vscf)
     use precision,    only : grid_p
     use m_ts_options, only : Volt
     use m_mesh_node,  only : offset_i
@@ -212,6 +224,7 @@ contains
     ! * INPUT variables     *
     ! ***********************
     real(dp),      intent(in) :: cell(3,3)
+    integer,       intent(in) :: nmesh(3)
     integer,       intent(in) :: nmeshl(3)
     ! ***********************
     ! * OUTPUT variables    *
@@ -225,7 +238,7 @@ contains
     real(dp) :: dF, dV
 
     ! field in [0;end]: v = e*x = f*index
-    dF = (V_high - V_low) / real(right_elec_mesh_idx - left_elec_mesh_idx+1,dp)
+    dF = (V_high - V_low) / real(nmesh(ts_tidx) - 1,dp)
 
     ! Find quantities in mesh coordinates
     if ( product(nmeshl) /= size(Vscf) ) &
@@ -234,76 +247,40 @@ contains
     ! Add the electric field potential to the input potential
     imesh = 0
     if ( ts_tidx == 1 ) then
-
+      
       do i3 = 1 , nmeshl(3)
         do i2 = 1 , nmeshl(2)
-          do i1 = offset_i(1)+1,offset_i(1)+nmeshl(1)
-
-            ! Check the region
-            if ( i1 < left_elec_mesh_idx ) then
-              ! We are on the left hand side, hence
-              ! we have the left \mu
-              dV = V_low
-            else if ( right_elec_mesh_idx < i1 ) then
-              ! We are on the right hand side, hence
-              ! we have the right \mu
-              dV = V_high
-            else
-              ! We are in between the electrodes
-              dV = V_low + dF*(i1-left_elec_mesh_idx)
-            end if
-
+          do i1 = offset_i(1), offset_i(1)+nmeshl(1)-1
+            
+            dV = V_low + dF*i1
+            
             imesh = imesh + 1
             Vscf(imesh) = Vscf(imesh) + dV
-
+            
           end do
         end do
       end do
-
+      
     else if ( ts_tidx == 2 ) then
-
+      
       do i3 = 1,nmeshl(3)
-        do i2 = offset_i(2)+1,offset_i(2)+nmeshl(2)
-
-          ! Check the region
-          if ( i2 < left_elec_mesh_idx ) then
-            ! We are on the left hand side, hence
-            ! we have the left \mu
-            dV = V_low
-          else if ( right_elec_mesh_idx < i2 ) then
-            ! We are on the right hand side, hence
-            ! we have the right \mu
-            dV = V_high
-          else
-            ! We are in between the electrodes
-            dV = V_low + dF*(i2-left_elec_mesh_idx)
-          end if
-
+        do i2 = offset_i(2),offset_i(2)+nmeshl(2)-1
+          
+          dV = V_low + dF*i2
+          
           do i1 = 1 , nmeshl(1)
             imesh = imesh + 1
             Vscf(imesh) = Vscf(imesh) + dV
           end do
-
+          
         end do
       end do
-
+      
     else
+      
+      do i3 = offset_i(3),offset_i(3)+nmeshl(3)-1
 
-      do i3 = offset_i(3)+1,offset_i(3)+nmeshl(3)
-
-        ! Check the region
-        if ( i3 < left_elec_mesh_idx ) then
-          ! We are on the left hand side, hence
-          ! we have the left \mu
-          dV = V_low
-        else if ( right_elec_mesh_idx < i3 ) then
-          ! We are on the right hand side, hence
-          ! we have the right \mu
-          dV = V_high
-        else
-          ! We are in between the electrodes
-          dV = V_low + dF*(i3-left_elec_mesh_idx)
-        end if
+        dV = V_low + dF*i3
 
         do i2 = 1 , nmeshl(2)
           do i1 = 1 , nmeshl(1)
@@ -316,7 +293,8 @@ contains
 
     end if
 
-  end subroutine ts_ramp_elec
+  end subroutine ts_ramp
+
 
   subroutine ts_elec_only(nmesh, nmeshl, Vscf)
     use precision,    only : grid_p
@@ -417,192 +395,18 @@ contains
 
   end subroutine ts_elec_only
 
-  subroutine get_elec_indices(cell, na_u, xa, iElL, iElR)
-    use m_ts_electype
-    use m_ts_options, only : Elecs
-
-    ! ***********************
-    ! * INPUT variables     *
-    ! ***********************
-    real(dp), intent(in) :: cell(3,3)
-    integer,  intent(in) :: na_u
-    real(dp), intent(in) :: xa(3,na_u)
-
-    ! ***********************
-    ! * OUTPUT variables    *
-    ! ***********************
-    integer, intent(out) :: iElL, iElR
-
-    ! ***********************
-    ! * LOCAL variables     *
-    ! ***********************
-    integer  :: i
-    real(dp) :: r1, r2
-
-    call Elec_frac(Elecs(1), cell, na_u, xa, ts_tidx, fmin = r1)
-    call Elec_frac(Elecs(2), cell, na_u, xa, ts_tidx, fmin = r2)
-
-    if ( r1 < r2 ) then
-      iElL = 1
-      iElR = 2
-    else
-      iElL = 2
-      iElR = 1
-    end if
-
-  end subroutine get_elec_indices
-
-  subroutine init_elec_indices(cell, nmesh, na_u, xa)
-    use intrinsic_missing, only : VNORM
-    use parallel,     only : IONode
-    use units,        only : Ang
-    use fdf, only: fdf_get
-    use m_ts_electype
-    use m_ts_options, only : N_Elec, Elecs
-
-    ! ***********************
-    ! * INPUT variables     *
-    ! ***********************
-    real(dp), intent(in) :: cell(3,3)
-    ! total number of mesh-divisions
-    integer,  intent(in) :: nmesh(3), na_u
-    real(dp), intent(in) :: xa(3,na_u)
-
-    ! ***********************
-    ! * LOCAL variables     *
-    ! ***********************
-    integer  :: i, it, iElL, iElR
-    real(dp) :: Lvc, rcell(3,3), bdir(3)
-    real(dp) :: dd, sc
-
-    if ( N_Elec > 2 ) call die('Not fully implemented, only non-bias with N-electrode')
-    Lvc = VNORM(cell(:,ts_tidx))
-
-    ! Calculate the reciprocal cell (without 2Pi)
-    call reclat(cell, rcell, 0)
-
-    ! get the left/right electrodes
-    call get_elec_indices(cell, na_u, xa, iElL, iElR)
-
-    if ( Elecs(iElL)%Bulk ) then
-      sc = -huge(1._dp)
-    else
-      sc =  huge(1._dp)
-    end if
-    do i = Elecs(iElL)%idx_a , &
-        Elecs(iElL)%idx_a + TotUsedAtoms(Elecs(iElL)) - 1
-      ! Get fraction in the unitcell
-      dd = sum(xa(:,i) * rcell(:,ts_tidx))
-      if ( Elecs(iElL)%Bulk ) then
-        sc = max(sc,dd)
-      else
-        sc = min(sc,dd)
-      end if
-    end do
-
-    ! Extend the left electrode constant potential by this length.
-    dd = fdf_get('TS.Elec.'//trim(Elecs(iElL)%name) // &
-        '.Hartree.Extend', 0._dp, 'Bohr')
-    sc = sc + dd * sum(cell(:,ts_tidx) / Lvc * rcell(:,ts_tidx))
-
-    ! Calculate the corresponding placement in the cell
-    ! This is easy as we have the fraction of the
-    ! cell-vector contribution. So we can simply calculate it
-    ! Add 0.2 interlayer distance
-    ! NOTE this fraction heavily decides the convergence properties
-    ! This parameter has been optimized for a Gold junction in the 100 direction
-    ! It has to place the ramp, "far" from atomic centers, but close to the electrode
-    bdir = Elecs(iElL)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
-    sc = sc + sum(bdir * rcell(:,ts_tidx))
-    left_elec_mesh_idx = nint(sc * nmesh(ts_tidx))
-
-    if ( Elecs(iElR)%Bulk ) then
-      sc =  huge(1._dp)
-    else
-      sc = -huge(1._dp)
-    end if
-    do i = Elecs(iElR)%idx_a , &
-        Elecs(iElR)%idx_a + TotUsedAtoms(Elecs(iElR)) - 1
-      ! Get fraction in the unitcell
-      dd = sum(xa(:,i) * rcell(:,ts_tidx))
-      if ( Elecs(iElR)%Bulk ) then
-        sc = min(sc,dd)
-      else
-        sc = max(sc,dd)
-      end if
-    end do
-
-    ! Extend the left electrode constant potential by this length.
-    dd = fdf_get('TS.Elec.'//trim(Elecs(iElR)%name) // &
-        '.Hartree.Extend', 0._dp, 'Bohr')
-    sc = sc - dd * sum(cell(:,ts_tidx) / Lvc * rcell(:, ts_tidx))
-
-    ! Subtract 0.2 interlayer distance
-    bdir = Elecs(iElR)%dINF_layer * 0.2_dp * cell(:,ts_tidx) / Lvc
-    sc = sc - sum(bdir * rcell(:,ts_tidx))
-    right_elec_mesh_idx = nint(sc * nmesh(ts_tidx))
-
-
-    ! We correct for the case of users having put the electrode in 
-    ! in-correct order in the cell....
-    it = 0
-    if ( left_elec_mesh_idx > right_elec_mesh_idx ) then
-      if ( IONode ) then
-        write(*,'(1x,a)') 'WARNING: The voltage ramp could not be placed in &
-            &between the electrodes, be sure to have the atomic &
-            &coordinates in ascending order and starting from &
-            & (0.,0.,0.).'
-      end if
-      left_elec_mesh_idx  = 1
-      right_elec_mesh_idx = nmesh(ts_tidx)
-    end if
-    if ( left_elec_mesh_idx >= nmesh(ts_tidx) ) then
-      if ( IONode ) then
-        write(*,'(1x,a)') 'WARNING: The voltage ramp could not be placed in &
-            &between the electrodes, be sure to have the atomic &
-            &coordinates in ascending order and starting from &
-            & (0.,0.,0.).'
-      end if
-      left_elec_mesh_idx  = 1
-      right_elec_mesh_idx = nmesh(ts_tidx)
-    end if
-
-    ! Otherwise correct
-    left_elec_mesh_idx = max(1,left_elec_mesh_idx)
-    left_elec_mesh_idx = min(nmesh(ts_tidx),left_elec_mesh_idx)
-    right_elec_mesh_idx = max(1,right_elec_mesh_idx)
-    right_elec_mesh_idx = min(nmesh(ts_tidx),right_elec_mesh_idx)
-
-  end subroutine init_elec_indices
 
   ! Print out the voltage direction dependent on the cell parameters.
-  subroutine print_ts_voltage(cell, nmesh)
-    use intrinsic_missing, only : VNORM
+  subroutine print_ts_voltage()
     use parallel,     only : IONode
-    use units,        only : eV, Ang
-    ! ***********************
-    ! * INPUT variables     *
-    ! ***********************
-    real(dp), intent(in) :: cell(3,3)
-    ! total number of mesh-divisions
-    integer, intent(in) :: nmesh(3)
-
-    ! ***********************
-    ! * LOCAL variables     *
-    ! ***********************
-    integer  :: i
-    real(dp) :: Lvc, vcdir(3), ElL(3), ElR(3)
+    use units,        only : eV
 
     if ( .not. IONode ) return
 
     ! Print the ramp coordinates
-    vcdir = cell(:,ts_tidx) / nmesh(ts_tidx) / Ang
-    ElL = vcdir * (left_elec_mesh_idx - 1)
-    ElR = vcdir *  right_elec_mesh_idx
     write(*,'(a,2(f6.3,tr1,a),a)') &
         'ts-voltage: Ramp ', V_low/eV, 'eV to ', V_high/eV, 'eV ', &
-        'placed between cell coordinates (Ang):'
-    write(*,'(tr2,a,3(f9.3,tr1),a,3(tr1,f9.3),a)') '{',ElL,'} to {',ElR,' }'
+        'placed in cell'
 
   end subroutine print_ts_voltage
 
@@ -729,7 +533,7 @@ contains
     if ( any(lnmesh /= nmesh) ) then
       
       write(*,*)
-      write(*,'(a)') 'TS.Hartree file cannot be used!'
+      write(*,'(a)') 'TS.Poisson file cannot be used!'
       write(*,'(a)') 'Please carefully read the below error message:'
 
       write(*,'(/,a)') 'TranSiesta internal grid dimensions are:'

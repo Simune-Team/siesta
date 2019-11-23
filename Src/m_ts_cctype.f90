@@ -105,15 +105,15 @@ contains
     character(len=CC_METHOD_LEN) :: str
     select case ( method )
     case ( CC_G_NF_MIN:CC_G_NF_MAX )
-       write(str,'(a,i0)') 'G-Fermi_',method-CC_G_NF_0kT
+       write(str,'(a,i0)') 'Gauss-Fermi_',method-CC_G_NF_0kT
     case ( CC_G_LEGENDRE )
-       str = 'G-Legendre'
+       str = 'Gauss-Legendre'
     case ( CC_TANH_SINH )
        str = 'Tanh-Sinh'
     case ( CC_SIMP_MIX )
        str = 'Simpson 3/8-3'
     case ( CC_BOOLE_MIX )
-       str = 'Boole-Simp-3/8'
+       str = 'Boole-Simpson 3/8'
     case ( CC_MID )
        str = 'Mid-rule'
     case ( CC_CONTINUED_FRAC )
@@ -130,9 +130,9 @@ contains
     character(len=CC_METHOD_LEN) :: str
     select case ( method )
     case ( CC_G_NF_MIN:CC_G_NF_MAX )
-       str = 'g-fermi'
+       str = 'gauss-fermi'
     case ( CC_G_LEGENDRE )
-       str = 'g-Legendre'
+       str = 'gauss-Legendre'
     case ( CC_TANH_SINH )
        str = 'Tanh-Sinh'
     case ( CC_SIMP_MIX )
@@ -193,7 +193,7 @@ contains
     integer :: method
     character(len=20) :: tmp
     integer :: i
-    if ( leqi(str,'g-legendre') ) then
+    if ( leqi(str,'g-legendre') .or. leqi(str, 'gauss-legendre') ) then
        method = CC_G_LEGENDRE
     else if ( leqi(str,'tanh-sinh') ) then
        method = CC_TANH_SINH
@@ -213,7 +213,7 @@ contains
     else if ( leqi(str,'file') .or. &
          leqi(str,'user') ) then
        method = CC_USER
-    else if ( leqi(str,'g-fermi') ) then
+    else if ( leqi(str,'g-fermi') .or. leqi(str, 'gauss-fermi') ) then
        method = CC_G_NF_0kT
        do i = G_NF_MIN_kT , G_NF_MAX_kT
           write(tmp,'(a,i0,a)') 'g-fermi(',i,')'

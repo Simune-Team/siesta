@@ -269,7 +269,7 @@ contains
   elemental function ts2s_orb(io) result(off)
     integer, intent(in) :: io
     integer :: off
-    do off = io , no_u_TS
+    do off = io + o_offset(io) , no_u_TS
       if ( o_type(off) == TYP_BUFFER ) cycle ! the buffer atoms are NOT transiesta
       if ( off - o_offset(off) == io ) return
     end do

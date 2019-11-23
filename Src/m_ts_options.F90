@@ -62,11 +62,6 @@ module m_ts_options
   ! 0  == We optimize for speed
   ! 1  == We optimize for memory
 
-  ! Determines whether the voltage-drop should be located in the constriction
-  ! I.e. if the electrode starts at 10 Ang and the central region ends at 20 Ang
-  ! then the voltage drop will only take place between 10.125 Ang and 19.875 Ang
-  logical :: VoltageInC = .false.
-
   ! File name for reading in the grid for the Hartree potential
   character(len=150) :: Hartree_fname = ' '
 
@@ -606,10 +601,9 @@ contains
     ! is applied.
     ! For N-terminal calculations we advice the user
     ! to use a Poisson solution they add.
-    VoltageInC = .false.
     if ( ts_tidx > 0 ) then
        ! We have a single unified semi-inifinite direction
-       chars = fdf_get('TS.Poisson','ramp-central')
+       chars = fdf_get('TS.Poisson','ramp-cell')
     else
        chars = fdf_get('TS.Poisson','elec-box')
     end if
@@ -624,15 +618,8 @@ contains
 #endif
        Hartree_fname = ' '
        if ( leqi(chars,'ramp-cell') ) then
-          VoltageInC = .false.
           if ( ts_tidx <= 0 ) then
              call die('TS.Poisson cannot be ramp-cell for &
-                  &anything but 2-electrodes with aligned transport direction.')
-          end if
-       else if ( leqi(chars, 'ramp-central') ) then
-          VoltageInC = .true.
-          if ( ts_tidx <= 0 ) then
-             call die('TS.Poisson cannot be ramp-central for &
                   &anything but 2-electrodes with aligned transport direction.')
           end if
        else if ( leqi(chars,'elec-box') ) then
@@ -640,10 +627,10 @@ contains
        else
 #ifdef NCDF_4
           call die('Error in specifying how the Hartree potential &
-               &should be placed. [ramp-cell|ramp-central|elec-box|NetCDF-file]')
+               &should be placed. [ramp-cell|elec-box|NetCDF-file]')
 #else
           call die('Error in specifying how the Hartree potential &
-               &should be placed. [ramp-cell|ramp-central|elec-box]')
+               &should be placed. [ramp-cell|elec-box]')
 #endif
        end if
 #ifdef NCDF_4
@@ -918,7 +905,9 @@ contains
        end select
     end if
     select case ( TS_HA )
-    case ( TS_HA_PLANE , TS_HA_ELEC )
+    case ( TS_HA_PLANE )
+      write(*,f11) 'Fixing Hartree potential at cell boundary'
+    case ( TS_HA_ELEC )
        write(*,f10) 'Fixing Hartree potential at electrode-plane',trim(El%name)
     case ( TS_HA_ELEC_BOX )
        write(*,f10) 'Fixing Hartree potential in electrode-box',trim(El%name)
@@ -988,12 +977,7 @@ contains
                trim(Hartree_fname)
        else
           if ( ts_tidx > 0 ) then
-             write(*,f11) 'Hartree potential as linear ramp'
-             if ( VoltageInC ) then
-                write(*,f11) 'Hartree potential ramp across central region'
-             else
-                write(*,f11) 'Hartree potential ramp across entire cell'    
-             end if
+             write(*,f11) 'Hartree potential ramp across entire cell'
           else
              write(*,f11) 'Hartree potential will be placed in electrode box'
           end if

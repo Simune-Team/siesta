@@ -176,7 +176,7 @@ contains
 ! ************************************************************
 
 ! ******************* Miscalleneous variables ****************
-    integer :: ierr, no_u_TS, off, no
+    integer :: ierr, no_u_TS, off, no, no_col, no_Els
 ! ************************************************************
 
 #ifdef TRANSIESTA_DEBUG
@@ -211,18 +211,25 @@ contains
     call memory('A','Z',nzwork,'transiesta')
 
     ! We only need a partial size of the Green function
-    no = no_u_TS
+    io = 0
+    no_Els = 0
+    no_col = no_u_TS
     do iEl = 1 , N_Elec
-       if ( Elecs(iEl)%DM_update == 0 ) then
-          no = no - TotUsedOrbs(Elecs(iEl))
-       end if
+      no = TotUsedOrbs(Elecs(iEl))
+      if ( Elecs(iEl)%DM_update == 0 ) then
+        no_col = no_col - no
+      end if
+      no_Els = no_Els + no
+      io = io + no * no
     end do
+    no = no_col
     ! when bias is needed we need the entire GF column
     ! for all the electrodes (at least some of the contour points needs this)
     if ( IsVolt ) then
-       no = max(no,sum(TotUsedOrbs(Elecs)))
+      no = max(no, no_Els)
     end if
     no = no * no_u_TS
+    no = max(no, io)
     allocate(GF(no),stat=ierr)
     if (ierr/=0) call die('Could not allocate space for GFpart')
     call memory('A','Z',no,'transiesta')
@@ -342,12 +349,6 @@ contains
        ! ***************
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
-       no = no_u_TS
-       do iEl = 1 , N_Elec
-          if ( Elecs(iEl)%DM_update == 0 ) then
-             no = no - TotUsedOrbs(Elecs(iEl))
-          end if
-       end do
        iE = Nodes - Node
        cE = Eq_E(iE,step=Nodes) ! we read them backwards
        do while ( cE%exist )
@@ -395,7 +396,7 @@ close(io)
 #endif
 
           else
-             call calc_GF_part(cE, no_u_TS, &
+             call calc_GF_part(cE, no_u, no_u_TS, no_col, &
                   N_Elec, Elecs, &
                   zwork, GF)
 
@@ -413,7 +414,7 @@ close(io)
              
              call c2weight_eq(cE,idx, kw, W ,ZW)
              call add_DM( spuDM, W, spuEDM, ZW, &
-                  no_u_TS, no, GF, &
+                  no_u_TS, no_col, GF, &
                   N_Elec, Elecs, &
                   DMidx=mus(imu)%ID)
           end do
@@ -511,7 +512,7 @@ close(io)
           ! *******************
           ! * calc GF         *
           ! *******************
-          call calc_GF_Bias(cE, no_u_TS, &
+          call calc_GF_Bias(cE, no_u_TS, no_Els, &
                N_Elec, Elecs, &
                zwork, GF)
 
@@ -665,10 +666,10 @@ close(io)
   ! sparsity patterns
   ! Note that these routines implement the usual rho(Z) \propto - GF
   subroutine add_DM(DM, DMfact,EDM, EDMfact, &
-       no1,no2,GF, &
-       N_Elec,Elecs, &
-       DMidx, EDMidx, &
-       eq)
+      no1,no2,GF, &
+      N_Elec,Elecs, &
+      DMidx, EDMidx, &
+      eq)
 
     use class_Sparsity
     use class_zSpData2D
@@ -704,7 +705,7 @@ close(io)
     ! Remember that this sparsity pattern HAS to be in Global UC
     s => spar(DM)
     call attach(s,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=nr)
+        nrows=nr)
     D => val(DM)
     hasEDM = initialized(EDM)
     if ( hasEDM ) E => val(EDM)
@@ -714,94 +715,94 @@ close(io)
     if ( present(EDMidx) ) i2 = EDMidx
 
     if ( hasEDM ) then
-       if ( leq ) then
+      if ( leq ) then
 
 !$OMP parallel do default(shared), private(io,iu,ind,ju)
-          do io = 1 , nr
-             ! Quickly go past the buffer atoms...
-             if ( l_ncol(io) /= 0 ) then
-                
-             ! The update region equivalent GF part
-             iu = io - orb_offset(io)
-
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                
-                ju = l_col(ind) - orb_offset(l_col(ind)) - &
-                     offset(N_Elec,Elecs,l_col(ind))
-                
-                D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
-                E(ind,i2) = E(ind,i2) - Gf(iu,ju) * EDMfact
-                
-             end do
-
-             end if
-          end do
+        do io = 1 , nr
+          ! Quickly go past the buffer atoms...
+          if ( l_ncol(io) /= 0 ) then
+            
+            ! The update region equivalent GF part
+            iu = io - orb_offset(io)
+            
+            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+              
+              ju = l_col(ind) - orb_offset(l_col(ind)) - &
+                  offset(N_Elec,Elecs,l_col(ind))
+              
+              D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
+              E(ind,i2) = E(ind,i2) - Gf(iu,ju) * EDMfact
+              
+            end do
+            
+          end if
+        end do
 !$OMP end parallel do
-     
-       else
+        
+      else
 
 !$OMP parallel do default(shared), private(io,iu,ind,ju)
-          do io = 1 , nr
-             if ( l_ncol(io) /= 0 ) then
-             iu = io - orb_offset(io)
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                ju = l_col(ind) - orb_offset(l_col(ind))
-                D(ind,i1) = D(ind,i1) + GF(iu,ju) * DMfact
-                E(ind,i2) = E(ind,i2) + GF(iu,ju) * EDMfact
-             end do
-             end if
-          end do
+        do io = 1 , nr
+          if ( l_ncol(io) /= 0 ) then
+            iu = io - orb_offset(io)
+            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+              ju = l_col(ind) - orb_offset(l_col(ind))
+              D(ind,i1) = D(ind,i1) + GF(iu,ju) * DMfact
+              E(ind,i2) = E(ind,i2) + GF(iu,ju) * EDMfact
+            end do
+          end if
+        end do
 !$OMP end parallel do
 
-       end if
+      end if
     else
-
-       if ( leq ) then
+      
+      if ( leq ) then
 !$OMP parallel do default(shared), private(io,iu,ind,ju)
-          do io = 1 , nr
-             ! Quickly go past the buffer atoms...
-             if ( l_ncol(io) /= 0 ) then
-
-             ! The update region equivalent GF part
-             iu = io - orb_offset(io)
-
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-                ju = l_col(ind) - orb_offset(l_col(ind)) - &
-                     offset(N_Elec,Elecs,l_col(ind))
-
-                D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
-                
-             end do
-             end if
-          end do
+        do io = 1 , nr
+          ! Quickly go past the buffer atoms...
+          if ( l_ncol(io) /= 0 ) then
+            
+            ! The update region equivalent GF part
+            iu = io - orb_offset(io)
+            
+            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+              
+              ju = l_col(ind) - orb_offset(l_col(ind)) - &
+                  offset(N_Elec,Elecs,l_col(ind))
+              
+              D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
+              
+            end do
+          end if
+        end do
 !$OMP end parallel do
 
-       else
+      else
 !$OMP parallel do default(shared), private(io,iu,ind,ju)
-          do io = 1 , nr
-             if ( l_ncol(io) /= 0 ) then
-             iu = io - orb_offset(io)
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                ju = l_col(ind) - orb_offset(l_col(ind))
-                D(ind,i1) = D(ind,i1) + GF(iu,ju) * DMfact
-             end do
-             end if
-          end do
+        do io = 1 , nr
+          if ( l_ncol(io) /= 0 ) then
+            iu = io - orb_offset(io)
+            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+              ju = l_col(ind) - orb_offset(l_col(ind))
+              D(ind,i1) = D(ind,i1) + GF(iu,ju) * DMfact
+            end do
+          end if
+        end do
 !$OMP end parallel do
 
-       end if
+      end if
     end if
 
   contains
     
-    pure function offset(N_Elec,Elecs,io)
+     function offset(N_Elec,Elecs,io)
       integer, intent(in) :: N_Elec
       type(Elec), intent(in) :: Elecs(N_Elec)
       integer, intent(in) :: io
       integer :: offset
       offset = sum(TotUsedOrbs(Elecs(:)), &
-           MASK=(Elecs(:)%DM_update == 0) .and. Elecs(:)%idx_o <= io )
+          MASK=(Elecs(:)%DM_update == 0) .and. Elecs(:)%idx_o <= io )
     end function offset
 
   end subroutine add_DM
@@ -824,7 +825,7 @@ close(io)
     ! the current energy point
     type(ts_c_idx), intent(in) :: cE
     integer, intent(in) :: no_u
-    complex(dp), intent(out) :: GFinv(no_u**2)
+    complex(dp), intent(out) :: GFinv(no_u,no_u)
     integer, intent(in) :: N_Elec
     type(Elec), intent(in) :: Elecs(N_Elec)
     ! The Hamiltonian and overlap sparse matrices
@@ -860,15 +861,13 @@ integer :: i
 #ifdef TS_DEV    
     if (.not. hasSaved )then
        hasSaved = .true.
-       GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+       GFinv(:,:) = dcmplx(0._dp,0._dp)
+       if ( orb_offset(no_u) /= 0 ) call die('cannot check with buffer atoms')
        do io = 1, no_u
-          if ( l_ncol(io) == 0 ) cycle
-          ioff = orb_offset(io) - 1
-          iu = (io - ioff) * no_u
-          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
-             ioff = orb_offset(l_col(ind))
-             GFinv(iu+l_col(ind)-ioff) = H(ind)
-          end do
+         if ( l_ncol(io) == 0 ) cycle
+         do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
+           GFinv(l_col(ind)+no_u*(io-1)) = H(ind)
+         end do
        end do
        if (ionode) then
           i = 50
@@ -876,19 +875,16 @@ integer :: i
           write(i) dcmplx(100._dp,100._dp)
           write(i) no_u
           write(i) no_u
-          write(i) GFinv(1:no_u**2)
+          write(i) GFinv(:,:)
           write(i) no_u
-          GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+          GFinv(:,:) = dcmplx(0._dp,0._dp)
           do io = 1, no_u
              if ( l_ncol(io) == 0 ) cycle
-             ioff = orb_offset(io) - 1
-             iu = (io - ioff) * no_u
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
-                ioff = orb_offset(l_col(ind))
-                GFinv(iu+l_col(ind)-ioff) = S(ind)
+             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+                GFinv(l_col(ind),iu) = S(ind)
              end do
           end do
-          write(i) GFinv(1:no_u**2)
+          write(i) GFinv(:,:)
           close(i)
        end if
     end if
@@ -898,7 +894,7 @@ integer :: i
 
     ! Initialize
 !$OMP workshare
-    GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
+    GFinv(:,:) = dcmplx(0._dp,0._dp)
 !$OMP end workshare
 
     ! We will only loop in the central region
@@ -909,8 +905,7 @@ integer :: i
 
        if ( l_ncol(io) /= 0 ) then
 
-       ioff = orb_offset(io)
-       iu = (io - ioff - 1) * no_u
+       iu = io - orb_offset(io)
        
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
 
@@ -918,7 +913,7 @@ integer :: i
              
           ! Notice that we transpose S and H back here
           ! See symmetrize_HS_Gamma (H is hermitian)
-          GFinv(iu+l_col(ind)-ioff) = Z * S(ind) - H(ind)
+          GFinv(l_col(ind)-ioff,iu) = Z * S(ind) - H(ind)
 
        end do
        end if

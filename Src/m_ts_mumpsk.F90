@@ -27,7 +27,7 @@ module m_ts_mumpsk
   use m_ts_weight, only : TS_W_K_CORRELATED
   use m_ts_weight, only : TS_W_K_UNCORRELATED
 
-  use m_ts_method, only: orb_offset, no_Buf, ts2s_orb
+  use m_ts_method, only: no_Buf, ts2s_orb
 
   use m_ts_mumps_init
   
