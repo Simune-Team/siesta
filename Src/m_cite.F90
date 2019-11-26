@@ -306,7 +306,7 @@ contains
       cit%journal = "Physical Review B"
       cit%year = 2019
       cit%volume = "100"
-      cit%issue "19"
+      cit%issue = "19"
       cit%cite_key = "Papior2019A"
 
     case ( 9 )
