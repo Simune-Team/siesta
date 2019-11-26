@@ -90,7 +90,8 @@ contains
 
     use parallel, only: IONode, Nodes, BlockSize
     use fdf, only: fdf_get, leqi
-
+    use m_cite, only: add_citation
+    
     logical, intent(in) :: Gamma
     integer, intent(in) :: nspin
 
@@ -230,7 +231,7 @@ contains
 #ifdef SIESTA__ELPA
     else if ( leqi(algo, 'elpa-1') .or. leqi(algo, 'elpa-1stage') ) then
        algorithm = ELPA_1stage
-       
+       call add_citation("10.1088/0953-8984/26/21/213201")
        ! The current ELPA implementation requires non-serial
        Serial = .false.
        ParallelOverK = .false.
@@ -238,7 +239,7 @@ contains
     else if ( leqi(algo, 'elpa') .or. &
          leqi(algo, 'elpa-2stage') .or. leqi(algo, 'elpa-2') ) then
        algorithm = ELPA_2stage
-
+       call add_citation("10.1088/0953-8984/26/21/213201")
        ! The current ELPA implementation requires non-serial
        Serial = .false.
        ParallelOverK = .false.

@@ -74,7 +74,7 @@ module m_cite
   ! Increment this after having added a new
   ! citation!
   ! OTHERWISE YOU WILL EXPERIENCE A SEG-FAULT.
-  integer, parameter :: N_citations = 11
+  integer, parameter :: N_citations = 12
 
   private
 
@@ -221,6 +221,9 @@ contains
       case ( "10.1016/j.cpc.2017.09.007" )
         ! ELSI
         lID = 11
+      case ( "10.1088/0953-8984/26/21/213201")
+        ! ELPA
+        lID = 12
       end select
 
     end if
@@ -348,6 +351,18 @@ contains
       cit%issue = "267"
       cit%cite_key = "Yu2018"
       cit%doi = "10.1016/j.cpc.2017.09.007"
+      
+    case ( 12 )
+      ! ELPA paper
+      cit%comment = "ELPA library"
+      cit%title = "The {ELPA} library: Scalable parallel eigenvalue solutions for electronic structure theory and computational science"
+      cit%author = "A Marek et al"
+      cit%journal = "Journal of Physics: Condensed Matter"
+      cit%year = 2014
+      cit%volume = "26"
+      cit%issue = "213201"
+      cit%cite_key = "elpa_marek_2014"
+      cit%doi = "10.1088/0953-8984/26/21/213201"
       
     case default
       ! Not found
