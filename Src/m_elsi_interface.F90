@@ -34,6 +34,7 @@ module m_elsi_interface
   use units, only:    eV
   use elsi
   use class_Distribution
+  use m_cite, only: add_citation
 
   implicit none
 
@@ -294,6 +295,7 @@ subroutine elsi_get_opts()
   select case (solver_string)
   case ("elpa", "ELPA")
     which_solver = ELPA_SOLVER
+    call add_citation("10.1088/0953-8984/26/21/213201")
   case ("omm", "OMM")
     which_solver = OMM_SOLVER
   case ("pexsi", "PEXSI")
