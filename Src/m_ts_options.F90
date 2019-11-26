@@ -520,7 +520,7 @@ contains
 
       ! We add the real-space self-energy article
       if ( IONode ) then
-        call add_citation("arXiv:1905.11113")
+        call add_citation("10.1103/PhysRevB.100.195417")
       end if
 
     else

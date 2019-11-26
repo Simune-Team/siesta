@@ -209,7 +209,7 @@ contains
       case ( "10.1088/0953-8984/26/30/305503" )
         ! PEXSI-siesta
         lID = 7
-      case ( "arXiv:1905.11113" )
+      case ( "10.1103/PhysRevB.100.195417" )
         ! Real-space self-energy
         lID = 8
       case ( "10.1088/0953-8984/19/19/489001" )
@@ -305,6 +305,8 @@ contains
       cit%author = "Papior, N. and Calogero, G. and Leitherer, S and Brandbyge, M"
       cit%journal = "Physical Review B"
       cit%year = 2019
+      cit%volume = "100"
+      cit%issue "19"
       cit%cite_key = "Papior2019A"
 
     case ( 9 )
