@@ -371,29 +371,11 @@ contains
                N_Elec, Elecs, &
                spH=spH , spS=spS)
 
-#ifdef TS_DEV
-io=100+iE+node
-open(io,form='unformatted')
-write(io) cE%e
-write(io) no_u_TS, no_u_TS
-write(io) zwork(1:no_u_TS**2)
-close(io)
-#endif
-
           ! *******************
           ! * calc GF         *
           ! *******************
           if ( all(Elecs(:)%DM_update /= 0) ) then
              call calc_GF(cE,no_u_TS, zwork, GF)
-
-#ifdef TS_DEV
-io=300+iE+node
-open(io,form='unformatted')
-write(io) cE%e
-write(io) no_u_TS, no_u_TS
-write(io) gf(1:no_u_TS**2)
-close(io)
-#endif
 
           else
              call calc_GF_part(cE, no_u, no_u_TS, no_col, &
@@ -515,17 +497,6 @@ close(io)
           call calc_GF_Bias(cE, no_u_TS, no_Els, &
                N_Elec, Elecs, &
                zwork, GF)
-
-#ifdef TS_DEV
-io = 500 + iE + Node
-open(io,form='unformatted')
-write(io) cE%e
-write(io) no_u_TS, TotUsedOrbs(Elecs(1))
-write(io) GF(1:no_u_TS * totusedorbs(Elecs(1)))
-write(io) no_u_TS, TotUsedOrbs(Elecs(2))
-write(io) GF(no_u_TS*totusedorbs(Elecs(1))+1:no_u_TS * sum(totusedorbs(Elecs)))
-close(io)
-#endif
 
           ! ** At this point we have calculated the Green function
 
@@ -817,9 +788,6 @@ close(io)
     use class_Sparsity
     use m_ts_electype
     use m_ts_cctype, only : ts_c_idx
-#ifdef TS_DEV
-    use parallel,only:ionode
-#endif
     use m_ts_full_scat, only : insert_Self_Energies
 
     ! the current energy point
@@ -838,11 +806,6 @@ close(io)
     complex(dp), pointer :: H(:), S(:)
     integer :: io, iu, ind, ioff, nr
 
-#ifdef TS_DEV
-logical, save :: hasSaved = .false.
-integer :: i
-#endif
-
     if ( cE%fake ) return
 
 #ifdef TRANSIESTA_TIMING
@@ -858,38 +821,6 @@ integer :: i
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
      
-#ifdef TS_DEV    
-    if (.not. hasSaved )then
-       hasSaved = .true.
-       GFinv(:,:) = dcmplx(0._dp,0._dp)
-       if ( orb_offset(no_u) /= 0 ) call die('cannot check with buffer atoms')
-       do io = 1, no_u
-         if ( l_ncol(io) == 0 ) cycle
-         do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
-           GFinv(l_col(ind)+no_u*(io-1)) = H(ind)
-         end do
-       end do
-       if (ionode) then
-          i = 50
-          open(i,form='unformatted')
-          write(i) dcmplx(100._dp,100._dp)
-          write(i) no_u
-          write(i) no_u
-          write(i) GFinv(:,:)
-          write(i) no_u
-          GFinv(:,:) = dcmplx(0._dp,0._dp)
-          do io = 1, no_u
-             if ( l_ncol(io) == 0 ) cycle
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                GFinv(l_col(ind),iu) = S(ind)
-             end do
-          end do
-          write(i) GFinv(:,:)
-          close(i)
-       end if
-    end if
-#endif
-
 !$OMP parallel default(shared), private(io,ioff,iu,ind)
 
     ! Initialize

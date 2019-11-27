@@ -162,24 +162,23 @@ contains
     call write_debug( 'POS GFGammaGF' )
 #endif
 
+#ifdef TRANSIESTA_31
+  contains
+    subroutine my_symmetrize(N,M)
+      integer    , intent(in) :: N
+      complex(dp), intent(inout) :: M(N,N)
+      integer :: i,j
+      do j = 1 , N
+        do i = 1 , j
+          M(j,i) = aimag(M(i,j))
+          M(i,j) = M(j,i)
+        end do
+      end do
+    end subroutine my_symmetrize
+#endif
+
   end subroutine GF_Gamma_GF
 
-#ifdef TRANSIESTA_31
-subroutine my_symmetrize(N,M)
-  use parallel, only : IONode
-    integer    , intent(in) :: N
-    complex(dp), intent(inout) :: M(N,N)
-    integer :: i,j
-    do j = 1 , N
-       do i = 1 , j
-!          if(ionode)print *,M(j,i),M(i,j)
-          M(j,i) = dimag(M(i,j))
-          M(i,j) = M(j,i)
-
-       end do
-    end do
-  end subroutine my_symmetrize
-#endif
 
 ! ##################################################################
 ! ## Calculating Full Green functions of                          ## 
