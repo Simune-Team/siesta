@@ -670,9 +670,8 @@ m_ts_trik.o: parallel.o precision.o units.o
 m_ts_trimat_invert.o: class_TriMat.o m_pivot_array.o m_region.o
 m_ts_trimat_invert.o: m_trimat_invert.o m_ts_electype.o m_ts_method.o
 m_ts_trimat_invert.o: precision.o
-m_ts_voltage.o: intrinsic_missing.o m_geom_box.o m_mesh_node.o m_ncdf_io.o
-m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
-m_ts_voltage.o: precision.o units.o
+m_ts_voltage.o: m_geom_box.o m_mesh_node.o m_ncdf_io.o m_ts_electype.o
+m_ts_voltage.o: m_ts_options.o m_ts_tdir.o parallel.o precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_weight.o: geom_helper.o intrinsic_missing.o m_ts_chem_pot.o
 m_ts_weight.o: m_ts_contour_neq.o m_ts_electype.o parallel.o precision.o

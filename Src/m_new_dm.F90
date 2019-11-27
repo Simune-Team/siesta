@@ -389,7 +389,7 @@ contains
     use class_Sparsity
     use class_dSpData2D
     use class_Fstack_dData1D, only: reset
-    use m_ts_global_vars,only: ts_method_init, TSinit, TSrun
+    use m_ts_global_vars,only: ts_method_init, TSinit, TSrun, TSmode
     use m_ts_options,   only : TS_scf_mode, ts_hist_keep
     use m_ts_options,   only : val_swap, ts_scf_mixs
     use m_ts_options,   only : ts_Dtol, ts_Htol
@@ -481,22 +481,27 @@ contains
     
     if ( TS_scf_mode == 1 .and. TSinit ) then
 
-       ! if the user requests to start the transiesta SCF immediately.
-       call ts_method_init( .true. )
+      ! if the user requests to start the transiesta SCF immediately.
+      call ts_method_init( .true. )
 
     else 
 
-       ! Print-out whether transiesta is starting, or siesta is starting
-       call ts_method_init( abs(init_method) == 2 )
+      ! Print-out whether transiesta is starting, or siesta is starting
+      call ts_method_init( abs(init_method) == 2 )
 
     end if
 
-    if ( TSrun ) then
-
-      if ( abs(init_method) /= 2 .and. IsVolt ) then
-        call die('ts: You have to calculate the 0 V and re-use the TSDE from &
-            &that calculation.')
+    if ( TSmode .and. IsVolt .and. abs(init_method) /= 2 ) then
+      if ( IONode ) then
+        write(*,'(a)') 'ts: Before doing a bias calculation one have to do the 0-bias calculation'
+        write(*,'(a)') 'ts: The implementation does not allow starting, &
+            &from scratch, a bias calculation!'
       end if
+      call die('ts: You have to calculate the 0 V and re-use the TSDE from &
+          &that calculation.')
+    end if
+
+    if ( TSrun ) then
 
       ! Correct the convergence parameters in transiesta
       call val_swap(dDtol,ts_Dtol)

@@ -80,18 +80,18 @@ module m_tbt_hs
 
 contains
 
-  subroutine tbt_init_HSfile( nspin )
+  subroutine tbt_init_HSfile( )
 
     use fdf
     use files, only : slabel
     use units, only : eV
     use m_interpolate
+    use m_spin, only: init_spin
 
+    use m_ts_io, only: ts_read_TSHS_opt
     use m_ts_io_ctype, only : ts_c_bphysical, ts_c_bisphysical
-
-    integer, intent(in) :: nspin
     
-    integer :: iHS
+    integer :: iHS, nspin
     ! For reading in the TSHS file block
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
@@ -210,9 +210,16 @@ contains
        tHS(1)%HSfile = fdf_get('TBT.HS',trim(slabel)//'.TSHS')
        tHS(1)%Volt = Volt
 
-    end if
+     end if
 
-    ! Check that the hamiltonians function the way they should
+     ! Before we can read the spin information we have to
+     ! read the default from the HS file.
+     ! This is important for TB calculations where
+     ! one need not specify "Spin polarized"
+     call ts_read_TSHS_opt(tHS(1)%HSfile, nspin=nspin)
+
+     ! Now we can read the spin-configuration using fdf-flags
+     call init_spin( default_nspin=nspin )
 
     ! We read in the first file and 
     ! initialize the sparsity pattern.
@@ -234,9 +241,9 @@ contains
     ! Start by creating the Hamiltonian!
     ! just prepare the next ispin..
     if ( spin_idx == 0 ) then
-       call prep_next_HS(1, Volt)
+      call prep_next_HS(1, Volt)
     else
-       call prep_next_HS(spin_idx, Volt)
+      call prep_next_HS(spin_idx, Volt)
     end if
 
   end subroutine tbt_init_HSfile
