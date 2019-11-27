@@ -108,7 +108,7 @@ module m_spin
 
 contains
   
-  subroutine init_spin()
+  subroutine init_spin(default_nspin)
     
     use sys, only: die
     use fdf, only : fdf_get, leqi, fdf_deprecated
@@ -117,6 +117,12 @@ contains
     use m_cite, only: add_citation
     use files, only: slabel
     use parallel, only: IONode
+
+    !< Externally option for a specific spin configuration for the Hamiltonian.
+    !! Upon entry this value is used to setup the default settings, but
+    !! fdf-flags still has precedence.
+    !! Upon exit, it contains the requested spin-number for the Hamiltonian
+    integer, intent(inout), optional :: default_nspin
 
     character(len=32) :: opt, opt_old
 
@@ -144,9 +150,21 @@ contains
     spin%SO_onsite  = .false.
 
     ! Read in old flags (discouraged)
-    spin%Col  = fdf_get('SpinPolarized',.false.)
-    spin%NCol = fdf_get('NonCollinearSpin',.false.)
-    spin%SO   = fdf_get('SpinOrbit',.false.)
+    if ( present(default_nspin) ) then
+      select case ( default_nspin )
+      case ( 1 )
+        ! default to non-polarized (the default)
+      case ( 2 )
+        spin%Col = .true.
+      case ( 4 )
+        spin%NCol = .true.
+      case ( 8 )
+        spin%SO = .true.
+      end select
+    end if
+    spin%Col  = fdf_get('SpinPolarized', spin%Col)
+    spin%NCol = fdf_get('NonCollinearSpin', spin%NCol)
+    spin%SO   = fdf_get('SpinOrbit', spin%SO)
 
     ! Announce the deprecated flags (if used)...
     call fdf_deprecated('SpinPolarized','Spin')
@@ -321,6 +339,10 @@ contains
 
     end if
 
+
+    if ( present(default_nspin) ) then
+      default_nspin = spin%H
+    end if
 
   contains
 

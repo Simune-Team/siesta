@@ -891,9 +891,8 @@ m_ts_trik.o: precision.o ts_kpoint_scf.o units.o
 m_ts_trimat_invert.o: class_TriMat.o m_pivot_array.o m_region.o
 m_ts_trimat_invert.o: m_trimat_invert.o m_ts_electype.o m_ts_method.o
 m_ts_trimat_invert.o: precision.o
-m_ts_voltage.o: intrinsic_missing.o m_geom_box.o m_mesh_node.o m_ncdf_io.o
-m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
-m_ts_voltage.o: precision.o units.o
+m_ts_voltage.o: m_geom_box.o m_mesh_node.o m_ncdf_io.o m_ts_electype.o
+m_ts_voltage.o: m_ts_options.o m_ts_tdir.o parallel.o precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_weight.o: geom_helper.o intrinsic_missing.o m_ts_chem_pot.o
 m_ts_weight.o: m_ts_contour_neq.o m_ts_electype.o parallel.o precision.o
@@ -1217,7 +1216,7 @@ m_tbt_gf.o: local_sys.o m_os.o m_tbt_contour.o m_ts_cctype.o m_ts_electrode.o
 m_tbt_gf.o: m_ts_electype.o m_ts_gf.o parallel.o precision.o
 m_tbt_hs.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 m_tbt_hs.o: class_Sparsity.o files.o m_handle_sparse.o m_interpolate.o
-m_tbt_hs.o: m_sparsity_handling.o m_ts_io.o m_ts_io_ctype.o parallel.o
+m_tbt_hs.o: m_sparsity_handling.o m_spin.o m_ts_io.o m_ts_io_ctype.o parallel.o
 m_tbt_hs.o: precision.o units.o
 m_tbt_kpoint.o: fdf_extra.o files.o find_kgrid.o intrinsic_missing.o
 m_tbt_kpoint.o: m_gauss_quad.o m_integrate.o m_os.o m_tbt_save.o m_ts_tdir.o
@@ -1286,9 +1285,9 @@ sorted_search.o: intrinsic_missing.o
 tbt_end.o: alloc.o m_tbt_dH.o m_tbt_dSE.o m_tbt_delta.o m_wallclock.o
 tbt_end.o: parallel.o timestamp.o
 tbt_init.o: alloc.o class_SpData1D.o class_SpData2D.o class_Sparsity.o files.o
-tbt_init.o: local_sys.o m_sparsity_handling.o m_spin.o m_tbt_contour.o
-tbt_init.o: m_tbt_gf.o m_tbt_hs.o m_tbt_kpoint.o m_tbt_kregions.o
-tbt_init.o: m_tbt_options.o m_tbt_proj.o m_tbt_regions.o m_tbt_save.o m_timer.o
+tbt_init.o: local_sys.o m_sparsity_handling.o m_tbt_contour.o m_tbt_gf.o
+tbt_init.o: m_tbt_hs.o m_tbt_kpoint.o m_tbt_kregions.o m_tbt_options.o
+tbt_init.o: m_tbt_proj.o m_tbt_regions.o m_tbt_save.o m_timer.o
 tbt_init.o: m_ts_electrode.o m_ts_electype.o m_wallclock.o parallel.o
 tbt_init.o: precision.o timestamp.o
 tbt_reinit.o: local_sys.o m_verbosity.o parallel.o
