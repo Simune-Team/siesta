@@ -324,29 +324,11 @@ contains
                N_Elec, Elecs, &
                spH=spH , spS=spS)
 
-#ifdef TS_DEV
-io=100+iE+node
-open(io,form='unformatted')
-write(io) cE%e / eV
-write(io) no_u_TS,no_u_TS
-write(io) zwork(1:no_u_TS**2) / eV
-close(io)
-#endif
-
           ! *******************
           ! * calc GF         *
           ! *******************
           if ( eq_full_Gf ) then
              call calc_GF(cE,no_u_TS, zwork, GF)
-
-#ifdef TS_DEV
-io=300+iE+node
-open(io,form='unformatted')
-write(io) cE%e / eV
-write(io) no_u_TS, no_u_TS
-write(io) gf(1:no_u_TS**2) * eV
-close(io)
-#endif
 
           else
              call calc_GF_part(cE, no_u, no_u_TS, no_col, &
@@ -462,17 +444,6 @@ close(io)
           call calc_GF_Bias(cE, no_u_TS, no_Els, &
                N_Elec, Elecs, &
                zwork, GF)
-
-#ifdef TS_DEV
-io = 500 + iE + Node
-open(io,form='unformatted')
-write(io) cE%e / eV
-write(io) no_u_TS, TotUsedOrbs(Elecs(1))
-write(io) GF(1:no_u_TS * totusedorbs(Elecs(1))) * eV
-write(io) no_u_TS, TotUsedOrbs(Elecs(2))
-write(io) GF(no_u_TS*totusedorbs(Elecs(1))+1:no_u_TS * sum(totusedorbs(Elecs))) * eV
-close(io)
-#endif
 
           ! ** At this point we have calculated the Green function
 
@@ -755,9 +726,6 @@ close(io)
     use class_Sparsity
     use m_ts_electype
     use m_ts_cctype, only : ts_c_idx
-#ifdef TS_DEV
-    use parallel,only:ionode
-#endif
     use m_ts_full_scat, only : insert_Self_Energies
 
     ! the current energy point
@@ -778,11 +746,6 @@ close(io)
     real(dp), pointer :: H(:), S(:)
     integer :: io, iu, ind, ioff, nr
 
-#ifdef TS_DEV
-logical, save :: hasSaved = .false.
-integer :: i
-#endif
-
     if ( cE%fake ) return
 
 #ifdef TRANSIESTA_TIMING
@@ -797,39 +760,6 @@ integer :: i
 
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
-
-#ifdef TS_DEV    
-    if (.not. hasSaved )then
-       hasSaved = .true.
-       GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
-       if ( orb_offset(no_u) /= 0 ) call die('cannot check with buffer atoms')
-       do io = 1, no_u
-          if ( l_ncol(io) == 0 ) cycle
-          do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-             ioff = orb_offset(l_col(ind))
-             GFinv(iu+l_col(ind)-ioff) = H(ind)
-          end do
-       end do
-       if (ionode) then
-          i = 50
-          open(i,form='unformatted')
-          write(i) cmplx(100._dp,100._dp,dp)
-          write(i) no_u
-          write(i) no_u
-          write(i) GFinv(1:no_u**2) / eV
-          write(i) no_u
-          GFinv(1:no_u**2) = cmplx(0._dp,0._dp,dp)
-          do io = 1, no_u
-             if ( l_ncol(io) == 0 ) cycle
-             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-                GFinv(l_col(ind)+no_u*(io-1)) = S(ind)
-             end do
-          end do
-          write(i) GFinv(1:no_u**2)
-          close(i)
-       end if
-    end if
-#endif
 
 !$OMP parallel default(shared), private(io,ioff,iu,ind)
 

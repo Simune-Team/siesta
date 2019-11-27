@@ -490,14 +490,6 @@ contains
           ! ** information to create the Green function column
           ! ** for all the electrodes
 
-#ifdef TS_DEV
-          if ( .not. cE%fake ) then
-          io = 1000 + iE + Node
-          open(io,form='unformatted')
-          write(io) cE%e
-          end if
-#endif
-          
           ! ****************
           ! * save GF      *
           ! ****************
@@ -511,18 +503,6 @@ contains
               call invert_BiasTriMat_rgn(GF_tri,zwork_tri, &
                    r_pvt, pvt, Elecs(iEl)%o_inD)
 
-#ifdef TS_DEV
-              ! offset and number of orbitals
-              no = TotUsedOrbs(Elecs(iEl))
-
-              idx = 0
-              do iid = 1 , c_Tri%n
-                 write(io) c_Tri%r(iid),no
-                 write(io) zwork(idx+1:idx+c_Tri%r(iid)*no)
-                 idx = idx + c_Tri%r(iid)*no
-              end do
-#endif
-             
               call GF_Gamma_GF(zwork_tri, Elecs(iEl), Elecs(iEl)%o_inD%n, &
                    calc_parts, GFGGF_size, GFGGF_work)
 #ifdef TRANSIESTA_WEIGHT_DEBUG
@@ -551,10 +531,6 @@ contains
                      DMidx=iID, EDMidx=imu , eq = .false.)
              end do
           end do
-
-#ifdef TS_DEV
-          if ( .not. cE%fake ) close(io)
-#endif
 
           ! step energy-point
           iE = iE + Nodes
