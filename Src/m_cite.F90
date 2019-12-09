@@ -74,7 +74,7 @@ module m_cite
   ! Increment this after having added a new
   ! citation!
   ! OTHERWISE YOU WILL EXPERIENCE A SEG-FAULT.
-  integer, parameter :: N_citations = 11
+  integer, parameter :: N_citations = 13
 
   private
 
@@ -221,6 +221,12 @@ contains
       case ( "10.1016/j.cpc.2017.09.007" )
         ! ELSI
         lID = 11
+      case ( "10.1088/0953-8984/26/21/213201")
+        ! ELPA
+        lID = 12
+      case ( "projecteuclid.org/euclid.cms/12565628222")
+        ! Selected Inversion Algorithm
+        lID = 13
       end select
 
     end if
@@ -295,6 +301,8 @@ contains
     case ( 7 )
       ! PEXSI-siesta
       cit%comment = "SIESTA-PEXSI"
+      cit%title = "SIESTA-PEXSI: Massively parallel method for efficient and accurate&
+                   & ab initio materials simulation without matrix diagonalization"
       cit%doi = "10.1088/0953-8984/26/30/305503"
       cit%journal = "Journal of Physics: Condensed Matter"
       cit%year = 2014
@@ -350,6 +358,32 @@ contains
       cit%issue = "267"
       cit%cite_key = "Yu2018"
       cit%doi = "10.1016/j.cpc.2017.09.007"
+      
+    case ( 12 )
+      ! ELPA paper
+      cit%comment = "ELPA library"
+      cit%title = "The {ELPA} library: Scalable parallel eigenvalue solutions&
+                   & for electronic structure theory and computational science"
+      cit%author = "A Marek et al"
+      cit%journal = "Journal of Physics: Condensed Matter"
+      cit%year = 2014
+      cit%volume = "26"
+      cit%issue = "213201"
+      cit%cite_key = "elpa_marek_2014"
+      cit%doi = "10.1088/0953-8984/26/21/213201"
+      
+    case ( 13 )
+      ! Selected inversion algorithm
+      cit%comment = "SelInv algorithm"
+      cit%title = "Fast algorithm for extracting the diagonal of the inverse matrix&
+                   & with application to the electronic structure analysis of metallic systems"
+      cit%author = "Lin, L. and Lu, J. and Ying, L. and Car, R. and E, W."
+      cit%journal = "Comm. Math. Sci."
+      cit%year = 2009
+      cit%volume = "7"
+      cit%issue = "755"
+      cit%cite_key = "CMS2009"
+      cit%doi = "projecteuclid.org/euclid.cms/12565628222"
       
     case default
       ! Not found

@@ -109,10 +109,10 @@ contains
     else
        ! In later steps, the lack of normalization is more serious
        ! The tolerance is tighter by default
-       if (IOnode) then
-          write(6,'(a,2f20.8,1x,f14.8)') &
-               'Note: For computed DM, Qtot, Tr[D*S] =', qtot, qsol, scale
-       end if
+       !!if (IOnode) then
+       !!   write(6,'(a,2f20.8,1x,f14.8)') &
+       !!        'Note: For computed DM, Qtot, Tr[D*S] =', qtot, qsol, scale
+       !!end if
        if ( scale > dm_normalization_tol ) then
           write(msg,'(a,2f20.8)') &
                'Bad DM normalization: Qtot, Tr[D*S] =', qtot, qsol
