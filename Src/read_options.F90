@@ -715,6 +715,7 @@ subroutine read_options( na, ns, nspin )
      isolve = SOLVE_PEXSI
      if (ionode) then
         call add_citation("10.1088/0953-8984/26/30/305503")
+        call add_citation("projecteuclid.org/euclid.cms/12565628222")
         write(*,3) 'redata: Method of Calculation', 'PEXSI-builtin'
      endif
 #else

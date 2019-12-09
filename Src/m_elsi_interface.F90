@@ -299,6 +299,8 @@ subroutine elsi_get_opts()
   case ("omm", "OMM")
     which_solver = OMM_SOLVER
   case ("pexsi", "PEXSI")
+    call add_citation("10.1088/0953-8984/26/30/305503")
+    call add_citation("projecteuclid.org/euclid.cms/12565628222")
     which_solver = PEXSI_SOLVER
   case ("sips", "SIPS", "SIPs")
     which_solver = SIPS_SOLVER
