@@ -28,6 +28,7 @@ module m_ts_sparse
   ! matrices. In principle this could be made obsolete. However,
   ! that task seems more cumbersome than worthy of notice (for
   ! the moment).
+  ! This is a *SORTED* sparse matrix
   type(Sparsity), save :: ts_sp_uc ! TS-GLOBAL (UC)
 
   ! We will save the "update region sparsity"
@@ -38,6 +39,7 @@ module m_ts_sparse
   ! Lastly the usage of a MASKED sparsity pattern, will reduce the clutter
   ! between MPI and non-MPI codes as it will be the same array in both 
   ! circumstances.
+  ! This is a *SORTED* sparse matrix
   type(Sparsity), save :: tsup_sp_uc ! TS-update-GLOBAL (UC)
 
   ! We will save the local "update region sparsity"
@@ -655,20 +657,18 @@ contains
           !   DM_update == 0 (none)
           !   DM_update == 1 (cross-terms)
           !   DM_update == 2 (all)
+          DM_cross = .true.
 
           if ( ict > TYP_DEVICE ) then
-             ! Assign that the density matrix, should not be updated
-             DM_bulk = Elecs(ict)%DM_update < 2
-             ! If DM_cross is different from 0, the entire
-             ! electrode region is updated
-             DM_cross = Elecs(ict)%DM_update /= 0
-          else if ( jct > TYP_DEVICE ) then
-             DM_bulk = Elecs(jct)%DM_update < 2
-             DM_cross = Elecs(jct)%DM_update /= 0
-          else
-             ! we are definitely not in an electrode
-             ! just set it to be updated
-             DM_cross = .true.
+            ! Assign that the density matrix, should not be updated
+            DM_bulk = Elecs(ict)%DM_update < 2
+            ! If DM_cross is different from 0, the entire
+            ! electrode region is updated
+            DM_cross = Elecs(ict)%DM_update /= 0
+          end if
+          if ( jct > TYP_DEVICE ) then
+            DM_bulk = Elecs(jct)%DM_update < 2
+            DM_cross = Elecs(jct)%DM_update /= 0
           end if
 
           ! We check whether it is electrode-connections. 

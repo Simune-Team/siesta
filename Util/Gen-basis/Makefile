@@ -191,8 +191,8 @@ radial.o: alloc.o interpolation.o precision.o xml.o
 radial.o: alloc.o interpolation.o precision.o xml.o
 read_xc_info.o: local_sys.o parallel.o precision.o
 read_xc_info.o: local_sys.o parallel.o precision.o
-spher_harm.o: alloc.o local_sys.o precision.o
-spher_harm.o: alloc.o local_sys.o precision.o
+spher_harm.o: precision.o
+spher_harm.o: precision.o
 units.o: precision.o
 units.o: precision.o
 xml.o: precision.o

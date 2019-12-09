@@ -12729,11 +12729,11 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
 \tsiesta\ requires fixed boundary conditions and forcing this is an
 intricate and important detail. 
 
-\begin{fdfentry}{TS!Poisson}[string]<ramp-central|elec-box|\nonvalue{file}|ramp-cell>
+\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|elec-box|\nonvalue{file}|ramp-cell>
 
   Define how the correction of the Poisson equation is
   superimposed. The default is to apply the linear correction across
-  the central region (if there are two semi-infinite aligned
+  the entire cell (if there are two semi-infinite aligned
   electrodes).  Otherwise this defaults to the \emph{box} solution
   which will introduce spurious effects at the electrode
   boundaries. In this case you are encouraged to supply a \fdf*{file}.
@@ -12759,14 +12759,11 @@ intricate and important detail.
   \end{developer}
 
   \begin{fdfoptions}
-    \option[ramp-central]%
-    \fdfindex*{TS!Poisson:ramp-central}%
+    \option[ramp-cell]%
+    \fdfindex*{TS!Poisson:ramp-cell}%
 
-    Apply the bias-ramp between the leads. For a \emph{bulk} electrode
-    (see \fdf{TS!Elec.<>!Bulk}) the ramp will start at the
-    electrode-device interface, otherwise it will start at the
-    beginning of the electrode.
-
+    Apply the ramp for the full cell. This is the default for 2
+    electrodes.
 
     \option[<file>]%
     \fdfindex*{TS!Poisson:<file>}%
@@ -12812,12 +12809,6 @@ variables:
     
     \note usage of this Poisson solution is \emph{highly}
     discouraged. Please see \fdf{TS!Poisson:<file>}.
-
-    \option[ramp-cell]%
-    \fdfindex*{TS!Poisson:ramp-cell}%
-
-    Apply the ramp for the full cell. This option should \emph{only}
-    be used for testing against older versions of \tsiesta.
 
   \end{fdfoptions}
   

@@ -58,10 +58,6 @@ module m_ts_hartree
   ! The Hartree offset potential as determined from the electrode calculation
   real(dp), public :: Vha_offset = 0._dp
 
-  ! The grid-index in the transport direction
-  ! where we fix the Hartree potential.
-  integer :: ha_idx = 1
-
 contains
 
   subroutine read_ts_hartree_options(N_Elec, Elecs, cell, na_u, xa)
@@ -144,46 +140,44 @@ contains
 
     if ( TS_HA == TS_HA_PLANE ) then
 
-       ! The hartree plane can only be used for 1 and 2
-       ! electrodes
-       if ( N_Elec == 1 ) then
-          
+      ! The hartree plane can only be used for 1 and 2
+      ! electrodes
+      if ( N_Elec == 1 ) then
+        El => Elecs(1)
+        return
+      end if
+
+      ! The plane can only be chosen with
+      ! 2 electrodes
+      if ( N_Elec /= 2 ) then
+        call die('ts_hartree: Error in fixation of plane.')
+      end if
+
+      ! Select the electrode which is more than a bond length
+      ! from its boundary
+      call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx,fmin=f1,fmax=f2)
+      call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx,fmin=tmp,fmax=area)
+
+      if ( f1 < tmp ) then
+        ! 1 lie closests to the lower cell-boundary
+        ! check which of f1 or 1-area is bigger
+        if ( f1 < 1._dp - area ) then
+          El => Elecs(2)
+        else
           El => Elecs(1)
-          return
-          
-       end if
+        end if
+      else
+        ! 2 lie closests to the lower cell-boundary
+        ! check which of tmp or 1-f2 is bigger
+        if ( tmp < 1._dp - f2 ) then
+          El => Elecs(1)
+        else
+          El => Elecs(2)
+        end if
+      end if
 
-       ! The plane can only be chosen with
-       ! 2 electrodes
-       if ( N_Elec /= 2 ) then
-          call die('ts_hartree: Error in fixation of plane.')
-       end if
-       
-       ! Select the electrode which is more than a bond length
-       ! from its boundary
-       call Elec_frac(Elecs(1),cell,na_u,xa,ts_tidx,fmin=f1,fmax=f2)
-       call Elec_frac(Elecs(2),cell,na_u,xa,ts_tidx,fmin=tmp,fmax=area)
+      return
 
-       if ( f1 < tmp ) then
-          ! 1 lie closests to the lower cell-boundary
-          ! check which of f1 or 1-area is bigger
-          if ( f1 < 1._dp - area ) then
-             El => Elecs(2)
-          else
-             El => Elecs(1)
-          end if
-       else
-          ! 2 lie closests to the lower cell-boundary
-          ! check which of tmp or 1-f2 is bigger
-          if ( tmp < 1._dp - f2 ) then
-             El => Elecs(1)
-          else
-             El => Elecs(2)
-          end if
-       end if
-       
-       return
-       
     end if
 
     ! Easy determination of largest basal plane of electrodes
@@ -276,55 +270,8 @@ contains
     ! Quick skip if not fixing
     if ( TS_HA == TS_HA_NONE ) return
 
-    if ( TS_HA == TS_HA_PLANE ) then
-
-       call reclat(cell, rcell, 0) ! without 2pi
-       
-       ! Calculate the index where we will fix
-       ! the Hartree potential.
-
-       ! 'El' points to the electrode which has the
-       ! cell boundary farthest from the atoms
-
-       ! Calculate the fraction point where we will cut
-       call Elec_frac(El,cell,na_u,xa,ts_tidx, &
-            fmin = llYZ(1), fmax = llYZ(2) )
-
-       ! Unit-cell vector
-       ll = cell(:,ts_tidx)
-       ll = ll / VNORM(ll)
-
-       if ( llYZ(1) < 1._dp - llYZ(2) ) then
-          
-          ! We have a lower index point
-          ! Correct fraction by the interlayer distance
-          llYZ(1) = llYZ(1) - &
-               sum(ll*El%dINF_layer*0.5_dp*rcell(:,ts_tidx))
-          
-       else
-
-          llYZ(1) = llYZ(2) + &
-               sum(ll*El%dINF_layer*0.5_dp*rcell(:,ts_tidx))
-
-       end if
-
-       ! Figure out the index
-       ha_idx = nint(llYZ(1) * nmesh(ts_tidx))
-       ha_idx = max(1,ha_idx)
-       ha_idx = min(nmesh(ts_tidx),ha_idx)
-
-       if ( IONode ) then
-         write(*,*)
-         write(*,'(3a)')'ts: Using electrode: ',trim(El%Name), &
-              ' for Hartree correction'
-         write(*,'(a,f8.5)')'ts: Grid fraction plane ',llYZ(1)
-         write(*,'(a,3(tr1,f13.5))') 'ts: Grid point plane (Ang):',&
-              llYZ(1)*cell(:,ts_tidx)/Ang
-       end if
-    
-       return
-       
-    end if
+    ! Plane at Poisson boundary
+    if ( TS_HA == TS_HA_PLANE ) return
 
     ! We now were to put the Hartree correction
     if ( TS_HA /= TS_HA_ELEC .and. &
@@ -508,7 +455,7 @@ contains
     case ( TS_HA_PLANE )
       
       ! Calculate index
-      i = ha_idx - offset_i(ts_tidx)
+      i = 1 - offset_i(ts_tidx)
       
       if ( ts_tidx == 1 .and. &
           0 < i .and. i <= nmeshl(1) ) then

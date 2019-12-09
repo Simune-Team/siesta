@@ -225,8 +225,8 @@ sparse_matrices.o: class_SpData2D.o class_SpData2D.o class_Sparsity.o
 sparse_matrices.o: precision.o
 spatial.o: precision.o
 spatial.o: precision.o
-spher_harm.o: alloc.o local_sys.o precision.o
-spher_harm.o: alloc.o local_sys.o precision.o
+spher_harm.o: precision.o
+spher_harm.o: precision.o
 xml.o: precision.o
 xml.o: precision.o
 atompla.o: local_sys.o precision.o

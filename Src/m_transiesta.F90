@@ -510,10 +510,6 @@ contains
 
     call timer('TS',2)
 
-#ifdef TS_DEV
-    call die('to not disturb the TSDE')
-#endif
-
   contains
 
     subroutine init_Electrode_HS(El)
