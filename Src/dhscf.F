@@ -116,7 +116,6 @@
       use m_ts_global_vars,only: TSmode
       use m_ts_options,   only : IsVolt, N_Elec, Elecs
       use m_ts_voltage,   only : ts_init_voltage
-      use m_ts_hartree,   only : ts_init_hartree_fix
 
       implicit none
       integer, intent(in)     :: nspin, norb, iaorb(norb), iphorb(norb),
@@ -438,7 +437,6 @@ C ----------------------------------------------------------------------
       ! corresponding to the voltage-drop.
       if ( TSmode ) then
         ! These routines are important if there are cell-changes
-        call ts_init_hartree_fix( cell, nua, xa, ntm, ntml)
         if ( IsVolt ) then
            call ts_init_voltage( cell, nua, xa, ntm)
         end if
