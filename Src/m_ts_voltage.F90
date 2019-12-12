@@ -205,7 +205,7 @@ contains
       call ts_ramp(cell, nmesh, nmeshl, Vscf)
 #ifdef NCDF_4
     else if ( len_trim(Hartree_fname) > 0 ) then
-      call ts_ncdf_Voltage(Hartree_fname, 'V', nmeshl, Vscf)
+      call ts_ncdf_Voltage(cell, Hartree_fname, 'V', nmesh, nmeshl, Vscf)
 #endif
     else
       call ts_elec_only(nmesh, nmeshl, Vscf)
@@ -416,7 +416,7 @@ contains
   ! We note that the potential landscape need only be calculated
   ! for one V, direct interpolation is possible as 
   ! the solution to the Poisson equation is linearly dependent on the BC
-  subroutine ts_ncdf_voltage(fname, V_name, nmeshl, V)
+  subroutine ts_ncdf_voltage(cell, fname, V_name, nmesh, nmeshl, V)
     use precision, only: grid_p
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World, MPI_Bcast, MPI_Grid_Real
@@ -424,9 +424,14 @@ contains
     use m_ncdf_io, only : cdf_r_grid
     use netcdf_ncdf
 
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+    use iogrid_netcdf, only: write_grid_netcdf
+#endif
+
+    real(dp), intent(in) :: cell(3,3)
     character(len=*), intent(in) :: fname, V_name
-    ! local number of mesh-divisions
-    integer, intent(in) :: nmeshl(3)
+    ! global and local number of mesh-divisions
+    integer, intent(in) :: nmesh(3), nmeshl(3)
     real(grid_p), intent(inout) :: V(:)
 
     type(hNCDF) :: ncdf
@@ -461,8 +466,15 @@ contains
     ! Align the bottom potentials so that the range becomes correct
     Vmm(1) = V_low - Vmm(1) * fact
 
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+    tmpV(:) = tmpV(:) * fact + Vmm(1)
+    call write_grid_netcdf( cell, nmesh, 1, product(nmeshl), tmpV, &
+        "TransiestaHartreePotential")
+    call bye('transiesta debug for Hartree potential')
+#endif
+
 !$OMP parallel workshare default(shared), firstprivate(fact,Vmm)
-    V(:) = V(:) + tmpV(:) * fact + Vmm(1)
+    V(:) = Vmm(1) + V(:) + tmpV(:) * fact
 !$OMP end parallel workshare
 
     deallocate(tmpV)

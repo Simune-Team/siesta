@@ -217,6 +217,7 @@ TS.BTD.Pivot atom+GGPS
   electrode-position end -13
 %endblock TS.Elec.el-4
 
+TS.Hartree.Fix -C+C
 
 # TBtrans allows k-points along self-energy directions
 # when using mis-aligned electrodes.

@@ -856,14 +856,6 @@ contains
        
        write(*,f1) 'Save H and S matrices', TS_HS_save
        write(*,f1) 'Save DM and EDM matrices', TS_DE_save
-       chars = ' '
-       if ( TS_HA_PLANES(1, 1) ) chars = trim(chars) // '-A'
-       if ( TS_HA_PLANES(2, 1) ) chars = trim(chars) // '+A'
-       if ( TS_HA_PLANES(1, 2) ) chars = trim(chars) // '-B'
-       if ( TS_HA_PLANES(2, 2) ) chars = trim(chars) // '+B'
-       if ( TS_HA_PLANES(1, 3) ) chars = trim(chars) // '-C'
-       if ( TS_HA_PLANES(2, 3) ) chars = trim(chars) // '+C'
-       write(*,f10) 'Fix Hartree potential at cell boundary', trim(chars)
        write(*,f1) 'Only save the overlap matrix S', onlyS
 
        write(*,f11) repeat('*', 62)

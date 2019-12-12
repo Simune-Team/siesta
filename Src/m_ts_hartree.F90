@@ -147,6 +147,9 @@ contains
     call write_debug( 'PRE TS_VH_fix' )
 #endif
 
+    ! Quick return if no planes are fixed
+    if ( .not. any(TS_HA_PLANES) ) return
+
     ! Initialize summation
     Vtot = 0._dp
 

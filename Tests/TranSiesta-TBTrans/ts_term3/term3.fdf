@@ -116,6 +116,7 @@ SaveHS                          T
  0 0 1 0.
 %endblock
 TS.BTD.Pivot atom+GGPS
+TS.Hartree.Fix -C+C
 
 # Only two different chemical potentials
 %block TS.ChemPots
@@ -175,7 +176,7 @@ TS.BTD.Pivot atom+GGPS
       method mid-rule
 %endblock TS.Contour.nEq.neq
 
-# We have 4 electrodes
+# We have 3 electrodes
 %block TS.Elecs
   el-1
   el-3
