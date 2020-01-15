@@ -7,11 +7,9 @@ module m_ts_electype
   use class_dSpData2D
   use m_region
 
-  use m_geom_plane, only: geo_plane_delta
-  use m_geom_plane, only: in_basal_Elec => voxel_in_plane_delta
-
   use m_geom_box, only: geo_box_delta
   use m_geom_box, only: in_Elec => voxel_in_box_delta
+
   use bloch_unfold_m, only: bloch_unfold_t
 
   use m_ts_chem_pot, only : ts_mu, name
@@ -52,7 +50,7 @@ module m_ts_electype
 
   public :: Elec_box2grididx, Elec_frac
 
-  public :: in_basal_Elec, in_Elec
+  public :: in_Elec
 
   public :: operator(.eq.)
 
@@ -191,8 +189,6 @@ module m_ts_electype
      ! The region of the down-folded region
      type(tRgn) :: o_inD, inDpvt
 
-     ! The basal plane of the electrode
-     type(geo_plane_delta) :: p
      ! A box containing all atoms of the electrode in the
      ! simulation box
      type(geo_box_delta) :: box
@@ -979,103 +975,6 @@ contains
        
     end do
     
-    ! Create the basal plane of the electrode
-    ! Decide which end of the electrode we use
-    ! Calculate planes of the electrodes
-    select case ( this%t_dir )
-    case ( 4 ) ! B-C
-      call cross(this%cell(:,1), this%cell(:,2), p)
-      contrib = VNORM(p)
-      call cross(this%cell(:,1), this%cell(:,3), p)
-      if ( contrib > VNORM(p) ) then
-        ! the area on A-B is biggest, hence the normal plane is along C
-        p = this%cell(:,3)
-      else
-        p = this%cell(:,2)
-      end if
-    case ( 5 ) ! A-C
-      call cross(this%cell(:,2), this%cell(:,1), p)
-      contrib = VNORM(p)
-      call cross(this%cell(:,2), this%cell(:,3), p)
-      if ( contrib > VNORM(p) ) then
-        p = this%cell(:,3)
-      else
-        p = this%cell(:,1)
-      end if
-    case ( 6 ) ! A-B
-      call cross(this%cell(:,3), this%cell(:,1), p)
-      contrib = VNORM(p)
-      call cross(this%cell(:,3), this%cell(:,2), p)
-      if ( contrib > VNORM(p) ) then
-        p = this%cell(:,2)
-      else
-        p = this%cell(:,1)
-      end if
-    case ( 7 ) ! A-B-C
-      call cross(this%cell(:,1), this%cell(:,2), p)
-      contrib = VNORM(p)
-      call cross(this%cell(:,1), this%cell(:,3), p)
-      if ( contrib > VNORM(p) ) then
-        i = 3
-      else
-        i = 2
-        contrib = VNORM(p)
-      end if
-      call cross(this%cell(:,2), this%cell(:,3), p)
-      if ( VNORM(p) > contrib ) then
-        i = 1
-      end if
-      p = this%cell(:, i)
-    case default
-      p = this%cell(:,this%t_dir)
-    end select
-    p = p / VNORM(p)
-
-    ! Select the atom farthest from the device region
-    ! along the semi-infinite direction
-    j = ia
-    contrib = VEC_PROJ_SCA(p,xa(:,j))
-    if ( this%inf_dir == INF_POSITIVE ) then
-       ! We need to utilize the last atom 
-       do i = ia + 1, ia + na - 1
-          if ( VEC_PROJ_SCA(p,xa(:,i)) > contrib ) then
-             j = i
-             contrib = VEC_PROJ_SCA(p,xa(:,j))
-          end if
-       end do
-    else
-       ! We need to utilize the first atom
-       do i = ia + 1, ia + na - 1
-          if ( VEC_PROJ_SCA(p,xa(:,i)) < contrib ) then
-             j = i
-             contrib = VEC_PROJ_SCA(p,xa(:,j))
-          end if
-       end do
-    end if
-    this%p%c = xa(:,j)
-
-    ! We add a vector with length of half the minimal bond length
-    ! to the vector, to do the averaging 
-    ! not on-top of an electrode atom.
-    contrib = this%dINF_layer * 0.5_dp
-    if ( this%inf_dir == INF_POSITIVE ) then
-       this%p%c = this%p%c + p * contrib ! add vector
-    else
-       this%p%c = this%p%c - p * contrib ! subtract vector
-    end if
-
-    ! Normal vector to electrode basal plane.
-    ! This coincides with the electrode semi-infinite direction
-    this%p%n = p ! normalized semi-infinite direction vector
-
-    ! The distance parameter used when calculating
-    ! the +/- voxel placements
-    this%p%d = sum( this%p%n(:) * this%p%c(:) )
-
-    ! *** Now we have created the Hartree plane
-    !     where the potential is fixed.         ***
-
-
     ! *** Calculate the electrode box for N-electrodes
     ! We do this by:
     !  1. find the average Cartesian coordinate.
@@ -2480,13 +2379,6 @@ contains
 
 
 #ifndef TBTRANS
-    if ( present(plane) ) then
-    if ( plane ) then
-       write(*,f11) '  Hartree fix plane:'
-       write(*,f3)  '    plane origo',this%p%c / Ang, 'Ang'
-       write(*,f3)  '    plane normal vector',this%p%n
-    end if
-    end if
     if ( present(box) ) then
     if ( box ) then
       write(*,f11) '  Hartree potential box:'

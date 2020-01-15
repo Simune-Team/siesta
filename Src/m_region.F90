@@ -627,6 +627,7 @@ contains
   !      the connections, one could easily imagine 2 orbitals where
   !      one is connecting out, the other does not, in that case would
   !      'connect_from' only contain one orbital.
+  !      In case of a parallel run, this region contains the local index.
   ! NOTE: It DOES work in parallel
   subroutine rgn_sp_connect(r,dit,sp,cr,except, connect_from, follow)
 
@@ -2161,12 +2162,13 @@ contains
     use mpi_siesta, only : MPI_Bcast
     use mpi_siesta, only : MPI_Recv, MPI_Send, MPI_STATUS_SIZE
     use mpi_siesta, only : MPI_Get_Count
+    use intrinsic_missing, only: sort_quick
 
     type(OrbitalDistribution), intent(in) :: dit
     type(tRgn), intent(inout) :: r
     
     ! Our temporary region
-    integer :: i, nt, ct, iN, it
+    integer :: nt, ct, iN, it
     integer, allocatable :: rd(:)
     character(len=R_NAME_LEN) :: tmp
     integer :: comm
@@ -2187,29 +2189,35 @@ contains
     ! the data, then we b-cast it...
     if ( dist_node(dit) == 0 ) then
        if ( r%n > 0 ) then
-          do i = 1 , r%n
-             rd(i) = r%r(i)
+          do it = 1 , r%n
+             rd(it) = r%r(it)
           end do
        end if
-       ct = r%n + 1
+       ct = r%n
        do iN = 1 , dist_nodes(dit) - 1
-          call MPI_Recv(rd(ct),nt-ct+1,MPI_Integer, &
-               iN, 0, comm, MPIstatus, MPIerror)
-          call MPI_Get_Count(MPIstatus, MPI_Integer, it, MPIerror)
-          ct = ct + it
+         call MPI_Recv(rd(ct+1),nt-ct,MPI_Integer, &
+             iN, 0, comm, MPIstatus, MPIerror)
+         call MPI_Get_Count(MPIstatus, MPI_Integer, it, MPIerror)
+         ct = ct + it
        end do
+       ! Total number of elements recieved
+       nt = ct
        ! Count the actual number of unique entries
-       nt = uniqc(rd(1:nt-1))
-       ! Sort them...
-       ct = 1
-       it = 1
-       do while ( ct < nt )
-          it = it + 1
-          if ( all(rd(it) /= rd(1:ct)) ) then
-             ct = ct + 1
-             rd(ct) = rd(it)
-          end if
+       call sort_quick(nt, rd)
+       ! Remove all with same values
+       ct = 0
+       do it = 1, nt - 1
+         if ( rd(it) /= rd(it + 1) ) then
+           ct = ct + 1
+           rd(ct) = rd(it)
+         end if
        end do
+       if ( nt > 0 ) then
+         ct = ct + 1
+         rd(ct) = rd(nt)
+       end if
+       ! Update counter
+       nt = ct
     else
        if ( r%n == 0 ) then
           call MPI_Send(rd(1),0,MPI_Integer, &

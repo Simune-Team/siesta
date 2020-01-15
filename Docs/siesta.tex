@@ -11419,7 +11419,9 @@ $N\ge1$ setups\cite{Papior2017}.
   \item %
   The \sysfile{TSDE} may be read equivalently as the
   \sysfile{DM}. Thus, it may be used by fx. \program{denchar} to
-  analyze the non-equilibrium charge density.
+  analyze the non-equilibrium charge density. Alternatively one can
+  use \sisl\cite{sisl} to interpolate the DM and EDM to speed up
+  convergence.
 
   \item %
   As in the case of \siesta\ calculations, what \tsiesta\ does is to
@@ -11480,6 +11482,13 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
 \end{output}
 Always ensure the last column (\code{dQ}) is a very small fraction of
 the total number of electrons. Ideally this should be $0$.
+%
+For $0$ bias calculations this should be very small, typically less
+than $0.1\,\%$ of the total charge in the system. If this is not the
+case, it probably means that there is not enough screening towards the
+electrodes which can be solved by adding more electrode layers between
+the electrode and the scattering region. This layer thickness is
+\emph{very} important to obtain a correct open boundary calculation.
 
   \item%
   Do \emph{not} perform \tsiesta\ calculations using semi-conducting
@@ -11555,7 +11564,7 @@ both of the below sequences are allowed.
 \paragraph{Tile} \fdfindex{TS!Elec.<>!Bloch}%
 Here the atoms are copied and displaced by the full
 electrode. Generally this expansion should be preferred over the
-\emph{repeat} expansion due to faster execution.
+\emph{repeat} expansion due to much faster execution.
 \begin{fdfexample}
   iaD = 10 ! as per the above input option
   do iC = 0 , nC - 1
@@ -11582,7 +11591,8 @@ by using the following command-line utility on an input
 
 \paragraph{Repeat} \fdfindex{TS!Elec.<>!Bloch}%
 Here the atoms are copied individually. Generally
-this expansion should \emph{not} be used.
+this expansion should \emph{not} be used since it is much slower than
+tiling.
 \begin{fdfexample}
   iaD = 10 ! as per the above input option
   do iaE = 1 , na_u
@@ -11632,7 +11642,11 @@ following will be shown in the output file.
     Overlap          :  S(8,6587)|@R=-2 =   0.00    
 \end{verbatim}
 It is imperative that you have a \emph{perfect} electrode as otherwise
-nonphysical results will occur.
+nonphysical results will occur. This means that you need to add more
+layers in your electrode calculation (and hence also in your
+scattering region). An example is an ABC stacking electrode. If the
+above error is shown one \emph{has} to create an electrode with ABCABC
+stacking in order to retain periodicity.
 
 By default \tsiesta\ will die if there are connections beyond the
 principal cell. One may control whether this is allowed or not by
@@ -12335,20 +12349,23 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
 \subsubsection{Poisson solution for fixed boundary conditions}
 
 \tsiesta\ requires fixed boundary conditions and forcing this is an
-intricate and important detail. 
+intricate and important detail.
 
-\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|elec-box|\nonvalue{file}|ramp-cell>
+It is important that these options are exactly the same if one reuses
+the \sysfile{TSDE} files.
+
+\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|elec-box|\nonvalue{file}>
 
   Define how the correction of the Poisson equation is
   superimposed. The default is to apply the linear correction across
   the entire cell (if there are two semi-infinite aligned
-  electrodes).  Otherwise this defaults to the \emph{box} solution
+  electrodes). Otherwise this defaults to the \emph{box} solution
   which will introduce spurious effects at the electrode
   boundaries. In this case you are encouraged to supply a \fdf*{file}.
 
   If the input is a \fdf*{file}, it should be a NetCDF file containing
   the grid information which acts as the boundary conditions for the
-  SCF cycle. 
+  SCF cycle.
   The grid information should conform to the grid size of the
   unit-cell in the simulation.
   % 
@@ -12422,36 +12439,16 @@ variables:
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Hartree.Fix}[string]<plane|elec-plane|elec-box>
+\begin{fdfentry}{TS!Hartree.Fix}[string]<[-+][ABC]>
 
-  As the fixed boundary conditions requires a fixed reference
-  potential. For two electrode calculations this defaults to taking
-  the plane at one of the electrodes basal-planes (\fdf*{plane}). 
-
-  For anything but two electrodes this defaults to \fdf*{elec-plane}
-  because the plane should be at a fixed position in the cell. 
-
-  \note generally this need not be changed.
-
-\end{fdfentry}
-
-\begin{fdfentry}{TS!Hartree.Fix.Elec}[string]<electrode name>
-  \fdfdepend{TS!Hartree.Fix}
-
-  Specifically select an electrode's boundary plane to be used as the
-  constant potential boundary. The electrode unit-cell plane is
-  integrated and subtracted from all potential grid-points to ensure a
-  constant potential at the interface between the electrode in the
-  pristine calculation and in the device calculation.
-
-  \tsiesta\ defaults to select the electrode plane which has the
-  largest area.
-
-  \note this may be important in $N>2$ electrode calculations where
-  some electrodes may have a huge semi-infinite surface plane but a
-  limited amount of atoms. It is heavily advised to select the
-  electrode with the largest number of atoms in a plane-cut
-  perpendicular to the semi-infinite direction.
+  Specify which plane to fix the Hartree potential at. For regular (2
+  electrode calculations with a single transport direction) this
+  should not be set.
+  %
+  For $N$ electrode systems one \emph{have} to specify a plane to fix.
+  One can specify one ore several planes to fix. Users are encouraged
+  to fix the plane where the entire plane has the highest/lowest
+  potential.
 
 \end{fdfentry}
 
@@ -12472,28 +12469,6 @@ variables:
   region calculations.
 
 \end{fdfentry}
-
-
-\begin{fdfentry}{TS!Elec.<>!Hartree.Extend}[length]<$0.\,\mathrm{Ang}$>
-  \fdfdepend{TS!Poisson:ramp-central,TS!Poisson:ramp-cell}
-
-  The potential profile will by default be terminated at the interface
-  between the electrode and the device. However, as one requires a
-  screening region between the electrode and the actual scattering
-  region one may argue that the electrode potential will extend
-  further into the device.
-  %
-  This flag increases the electrode potentials extend into the device
-  region.
-
-  It may help convergence but should not be so large it extends into
-  the scattering region.
-
-  \note This only affects $2$ electrode calculations when
-  \fdf{TS!Poisson:ramp-central} or \fdf{TS!Poisson:ramp-cell}.
-  
-\end{fdfentry}
-
 
 \subsubsection{Electrode description options}
 
