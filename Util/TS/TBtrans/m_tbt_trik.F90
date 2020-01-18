@@ -1675,6 +1675,9 @@ contains
     call end_save(iounits)
     call end_save(iounits_El)
     deallocate(iounits, iounits_El)
+    if ( IONode ) then
+      write(*,'(a)') 'Currents will only be calculated if compiled with -DNCDF -DNCDF_4 (NetCDF support)'
+    end if
 #endif
 
 #ifdef MPI
