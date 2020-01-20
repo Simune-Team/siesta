@@ -634,7 +634,7 @@ only added on super cell elements, \emph{not} unit cell elements.
   \emph{must} adhere to these file format notations and is required to
   be supplied in a NetCDF4 format
 
-  \begin{shellexample}
+  \begin{output}[fontsize=\footnotesize]
 netcdf file.dH {
 dimensions:
 	one = 1 ;
@@ -710,7 +710,7 @@ group: LEVEL-4 {
   		delta:unit = "Ry" ;
   } // group LEVEL-4
 }
-  \end{shellexample}
+  \end{output}
 
   This example file shows how the file should be formatted. Note that
   one may either define the Hamiltonian as \shell{delta} or as
@@ -743,7 +743,7 @@ set.
 
   The only difference between a $\dH$ and $\dSE$ file is that the
   terms in $\dSE$ does \emph{not} enter the calculation of the
-  bond-currents, whereas $\dH$ does.
+  bond-currents, whereas $\dH$ does, see Eq.~\eqref{eq:bond-current}.
 
 \end{fdfentry}
 
@@ -1047,6 +1047,7 @@ Population may also be calculated. These are only available if
   
   Orbital currents are implemented as:
   \begin{equation}
+    \label{eq:bond-current}
     J_{\alpha \beta}(E) = i [
     (\mathbf H_{\beta\alpha} - E\mathbf S_{\beta\alpha}) \mathbf A_{\alpha\beta}(E)
     - 
@@ -1430,7 +1431,7 @@ and transmission.
 
     This file has the same formatting as the \sysfile{TBT.CC} output
     with some optional inputs. Below is an example input file.
-    \begin{shellexample}
+    \begin{output}[fontsize=\footnotesize]
 # There are 2 different input options:
 # 1. Re[E] Im[E] W  (optional unit)
 # 2. Re[E] W        (optional unit) (imaginary part will be device Eta)
@@ -1442,7 +1443,7 @@ and transmission.
 -0.02 0.1    # E = -0.02 Ry (above unit continue) and weight 0.1 Ry
 -0.2  0.1 eV # E = -0.2 eV and weight 0.1 eV
 -0.2 1. 0.1  # E = -0.2 eV and 1. eV eta and weight 0.1 eV
-\end{shellexample}
+\end{output}
 
     If the file specified is \sysfile{TBT.CC} the same energy points
     will be used. Note that the resulting \sysfile{TBT.nc} file does
@@ -1967,7 +1968,7 @@ flag controls the partitioning for the device region.
   the pivoting scheme that uses the least amount of memory. However,
   one should also choose the method with the largest block-size being
   as small as possible. As an example:
-  \begin{shellexample}
+  \begin{output}[fontsize=\footnotesize]
 TBT.BTD.Pivot.Device atom+GPS
 ...
     BTD partitions (7): 
@@ -1982,12 +1983,24 @@ TBT.BTD.Pivot.Device atom+GGPS
     BTD matrix block size [max] / [average]: 2916 /   1989.667
     BTD matrix elements in % of full matrix:   48.62867 %
 
-  \end{shellexample}
+  \end{output}
   Although the GPS method uses the least amount of memory, the GGPS
   will likely perform better as the largest block in GPS is $4050$
   vs. $2916$ for the GGPS method. 
 
 \end{fdflogicalF}
+
+
+\begin{fdfentry}{TBT.BTD!Optimize}[string]<speed|memory>
+
+  When selecting the smallest blocks for the BTD matrix there are
+  certain criteria that may change the size of each block. For very
+  memory consuming jobs one may choose the \fdf*{memory}. 
+
+  \note often both methods provide \emph{exactly} the same BTD matrix
+  due to constraints on the matrix.
+  
+\end{fdfentry}
 
 
 \begin{fdfentry}{TBT.BTD!Pivot.Device}[string]<atom-\nonvalue{largest
@@ -2639,24 +2652,24 @@ obtained if compiled with the NetCDF4 library and via the use of
 This will calculate the transport using all these equations
 \begin{align}
   \label{eq:T:proj:1}
-  T_{\ket{H_1},\ket{H_2}} &=\Tr\big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\kb{H_2}\Gam_R\kb{H_2}\big]
+  T_{\ket{H_1},\ket{H_2}} &=\Tr\big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\kb{H_2}{H_2}\Gam_R\kb{H_2}{H_2}\big]
   \\
   \label{eq:T:proj:2}
-  T_{\ket{H_1},\ket{L_2}} &=\Tr\big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\kb{L_2}\Gam_R\kb{L_2}\big]
+  T_{\ket{H_1},\ket{L_2}} &=\Tr\big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\kb{L_2}{L_2}\Gam_R\kb{L_2}{L_2}\big]
   \\
   \label{eq:T:two:one}
   T_{\ket{H_1},\ket{H_2}+\ket{L_2}}
-  &=\Tr\Big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\big(\kb{H_2}+\kb{L_2}\big)\Gam_R\big(\kb{H_2}+\kb{L_2}\big)\Big]
+  &=\Tr\Big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\big(\kb{H_2}{H_2}+\kb{L_2}{L_2}\big)\Gam_R\big(\kb{H_2}{H_2}+\kb{L_2}{L_2}\big)\Big]
   \\
   \label{eq:T:single:one}
-  T_{\ket{H_1},R} &=\Tr\Big[\Gf\kb{H_1}\Gam_L\kb{H_1}\Gf^\dagger\Gam_R\Big]
+  T_{\ket{H_1},R} &=\Tr\Big[\Gf\kb{H_1}{H_1}\Gam_L\kb{H_1}{H_1}\Gf^\dagger\Gam_R\Big]
   \\
   \label{eq:T:proj:5}
-  T_{\ket{L_1},\ket{L_2}} &=\Tr\big[\Gf\kb{L_1}\Gam_L\kb{L_1}\Gf^\dagger\kb{L_2}\Gam_R\kb{L_2}\big]
+  T_{\ket{L_1},\ket{L_2}} &=\Tr\big[\Gf\kb{L_1}{L_1}\Gam_L\kb{L_1}{L_1}\Gf^\dagger\kb{L_2}{L_2}\Gam_R\kb{L_2}{L_2}\big]
 \end{align}
 \egroup %
-Notice that \ref{eq:T:two:one} is equivalent to \ref{eq:T:single:one}
-in our two state model.
+Notice that Eq.~\eqref{eq:T:two:one} is equivalent to
+\eqref{eq:T:single:one} in our two state model.
 
 Note that removing an explicit named projection allows easy creation
 of all available permutations of the projection states associated with

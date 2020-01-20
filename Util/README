@@ -99,6 +99,9 @@ TS: Contains several different utilities that are related to
     the NEGF code TranSiesta. (by N. Papior)
     See TS/README for details.
 
+Unfolding: Contains a band-unfolding utility
+           (by Sara G. Mayo and Jose M. Soler)
+
 VCA: Utilities to help in Virtual-Crystal calculations (by A. Garcia)
 
 Vibra: Package to compute phonon frequencies and modes (by P. Ordejon)

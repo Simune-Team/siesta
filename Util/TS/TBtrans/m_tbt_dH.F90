@@ -182,7 +182,7 @@ contains
     use dictionary
     use parallel, only : IONode
 
-    type(dict), intent(in) :: save_DATA
+    type(dictionary_t), intent(in) :: save_DATA
 
     logical :: has
 

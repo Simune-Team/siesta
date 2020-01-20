@@ -510,10 +510,6 @@ contains
 
     call timer('TS',2)
 
-#ifdef TS_DEV
-    call die('to not disturb the TSDE')
-#endif
-
   contains
 
     subroutine init_Electrode_HS(El)
@@ -622,7 +618,7 @@ contains
 
     use m_ts_tri_init, only : c_Tri
     use m_ts_tri_common, only : GFGGF_needed_worksize
-    use m_ts_tri_common, only : nnzs_tri, nnzs_tri_dp
+    use m_ts_tri_common, only : nnzs_tri_i8b
     use m_ts_method, only : no_Buf
 
     logical, intent(in) :: ts_Gamma ! transiesta Gamma
@@ -733,11 +729,11 @@ contains
                N_Elec, Elecs, padding, worksize)
        end if
 
-       zmem = nnzs_tri(c_Tri%n,c_Tri%r)
-       if ( zmem < int(nnzs_tri_dp(c_Tri%n, c_Tri%r)) ) then
-          call die('transiesta: Memory consumption is too large')
+       nel = nnzs_tri_i8b(c_Tri%n,c_Tri%r)
+       if ( nel > huge(1) ) then
+          call die('transiesta: Memory consumption is too large!')
        end if
-       zmem = (zmem * 2 + padding + worksize ) * 16._dp / 1024._dp ** 2
+       zmem = (nel * 2._dp + padding + worksize ) * 16._dp / 1024._dp ** 2
        if ( IONode ) &
             write(*,'(a,t55,f10.2,a)') &
             'transiesta: mem of tri-diagonal matrices: ', &

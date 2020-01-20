@@ -176,12 +176,12 @@ contains
        str_tmp = 'atom'
 
        ! Convert pivoting region to atomic 
-       call rgn_orb2atom(r_pvt,na_u,lasto,c_pvt)
+       call rgn_Orb2Atom(r_pvt,na_u,lasto,c_pvt)
        
        pvt_orb = str_contain(pvt_str,'atom') ! just to pop 'atom'
        pvt_orb = .false. ! it isn't orbital sorted
 
-       call rgn_orb2atom(r_Els,na_u,lasto,r_tmp)
+       call rgn_Orb2Atom(r_Els,na_u,lasto,r_tmp)
        call rgn_copy(r_tmp,r_Els)
        call rgn_delete(r_tmp)
        call SpOrb_to_SpAtom(dit,sp,na_u,lasto,tmp_Sp)
@@ -375,7 +375,7 @@ contains
            if ( pvt_orb ) then
              call rgn_assoc(r_tmp, Elecs(i)%o_inD)
            else
-             call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
+             call rgn_Orb2Atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
            end if
 
            do j = 1, r_tmp%n
@@ -405,7 +405,7 @@ contains
          if ( pvt_orb ) then
            call rgn_copy(Elecs(1)%o_inD, r_Els)
          else
-           call rgn_orb2atom(Elecs(1)%o_inD,na_u,lasto,r_Els)
+           call rgn_Orb2Atom(Elecs(1)%o_inD,na_u,lasto,r_Els)
          end if
 
          do j = 1, r_Els%n
@@ -464,7 +464,7 @@ contains
              if ( pvt_orb ) then
                 call rgn_assoc(r_tmp, Elecs(i)%o_inD)
              else
-                call rgn_orb2atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
+                call rgn_Orb2Atom(Elecs(i)%o_inD,na_u,lasto,r_tmp)
              end if
 
              if ( .not. rgn_push(r_pvt, r_tmp) ) then
@@ -515,7 +515,7 @@ contains
        end if
        
        ! Find the middle of the electrode atoms (in the device region)!
-       call rgn_orb2atom(Elecs(fan1)%o_inD,na_u,lasto,r_tmp)
+       call rgn_Orb2Atom(Elecs(fan1)%o_inD,na_u,lasto,r_tmp)
        llsB = 0._dp
        do i = 1 , r_tmp%n
           llsB = llsB + xa(:,r_tmp%r(i))
@@ -627,7 +627,7 @@ contains
           p_cr = p_cr / VNORM(p_cr)
 
           ! do end-fan electrode
-          call rgn_orb2atom(Elecs(fan2)%o_inD,na_u,lasto,r_tmp)
+          call rgn_Orb2Atom(Elecs(fan2)%o_inD,na_u,lasto,r_tmp)
           llsB = 0._dp
           do i = 1 , r_tmp%n
              llsB = llsB + xa(:,r_tmp%r(i))
@@ -790,7 +790,7 @@ contains
           ! We want to add the 'fan' atoms
           
           if ( pvt_orb .and. .not. orb_1 ) then
-            call rgn_orb2atom(r_tmp,na_u,lasto,r_Els)
+            call rgn_Orb2Atom(r_tmp,na_u,lasto,r_Els)
           else
             call rgn_assoc(r_Els, r_tmp)
           end if
@@ -861,7 +861,7 @@ contains
              call rgn_append(r_pvt, r_tmp, r_tmp2)
              call rgn_complement(r_tmp2, c_pvt, r_Els)
              if ( pvt_orb .and. .not. orb_1 ) &
-                  call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
+                  call rgn_Orb2Atom(r_Els,na_u,lasto,r_Els)
 
              ! Pre-allocate maximum size of the added atoms
              call rgn_init(r_tmp2, r_Els%n)
@@ -948,7 +948,7 @@ contains
              call rgn_append(r_pvt, r_tmp, r_tmp2)
              call rgn_complement(r_tmp2,c_pvt,r_Els)
              if ( pvt_orb .and. .not. orb_1 ) &
-                  call rgn_orb2atom(r_Els,na_u,lasto,r_Els)
+                  call rgn_Orb2Atom(r_Els,na_u,lasto,r_Els)
 
              ! Pre-allocate maximum size of the added atoms
              call rgn_init(r_tmp2, r_Els%n)

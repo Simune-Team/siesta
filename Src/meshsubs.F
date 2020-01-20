@@ -42,6 +42,7 @@
       use siesta_cml
       use cellsubs,      only : reclat  ! Finds reciprocal unit cell
       use cellsubs,      only : volcel  ! Finds unit cell volume
+      use fdf,           only : fdf_defined
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -154,6 +155,8 @@ C     Find volume of unit cell and of mesh cell
       dvol = volume / ntp
 
 C     Output current mesh dimensions and cut-off
+      if (fdf_defined('MeshSizes') .and. .not.fdf_defined('MeshCutoff'))
+     &  G2max = 0._dp
       if (Node.eq.0) then
         write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
      &        ntm(1),' x',ntm(2),' x',ntm(3),' =', ntp
@@ -269,6 +272,7 @@ C     Create extended mesh arrays for the first data distribution
       ! sampling size nsm.
 
       use precision,     only : dp
+      use parallel,      only : IOnode
       use cellsubs,      only : reclat  ! Finds reciprocal unit cell
       use m_chkgmx,      only : chkgmx  ! Checks planewave cutoff of a mesh
       use gpfa_fft,      only : nfft    ! Finds allowed value for 1-D FFT
@@ -365,10 +369,10 @@ C     Create extended mesh arrays for the first data distribution
 
 !     Issue a warning if the mesh sizes are smaller than
 !     the requested mesh cutoff
-      if ( RealCutoff < G2max ) then
-        call message("WARNING","Read mesh sizes give a smaller"
-     $      // " cutoff than requested")
-      end if
+        if (RealCutoff<G2max .and. fdf_defined('MeshCutoff')) then
+           call message("WARNING","Read mesh sizes give a smaller"
+     &                   // " cutoff than requested")
+        endif
 
 !     Check whether the resulting mesh sizes are multiples
 !     of nsm.

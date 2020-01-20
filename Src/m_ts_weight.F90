@@ -869,41 +869,28 @@ contains
 
 
   ! Calculate the theta values
-  pure subroutine calc_theta(N_mu,N_id,ID_mu,w_ID,theta)
-    integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
-    real(dp), intent(in)  :: w_ID(N_id)
-    real(dp), intent(out) :: theta(N_mu)
-    integer :: ID
-
-    ! TODO check that this is correct for several electrodes
-    theta(:) = 0._dp
-    do ID = 1 , N_id
-      theta(ID_mu(ID)) = theta(ID_mu(ID)) + w_ID(ID)
-    end do
-
-  end subroutine calc_theta
-
-  ! Calculate the theta values
   pure subroutine calc_weight(N_mu,N_id,ID_mu,w_ID,w)
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: w_ID(N_id)
     real(dp), intent(out) :: w(N_mu)
     real(dp) :: theta(N_mu), tmp
-    integer :: i
+    integer :: i, j
 
-    call calc_theta(N_mu,N_id,ID_mu,w_ID,theta)
-
-    w(:) = product(theta)
+    call calc_neq(N_mu,N_id,ID_mu,w_ID,theta)
+    ! We need to do it this complicated since
+    ! one of theta's may be 0.
+    tmp = 0._dp
     do i = 1 , N_mu
-      if ( theta(i) > 0._dp ) then
-        w(i) = w(i) / theta(i)
-      else
-        w(i) = 0._dp
-      end if
+      w(i) = 1._dp
+      do j = 1, N_mu
+        if ( i /= j ) then
+          w(i) = w(i) * theta(j)
+        end if
+      end do
+      tmp = tmp + w(i)
     end do
 
     ! The denominator
-    tmp = sum(w)
     if ( tmp == 0._dp ) then
       w = 1._dp / real(N_mu,dp)
     else
@@ -919,37 +906,38 @@ contains
     real(dp), intent(in)  :: neq_ID(N_id)
     real(dp), intent(out) :: neq(N_mu)
     real(dp), intent(out) :: w(N_mu)
-    integer :: i
+    integer :: i, j
     real(dp) :: tmp
 
     ! TODO check that this is correct for several electrodes
-    call calc_theta(N_mu,N_id,ID_mu,neq_ID**2,neq)
-    w(:) = product(neq)
+    call calc_neq(N_mu,N_id,ID_mu,neq_ID**2,neq)
+    tmp = 0._dp
     do i = 1 , N_mu
-      if ( neq(i) > 0._dp ) then
-        w(i) = w(i) / neq(i)
-      else
-        w(i) = 0._dp
-      end if
+      ! Calculate weight for chemical potential i
+      w(i) = 1._dp
+      do j = 1, N_mu
+        if ( i /= j ) then
+          w(i) = w(i) * neq(j)
+        end if
+      end do
+      tmp = tmp + w(i)
     end do
 
     ! The denominator
-    tmp = sum(w)
     if ( tmp == 0._dp ) then
       w = 1._dp / real(N_mu,dp)
     else
       w = w / tmp
     end if
 
-    neq(:) = 0._dp
-    do i = 1 , N_id
-      neq(ID_mu(i)) = neq(ID_mu(i)) + neq_ID(i)
-    end do
+    call calc_neq(N_mu,N_id,ID_mu,neq_ID,neq)
 
   end subroutine calc_neq_weight
 
   ! Calculate both the non-equilibrium contribution
   ! and the weight associated with those points
+  ! Note that the non-equilibrium contribution calculation
+  ! is the same as the theta calculation.
   pure subroutine calc_neq(N_mu,N_id,ID_mu,neq_ID,neq)
     integer,  intent(in)  :: N_mu, N_id, ID_mu(N_id)
     real(dp), intent(in)  :: neq_ID(N_id)

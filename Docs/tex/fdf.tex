@@ -36,18 +36,27 @@
 % A fdf-key must be formatted like this:
 %   Label!SubLabel:argument
 % and then the index of the key will be
-%   Label!SubLabel!argument
-\NewDocumentCommand\fdf{ s m }
+%   Label!SubLabel!option
+% Or in some cases if Label!SubLabel!option is not defined
+% one may add an optional supplement to the reference that will be
+% added.
+\NewDocumentCommand\fdf{ s m o }
 {%
     \bgroup%
+    % We need to catch 2 different values:
+    % 1. The indexed value (removed all {:*} occurrences): \@tmp
+    % 2. The string to print, this we will store in: \@@tmp
     \StrSubstitute{#2}{!}{.}[\@tmp]%
-    % Handle fdf-flags with arguments (Flag:argument)
     \expandafter\StrSubstitute\expandafter{\@tmp}{:}{ }[\@@tmp]%
+    \IfValueT{#3}{%
+        \expandafter\def\expandafter\@@tmp\expandafter{\@@tmp#3}%
+    }%
     \IfBooleanTF{#1}{%
-        \expandafter\fontfdf\expandafter{\@@tmp}%
+        % There is a star! So no link!
+        \fontfdf{\@@tmp}%
     }{%
+        % We will write a link
         \expandafter\cleanedhyperlink\expandafter{\@tmp}{\fontfdf{\@@tmp}}%
-        % Create index (catch arguments)
         \StrSubstitute{#2}{:}{!}[\@tmp]%
         \sindex[sfdf]{\@tmp}%
     }%
@@ -99,6 +108,24 @@
     \scriptsize%
     \hfill%
     \emph{depends~on:}~%
+    % This construct maps each entry onto the 
+    % fdf command
+    % First create a sequence from a list
+    \seq_set_from_clist:Nn \l_tmpa_seq { #1 }%
+    % Map on each entry in the sequence
+    \seq_set_map:NNn \l_tmpb_seq \l_tmpa_seq { \exp_not:n { \fdf{##1} } }%
+    \seq_use:Nn \l_tmpb_seq { ,~ }%
+    \setlength{\parskip}{2pt}%
+    \par%
+    \egroup%
+}
+
+\NewDocumentCommand{\fdfreplace}{ m }
+{%
+    \bgroup%
+    \scriptsize%
+    \hfill%
+    \emph{replaces:}~%
     % This construct maps each entry onto the 
     % fdf command
     % First create a sequence from a list

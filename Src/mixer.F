@@ -50,15 +50,15 @@
       call timer( 'MIXER', 1 )
 
       if ( mixH ) then
-         ! Mix Hamiltonian
-         Xin => Hold
-         Xout => H
-         nspin_mix = spin%H
+        ! Mix Hamiltonian
+        Xin => Hold
+        Xout => H
+        nspin_mix = spin%H
       else
-         ! Mix density matrix
-         Xin => Dold
-         Xout => Dscf
-         nspin_mix = spin%DM
+        ! Mix density matrix
+        Xin => Dold
+        Xout => Dscf
+        nspin_mix = spin%DM
       end if
 
 
@@ -70,25 +70,25 @@
       ! prepare input...
       select case ( mix_spin )
       case ( MIX_SPIN_ALL , MIX_SPIN_SPINOR )
-         ! Xin and Xout are unchanged...
+        ! Xin and Xout are unchanged...
       case ( MIX_SPIN_SUM , MIX_SPIN_SUM_DIFF )
 
-         ! transfer spin density to
-         ! spin-sum and spin-difference
+        ! transfer spin density to
+        ! spin-sum and spin-difference
 !$OMP do
-         do i = 1 , size(Xin,1)
-            dtmp = (Xin(i,1) + Xin(i,2)) * 0.5_dp
-            Xin(i,2) = (Xin(i,1) - Xin(i,2)) * 0.5_dp
-            Xin(i,1) = dtmp
-         end do
+        do i = 1 , size(Xin,1)
+          dtmp = (Xin(i,1) + Xin(i,2)) * 0.5_dp
+          Xin(i,2) = (Xin(i,1) - Xin(i,2)) * 0.5_dp
+          Xin(i,1) = dtmp
+        end do
 !$OMP end do nowait
 
 !$OMP do
-         do i = 1 , size(Xout,1)
-            dtmp = (Xout(i,1) + Xout(i,2)) * 0.5_dp
-            Xout(i,2) = (Xout(i,1) - Xout(i,2)) * 0.5_dp
-            Xout(i,1) = dtmp
-         end do
+        do i = 1 , size(Xout,1)
+          dtmp = (Xout(i,1) + Xout(i,2)) * 0.5_dp
+          Xout(i,2) = (Xout(i,1) - Xout(i,2)) * 0.5_dp
+          Xout(i,1) = dtmp
+        end do
 !$OMP end do
 
       end select
@@ -106,16 +106,13 @@
       ! Upon exit Xout contains the mixed quantity
       select case ( mix_spin )
       case ( MIX_SPIN_ALL )
-         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout)
-      case ( MIX_SPIN_SPINOR )
-         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
-     &        nsub=2)
+        call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout)
+      case ( MIX_SPIN_SPINOR, MIX_SPIN_SUM_DIFF )
+        call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
+     &      nsub=2)
       case ( MIX_SPIN_SUM )
-         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
-     &        nsub=1)
-      case ( MIX_SPIN_SUM_DIFF )
-         call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
-     &        nsub=2)
+        call mixing( scf_mix, maxnh, nspin_mix, Xin, F, Xout,
+     &      nsub=1)
       end select
 
 !$OMP parallel default(shared), private(dtmp,i,is)
@@ -123,26 +120,25 @@
       ! correct output...
       select case ( mix_spin )
       case ( MIX_SPIN_ALL , MIX_SPIN_SPINOR )
-         ! Xin and Xout are unchanged...
+        ! Xin and Xout are unchanged...
       case ( MIX_SPIN_SUM , MIX_SPIN_SUM_DIFF )
 
-         ! transfer spin-sum and difference to
-         ! spin-up and spin-down
-
+        ! transfer spin-sum and difference to
+        ! spin-up and spin-down
 !$OMP do
-         do i = 1 , size(Xin,1)
-            dtmp = Xin(i,1) + Xin(i,2)
-            Xin(i,2) = Xin(i,1) - Xin(i,2)
-            Xin(i,1) = dtmp
-         end do
+        do i = 1 , size(Xin,1)
+          dtmp = Xin(i,1) + Xin(i,2)
+          Xin(i,2) = Xin(i,1) - Xin(i,2)
+          Xin(i,1) = dtmp
+        end do
 !$OMP end do nowait
 
 !$OMP do
-         do i = 1 , size(Xout,1)
-            dtmp = Xout(i,1) + Xout(i,2)
-            Xout(i,2) = Xout(i,1) - Xout(i,2)
-            Xout(i,1) = dtmp
-         end do
+        do i = 1 , size(Xout,1)
+          dtmp = Xout(i,1) + Xout(i,2)
+          Xout(i,2) = Xout(i,1) - Xout(i,2)
+          Xout(i,1) = dtmp
+        end do
 !$OMP end do
 
       end select

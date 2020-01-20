@@ -23,7 +23,6 @@ subroutine tbt_init()
   use files, only   : slabel
   use m_timestamp, only : timestamp
   use m_wallclock, only : wallclock
-  use m_spin
 #ifdef NCDF_4
   use netcdf_ncdf, only : ncdf_IOnode
 #endif
@@ -158,8 +157,8 @@ subroutine tbt_init()
 !$    write(*,'(a,i0)') '* OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    if ( itmp == 1 ) then
 !$     ! this is the default scheduling, probably the user
-!$     ! have not set the value, predefine it to 16
-!$     itmp = 16
+!$     ! have not set the value, predefine it to 32
+!$     itmp = 32
 !$     write(*,'(a,i0)')'** OpenMP runtime schedule DYNAMIC, chunks ',itmp
 !$    end if
 !$    case ( OMP_SCHED_GUIDED ) 
@@ -206,10 +205,6 @@ subroutine tbt_init()
   call ncdf_IOnode(IONode)
 #endif
 
-  ! initialize spin in the system
-  ! We read in information regarding spin
-  call init_spin()
-
   ! Initialization now complete. Flush stdout.
   if ( IOnode ) call pxfflush( 6 )
 
@@ -218,7 +213,7 @@ subroutine tbt_init()
   ! do interpolation due to bias not matching any TSHS files
   ! passed to the program.
   ! This will also read in the required information about the system
-  call tbt_init_HSfile( nspin )
+  call tbt_init_HSfile( )
 
   ! Read in generic options
   call read_tbt_generic(TSHS%na_u, TSHS%lasto)

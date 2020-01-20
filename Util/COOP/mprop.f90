@@ -141,7 +141,7 @@ program mprop
   allocate (wk(nkp), pk(3,nkp))
 
   read(wfs_u) wfs_spin_flag   !  1, 2, or 4 
-  non_coll = (wfs_spin_flag == 4)
+  non_coll = (wfs_spin_flag >= 4)
   read(wfs_u) nao
   read(wfs_u)        !! Symbols, etc
   if (debug) print *, "WFSX read: nkp, nspin_flag, nnao: ", nkp, wfs_spin_flag, nao

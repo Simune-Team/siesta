@@ -310,9 +310,9 @@ program ts2ts
        c_TBTmin,c_TBTmax,cD=c_TBTdE,prefix='TBT')
 
   call nl
-  write(*,'(a)') '# It is adviced to define a device region of'
+  write(*,'(a)') '# It is advised to define a device region of'
   write(*,'(a)') '# particular interest'
-  write(0,'(a)') '# It is adviced to define a device region of'
+  write(0,'(a)') '# It is advised to define a device region of'
   write(0,'(a)') '# particular interest'
 
 contains

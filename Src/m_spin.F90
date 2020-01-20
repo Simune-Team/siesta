@@ -108,7 +108,7 @@ module m_spin
 
 contains
   
-  subroutine init_spin()
+  subroutine init_spin(default_nspin)
     
     use sys, only: die
     use fdf, only : fdf_get, leqi, fdf_deprecated
@@ -117,6 +117,12 @@ contains
     use m_cite, only: add_citation
     use files, only: slabel
     use parallel, only: IONode
+
+    !< Externally option for a specific spin configuration for the Hamiltonian.
+    !! Upon entry this value is used to setup the default settings, but
+    !! fdf-flags still has precedence.
+    !! Upon exit, it contains the requested spin-number for the Hamiltonian
+    integer, intent(inout), optional :: default_nspin
 
     character(len=32) :: opt, opt_old
 
@@ -144,9 +150,21 @@ contains
     spin%SO_onsite  = .false.
 
     ! Read in old flags (discouraged)
-    spin%Col  = fdf_get('SpinPolarized',.false.)
-    spin%NCol = fdf_get('NonCollinearSpin',.false.)
-    spin%SO   = fdf_get('SpinOrbit',.false.)
+    if ( present(default_nspin) ) then
+      select case ( default_nspin )
+      case ( 1 )
+        ! default to non-polarized (the default)
+      case ( 2 )
+        spin%Col = .true.
+      case ( 4 )
+        spin%NCol = .true.
+      case ( 8 )
+        spin%SO = .true.
+      end select
+    end if
+    spin%Col  = fdf_get('SpinPolarized', spin%Col)
+    spin%NCol = fdf_get('NonCollinearSpin', spin%NCol)
+    spin%SO   = fdf_get('SpinOrbit', spin%SO)
 
     ! Announce the deprecated flags (if used)...
     call fdf_deprecated('SpinPolarized','Spin')
@@ -322,6 +340,10 @@ contains
     end if
 
 
+    if ( present(default_nspin) ) then
+      default_nspin = spin%H
+    end if
+
   contains
 
     subroutine int_pointer(from, to)
@@ -356,19 +378,22 @@ end subroutine init_spin
   ! Print out spin-configuration options
   subroutine print_spin_options( )
     use parallel, only: IONode
+    use m_cite, only : add_citation
 
     character(len=32) :: opt
 
     if ( .not. IONode ) return
 
     if ( spin%SO ) then
-       if ( spin%SO_offsite ) then
-          opt = 'spin-orbit+offsite'
-       else if (spin%SO_onsite) then
-          opt = 'spin-orbit+onsite'
-       else
-          call die("Inconsistent SO option")
-       end if
+      if ( spin%SO_offsite ) then
+        opt = 'spin-orbit+offsite'
+        call add_citation("10.1088/0953-8984/24/8/086005")
+      else if (spin%SO_onsite) then
+        opt = 'spin-orbit+onsite'
+        call add_citation("10.1088/0953-8984/19/19/489001")
+      else
+        call die("Inconsistent SO option")
+      end if
     else if ( spin%NCol ) then
        opt = 'non-collinear'
     else if ( spin%Col ) then
@@ -385,14 +410,10 @@ end subroutine init_spin
        write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
     end if
 
-    if ( spin%SO ) then
-       write(*,'(a)') repeat('#',60)
-       write(*,'(a,t16,a,t60,a)') '#','Spin-orbit coupling is in beta','#'
-       write(*,'(a,t13,a,t60,a)') '#','Several options may not be compatible','#'
-       if ( spin%SO_onsite ) then
-          call message("WARNING","Using a local approximation to spin-orbit coupling.")
-       end if
-       write(*,'(a)') repeat('#',60)
+    if ( spin%SO .and. spin%SO_onsite ) then
+      write(*,'(a)') repeat('#',60)
+      call message("WARNING","Using a local approximation for spin-orbit coupling.")
+      write(*,'(a)') repeat('#',60)
     end if
 
   end subroutine print_spin_options

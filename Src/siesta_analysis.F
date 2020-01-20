@@ -56,6 +56,8 @@
       use m_iodm_old,        only: read_spmatrix
       use m_siesta2wannier90, only: siesta2wannier90
 
+      use m_ts_global_vars, only: TSrun
+      
       use m_mpi_utils, only: barrier
 #ifdef SIESTA__FLOOK
       use flook_siesta, only : slua_call, LUA_ANALYSIS
@@ -417,6 +419,9 @@
         call siesta_write_energies( iscf=0, dDmax=0._dp, dHmax=0._dp)
         ! final == .true. which makes the step counter irrelevant
         call siesta_write_forces(-1)
+        if ( TSrun ) then
+          call transiesta_write_forces()
+        end if
         call siesta_write_stress_pressure()
         call write_basis_enthalpy(FreeE,FreeEHarris)
       endif

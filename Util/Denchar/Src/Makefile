@@ -283,6 +283,9 @@ class_zdata1d.o: class_Data1D.o
 class_zdata2d.o: class_Data2D.o
 class_zspdata1d.o: class_SpData1D.o
 class_zspdata2d.o: class_SpData2D.o
+gpfa_core_dp.o: m_fft_gpfa.o
+gpfa_core_sp.o: m_fft_gpfa.o
+gpfa_fft.o: m_fft_gpfa.o
 listsc_module.o: listsc.o
 m_bessph.o: bessph.o
 m_object_debug.o: object_debug.o

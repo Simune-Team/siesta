@@ -102,7 +102,7 @@ program spin_texture
   allocate (wk(nkp), pk(3,nkp))
 
   read(wfs_u) nsp
-  non_coll = (nsp == 4)
+  non_coll = (nsp >= 4)
   if (.not. (non_coll)) then
      STOP "Spin texture not available for collinear-spin"
   endif

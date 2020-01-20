@@ -106,7 +106,7 @@
       logical :: not_using_auxcell, dummy_logical
 #ifdef CDF
 #ifdef NCDF_4
-      type(dict) :: dic_save
+      type(dictionary_t) :: dic_save
 #endif
 #endif
 
