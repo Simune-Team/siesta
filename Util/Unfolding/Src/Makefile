@@ -13,6 +13,8 @@
 
 .PHONY: default what dep version clean-tbt clean
 
+override WITH_NCDF=
+
 default: what unfold 
 
 VPATH:=$(shell pwd)/../../../Src
@@ -90,17 +92,7 @@ SIESTA_OBJS += init_output.o
 
 # As the classes are based on inputs we force the dependency to
 # alloc
-class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
-
-# Some of NPA modules
-#SIESTA_OBJS += m_char.o cross.o m_os.o
-#SIESTA_OBJS += intrinsic_missing.o geom_helper.o m_io_s.o m_sparse.o
-#SIESTA_OBJS += m_integrate.o m_interpolate.o m_mat_invert.o
-#SIESTA_OBJS += m_iterator.o fdf_extra.o
-#SIESTA_OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
-#SIESTA_OBJS += m_region.o m_sparsity_handling.o m_pivot_array.o
-#SIESTA_OBJS += m_ncdf_io.o
-
+class_Sparsity.o class_Data1D.o class_Data2D.o: alloc.o
 
 DEP_OBJS = $(SIESTA_OBJS) $(TS_OBJS) $(SYSOBJ) $(EXTRA)
 
@@ -141,7 +133,6 @@ $(FDF): $(MPI_INTERFACE)
 	"INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS:$(IPO_FLAG)=)" module)
 
 #######################
-#  TS-TBT libs:
 #
 # Linear algebra routines
 #
