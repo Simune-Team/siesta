@@ -93,18 +93,14 @@ SIESTA_OBJS += init_output.o
 class_Sparsity.o class_Data1D.o class_Data2D.o class_TriMat.o: alloc.o
 
 # Some of NPA modules
-SIESTA_OBJS += m_char.o cross.o m_os.o
-SIESTA_OBJS += intrinsic_missing.o geom_helper.o m_io_s.o m_sparse.o
-#TEST SIESTA_OBJS += m_handle_sparse.o m_iodm.o
-SIESTA_OBJS += m_integrate.o m_interpolate.o m_mat_invert.o
-SIESTA_OBJS += m_iterator.o fdf_extra.o
-SIESTA_OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
-SIESTA_OBJS += m_region.o m_sparsity_handling.o m_pivot_array.o
-SIESTA_OBJS += m_ncdf_io.o
+#SIESTA_OBJS += m_char.o cross.o m_os.o
+#SIESTA_OBJS += intrinsic_missing.o geom_helper.o m_io_s.o m_sparse.o
+#SIESTA_OBJS += m_integrate.o m_interpolate.o m_mat_invert.o
+#SIESTA_OBJS += m_iterator.o fdf_extra.o
+#SIESTA_OBJS += create_Sparsity_SC.o create_Sparsity_Union.o
+#SIESTA_OBJS += m_region.o m_sparsity_handling.o m_pivot_array.o
+#SIESTA_OBJS += m_ncdf_io.o
 
-# Geometry modules
-SIESTA_OBJS += m_geom_aux.o m_geom_objects.o
-SIESTA_OBJS += m_geom_box.o m_geom_coord.o m_geom_square.o m_geom_plane.o
 
 DEP_OBJS = $(SIESTA_OBJS) $(TS_OBJS) $(SYSOBJ) $(EXTRA)
 
@@ -257,29 +253,19 @@ class_SpData2D.o: class_Data2D.o class_Data2D.o class_Data2D.o
 class_SpData3D.o: class_OrbitalDistribution.o class_Sparsity.o
 class_Sparsity.o: alloc.o
 class_Sparsity.o: alloc.o
-class_TriMat.o: alloc.o intrinsic_missing.o
+class_TriMat.o: alloc.o
 coor.o: alloc.o local_sys.o parallel.o precision.o siesta_geom.o units.o
 coor.o: zmatrix.o
 coor.o: alloc.o local_sys.o parallel.o precision.o siesta_geom.o units.o
 coor.o: zmatrix.o
-create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
-create_Sparsity_SC.o: class_Sparsity.o geom_helper.o intrinsic_missing.o
-create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
-create_Sparsity_Union.o: m_region.o parallel.o precision.o
-create_Sparsity_Union.o: class_OrbitalDistribution.o class_Sparsity.o
-create_Sparsity_Union.o: m_region.o parallel.o precision.o
 debugmpi.o: parallel.o
 debugmpi.o: parallel.o
 diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
 diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
 diag_option.o: parallel.o precision.o
 diag_option.o: parallel.o precision.o
-fdf_extra.o: m_region.o
-fdf_extra.o: m_region.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
-geom_helper.o: intrinsic_missing.o
-geom_helper.o: intrinsic_missing.o
 get_kpoints_scale.o: parallel.o siesta_geom.o
 get_kpoints_scale.o: parallel.o siesta_geom.o
 idiag.o: local_sys.o parallel.o
@@ -300,52 +286,8 @@ m_cell.o: precision.o siesta_geom.o units.o
 m_cell.o: precision.o siesta_geom.o units.o
 m_filter.o: bessph.o local_sys.o precision.o radfft.o
 m_filter.o: bessph.o local_sys.o precision.o radfft.o
-m_geom_box.o: intrinsic_missing.o m_geom_aux.o
-m_geom_box.o: intrinsic_missing.o m_geom_aux.o
-m_geom_coord.o: intrinsic_missing.o m_geom_aux.o parallel.o
-m_geom_coord.o: intrinsic_missing.o m_geom_aux.o parallel.o
-m_geom_objects.o: m_geom_aux.o m_geom_box.o m_geom_coord.o m_geom_plane.o
-m_geom_objects.o: m_geom_square.o
-m_geom_objects.o: m_geom_aux.o m_geom_box.o m_geom_coord.o m_geom_plane.o
-m_geom_objects.o: m_geom_square.o
-m_geom_plane.o: intrinsic_missing.o m_geom_aux.o
-m_geom_plane.o: intrinsic_missing.o m_geom_aux.o
-m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
-m_geom_square.o: intrinsic_missing.o m_geom_aux.o m_geom_plane.o
-m_integrate.o: precision.o
-m_integrate.o: precision.o
-m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-m_io_s.o: class_Sparsity.o parallel.o precision.o
-m_io_s.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-m_io_s.o: class_Sparsity.o parallel.o precision.o
-m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
-m_mat_invert.o: intrinsic_missing.o m_pivot_array.o precision.o
 m_mpi_utils.o: precision.o
 m_mpi_utils.o: precision.o
-m_ncdf_io.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
-m_ncdf_io.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
-m_ncdf_io.o: class_Sparsity.o m_io_s.o parallel.o precision.o
-m_region.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
-m_region.o: intrinsic_missing.o
-m_region.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
-m_region.o: intrinsic_missing.o
-m_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData2D.o
-m_sparse.o: class_Sparsity.o geom_helper.o intrinsic_missing.o parallel.o
-m_sparse.o: precision.o
-m_sparse.o: alloc.o class_OrbitalDistribution.o class_SpData2D.o
-m_sparse.o: class_Sparsity.o geom_helper.o intrinsic_missing.o parallel.o
-m_sparse.o: precision.o
-m_sparsity_handling.o: class_Data1D.o class_Data2D.o
-m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
-m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
-m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
-m_sparsity_handling.o: precision.o
-m_sparsity_handling.o: class_Data1D.o class_Data2D.o
-m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
-m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
-m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
-m_sparsity_handling.o: precision.o
 m_spin.o: alloc.o files.o local_sys.o m_cite.o parallel.o precision.o units.o
 m_spin.o: alloc.o files.o local_sys.o m_cite.o parallel.o precision.o units.o
 m_timer.o: local_sys.o m_io.o m_walltime.o moreParallelSubs.o parallel.o
