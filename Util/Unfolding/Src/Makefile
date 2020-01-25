@@ -14,6 +14,7 @@
 .PHONY: default what dep version clean-tbt clean
 
 override WITH_NCDF=
+override WITH_FLOOK=
 
 default: what unfold 
 

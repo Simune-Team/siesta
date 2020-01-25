@@ -16,15 +16,18 @@ VPATH:=$(shell pwd)/../../Src
 #
 default: get_chem_labels
 #
-ARCH_MAKE=../../$(OBJDIR)/arch.make
+override WITH_MPI=
+override WITH_NCDF=
+override WITH_FLOOK=
+
+MAIN_OBJDIR:=$(shell cd -P -- ../../\$(OBJDIR) && pwd -P)
+ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
 include $(ARCH_MAKE)
 #
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 #
-DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
-FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 #
 # Uncomment the following line for debugging support
@@ -64,7 +67,7 @@ get_chem_labels: $(FDF)  $(OBJS_GET_CHEM_LABELS)
 #
 clean:
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f get_chem_labels ioncat *.o  *.a
+	rm -f get_chem_labels  *.o  *.a
 	rm -f *.mod .tmp_fdflog
 	rm -rf fdf
 
