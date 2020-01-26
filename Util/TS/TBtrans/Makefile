@@ -201,7 +201,10 @@ $(FDICT):
 	(cd fdict ; \
 	echo "TOP_DIR=$(VPATH)/fdict" > Makefile ; echo "include $(VPATH)/fdict/Makefile" >> Makefile ; \
 	echo "FC=$(FC_SERIAL)" > setup.make ; \
+	echo "AR=$(AR)" >> setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
 	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
 	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
 	@cp -p fdict/*.mod ./
 	cp fdict/$(FDICT) ./
@@ -216,9 +219,12 @@ $(NCDF): $(FDICT)
 	echo "settings.bash: FORCE" >> Makefile ; \
 	printf '%s\n' "	-cp ../fdict/settings.bash ." >> Makefile ; \
 	echo "FC=$(FC)" > setup.make ; \
+	echo "AR=$(AR)" >> setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
 	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
 	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
-	echo "INCLUDES = $(INCFLAGS) -I../" >> setup.make ; \
+	echo "INCLUDES = $(INCFLAGS) $(NETCDF_INCFLAGS) -I../" >> setup.make ; \
 	echo "LIBS = $(LIBS) -lfdict" >> setup.make ; \
 	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
 	@cp -p ncdf/*.mod ./
@@ -253,7 +259,7 @@ libsiestaLAPACK.a: $(VPATH)/Libs/lapack.F
 # This will setup the correct compilation sequence as
 # FDF => MPI
 $(DEP_OBJS): $(FDF) $(COMP_LIBS) $(FDICT)
-#####$(TBTOBJS): $(DEP_OBJS)
+#$(TBTOBJS): $(DEP_OBJS)
 
 .PHONY: check-tbtrans
 check-tbtrans:
