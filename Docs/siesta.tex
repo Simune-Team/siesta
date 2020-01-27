@@ -11491,11 +11491,32 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
 
 \end{fdflogicalT}
 
-\begin{fdfentry}{TS!ChargeCorrection}[string]<none|buffer|fermi>
+\begin{fdfentry}{TS!dQ}[string]<none|buffer|fermi>
 
   Any excess/deficiency of charge can be re-adjusted after each
   \tsiesta\ cycle to reduce charge fluctuations in the cell.
-  
+
+  The non-neutral charge in \tsiesta\ cycles is an expression of one
+  of the following things:
+  \begin{enumerate}
+    \item An incorrect screening towards the electrodes. To check
+    this, simply add more electrode layers towards the device at each
+    electrode and see how the charge evolves.
+
+    \item An incorrect reference energy level. In \tsiesta\ the Fermi
+    level is calculated from the \siesta\ SCF. However, the \siesta\
+    Fermi level corresponds to a periodic calculation and \emph{not}
+    an open system calculation such as NEGF.
+
+    \item A combination of the above
+  \end{enumerate}
+  One of the best ways to check whether one needs more electrode
+  layers is to use \fdf{TS!Elec.<>!DM-init:bulk}.
+
+  \note only use charge corrections for $0\,\mathrm{V}$ calculations
+  as 
+
+
   \begin{fdfoptions}
 
     \option[none]%
@@ -11506,28 +11527,29 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
     atoms are required to exist)
 
     \option[fermi] %
-    Correct the filling by calculating a new Fermi-level (reference energy). \\
+    Correct the charge filling by calculating a new reference energy
+    level (referred to as the Fermi level). \\
     We approximate the contribution to be constant around the Fermi
     level and find
     \begin{equation}
       \label{eq:fermi-shift}
       \mathrm{d}E_F = \frac{Q'-Q}{Q|_{E_F}},
     \end{equation}
-    where $Q'$ is the charge from a converged \tsiesta\ calculation
+    where $Q'$ is the charge from a \tsiesta\ SCF step
     and $Q|_{E_F}$ is the equilibrium charge at the current Fermi
     level, $Q$ is the supposed charge to reside in the
     calculation. Fermi correction utilizes Eq. \eqref{eq:fermi-shift} for
     the first correction and all subsequent corrections are based on a
-    cubic spline interpolation to much faster converge to the
+    cubic spline interpolation to faster converge the
     ``correct'' Fermi level.
     
     This method will create a file called \file{TS\_FERMI}.
-    
+
   \end{fdfoptions}
 
 \end{fdfentry}
 
-\begin{fdfentry}{TS!ChargeCorrection!Factor}[real]<0.75>
+\begin{fdfentry}{TS!dQ!Factor}[real]<0.75>
 
   Should be between $0$ and $1$ to lower the charge adjustment. $0$
   means no charge correction. $1$ means total charge correction. This
@@ -11536,7 +11558,7 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!ChargeCorrection!Fermi.Tolerance}[real]<0.01>
+\begin{fdfentry}{TS!dQ!Fermi.Tolerance}[real]<0.01>
 
   The tolerance at which the charge correction will converge. Any
   excess/missing charge ($|Q'-Q|>\mathrm{Tol}$) will result in a
@@ -11544,7 +11566,7 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!ChargeCorrection!Fermi.Max}[energy]<$1.5\,\mathrm{eV}$>%
+\begin{fdfentry}{TS!dQ!Fermi.Max}[energy]<$1.5\,\mathrm{eV}$>%
 
   The maximally allowed value that the Fermi level will change from a
   charge correction using the Fermi correction method. In case the
@@ -12041,6 +12063,7 @@ electrodes in a generic input format.
 
     \option[DM-init]%
     \fdfindex*{TS!Elec.<>!DM-init}%
+    \fdfindex*{TS!Elec.<>!DM-init:bulk}%
     \fdfdepend{TS!Elecs!DM.Init}%
     String of values \fdf*{bulk}, \fdf*{diagon} or \fdf*{force-bulk}
     which controls whether the DM is initially overwritten by the DM
@@ -12453,7 +12476,7 @@ calculated via \tbtrans\ relative to the average chemical potential.
 In this section the equilibrium contours are defined, and in the next
 section the non-equilibrium contours are defined.
 
-\begin{fdfentry}{TS!Contours!Eq.Pole}[energy]<$2.5\,\mathrm{eV}$>
+\begin{fdfentry}{TS!Contours!Eq.Pole}[energy]<$1.5\,\mathrm{eV}$>
 
   The imaginary part of the line integral crossing the chemical
   potential. Note that the actual number of poles may differ between

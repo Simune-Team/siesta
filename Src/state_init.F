@@ -680,20 +680,6 @@
          
       endif 
 
-      ! In case the user is requesting a Fermi-correction
-      ! we need to delete the TS_FERMI file after each iteration
-      if ( TSmode .and. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
-     &     .and. IONode ) then
-          ! Delete the TS_FERMI file (enables
-          ! reading it in and improve on the convergence)
-          if ( file_exist('TS_FERMI') ) then
-             i = 23455 ! this should just not be used any were...
-             ! Delete the file...
-             open(unit=i,file='TS_FERMI')
-             close(i,status='delete')
-          end if
-       end if
-      
 #ifdef CDF
       if (writedm_cdf) then
          call setup_dm_netcdf_file( maxnh, no_l, spin%H,

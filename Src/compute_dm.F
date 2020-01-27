@@ -223,7 +223,7 @@ c$$$     &           S, 'S.matrix')
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        no_u == no_s, ucell, nsc, isc_off, no_u, na_u,
      &        lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot, .false.)
+     &        H, S, Dscf, Escf, Ef, Qtot)
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

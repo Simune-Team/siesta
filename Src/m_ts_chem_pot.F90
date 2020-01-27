@@ -109,7 +109,7 @@ contains
 
     allocate(this_n(n))
     this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
-    E_pole = fdf_get('TS.Contours.Eq.Pole',2.5_dp*eV,'Ry')
+    E_pole = fdf_get('TS.Contours.Eq.Pole',1.5_dp*eV,'Ry')
     if ( E_pole > 0._dp ) then
        call E2Npoles(E_pole,kT,i)
        this_n(:)%N_poles = i

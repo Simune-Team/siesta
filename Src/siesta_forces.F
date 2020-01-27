@@ -96,6 +96,8 @@
       use m_ts_charge,           only: TS_RHOCORR_METHOD
       use m_ts_charge,           only: TS_RHOCORR_FERMI
       use m_ts_charge,           only: TS_RHOCORR_FERMI_TOLERANCE
+      use m_ts_charge,           only: TS_RHOCORR_FERMI_SCALE
+      use m_ts_charge,           only: ts_charge_conv
       use m_transiesta,          only: transiesta
       use kpoint_grid, only : gamma_scf
       use m_energies, only : Ef
@@ -364,31 +366,32 @@
      $            min_nscf
            end if
         end if
-
-        ! Check whether we should step to the next mixer
-        call mixing_scf_converged( SCFconverged )
         
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level
-        if ( SCFconverged .and. TSrun .and.
-     &       TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
-
-           
-           if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
-
-              ! Call transiesta with fermi-correct
-              call transiesta(iscf,spin%H, 
-     &             block_dist, sparse_pattern, Gamma_Scf, ucell, nsc,
-     &             isc_off, no_u, na_u, lasto, xa, maxnh, H, S,
-     &             Dscf, Escf, Ef, Qtot, .true.) 
-           
-              ! We will not have not converged as we have just
-              ! changed the Fermi-level
-              SCFconverged = .false.
-
-           end if
-           
+        if ( TSrun .and. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+          ! Signal for next SCF
+          ts_charge_conv%run = .true.
+          if ( converge_DM )
+     &        ts_charge_conv%run = ts_charge_conv%run .and.
+     &        dDtol * TS_RHOCORR_FERMI_SCALE > dDmax
+          if ( converge_H )
+     &        ts_charge_conv%run = ts_charge_conv%run .and.
+     &        dHtol * TS_RHOCORR_FERMI_SCALE > dHmax
+          if ( converge_EDM )
+     &        ts_charge_conv%run = ts_charge_conv%run .and.
+     &        tolerance_EDM * TS_RHOCORR_FERMI_SCALE > dEmax
+          if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
+            if ( IONode .and. SCFconverged ) then
+              write(6,"(2a)") "SCF cycle continued due ",
+     &            "to TranSiesta charge deviation"
+            end if
+            SCFconverged = .false.
+          end if
         end if
+
+        ! Check whether we should step to the next mixer
+        call mixing_scf_converged( SCFconverged )
 
         if (monitor_forces_in_scf) call compute_forces()
         

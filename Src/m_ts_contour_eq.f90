@@ -48,6 +48,7 @@ module m_ts_contour_eq
   public :: io_contour_eq
   public :: N_Eq_E
   public :: Eq_E
+  public :: c2energy
   public :: c2weight_eq
   public :: ID2idx
 
@@ -581,6 +582,14 @@ contains
     ZW = W * Eq_c(c%idx(2))%c(c%idx(3))
     
   end subroutine c2weight_eq
+
+  pure function c2energy(c) result(Z)
+    type(ts_c_idx), intent(in) :: c
+    complex(dp) :: Z
+    
+    Z = Eq_c(c%idx(2))%c(c%idx(3))
+    
+  end function c2energy
 
   subroutine contour_Circle(c,mu,R,cR)
     use fdf, only: leqi

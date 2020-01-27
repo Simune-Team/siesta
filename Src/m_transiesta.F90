@@ -48,12 +48,13 @@ contains
        sp_dist, sparse_pattern, &
        no_aux_cell, ucell, nsc, isc_off, no_u, na_u, lasto, xa, n_nzs, &
        H, S, DM, EDM, Ef, &
-       Qtot, Fermi_correct)
+       Qtot)
 
     use units, only : eV
     use alloc, only : re_alloc, de_alloc
 
     use parallel, only : IONode
+    use m_os, only: file_delete
 
     use class_OrbitalDistribution
     use class_Sparsity
@@ -95,7 +96,6 @@ contains
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Qtot
     real(dp), intent(inout) :: Ef
-    logical, intent(in) :: Fermi_correct
 
 ! ******************** IO descriptors ************************
     integer, allocatable :: uGF(:)
@@ -107,10 +107,11 @@ contains
 
     ! * local variables
     integer :: iEl, NEn, no_used, no_used2
-    logical :: converged
+    logical :: converged, charge_conv_run
     ! In case of Fermi-correction, we save the previous steps
     ! and do a spline interpolation... :)
     integer :: N_F, i_F, ioerr
+    real(dp) :: dEf
     real(dp), pointer :: Q_Ef(:,:) => null()
 
     if ( nspin > 2 ) then
@@ -131,45 +132,49 @@ contains
     NEGF_DE = 0._dp
 
     if ( TSiscf == 1 ) then
-       ! We need to initialize TRANSIESTA
+      ! We need to initialize TRANSIESTA
+      
+      call timer('TS_init',1)
 
-       call timer('TS_init',1)
-
-       ! For the fermi-correction, we need the 
-       ! local sparsity pattern...
-       converged = IsVolt .or. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
-       call ts_sparse_init(slabel,converged, N_Elec, Elecs, &
-            ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, no_aux_cell, &
+      if ( IONode ) then
+        if ( file_delete('TS_FERMI') ) then
+          write(*,'(/a/)') 'ts: Deleted TS_FERMI'
+        end if
+      end if
+      
+      ! For the fermi-correction, we need the 
+      ! local sparsity pattern...
+      converged = IsVolt .or. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
+      call ts_sparse_init(slabel,converged, N_Elec, Elecs, &
+          ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, no_aux_cell, &
             isc_off)
+      
+      if ( ts_method == TS_BTD ) then
+        ! initialize the tri-diagonal partition
+        call ts_tri_init( sp_dist, sparse_pattern , N_Elec, &
+            Elecs, IsVolt, ucell, na_u, xa, lasto ,nsc, isc_off, &
+            BTD_method )
+      end if
 
-       if ( ts_method == TS_BTD ) then
-          ! initialize the tri-diagonal partition
-          call ts_tri_init( sp_dist, sparse_pattern , N_Elec, &
-               Elecs, IsVolt, ucell, na_u, xa, lasto ,nsc, isc_off, &
-               BTD_method )
-       end if
+      ! print out estimated memory usage...
+      call ts_print_memory(ts_Gamma)
 
-       ! print out estimated memory usage...
-       call ts_print_memory(ts_Gamma)
+      if ( .not. Calc_Forces ) then
+        if ( IONode ) then
+          write(*,'(a)') 'transiesta: *** The forces are NOT updated ***'
+          write(*,'(a)') 'transiesta: ***  Will set the energy-density matrix to 0!  ***'
+        end if
+        EDM(:,:) = 0._dp
+      end if
 
-       call ts_print_charges(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
-            nspin, n_nzs, DM, S)
-
-       if ( .not. Calc_Forces ) then
-          if ( IONode ) then
-             write(*,'(a)') 'transiesta: *** The forces are NOT updated ***'
-             write(*,'(a)') 'transiesta: ***  Will set the energy-density matrix to 0!  ***'
-          end if
-          EDM(:,:) = 0._dp
-       end if
-
-       call timer('TS_init',2)
-
+      call timer('TS_init',2)
+      
     end if
 
-
+    
     call timer('TS',1)
 
+    
     ! Total number of energy-points...
     NEn = N_Eq_E() + N_nEq_E()
 
@@ -228,22 +233,26 @@ contains
 
     ! start calculation
     converged = .false.
-    if ( Fermi_correct ) then
+    i_F = -1
+    charge_conv_run = ts_charge_conv%run
+    if ( charge_conv_run ) then
 
-       ! we will utilize the old Fermi-level to correct the 
-       ! EDM matrix (just in case the 
-       ! electrode region elements are not taken care of)
-
-       ! Allocate for interpolation
-       N_F = 10
-       i_F = 0
-       call re_alloc(Q_Ef,1,N_F,1,2)
-
+      ! we will utilize the old Fermi-level to correct the 
+      ! EDM matrix (just in case the 
+      ! electrode region elements are not taken care of)
+      
+      ! Allocate for interpolation
+      N_F = 10
+      i_F = 0
+      call re_alloc(Q_Ef,1,N_F,1,2)
     end if
 
     do while ( .not. converged )
+      
+      call open_GF(N_Elec,Elecs,uGF,NEn)
 
-       call open_GF(N_Elec,Elecs,uGF,NEn,.false.)
+      ! Signal only doing this for the first run
+      ts_charge_conv%run = charge_conv_run .and. (i_F == 0)
 
        if ( ts_method == TS_FULL ) then
           if ( ts_Gamma ) then
@@ -266,14 +275,16 @@ contains
                   nq, uGF, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, NEGF_DE)
+                  H, S, DM, EDM, Ef, &
+                  NEGF_DE, ts_charge_conv)
           else
              call ts_trik(N_Elec,Elecs, &
                   nq, uGF, &
                   ucell, nspin, na_u, lasto, &
                   sp_dist, sparse_pattern, &
                   no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, NEGF_DE)
+                  H, S, DM, EDM, Ef, &
+                  NEGF_DE, ts_charge_conv)
           end if
 #ifdef SIESTA__MUMPS
        else if ( ts_method == TS_MUMPS ) then
@@ -299,174 +310,146 @@ contains
 
        ! Close files
        do iEl = 1 , N_Elec
-          if ( IONode .and. Elecs(iEl)%out_of_core ) then
-             call io_close(uGF(iEl))
-          end if
+         if ( IONode .and. Elecs(iEl)%out_of_core ) then
+           call io_close(uGF(iEl))
+         end if
        end do
-       
-       if ( Fermi_correct ) then
 
-          ! This is the 1. part of the Fermi correction
-          !
-          ! In this section we estimate the new Fermi level by
-          ! calculating the charge Q(E_F) and then correct
-          ! E_F such that dQ = Q(TS) - Qtot -> 0.
-          
-          i_F = i_F + 1
-          if ( N_F < i_F ) then
-             N_F = N_F + 10
-             call re_alloc(Q_Ef,1,N_F,1,2,copy=.true.)
-          end if
+       if ( charge_conv_run ) then
 
-          ! Save current fermi level and charge
-          call ts_get_charges(N_Elec, sp_dist, sparse_pattern, &
-               nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
-          Q_Ef(i_F,2) = Ef
+         ! This is the 1. part of the Fermi correction
+         !
+         ! In this section we estimate the new Fermi level by
+         ! calculating the charge Q(E_F) and then correct
+         ! E_F such that dQ = Q(TS) - Qtot -> 0.
 
-          if ( i_F < 2 ) then
+         i_F = i_F + 1
+         if ( N_F < i_F ) then
+           N_F = N_F + 10
+           call re_alloc(Q_Ef,1,N_F,1,2,copy=.true.)
+         end if
 
-          call open_GF(N_Elec,Elecs,uGF,1,.true.)
-          
-          if ( ts_method == TS_FULL ) then
-             if ( Q_Ef(i_F,1) > Qtot ) then
-                Ef = Ef - 0.01_dp * eV
-             else
-                Ef = Ef + 0.01_dp * eV
-             end if
-          else if ( ts_method == TS_BTD ) then
-             if ( ts_Gamma ) then
-                call ts_trig_Fermi(N_Elec,Elecs, &
-                     nq, uGF, nspin, na_u, lasto, &
-                     sp_dist, sparse_pattern, &
-                     no_u, n_nzs, &
-                     H, S, DM, Ef, Qtot, converged)
-             else
-                call ts_trik_Fermi(N_Elec,Elecs, &
-                     nq, uGF, &
-                     ucell, nspin, na_u, lasto, &
-                     sp_dist, sparse_pattern, &
-                     no_u, n_nzs, &
-                     H, S, DM, Ef, Qtot, converged)
-             end if
-#ifdef SIESTA__MUMPS
-          else if ( ts_method == TS_MUMPS ) then
-             if ( Q_Ef(i_F,1) > Qtot ) then
-                Ef = Ef - 0.01_dp * eV
-             else
-                Ef = Ef + 0.01_dp * eV
-             end if
-#endif
-          else
-             
-             call die('Error in code')
-          end if
+         ! Save current fermi level and charge
+         call ts_get_charges(N_Elec, sp_dist, sparse_pattern, &
+             nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
+         Q_Ef(i_F,2) = Ef
 
-          ! Close files
-          do iEl = 1 , N_Elec
-             if ( IONode .and. Elecs(iEl)%out_of_core ) then
-                call io_close(uGF(iEl))
-             end if
-          end do
+         if ( i_F < 2 ) then
+           call ts_qc_Fermi(sp_dist, nspin, n_nzs, &
+               Ef, DM, S, Qtot, &
+               ts_charge_conv)
 
-          else
+         else
 
-             ! Instead of doing Q(E_F) for every change
-             ! we will perform spline interpolation ones we have 2 estimated
-             ! Q(E_F).
-             ! This tends to drastically speed up the convergence of the dQ -> 0.
-             
-             ! In case we have accumulated 2 or more points
-             call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
+           ! Instead of doing Q(E_F) for every change
+           ! we will perform spline interpolation ones we have 2 estimated
+           ! Q(E_F).
+           ! This tends to drastically speed up the convergence of the dQ -> 0.
 
-             ! Truncate to the maximum allowed change in Fermi-level
-             converged = ts_qc_Fermi_truncate(Q_Ef(i_F,2), &
-                  TS_RHOCORR_FERMI_MAX, Ef)
+           ! In case we have accumulated 2 or more points
+           call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
 
-             if ( IONode ) then
-                write(*,'(a,e11.4,a)') 'ts-qc-iscf: cubic spline dEf = ', &
-                     (Ef-Q_Ef(i_F,2))/eV, ' eV'
-             end if
+           ! Truncate to the maximum allowed change in Fermi-level
+           call ts_qc_truncate(Q_Ef(i_F,2), &
+               TS_RHOCORR_FERMI_MAX, Ef, trunk=converged)
 
-             ! Even if we have converged we allow the interpolation
-             ! to do a final step. If dQ is very small it should be very
-             ! close to the found value.
-             ! If the truncation already is reached we stop as that
-             ! *MUST* be the maximal change.
-             if ( .not. converged ) &
-                  converged = abs(Q_Ef(i_F,1) - Qtot) < &
-                  TS_RHOCORR_FERMI_TOLERANCE
+           if ( IONode ) then
+             write(*,'(a,es11.4)') 'ts-qc-iscf: cubic spline dq = ', &
+                 Q_Ef(i_F,1) - qtot
+           end if
 
-          end if
+         end if
+
+         ! Even if we have converged we allow the interpolation
+         ! to do a final step. If dQ is very small it should be very
+         ! close to the found value.
+         ! If the truncation already is reached we stop as that
+         ! *MUST* be the maximal change.
+         if ( .not. converged ) &
+             converged = abs(Q_Ef(i_F,1) - Qtot) < &
+             TS_RHOCORR_FERMI_TOLERANCE
 
        else
-          
-          ! If no Fermi-correction, we are converged
-          converged = .true.
+
+         ! If no Fermi-correction, we are converged
+         converged = .true.
 
        end if
 
     end do
 
-    if ( IONode .and. Fermi_correct ) then
+    ! We will only do major extrapolation when we are
+    ! far from the charge neutrality point.
+    ! Otherwise we will iterate forever...
+    if ( charge_conv_run .and. i_F > 1 ) then
 
-       ! After converge we write out the convergence
-       call io_assign(iEl)
-       inquire(file='TS_FERMI', exist=converged)
-       if ( converged ) then
+      if ( IONode ) then
+        ! After converge we write out the convergence
+        call io_assign(iEl)
+        inquire(file='TS_FERMI', exist=converged)
+        if ( converged ) then
           open(unit=iEl,file='TS_FERMI',position='append',form='formatted', &
-               status='old',iostat=ioerr)
+              status='old',iostat=ioerr)
           write(iEl,'(/,a,i0)') '# TSiscf = ',TSiscf
-       else
+        else
           open(unit=iEl,file='TS_FERMI',form='formatted', &
-               status='new')
+              status='new')
           write(iEl,'(a,i0)') '# TSiscf = ',TSiscf
-       end if
-       N_F = i_F
-       write(iEl,'(a,i0)')'# ',N_F ! Number of iterations
-       do i_F = 1 , N_F
+        end if
+        N_F = i_F
+        write(iEl,'(a,i0)')'# ',N_F ! Number of iterations
+        do i_F = 1 , N_F
           write(iEl,'(2(tr1,e20.10))') Q_Ef(i_F,2)/eV,Q_Ef(i_F,1) - Qtot
-       end do
+        end do
 
-       call io_close(iEl)
+        call io_close(iEl)
+
+      end if
+
+      ! This is the 2nd step of dEF correction.
+      ! At this point we have corrected E_f for the current
+      ! iteration. But generally the Hartree potential will counter
+      ! the change in E_F. So to speed up convergence
+      ! we do a spline interpolation of the dE_F by doing a spline
+      ! interpolation of the ISCF corrections.
+      ! Say TS corrects EF at iterations 50 and 80
+      ! which means TS_FERMI may look like this:
+      !#####
+      ! # TSiscf = 50
+      ! # 3
+      !   -0.204782E+01    0.172948E-01
+      !   -0.205297E+01    0.834017E-03
+      !   -0.205323E+01   -0.250016E-05
+      !
+      ! # TSiscf = 80
+      !# 3
+      !   -0.207423E+01    0.967930E-02
+      !   -0.207710E+01    0.490200E-03
+      !   -0.207726E+01   -0.817259E-06
+      !#####
+      ! 
+
+      ! Guess-stimate the actual Fermi-shift
+      ! typically will the above be "too" little
+      ! So we interpolate between all previous 
+      ! estimations for this geometry...
+      call ts_qc_Fermi_file(Q_Ef(1,2), Ef)
 
     end if
-    if ( Fermi_correct ) then
 
-       ! This is the 2nd step of dEF correction.
-       ! At this point we have corrected E_f for the current
-       ! iteration. But generally the Hartree potential will counter
-       ! the change in E_F. So to speed up convergence
-       ! we do a spline interpolation of the dE_F by doing a spline
-       ! interpolation of the ISCF corrections.
-       ! Say TS corrects EF at iterations 50 and 80
-       ! which means TS_FERMI may look like this:
-       !#####
-       ! # TSiscf = 50
-       ! # 3
-       !   -0.204782E+01    0.172948E-01
-       !   -0.205297E+01    0.834017E-03
-       !   -0.205323E+01   -0.250016E-05
-       !
-       ! # TSiscf = 80
-       !# 3
-       !   -0.207423E+01    0.967930E-02
-       !   -0.207710E+01    0.490200E-03
-       !   -0.207726E+01   -0.817259E-06
-       !#####
-       ! 
+    if ( charge_conv_run ) then
+      ! We have now calculated the new Ef
+      ! We shift it EDM to the correct level
+      dEf = Ef - Q_Ef(1,2)
 
-       ! Guess-stimate the actual Fermi-shift
-       ! typically will the above be "too" little
-       ! So we interpolate between all previous 
-       ! estimations for this geometry...
-       call ts_qc_Fermi_file(Ef)
+      if ( IONode ) then
+        write(*,'(a,es11.4,a)') 'ts-qc: dEf = ', dEf/eV, ' eV'
+      end if
 
-       ! We have now calculated the new Ef
-       ! We shift it EDM to the correct level
-       Q_Ef(1,2) = Ef - Q_Ef(1,2)
-       call daxpy(n_nzs*nspin,Q_Ef(1,2),DM(1,1),1,EDM(1,1),1)
+      ! Correct energy-density matrix
+      call daxpy(n_nzs*nspin,dEf,DM(1,1),1,EDM(1,1),1)
 
-       call de_alloc(Q_Ef)
+      call de_alloc(Q_Ef)
 
     end if
 
@@ -541,12 +524,11 @@ contains
 
     end subroutine init_Electrode_HS
 
-    subroutine open_GF(N_Elec,Elecs,uGF,NEn,Fermi_correct)
+    subroutine open_GF(N_Elec,Elecs,uGF,NEn)
       integer, intent(in) :: N_Elec
       type(Elec), intent(inout) :: Elecs(N_Elec)
       integer, intent(out) :: uGF(N_Elec)
       integer, intent(in) :: NEn
-      logical, intent(in) :: Fermi_correct
 
       ! Local variables
       integer :: iEl
@@ -556,30 +538,18 @@ contains
          ! Initialize k-points (never seen k-point)
          Elecs(iEl)%bkpt_cur(:) = 2352345._dp
 
-         if ( .not. Fermi_correct ) then
-            if ( Elecs(iEl)%out_of_core ) then
-               
-               if ( IONode ) then
-                  call io_assign(uGF(iEl))
-                  open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
-               end if
-               
-            else
+         if ( Elecs(iEl)%out_of_core ) then
 
-               ! prepare the electrode to create the surface self-energy
-               call init_Electrode_HS(Elecs(iEl))
-               
-            end if
+           if ( IONode ) then
+             call io_assign(uGF(iEl))
+             open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
+           end if
+
          else
 
-            if ( Elecs(iEl)%out_of_core ) then
-               if ( IONode ) then
-                  call io_assign(uGF(iEl))
-                  open(file=trim(Elecs(iEl)%GFfile)//'-Fermi', &
-                       unit=uGF(iEl),form='unformatted')
-               end if
-            end if
-            
+           ! prepare the electrode to create the surface self-energy
+           call init_Electrode_HS(Elecs(iEl))
+
          end if
 
          if ( Elecs(iEl)%out_of_core ) then
