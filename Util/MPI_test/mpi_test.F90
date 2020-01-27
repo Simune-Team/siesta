@@ -53,4 +53,6 @@ if (Node == 0) then
    print *, nodes*a
 endif
 
+call MPI_Finalize(MPIerror)
+
 end program mpi_test

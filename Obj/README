@@ -49,7 +49,7 @@ use the provided makefiles, typing "make" as appropriate.
                                operation, and also supporting the use
                                of single-precision grid arrays.
 
-
+    full_options.make:  Incorporates options for FLOOK and NCDF.
 			  
     Of lesser interest are:
     

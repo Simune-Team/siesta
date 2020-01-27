@@ -238,8 +238,6 @@ sparse_matrices.o: precision.o
 spatial.o: precision.o
 spatial.o: precision.o
 spher_harm.o: precision.o
-spher_harm.o: precision.o
-units.o: precision.o
 units.o: precision.o
 xml.o: precision.o
 xml.o: precision.o

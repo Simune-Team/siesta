@@ -137,8 +137,8 @@ contains
 
     ! this will be the applied bias in the "lower"
     ! electrode in the unit-cell
-    V_low = Elecs(iElL)%mu%mu
-    V_high = Elecs(iElR)%mu%mu
+    V_high = Elecs(iElL)%mu%mu
+    V_low = Elecs(iElR)%mu%mu
 
     ! Print out the coordinates of the ramp placement
     call print_ts_voltage()
@@ -205,7 +205,7 @@ contains
       call ts_ramp(cell, nmesh, nmeshl, Vscf)
 #ifdef NCDF_4
     else if ( len_trim(Hartree_fname) > 0 ) then
-      call ts_ncdf_Voltage(Hartree_fname, 'V', nmeshl, Vscf)
+      call ts_ncdf_Voltage(cell, Hartree_fname, 'V', nmesh, nmeshl, Vscf)
 #endif
     else
       call ts_elec_only(nmesh, nmeshl, Vscf)
@@ -238,7 +238,7 @@ contains
     real(dp) :: dF, dV
 
     ! field in [0;end]: v = e*x = f*index
-    dF = (V_high - V_low) / real(nmesh(ts_tidx) - 1,dp)
+    dF = - (V_high - V_low) / real(nmesh(ts_tidx) - 1,dp)
 
     ! Find quantities in mesh coordinates
     if ( product(nmeshl) /= size(Vscf) ) &
@@ -252,7 +252,7 @@ contains
         do i2 = 1 , nmeshl(2)
           do i1 = offset_i(1), offset_i(1)+nmeshl(1)-1
             
-            dV = V_low + dF*i1
+            dV = V_high + dF*i1
             
             imesh = imesh + 1
             Vscf(imesh) = Vscf(imesh) + dV
@@ -266,7 +266,7 @@ contains
       do i3 = 1,nmeshl(3)
         do i2 = offset_i(2),offset_i(2)+nmeshl(2)-1
           
-          dV = V_low + dF*i2
+          dV = V_high + dF*i2
           
           do i1 = 1 , nmeshl(1)
             imesh = imesh + 1
@@ -280,7 +280,7 @@ contains
       
       do i3 = offset_i(3),offset_i(3)+nmeshl(3)-1
 
-        dV = V_low + dF*i3
+        dV = V_high + dF*i3
 
         do i2 = 1 , nmeshl(2)
           do i1 = 1 , nmeshl(1)
@@ -405,7 +405,7 @@ contains
 
     ! Print the ramp coordinates
     write(*,'(a,2(f6.3,tr1,a),a)') &
-        'ts-voltage: Ramp ', V_low/eV, 'eV to ', V_high/eV, 'eV ', &
+        'ts-voltage: Ramp ', V_high/eV, 'eV to ', V_low/eV, 'eV ', &
         'placed in cell'
 
   end subroutine print_ts_voltage
@@ -416,7 +416,7 @@ contains
   ! We note that the potential landscape need only be calculated
   ! for one V, direct interpolation is possible as 
   ! the solution to the Poisson equation is linearly dependent on the BC
-  subroutine ts_ncdf_voltage(fname, V_name, nmeshl, V)
+  subroutine ts_ncdf_voltage(cell, fname, V_name, nmesh, nmeshl, V)
     use precision, only: grid_p
 #ifdef MPI
     use mpi_siesta, only : MPI_Comm_World, MPI_Bcast, MPI_Grid_Real
@@ -424,9 +424,14 @@ contains
     use m_ncdf_io, only : cdf_r_grid
     use netcdf_ncdf
 
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+    use iogrid_netcdf, only: write_grid_netcdf
+#endif
+
+    real(dp), intent(in) :: cell(3,3)
     character(len=*), intent(in) :: fname, V_name
-    ! local number of mesh-divisions
-    integer, intent(in) :: nmeshl(3)
+    ! global and local number of mesh-divisions
+    integer, intent(in) :: nmesh(3), nmeshl(3)
     real(grid_p), intent(inout) :: V(:)
 
     type(hNCDF) :: ncdf
@@ -458,13 +463,19 @@ contains
 
     ! Correct the limits so that we align to the current potential
     fact = ( V_high - V_low ) / ( Vmm(2) - Vmm(1) ) 
-    ! Align the bottom potentials so that the range becomes
-    ! correct
+    ! Align the bottom potentials so that the range becomes correct
     Vmm(1) = V_low - Vmm(1) * fact
 
-    !$OMP parallel workshare default(shared), firstprivate(fact,Vmm)
-    V = V + tmpV * fact + Vmm(1)
-    !$OMP end parallel workshare
+#ifdef TRANSIESTA_VOLTAGE_DEBUG
+    tmpV(:) = tmpV(:) * fact + Vmm(1)
+    call write_grid_netcdf( cell, nmesh, 1, product(nmeshl), tmpV, &
+        "TransiestaHartreePotential")
+    call bye('transiesta debug for Hartree potential')
+#endif
+
+!$OMP parallel workshare default(shared), firstprivate(fact,Vmm)
+    V(:) = Vmm(1) + V(:) + tmpV(:) * fact
+!$OMP end parallel workshare
 
     deallocate(tmpV)
 

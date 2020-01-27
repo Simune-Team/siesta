@@ -577,41 +577,37 @@ contains
 
        ! Initialize sparsity to 0 entries
        num(lio) = 0
-
+       
        if ( l_ncol(lio) /= 0 ) then
 
-       io = index_local_to_global(dit,lio)
+         io = index_local_to_global(dit,lio)
 
-       if ( log_r(io, 1) ) then
-          ridx = 1
-       else if ( log_r(io, 2) ) then
-          ridx = 2
-       else
-          ridx = 0
-          num(lio) = l_ncol(lio)
-       end if
+         if ( log_r(io, 1) ) then
+           ! io is in region-1, the checked region
+           ! for jo will then be in region two
+           ridx = 2
+         else if ( log_r(io, 2) ) then
+           ridx = 1
+         else
+           ridx = 0
+           num(lio) = l_ncol(lio)
+         end if
 
-       if ( ridx /= 0 ) then
+         if ( ridx /= 0 ) then
 
-       do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
-          
-          if ( ridx == 1 ) then
+           do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
              jo = ucorb(l_col(ind),no_u)
-             ! the i'th orbital is in region 1
-             ! now if jo is in region 2 we have a match
-             ! and remove that orbital connection
-             if ( log_r(jo, 2) ) cycle
-          else if ( ridx == 2 ) then
-             jo = ucorb(l_col(ind),no_u)
-             if ( log_r(jo, 1) ) cycle
-          end if
-       
-          ! The orbital exists on the atom
-          num(lio) = num(lio) + 1
-          
-       end do
-       
-       end if
+             ! If ridx is 2, then io is in region 1
+             ! Else, if ridx is 1, then io is in region 2
+             if ( log_r(jo, ridx) ) cycle
+
+             ! The orbital exists on the atom
+             num(lio) = num(lio) + 1
+
+           end do
+
+         end if
        end if
 
     end do
@@ -633,25 +629,20 @@ contains
 
        io = index_local_to_global(dit,lio)
        if ( log_r(io, 1) ) then
-          ridx = 1
-       else if ( log_r(io, 2) ) then
           ridx = 2
+       else if ( log_r(io, 2) ) then
+          ridx = 1
        else
           ridx = 0
        end if
 
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
 
-          if ( ridx == 1 ) then
-             jo = ucorb(l_col(ind),no_u)
-             ! the i'th orbital is in region 1
-             ! now if jo is in region 2 we have a match
-             ! and remove that orbital connection
-             if ( log_r(jo, 2) ) cycle
-          else if ( ridx == 2 ) then
-             jo = ucorb(l_col(ind),no_u)
-             if ( log_r(jo, 1) ) cycle
-          end if
+         if ( ridx /= 0 ) then
+           ! See above for explanation
+           jo = ucorb(l_col(ind),no_u)
+           if ( log_r(jo, ridx) ) cycle
+         end if
 
           indx = indx + 1
           list(indx) = l_col(ind)

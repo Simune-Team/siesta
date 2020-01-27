@@ -201,7 +201,10 @@ $(FDICT):
 	(cd fdict ; \
 	echo "TOP_DIR=$(VPATH)/fdict" > Makefile ; echo "include $(VPATH)/fdict/Makefile" >> Makefile ; \
 	echo "FC=$(FC_SERIAL)" > setup.make ; \
+	echo "AR=$(AR)" >> setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
 	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
 	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
 	@cp -p fdict/*.mod ./
 	cp fdict/$(FDICT) ./
@@ -216,9 +219,12 @@ $(NCDF): $(FDICT)
 	echo "settings.bash: FORCE" >> Makefile ; \
 	printf '%s\n' "	-cp ../fdict/settings.bash ." >> Makefile ; \
 	echo "FC=$(FC)" > setup.make ; \
+	echo "AR=$(AR)" >> setup.make ; \
+	echo "RANLIB=$(RANLIB)" >> setup.make ; \
 	echo "FFLAGS=$(FFLAGS)" >> setup.make ; \
+	echo "LINK_FLAGS=$(FFLAGS)" >> setup.make ; \
 	echo "FPPFLAGS = $(FPPFLAGS)" >> setup.make ; \
-	echo "INCLUDES = $(INCFLAGS) -I../" >> setup.make ; \
+	echo "INCLUDES = $(INCFLAGS) $(NETCDF_INCFLAGS) -I../" >> setup.make ; \
 	echo "LIBS = $(LIBS) -lfdict" >> setup.make ; \
 	$(MAKE) -j 1 copy ; $(MAKE) -j 1 lib SHARED=0)
 	@cp -p ncdf/*.mod ./
@@ -253,7 +259,7 @@ libsiestaLAPACK.a: $(VPATH)/Libs/lapack.F
 # This will setup the correct compilation sequence as
 # FDF => MPI
 $(DEP_OBJS): $(FDF) $(COMP_LIBS) $(FDICT)
-#####$(TBTOBJS): $(DEP_OBJS)
+#$(TBTOBJS): $(DEP_OBJS)
 
 .PHONY: check-tbtrans
 check-tbtrans:
@@ -497,15 +503,15 @@ m_ts_electrode.o: parallel.o precision.o units.o
 m_ts_electype.o: bloch_unfold.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_electype.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
 m_ts_electype.o: geom_helper.o intrinsic_missing.o m_char.o m_geom_box.o
-m_ts_electype.o: m_geom_plane.o m_handle_sparse.o m_iodm.o m_os.o m_region.o
-m_ts_electype.o: m_ts_chem_pot.o m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o
-m_ts_electype.o: parallel.o precision.o units.o
+m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
+m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
+m_ts_electype.o: units.o
 m_ts_electype.o: bloch_unfold.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_electype.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
 m_ts_electype.o: geom_helper.o intrinsic_missing.o m_char.o m_geom_box.o
-m_ts_electype.o: m_geom_plane.o m_handle_sparse.o m_iodm.o m_os.o m_region.o
-m_ts_electype.o: m_ts_chem_pot.o m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o
-m_ts_electype.o: parallel.o precision.o units.o
+m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
+m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
+m_ts_electype.o: units.o
 m_ts_gf.o: local_sys.o m_os.o m_ts_cctype.o m_ts_contour_eq.o
 m_ts_gf.o: m_ts_contour_neq.o m_ts_electrode.o m_ts_electype.o parallel.o
 m_ts_gf.o: precision.o units.o
