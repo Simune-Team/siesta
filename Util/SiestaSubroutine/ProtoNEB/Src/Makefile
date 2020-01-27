@@ -50,8 +50,8 @@ INCFLAGS:=$(NETCDF_INCFLAGS) \
           $(NCPS_INCFLAGS) $(PSOP_INCFLAGS) $(PSML_INCFLAGS) \
           $(XMLF90_INCFLAGS) $(GRIDXC_INCFLAGS) $(INCFLAGS)
 #
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS)  $(XC) \
-	$(NCPS) $(PSML) $(PSOP) $(MS)\
+ALL_LIBS= $(SIESTA_LIB) $(FDF)  $(XC) \
+	$(NCPS) $(PSML) $(XMLF90_LIBS) $(PSOP) $(MS)\
 	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
@@ -60,9 +60,9 @@ libs_collected:
 	cp -f *.a *.mod $(WORK_DIR) )
 	touch libs_collected
 #
-protoNEB: libs_collected protoNEB.o 
+protoNEB: libs_collected protoNEB.o handlers.o
 	$(FC) $(LDFLAGS) -o protoNEB \
-	      protoNEB.o $(ALL_LIBS)
+	      protoNEB.o handlers.o $(ALL_LIBS)
 #
 intermediate: 
 	@echo "==> Cleaning intermediate files ONLY"
