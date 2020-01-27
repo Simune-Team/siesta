@@ -32,7 +32,7 @@ module m_ts_charge
 
   real(dp), save :: TS_RHOCORR_FERMI_TOLERANCE = 0.01_dp
   real(dp), save :: TS_RHOCORR_FERMI_MAX = 0.1102471_dp ! 1.5 eV
-  real(dp), save :: TS_RHOCORR_FERMI_REF = 7.349806700083787e-5_dp ! 0.001 eV
+  real(dp), save :: TS_RHOCORR_FERMI_ETA = 7.349806700083787e-5_dp ! 0.001 eV
   real(dp), save :: TS_RHOCORR_FERMI_SCALE = 75._dp
 
   interface ts_qc_Fermi
@@ -87,7 +87,7 @@ contains
     ! correction
     TS_RHOCORR_FERMI_SCALE = fdf_get('TS.dQ.Fermi.Scale', 50._dp)
     ! The eta value at which to extrapolate the charge density
-    TS_RHOCORR_FERMI_REF = fdf_get('TS.dQ.Fermi.Eta', 0.001_dp * eV, 'Ry')
+    TS_RHOCORR_FERMI_ETA = fdf_get('TS.dQ.Fermi.Eta', 0.001_dp * eV, 'Ry')
 
     ! Factor for charge-correction
     TS_RHOCORR_FACTOR = fdf_get('TS.ChargeCorrection.Factor', 0.75_dp)
@@ -549,7 +549,7 @@ contains
       deallocate(all_N_dq)
 
       ! Interpolate result
-      call interp_spline(N_dq, all_eta, all_dq, TS_RHOCORR_FERMI_REF, dQ_Ef)
+      call interp_spline(N_dq, all_eta, all_dq, TS_RHOCORR_FERMI_ETA, dQ_Ef)
       
       ! Clean-up
       deallocate(all_eta, all_dq)
@@ -562,7 +562,7 @@ contains
 #else
     ! With no MPI it is much easier ;)
     N_dq = size(charge_conv%dq)
-    call interp_spline(N_dq, charge_conv%eta, charge_conv%dq, TS_RHOCORR_FERMI_REF, dQ_Ef)
+    call interp_spline(N_dq, charge_conv%eta, charge_conv%dq, TS_RHOCORR_FERMI_ETA, dQ_Ef)
     
 #endif
     

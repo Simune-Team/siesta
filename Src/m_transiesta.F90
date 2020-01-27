@@ -254,127 +254,126 @@ contains
       ! Signal only doing this for the first run
       ts_charge_conv%run = charge_conv_run .and. (i_F == 0)
 
-       if ( ts_method == TS_FULL ) then
-          if ( ts_Gamma ) then
-             call ts_fullg(N_Elec,Elecs, &
-                  nq, uGF, nspin, na_u, lasto, &
-                  sp_dist, sparse_pattern, &
-                  no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, NEGF_DE)
-          else
-             call ts_fullk(N_Elec,Elecs, &
-                  nq, uGF, &
-                  ucell, nspin, na_u, lasto, &
-                  sp_dist, sparse_pattern, &
-                  no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, NEGF_DE)
-          end if
-       else if ( ts_method == TS_BTD ) then
-          if ( ts_Gamma ) then
-             call ts_trig(N_Elec,Elecs, &
-                  nq, uGF, nspin, na_u, lasto, &
-                  sp_dist, sparse_pattern, &
-                  no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, &
-                  NEGF_DE, ts_charge_conv)
-          else
-             call ts_trik(N_Elec,Elecs, &
-                  nq, uGF, &
-                  ucell, nspin, na_u, lasto, &
-                  sp_dist, sparse_pattern, &
-                  no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, &
-                  NEGF_DE, ts_charge_conv)
-          end if
+      select case ( ts_method )
+      case ( TS_FULL )
+        if ( ts_Gamma ) then
+          call ts_fullg(N_Elec,Elecs, &
+              nq, uGF, nspin, na_u, lasto, &
+              sp_dist, sparse_pattern, &
+              no_u, n_nzs, &
+              H, S, DM, EDM, Ef, NEGF_DE)
+        else
+          call ts_fullk(N_Elec,Elecs, &
+              nq, uGF, &
+              ucell, nspin, na_u, lasto, &
+              sp_dist, sparse_pattern, &
+              no_u, n_nzs, &
+              H, S, DM, EDM, Ef, NEGF_DE)
+        end if
+      case ( TS_BTD )
+        if ( ts_Gamma ) then
+          call ts_trig(N_Elec,Elecs, &
+              nq, uGF, nspin, na_u, lasto, &
+              sp_dist, sparse_pattern, &
+              no_u, n_nzs, &
+              H, S, DM, EDM, Ef, &
+              NEGF_DE, ts_charge_conv)
+        else
+          call ts_trik(N_Elec,Elecs, &
+              nq, uGF, &
+              ucell, nspin, na_u, lasto, &
+              sp_dist, sparse_pattern, &
+              no_u, n_nzs, &
+              H, S, DM, EDM, Ef, &
+              NEGF_DE, ts_charge_conv)
+        end if
 #ifdef SIESTA__MUMPS
-       else if ( ts_method == TS_MUMPS ) then
-          if ( ts_Gamma ) then
-             call ts_mumpsg(N_Elec,Elecs, &
-                  nq, uGF, nspin, na_u, lasto, &
-                  sp_dist, sparse_pattern, &
-                  no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, NEGF_DE)
-          else
-             call ts_mumpsk(N_Elec,Elecs, &
-                  nq, uGF, &
-                  ucell, nspin, na_u, lasto, &
-                  sp_dist, sparse_pattern, &
-                  no_u, n_nzs, &
-                  H, S, DM, EDM, Ef, NEGF_DE)
-          end if
+      case ( TS_MUMPS )
+        if ( ts_Gamma ) then
+          call ts_mumpsg(N_Elec,Elecs, &
+              nq, uGF, nspin, na_u, lasto, &
+              sp_dist, sparse_pattern, &
+              no_u, n_nzs, &
+              H, S, DM, EDM, Ef, NEGF_DE)
+        else
+          call ts_mumpsk(N_Elec,Elecs, &
+              nq, uGF, &
+              ucell, nspin, na_u, lasto, &
+              sp_dist, sparse_pattern, &
+              no_u, n_nzs, &
+              H, S, DM, EDM, Ef, NEGF_DE)
+        end if
 #endif
-       else
+      case default
+        call die('Error in code')
+      end select
+      
+      ! Close files
+      do iEl = 1 , N_Elec
+        if ( IONode .and. Elecs(iEl)%out_of_core ) then
+          call io_close(uGF(iEl))
+        end if
+      end do
+      
+      if ( charge_conv_run ) then
 
-          call die('Error in code')
-       end if
+        ! This is the 1. part of the Fermi correction
+        !
+        ! In this section we estimate the new Fermi level by
+        ! calculating the charge Q(E_F) and then correct
+        ! E_F such that dQ = Q(TS) - Qtot -> 0.
+        i_F = i_F + 1
+        if ( N_F < i_F ) then
+          N_F = N_F + 10
+          call re_alloc(Q_Ef,1,N_F,1,2,copy=.true.)
+        end if
 
-       ! Close files
-       do iEl = 1 , N_Elec
-         if ( IONode .and. Elecs(iEl)%out_of_core ) then
-           call io_close(uGF(iEl))
-         end if
-       end do
+        ! Save current fermi level and charge
+        call ts_get_charges(N_Elec, sp_dist, sparse_pattern, &
+            nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
+        Q_Ef(i_F,2) = Ef
 
-       if ( charge_conv_run ) then
+        if ( i_F < 2 ) then
+          call ts_qc_Fermi(sp_dist, nspin, n_nzs, &
+              Ef, DM, S, Qtot, &
+              ts_charge_conv)
 
-         ! This is the 1. part of the Fermi correction
-         !
-         ! In this section we estimate the new Fermi level by
-         ! calculating the charge Q(E_F) and then correct
-         ! E_F such that dQ = Q(TS) - Qtot -> 0.
+        else
 
-         i_F = i_F + 1
-         if ( N_F < i_F ) then
-           N_F = N_F + 10
-           call re_alloc(Q_Ef,1,N_F,1,2,copy=.true.)
-         end if
+          ! Instead of doing Q(E_F) for every change
+          ! we will perform spline interpolation ones we have 2 estimated
+          ! Q(E_F).
+          ! This tends to drastically speed up the convergence of the dQ -> 0.
 
-         ! Save current fermi level and charge
-         call ts_get_charges(N_Elec, sp_dist, sparse_pattern, &
-             nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
-         Q_Ef(i_F,2) = Ef
+          ! In case we have accumulated 2 or more points
+          call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
 
-         if ( i_F < 2 ) then
-           call ts_qc_Fermi(sp_dist, nspin, n_nzs, &
-               Ef, DM, S, Qtot, &
-               ts_charge_conv)
+          ! Truncate to the maximum allowed change in Fermi-level
+          call ts_qc_truncate(Q_Ef(i_F,2), &
+              TS_RHOCORR_FERMI_MAX, Ef, trunk=converged)
 
-         else
+          if ( IONode ) then
+            write(*,'(a,es11.4)') 'ts-qc-iscf: cubic spline dq = ', &
+                Q_Ef(i_F,1) - qtot
+          end if
 
-           ! Instead of doing Q(E_F) for every change
-           ! we will perform spline interpolation ones we have 2 estimated
-           ! Q(E_F).
-           ! This tends to drastically speed up the convergence of the dQ -> 0.
+        end if
 
-           ! In case we have accumulated 2 or more points
-           call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
+        ! Even if we have converged we allow the interpolation
+        ! to do a final step. If dQ is very small it should be very
+        ! close to the found value.
+        ! If the truncation already is reached we stop as that
+        ! *MUST* be the maximal change.
+        if ( .not. converged ) &
+            converged = abs(Q_Ef(i_F,1) - Qtot) < &
+            TS_RHOCORR_FERMI_TOLERANCE
 
-           ! Truncate to the maximum allowed change in Fermi-level
-           call ts_qc_truncate(Q_Ef(i_F,2), &
-               TS_RHOCORR_FERMI_MAX, Ef, trunk=converged)
+      else
 
-           if ( IONode ) then
-             write(*,'(a,es11.4)') 'ts-qc-iscf: cubic spline dq = ', &
-                 Q_Ef(i_F,1) - qtot
-           end if
+        ! If no Fermi-correction, we are converged
+        converged = .true.
 
-         end if
-
-         ! Even if we have converged we allow the interpolation
-         ! to do a final step. If dQ is very small it should be very
-         ! close to the found value.
-         ! If the truncation already is reached we stop as that
-         ! *MUST* be the maximal change.
-         if ( .not. converged ) &
-             converged = abs(Q_Ef(i_F,1) - Qtot) < &
-             TS_RHOCORR_FERMI_TOLERANCE
-
-       else
-
-         ! If no Fermi-correction, we are converged
-         converged = .true.
-
-       end if
+      end if
 
     end do
 
@@ -457,20 +456,20 @@ contains
     !       Clean up
     !***********************
     do iEl = 1 , N_Elec
-       if ( .not. Elecs(iEl)%out_of_core ) then
-          call delete(Elecs(iEl))
-       end if
+      if ( .not. Elecs(iEl)%out_of_core ) then
+        call delete(Elecs(iEl))
+      end if
     end do
 
     !***********************
     !  Clean up electrodes
     !***********************
     do iEl = 1 , N_Elec
-       if ( associated(Elecs(iEl)%HA) ) then
-          call de_alloc(Elecs(iEl)%HA,routine='transiesta')
-          call de_alloc(Elecs(iEl)%SA,routine='transiesta')
-       end if
-       call de_alloc(Elecs(iEl)%Gamma,routine='transiesta')
+      if ( associated(Elecs(iEl)%HA) ) then
+        call de_alloc(Elecs(iEl)%HA,routine='transiesta')
+        call de_alloc(Elecs(iEl)%SA,routine='transiesta')
+      end if
+      call de_alloc(Elecs(iEl)%Gamma,routine='transiesta')
     end do
 
     deallocate(uGF,nq)
@@ -479,11 +478,11 @@ contains
     ! computation here (notice that the routine will automatically
     ! return if no charge-correction is requested)
     call ts_qc(N_Elec,Elecs, sp_dist, &
-         sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot, &
-         TS_RHOCORR_METHOD)
+        sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot, &
+        TS_RHOCORR_METHOD)
 
     call ts_print_charges(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
-         nspin, n_nzs, DM, S, method = TS_INFO_SCF)
+        nspin, n_nzs, DM, S, method = TS_INFO_SCF)
 
     call timer('TS',2)
 
@@ -504,8 +503,8 @@ contains
       call read_Elec(El,Bcast=.true., IO = .false.)
       
       if ( .not. associated(El%isc_off) ) then
-         call die('An electrode file needs to be a non-Gamma calculation. &
-              &Ensure at least two k-points in the T-direction.')
+        call die('An electrode file needs to be a non-Gamma calculation. &
+            &Ensure at least two k-points in the T-direction.')
       end if
       
       call create_sp2sp01(El, IO = .false.)
@@ -517,7 +516,7 @@ contains
       
       ! We do not accept onlyS files
       if ( .not. initialized(El%H00) ) then
-         call die('An electrode file must contain the Hamiltonian')
+        call die('An electrode file must contain the Hamiltonian')
       end if
 
       call delete(El%sp)
@@ -535,26 +534,26 @@ contains
       
       do iEl = 1 , N_Elec
 
-         ! Initialize k-points (never seen k-point)
-         Elecs(iEl)%bkpt_cur(:) = 2352345._dp
+        ! Initialize k-points (never seen k-point)
+        Elecs(iEl)%bkpt_cur(:) = 2352345._dp
 
-         if ( Elecs(iEl)%out_of_core ) then
+        if ( Elecs(iEl)%out_of_core ) then
 
-           if ( IONode ) then
-             call io_assign(uGF(iEl))
-             open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
-           end if
+          if ( IONode ) then
+            call io_assign(uGF(iEl))
+            open(file=Elecs(iEl)%GFfile,unit=uGF(iEl),form='unformatted')
+          end if
 
-         else
+        else
 
-           ! prepare the electrode to create the surface self-energy
-           call init_Electrode_HS(Elecs(iEl))
+          ! prepare the electrode to create the surface self-energy
+          call init_Electrode_HS(Elecs(iEl))
 
-         end if
+        end if
 
-         if ( Elecs(iEl)%out_of_core ) then
-            call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn )
-         end if
+        if ( Elecs(iEl)%out_of_core ) then
+          call read_Green(uGF(iEl),Elecs(iEl), ts_nkpnt, NEn )
+        end if
          
       end do
       
@@ -598,34 +597,33 @@ contains
     zmem = 0._dp
     do i = 1 , N_Elec
 
-       no_used = Elecs(i)%no_used
-       no_E = TotUsedOrbs(Elecs(i))
+      no_used = Elecs(i)%no_used
+      no_E = TotUsedOrbs(Elecs(i))
 
-       if ( IsVolt .or. .not. Elecs(i)%Bulk ) then
-          ! Hamiltonian and overlap
-          if ( Elecs(i)%pre_expand > 1 ) then
-             zmem = zmem + no_E ** 2 * 2
-          else
-             zmem = zmem + no_E * no_used * 2
-          end if
-       end if
+      if ( IsVolt .or. .not. Elecs(i)%Bulk ) then
+        ! Hamiltonian and overlap
+        if ( Elecs(i)%pre_expand > 1 ) then
+          zmem = zmem + no_E ** 2 * 2
+        else
+          zmem = zmem + no_E * no_used * 2
+        end if
+      end if
 
-       if ( IsVolt ) then
-          zmem = zmem + no_E ** 2 ! GS/Gamma
-       else
-          if ( Elecs(i)%pre_expand > 0 ) then
-             zmem = zmem + no_E ** 2
-          else
-             zmem = zmem + no_E * no_used
-          end if
-       end if
+      if ( IsVolt ) then
+        zmem = zmem + no_E ** 2 ! GS/Gamma
+      else
+        if ( Elecs(i)%pre_expand > 0 ) then
+          zmem = zmem + no_E ** 2
+        else
+          zmem = zmem + no_E * no_used
+        end if
+      end if
        
     end do
     zmem = zmem * 16._dp / 1024._dp ** 2
     if ( IONode ) then
-       write(*,'(/,a,t55,f10.2,a)') &
-            'transiesta: mem of electrodes (static): ', &
-            zmem,'MB'
+      write(*,'(/,a,t55,f10.2,a)') &
+          'transiesta: mem of electrodes (static): ', zmem,'MB'
     end if
     mem = zmem
 
@@ -634,22 +632,22 @@ contains
     zmem = 0._dp
     nel = nnzs(ts_sp_uc) * 2
     if ( ts_Gamma ) then
-       dmem = dmem + nel
+      dmem = dmem + nel
     else
-       zmem = zmem + nel
+      zmem = zmem + nel
     end if
 
     ! global sparsity update
     nel = nnzs(tsup_sp_uc)
     if ( Calc_Forces ) then
-       i = max(N_mu,N_nEq_id) + N_mu
+      i = max(N_mu,N_nEq_id) + N_mu
     else
-       i = max(N_mu,N_nEq_id)
+      i = max(N_mu,N_nEq_id)
     end if
     if ( ts_Gamma ) then
-       dmem = dmem + nel * i
+      dmem = dmem + nel * i
     else
-       zmem = zmem + nel * i
+      zmem = zmem + nel * i
     end if
     ! Convert to MB
     dmem = dmem * 8._dp / 1024._dp ** 2
@@ -657,93 +655,89 @@ contains
     mem = mem + dmem + zmem
 
     if ( IONode ) then
-       write(*,'(a,t55,f10.2,a)') &
-            'transiesta: mem of global update arrays (static): ', &
-            dmem+zmem,'MB'
+      write(*,'(a,t55,f10.2,a)') &
+          'transiesta: mem of global update arrays (static): ', dmem+zmem,'MB'
     end if
 
     ! Local sparsity update
     if ( IsVolt ) then
-       nel = nnzs(ltsup_sp_sc)
-       if ( Calc_Forces ) then
-          dmem = nel * ( 2 * N_mu + N_nEq_id )
-       else
-          dmem = nel * ( N_mu + N_nEq_id )
-       end if
-       ! Bias local sparsity pattern is always
-       ! in double precision
-       dmem = dmem * 8._dp / 1024._dp ** 2
-       if ( IONode ) then
-          write(*,'(a,t55,f10.2,a)') &
-               'transiesta: mem of master node sparse arrays: ', &
-               dmem,'MB'
-       end if
-       mem = mem + dmem
+      nel = nnzs(ltsup_sp_sc)
+      if ( Calc_Forces ) then
+        dmem = nel * ( 2 * N_mu + N_nEq_id )
+      else
+        dmem = nel * ( N_mu + N_nEq_id )
+      end if
+      ! Bias local sparsity pattern is always
+      ! in double precision
+      dmem = dmem * 8._dp / 1024._dp ** 2
+      if ( IONode ) then
+        write(*,'(a,t55,f10.2,a)') &
+            'transiesta: mem of master node sparse arrays: ', dmem,'MB'
+      end if
+      mem = mem + dmem
     end if
 
     if ( ts_method == TS_BTD ) then
 
-       ! initialize padding and work-size query
-       padding = 0
-       worksize = 0
+      ! initialize padding and work-size query
+      padding = 0
+      worksize = 0
 
-       if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
-          ! Calculate size of the tri-diagonal matrix
-          call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
-               N_Elec, Elecs, padding, worksize)
-       end if
+      if ( ts_A_method == TS_BTD_A_COLUMN .and. IsVolt ) then
+        ! Calculate size of the tri-diagonal matrix
+        call GFGGF_needed_worksize(c_Tri%n,c_Tri%r, &
+            N_Elec, Elecs, padding, worksize)
+      end if
 
-       nel = nnzs_tri_i8b(c_Tri%n,c_Tri%r)
-       if ( nel > huge(1) ) then
-          call die('transiesta: Memory consumption is too large!')
-       end if
-       zmem = (nel * 2._dp + padding + worksize ) * 16._dp / 1024._dp ** 2
-       if ( IONode ) &
-            write(*,'(a,t55,f10.2,a)') &
-            'transiesta: mem of tri-diagonal matrices: ', &
-            zmem,'MB'
-       mem = mem + zmem
+      nel = nnzs_tri_i8b(c_Tri%n,c_Tri%r)
+      if ( nel > huge(1) ) then
+        call die('transiesta: Memory consumption is too large!')
+      end if
+      zmem = (nel * 2._dp + padding + worksize ) * 16._dp / 1024._dp ** 2
+      if ( IONode ) &
+          write(*,'(a,t55,f10.2,a)') &
+          'transiesta: mem of tri-diagonal matrices: ', zmem,'MB'
+      mem = mem + zmem
+
     else if ( ts_method == TS_FULL ) then
-       ! Calculate size of the full matrices
-       ! Here we calculate number of electrodes not needed to update the cross-terms
-       no_E = sum(TotUsedOrbs(Elecs),Elecs(:)%DM_update==0)
-       i = nrows_g(ts_sp_uc) - no_Buf
-       ! LHS
-       zmem = i ** 2
-       ! RHS
-       if ( IsVolt ) then
-          zmem = zmem + i * max(i-no_E,sum(TotUsedOrbs(Elecs)))
-       else
-          zmem = zmem + i * (i-no_E)
-       end if
-       zmem = zmem * 16._dp / 1024._dp ** 2
-       if ( IONode ) &
-            write(*,'(a,t55,f10.2,a)') &
-            'transiesta: mem of full matrices: ', &
-            zmem,'MB'
-       mem = mem + zmem
+      ! Calculate size of the full matrices
+      ! Here we calculate number of electrodes not needed to update the cross-terms
+      no_E = sum(TotUsedOrbs(Elecs),Elecs(:)%DM_update==0)
+      i = nrows_g(ts_sp_uc) - no_Buf
+      ! LHS
+      zmem = i ** 2
+      ! RHS
+      if ( IsVolt ) then
+        zmem = zmem + i * max(i-no_E,sum(TotUsedOrbs(Elecs)))
+      else
+        zmem = zmem + i * (i-no_E)
+      end if
+      zmem = zmem * 16._dp / 1024._dp ** 2
+      if ( IONode ) &
+          write(*,'(a,t55,f10.2,a)') &
+          'transiesta: mem of full matrices: ', zmem,'MB'
+      mem = mem + zmem
 #ifdef SIESTA__MUMPS
     else if ( ts_method == TS_MUMPS ) then
-       if ( IONode ) then
-          write(*,'(a)')'transiesta: mem is determined by MUMPS.'
-          write(*,'(a)')'transiesta: Search in TS_MUMPS_<Node>.dat for: ### Minimum memory.'
-       end if
+      if ( IONode ) then
+        write(*,'(a)')'transiesta: mem is determined by MUMPS.'
+        write(*,'(a)')'transiesta: Search in TS_MUMPS_<Node>.dat for: ### Minimum memory.'
+      end if
 #endif
     end if
 
 #ifdef MPI
     call MPI_Reduce(mem,zmem,1,MPI_Double_Precision, &
-         MPI_MAX, 0, MPI_Comm_World, MPIerror)
+        MPI_MAX, 0, MPI_Comm_World, MPIerror)
 #else
     zmem = mem
 #endif
 
     if ( IONode ) then
-       write(*,'(a,t55,f10.2,a)') &
-            'transiesta: Total memory usage: ', &
-            zmem,'MB'
+      write(*,'(a,t55,f10.2,a)') &
+          'transiesta: Total memory usage: ', zmem,'MB'
     end if
-    
+
   end subroutine ts_print_memory
 
 end module m_transiesta

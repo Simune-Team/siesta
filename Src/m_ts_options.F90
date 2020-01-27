@@ -827,7 +827,7 @@ contains
 
     use m_ts_charge, only: TS_RHOCORR_METHOD, TS_RHOCORR_BUFFER, TS_RHOCORR_FERMI
     use m_ts_charge, only: TS_RHOCORR_FACTOR, TS_RHOCORR_FERMI_TOLERANCE
-    use m_ts_charge, only: TS_RHOCORR_FERMI_MAX
+    use m_ts_charge, only: TS_RHOCORR_FERMI_MAX, TS_RHOCORR_FERMI_ETA
 
     use m_ts_weight, only: TS_W_METHOD, TS_W_CORRELATED
     use m_ts_weight, only: TS_W_ORB_ORB, TS_W_TR_ATOM_ATOM, TS_W_SUM_ATOM_ATOM
@@ -1022,7 +1022,8 @@ contains
        write(*,f8)'Charge correction factor',TS_RHOCORR_FACTOR
     else if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then ! Correct fermi-lever
        write(*,f10)'Charge correction','Fermi-level'
-       write(*,f8)'Charge correction tolerance',TS_RHOCORR_FERMI_TOLERANCE
+       write(*,f8)'Charge correction dQ tolerance',TS_RHOCORR_FERMI_TOLERANCE
+       write(*,f7)'Fermi-level extrapolation eta value ',TS_RHOCORR_FERMI_ETA/eV, 'eV'
        write(*,f8)'Charge correction factor',TS_RHOCORR_FACTOR
        write(*,f7)'Max change in Fermi-level allowed', &
             TS_RHOCORR_FERMI_MAX / eV,'eV'
