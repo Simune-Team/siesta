@@ -11,7 +11,7 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 
-.PHONY: default what dep version clean-tbt clean
+.PHONY: default what dep version  clean
 
 override WITH_NCDF=
 override WITH_FLOOK=

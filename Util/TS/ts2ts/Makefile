@@ -24,6 +24,8 @@ dep:
           $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 $(VPATH)/*.T90
 	@sed -i -e 's/\.T90\.o:/.o:/g' Makefile
 
+override WITH_MPI=
+
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
 
@@ -31,8 +33,6 @@ FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
 
-DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS) $(DEFS_PREFIX)-UMPI
-FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(FPPFLAGS) $(DEFS_PREFIX)-UMPI
 INCFLAGS:=$(NETCDF_INCFLAGS) $(INCFLAGS)
 
 # Uncomment the following line for debugging support
@@ -80,6 +80,4 @@ dep:
 
 # DO NOT DELETE THIS LINE - used by make depend
 units.o: precision.o
-units.o: precision.o
-ts2ts.o: f2kcli.o precision.o units.o
 ts2ts.o: f2kcli.o precision.o units.o

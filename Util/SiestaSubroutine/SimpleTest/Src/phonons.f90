@@ -21,7 +21,7 @@ program phonons
 
   integer,parameter :: na = 3
   integer :: error, ia, i
-  integer :: myNode, MPI_Comm, Nodes
+  integer :: myNode, Comm, Nodes
   real(dp):: e, fa(3,na), xa(3,na), faplus(3,na), faminus(3,na)
   real(dp):: xaflat(3*na), fc(3*na,3*na), fcbuff(3*na)
   real(dp), parameter :: delta_u = 0.05
@@ -48,7 +48,7 @@ program phonons
 ! things would not work. In real life one should decide beforehand
 ! how to distribute the load.
 
-  call MPI_Comm_Split( MPI_Comm_World, myNode, myNode, MPI_Comm, error )
+  call MPI_Comm_Split( MPI_Comm_World, myNode, myNode, Comm, error )
 
 ! Set physical units
   call siesta_units( 'Ang', 'eV' )
@@ -59,7 +59,7 @@ program phonons
 ! will attempt to create files with the same names!
 ! There should be a more flexible framework for this
 
-  call siesta_launch( 'h2o', mpi_comm= MPI_Comm )
+  call siesta_launch( 'h2o', mpi_comm= Comm )
   if (myNode==0) print*, 'siesta launched'
 
 !
