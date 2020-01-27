@@ -25,10 +25,12 @@
 # Special needs for the use of FFTW
 # You must set these symbols properly, either here or 
 # (better) in your top arch.make
-# 
-FFTW_ROOT ?=/usr/local
-FFTW_INCFLAGS ?= -I$(FFTW_ROOT)/include
-FFTW_LIBS ?= -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
+#
+ifndef FFTW_ROOT
+ $(error You need to define FFTW_ROOT in your arch.make)
+endif
+FFTW_INCFLAGS = -I$(FFTW_ROOT)/include
+FFTW_LIBS = -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
 #-----------------------------------------
 
 OBJDIR=Obj

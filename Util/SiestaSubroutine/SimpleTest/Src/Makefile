@@ -30,7 +30,7 @@ OBJDIR=Obj
 all: default
 
 default: simple_pipes_serial simple_sockets_serial simple_mpi_serial \
-         simple_pipes_parallel simple_sockets_parallel simple_mpi_parallel clean 
+         simple_pipes_parallel simple_sockets_parallel simple_mpi_parallel
 #
 MAIN_OBJDIR:=$(shell cd -P -- ../../../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
@@ -70,8 +70,8 @@ INCFLAGS:=$(NETCDF_INCFLAGS) \
 #
 MS=MatrixSwitch.a
 #
-ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XMLF90_LIBS) $(XC) \
-	$(NCPS) $(PSML) $(PSOP) $(MS) \
+ALL_LIBS= $(SIESTA_LIB) $(FDF) $(XC) \
+	$(NCPS) $(PSML) $(XMLF90_LIBS) $(PSOP) $(MS) \
 	$(MPI_INTERFACE) $(COMP_LIBS) $(LIBS)
 #
 libs_collected:
@@ -101,15 +101,15 @@ simple_sockets_parallel: $(FSIESTA_SOCKETS) simple_parallel.o
 #
 # MPI version
 #
-phonons: libs_collected phonons.o 
-	$(FC) $(LDFLAGS) -o phonons phonons.o $(ALL_LIBS)
+phonons: libs_collected phonons.o handlers.o
+	$(FC) $(LDFLAGS) -o phonons phonons.o handlers.o $(ALL_LIBS)
 #
-simple_mpi_serial: libs_collected simple_serial.o 
-	$(FC) $(LDFLAGS) -o simple_mpi_serial simple_serial.o $(ALL_LIBS)
+simple_mpi_serial: libs_collected simple_serial.o  handlers.o
+	$(FC) $(LDFLAGS) -o simple_mpi_serial simple_serial.o handlers.o $(ALL_LIBS)
 #
-simple_mpi_parallel: libs_collected simple_mpi_parallel.o 
+simple_mpi_parallel: libs_collected simple_mpi_parallel.o handlers.o
 	$(FC) $(LDFLAGS) -o simple_mpi_parallel \
-	      simple_mpi_parallel.o $(ALL_LIBS)
+	      simple_mpi_parallel.o handlers.o $(ALL_LIBS)
 #
 intermediate: 
 	@echo "==> Cleaning intermediate files ONLY"
