@@ -7,8 +7,6 @@ module flook_siesta
   use siesta_geom
   use parallel, only : IONode, Node, Nodes
 
-  use sys, only: bye, die
-
 #endif
 
   implicit none
