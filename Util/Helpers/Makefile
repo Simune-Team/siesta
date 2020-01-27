@@ -55,7 +55,7 @@ FDF_MAKEFILE=$(VPATH)/fdf/makefile
 FDF_INCFLAGS:=-I $(VPATH)/fdf $(INCFLAGS)
 $(FDF): 
 	(mkdir -p fdf; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC)" "VPATH=$(VPATH)/fdf" \
-                          "ARCH_MAKE=../$(ARCH_MAKE)" \
+                          "ARCH_MAKE=$(ARCH_MAKE)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
