@@ -273,6 +273,12 @@ C     Initialise MPI and set processor number
 #endif
       IOnode = SIESTA_worker .and. (Node .eq. 0)
 
+      if ( IONode ) then
+        ! Add citations
+        call init_citation(trim(slabel))
+        call add_citation("10.1088/0953-8984/14/11/302")
+      end if
+
       ! Be sure to initialize the spin-configuration data
       ! for all processors.
       call init_spin( )
@@ -355,12 +361,6 @@ C     Initialise MPI and set processor number
      .                   threshold=threshold,
      &                   printNow=.false. )
       
-      if ( IONode ) then
-         ! Add citations
-         call init_citation(trim(slabel))
-         call add_citation("10.1088/0953-8984/14/11/302")
-      end if
-
 
 !     Initialise exchange-correlation functional information
       call read_xc_info()

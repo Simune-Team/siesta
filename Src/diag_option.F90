@@ -96,7 +96,6 @@ contains
 #ifdef MPI
     if ( Nodes > 1 .and. .not. Gamma ) then
        ParallelOverK = fdf_get( 'Diag.ParallelOverK', .false.)
-       if ( nspin > 2 ) ParallelOverK = .false.
     end if
 
     if ( Nodes == 1 ) then
