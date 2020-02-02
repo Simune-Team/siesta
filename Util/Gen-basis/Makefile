@@ -268,9 +268,13 @@ diag.o: alloc.o diag_option.o parallel.o precision.o
 diag2g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
 diag2g.o:  writewave.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o  writewave.o
+diag2kp.o: alloc.o fermid.o intrinsic_missing.o m_spin.o parallel.o
+diag2kp.o: parallelsubs.o precision.o 
 diag3g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
 diag3g.o:  writewave.o
 diag3k.o: fermid.o parallel.o parallelsubs.o precision.o  writewave.o
+diag3kp.o: alloc.o fermid.o intrinsic_missing.o m_spin.o parallel.o
+diag3kp.o: parallelsubs.o precision.o 
 diag_option.o: parallel.o precision.o
 diagg.o: alloc.o fermid.o intrinsic_missing.o m_spin.o parallel.o
 diagg.o: parallelsubs.o precision.o  writewave.o
@@ -583,11 +587,11 @@ m_ts_electrode.o: precision.o  units.o
 m_ts_electype.o: bloch_unfold.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_electype.o: class_SpData2D.o class_Sparsity.o create_Sparsity_SC.o
 m_ts_electype.o: geom_helper.o intrinsic_missing.o m_char.o m_geom_box.o
-m_ts_electype.o: m_geom_plane.o m_handle_sparse.o m_iodm.o m_os.o m_region.o
-m_ts_electype.o: m_ts_chem_pot.o m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o
-m_ts_electype.o: parallel.o precision.o units.o
+m_ts_electype.o: m_handle_sparse.o m_iodm.o m_os.o m_region.o m_ts_chem_pot.o
+m_ts_electype.o: m_ts_io.o m_ts_io_ctype.o m_ts_iodm.o parallel.o precision.o
+m_ts_electype.o: units.o
 m_ts_full_scat.o: intrinsic_missing.o m_ts_cctype.o m_ts_electype.o
-m_ts_full_scat.o: m_ts_method.o parallel.o precision.o
+m_ts_full_scat.o: m_ts_method.o precision.o
 m_ts_fullg.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_fullg.o: class_SpData2D.o class_Sparsity.o m_iterator.o m_ts_cctype.o
 m_ts_fullg.o: m_ts_contour_eq.o m_ts_contour_neq.o m_ts_debug.o
@@ -605,8 +609,7 @@ m_ts_gf.o: m_os.o m_ts_cctype.o m_ts_contour_eq.o m_ts_contour_neq.o
 m_ts_gf.o: m_ts_electrode.o m_ts_electype.o parallel.o precision.o 
 m_ts_gf.o: units.o
 m_ts_global_vars.o: densematrix.o parallel.o
-m_ts_hartree.o: intrinsic_missing.o m_mesh_node.o m_ts_electype.o m_ts_tdir.o
-m_ts_hartree.o: parallel.o precision.o units.o
+m_ts_hartree.o: m_mesh_node.o m_ts_tdir.o parallel.o precision.o units.o
 m_ts_io.o: alloc.o class_OrbitalDistribution.o class_SpData1D.o
 m_ts_io.o: class_SpData2D.o class_Sparsity.o geom_helper.o m_io_s.o m_ncdf_io.o
 m_ts_io.o: m_os.o m_sparse.o parallel.o precision.o 
@@ -686,8 +689,9 @@ m_ts_trik.o: precision.o ts_kpoint_scf.o units.o
 m_ts_trimat_invert.o: class_TriMat.o m_pivot_array.o m_region.o
 m_ts_trimat_invert.o: m_trimat_invert.o m_ts_electype.o m_ts_method.o
 m_ts_trimat_invert.o: precision.o
-m_ts_voltage.o: m_geom_box.o m_mesh_node.o m_ncdf_io.o m_ts_electype.o
-m_ts_voltage.o: m_ts_options.o m_ts_tdir.o parallel.o precision.o units.o
+m_ts_voltage.o: iogrid_netcdf.o m_geom_box.o m_mesh_node.o m_ncdf_io.o
+m_ts_voltage.o: m_ts_electype.o m_ts_options.o m_ts_tdir.o parallel.o
+m_ts_voltage.o: precision.o units.o
 m_ts_weight.o: class_OrbitalDistribution.o class_SpData2D.o class_Sparsity.o
 m_ts_weight.o: geom_helper.o intrinsic_missing.o m_ts_chem_pot.o
 m_ts_weight.o: m_ts_contour_neq.o m_ts_electype.o parallel.o precision.o

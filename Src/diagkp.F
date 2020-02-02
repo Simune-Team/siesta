@@ -76,7 +76,7 @@ C *************************** AUXILIARY *******************************
 C real*8 Haux(2,nuotot,nuo) : Auxiliary space for the hamiltonian matrix
 C real*8 Saux(2,nuotot,nuo) : Auxiliary space for the overlap matrix
 C real*8 psi(2,nuotot,nuo)  : Auxiliary space for the eigenvectors
-C real*8 aux(2,nuotot*5)    : Extra auxiliary space
+C real*8 aux(2,nuotot)      : Extra auxiliary space
 C real*8 Dk(2,nuotot,nuo)   : Aux. space that may be the same as Haux
 C real*8 Ek(2,nuotot,nuo)   : Aux. space that may be the same as Saux
 C *************************** UNITS ***********************************
@@ -118,7 +118,7 @@ C
      &                  xij(3,maxnh), qs(nspin)
       real(dp)          Dk(2,nuotot,nuotot), Ek(2,nuotot,nuotot),
      &                  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
-     &                  psi(2,nuotot,nuotot), aux(2,nuotot*5)
+     &                  psi(2,nuotot,nuotot), aux(2,nuotot)
       logical           getD, fixspin
       external          cdiag, memory
 
