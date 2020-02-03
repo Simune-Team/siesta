@@ -1,5 +1,12 @@
 #
-SIESTA_ARCH=MN4-ifort
+SIESTA_ARCH=MN4-intel
+#
+# Machine specific settings might be:
+#
+# 1. Inherited from environmental variables
+#    (paths, libraries, etc)
+# 2. Set from a 'fortran.mk' file that is
+#    included below (compiler names, flags, etc) (Uncomment first)
 #
 # NOTE: To be used with the "last" libgridxc of the 0.8 series,
 #       without auto-tools support
@@ -22,16 +29,19 @@ WITH_GRID_SP=
 # (Either explicitly here, or through shell variables, perhaps
 #  set by a module system)
 #
+#--------------------------------------------------------
 #XMLF90_ROOT=
 #PSML_ROOT=
 #GRIDXC_ROOT=
-#NETCDF_ROOT=/usr/include  
+#ELSI_ROOT=
+#ELPA_ROOT=
+#ELPA_INCLUDE_DIRECTORY=
+#FLOOK_ROOT=
+#--------------------------------------------------------
+NETCDF_ROOT=/apps/NETCDF/4.4.1.1/INTEL/IMPI
 SCALAPACK_LIBS=-L$(MKLROOT)/lib/intel64 -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
 LAPACK_LIBS=-L$(MKLROOT)/lib/intel64 -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
 FFTW_ROOT=/apps/FFTW/3.3.6/INTEL/IMPI
-#LAPACK_LIBS=-lveclibfort     # Appropriate for MacOS (Homebrew)
-#COMP_LIBS = libsiestaLAPACK.a libsiestaBLAS.a  # Generic built-in
-#
 # Needed for PEXSI (ELSI) support
 LIBS_CPLUS=-lstdc++ 
 #--------------------------------------------------------
@@ -40,18 +50,36 @@ LIBS_CPLUS=-lstdc++
 #
 FC_PARALLEL=mpiifort
 FC_SERIAL=ifort
-#
 FPP = $(FC_SERIAL) -E -P -x c
-#
-FFLAGS = $(FCFLAGS)
+FFLAGS = -O2 -fp-model source
 FFLAGS_DEBUG= -g -O0
-
 RANLIB=echo
-FC_ASIS=$(FC_SERIAL)
-COMP_LIBS=
+#
+# Alternatively, prepare a fortran.mk file with compiler definitions,
+# put it in this same directory, and uncomment the two lines below
+#
+### SELF_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+### include $(SELF_DIR)fortran.mk
+#
+#-----------------------------------------
+# Possible section on specific recipes for troublesome files, using
+# a lower optimization level.
+#
+#atom.o: atom.F
+#	$(FC) -c $(FFLAGS_DEBUG) $(INCFLAGS) $(FPPFLAGS) $< 
+#state_analysis.o: 
+#create_Sparsity_SC.o:
+#
+# Note that simply using target-specific variables, such as:
+#atom.o: FFLAGS=$(FFLAGS_DEBUG)
+# would compile *all* dependencies of atom.o with that setting...
 #
 #--------------------------------------------------------
 # Nothing should need to be changed below
+#--------------------------------------------------------
+#
+FC_ASIS=$(FC_SERIAL)
+COMP_LIBS=
 #
 ifdef WITH_GRID_SP
    $(error GRID_SP option does not work with libgridxc < 0.9.X)
@@ -103,7 +131,8 @@ ifdef WITH_NETCDF
  NETCDF_INCFLAGS=-I$(NETCDF_ROOT)/include
  NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdff
  FPPFLAGS_CDF= -DCDF
- LIBS +=$(NETCDF_LIBS)
+ INCFLAGS += $(NETCDF_INCFLAGS)
+ LIBS += $(NETCDF_LIBS)
 endif
 #
 ifdef WITH_NCDF
@@ -141,6 +170,8 @@ endif
 SYS=nag
 FPPFLAGS += $(FPPFLAGS_CDF) $(FPPFLAGS_GRID) $(FPPFLAGS_MPI) $(FPPFLAGS_FLOOK)
 #
+# These lines make use of a custom mechanism to generate library lists and
+# include-file management. The mechanism is not implemented in all libraries.
 #---------------------------------------------
 include $(XMLF90_ROOT)/share/org.siesta-project/xmlf90.mk
 include $(PSML_ROOT)/share/org.siesta-project/psml.mk
@@ -149,13 +180,13 @@ include $(GRIDXC_ROOT)/gridxc.mk
 # We assume that libgridxc
 # includes libxc. If not, delete '-lxc90 -lxc' from GRIDXC_LIBS above.
 #---------------------------------------------
-#
+.c.o:
+	$(CC) -c $(CFLAGS) $(INCFLAGS) $(CPPFLAGS) $< 
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
-.f.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $< 
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(FPPFLAGS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90) $< 
+.f.o:
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f)  $<
 .f90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
-#
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_free_f90)  $<
