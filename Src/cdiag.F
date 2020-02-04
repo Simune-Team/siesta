@@ -164,9 +164,13 @@ C Start time count
 C Check whether first call needs to be reset due to a change of algorithm
       if (ResetFirstCall) then
         if (.not. FirstCall) then
+#ifdef MPI
           call blacs_gridexit( ictxt )
+#endif
           if (Use2D) then
+#ifdef MPI
             call blacs_gridexit( i2d_ctxt )
+#endif
           end if
         end if
         FirstCall = .true.
