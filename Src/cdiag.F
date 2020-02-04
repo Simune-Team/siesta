@@ -165,11 +165,11 @@ C Check whether first call needs to be reset due to a change of algorithm
       if (ResetFirstCall) then
         if (.not. FirstCall) then
 #ifdef MPI
-          call blacs_gridexit( ictxt )
+          call blacs_gridexit( ictxt )  ! commenting out this
 #endif
           if (Use2D) then
 #ifdef MPI
-            call blacs_gridexit( i2d_ctxt )
+            call blacs_gridexit( i2d_ctxt ) ! commenting out this
 #endif
           end if
         end if
