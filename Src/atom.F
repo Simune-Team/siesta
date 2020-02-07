@@ -696,8 +696,14 @@ c    .          'atom: The above configuration will be used ',
             nvlocal = 0
             call com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
      .                      zval,flting,spp)
-! 
-         endif
+!
+! Array S for the Schrodinger eq. integration
+!          (Needed for the calculation of the basis set )
+
+            s(2:nrval) = drdi(2:nrval)*drdi(2:nrval)
+            s(1) = s(2)
+
+          endif
 !------------------------------------------------------------
 !     
 ! Calculate initial populations for the atomic orbitals
