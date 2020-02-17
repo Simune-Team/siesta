@@ -45,7 +45,7 @@ TYPE(rusage), TARGET                     :: usage
 ret = 0
 m_memory = 0
 
-#ifndef __WIN__ 
+#ifndef __WIN32__ 
 ret = getrusage(0, C_LOC(usage))
 m_memory = usage%ru_maxrss
 #endif
