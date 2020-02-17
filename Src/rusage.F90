@@ -45,10 +45,11 @@ TYPE(rusage), TARGET                     :: usage
 ret = 0
 m_memory = 0
 
-! I could not get the preprocessor working, therefore these two lines are commented!!!
-!ret = getrusage(0, C_LOC(usage))
-!m_memory = usage%ru_maxrss
-!
+#ifndef __WIN__ 
+ret = getrusage(0, C_LOC(usage))
+m_memory = usage%ru_maxrss
+#endif
+
 END FUNCTION m_memory
 
 FUNCTION rss_max()
