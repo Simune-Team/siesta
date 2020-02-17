@@ -42,9 +42,13 @@ INTEGER(KIND=int_8)                      :: m_memory
 
 INTEGER(C_INT)                           :: ret
 TYPE(rusage), TARGET                     :: usage
+ret = 0
+m_memory = 0
 
-ret = getrusage(0, C_LOC(usage))
-m_memory = usage%ru_maxrss 
+! I could not get the preprocessor working, therefore these two lines are commented!!!
+!ret = getrusage(0, C_LOC(usage))
+!m_memory = usage%ru_maxrss
+!
 END FUNCTION m_memory
 
 FUNCTION rss_max()
