@@ -46,7 +46,7 @@ BLACS_LIBS=
 
 #SCALAPACK_LIBS= -lscalapack-openmpi -lblacs-openmpi -L${MKLROOT}/lib -lmkl_gf_lp64 -lmkl_core -lmkl_sequential -lpthread -lm -ldl
 
-SCALAPACK_LIBS= -lscalapack-openmpi -lblacs-openmpi -lblacsF77init-openmpi -llapack -lblas -lpthread -lm -ldl
+SCALAPACK_LIBS= -lscalapack-openmpi -llapack -lblas -lpthread -lm -ldl
 
 
 NETCDF_LIBS=
