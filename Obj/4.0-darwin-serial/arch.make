@@ -36,7 +36,7 @@ FPP = $(FC) -E -P -x c
 # a good idea to add options here, except when they are essential for
 # a proper operation.
 # In case of MPI compilation this should be the mpi compiler (mpifort).
-FC = mpif90
+FC = gfortran
 
 # The FC_SERIAL symbol is useful in at least two cases:
 #   1. When the "MPI compiler environment" is so complex that it might
@@ -48,7 +48,7 @@ FC = mpif90
 FC_SERIAL = gfortran
 
 # Here we should put mainly optimization flags
-FFLAGS = -O2 -fPIC -ftree-vectorize -march=native -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
+FFLAGS = -O2 -fPIC -ftree-vectorize -march=native 
 
 # If you want to use a specific archive function you may specify it here
 # Note that if you use LTO(gcc)/IPO(intel) specifying the correct AR
@@ -87,8 +87,8 @@ KINDS = $(SP_KIND) $(DP_KIND)
 DEFS_PREFIX =
 
 # Used only at the linking stage. For example, you might need "-static"
-LDFLAGS = -static
-FPPFLAGS= -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
+LDFLAGS = # -static
+FPPFLAGS= -DFC_HAVE_FLUSH -DFC_HAVE_ABORT # -DMPI
 
 # These symbols help to keep the building rules concise
 # This enables specific compilation options for certain
@@ -107,12 +107,12 @@ FPPFLAGS_free_F90 = $(FPPFLAGS)
 #   BLAS
 #   LAPACK
 #   ScaLAPACK (only for MPI compilation)
-BLAS_LIBS = -lblas
-LAPACK_LIBS = -llapack
+# BLAS_LIBS = -lblas
+LAPACK_LIBS = -llapack -lblas
 # The most recent ScaLAPACK versions have built in the BLACS library.
 # If BLACS is not included in the ScaLAPACK library you are
 # required to add it here as well:
-# SCALAPACK_LIBS = -lscalapack
+SCALAPACK_LIBS = #-lscalapack
 
 # If you do not have BLAS/LAPACK installed on your machine
 # you may use the shipped BLAS/LAPACK versions.
@@ -138,8 +138,8 @@ COMP_LIBS =
 #NETCDF_LIBS = -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf
 
 # This (as well as the -DMPI definition) is essential for MPI support
-# MPI_INTERFACE = libmpi_f90.a
-# MPI_INCLUDE = .
+MPI_INTERFACE = # libmpi_f90.a
+MPI_INCLUDE = # .
 
 # Preprocessor definitions or flags.
 # Here we use FPPFLAGS (as 'configure' calls them), but historically
