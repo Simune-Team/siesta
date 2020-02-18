@@ -35,6 +35,9 @@ module m_ts_options
   ! Whether we should stop before transiesta begins...
   logical :: TS_siesta_stop = .false.
 
+  !< Whether TranSiesta is allowed to start without the 0-bias calculation.
+  logical :: TS_start_bias = .false.
+
   ! Controls to save the TSHS file
   logical :: TS_HS_save = .true.
   logical :: TS_DE_save = .false.
@@ -147,6 +150,10 @@ contains
     ! When running TSmode we FORCE TS.HS.Save and TS.DE.Save
     TS_HS_save = .true.
     TS_DE_save = .true.
+
+    ! Force the run of a biased TranSiesta run
+    ! from a pristine siesta calculation.
+    TS_start_bias = fdf_get('TS.Voltage.FromSiesta', .false.)
 
     ! Read in the transiesta SCF mixing options
     call mixers_init('TS.SCF', ts_scf_mixs )

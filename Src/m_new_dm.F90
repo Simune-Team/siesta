@@ -393,7 +393,7 @@ contains
     use m_ts_options,   only : TS_scf_mode, ts_hist_keep
     use m_ts_options,   only : val_swap, ts_scf_mixs
     use m_ts_options,   only : ts_Dtol, ts_Htol
-    use m_ts_options,   only : IsVolt
+    use m_ts_options,   only : IsVolt, TS_start_bias
     use siesta_options, only : dDtol, dHtol
 
     use m_mixing, only: mixers_history_init
@@ -493,12 +493,12 @@ contains
 
     if ( TSmode .and. IsVolt .and. abs(init_method) /= 2 ) then
       if ( IONode ) then
-        write(*,'(a)') 'ts: Before doing a bias calculation one have to do the 0-bias calculation'
-        write(*,'(a)') 'ts: The implementation does not allow starting, &
-            &from scratch, a bias calculation!'
+        write(*,'(a,/)') 'ts: We highly recommend you to perform 0-bias calculations before *any* bias calculations'
       end if
-      call die('ts: You have to calculate the 0 V and re-use the TSDE from &
-          &that calculation.')
+      if ( .not. TS_start_bias ) then
+        call die('ts: You have to calculate the 0 V and re-use the TSDE from &
+            &that calculation.')
+      end if
     end if
 
     if ( TSrun ) then
