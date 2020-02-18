@@ -48,7 +48,7 @@ FC = mpif90
 FC_SERIAL = gfortran
 
 # Here we should put mainly optimization flags
-FFLAGS = -O2 -fPIC -ftree-vectorize -march=native -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
+FFLAGS = -O2 -fPIC -ftree-vectorize -march=native -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
 
 # If you want to use a specific archive function you may specify it here
 # Note that if you use LTO(gcc)/IPO(intel) specifying the correct AR
@@ -112,7 +112,7 @@ LAPACK_LIBS = -llapack
 # The most recent ScaLAPACK versions have built in the BLACS library.
 # If BLACS is not included in the ScaLAPACK library you are
 # required to add it here as well:
-SCALAPACK_LIBS = -lscalapack
+SCALAPACK_LIBS = -lscalapack -L/usr/local/Cellar/scalapack/2.1.0/lib/
 
 # If you do not have BLAS/LAPACK installed on your machine
 # you may use the shipped BLAS/LAPACK versions.
