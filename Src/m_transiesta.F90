@@ -155,18 +155,12 @@ contains
        call ts_print_charges(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S)
 
-       if ( .not. Calc_Forces .and. IONode ) then
-          write(*,'(a)') 'transiesta: *** Notice that the forces are NOT updated ***'
-          write(*,'(a)') 'transiesta: *** Will set the forces to zero ***'
-       end if
        if ( .not. Calc_Forces ) then
           if ( IONode ) then
              write(*,'(a)') 'transiesta: *** The forces are NOT updated ***'
-             write(*,'(a)') 'transiesta: ***  Will set the forces to 0  ***'
+             write(*,'(a)') 'transiesta: ***  Will set the energy-density matrix to 0!  ***'
           end if
-!$OMP parallel workshare default(shared)
           EDM(:,:) = 0._dp
-!$OMP end parallel workshare
        end if
 
        call timer('TS_init',2)

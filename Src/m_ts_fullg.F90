@@ -761,12 +761,10 @@ contains
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
 
-!$OMP parallel default(shared), private(io,ioff,iu,ind)
-
     ! Initialize
-!$OMP workshare
-    GFinv(1:no_u**2) = dcmplx(0._dp,0._dp)
-!$OMP end workshare
+    GFinv(:) = dcmplx(0._dp,0._dp)
+
+!$OMP parallel default(shared), private(io,ioff,iu,ind)
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain

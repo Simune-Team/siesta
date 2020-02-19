@@ -1114,18 +1114,15 @@ contains
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     Gfinv => val(Gfinv_tri)
+    ! Initialize
+    GFinv(:) = dcmplx(0._dp,0._dp)
 
 !$OMP parallel default(shared), private(io,iu,ind,idx)
-
-    ! Initialize
-!$OMP workshare
-    GFinv(:) = dcmplx(0._dp,0._dp)
-!$OMP end workshare
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
-!$OMP do 
+!$OMP do
     do iu = 1, r%n
        io = r%r(iu)
        if ( l_ncol(io) /= 0 ) then
@@ -1142,11 +1139,11 @@ contains
     end do
 !$OMP end do
 
-!$OMP end parallel
-
     do io = 1 , N_Elec
-       call insert_Self_Energies(Gfinv_tri, Gfinv, pvt, Elecs(io))
+      call insert_Self_Energies(Gfinv_tri, Gfinv, pvt, Elecs(io))
     end do
+
+!$OMP end parallel
 
 #ifdef TRANSIESTA_TIMING
     call timer('TS-prep',2)

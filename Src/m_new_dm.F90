@@ -1442,9 +1442,7 @@ contains
     ! Scratch array to accumulate the elements
     call newdData2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
     a => val(a_out)
-!$OMP parallel workshare default(shared)
     a(:,:) = 0.0_dp
-!$OMP end parallel workshare
 
     do i = 1, n
        pair => get_pointer(DM_history,i)
@@ -1454,9 +1452,7 @@ contains
        !           endif
        call restruct_dSpData2D(dm,sparse_pattern,DMtmp)
        ai => val(DMtmp)
-!$OMP parallel workshare default(shared)
-       a = a + c(i) * ai
-!$OMP end parallel workshare
+       a(:,:) = a(:,:) + c(i) * ai(:,:)
     enddo
 
     call newdSpData2D(sparse_pattern,a_out,orb_dist, &

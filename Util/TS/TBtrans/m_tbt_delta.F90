@@ -712,10 +712,8 @@ contains
          if ( is_real ) then
             call ncdf_get_var(grp,'delta',rM, start = start )
             call MPI_Bcast(rM,nnz,MPI_Double_Precision, 0, &
-                 MPI_Comm_World, MPIerror)
-!$OMP parallel workshare default(shared)
+                MPI_Comm_World, MPIerror)
             zM(:) = rM(:)
-!$OMP end parallel workshare
             deallocate(rM)
          else
             call ncdf_get_var(grp,'delta',zM, start = start )
@@ -761,9 +759,7 @@ contains
       
       if ( is_real ) then
          call ncdf_get_var(grp,'delta',rM, start = start )
-!$OMP parallel workshare default(shared)
          zM(:) = rM(:)
-!$OMP end parallel workshare
          deallocate(rM)
       else
          call ncdf_get_var(grp,'delta',zM, start = start )

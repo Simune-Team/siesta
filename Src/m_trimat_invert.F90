@@ -274,13 +274,15 @@ contains
        ! We can/shall not calculate this
        return
     end if
-    sN    = nrows_g(M,n)
+    sN = nrows_g(M,n)
 
     ! *** we will now calculate Mn+1,n
     ! Copy over Xn/Cn+1
     Xn    => Xn_div_Cn_p1(M   ,n)
     Mpinv => Xn_div_Cn_p1(Minv,n)
+
     call zcopy(sN*sNp1,Mpinv,1,Xn,1)
+
     ! Do matrix-multiplication
     Mp    => val(Minv,n,n)
     ! Calculate: Xn/Cn+1 * Mnn
@@ -313,7 +315,9 @@ contains
     ! Copy over Yn/Bn-1
     Yn    => Yn_div_Bn_m1(M   ,n)
     Mpinv => Yn_div_Bn_m1(Minv,n)
+
     call zcopy(sN*sNm1,Mpinv,1,Yn,1)
+
     ! Do matrix-multiplication
     Mp    => val(Minv,n,n)
     ! Calculate: Yn/Bn-1 * Mnn
@@ -359,17 +363,14 @@ contains
 #endif
 
     ! Copy over the Bn array
-    Cnp2 => val(M   ,n+1,n)
+    Cnp2 => val(M, n+1, n)
     ! This is where the inverted matrix will be located 
-    Xn   => Xn_div_Cn_p1(Minv,n)
+    Xn   => Xn_div_Cn_p1(Minv, n)
     ! Copy over the An+1 array
-    ztmp => val(M,n+1,n+1)
+    ztmp => val(M, n+1, n+1)
 
-    ! TODO implement direct algorithms, (or zcopy)
-!$OMP parallel workshare default(shared)
-    Xn(:)           = Cnp2(:)
-    zwork(1:sNp1SQ) = ztmp(:)
-!$OMP end parallel workshare
+    call zcopy(sN*sNp1, Cnp2(1), 1, Xn(1), 1)
+    call zcopy(sNp1SQ, ztmp(1), 1, zwork(1), 1)
 
     ! If we should calculate X_N-1 then X_N == 0
     if ( n < parts(M) - 1 ) then
@@ -442,13 +443,9 @@ contains
     ! Copy over the An-1 array
     ztmp => val(M,n-1,n-1)
 
-    ! TODO implement direct loops (or zcopy)
-!$OMP parallel workshare default(shared)
-    Yn(:)           = Bnm2(:)
-    zwork(1:sNm1SQ) = ztmp(:)
-!$OMP end parallel workshare
+    call zcopy(sN*sNm1, Bnm2(1), 1, Yn(1), 1)
+    call zcopy(sNm1SQ, ztmp(1), 1, zwork(1), 1)
 
-    ! If we should calculate Y_2 then Y_1 == 0
     if ( 2 < n ) then
        ! Size...
        sNm2 =  nrows_g(M,n-2)

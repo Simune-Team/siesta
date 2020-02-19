@@ -1418,10 +1418,8 @@ contains
       allocate(A(nn,nn), B(nn,nn))
       allocate(we(nn),work(3*nn))
 
-!$OMP parallel workshare default(shared)
       A = 0._dp
       B = 0._dp
-!$OMP end parallel workshare
       do i = 1 , nn - 1
          B(i,i) = 2._dp * i - 1._dp
          A(i,i+1) = -0.5_dp

@@ -75,19 +75,11 @@
 #endif     
 
       if (SIESTA_worker) then
-         ! Save present density matrix
-!$OMP parallel default(shared)
-         if ( converge_EDM ) then
-!$OMP workshare
-            Eold(:,:) = Escf(:,:)
-            Dold(:,:) = Dscf(:,:)
-!$OMP end workshare
-         else
-!$OMP workshare
-            Dold(:,:) = Dscf(:,:)
-!$OMP end workshare
-         end if
-!$OMP end parallel
+        ! Save present density matrix
+        call dcopy(size(Dscf), Dscf(1,1), 1, Dold(1,1), 1)
+        if ( converge_EDM ) then
+          call dcopy(size(Escf), Escf(1,1), 1, Eold(1,1), 1)
+        end if
       end if
 
       ! Compute shift in Tr(H*DM) for fermi-level bracketting

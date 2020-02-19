@@ -644,9 +644,7 @@
       ! a continuation run gives bad forces.
       if ( .not. TSrun ) then
          call normalize_DM( first= .true. )
-!$OMP parallel workshare default(shared)
          Escf(:,:) = 0.0_dp
-!$OMP end parallel workshare
       end if
 
 #ifdef TEST_IO

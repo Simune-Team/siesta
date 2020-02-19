@@ -513,16 +513,14 @@ contains
       integer :: iow,jow,jau,ja1,ja2,ja3
       complex(dp) :: p(3), pZ, qPi
       real(dp) :: rPi(3), wq
-      
+
+      HSE(:,:) = 0._dp
+      GSE(:,:) = 0._dp
+
 !$OMP parallel default(shared), private(wq,rPi,qPi,p,pZ), &
 !$OMP&  private(B,i1,i2,i3), &
 !$OMP&  private(iow,iau,ia1,ia2,ia3,iuo), &
 !$OMP&  private(jow,jau,ja1,ja2,ja3,juo)
-
-!$OMP workshare
-      HSE(:,:) = 0._dp
-      GSE(:,:) = 0._dp
-!$OMP end workshare
 
       ! Save some multiplications
       B(:) = El%Bloch%B(:)
@@ -623,15 +621,13 @@ contains
       integer :: jau,jow,ja1,ja2,ja3,juo
       complex(dp) :: p(3), qPi
       real(dp) :: rPi(3), wq
-      
+
+      AE(:,:) = 0._dp
+
 !$OMP parallel default(shared), private(wq,rPi,qPi,p), &
 !$OMP&  private(B,i1,i2,i3), &
 !$OMP&  private(iow,iau,ia1,ia2,ia3,iuo), &
 !$OMP&  private(jow,jau,ja1,ja2,ja3,juo)
-
-!$OMP workshare
-      AE(:,:) = 0._dp
-!$OMP end workshare
 
       ! Save some multiplications
       B(:) = El%Bloch%B(:)

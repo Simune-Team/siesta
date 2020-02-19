@@ -66,7 +66,7 @@
       ! Create residual function to minimize
       allocate(F(maxnh,nspin_mix))
 
-!$OMP parallel default(shared), private(dtmp,i)
+!$OMP parallel default(shared), private(dtmp,i,is)
 
       ! prepare input...
       select case ( mix_spin )
@@ -95,9 +95,13 @@
       end select
 
       ! Calculate the residual
-!$OMP workshare
-      F(:,:) = Xout(:,:) - Xin(:,:)
-!$OMP end workshare
+!$OMP do
+      do is = 1 , nspin_mix
+        do i = 1 , size(Xin, 1)
+          F(i,is) = Xout(i,is) - Xin(i,is)
+        end do
+      end do
+!$OMP end do nowait
 
 !$OMP end parallel
 

@@ -1035,9 +1035,7 @@ contains
     ! Reset bulk DOS
     if ( CalcDOS ) then
        allocate(lDOS(nuo_E))
-!$OMP parallel workshare default(shared)
        DOS(:,:,:) = 0._dp
-!$OMP end parallel workshare
     end if
     if ( CalcT ) then
        T = 0._dp
@@ -1096,9 +1094,7 @@ contains
        
        if ( itt_stepped(it2,1) ) then
           ! Number of iterations
-!$OMP parallel workshare default(shared)
           iters(:,:,:,:) = 0
-!$OMP end parallel workshare
        end if
        
        ! Init kpoint, in reciprocal vector units ( from CONTACT ucell)
@@ -1279,14 +1275,10 @@ contains
 #else
 !$OMP parallel default(shared), private(j,i,iqpt)
 
-!$OMP workshare
           iters(:,:,:,2) = iters(:,:,:,1)
-!$OMP end workshare
 #endif
           if ( IONode ) then
-!$OMP workshare
              i_mean = sum(iters(:,:,:,2)) / real(nq*NEn*nkpnt,dp)
-!$OMP end workshare
 
 !$OMP single
              i_std = 0._dp
@@ -1676,15 +1668,13 @@ contains
        ph(i) = cdexp(dcmplx(0._dp, sum(kq*sc_off(:,i))) )
     end do
 
-!$OMP parallel default(shared), private(i,j,io,jo,ind,is)
-
     ! Initialize arrays
-!$OMP workshare
-    Hk = z_0
-    Sk = z_0
-    Hk_T = z_0
-    Sk_T = z_0
-!$OMP end workshare
+    Hk(:,:) = z_0
+    Sk(:,:) = z_0
+    Hk_T(:,:) = z_0
+    Sk_T(:,:) = z_0
+
+!$OMP parallel default(shared), private(i,j,io,jo,ind,is)
 
     ! We will not have any data-race condition here
 !$OMP do 

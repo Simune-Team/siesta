@@ -252,30 +252,25 @@ subroutine diag3kp( spin, no_l, no_u, no_s, nnz, &
   call re_alloc( g_DM, 1, g_nnz, 1, spin%DM, name='g_DM', routine= 'diag3kp' )
   call re_alloc( g_EDM, 1, g_nnz, 1, spin%EDM, name='g_EDM', routine= 'diag3kp' )
 
-!$OMP parallel default(shared), private(t,ik,io)
 
   ! Find weights for local density of states ............................
   if ( e1 < e2 ) then
     
     t = max( temp, 1.d-6 )
-!$OMP do
+!$OMP parallel do default(shared), private(ik,io), firstprivate(t)
     do ik = 1,nk
       do io = 1, neigwanted2
         qo(io,ik) = wk(ik) * &
             ( stepf((eo(io,ik)-e2)/t) - stepf((eo(io,ik)-e1)/t) )
       end do
     end do
-!$OMP end do nowait
+!$OMP end parallel do
 
   end if
 
   ! Initialize to 0
-!$OMP workshare
   g_DM(:,:) = 0._dp
   g_EDM(:,:) = 0._dp
-!$OMP end workshare nowait
-
-!$OMP end parallel
 
   do ik = 1 + Node, nk, Nodes
 
@@ -303,18 +298,15 @@ subroutine diag3kp( spin, no_l, no_u, no_s, nnz, &
     end if
 
     ! Expand the eigenvectors to the density matrix
-      
+
+    Dk = cmplx(0._dp, 0._dp, dp)
+    Ek = cmplx(0._dp, 0._dp, dp)
+
 !$OMP parallel default(shared), &
 !$OMP&private(ie,io,jo,ind), &
 !$OMP&private(kxij,kph,D11,D22,D12,D21,cp)
 
     ! Add contribution to density matrices of unit-cell orbitals
-      
-!$OMP workshare
-    Dk = cmplx(0._dp, 0._dp, dp)
-    Ek = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
-
     ! Global operation to form new density matrix
     do ie = 1, neigneeded
         
@@ -377,7 +369,7 @@ subroutine diag3kp( spin, no_l, no_u, no_s, nnz, &
           
       end do
     end do
-!$OMP end do
+!$OMP end do nowait
     
 !$OMP end parallel
 
@@ -443,15 +435,11 @@ contains
   
   subroutine setup_k(k)
     real(dp), intent(in) :: k(3)
-    
-!$OMP parallel default(shared), private(io,jo,ind,kxij,kph)
 
-!$OMP workshare
     Sk = cmplx(0._dp, 0._dp, dp)
     Hk = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
 
-!$OMP do
+!$OMP parallel do default(shared), private(io,jo,ind,kxij,kph)
     do io = 1,no_u
       do ind = g_ptr(io) + 1, g_ptr(io) + g_ncol(io)
         jo = modp(g_col(ind), no_u)
@@ -469,9 +457,7 @@ contains
 
       end do
     end do
-!$OMP end do nowait
-
-!$OMP end parallel
+!$OMP end parallel do
 
   end subroutine setup_k
   

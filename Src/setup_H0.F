@@ -97,9 +97,7 @@ C     Add on force field contribution to energy
 
 !     Kinetic: matrix elements only
       H_val => val(H_kin_1D)
-!$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
-!$OMP end parallel workshare
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
@@ -110,9 +108,7 @@ C     Add on force field contribution to energy
 
 !     Non-local-pseudop:  matrix elements only
       H_val => val(H_vkb_1D)
-!$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
-!$OMP end parallel workshare
       call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &            numh, listhptr, listh, numh, listhptr, listh, 
@@ -131,9 +127,7 @@ C     Add on force field contribution to energy
 !
       if ( spin%SO ) then
          H_so => val(H_so_2D)
-!$OMP parallel workshare default(shared)
          H_so = 0._dp
-!$OMP end parallel workshare
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_so,Eso)
       else

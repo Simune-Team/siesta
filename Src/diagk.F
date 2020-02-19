@@ -341,7 +341,7 @@ C Repeat diagonalisation with increased memory to handle clustering
              if (.not. getD) then
                 ! Fill in the missing eigenvalue information
                 ! This is useful if we are requesting WFS in a "bands" setting
-                call kludge_copy(nuotot,eo(1,ispin,ik),aux)
+               call dcopy(nuotot, aux(1,1), 1, eo(1,ispin,ik), 1)
              endif
              call c_f_pointer(c_loc(psi),psi_real_1d,[size(psi)])
              call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
@@ -445,18 +445,5 @@ C Global operation to form new density matrix
         enddo
       enddo
       deallocate(done_juo)
-
-      CONTAINS
-
-      ! Work around shape of aux array
-      subroutine kludge_copy(n,a,b)
-      integer, intent(in) :: n
-      real(dp), intent(out) :: a(n)
-      real(dp), intent(in)  :: b(n)
-!$OMP parallel workshare default(shared)
-      a(1:n) = b(1:n)
-!$OMP end parallel workshare
-      end subroutine kludge_copy
-
 
       end subroutine diagk
