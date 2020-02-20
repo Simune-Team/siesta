@@ -46,8 +46,7 @@ contains
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
        Hs, Ss, DM, EDM, Ef, &
-       DE_NEGF, &
-       charge_conv)
+       DE_NEGF)
 
     use units, only : eV, Pi
     use parallel, only : Node, Nodes
@@ -97,7 +96,7 @@ contains
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
 
-    use m_ts_charge, only: ts_qc_Fermi, ts_charge_t
+    use ts_dq_m, only: ts_dq
 
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -118,8 +117,6 @@ contains
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Ef
     real(dp), intent(inout) :: DE_NEGF
-    !< Charge convergence type
-    type(ts_charge_t), intent(inout) :: charge_conv
 
 ! ******************* Computational arrays *******************
     integer :: ndwork, nzwork, n_s
@@ -149,9 +146,9 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
-    real(dp)    :: kw, dq_mu
-    complex(dp) :: W, ZW, Z
-    integer :: N_dq
+    integer :: index_dq !< Index for the current charge calculation @ E == mu
+    real(dp) :: kw, dq_mu
+    complex(dp) :: W, ZW
     type(tRgn)  :: pvt
 ! ************************************************************
 
@@ -263,7 +260,6 @@ contains
 #else
     call newDistribution(no_u,-1           ,fdist,name='TS-fake dist')
 #endif
-    
 
     ! The Hamiltonian and overlap matrices (in Gamma calculations
     ! we will not have any phases, hence, it makes no sense to
@@ -314,28 +310,9 @@ contains
     end do
 #endif 
 
-    ! Initialize Fermi-level correction
-    iE = Nodes - Node
-    cE = Eq_E(iE,step=Nodes) ! we read them backwards
-    N_dq = 0
-    do while ( cE%exist .and. .not. cE%fake )
-      Z = c2energy(cE)
-      do imu = 1, N_mu
-        if ( abs(real(Z, dp) - mus(imu)%mu) < 0.00000001_dp ) then
-          N_dq = N_dq + 1
-        end if
-      end do
-      ! step
-      iE = iE + Nodes
-      cE = Eq_E(iE,step=Nodes) ! we read them backwards
-    end do
-    ! Allocate different charges
-    if ( N_dq > 0 .and. charge_conv%run ) then
-      call re_alloc(charge_conv%dq, 1, N_dq)
-      call re_alloc(charge_conv%eta, 1, N_dq)
-      charge_conv%dq(:) = 0._dp
-    end if
-    
+    ! Initialize the charge correction scheme (will return if not used)
+    call ts_dq%initialize_dq()
+
     ! start the itterators
     call itt_init  (Sp,end=nspin)
     ! point to the index iterators
@@ -373,7 +350,6 @@ contains
        ! ***************
        ! * EQUILIBRIUM *
        ! ***************
-       N_dq = 0
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
        iE = Nodes - Node
@@ -414,29 +390,20 @@ contains
             if ( cE%fake ) cycle ! in case we implement an MPI communication solution...
             call ID2idx(cE,mus(imu)%ID,idx)
             if ( idx < 1 ) cycle
-            
+
             call c2weight_eq(cE,idx, kw, W ,ZW)
-            if ( charge_conv%run ) then
-              Z = c2energy(cE)
-              if ( abs(real(Z, dp) - mus(imu)%mu) < 0.00000001_dp ) then
-                ! Accummulate charge at the electrodes chemical potentials
-                ! Note that this dq_mu does NOT have the prefactor 1/Pi
-                call add_DM( spuDM, W, spuEDM, ZW, &
-                    GF_tri, r_pvt, pvt, &
-                    N_Elec, Elecs, &
-                    spS=spS, q=dq_mu, &
-                    DMidx=mus(imu)%ID)
-                N_dq = N_dq + 1
-                charge_conv%dq(N_dq) = charge_conv%dq(N_dq) &
-                    + dq_mu * kw
-                charge_conv%eta(N_dq) = aimag(Z)
-              else
-                ! SAME AS BELOW
-                call add_DM( spuDM, W, spuEDM, ZW, &
-                    GF_tri, r_pvt, pvt, &
-                    N_Elec, Elecs, &
-                    DMidx=mus(imu)%ID)
-              end if
+
+            ! Figure out if this point is a charge-correction energy
+            index_dq = ts_dq%get_index(imu, iE)
+            if ( index_dq > 0 ) then
+              ! Accummulate charge at the electrodes chemical potentials
+              ! Note that this dq_mu does NOT have the prefactor 1/Pi
+              call add_DM( spuDM, W, spuEDM, ZW, &
+                  GF_tri, r_pvt, pvt, &
+                  N_Elec, Elecs, &
+                  DMidx=mus(imu)%ID, &
+                  spS=spS, q=dq_mu)
+              ts_dq%mus(imu)%dq(index_dq) = ts_dq%mus(imu)%dq(index_dq) + dq_mu * kw
             else
               call add_DM( spuDM, W, spuEDM, ZW, &
                   GF_tri, r_pvt, pvt, &
@@ -686,9 +653,9 @@ contains
 
     use intrinsic_missing, only: SFIND
 
+    use class_Sparsity
     use class_dSpData1D
     use class_dSpData2D
-    use class_Sparsity
     use class_zTriMat
 
     use m_ts_electype
@@ -698,7 +665,6 @@ contains
     complex(dp), intent(in) :: DMfact
     type(dSpData2D), intent(inout) :: EDM
     complex(dp), intent(in) :: EDMfact
-    logical, intent(in), optional :: is_eq
     
     ! The Green function
     type(zTriMat), intent(inout) :: GF_tri
@@ -714,6 +680,7 @@ contains
     !!
     !! This does not contain the additional factor 1/Pi
     real(dp), intent(inout), optional :: q
+    logical, intent(in), optional :: is_eq
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
@@ -906,8 +873,10 @@ contains
     
     end if
 
-    if ( calc_q ) q = q * 2._dp
-
+    ! For ts_dq we should not multiply by 2 since we don't do G + G^\dagger for Gamma-only
+    ! this is because G is ensured symmetric for Gamma-point and thus it is not needed.
+    ! So here the weights are not scaled
+    
   end subroutine add_DM
 
   ! creation of the GF^{-1}.

@@ -92,12 +92,12 @@
       use atomlist,              only: no_u, lasto
       use sparse_matrices,       only: sparse_pattern, block_dist
       use sparse_matrices,       only: Escf, S, maxnh
-      use m_ts_charge, only : ts_get_charges
-      use m_ts_charge,           only: TS_RHOCORR_METHOD
-      use m_ts_charge,           only: TS_RHOCORR_FERMI
-      use m_ts_charge,           only: TS_RHOCORR_FERMI_TOLERANCE
-      use m_ts_charge,           only: TS_RHOCORR_FERMI_SCALE
-      use m_ts_charge,           only: ts_charge_conv
+      use m_ts_options,          only: N_mu, mus
+      use ts_dq_m,               only: TS_DQ_METHOD
+      use ts_dq_m,               only: TS_DQ_METHOD_FERMI
+      use ts_dq_m,               only: TS_DQ_FERMI_TOLERANCE
+      use ts_dq_m,               only: TS_DQ_FERMI_SCALE
+      use ts_dq_m,               only: ts_dq
       use m_transiesta,          only: transiesta
       use kpoint_grid, only : gamma_scf
       use m_energies, only : Ef
@@ -157,6 +157,11 @@
          endif
          call bye("S only")
       endif
+
+      if ( TS_DQ_METHOD == TS_DQ_METHOD_FERMI ) then
+        ! Initialize the charge correction
+        call ts_dq%initialize(N_mu, mus)
+      end if
 
       Qcur = Qtot
       
@@ -239,6 +244,7 @@
 
       ! The dHmax variable only has meaning for Hamiltonian
       ! mixing, or when requiring the Hamiltonian to be converged.
+      dDmax = -1._dp
       dHmax = -1._dp
       dEmax = -1._dp
 
@@ -369,19 +375,19 @@
         
         ! In case the user has requested a Fermi-level correction
         ! Then we start by correcting the fermi-level
-        if ( TSrun .and. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+        if ( TSrun .and. TS_DQ_METHOD == TS_DQ_METHOD_FERMI ) then
           ! Signal for next SCF
-          ts_charge_conv%run = .true.
+          ts_dq%run = .true.
           if ( converge_DM )
-     &        ts_charge_conv%run = ts_charge_conv%run .and.
-     &        dDtol * TS_RHOCORR_FERMI_SCALE > dDmax
+     &        ts_dq%run = ts_dq%run .and.
+     &        dDtol * TS_DQ_FERMI_SCALE > dDmax
           if ( converge_H )
-     &        ts_charge_conv%run = ts_charge_conv%run .and.
-     &        dHtol * TS_RHOCORR_FERMI_SCALE > dHmax
+     &        ts_dq%run = ts_dq%run .and.
+     &        dHtol * TS_DQ_FERMI_SCALE > dHmax
           if ( converge_EDM )
-     &        ts_charge_conv%run = ts_charge_conv%run .and.
-     &        tolerance_EDM * TS_RHOCORR_FERMI_SCALE > dEmax
-          if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
+     &        ts_dq%run = ts_dq%run .and.
+     &        tolerance_EDM * TS_DQ_FERMI_SCALE > dEmax
+          if ( abs(Qcur - Qtot) > TS_DQ_FERMI_TOLERANCE ) then
             if ( IONode .and. SCFconverged ) then
               write(6,"(2a)") "SCF cycle continued due ",
      &            "to TranSiesta charge deviation"
@@ -495,6 +501,9 @@
       endif
 #endif            
 
+      ! Clean up the charge correction object
+      call ts_dq%delete()
+      
       if (.not. SIESTA_worker) RETURN
 
       call end_of_cycle_save_operations(SCFconverged)

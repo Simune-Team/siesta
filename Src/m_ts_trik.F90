@@ -49,8 +49,7 @@ contains
        sp_dist, sparse_pattern, &
        no_u, n_nzs, &
        Hs, Ss, DM, EDM, Ef, &
-       DE_NEGF, &
-       charge_conv)
+       DE_NEGF)
 
     use units, only : Pi
     use parallel, only : Node, Nodes
@@ -105,7 +104,7 @@ contains
     ! Gf.Gamma.Gf
     use m_ts_tri_scat
 
-    use m_ts_charge, only: ts_qc_Fermi, ts_charge_t
+    use ts_dq_m, only: ts_dq
 
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
@@ -127,8 +126,6 @@ contains
     real(dp), intent(inout) :: DM(n_nzs,nspin), EDM(n_nzs,nspin)
     real(dp), intent(in) :: Ef
     real(dp), intent(inout) :: DE_NEGF
-    !< Charge convergence type
-    type(ts_charge_t), intent(inout) :: charge_conv
 
 ! ******************* Computational arrays *******************
     integer :: nzwork, n_s
@@ -157,9 +154,10 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
-    integer :: NE, N_dq
+    integer :: NE
+    integer :: index_dq !< Index for the current charge calculation @ E == mu
     real(dp)    :: kw, kpt(3), bkpt(3), dq_mu
-    complex(dp) :: W, ZW, Z
+    complex(dp) :: W, ZW
     type(tRgn)  :: pvt
 ! ************************************************************
 
@@ -309,28 +307,9 @@ contains
     end do
 #endif
 
-    ! Initialize Fermi-level correction
-    iE = Nodes - Node
-    cE = Eq_E(iE,step=Nodes) ! we read them backwards
-    N_dq = 0
-    do while ( cE%exist .and. .not. cE%fake )
-      Z = c2energy(cE)
-      do imu = 1, N_mu
-        if ( abs(real(Z, dp) - mus(imu)%mu) < 0.00000001_dp ) then
-          N_dq = N_dq + 1
-        end if
-      end do
-      ! step
-      iE = iE + Nodes
-      cE = Eq_E(iE,step=Nodes) ! we read them backwards
-    end do
-    ! Allocate different charges
-    if ( N_dq > 0 .and. charge_conv%run ) then
-      call re_alloc(charge_conv%dq, 1, N_dq)
-      call re_alloc(charge_conv%eta, 1, N_dq)
-      charge_conv%dq(:) = 0._dp
-    end if
- 
+    ! Initialize the charge correction scheme (will return if not used)
+    call ts_dq%initialize_dq()
+
     ! Total number of energy points
     NE = N_Eq_E() + N_nEq_E()
 
@@ -354,7 +333,11 @@ contains
        kpt(:) = ts_kpoint(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
-       kw = 1._dp / (Pi * nspin) * ts_kweight(ikpt)
+
+       ! Include spin factor and 1/\pi
+       ! Since we are calculating G - G^\dagger in the equilibrium contour
+       ! we need *half* the weight
+       kw = ts_kweight(ikpt) / (Pi * nspin)
        
 #ifdef TRANSIESTA_TIMING
        call timer('TS_HS',1)
@@ -380,7 +363,6 @@ contains
        ! ***************
        ! * EQUILIBRIUM *
        ! ***************
-       N_dq = 0
        call init_val(spuDM)
        if ( Calc_Forces ) call init_val(spuEDM)
        iE = Nodes - Node
@@ -423,27 +405,18 @@ contains
              if ( idx < 1 ) cycle
              
              call c2weight_eq(cE,idx, kw, W ,ZW)
-             if ( charge_conv%run ) then
-               Z = c2energy(cE)
-               if ( abs(real(Z, dp) - mus(imu)%mu) < 0.00000001_dp ) then
-                 ! Accummulate charge at the electrodes chemical potentials
-                 ! Note that this dq_mu does NOT have the prefactor 1/Pi
-                 call add_DM( spuDM, W, spuEDM, ZW, &
-                     GF_tri, r_pvt, pvt, &
-                     N_Elec, Elecs, &
-                     spS=spS, q=dq_mu, &
-                     DMidx=mus(imu)%ID)
-                 N_dq = N_dq + 1
-                 charge_conv%dq(N_dq) = charge_conv%dq(N_dq) &
-                     + dq_mu * kw
-                 charge_conv%eta(N_dq) = aimag(Z)
-               else
-                 ! SAME AS BELOW
-                 call add_DM( spuDM, W, spuEDM, ZW, &
-                     GF_tri, r_pvt, pvt, &
-                     N_Elec, Elecs, &
-                     DMidx=mus(imu)%ID)
-               end if
+
+             ! Figure out if this point is a charge-correction energy
+             index_dq = ts_dq%get_index(imu, iE)
+             if ( index_dq > 0 ) then
+               ! Accummulate charge at the electrodes chemical potentials
+               ! Note that this dq_mu does NOT have the prefactor 1/Pi
+               call add_DM( spuDM, W, spuEDM, ZW, &
+                   GF_tri, r_pvt, pvt, &
+                   N_Elec, Elecs, &
+                   DMidx=mus(imu)%ID, &
+                   spS=spS, q=dq_mu)
+               ts_dq%mus(imu)%dq(index_dq) = ts_dq%mus(imu)%dq(index_dq) + dq_mu * kw
              else
                call add_DM( spuDM, W, spuEDM, ZW, &
                    GF_tri, r_pvt, pvt, &
@@ -747,9 +720,9 @@ contains
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: s_ncol(:), s_ptr(:), s_col(:)
     complex(dp), pointer :: D(:,:), E(:,:)
     complex(dp), pointer :: Gf(:)
-    integer, pointer :: s_ncol(:), s_ptr(:), s_col(:)
     complex(dp), pointer :: Sk(:)
     integer :: s_ptr_begin, s_ptr_end, sin
     integer :: io, ind, iu, idx, i1, i2
@@ -836,7 +809,7 @@ contains
      else if ( calc_q ) then
 
 !$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,idx,s_ptr_begin,s_ptr_end,sin))
+!$OMP&private(io,iu,ind,idx,s_ptr_begin,s_ptr_end,sin)
        do iu = 1 , r%n
           io = r%r(iu)
           if ( l_ncol(io) /= 0 ) then

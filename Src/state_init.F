@@ -76,7 +76,7 @@
       use m_sparse, only : xij_offset
 
       use m_ts_kpoints, only: setup_ts_kpoint_grid
-      use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
+      use ts_dq_m, only : TS_DQ_METHOD, TS_DQ_METHOD_FERMI
       use m_ts_options, only : BTD_method
       use m_ts_options, only : TS_Analyze
       use m_ts_options, only : N_Elec, Elecs, IsVolt

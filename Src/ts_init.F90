@@ -43,7 +43,6 @@ contains
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
     use m_ts_method
-    use m_ts_charge
 
     use m_ts_global_vars, only : TSmode, TSinit, onlyS
     use siesta_options, only : isolve, SOLVE_TRANSI, Nmove

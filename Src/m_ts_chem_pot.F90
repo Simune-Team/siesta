@@ -153,7 +153,7 @@ contains
 
     ! Read in number of poles
     this_n(:)%N_poles = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
-    E_pole = fdf_get('TS.Contours.Eq.Pole',2.5_dp*eV,'Ry')
+    E_pole = fdf_get('TS.Contours.Eq.Pole',1.5_dp*eV,'Ry')
     ! If the energy is larger than zero, the user requests
     ! number of poles
     if ( E_pole > 0._dp ) then
@@ -288,7 +288,7 @@ contains
        ! Update the number of poles
        call E2Npoles(E_pole, this%kT, this%N_poles)
     else if ( .not. bool_pole(1) ) then
-       E_pole = fdf_get('TS.Contours.Eq.Pole',2.5_dp*eV,'Ry')
+       E_pole = fdf_get('TS.Contours.Eq.Pole',1.5_dp*eV,'Ry')
        if ( E_pole > 0._dp ) then
           call E2Npoles(E_pole,this%kT,this%N_poles)
        end if
@@ -507,7 +507,7 @@ contains
     if ( .not. IONode ) return
 
     def_pole = fdf_get('TS.Contours.Eq.Pole.N',def_poles)
-    E_pole = fdf_get('TS.Contours.Eq.Pole',2.5_dp*eV,'Ry')
+    E_pole = fdf_get('TS.Contours.Eq.Pole',1.5_dp*eV,'Ry')
     if ( E_pole > 0._dp ) then
        call E2Npoles(E_pole,this%kT, def_pole)
     end if

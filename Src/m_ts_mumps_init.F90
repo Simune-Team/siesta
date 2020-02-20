@@ -337,11 +337,6 @@ contains
 
     mum%IRHS_PTR(no_u_TS+1) = nzs + 1
 
-    if ( ind /= mum%NZ_RHS ) then
-       write(*,*)ind,mum%NZ_RHS
-       call die('Error in sparsity pattern of equilibrium')
-    end if
-
   end subroutine prep_RHS_Eq
 
   subroutine prep_RHS_nEq(mum,no_u_TS,N_Elec, Elecs,Gf)

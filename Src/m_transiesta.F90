@@ -71,7 +71,8 @@ contains
     use m_ts_contour_eq , only : N_Eq_E
     use m_ts_contour_neq, only : N_nEq_E
 
-    use m_ts_charge
+    use ts_charge_m
+    use ts_dq_m
     
     use m_ts_gf, only : read_Green
     use m_interpolate
@@ -107,7 +108,7 @@ contains
 
     ! * local variables
     integer :: iEl, NEn, no_used, no_used2
-    logical :: converged, charge_conv_run
+    logical :: converged, dq_run
     ! In case of Fermi-correction, we save the previous steps
     ! and do a spline interpolation... :)
     integer :: N_F, i_F, ioerr
@@ -142,10 +143,7 @@ contains
         end if
       end if
       
-      ! For the fermi-correction, we need the 
-      ! local sparsity pattern...
-      converged = IsVolt .or. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
-      call ts_sparse_init(slabel,converged, N_Elec, Elecs, &
+      call ts_sparse_init(slabel, IsVolt, N_Elec, Elecs, &
           ucell, nsc, na_u, xa, lasto, sp_dist, sparse_pattern, no_aux_cell, &
             isc_off)
       
@@ -159,6 +157,9 @@ contains
       ! print out estimated memory usage...
       call ts_print_memory(ts_Gamma)
 
+      call ts_charge_print(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
+          nspin, n_nzs, DM, S, TS_Q_INFO_FULL)
+      
       if ( .not. Calc_Forces ) then
         if ( IONode ) then
           write(*,'(a)') 'transiesta: *** The forces are NOT updated ***'
@@ -234,14 +235,15 @@ contains
     ! start calculation
     converged = .false.
     i_F = -1
-    charge_conv_run = ts_charge_conv%run
-    if ( charge_conv_run ) then
+    dq_run = ts_dq%run
+    if ( dq_run ) then
 
       ! we will utilize the old Fermi-level to correct the 
       ! EDM matrix (just in case the 
       ! electrode region elements are not taken care of)
       
-      ! Allocate for interpolation
+      ! Allocate for interpolation, this is typically
+      ! converging in 3-5 steps
       N_F = 10
       i_F = 0
       call re_alloc(Q_Ef,1,N_F,1,2)
@@ -250,9 +252,6 @@ contains
     do while ( .not. converged )
       
       call open_GF(N_Elec,Elecs,uGF,NEn)
-
-      ! Signal only doing this for the first run
-      ts_charge_conv%run = charge_conv_run .and. (i_F == 0)
 
       select case ( ts_method )
       case ( TS_FULL )
@@ -276,16 +275,14 @@ contains
               nq, uGF, nspin, na_u, lasto, &
               sp_dist, sparse_pattern, &
               no_u, n_nzs, &
-              H, S, DM, EDM, Ef, &
-              NEGF_DE, ts_charge_conv)
+              H, S, DM, EDM, Ef, NEGF_DE)
         else
           call ts_trik(N_Elec,Elecs, &
               nq, uGF, &
               ucell, nspin, na_u, lasto, &
               sp_dist, sparse_pattern, &
               no_u, n_nzs, &
-              H, S, DM, EDM, Ef, &
-              NEGF_DE, ts_charge_conv)
+              H, S, DM, EDM, Ef, NEGF_DE)
         end if
 #ifdef SIESTA__MUMPS
       case ( TS_MUMPS )
@@ -315,7 +312,7 @@ contains
         end if
       end do
       
-      if ( charge_conv_run ) then
+      if ( dq_run ) then
 
         ! This is the 1. part of the Fermi correction
         !
@@ -329,14 +326,14 @@ contains
         end if
 
         ! Save current fermi level and charge
-        call ts_get_charges(N_Elec, sp_dist, sparse_pattern, &
+        call ts_charge_get(N_Elec, sp_dist, sparse_pattern, &
             nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
         Q_Ef(i_F,2) = Ef
 
         if ( i_F < 2 ) then
-          call ts_qc_Fermi(sp_dist, nspin, n_nzs, &
-              Ef, DM, S, Qtot, &
-              ts_charge_conv)
+          call ts_dq%calculate_dEf(Qtot, &
+              sp_dist, nspin, n_nzs, DM, S, dEf)
+          Ef = Ef + dEf
 
         else
 
@@ -346,14 +343,17 @@ contains
           ! This tends to drastically speed up the convergence of the dQ -> 0.
 
           ! In case we have accumulated 2 or more points
+          dEf = Ef
           call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
+          dEf = Ef - dEf
 
           ! Truncate to the maximum allowed change in Fermi-level
-          call ts_qc_truncate(Q_Ef(i_F,2), &
-              TS_RHOCORR_FERMI_MAX, Ef, trunk=converged)
+          call ts_dq_truncate(Q_Ef(i_F,2), &
+              TS_DQ_FERMI_MAX, Ef, truncated=converged)
+          converged = .not. converged
 
           if ( IONode ) then
-            write(*,'(a,es11.4)') 'ts-qc-iscf: cubic spline dq = ', &
+            write(*,'(a,es11.4)') 'ts-dq-iscf: cubic spline dq = ', &
                 Q_Ef(i_F,1) - qtot
           end if
 
@@ -366,7 +366,10 @@ contains
         ! *MUST* be the maximal change.
         if ( .not. converged ) &
             converged = abs(Q_Ef(i_F,1) - Qtot) < &
-            TS_RHOCORR_FERMI_TOLERANCE
+            TS_DQ_FERMI_TOLERANCE
+
+        ! Signal only doing this for the first run
+        ts_dq%run = .false.
 
       else
 
@@ -380,7 +383,7 @@ contains
     ! We will only do major extrapolation when we are
     ! far from the charge neutrality point.
     ! Otherwise we will iterate forever...
-    if ( charge_conv_run .and. i_F > 1 ) then
+    if ( dq_run .and. i_F > 1 ) then
 
       if ( IONode ) then
         ! After converge we write out the convergence
@@ -432,17 +435,17 @@ contains
       ! typically will the above be "too" little
       ! So we interpolate between all previous 
       ! estimations for this geometry...
-      call ts_qc_Fermi_file(Q_Ef(1,2), Ef)
+      call ts_dq_Fermi_file(Q_Ef(1,2), Ef)
 
     end if
 
-    if ( charge_conv_run ) then
+    if ( dq_run ) then
       ! We have now calculated the new Ef
       ! We shift it EDM to the correct level
       dEf = Ef - Q_Ef(1,2)
 
       if ( IONode ) then
-        write(*,'(a,es11.4,a)') 'ts-qc: dEf = ', dEf/eV, ' eV'
+        write(*,'(a,es11.4,a)') 'ts-dq: dEf = ', dEf/eV, ' eV'
       end if
 
       ! Correct energy-density matrix
@@ -477,12 +480,14 @@ contains
     ! We do the charge correction of the transiesta
     ! computation here (notice that the routine will automatically
     ! return if no charge-correction is requested)
-    call ts_qc(N_Elec,Elecs, sp_dist, &
-        sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot, &
-        TS_RHOCORR_METHOD)
+    if ( TS_DQ_METHOD == TS_DQ_METHOD_BUFFER ) then
+      call ts_dq_buffer(N_Elec,Elecs, sp_dist, &
+          sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot)
+    end if
 
-    call ts_print_charges(N_Elec,Elecs, Qtot, sp_dist, sparse_pattern, &
-        nspin, n_nzs, DM, S, method = TS_INFO_SCF)
+    call ts_charge_print(N_Elec, Elecs, Qtot, sp_dist, sparse_pattern, &
+        nspin, n_nzs, DM, S, &
+        method = TS_Q_INFO_SCF)
 
     call timer('TS',2)
 
