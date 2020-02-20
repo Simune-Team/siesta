@@ -100,7 +100,7 @@ contains
     TS_DQ_FERMI_ETA = fdf_get('TS.dQ.Fermi.Eta', 0.0001_dp * eV, 'Ry')
 
     ! Factor for charge-correction
-    TS_DQ_FACTOR = fdf_get('TS.ChargeCorrection.Factor', 0.75_dp)
+    TS_DQ_FACTOR = fdf_get('TS.ChargeCorrection.Factor', 0.9_dp)
     TS_DQ_FACTOR = fdf_get('TS.dQ.Factor', TS_DQ_FACTOR)
     if ( TS_DQ_FACTOR <= 0.0_dp ) then
       call die("TS.dQ.Factor: Charge correction factor must be larger than 0")
