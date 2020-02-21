@@ -845,16 +845,10 @@ contains
 
     ! Retrieve the position in the inverted matrix
     Mpinv => val(Minv,n,n)
-!$OMP parallel default(shared), private(i)
-!$OMP workshare
     Mpinv((sCol-1)*sN+1:eCol*sN) = cmplx(0._dp,0._dp,dp)
-!$OMP end workshare
-!$OMP do
     do i = sCol - 1 , eCol - 1
        Mpinv(i * sN + i + 1) = cmplx(1._dp,0._dp,dp)
     end do
-!$OMP end do nowait
-!$OMP end parallel 
 
     i = eCol - sCol + 1
     call zgesv(sN,i,Mp,sN,ipiv,Mpinv((sCol-1)*sN+1),sN,ierr)

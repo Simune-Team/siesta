@@ -181,10 +181,9 @@ contains
     ! Copy over A2 array
     t1 => M(sA2:eA2)
     t2 => M(sB1:eB1)
-!$OMP parallel workshare default(shared)
-    t1(:) = A2(:)
-    t2(:) = B1(:)
-!$OMP end parallel workshare
+    call zcopy(eA2-sA2+1, A2(1), 1, t1(1), 1)
+    call zcopy(eB1-sB1+1, B1(1), 1, t2(1), 1)
+
     ! Calculate X1/C2 (store in B1 in original matrix)
     call zgesv(n2,n1,t1,n2,ipiv,t2,n2,i)
     if ( i /= 0 ) then
@@ -199,10 +198,9 @@ contains
     ! Copy over A1 array
     t1 => M(sA1:eA1)
     t2 => M(sC2:eC2)
-!$OMP parallel workshare default(shared)
-    t1(:) = A1(:)
-    t2(:) = C2(:)
-!$OMP end parallel workshare
+    call zcopy(eA1-sA1+1, A1(1), 1, t1(1), 1)
+    call zcopy(eC2-sC2+1, C2(1), 1, t2(1), 1)
+
     ! Calculate Y2/B1
     call zgesv(n1,n2,t1,n1,ipiv,t2,n1,i)
     if ( i /= 0 ) then

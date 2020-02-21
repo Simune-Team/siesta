@@ -1081,7 +1081,7 @@ contains
              if ( .not. cE%fake ) then
                 call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
-                DOS(:,1) = 2._dp * omega * DOS(:,1)
+                call dscal(r_oDev%n, 2._dp * omega, DOS(1,1), 1)
 #endif
              end if
              
@@ -1089,7 +1089,7 @@ contains
              if ( calc_DM_Gf ) then
                call Gf_DM(TSHS%sc_off,kpt,phase,Gf_tri,zwork_tri,r_oDev,pvt, dev_M)
 #ifdef TBT_PHONON
-               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+               call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M)
              end if
@@ -1097,7 +1097,7 @@ contains
                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
                    TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
 #ifdef TBT_PHONON
-               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+               call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M)
              end if
@@ -1109,7 +1109,7 @@ contains
                      phase, Gf_tri, zwork_tri, r_oDev, dev_M, pvt)
                end if
 #ifdef TBT_PHONON
-               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+               call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M)
              end if
@@ -1191,7 +1191,7 @@ contains
                    ! Calculate the DOS from the spectral function
                    call A_DOS(r_oDev,zwork_tri,spS,pvt,DOS(:,1+iEl))
 #ifdef TBT_PHONON
-                   DOS(:,1+iEl) = 2._dp * omega * DOS(:,1+iEl)
+                   call dscal(r_oDev%n, 2._dp * omega, DOS(1,1+iEl), 1)
 #endif
                 end if
                 
@@ -1199,7 +1199,7 @@ contains
                 if ( calc_DM_A ) then
                   call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
 #ifdef TBT_PHONON
-                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+                  call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M, &
                       Elecs(iEl))
@@ -1208,7 +1208,7 @@ contains
                   call A_COP(r_oDev,zwork_tri,pvt, &
                       TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
 #ifdef TBT_PHONON
-                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+                  call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M, &
                       Elecs(iEl))
@@ -1221,7 +1221,7 @@ contains
                         kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                   end if
 #ifdef TBT_PHONON
-                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+                  call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M, &
                       Elecs(iEl))
@@ -1353,7 +1353,7 @@ contains
             !   if ( .not. cE%fake ) then
             !      call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
-            !       DOS(:,1) = 2._dp * omega * DOS(:,1)
+            !      call dscal(r_oDev%n, 2._dp * omega, DOS(1,1), 1)
 #endif
             !   end if
             !end if
@@ -1430,14 +1430,14 @@ contains
                ! Calculate the DOS from the spectral function
                call A_DOS(r_oDev,zwork_tri,spS,pvt,pDOS(:,2,ipt))
 #ifdef TBT_PHONON
-               pDOS(:,2,ipt) = 2._dp * omega * pDOS(:,2,ipt)
+               call dscal(r_oDev%n, 2._dp * omega, pDOS(1,2,ipt), 1)
 #endif
                
 #ifdef NCDF_4
                if ( calc_proj_DM_A ) then
                  call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
 #ifdef TBT_PHONON
-                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+                 call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'DM', p_E, dev_M)
                end if
@@ -1445,7 +1445,7 @@ contains
                  call A_COP(r_oDev,zwork_tri,pvt, &
                      TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
 #ifdef TBT_PHONON
-                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+                 call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COOP', p_E, dev_M)
                end if
@@ -1457,7 +1457,7 @@ contains
                        kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                  end if
 #ifdef TBT_PHONON
-                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
+                 call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
 #endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COHP', p_E, dev_M)
                end if
@@ -1773,18 +1773,15 @@ contains
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     Gfinv => val(Gfinv_tri)
-
-!$OMP parallel default(shared), private(iu,io,ind,ju,idx)
-
     ! Initialize
-!$OMP workshare
     GFinv(:) = cmplx(0._dp,0._dp,dp)
-!$OMP end workshare
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
-!$OMP do 
+!$OMP parallel default(shared), private(iu,io,ind,ju,idx)
+
+!$OMP do
     do iu = 1, r%n
        io = r%r(iu) ! get the orbital in the big sparsity pattern
           
@@ -1806,13 +1803,13 @@ contains
        end do
              
     end do
-!$OMP end do nowait
-
-!$OMP end parallel
+!$OMP end do
 
     do io = 1 , N_Elec
        call insert_self_energy_dev(Gfinv_tri,Gfinv,r,Elecs(io))
     end do
+
+!$OMP end parallel
 
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
@@ -2080,9 +2077,7 @@ contains
        B => work(i:i-1+ierr**2)
 
        if ( ip > 2 ) then
-!$OMP parallel workshare default(shared)
           A(:) = A(:) - Y(:)
-!$OMP end parallel workshare
        else
           Y => El%Sigma
        end if
@@ -2227,7 +2222,7 @@ contains
 
     ! the current energy point
     complex(dp), intent(in) :: Z
-    ! Electrodes...
+    ! Electrode
     type(Elec), intent(inout) :: El
     ! The Hamiltonian and overlap sparse matrices
     type(zSpData1D), intent(in) :: spH,  spS
@@ -2252,7 +2247,9 @@ contains
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! We will only loop in the region
-!$OMP parallel do default(shared), private(iu,io,ind,ju,ss)
+!$OMP parallel default(shared), private(iu,io,ind,ju,ss)
+
+!$OMP do
     do iu = 1 , n2
        io = r%r(off2+iu) ! get the orbital in the sparsity pattern
 
@@ -2279,9 +2276,11 @@ contains
        end do
        end if
     end do
-!$OMP end parallel do
+!$OMP end do
 
     call insert_Self_Energy(n1,n2,M,r,El,off1,off2)
+
+!$OMP end parallel
 
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then

@@ -337,13 +337,9 @@ contains
     Gfd => val(Gfd_tri)
     Gfo => val(Gfo_tri)
 
-!$OMP parallel default(shared), private(br,io,ind,iind,bc,ss,GfGfd)
-
-!$OMP workshare
     C(:) = 0._dp
-!$OMP end workshare
-    
-!$OMP do
+
+!$OMP parallel do default(shared), private(br,io,ind,iind,bc,ss,GfGfd)
     do br = 1, r%n
       io = r%r(br)
       
@@ -370,8 +366,7 @@ contains
       end do
           
     end do
-!$OMP end do
-!$OMP end parallel
+!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-COP',2)
@@ -616,13 +611,9 @@ contains
 
     A => val(A_tri)
 
-!$OMP parallel default(shared), private(br,io,ind,iind,bc,ss)
-
-!$OMP workshare
     C(:) = 0._dp
-!$OMP end workshare
 
-!$OMP do
+!$OMP parallel do default(shared), private(br,io,ind,iind,bc,ss)
     do br = 1, r%n
       io = r%r(br)
 
@@ -649,8 +640,7 @@ contains
       end do
           
     end do
-!$OMP end do
-!$OMP end parallel
+!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('A-COP',2)
@@ -820,9 +810,7 @@ contains
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
     
     ! Initialize DOS to 0
-!$OMP parallel workshare default(shared)
     DOS(:) = 0._dp
-!$OMP end parallel workshare
 
     off2 = 0
     np = parts(Gf_tri)
@@ -952,10 +940,8 @@ contains
       end do
       
     end do
-    
-!$OMP parallel workshare default(shared)
-    DOS(:) = DOS(:) / Pi
-!$OMP end parallel workshare
+
+    call dscal(r%n, 1._dp / Pi, DOS, 1)
 
   contains
     
@@ -1230,11 +1216,10 @@ contains
 #endif
 
     ! To remove any singular values we add a 1e-3 to the diagonal
-!$OMP parallel do default(shared), private(i)
     do i = 1 , n
       tt((i-1)*n+i) = tt((i-1)*n+i) + 1.e-3_dp
     end do
-!$OMP end parallel do
+
     call zgeev('N','N',n,tt,n,eig,work(1),1,work(1),1, &
         work,nwork,rwork,i)
     if ( i /= 0 ) then
@@ -1628,14 +1613,11 @@ contains
     end do
 
     A => val(A_tri)
-!$OMP parallel default(shared), private(iu,io,ju,jo,iind,ind,Hi,ss)
 
     ! we need this in case the device region gets enlarged due to dH
-!$OMP workshare
     J(:) = 0._dp
-!$OMP end workshare
-    
-!$OMP do
+
+!$OMP parallel do default(shared), private(iu,io,ju,jo,iind,ind,Hi,ss)
     do iu = 1, r%n
       io = r%r(iu)
 
@@ -1677,8 +1659,7 @@ contains
 
       end do
     end do
-!$OMP end do
-!$OMP end parallel
+!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',2)
@@ -1739,6 +1720,7 @@ contains
     end do
 
     A => val(A_tri)
+
 !$OMP parallel do default(shared), &
 !$OMP&private(iu,io,iind,jo,ju,ind,col,jj,p)
     do iu = 1, r%n
@@ -1883,15 +1865,11 @@ contains
 
     Gfd => val(Gfd_tri)
     Gfo => val(Gfo_tri)
-    
-!$OMP parallel default(shared), private(iu,io,ind,ju,GfGfd)
 
     ! we need this in case the device region gets enlarged due to dH
-!$OMP workshare
     DM(:) = 0._dp
-!$OMP end workshare
-    
-!$OMP do
+
+!$OMP parallel do default(shared), private(iu,io,ind,ju,GfGfd)
     do iu = 1, r%n
       io = r%r(iu)
 
@@ -1909,8 +1887,7 @@ contains
 
       end do
     end do
-!$OMP end do
-!$OMP end parallel
+!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-DM',2)
@@ -1983,14 +1960,11 @@ contains
     end do
 
     A => val(A_tri)
-!$OMP parallel default(shared), private(iu,io,ind,ju)
 
     ! we need this in case the device region gets enlarged due to dH
-!$OMP workshare
     DM(:) = 0._dp
-!$OMP end workshare
-    
-!$OMP do
+
+!$OMP parallel do default(shared), private(iu,io,ind,ju)
     do iu = 1, r%n
       io = r%r(iu)
 
@@ -2008,8 +1982,7 @@ contains
 
       end do
     end do
-!$OMP end do
-!$OMP end parallel
+!$OMP end parallel do
 
 #ifdef TBTRANS_TIMING
     call timer('A-DM',2)
@@ -2034,10 +2007,6 @@ contains
     ! local variables
     integer :: j, je, i, ie, no, idx
 
-#ifdef TBTRANS_TIMING
-    call timer('insert-SE',1)
-#endif
-
     idx = El%idx_o - 1
     no = TotUsedOrbs(El)
 
@@ -2048,7 +2017,7 @@ contains
     ! not bulk) A non-bulk electrode
 
     if ( El%Bulk ) then
-!$OMP parallel do default(shared), private(j,je,i,ie)
+!$OMP do private(j,je,i,ie)
       do j = 1 , n2
         je = r%r(off2+j) - idx
         if ( 1 <= je .and. je <= no ) then
@@ -2063,9 +2032,9 @@ contains
           end do
         end if
       end do
-!$OMP end parallel do
+!$OMP end do
     else
-!$OMP parallel do default(shared), private(j,je,i,ie)
+!$OMP do private(j,je,i,ie)
       do j = 1 , n2
         je = r%r(off2+j) - idx
         if ( 1 <= je .and. je <= no ) then
@@ -2080,12 +2049,8 @@ contains
           end do
         end if
       end do
-!$OMP end parallel do
+!$OMP end do
     end if
-
-#ifdef TBTRANS_TIMING
-    call timer('insert-SE',2)
-#endif
 
   end subroutine insert_Self_energy
 
@@ -2101,17 +2066,13 @@ contains
     ! local variables
     integer :: j, je, i, ii, idx, no
 
-#ifdef TBTRANS_TIMING
-    call timer('insert-SED',1)
-#endif
-
     no = El%o_inD%n
 
     ! A down-folded self-energy, this
     ! is always considered to be "non-bulk" as
     ! we have it downfolded.
 
-!$OMP parallel do default(shared), private(j,ii,je,i,idx)
+!$OMP do private(j,ii,je,i,idx)
     do j = 1 , no
       ii = (j-1)*no
       ! grab the index in the full tri-diagonal matrix
@@ -2124,12 +2085,8 @@ contains
         
       end do
     end do
-!$OMP end parallel do
+!$OMP end do
 
-#ifdef TBTRANS_TIMING
-    call timer('insert-SED',2)
-#endif
-    
   end subroutine insert_Self_energy_Dev
 
 end module m_tbt_tri_scat

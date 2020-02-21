@@ -473,9 +473,7 @@ contains
     call bye('transiesta debug for Hartree potential')
 #endif
 
-!$OMP parallel workshare default(shared), firstprivate(fact,Vmm)
     V(:) = Vmm(1) + V(:) + tmpV(:) * fact
-!$OMP end parallel workshare
 
     deallocate(tmpV)
 

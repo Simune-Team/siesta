@@ -731,8 +731,7 @@ contains
           use_constr = .true.
 
 
-       else if ( leqi(namec,'cellangle') .or. &
-            leqi(namec,'cell-angle') ) then
+       else if ( leqi(namec,'cellangle') .or. leqi(namec,'cell-angle') ) then
 
           N = fdf_bnnames(pline)
 
@@ -873,13 +872,29 @@ contains
 
           end do
           
-       else if ( leqi(namec,'position') .or. leqi(namec,'atom') .or. &
-            leqi(namec,'species-i') .or. leqi(namec,'Z') ) then
+       else if ( leqi(namec,'position') .or. leqi(namec,'atom') ) then
           
           ifix = ifix + 1
-             
+
           ! Create a list of atoms from this line
           call fix_brange(pline,rr,na)
+
+          fixs(ifix)%n = rr%n
+          allocate(fixs(ifix)%a(rr%n))
+          fixs(ifix)%a(:) = rr%r(:)
+
+          add_dir = .true.
+          fixs(ifix)%type = 'pos'
+
+        else if ( leqi(namec,'species-i') .or. leqi(namec,'Z') ) then
+
+          ifix = ifix + 1
+
+          ! Create a list of atoms from this line
+          ! We truncate to 1000
+          ! I.e. maximally use 1000 different species
+          ! Note that fix_brange also removes duplicates
+          call fix_brange(pline,rr,1000)
 
           ! Loop through and allocate the correct atoms
           ix = 0
@@ -887,10 +902,6 @@ contains
           if ( leqi(namec,'species-i') ) then
              do i = 1 , rr%n
                 N = N + count( isa(:) == rr%r(i) )
-                if ( count(rr%r(i) == rr%r) > 1 ) then
-                   call die('Same species indexes are not allowed, please &
-                        &remove dublicate entries')
-                end if
              end do
              fixs(ifix)%n = N
              allocate(fixs(ifix)%a(N))
@@ -904,11 +915,7 @@ contains
 
           else if ( leqi(namec,'Z') ) then
              do i = 1 , rr%n
-                N = N + count(iza(:) == rr%r(i))
-                if ( count(rr%r(i) == rr%r) > 1 ) then
-                   call die('Same species indexes are not allowed, please &
-                        &remove dublicate entries')
-                end if
+                N = N + count( iza(:) == rr%r(i) )
              end do
              fixs(ifix)%n = N
              allocate(fixs(ifix)%a(N))
@@ -920,10 +927,6 @@ contains
                 end if
              end do
              
-          else
-             fixs(ifix)%n = rr%n
-             allocate(fixs(ifix)%a(rr%n))
-             fixs(ifix)%a(:) = rr%r(:)
           end if
 
           add_dir = .true.
@@ -1083,7 +1086,7 @@ contains
       ! (limit of one wrap-around)
       call fdf_brange(pline,r, 1, na)
 
-      ! This removes dublicates, then sorts it
+      ! This removes duplicates, then sorts it
       call rgn_uniq(r)
       call rgn_sort(r)
 
