@@ -274,10 +274,10 @@ dfscf.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o
 dhscf.o: alloc.o atmfuncs.o delk.o dfscf.o doping_uniform.o files.o forhar.o
 dhscf.o: iogrid_netcdf.o local_sys.o m_charge_add.o m_efield.o m_hartree_add.o
 dhscf.o: m_iorho.o m_mesh_node.o m_ncdf_io.o m_ncdf_siesta.o
-dhscf.o: m_partial_charges.o m_rhog.o m_spin.o m_ts_global_vars.o
-dhscf.o: m_ts_hartree.o m_ts_options.o m_ts_voltage.o mesh.o meshdscf.o
-dhscf.o: meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o rhofft.o
-dhscf.o: rhoofd.o siesta_options.o units.o vmat.o
+dhscf.o: m_partial_charges.o m_rhog.o m_spin.o m_ts_electype.o
+dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_voltage.o mesh.o
+dhscf.o: meshdscf.o meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
+dhscf.o: rhofft.o rhoofd.o siesta_options.o units.o vmat.o
 diag.o: alloc.o diag_option.o local_sys.o parallel.o precision.o
 diag2g.o: fermid.o intrinsic_missing.o local_sys.o parallel.o parallelsubs.o
 diag2g.o: precision.o writewave.o
@@ -944,7 +944,7 @@ transition_rate.o: precision.o
 ts_charge.o: class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
 ts_charge.o: m_ts_electype.o m_ts_method.o parallel.o precision.o
 ts_dq.o: alloc.o class_OrbitalDistribution.o class_Sparsity.o geom_helper.o
-ts_dq.o: m_interpolate.o m_os.o m_ts_cctype.o m_ts_chem_pot.o m_ts_contour_eq.o
+ts_dq.o: m_interpolate.o m_ts_cctype.o m_ts_chem_pot.o m_ts_contour_eq.o
 ts_dq.o: m_ts_electype.o m_ts_method.o parallel.o precision.o sorting.o
 ts_dq.o: ts_charge.o units.o
 ts_energies.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
