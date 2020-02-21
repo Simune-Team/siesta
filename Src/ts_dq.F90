@@ -644,7 +644,7 @@ contains
         nrows=no_l,nrows_g=no_u)
 
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,ind,jo,ir,ir_dm,jr,jr_dm)
+!$OMP&private(lio,io,ind,ir,ir_dm,jr,jr_dm)
     do lio = 1 , no_l
 
       ! obtain the global index of the orbital.
