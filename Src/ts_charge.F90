@@ -204,7 +204,7 @@ contains
               trim(name(Elecs(i))),'/ device [C',i,'] :', &
               Q(4+(i-1)*2,1), Q(4+(i-1)*2,2)
         end do
-        write(*,'(a,2(f12.5,tr1),/)') &
+        write(*,'(a,2(f12.5,tr1))') &
             'Other                         [O]  :',Q(0,1), Q(0,2)
         if ( has_buffer ) then
           write(*,'(a,2(f12.5,tr1))') &
@@ -225,9 +225,12 @@ contains
           write(*,'(a,f12.5)') &
             'Buffer                        [B]  :',Q(1,1)
         end if
-        write(*,'(a,f12.5,/)') &
+        write(*,'(a,f12.5)') &
             'Other                         [O]  :',Q(0,1)
       end if
+      write(*,'(a,f12.5,/)') &
+          'Excess charge                [dQ]  :',sum(Q) - Qtot
+
 
     else if ( lmethod == TS_Q_INFO_SCF ) then
 

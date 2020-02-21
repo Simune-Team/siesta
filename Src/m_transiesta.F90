@@ -108,7 +108,7 @@ contains
 
     ! * local variables
     integer :: iEl, NEn, no_used, no_used2
-    logical :: converged, dq_run
+    logical :: converged, dq_run, truncated
     ! In case of Fermi-correction, we save the previous steps
     ! and do a spline interpolation... :)
     integer :: N_F, i_F, ioerr
@@ -322,7 +322,7 @@ contains
         i_F = i_F + 1
         if ( N_F < i_F ) then
           N_F = N_F + 10
-          call re_alloc(Q_Ef,1,N_F,1,2,copy=.true.)
+          call re_alloc(Q_Ef, 1, N_F, 1, 2, copy=.true.)
         end if
 
         ! Save current fermi level and charge
@@ -330,10 +330,21 @@ contains
             nspin, n_nzs, DM, S, Qtot = Q_Ef(i_F,1) )
         Q_Ef(i_F,2) = Ef
 
+        ! Determine whether the charge *has* converged
+        converged = abs(Q_Ef(i_F,1) - Qtot) < TS_DQ_FERMI_TOLERANCE
+
         if ( i_F < 2 ) then
+
           call ts_dq%calculate_dEf(Qtot, &
               sp_dist, nspin, n_nzs, DM, S, dEf)
-          Ef = Ef + dEf
+          ! In case the charge *is* converged
+          ! Then we further reduce dEf since
+          ! it causes SCF fluctuations
+          if ( converged ) then
+            Ef = Ef + dEf * min(abs(Q_Ef(i_F,1) - Qtot), 0.05_dp)
+          else
+            Ef = Ef + dEf
+          end if
 
         else
 
@@ -349,8 +360,8 @@ contains
 
           ! Truncate to the maximum allowed change in Fermi-level
           call ts_dq_truncate(Q_Ef(i_F,2), &
-              TS_DQ_FERMI_MAX, Ef, truncated=converged)
-          converged = .not. converged
+              TS_DQ_FERMI_MAX, Ef, truncated=truncated)
+          converged = converged .and. (.not. truncated)
 
           if ( IONode ) then
             write(*,'(a,es11.4)') 'ts-dq-iscf: cubic spline dq = ', &
@@ -359,16 +370,8 @@ contains
 
         end if
 
-        ! Even if we have converged we allow the interpolation
-        ! to do a final step. If dQ is very small it should be very
-        ! close to the found value.
-        ! If the truncation already is reached we stop as that
-        ! *MUST* be the maximal change.
-        if ( .not. converged ) &
-            converged = abs(Q_Ef(i_F,1) - Qtot) < &
-            TS_DQ_FERMI_TOLERANCE
-
         ! Signal only doing this for the first run
+        ! for subsequent dq-scf we interpolate
         ts_dq%run = .false.
 
       else
@@ -383,73 +386,91 @@ contains
     ! We will only do major extrapolation when we are
     ! far from the charge neutrality point.
     ! Otherwise we will iterate forever...
-    if ( dq_run .and. i_F > 1 ) then
-
-      if ( IONode ) then
-        ! After converge we write out the convergence
-        call io_assign(iEl)
-        inquire(file='TS_FERMI', exist=converged)
-        if ( converged ) then
-          open(unit=iEl,file='TS_FERMI',position='append',form='formatted', &
-              status='old',iostat=ioerr)
-          write(iEl,'(/,a,i0)') '# TSiscf = ',TSiscf
-        else
-          open(unit=iEl,file='TS_FERMI',form='formatted', &
-              status='new')
-          write(iEl,'(a,i0)') '# TSiscf = ',TSiscf
-        end if
-        N_F = i_F
-        write(iEl,'(a,i0)')'# ',N_F ! Number of iterations
-        do i_F = 1 , N_F
-          write(iEl,'(2(tr1,e20.10))') Q_Ef(i_F,2)/eV,Q_Ef(i_F,1) - Qtot
-        end do
-
-        call io_close(iEl)
-
-      end if
-
-      ! This is the 2nd step of dEF correction.
-      ! At this point we have corrected E_f for the current
-      ! iteration. But generally the Hartree potential will counter
-      ! the change in E_F. So to speed up convergence
-      ! we do a spline interpolation of the dE_F by doing a spline
-      ! interpolation of the ISCF corrections.
-      ! Say TS corrects EF at iterations 50 and 80
-      ! which means TS_FERMI may look like this:
-      !#####
-      ! # TSiscf = 50
-      ! # 3
-      !   -0.204782E+01    0.172948E-01
-      !   -0.205297E+01    0.834017E-03
-      !   -0.205323E+01   -0.250016E-05
-      !
-      ! # TSiscf = 80
-      !# 3
-      !   -0.207423E+01    0.967930E-02
-      !   -0.207710E+01    0.490200E-03
-      !   -0.207726E+01   -0.817259E-06
-      !#####
-      ! 
-
-      ! Guess-stimate the actual Fermi-shift
-      ! typically will the above be "too" little
-      ! So we interpolate between all previous 
-      ! estimations for this geometry...
-      call ts_dq_Fermi_file(Q_Ef(1,2), Ef)
-
-    end if
-
     if ( dq_run ) then
-      ! We have now calculated the new Ef
-      ! We shift it EDM to the correct level
-      dEf = Ef - Q_Ef(1,2)
 
-      if ( IONode ) then
-        write(*,'(a,es11.4,a)') 'ts-dq: dEf = ', dEf/eV, ' eV'
+      ! Store the actual number of charge iterations runned
+      N_F = i_F
+
+      if ( N_F > 1 ) then
+
+        if ( IONode ) then
+          ! After converge we write out the convergence
+          call io_assign(iEl)
+          inquire(file='TS_FERMI', exist=converged)
+          if ( converged ) then
+            open(unit=iEl,file='TS_FERMI',position='append',form='formatted', &
+                status='old',iostat=ioerr)
+            write(iEl,'(/,a,i0)') '# TSiscf = ', TSiscf
+          else
+            open(unit=iEl,file='TS_FERMI',form='formatted', &
+                status='new')
+            write(iEl,'(a,i0)') '# TSiscf = ', TSiscf
+          end if
+          write(iEl,'(a,i0)')'# ', N_F ! Number of iterations
+          do i_F = 1 , N_F
+            write(iEl,'(2(tr1,e20.10))') Q_Ef(i_F,2)/eV, Q_Ef(i_F,1) - Qtot
+          end do
+
+          call io_close(iEl)
+
+        end if
+
+        ! When N_F > 1 we *know* that the initial run did
+        ! not converge the charges
+
+        ! This is the 2nd step of dEF correction.
+        ! At this point we have corrected E_f for the current
+        ! iteration. But generally the Hartree potential will counter
+        ! the change in E_F. So to speed up convergence
+        ! we do a spline interpolation of the dE_F by doing a spline
+        ! interpolation of the ISCF corrections.
+        ! Say TS corrects EF at iterations 50 and 80
+        ! which means TS_FERMI may look like this:
+        !#####
+        ! # TSiscf = 50
+        ! # 3
+        !   -0.204782E+01    0.172948E-01
+        !   -0.205297E+01    0.834017E-03
+        !   -0.205323E+01   -0.250016E-05
+        !
+        ! # TSiscf = 80
+        !# 3
+        !   -0.207423E+01    0.967930E-02
+        !   -0.207710E+01    0.490200E-03
+        !   -0.207726E+01   -0.817259E-06
+        !#####
+        !
+
+        ! Guess-stimate the actual Fermi-shift
+        ! typically will the above be "too" little
+        ! So we interpolate between all previous
+        ! estimations for this geometry...
+        call ts_dq_Fermi_file(Ef, dEf)
+        Ef = Ef + dEf
+
       end if
 
-      ! Correct energy-density matrix
-      call daxpy(n_nzs*nspin,dEf,DM(1,1),1,EDM(1,1),1)
+      ! We have now calculated the new Ef
+      if ( IONode ) then
+        write(*,'(a,es11.4,a)') 'ts-dq: dEf = ', (Ef - Q_Ef(1,2))/eV, ' eV'
+      end if
+
+      ! We shift it EDM to the correct level
+      ! Only correct energy density matrix in the respective
+      ! places. For instance the above
+      ! Only correct for the latest one, which have not
+      ! been applied during the charge-convergence ISCF
+      ! Although the DM/EDM for the device region
+      ! have been calculated with the
+      ! fermi level stored in Q_Ef(N_F,2) it seems the forces
+      ! in the electrode regions are better if one uses
+      ! the converged Ef as the baseline
+      ! I.e. if one wants EDM in the electrode regions
+      ! to be commensurate with the EDM in the device region
+      ! one should use Q_Ef(N_F,2) - Q_Ef(1,2)
+      call ts_dq_scale_EDM_elec(N_elec, Elecs, &
+          sp_dist, sparse_pattern, nspin, n_nzs, DM, EDM, &
+          Ef - Q_Ef(1,2), Ef - Q_Ef(N_F,2))
 
       call de_alloc(Q_Ef)
 
@@ -481,7 +502,7 @@ contains
     ! computation here (notice that the routine will automatically
     ! return if no charge-correction is requested)
     if ( TS_DQ_METHOD == TS_DQ_METHOD_BUFFER ) then
-      call ts_dq_buffer(N_Elec,Elecs, sp_dist, &
+      call ts_dq_buffer(N_Elec, sp_dist, &
           sparse_pattern, nspin, n_nzs, DM, EDM, S, Qtot)
     end if
 

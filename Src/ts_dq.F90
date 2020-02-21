@@ -24,11 +24,11 @@ module ts_dq_m
   integer, save :: TS_DQ_METHOD = 0
   integer, parameter :: TS_DQ_METHOD_BUFFER = 1
   integer, parameter :: TS_DQ_METHOD_FERMI = 2
-  real(dp), save :: TS_DQ_FACTOR = 0.75_dp
+  real(dp), save :: TS_DQ_FACTOR = 0.8_dp
 
   real(dp), save :: TS_DQ_FERMI_TOLERANCE = 0.01_dp
   real(dp), save :: TS_DQ_FERMI_MAX = 0.1102471_dp ! 1.5 eV
-  real(dp), save :: TS_DQ_FERMI_ETA = 7.349806700083787e-6_dp ! 0.0001 eV
+  real(dp), save :: TS_DQ_FERMI_ETA = 7.349806700083787e-5_dp ! 0.001 eV
   real(dp), save :: TS_DQ_FERMI_SCALE = 75._dp
 
 
@@ -97,10 +97,10 @@ contains
     ! correction
     TS_DQ_FERMI_SCALE = fdf_get('TS.dQ.Fermi.Scale', 50._dp)
     ! The eta value at which to extrapolate the charge density
-    TS_DQ_FERMI_ETA = fdf_get('TS.dQ.Fermi.Eta', 0.0001_dp * eV, 'Ry')
+    TS_DQ_FERMI_ETA = fdf_get('TS.dQ.Fermi.Eta', 0.001_dp * eV, 'Ry')
 
     ! Factor for charge-correction
-    TS_DQ_FACTOR = fdf_get('TS.ChargeCorrection.Factor', 0.9_dp)
+    TS_DQ_FACTOR = fdf_get('TS.ChargeCorrection.Factor', 0.8_dp)
     TS_DQ_FACTOR = fdf_get('TS.dQ.Factor', TS_DQ_FACTOR)
     if ( TS_DQ_FACTOR <= 0.0_dp ) then
       call die("TS.dQ.Factor: Charge correction factor must be larger than 0")
@@ -119,10 +119,9 @@ contains
   !! for these regions.
   !! Currently, we can't correct the total energies related
   !! to these *in-correct* terms.
-  subroutine ts_dq_buffer(N_Elec,Elecs, &
+  subroutine ts_dq_buffer(N_Elec, &
       dit, sp, nspin, n_nzs, DM, EDM, S, Qtot)
     
-    use m_ts_electype
     use m_ts_method
     use parallel, only : Node
 #ifdef MPI
@@ -138,8 +137,6 @@ contains
 ! * INPUT variables    *
 ! **********************
     integer, intent(in) :: N_Elec
-    ! The electrodes
-    type(Elec), intent(in) :: Elecs(N_Elec)
     type(OrbitalDistribution), intent(inout) :: dit
     ! SIESTA local sparse pattern (not changed)
     type(Sparsity), intent(inout) :: sp
@@ -222,7 +219,6 @@ contains
   !! routines, then it should also be adapted here.
   subroutine ts_dq_t_initialize(this, N_mu, mus)
     
-    use parallel, only : Nodes, Node
     use sorting, only: ordix
     use m_ts_chem_pot, only: ts_mu
 
@@ -237,7 +233,7 @@ contains
     type(ts_c_idx) :: cE
     real(dp), allocatable :: E(:)
     integer, allocatable :: indx(:), perm(:)
-    integer :: imu, ic, idx, iE, N
+    integer :: imu, ic, idx, ie, N
 
     ! Clean if necessary
     if ( associated(this%mus) ) call this%delete()
@@ -336,7 +332,7 @@ contains
 
   subroutine ts_dq_t_calculate_dEf(this, Qtot, dit, nspin, n_nzs, DM, S, dEf)
 
-    use parallel, only : IONode, Node, Nodes
+    use parallel, only: Node
     use units, only : eV
     use class_OrbitalDistribution
     use alloc, only: de_alloc
@@ -400,6 +396,7 @@ contains
     if ( Node == 0 ) then
       ! The additional charge
       dQ = dQ - Qtot
+      write(*,'(a,es11.4)') 'ts-dq: dq = ', dQ
 
       dQ_Ef = 0._dp
       
@@ -419,6 +416,12 @@ contains
       ! dQ + dE * DM@(Ef) = 0 => dE = -dQ / DM@(Ef)
       dEf = - (dQ / dQ_Ef) * TS_DQ_FACTOR
 
+      ! If Ef lies in the middle of bands we will have no DOS
+      ! right at the Fermi level.
+      ! If this is the case we truncate the change in Fermi-level
+      ! to the maximum allowed shift...
+      call ts_dq_truncate(0._dp, TS_DQ_FERMI_MAX, dEf)
+
     end if
 
 #ifdef MPI
@@ -427,16 +430,6 @@ contains
         MPI_Comm_World, MPIerror)
 #endif
     
-    ! If Ef lies in the middle of bands we will have no DOS
-    ! right at the Fermi level.
-    ! If this is the case we truncate the change in Fermi-level
-    ! to the maximum allowed shift...
-    call ts_dq_truncate(0._dp, TS_DQ_FERMI_MAX, dEf)
-    
-    if ( Node == 0 ) then
-      write(*,'(a,es11.4)') 'ts-dq: dq = ', dQ
-    end if
-
   end subroutine ts_dq_t_calculate_dEf
 
 
@@ -460,33 +453,35 @@ contains
 
   end function ts_dq_t_get_index
   
-  subroutine ts_dq_Fermi_file(Ef0, Ef)
+  subroutine ts_dq_Fermi_file(Ef, dEf)
 
     use parallel, only : Node
     use units, only : eV
-    use m_os, only : file_delete
     use m_interpolate
 #ifdef MPI
     use mpi_siesta
 #endif
-    !< Ef0 is the original Fermi-level (before any charge correction)
-    real(dp), intent(in) :: Ef0
     !< Ef is the -dq / dq@Ef corrected Fermi-level
     real(dp), intent(inout) :: Ef
+    !< The shift in the Fermi-level for this routine
+    real(dp), intent(inout) :: dEf
     
     integer :: iu, ioerr, i
     real(dp) :: cur(2)
 
-    real(dp) :: Ef_neg, Ef_pos
-    real(dp), allocatable :: Q_Ef(:,:,:), first_Q(:)
+    real(dp) :: Ef_new
+    real(dp), allocatable :: Q_Ef(:,:), first_Q(:)
     
     integer :: N, max_itt, tmp
+    integer :: i_start
     character(len=2) :: char2
-    integer :: all_sign
+    logical :: is_pos
 
 #ifdef MPI
     integer :: MPIerror
 #endif
+
+    dEf = 0._dp
 
     ! First we need to read in the entire 
     ! file and figure out the highest number of iterations
@@ -508,7 +503,7 @@ contains
       do while ( ioerr /= -1 ) 
         N = N + 1
         read(iu,*) ! # TSiscf line
-        read(iu,'(a2,i15)')char2,tmp
+        read(iu,'(a2,i15)') char2, tmp
         max_itt = max(max_itt,tmp)
         do i = 1 , tmp
           read(iu,*) ! data line
@@ -522,127 +517,69 @@ contains
 
         ! First calculated charge for every iteration
         allocate(first_Q(N))
-        ! Q_Ef(iteration, [Ef, Q], [negative(Q), positive(Q)])
-        allocate(Q_Ef(N,2,2))
-        Q_Ef(:,1,:) = 0._dp
-        Q_Ef(:,2,1) = huge(1._dp)
-        Q_Ef(:,2,2) = -huge(1._dp)
+        ! Q_Ef(iteration, [Ef, Q])
+        allocate(Q_Ef(N,2))
 
         ! Rewind and read data
         rewind(iu)
         ioerr = 0
+
         ! Read in the data and move it to Q_Ef
         N = 0
         do while ( ioerr /= -1 )
           N = N + 1
           read(iu,*) ! # TSiscf line
-          read(iu,'(a2,i15)') char2,tmp
+          read(iu,'(a2,i15)') char2, tmp
 
-          do i = 1 , tmp
-            read(iu,'(2(tr1,e20.10))') cur(:)
-
-            ! Get first charge (initial charge)
-            if ( i == 1 ) first_Q(N) = cur(2)
-            ! Convert to Ry
-            cur(1) = cur(1) * eV
-
-            ! Assign min Q
-            if ( Q_Ef(N,2,1) > cur(2) ) then
-              Q_Ef(N,:,1) = cur(:)
-            end if
-            ! Assign max Q
-            if ( Q_Ef(N,2,2) < cur(2) ) then
-              Q_Ef(N,:,2) = cur(:)
-            end if
-
+          read(iu,'(2(tr1,e20.10))') cur(:)
+          first_Q(N) = cur(2)
+          ! Convert to Ry
+          cur(1) = cur(1) * eV
+          Q_Ef(N,:) = cur(:)
+          do i = 2 , tmp
+            read(iu,*) !
           end do
-
           read(iu,*,iostat=ioerr) ! empty line
+
         end do
 
-        ! Interpolate the new fermi level by using the negative charge
-        call interp_spline(N,Q_Ef(1:N,2,1),Q_Ef(1:N,1,1),0._dp,Ef_neg)
-        if ( ISNAN(Ef_neg) ) Ef_neg = Ef
-        ! Interpolate the new fermi level by using the positive charge
-        call interp_spline(N,Q_Ef(1:N,2,2),Q_Ef(1:N,1,2),0._dp,Ef_pos)
-        if ( ISNAN(Ef_pos) ) Ef_pos = Ef
-        all_sign = 0
+        ! Figure out where we should use it
+        is_pos = is_positive(first_Q(N))
+        do i_start = N , 2, -1
+          if ( is_pos .neqv. is_positive(first_Q(i_start-1)) ) exit
+        end do
+        i_start = max(i_start, 1)
 
-        ! We first discard the interpolation that is 
-        ! clearly wrong. I.e. the one that decides the wrong
-        ! direction, this only makes sense
-        ! if all previous tries in estimating the fermi-level
-        ! has the same tendency. I.e. if we always have excess charge
-        ! then we should use this scheme.
-        if ( all(first_Q > 0._dp) ) then
-          all_sign = 1
-          ! We always have too much charge
-          ! If their guesses are clearly wrong, we simply
-          ! use the interpolated fermi-level, we need
-          ! more iterations to clear out this mess
-          if ( Ef_pos > Ef ) Ef_pos = Ef
-        else if ( all(first_Q < 0._dp) ) then
-          all_sign = -1
-          if ( Ef_neg < Ef ) Ef_neg = Ef
+        if ( N - i_start > 1 ) then ! len(i_start:N) >= 2
+          ! Interpolate the new fermi level by using first entry
+          call interp_spline(N-i_start+1,Q_Ef(i_start:N,2),Q_Ef(i_start:N,1),0._dp,Ef_new)
+          if ( ISNAN(Ef_new) ) Ef_new = Ef
+          dEf = TS_DQ_FACTOR * (Ef_new - Ef)
         end if
 
-        deallocate(Q_Ef,first_Q)
-
-        ! we take the minimum deviating one... :)
-        ! We do not tempt our souls to the Fermi-god...
-        select case ( all_sign )
-        case ( 0 ) 
-          if ( abs(Ef_neg - Ef) > abs(Ef_pos - Ef) ) then
-            Ef_neg = Ef
-            Ef = Ef + TS_DQ_FACTOR * ( Ef_pos - Ef )
-          else
-            Ef_pos = Ef
-            Ef = Ef + TS_DQ_FACTOR * ( Ef_neg - Ef )
-            Ef_neg = Ef_pos
-          end if
-        case ( 1 ) ! all first ones are positive
-                   ! i.e. we always underestimate
-          Ef_neg = Ef
-          Ef = Ef + TS_DQ_FACTOR * ( Ef_pos - Ef )
-        case ( -1 ) ! all first ones are negative
-                    ! i.e. we always underestimate
-          Ef_pos = Ef
-          Ef = Ef + TS_DQ_FACTOR * ( Ef_neg - Ef )
-          Ef_neg = Ef_pos
-        end select
-
-        ! In case our dq iscf iterations has a different sign than the
-        ! interpolation then there *must* be something wrong in the
-        ! used values.
-        ! We know that dq iscf are correct since they are based
-        ! on the actual charge differences for the current iteration.
-        ! This routine does so by considering multiple iterations
-        ! which may or may not be far from the ground state.
-        if ( (Ef - Ef0 > 0._dp .and. Ef - Ef_neg < 0._dp) .or. &
-            (Ef - Ef0 < 0._dp .and. Ef - Ef_neg > 0._dp) ) then
-          Ef = Ef_neg
-        end if
+        deallocate(Q_Ef, first_Q)
 
         ! Truncate to the maximum allowed difference
-        call ts_dq_truncate(Ef_neg,TS_DQ_FERMI_MAX,Ef)
+        call ts_dq_truncate(0._dp, TS_DQ_FERMI_MAX, dEf)
 
       end if ! N > 1
 
       call io_close(iu)
 
-      if ( N > 1 .and. abs(Ef - Ef0) < 1.e-8_dp * eV ) then
-        ! Delete TS_FERMI file, since the interpolation has stagnated
-        if ( file_delete('TS_FERMI') ) then
-          write(*,'(a)') 'ts-dq: Deleting TS_FERMI file as interpolation went stale'
-        end if
-      end if
-
     end if
 
 #ifdef MPI
-    call MPI_Bcast(Ef,1,MPI_Double_Precision, &
-         0,MPI_Comm_World, MPIerror)
+    call MPI_Bcast(dEf, 1, MPI_Double_Precision, 0, &
+        MPI_Comm_World, MPIerror)
 #endif
+
+  contains
+
+    pure function is_positive(V) result(is)
+      real(dp), intent(in) :: V
+      logical :: is
+      is = V > 0._dp
+    end function is_positive
 
   end subroutine ts_dq_Fermi_file
 
@@ -663,5 +600,91 @@ contains
     end if
 
   end subroutine ts_dq_truncate
+
+  subroutine ts_dq_scale_EDM_elec(N_Elec, Elecs, dit, sp, nspin, n_nzs, DM, EDM, &
+      dEf_elec, dEf_device)
+
+    use m_ts_method
+    use parallel, only : Node
+#ifdef MPI
+    use mpi_siesta
+#endif
+    use class_OrbitalDistribution
+    use class_Sparsity
+    use m_ts_electype
+
+! **********************
+! * INPUT variables    *
+! **********************
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    type(OrbitalDistribution), intent(inout) :: dit
+    ! SIESTA local sparse pattern (not changed)
+    type(Sparsity), intent(inout) :: sp
+    ! Number of non-zero elements
+    integer, intent(in) :: nspin, n_nzs
+    ! The density matrix
+    real(dp), intent(in) :: DM(n_nzs,nspin)
+    ! The energy density matrix
+    real(dp), intent(inout) :: EDM(n_nzs,nspin)
+    !< Fermi-level changes in the electrode region
+    real(dp), intent(in) :: dEf_elec, dEf_device
+
+! **********************
+! * LOCAL variables    *
+! **********************
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    integer :: no_l, no_u, lio, io, ind
+    integer :: ir_dm, jr_dm
+    integer :: ir, jr
+
+    ! Retrieve information about the sparsity pattern
+    call attach(sp, &
+        n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+        nrows=no_l,nrows_g=no_u)
+
+!$OMP parallel do default(shared), &
+!$OMP&private(lio,io,ind,jo,ir,ir_dm,jr,jr_dm)
+    do lio = 1 , no_l
+
+      ! obtain the global index of the orbital.
+      io = index_local_to_global(dit,lio,Node)
+      ir = orb_type(io)
+      if ( ir == TYP_BUFFER ) then
+        ir_dm = 0
+      else if ( ir == TYP_DEVICE ) then
+        ir_dm = 2
+      else
+        ir_dm = Elecs(ir)%DM_update
+      end if
+
+      ! Loop number of entries in the row... (index frame)
+      do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
+
+        ! as the local sparsity pattern is a super-cell pattern,
+        ! we need to check the unit-cell orbital
+        ! The unit-cell column index
+        jr = orb_type(l_col(ind))
+        if ( jr == TYP_BUFFER ) then
+          jr_dm = 0
+        else if ( jr == TYP_DEVICE ) then
+          jr_dm = 2
+        else
+          jr_dm = Elecs(jr)%DM_update
+        end if
+
+        if ( ir_dm + jr_dm <= 2 ) then
+          ! In a non-updated region
+          EDM(ind,:) = EDM(ind,:) + DM(ind,:) * dEf_elec
+        else
+          ! In an updated region
+          EDM(ind,:) = EDM(ind,:) + DM(ind,:) * dEf_device
+        end if
+
+      end do
+    end do
+!$OMP end parallel do
+
+  end subroutine ts_dq_scale_EDM_elec
 
 end module ts_dq_m
