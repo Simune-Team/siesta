@@ -970,7 +970,7 @@
           fres = fres + fa(ix,ia) ** 2
         end do
       end do
-      fres = sqrt(fres) / (na_u * 3)
+      fres = sqrt(fres / (na_u * 3))
       end subroutine analyze_force
 
       End Module write_subs
