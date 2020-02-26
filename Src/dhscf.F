@@ -401,7 +401,7 @@ C     Create Rhoatm using UNIFORM distr, in sequential form
         endif
 
 C     Allocate Temporal array
-      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
+      call re_alloc( Vscf, 1, ntpl, 1, 1, 'Vscf', 'dhscf_init' )
 
 C     Vscf is filled here but not used later
 C     Uharrs is computed (and saved)
