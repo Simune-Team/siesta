@@ -75,7 +75,7 @@ contains
     ! The region that we will create a tri-diagonal matrix on.
     type(tRgn), intent(in) :: r
     ! The sizes of the parts in the tri-diagonal matrix
-    integer, intent(out) :: parts
+    integer, intent(inout) :: parts
     integer, pointer :: n_part(:)
     ! Which kind of method should be used to create the tri-diagonal
     integer, intent(in) :: method
@@ -87,6 +87,7 @@ contains
     ! Local variables
     integer, pointer :: guess_part(:) => null()
     integer, pointer :: mm_col(:,:) => null()
+
     integer :: i, no, guess_parts, max_block
     ! In case of parallel
     integer :: guess_start, guess_step
@@ -495,8 +496,8 @@ contains
   subroutine guess_TriMat_last(no,mm_col,parts,n_part,last_eq)
 
     integer, intent(in) :: no, mm_col(2,no) ! number of orbitals, max,min
-    integer, intent(out) :: parts
-    integer, intent(out) :: n_part(:)
+    integer, intent(inout) :: parts
+    integer, intent(inout) :: n_part(:)
     integer, intent(in) :: last_eq
 
     ! Local variables
@@ -542,7 +543,6 @@ contains
     diff = p_N - g_N
     
     n = min(np, ng)
-!$OMP parallel do default(shared), private(i,p_N,g_N), reduction(+:diff), if(n>1000)
     do i = 2, n
 
       p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
@@ -554,7 +554,6 @@ contains
       diff = diff + p_N - g_N
       
     end do
-!$OMP end parallel do
 
     if ( np > ng ) then
       faster = .true.
@@ -603,19 +602,18 @@ contains
   ! searching for the size of the matrix that matches that of the previous 
   ! part.
   ! We save it in n_part(part)
-  subroutine guess_next_part_size(no,mm_col,no_cur,n_part,parts)
+  subroutine guess_next_part_size(no,mm_col,eRow,n_part,parts)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
-    ! no_cur is sum(parts(:-1))
-    integer, intent(in) :: no_cur, n_part
+    ! eRow is sum(parts(:-1))
+    integer, intent(in) :: eRow, n_part
     integer, intent(inout) :: parts(n_part)
     ! Local variables
-    integer :: i, sRow, eRow, mcol
+    integer :: i, sRow, mcol
     
     ! We are now checking a future part
     ! Hence we must ensure that the size is what
     ! is up to the last parts size, and thats it...
-    eRow = no_cur
     sRow = eRow - parts(n_part-1) + 1
 
     ! We will check in between the above selected rows and find the 
@@ -708,23 +706,23 @@ contains
     end do
 
     select case ( method )
-    case ( 0 ) ! speed
+    case ( 0 ) ! performance
 
       do
         changed = .false.
         do n = 2 , n_part - 1
           call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
           call diff_perf(n, n_part, parts, mem_parts, d)
-          call select()
+          call select(d)
         end do
         n = 1
         call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
         call diff_perf(n, n_part, parts, mem_parts, d)
-        call select()
+        call select(d)
         n = n_part
         call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
         call diff_perf(n, n_part, parts, mem_parts, d)
-        call select()
+        call select(d)
         
         if ( .not. changed ) exit
       end do
@@ -736,16 +734,16 @@ contains
         do n = 2 , n_part - 1
           call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
           call diff_mem(n, n_part, parts, mem_parts, d)
-          call select()
+          call select(d)
         end do
         n = 1
         call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
         call diff_mem(n, n_part, parts, mem_parts, d)
-        call select()
+        call select(d)
         n = n_part
         call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
         call diff_mem(n, n_part, parts, mem_parts, d)
-        call select()
+        call select(d)
         
         if ( .not. changed ) exit
       end do
@@ -760,7 +758,8 @@ contains
 
   contains
 
-    subroutine select()
+    subroutine select(d)
+      integer, intent(in) :: d
       if ( d == 0 ) then
         ! Simply store. It could be that we swapped a few things
         call store_part(n_part, parts, mem_parts, n)
@@ -959,7 +958,7 @@ contains
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     type(tRgn), intent(in) :: r
-    integer, intent(out) :: mm_col(2,r%n)
+    integer, intent(inout) :: mm_col(2,r%n)
     ! The results
     type(tRgn) :: pvt
     integer :: ir, row, ptr, nr, j
@@ -972,16 +971,11 @@ contains
     ! region! SUBSTANTIALLY!
     call rgn_init(pvt, nr, val=0)
 
-!$OMP parallel default(shared), private(ir,row,ptr,j)
-
     ! Create the back-pivoting array
-!$OMP do
     do ir = 1 , r%n
       pvt%r(r%r(ir)) = ir
     end do
-!$OMP end do
     
-!$OMP do
     do ir = 1 , r%n
 
        ! Get original sparse matrix row
@@ -1001,9 +995,6 @@ contains
        end do
 
     end do
-!$OMP end do nowait
-    
-!$OMP end parallel
 
     call rgn_delete(pvt)
 
@@ -1015,7 +1006,7 @@ contains
     integer, intent(in) :: part
     integer, intent(in) :: n
     integer, intent(in) :: part1(n), part2(n)
-    integer, intent(out) :: mem
+    integer, intent(inout) :: mem
     logical, intent(in), optional :: final
     integer :: next
     logical :: lfinal
@@ -1072,7 +1063,7 @@ contains
     integer, intent(in) :: part
     integer, intent(in) :: n
     integer, intent(in) :: part1(n), part2(n)
-    integer, intent(out) :: perf
+    integer, intent(inout) :: perf
     logical, intent(in), optional :: final
     real(dp) :: one_third = 0.3333333333333333333333_dp
     real(dp) :: p
@@ -1082,6 +1073,7 @@ contains
     perf = 0
     if ( part < 1 ) return
     if ( part > n ) return
+    if ( n < 2 ) return
     lfinal = .false.
     if ( present(final) ) lfinal = final
 
@@ -1093,7 +1085,7 @@ contains
       if ( .not. lfinal ) then
         ! This takes inv of part + 1 and mm 
         call diff_perf(part+1, n, part1, part2, next, .true.)
-        p = p + real(next, dp) ** 3
+        p = p + p_inv(next)
       end if
       
     else if ( part == n ) then
@@ -1104,7 +1096,7 @@ contains
       if ( .not. lfinal ) then
         ! This takes inv of part - 1 and mm 
         call diff_perf(part-1, n, part1, part2, next, .true.)
-        p = p + real(next, dp) ** 3
+        p = p + p_inv(next)
       end if
       
     else
@@ -1115,9 +1107,9 @@ contains
       
       if ( .not. lfinal ) then
         call diff_perf(part-1, n, part1, part2, next, .true.)
-        p = p + real(next, dp) ** 3
+        p = p + p_inv(next)
         call diff_perf(part+1, n, part1, part2, next, .true.)
-        p = p + real(next, dp) ** 3
+        p = p + p_inv(next)
       end if
       
     end if
@@ -1126,13 +1118,14 @@ contains
     ! We could essentially also just return +1/0/-1
     ! But perhaps we can use the actual value to something useful?
     if ( p < 0 ) then
-      perf = - int( (-p) ** one_third )
+      perf = - nint( (-p) ** one_third )
     else
-      perf = int(p ** one_third)
+      perf = nint(p ** one_third)
     end if
       
   contains
 
+    !< Order of inversion algorithm
     pure function p_inv(s) result(p)
       use precision, only: dp
       integer, intent(in) :: s
@@ -1140,6 +1133,7 @@ contains
       p = real(s, dp) ** 3
     end function p_inv
 
+    !< Order of matrix multiplication, here the matrices are [m,m] * [m,n]
     pure function p_mm(m, n) result(p)
       use precision, only: dp
       integer, intent(in) :: m, n
@@ -1257,7 +1251,7 @@ contains
 
     pure subroutine find_min_max(no, mm_col, N1, N2, col_min, col_max)
       integer, intent(in) :: no, mm_col(2,no), N1, N2
-      integer, intent(out) :: col_min, col_max
+      integer, intent(inout) :: col_min, col_max
       integer :: ir
       col_min = mm_col(1,N1)
       col_max = mm_col(2,N1)

@@ -197,9 +197,9 @@ contains
     end if
 
     chars = fdf_get('TS.BTD.Optimize','speed')
-    if ( leqi(chars,'speed') ) then
+    if ( leqi(chars, 'speed') .or. leqi(chars, 'performance') ) then
        BTD_method = 0
-    else if ( leqi(chars,'memory') ) then
+    else if ( leqi(chars, 'memory') ) then
        BTD_method = 1
     else
        call die('Could not determine flag TS.BTD.Optimize, please &
