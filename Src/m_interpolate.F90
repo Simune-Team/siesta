@@ -10,6 +10,9 @@ module m_interpolate
 
   private
 
+  interface crt_pivot
+    module procedure :: crt_pivot_r8, crt_pivot_i4
+  end interface crt_pivot
   public :: crt_pivot
   public :: interp_linear
   public :: interp_spline
@@ -17,7 +20,7 @@ module m_interpolate
 
 contains
 
-  subroutine crt_pivot(N,x,ipvt)
+  subroutine crt_pivot_r8(N,x,ipvt)
     integer, intent(in) :: N
     real(dp), intent(in) :: x(N)
     integer, intent(out) :: ipvt(N)
@@ -62,7 +65,54 @@ contains
       end do
     end do
 
-  end subroutine crt_pivot
+  end subroutine crt_pivot_r8
+
+  subroutine crt_pivot_i4(N,x,ipvt)
+    integer, intent(in) :: N
+    integer, intent(in) :: x(N)
+    integer, intent(out) :: ipvt(N)
+    integer :: i, j, ip, i_cur
+    integer :: c_low, c_high
+    integer :: x_cur, xd
+
+    if ( N < 1 ) then
+      return
+    else if ( N == 1 ) then
+      ipvt(1) = 1
+      return
+    else if ( N == 2 ) then
+      if ( x(1) > x(2) ) then
+        ipvt(1) = 2
+        ipvt(2) = 1
+      else
+        ipvt(1) = 1
+        ipvt(2) = 2
+      end if
+      return
+    end if
+
+    ! Assume it is sorted
+    do i = 1 , N
+      ipvt(i) = i
+    end do
+
+    ! Now rotate indices until they match
+    do i_cur = 2, N
+      ! Current pivoting index
+      x_cur = x(ipvt(i_cur))
+      ! rotate and swap if possible
+      i = i_cur - 1
+      do while ( x(ipvt(i)) > x_cur )
+        ! swap back
+        ip = ipvt(i+1)
+        ipvt(i+1) = ipvt(i)
+        ipvt(i) = ip
+        i = i - 1
+        if ( i <= 0 ) exit
+      end do
+    end do
+
+  end subroutine crt_pivot_i4
 
   ! A simple linear interpolation algorithm
   subroutine interp_linear(N,x,y,x0,y0)

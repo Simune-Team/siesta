@@ -54,7 +54,6 @@ contains
 
     use class_OrbitalDistribution
     use class_Sparsity
-    use create_Sparsity_Union
     use parallel, only : IONode, Node, Nodes
     use fdf, only : fdf_get
 #ifdef MPI
@@ -207,7 +206,7 @@ contains
 
     ! Correct starting guess for the node
     if ( lpar ) guess_start = min(guess_start + Node, max_block)
-    
+
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
@@ -226,8 +225,7 @@ contains
       end if
 
       ! Try and even out the different parts
-      call full_even_out_parts(N_Elec,Elecs,IsVolt,method, &
-          no,mm_col,guess_parts,guess_part,last_eq)
+      call full_even_out_parts(method,no,mm_col,guess_parts,guess_part,last_eq)
 
       if ( copy_first ) then
         ! ensure to copy it over (the initial one was not valid)
@@ -528,61 +526,58 @@ contains
 
     integer :: i, n
     real(dp) :: p_N, g_N, diff
-    real(dp), parameter :: off_diag = 1.2_dp
 
     ! We estimate the fastest algorithm
     ! by the number of operations the matrices make
+    ! inv = O^3, mm = O^3
 
-    ! 2 * 5 / 3 + 4 ~~ 1 + 1.2
-    p_N = R(n_part(1)) ** 2 + off_diag * R(n_part(2))
-    p_N = p_N * R(n_part(1))
-    
-    g_N = R(g_part(1)) ** 2 + off_diag * R(g_part(2))
-    g_N = g_N * R(g_part(1))
-    
+    p_N = (R(n_part(1)) + R(n_part(2))) * R(n_part(1)) * R(n_part(1))
+    g_N = (R(g_part(1)) + R(g_part(2))) * R(g_part(1)) * R(g_part(1))
+
     diff = p_N - g_N
-    
+
     n = min(np, ng)
-    do i = 2, n
+    do i = 2, n - 1
 
-      p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
-      p_N = p_N * R(n_part(i))
+      p_N = (R(n_part(i)) + R(n_part(i-1)) + R(n_part(i+1))) * R(n_part(i)) * R(n_part(i))
+      g_N = (R(g_part(i)) + R(g_part(i-1)) + R(g_part(i+1))) * R(g_part(i)) * R(g_part(i))
 
-      g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
-      g_N = g_N * R(g_part(i))
-      
       diff = diff + p_N - g_N
-      
+
     end do
+
+    ! The last entry
+    p_N = (R(n_part(np)) + R(n_part(np-1))) * R(n_part(np)) * R(n_part(np))
+    g_N = (R(g_part(ng)) + R(g_part(ng-1))) * R(g_part(ng)) * R(g_part(ng))
+
+    diff = diff + p_N - g_N
 
     if ( np > ng ) then
       faster = .true.
 
-      do i = ng + 1, np
-        
-        p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
-        p_N = p_N * R(n_part(i))
+      do i = ng, np - 1
+
+        p_N = (R(n_part(i)) + R(n_part(i-1)) + R(n_part(i+1))) * R(n_part(i)) * R(n_part(i))
 
         diff = diff + p_N
 
         if ( diff > 0._dp ) return
 
       end do
-      
+
     else
       faster = .false.
-      
-      do i = np + 1, ng
-        
-        g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
-        g_N = - g_N * R(g_part(i))
-        
-        diff = diff + g_N
+
+      do i = np, ng - 1
+
+        g_N = (R(g_part(i)) + R(g_part(i-1)) + R(g_part(i+1))) * R(g_part(i)) * R(g_part(i))
+
+        diff = diff - g_N
 
         if ( diff < 0._dp ) return
 
       end do
-      
+
     end if
 
     faster = diff > 0._dp
@@ -676,12 +671,8 @@ contains
 
   end subroutine guess_prev_part_size
 
-  subroutine full_even_out_parts(N_Elec,Elecs,IsVolt, &
-      method,no,mm_col,n_part,parts, last_eq)
+  subroutine full_even_out_parts(method,no,mm_col,n_part,parts, last_eq)
 
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
-    logical, intent(in) :: IsVolt
     integer, intent(in) :: method ! the method used for creating the parts
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
@@ -765,10 +756,12 @@ contains
         call store_part(n_part, parts, mem_parts, n)
         call store_cum_part(n_part, parts, cum_parts, n)
       else if ( d > 0 ) then
-        ! Copy back
+        ! We have that the just tested BTD matrix is not as performant
+        ! as the current
         call store_part(n_part, mem_parts, parts, n)
         ! the cumultative parts are not changed since we restore them
       else
+        ! the penalty is negative which means we have found a new candidate
         call store_part(n_part, parts, mem_parts, n)
         call store_cum_part(n_part, parts, cum_parts, n)
         changed = .true.
@@ -1001,144 +994,129 @@ contains
   end subroutine set_minmax_col
 
   !< Calculate the difference in memory requirement for two BTD
-  !< part1 - part2 == mem
-  recursive subroutine diff_mem(part, n, part1, part2, mem, final)
-    integer, intent(in) :: part
+  !!  mem(part1) - mem(part2) = d
+  !! If d > 0 part1 uses more memory than part2
+  subroutine diff_mem(p, n, part1, part2, mem)
+    integer, intent(in) :: p
     integer, intent(in) :: n
     integer, intent(in) :: part1(n), part2(n)
     integer, intent(inout) :: mem
-    logical, intent(in), optional :: final
-    integer :: next
-    logical :: lfinal
 
-    mem = 0
-    if ( part < 1 ) return
-    if ( part > n ) return
-    lfinal = .false.
-    if ( present(final) ) lfinal = final
+    if ( p == 1 ) then
 
-    if ( part == 1 ) then
-      
-      mem = part1(1) * ( part1(1) + part1(2) * 2 ) - &
-          part2(1) * ( part2(1) + part2(2) * 2 )
-
-      if ( .not. lfinal ) then
-        call diff_mem(part+1, n, part1, part2, next, .true.)
-        mem = mem + next
+      mem = memB(part1(1), part1(2)) - memB(part2(1), part2(2))
+      if ( n > 2 ) then
+        mem = mem +  memB(part1(2), part1(3)) - memB(part2(2), part2(3))
       end if
-      
-    else if ( part == n ) then
-      
-      mem = part1(n) * ( part1(n) + part1(n-1) * 2 ) - &
-          part2(n) * ( part2(n) + part2(n-1) * 2 )
 
-      if ( .not. lfinal ) then
-        call diff_mem(part-1, n, part1, part2, next, .true.)
-        mem = mem + next
+    else if ( p == n ) then
+
+      mem = memB(part1(n), part1(n-1)) - memB(part2(n), part2(n-1))
+      if ( n > 2 ) then
+        mem = mem +  memB(part1(n-1), part1(n-2)) - memB(part2(n-1), part2(n-2))
       end if
-      
+
     else
-      
-      mem = part1(part) * ( part1(part) + part1(part-1) * 2 + &
-          part1(part+1) * 2 ) + part1(part-1) ** 2 + part1(part+1) ** 2 &
-          - ( &
-          part2(part) * ( part2(part) + part2(part-1) * 2 + &
-          part2(part+1) * 2 ) + part2(part-1) ** 2 + part2(part+1) ** 2)
 
-      if ( .not. lfinal ) then
-        call diff_mem(part-1, n, part1, part2, next, .true.)
-        mem = mem + next
-        call diff_mem(part+1, n, part1, part2, next, .true.)
-        mem = mem + next
+      mem = memC(part1(p-1), part1(p), part1(p+1)) - memC(part2(p-1), part2(p), part2(p+1))
+      if ( p > 2 ) then
+        mem = mem + memB(part1(p-1), part1(p-2)) - memB(part2(p-1), part2(p-2))
       end if
-      
+      if ( p + 1 < n ) then
+        mem = mem + memB(part1(p+1), part1(p+2)) - memB(part2(p+1), part2(p+2))
+      end if
+
     end if
+
+  contains
+
+    !< Memory for boundary blocks
+    pure function memB(p1, p2) result(p)
+      integer, intent(in) :: p1, p2
+      integer :: p
+      p = p1 * (p1 + p2 * 2)
+    end function memB
+
+    !< Memory for center blocks
+    pure function memC(p0, p1, p2) result(p)
+      integer, intent(in) :: p0, p1, p2
+      integer :: p
+      p = p1 * (p1 + p0 * 2 + p2 * 2)
+    end function memC
 
   end subroutine diff_mem
 
-  !< Calculate the difference in memory requirement for two BTD
-  !< part1 - part2 == mem
-  recursive subroutine diff_perf(part, n, part1, part2, perf, final)
+  !< Calculate the difference in approximate flops for two BTD
+  !!   perf(part1) - perf(part2) = d
+  !! If d > 0 part1 is slower than part2
+  subroutine diff_perf(p, n, part1, part2, perf)
     use precision, only: dp
-    integer, intent(in) :: part
+    integer, intent(in) :: p
     integer, intent(in) :: n
     integer, intent(in) :: part1(n), part2(n)
     integer, intent(inout) :: perf
-    logical, intent(in), optional :: final
-    real(dp) :: one_third = 0.3333333333333333333333_dp
-    real(dp) :: p
-    integer :: next
-    logical :: lfinal
+    real(dp) :: one_third = 0.33333333333333333333333_dp
+    real(dp) :: pf
 
-    perf = 0
-    if ( part < 1 ) return
-    if ( part > n ) return
-    if ( n < 2 ) return
-    lfinal = .false.
-    if ( present(final) ) lfinal = final
+    if ( p == 1 ) then
 
-    if ( part == 1 ) then
+      pf = p_inv(part1(1)) - p_inv(part2(1)) + &
+          p_inv(part1(2)) - p_inv(part2(2)) + &
+          p_mm(part1(1), part1(2)) - p_mm(part2(1), part2(2))
 
-      p = p_inv(part1(1)) - p_inv(part2(1)) + & ! inv
-          (p_mm(part1(1), part1(2)) - p_mm(part2(1), part2(2))) ! mm
-      
-      if ( .not. lfinal ) then
-        ! This takes inv of part + 1 and mm 
-        call diff_perf(part+1, n, part1, part2, next, .true.)
-        p = p + p_inv(next)
+      if ( 2 < n ) then
+        pf = pf + p_mm(part1(2), part1(3)) - p_mm(part2(2), part2(3))
       end if
-      
-    else if ( part == n ) then
 
-      p = p_inv(part1(n)) - p_inv(part2(n)) + & ! inv
-          (p_mm(part1(n), part1(n-1)) - p_mm(part2(n), part2(n-1))) ! mm
+    else if ( p == n ) then
 
-      if ( .not. lfinal ) then
-        ! This takes inv of part - 1 and mm 
-        call diff_perf(part-1, n, part1, part2, next, .true.)
-        p = p + p_inv(next)
+      pf = p_inv(part1(n)) - p_inv(part2(n)) + &
+          p_inv(part1(n-1)) - p_inv(part2(n-1)) + &
+          p_mm(part1(n), part1(n-1)) - p_mm(part2(n), part2(n-1))
+
+      if ( 2 < n ) then
+        pf = pf + p_mm(part1(n-1), part1(n-2)) - p_mm(part2(n-1), part2(n-2))
       end if
       
     else
 
-      p = p_inv(part1(part)) - p_inv(part2(part)) + & ! inv
-          (p_mm(part1(part), part1(part-1)) - p_mm(part2(part), part2(part-1))) + & ! mm
-          (p_mm(part1(part), part1(part+1)) - p_mm(part2(part), part2(part+1))) ! mm
-      
-      if ( .not. lfinal ) then
-        call diff_perf(part-1, n, part1, part2, next, .true.)
-        p = p + p_inv(next)
-        call diff_perf(part+1, n, part1, part2, next, .true.)
-        p = p + p_inv(next)
+      pf = p_inv(part1(p-1)) - p_inv(part2(p-1)) + &
+          p_mm(part1(p), part1(p-1)) - p_mm(part2(p), part2(p-1)) + &
+          p_inv(part1(p)) - p_inv(part2(p)) + & ! diagonal
+          p_inv(part1(p+1)) - p_inv(part2(p+1)) + &
+          p_mm(part1(p), part1(p+1)) - p_mm(part2(p), part2(p+1))
+
+      if ( 2 < p ) then
+        pf = pf + p_mm(part1(p-1), part1(p-2)) - p_mm(part2(p-1), part2(p-2))
+      end if
+
+      if ( p + 1 < n ) then
+        pf = pf + p_mm(part1(p+1), part1(p+2)) - p_mm(part2(p+1), part2(p+2))
       end if
       
     end if
-    
+
     ! This should remove possible overflows
     ! We could essentially also just return +1/0/-1
-    ! But perhaps we can use the actual value to something useful?
-    if ( p < 0 ) then
-      perf = - nint( (-p) ** one_third )
-    else
-      perf = nint(p ** one_third)
-    end if
+    ! But perhaps we can use the value to something useful?
+    perf = nint(sign(abs(pf) ** one_third, pf))
       
   contains
 
     !< Order of inversion algorithm
-    pure function p_inv(s) result(p)
+    pure function p_inv(n) result(p)
       use precision, only: dp
-      integer, intent(in) :: s
+      integer, intent(in) :: n
       real(dp) :: p
-      p = real(s, dp) ** 3
+      p = real(n, dp) * real(n, dp) * real(n, dp)
     end function p_inv
 
-    !< Order of matrix multiplication, here the matrices are [m,m] * [m,n]
+    !< Order of matrix multiplication, here the matrices are [m,m] * [m,n] * 2 (upper and lower)
     pure function p_mm(m, n) result(p)
       use precision, only: dp
       integer, intent(in) :: m, n
       real(dp) :: p
-      p = real(m, dp) ** 2 * real(n, dp)
+      p = real(m, dp) * real(m, dp) * real(n * 2, dp)
     end function p_mm
 
   end subroutine diff_perf
