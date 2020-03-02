@@ -772,7 +772,7 @@ contains
       ! in index, all-in-all, win-win!
       call ts_pivot_tri_sort_El(nrows_g(tmpSp1), r_pvt, N_Elec, Elecs, ctri)
 
-      bw   = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
+      bw = bandwidth(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
       prof = profile(no,n_nzs,ncol,l_ptr,l_col,r_pvt)
       if ( IONode ) then
          write(*,'(tr3,a,t23,i10,/,tr3,a,t13,i20)') &
@@ -782,13 +782,11 @@ contains
       ! Calculate size of the tri-diagonal matrix
       els = nnzs_tri_i8b(ctri%n,ctri%r)
       ! check if there are overflows
-      if ( els > huge(1) ) then
+      is_suitable = els <= huge(1)
+      if ( .not. is_suitable ) then
         write(*,'(tr3,a,i0,'' / '',i0)')'*** Number of elements exceeds integer limits [elements / max] ', &
             els, huge(1)
         write(*,'(tr3,a)')'*** Will not be able to use this pivoting scheme!'
-        is_suitable = .false.
-      else
-        is_suitable = .true.
       end if
       
       total = real(no_u_ts, dp) ** 2
