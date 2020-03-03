@@ -55,6 +55,11 @@ module m_tbt_tri_scat
   complex(dp), parameter :: z1  = cmplx( 1._dp, 0._dp, dp)
   complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp, dp)
   complex(dp), parameter :: zi  = cmplx( 0._dp, 1._dp, dp)
+#ifdef USE_GEMM3M
+# define GEMM zgemm3m
+#else
+# define GEMM zgemm
+#endif
 
 contains
 
@@ -160,19 +165,14 @@ contains
       integer, intent(in) :: m,n
       complex(dp), pointer :: Gf(:), Mnn(:), XY(:)
 
-      XY  => val(Gfd_tri,m,n)
+      XY => val(Gfd_tri,m,n)
       Mnn => val(Gfd_tri,n,n)
-      Gf  => val(Gfo_tri,m,n)
+      Gf => val(Gfo_tri,m,n)
       
       ! We need to calculate the 
       ! Mnm1n/Mnp1n Green's function
-#ifdef USE_GEMM3M
-      call zgemm3m( &
-#else
-      call zgemm( &
-#endif
-           'N','N',no_i,no_o,no_o, &
-           zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
+      call GEMM ('N','N',no_i,no_o,no_o, &
+          zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
       
     end subroutine calc
 
@@ -844,11 +844,11 @@ contains
     do n = 1 , np
 
       no_o = nrows_g(Gf_tri,n)
-      
+
       ! Calculate the step size for the projection
       ! on this column
       step_o = min(max_p,no_o)
-      
+
       ! Loop over smaller group of columns in this block-column
       do i_o = 1 , no_o, step_o
         
@@ -894,22 +894,17 @@ contains
             
           else
             
-            XY  => val(Gf_tri,in,n)
+            XY => val(Gf_tri,in,n)
             Mnn => val(Gf_tri,n,n)
             ! re-point
             Mnn => Mnn((i_o-1)*no_o+1:)
             
-            Gf  => work(1:no_o*no_i)
+            Gf => work(1:no_o*no_i)
             
             ! We need to calculate the 
             ! Mnm1n/Mnp1n Green's function
-#ifdef USE_GEMM3M
-            call zgemm3m( &
-#else
-            call zgemm( &
-#endif
-                  'N','N',no_i,step_o,no_o, &
-                  zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
+            call GEMM ('N','N',no_i,step_o,no_o, &
+                zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
 
           end if
 
@@ -1137,12 +1132,7 @@ contains
         ! if the entire electrode sits in one block
         A => val(A_tri,in,in)
 
-#ifdef USE_GEMM3M
-        call zgemm3m( &
-#else
-        call zgemm( &
-#endif
-            'N','N',no,no,no, z1, A(A_i*(isN+1)+1), isN, &
+        call GEMM ('N','N',no,no,no, z1, A(A_i*(isN+1)+1), isN, &
             El%Gamma(1), no, z0, work(1), no)
 
         ! Quick break of loop
@@ -1167,12 +1157,7 @@ contains
           A_j = El%inDpvt%r(j_Elec) - crows(jn-1)
         end if
 
-#ifdef USE_GEMM3M
-        call zgemm3m( &
-#else
-        call zgemm( &
-#endif
-            'N','N',jj,no,ii, z1, A(A_i*jsN + A_j), jsN, &
+        call GEMM ('N','N',jj,no,ii, z1, A(A_i*jsN + A_j), jsN, &
             El%Gamma(i_Elec), no, z, work(j_Elec), no)
 
         j_Elec = j_Elec + jj
@@ -1406,13 +1391,8 @@ contains
       i = i + El%inDpvt%r(i_Elec) - (crows(n)-sN) - 1
 
       ! Calculate the G \Gamma
-#ifdef USE_GEMM3M
-      call zgemm3m( &
-#else
-      call zgemm( &
-#endif
-           'N','T',nb,no,no, z1, z(i),sN, &
-           El%Gamma(1), no, z0, zwork(i_Elec), no)
+      call GEMM ('N','T',nb,no,no, z1, z(i),sN, &
+          El%Gamma(1), no, z0, zwork(i_Elec), no)
        
       i_Elec = i_Elec + nb
 
@@ -1443,13 +1423,8 @@ contains
 
       ii = ( i_Elec-1 ) * no + 1
       ! Calculate the G \Gamma G^\dagger
-#ifdef USE_GEMM3M
-      call zgemm3m( &
-#else
-      call zgemm( &
-#endif
-           'N','C',no,nb,no, z1, zwork(1),no, &
-           z(i), sN, z0, z(ii), no)
+      call GEMM ('N','C',no,nb,no, z1, zwork(1),no, &
+          z(i), sN, z0, z(ii), no)
        
       i_Elec = i_Elec + nb
 
@@ -1598,7 +1573,7 @@ contains
          n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     i_sp => spar(orb_J)
-    J    => val (orb_J)
+    J => val (orb_J)
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
     ! Create the phases
@@ -2024,11 +1999,9 @@ contains
           je = (je - 1) * no
           do i = 1 , n1
             ie = r%r(off1+i) - idx
-            if ( ie < 1 ) cycle
-            if ( no < ie ) cycle
-             
-            M(i,j) = El%Sigma(je + ie)
-            
+            if ( 1 <= ie .and. ie <= no ) then
+              M(i,j) = El%Sigma(je + ie)
+            end if
           end do
         end if
       end do
@@ -2041,11 +2014,9 @@ contains
           je = (je - 1) * no
           do i = 1 , n1
             ie = r%r(off1+i) - idx
-            if ( ie < 1 ) cycle
-            if ( no < ie ) cycle
-
-            M(i,j) = M(i,j) - El%Sigma(je + ie)
-
+            if ( 1 <= ie .and. ie <= no ) then
+              M(i,j) = M(i,j) - El%Sigma(je + ie)
+            end if
           end do
         end if
       end do
@@ -2088,5 +2059,7 @@ contains
 !$OMP end do
 
   end subroutine insert_Self_energy_Dev
+
+#undef GEMM
 
 end module m_tbt_tri_scat

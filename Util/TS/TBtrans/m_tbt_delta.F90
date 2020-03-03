@@ -944,9 +944,9 @@ contains
           
           do ind = l_ptr(jo) + 1 , l_ptr(jo) + l_ncol(jo)
              iu = rgn_pivot(r, MODP(l_col(ind), no)) - off2
-             if ( iu < 1 .or. n2 < iu ) cycle
-             
-             M(ju,iu) = M(ju,iu) - d(ind) * ph( (l_col(ind)-1)/no )
+             if ( 1 <= iu .and. iu <= n2 ) then
+               M(ju,iu) = M(ju,iu) - d(ind) * ph( (l_col(ind)-1)/no )
+             end if
           end do
           
        end if

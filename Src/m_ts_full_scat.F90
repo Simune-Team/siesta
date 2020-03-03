@@ -26,6 +26,12 @@ module m_ts_full_scat
   public :: GF_Gamma_GF
   public :: insert_Self_Energies
 
+#ifdef USE_GEMM3M
+# define GEMM zgemm3m
+#else
+# define GEMM zgemm
+#endif
+
 contains
 
   
@@ -79,74 +85,54 @@ contains
     ! Loop over bottom row matrix 
     do iB = 0 , NB - 1
        
-       ! Collect the top row of complex conjugated Gf
-       ind = no_u_TS * no * iB + 1
-       do i = 1 , no
-          GGG(ind:ind-1+no) = conjg(Gf(iB*no+1:(iB+1)*no,i))
-          ind = ind + no
-       end do
-       ind = no_u_TS * no * iB + 1
+      ! Collect the top row of complex conjugated Gf
+      ind = no_u_TS * no * iB + 1
+      do i = 1 , no
+        GGG(ind:ind-1+no) = conjg(Gf(iB*no+1:(iB+1)*no,i))
+        ind = ind + no
+      end do
+      ind = no_u_TS * no * iB + 1
 
-       ! Do Gamma.Gf^\dagger
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'T','T',no,no,no,z1, &
-            El%Gamma, no, &
-            GGG(ind), no, &
-            z0, work,no)
+      ! Do Gamma.Gf^\dagger
+      call GEMM ('T','T',no,no,no,z1, &
+          El%Gamma, no, &
+          GGG(ind), no, &
+          z0, work,no)
        
-       ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','N',no_u_TS,no,no,z1, &
-            Gf(1,1), no_u_TS, &
-            work   ,      no, &
-            z0, GGG(ind),no_u_TS)
+      ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
+      call GEMM ('N','N',no_u_TS,no,no,z1, &
+          Gf(1,1), no_u_TS, &
+          work, no, &
+          z0, GGG(ind),no_u_TS)
     
     end do
 
     ! in case the block size does not match the matrix order
     if ( NB * no /= no_u_TS ) then
 
-       ! The size of the remaining block
-       iB = no_u_TS - NB * no
+      ! The size of the remaining block
+      iB = no_u_TS - NB * no
 
-       ! Copy over the block
-       ind = no_u_TS * no * NB + 1
-       do i = 1 , no
-          ! So this is the complex conjugated of the iB'th block
-          GGG(ind:ind-1+iB) = conjg(Gf(NB*no+1:NB*no+iB,i))
-          ind = ind + iB
-       end do
-       ind = no_u_TS * no * NB + 1
+      ! Copy over the block
+      ind = no_u_TS * no * NB + 1
+      do i = 1 , no
+        ! So this is the complex conjugated of the iB'th block
+        GGG(ind:ind-1+iB) = conjg(Gf(NB*no+1:NB*no+iB,i))
+        ind = ind + iB
+      end do
+      ind = no_u_TS * no * NB + 1
 
-       ! Do Gamma.Gf^\dagger
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'T','T',no,iB,no,z1, &
-            El%Gamma, no, &
-            GGG(ind), iB, &
-            z0, work,no)
+      ! Do Gamma.Gf^\dagger
+      call GEMM ('T','T',no,iB,no,z1, &
+          El%Gamma, no, &
+          GGG(ind), iB, &
+          z0, work,no)
        
-       ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','N',no_u_TS,iB,no,z1, &
-            Gf(1,1), no_u_TS, &
-            work   ,      no, &
-            z0, GGG(ind),no_u_TS)
+      ! Calculate the Gf.Gamma.Gf^\dagger product for the entire column
+      call GEMM ('N','N',no_u_TS,iB,no,z1, &
+          Gf(1,1), no_u_TS, &
+          work, no, &
+          z0, GGG(ind),no_u_TS)
 
     end if
 
@@ -398,27 +384,29 @@ contains
     
     if ( El%Bulk ) then
 !$OMP do private(j,jj,i,ii)
-       do j = 0 , no - 1
-          jj = off + j + 1
-          ii = j * no
-          do i = 1 , no
-             Gfinv(off+i,jj) = El%Sigma(ii+i)
-          end do
-       end do
+      do j = 0 , no - 1
+        jj = off + j + 1
+        ii = j * no
+        do i = 1 , no
+          Gfinv(off+i,jj) = El%Sigma(ii+i)
+        end do
+      end do
 !$OMP end do nowait
     else
 !$OMP do private(j,jj,i,ii,iii)
-       do j = 0 , no - 1
-          jj = off + j + 1
-          ii = j * no
-          do i = 1 , no
-             iii = off + i
-             Gfinv(iii,jj) = Gfinv(iii,jj) - El%Sigma(ii+i)
-          end do
-       end do
+      do j = 0 , no - 1
+        jj = off + j + 1
+        ii = j * no
+        do i = 1 , no
+          iii = off + i
+          Gfinv(iii,jj) = Gfinv(iii,jj) - El%Sigma(ii+i)
+        end do
+      end do
 !$OMP end do nowait
     end if
 
   end subroutine insert_Self_Energies
+
+#undef GEMM
 
 end module m_ts_full_scat

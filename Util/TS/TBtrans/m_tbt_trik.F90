@@ -50,6 +50,12 @@ module m_tbt_trik
 
   public :: tbt_trik
 
+#ifdef USE_GEMM3M
+# define GEMM zgemm3m
+#else
+# define GEMM zgemm
+#endif
+
   private
   
 contains
@@ -1860,31 +1866,29 @@ contains
 
     if ( cE%fake ) return
 
-    ip = maxval(p)
-
     ! Copy down the downfolded size...
     no = El%o_inD%n
 
     if ( p(np) /= no ) then
-       call die('Something went wrong... The last segment MUST be &
-            &equivalent to the down-folded region. No more, no less.')
+      call die('Something went wrong... The last segment MUST be &
+          &equivalent to the down-folded region. No more, no less.')
     end if
 
     ! Check that there is space enough in the work array.
     do ip = 1 , np - 1
-       itmp = p(ip) * p(ip+1) * 2 ! B,C
-       itmp = itmp  + p(ip) ** 2   ! A
-       itmp = itmp  + p(ip+1) ** 2 ! Y
-       if ( itmp > nwork ) then
-          call die('Work array is too small... A, B, C, Y')
-       end if
+      itmp = p(ip) * p(ip+1) * 2 ! B,C
+      itmp = itmp  + p(ip) ** 2   ! A
+      itmp = itmp  + p(ip+1) ** 2 ! Y
+      if ( itmp > nwork ) then
+        call die('Work array is too small... A, B, C, Y')
+      end if
     end do
 
     ! check that the last segment also holds...
     itmp = p(np-1) ** 2 ! A
     itmp = itmp + p(np) ** 2 ! Y
     if ( itmp > nwork ) then ! we do not need y here...
-       call die('Work array is too small..., A, Y-next')
+      call die('Work array is too small..., A, Y-next')
     end if
     ! We start by pointing the Y array to the far back of the
     ! work-array. In that way we ensure that no elements overlap
@@ -1894,67 +1898,58 @@ contains
     off = 0
     do ip = 2 , np 
 
-       ! Set up pointers
-       i = 1
-       A => work(i:i-1+p(ip-1)**2)
-       i = i + p(ip-1)**2
-       B => work(i:i-1+p(ip)*p(ip-1))
-       i = i + p(ip)*p(ip-1)
-       C => work(i:i-1+p(ip)*p(ip-1))
+      ! Set up pointers
+      i = 1
+      A => work(i:i-1+p(ip-1)**2)
+      i = i + p(ip-1)**2
+      B => work(i:i-1+p(ip)*p(ip-1))
+      i = i + p(ip)*p(ip-1)
+      C => work(i:i-1+p(ip)*p(ip-1))
 
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
-            sc_off, kpt)
+      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
+          sc_off, kpt)
 
-       if ( ip > 2 ) then
-          ii = p(ip-1) ** 2
-!$OMP parallel do default(shared) private(i)
-          do i = 1 , ii
-             A(i) = A(i) - Y(i)
-          end do
-!$OMP end parallel do
-       end if
+      if ( ip > 2 ) then
+        ii = p(ip-1) ** 2
+        call zaxpy(ii, cmplx(-1._dp, 0._dp, dp), Y, 1, A, 1)
+      end if
 
-       ! Ensures that Y is not overwritten
-       i = off + p(ip-1)
-       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
-            sc_off, kpt)
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),C, &
-            sc_off, kpt)
+      ! Ensures that Y is not overwritten
+      i = off + p(ip-1)
+      call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
+          sc_off, kpt)
+      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),C, &
+          sc_off, kpt)
 
-       ! increment offset
-       off = off + p(ip-1)
+      ! increment offset
+      off = off + p(ip-1)
 
-       ! re-point Y
-       if ( ip == np ) then
-          ! Sigma should have been emptied by the previous loops :)
-          Y => El%Sigma(:)
-          if ( no /= p(np) ) call die('must be enforced')
-       else
-          Y => work(nwork-p(ip)**2+1:nwork)
-       end if
+      ! re-point Y
+      if ( ip == np ) then
+        ! Sigma should have been emptied by the previous loops :)
+        Y => El%Sigma(:)
+        if ( no /= p(np) ) call die('must be enforced')
+      else
+        Y => work(nwork-p(ip)**2+1:nwork)
+      end if
 
-       ! Calculate: [An-1 - Yn-1] ^-1 Cn
-       call zgesv(p(ip-1),p(ip),A,p(ip-1),ipiv,C,p(ip-1),ierr)
-       if ( ierr /= 0 ) then
-          write(*,'(a,i0)') 'Inversion of down-projection failed: ',ierr
-       end if
+      ! Calculate: [An-1 - Yn-1] ^-1 Cn
+      call zgesv(p(ip-1),p(ip),A,p(ip-1),ipiv,C,p(ip-1),ierr)
+      if ( ierr /= 0 ) then
+        write(*,'(a,2(tr1,i0))') 'Inversion of down-projection failed: ',ip, ierr
+      end if
        
-       ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
-            B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
+      ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
+      call GEMM ('N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+          B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
        
     end do
 
     ! At this point we should be left with the last segment
     ! which is the self-energy projected into the device region...
     if ( r%n /= off + p(np) ) then
-       print *,r%n,off+p(np)
-       call die('Error in regional size, should not be encountered')
+      print *,r%n,off+p(np)
+      call die('Error in regional size, should not be encountered')
     end if
         
     ! Create Gamma...
@@ -1962,16 +1957,16 @@ contains
     ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
-       ii = no * ( j - 1 )
-       ip = j - no
-       do i = 1 , j - 1
-          ii = ii + 1
-          ip = ip + no
-          El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
-          El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
-       end do
-       ii = no*(j-1) + j
-       El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
+      ii = no * ( j - 1 )
+      ip = j - no
+      do i = 1 , j - 1
+        ii = ii + 1
+        ip = ip + no
+        El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
+        El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
+      end do
+      ii = no*(j-1) + j
+      El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -2020,31 +2015,29 @@ contains
 
     if ( cE%fake ) return
 
-    ip = maxval(p)
-
     ! Copy down the downfolded size...
     no = El%o_inD%n
 
     if ( p(np) /= no ) then
-       call die('Something went wrong... The last segment MUST be &
-            &equivalent to the down-folded region. No more, no less.')
+      call die('Something went wrong... The last segment MUST be &
+          &equivalent to the down-folded region. No more, no less.')
     end if
 
     ! Check that there is space enough in the work array.
     do ip = 1 , np - 1
-       itmp = p(ip) * p(ip+1) * 2 ! B,C
-       itmp = itmp  + p(ip) ** 2   ! A
-       itmp = itmp  + p(ip+1) ** 2 ! Y
-       if ( itmp > nwork ) then
-          call die('Work array is too small... A, B, C, Y')
-       end if
+      itmp = p(ip) * p(ip+1) * 2 ! B,C
+      itmp = itmp  + p(ip) ** 2   ! A
+      itmp = itmp  + p(ip+1) ** 2 ! Y
+      if ( itmp > nwork ) then
+        call die('Work array is too small... A, B, C, Y')
+      end if
     end do
 
     ! check that the last segment also holds...
     itmp = p(np-1) ** 2 ! A
     itmp = itmp + p(np) ** 2 ! Y
     if ( itmp > nwork ) then ! we do not need y here...
-       call die('Work array is too small..., A, Y-next')
+      call die('Work array is too small..., A, Y-next')
     end if
     ! We start by pointing the Y array to the far back of the
     ! work-array. In that way we ensure that no elements overlap
@@ -2054,129 +2047,109 @@ contains
     off = 0
     do ip = 2 , np 
 
-       ! Set up pointers
-       i = 1
-       A => work(i:i-1+p(ip-1)**2)
+      ! Set up pointers
+      i = 1
+      A => work(i:i-1+p(ip-1)**2)
 
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
-            sc_off, kpt)
+      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
+          sc_off, kpt)
 
-       ! Now we can calculate the life-time of the electrons
-       ! The life-time is the g_ii (local Green function)
-       !   Tr[Gf_ii^0\Gamma Gf_ii^0^\dagger \Gamma]
-       ! First calculate Gf, but we retain A
+      ! Now we can calculate the life-time of the electrons
+      ! The life-time is the g_ii (local Green function)
+      !   Tr[Gf_ii^0\Gamma Gf_ii^0^\dagger \Gamma]
+      ! First calculate Gf, but we retain A
        
-       ierr = p(ip-1)
-       if ( size(El%Sigma) >= ierr**2 ) then
-          C => El%Sigma
-       else
-          call die('Sigma array too small')
-       end if
+      ierr = p(ip-1)
+      if ( size(El%Sigma) >= ierr**2 ) then
+        C => El%Sigma
+      else
+        call die('Sigma array too small')
+      end if
        
-       i = 1 + ierr**2
-       B => work(i:i-1+ierr**2)
+      i = 1 + ierr**2
+      B => work(i:i-1+ierr**2)
 
-       if ( ip > 2 ) then
-          A(:) = A(:) - Y(:)
-       else
-          Y => El%Sigma
-       end if
+      if ( ip > 2 ) then
+        A(:) = A(:) - Y(:)
+      else
+        Y => El%Sigma
+      end if
        
-       ! Calculate Gf^0
-       call mat_invert(A,B,ierr,MI_IN_PLACE_LAPACK)
+      ! Calculate Gf^0
+      call mat_invert(A,B,ierr,MI_IN_PLACE_LAPACK)
        
-       ! Calculate the Gamma function
-       ! I.e. store the transposed Gamma.
-       ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
+      ! Calculate the Gamma function
+      ! I.e. store the transposed Gamma.
+      ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,jj)
-       do j = 1 , ierr
-          ii = ierr * ( j - 1 )
-          jj = j - ierr
-          do i = 1 , j - 1
-             ii = ii + 1
-             jj = jj + ierr
-             C(ii) = zi * (Y(jj) - conjg( Y(ii) ))
-             C(jj) = zi * (Y(ii) - conjg( Y(jj) ))
-          end do
-          ii = ierr*(j-1) + j
-          C(ii) = zi * (Y(ii) - conjg( Y(ii) ))
-       end do
+      do j = 1 , ierr
+        ii = ierr * ( j - 1 )
+        jj = j - ierr
+        do i = 1 , j - 1
+          ii = ii + 1
+          jj = jj + ierr
+          C(ii) = zi * (Y(jj) - conjg( Y(ii) ))
+          C(jj) = zi * (Y(ii) - conjg( Y(jj) ))
+        end do
+        ii = ierr*(j-1) + j
+        C(ii) = zi * (Y(ii) - conjg( Y(ii) ))
+      end do
 !$OMP end parallel do
 
-       ! Calculate matrix product
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','T',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
-            A,ierr,C,ierr,cmplx(0._dp,0._dp,dp),B,ierr)
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','C',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
-            B,ierr,A,ierr,cmplx(0._dp,0._dp,dp),El%Sigma,ierr)
+      ! Calculate matrix product
+      call GEMM ('N','T',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
+          A,ierr,C,ierr,cmplx(0._dp,0._dp,dp),B,ierr)
+      call GEMM ('N','C',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
+          B,ierr,A,ierr,cmplx(0._dp,0._dp,dp),El%Sigma,ierr)
 
-       ! Calculate trace
-       do i = 1 , ierr
-          ! Calculate offset
-          j = (i-1) * ierr + 1
-          life(off+i) = - aimag( zdotu(ierr,El%Sigma(j),1,C(j),1) )
-       end do
+      ! Calculate trace
+      do i = 1 , ierr
+        ! Calculate offset
+        j = (i-1) * ierr + 1
+        life(off+i) = - aimag( zdotu(ierr,El%Sigma(j),1,C(j),1) )
+      end do
 
-       ! Reassign pointers
-       i = 1 + p(ip-1)**2
-       B => work(i:i-1+p(ip)*p(ip-1))
-       i = i + p(ip)*p(ip-1)
-       C => work(i:i-1+p(ip)*p(ip-1))
+      ! Reassign pointers
+      i = 1 + p(ip-1)**2
+      B => work(i:i-1+p(ip)*p(ip-1))
+      i = i + p(ip)*p(ip-1)
+      C => work(i:i-1+p(ip)*p(ip-1))
+      
+      ! Ensures that Y is not overwritten
+      i = off + p(ip-1)
+      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),B, &
+          sc_off, kpt)
 
-       ! Ensures that Y is not overwritten
-       i = off + p(ip-1)
-       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),B, &
-            sc_off, kpt)
+      ! increment offset
+      off = off + p(ip-1)
 
-       ! increment offset
-       off = off + p(ip-1)
+      ! re-point Y
+      if ( ip == np ) then
+        ! Sigma should have been emptied by the previous loops :)
+        Y => El%Sigma(:)
+        if ( no /= p(np) ) call die('must be enforced')
+      else
+        Y => work(nwork-p(ip)**2+1:nwork)
+      end if
 
-       ! re-point Y
-       if ( ip == np ) then
-          ! Sigma should have been emptied by the previous loops :)
-          Y => El%Sigma(:)
-          if ( no /= p(np) ) call die('must be enforced')
-       else
-          Y => work(nwork-p(ip)**2+1:nwork)
-       end if
+      ! Calculate: [An-1 - Yn-1] ^-1 Cn
+      call GEMM ('N','N',p(ip-1),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+          A,p(ip-1),B,p(ip-1),cmplx(0._dp,0._dp,dp),C,p(ip))
 
-       ! Calculate: [An-1 - Yn-1] ^-1 Cn
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','N',p(ip-1),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
-            A,p(ip-1),B,p(ip-1),cmplx(0._dp,0._dp,dp),C,p(ip))
+      call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
+          sc_off, kpt)
 
-       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
-            sc_off, kpt)
-
-       ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
-            B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
+      ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
+      call GEMM ('N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+          B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
 
     end do
 
     ! At this point we should be left with the last segment
     ! which is the self-energy projected into the device region...
     if ( r%n /= off + p(np) ) then
-       print *,r%n,off+p(np)
-       call die('Error in regional size, should not be encountered')
+      print *,r%n,off+p(np)
+      call die('Error in regional size, should not be encountered')
     end if
         
     ! Create Gamma...
@@ -2184,16 +2157,16 @@ contains
     ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
-       ii = no * ( j - 1 )
-       ip = j - no
-       do i = 1 , j - 1
-          ii = ii + 1
-          ip = ip + no
-          El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
-          El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
-       end do
-       ii = no*(j-1) + j
-       El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
+      ii = no * ( j - 1 )
+      ip = j - no
+      do i = 1 , j - 1
+        ii = ii + 1
+        ip = ip + no
+        El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
+        El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
+      end do
+      ii = no*(j-1) + j
+      El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -2251,17 +2224,17 @@ contains
 
 !$OMP do
     do iu = 1 , n2
-       io = r%r(off2+iu) ! get the orbital in the sparsity pattern
+      io = r%r(off2+iu) ! get the orbital in the sparsity pattern
 
-       ! Initialize to zero
-       M(:,iu) = cmplx(0._dp,0._dp,dp)
+      ! Initialize to zero
+      M(:,iu) = cmplx(0._dp,0._dp,dp)
 
-       if ( l_ncol(io) /= 0 ) then
+      if ( l_ncol(io) /= 0 ) then
 
-       call ssearch_init(ss, l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)))
+        call ssearch_init(ss, l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)))
        
-       ! Loop on entries here...
-       do ju = 1 , n1
+        ! Loop on entries here...
+        do ju = 1 , n1
  
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
@@ -2273,8 +2246,8 @@ contains
           ! See symmetrize_HS_kpt
           M(ju,iu) = Z * S(ind) - H(ind)
 
-       end do
-       end if
+        end do
+      end if
     end do
 !$OMP end do
 
@@ -2284,15 +2257,17 @@ contains
 
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
-       ! Add dH
-       call add_zdelta_Mat(dH%d, r, off1,n1,off2,n2, M, sc_off, kpt)
+      ! Add dH
+      call add_zdelta_Mat(dH%d, r, off1,n1,off2,n2, M, sc_off, kpt)
     end if
     if ( dSE%lvl > 0 ) then
-       ! Add dSE
-       call add_zdelta_Mat(dSE%d, r, off1,n1,off2,n2, M, sc_off, kpt)
+      ! Add dSE
+      call add_zdelta_Mat(dSE%d, r, off1,n1,off2,n2, M, sc_off, kpt)
     end if
 #endif
 
   end subroutine prep_HS
+
+#undef GEMM
 
 end module m_tbt_trik
