@@ -10577,10 +10577,12 @@ involving molecules.
     \option[stress]%
     Control which of the 6 stress components are constrained.
 
-    This takes a number of integers $1\le i\le6$ where $1$ corresponds
-    to the \emph{AA} stress-component, $2$ is \emph{BB}, $3$ is
-    \emph{CC}, $4$ is \emph{BC}/\emph{CB}, $5$ is \emph{AC}/\emph{CA}
-    and $6$ is \emph{AB}/\emph{BA}.
+    Numbers $1\le i\le6$ where $1$ corresponds
+    to the \emph{XX} stress-component, $2$ is \emph{YY}, $3$ is
+    \emph{ZZ}, $4$ is \emph{YZ}/\emph{ZY}, $5$ is \emph{XZ}/\emph{ZX}
+    and $6$ is \emph{XY}/\emph{YX}.
+
+    The text specifications are also allowed.
 
 
     \option[routine]%
@@ -10617,10 +10619,12 @@ involving molecules.
   It is instructive to give an example of the input options presented.
 
   Consider a benzene molecule ($\mathrm{C}_6\mathrm{H}_6$) and we wish
-  to relax all Hydrogen atoms. This may be accomplished in this fashion
+  to relax all Hydrogen atoms (and no stress in $x$ and $y$
+  directions). This may be accomplished with this
   \begin{fdfexample}
     %block Geometry.Constraints
       Z 6
+      stress 1 2
     %endblock
   \end{fdfexample}
   Or as in this example
@@ -10638,16 +10642,20 @@ involving molecules.
       ... ... ... 2   # H 10
       ... ... ... 1   # C 11
       ... ... ... 2   # H 12
+      stress XX YY
     %endblock
     %block Geometry.Constraints
       atom from 1 to 12 step 2
+      stress XX YY
     %endblock
     %block Geometry.Constraints
       atom [1 -- 12 step 2]
+      stress XX 2
     %endblock
     %block Geometry.Constraints
       atom all
       clear-prev [2 -- 12 step 2]
+      stress 1 YY
     %endblock
   \end{fdfexample}
   where the 3 last blocks all create the same result.
