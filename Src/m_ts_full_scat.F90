@@ -180,7 +180,6 @@ contains
 ! ##################################################################
   subroutine calc_GF(cE,no_u_TS,GFinv,GF)
     
-    use intrinsic_missing, only: EYE
     use precision, only: dp
 
     implicit none 
@@ -195,7 +194,7 @@ contains
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
-    complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
+    complex(dp), intent(inout) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
     complex(dp), intent(out) :: GF(no_u_TS,no_u_TS)
 
 ! Local variables
@@ -209,11 +208,11 @@ contains
 
     call timer('GFT',1) 
 
-    call EYE(no_u_TS,GF)
-    
-    ! Invert directly
-    call zgesv(no_u_TS,no_u_TS,GFinv,no_u_TS,ipvt,GF,no_u_TS,ierr)            
-    if ( ierr /= 0 ) call die('GF: Could not invert the Green function')
+    call zcopy(no_u_TS*no_u_TS, GFinv, 1, GF, 1)
+    call zgetrf(no_u_TS, no_u_TS, GF, no_u_TS, ipvt, ierr)
+    if ( ierr /= 0 ) call die('GF: Error on LU factorization')
+    call zgetri(no_u_TS, GF, no_u_TS, ipvt, GFinv, no_u_TS*no_u_TS, ierr)
+    if ( ierr /= 0 ) call die('GF: Error on inverting Green function')
        
     call timer('GFT',2)  
 
@@ -250,7 +249,7 @@ contains
     ! This may seem strange, however, it will clean up this routine extensively
     ! as we dont need to make two different routines for real and complex
     ! Hamiltonian values.
-    complex(dp), intent(in out) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
+    complex(dp), intent(inout) :: GFinv(no_u_TS,no_u_TS) ! the inverted GF
     ! We only need Gf in the left and right blocks...
     complex(dp), intent(out) :: GF(no_u_TS,no_Els)
 

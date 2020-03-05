@@ -183,8 +183,16 @@ contains
        
   end subroutine invert_TriMat
 
+  ! We will calculate the diagonal inverse of the matrix.
+  ! Before calling this routine the following routines *have*
+  ! to be called:
+  !    calc_Yn_div_Bn_m1(..., n=n, ...)
+  !    calc_Xn_div_Cn_p1(..., n=n, ...)
+  ! Input matrix M
+  !    diagonal is lost, M[n,n] is *random*
+  ! Output matrix Minv
+  !    Minv[n,n] = M^(-1)[n,n]
   subroutine calc_Mnn_inv(M,Minv,n)
-    use intrinsic_missing, only: EYE
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
     ! Local variables
@@ -237,13 +245,26 @@ contains
 
     ! Retrive the position in the inverted matrix
     Mpinv => val(Minv,n,n)
-    call EYE(sN,Mpinv)
-    
-    call zgesv(sN,sN,Mp,sN,ipiv,Mpinv,sN,i)
+    call zcopy(sN*sN, Mp, 1, Mpinv, 1)
+    call zgetrf(sN, sN, Mpinv, sN, ipiv, i)
+    if ( i == 0 ) then
+      call zgetri(sN, Mpinv, sN, ipiv, Mp, sN*sN, i)
+    else
+      call die('Error on LU factorization of Mnn')
+    end if
     if ( i /= 0 ) call die('Error on inverting Mnn')
 
   end subroutine calc_Mnn_inv
 
+  ! Calculate the off-diagonal inverse of the matrix.
+  ! Before calling this routine the following routines *have*
+  ! to be called:
+  !    calc_Mnn_inv(..., n=n, ...)
+  !    calc_Xn_div_Cn_p1(..., n=n, ...)
+  ! Input matrix M
+  !    M[n+1,n] is destroyed
+  ! Output matrix Minv
+  !    Minv[n+1,n] = M^(-1)[n-1,n]
   subroutine calc_Mnp1n_inv(M,Minv,n)
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
@@ -275,6 +296,15 @@ contains
 
   end subroutine calc_Mnp1n_inv
 
+  ! Calculate the off-diagonal inverse of the matrix.
+  ! Before calling this routine the following routines *have*
+  ! to be called:
+  !    calc_Mnn_inv(..., n=n, ...)
+  !    calc_Yn_div_Bn_m1(..., n=n, ...)
+  ! Input matrix M
+  !    M[n-1,n] is destroyed
+  ! Output matrix Minv
+  !    Minv[n-1,n] = M^(-1)[n-1,n]
   subroutine calc_Mnm1n_inv(M,Minv,n)
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n
@@ -311,6 +341,11 @@ contains
   ! tri-diagonal inversion algorithm.
   ! The Xn/Cn+1 will be saved in the Minv n,n-1 (as that has
   ! the same size).
+  ! Input matrix M
+  !    nothing is changed
+  ! Output matrix Minv
+  !    Minv[n+1,n] = Xn/Cn+1
+  ! zwork is altered (zwork may be Minv[n+1,n+1])
   subroutine calc_Xn_div_Cn_p1(M,Minv,n,zwork,nz)
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n, nz
@@ -336,14 +371,8 @@ contains
     end if
 #endif
 
-    ! Copy over the Bn array
-    Cnp2 => val(M, n+1, n)
-    ! This is where the inverted matrix will be located 
-    Xn => Xn_div_Cn_p1(Minv, n)
     ! Copy over the An+1 array
     ztmp => val(M, n+1, n+1)
-
-    call zcopy(sN*sNp1, Cnp2(1), 1, Xn(1), 1)
     call zcopy(sNp1SQ, ztmp(1), 1, zwork(1), 1)
 
     ! If we should calculate X_N-1 then X_N == 0
@@ -360,7 +389,28 @@ contains
     end if
 
     ! Calculate Xn/Cn+1
-    call zgesv(sNp1,sN,zwork,sNp1,ipiv,Xn,sNp1,ierr)
+    Xn => Xn_div_Cn_p1(Minv, n)
+    ! Retrieve Cn+1 (stored in Cnp2 variable)
+    Cnp2 => val(M, n+1, n)
+
+    ! Split calculation into *fast*-slow
+    ! For n,m n<m*2 zgesv is faster than zgetrf+zgetri+zgemm
+    ! For n,m n>m*2 zgetrf+zgetri+zgemm is faster than zgesv
+    if ( sNp1 * 2 > sN ) then
+      ! Copy over the Bn array
+      call zcopy(sN*sNp1, Cnp2(1), 1, Xn(1), 1)
+      call zgesv(sNp1,sN,zwork,sNp1,ipiv,Xn,sNp1,ierr)
+    else
+      ! Here we know that sNp1 * 2 < sN and thus we
+      ! can use the result array (Xn) as work array
+      ! Since Xn has dimensions sNp1,sN > sNp1,sNp1
+      call zgetrf(sNp1, sNp1, zwork, sNp1, ipiv, ierr)
+      if ( ierr == 0 ) then
+        call zgetri(sNp1, zwork, sNp1, ipiv, Xn, sNp1SQ, ierr)
+        call GEMM ('N', 'N', sNp1, sN, sNp1, z1, &
+            zwork, sNp1, Cnp2, sNp1, z0, Xn, sNp1)
+      end if
+    end if
     if ( ierr /= 0 ) then
       write(cerr,'(3(a,i0))') &
           'Error on inverting X',n,'/C',n+1,' with error: ',ierr
@@ -380,6 +430,11 @@ contains
   ! tri-diagonal inversion algorithm.
   ! The Yn/Bn-1 will be saved in the Minv n-1,n (as that has
   ! the same size).
+  ! Input matrix M
+  !    nothing is changed
+  ! Output matrix Minv
+  !    Minv[n-1,n] = Yn/Bn-1
+  ! zwork is altered (zwork may be Minv[n-1,n-1])
   subroutine calc_Yn_div_Bn_m1(M,Minv,n,zwork,nz)
     type(zTriMat), intent(inout) :: M, Minv
     integer, intent(in) :: n, nz
@@ -405,14 +460,8 @@ contains
     end if
 #endif
 
-    ! Copy over the Cn array
-    Bnm2 => val(M   ,n-1,n)
-    ! This is where the inverted matrix will be located 
-    Yn => Yn_div_Bn_m1(Minv,n)
     ! Copy over the An-1 array
-    ztmp => val(M,n-1,n-1)
-
-    call zcopy(sN*sNm1, Bnm2(1), 1, Yn(1), 1)
+    ztmp => val(M, n-1, n-1)
     call zcopy(sNm1SQ, ztmp(1), 1, zwork(1), 1)
 
     if ( 2 < n ) then
@@ -428,7 +477,27 @@ contains
     end if
 
     ! Calculate Yn/Bn-1
-    call zgesv(sNm1,sN,zwork,sNm1,ipiv,Yn,sNm1,ierr)
+    Yn => Yn_div_Bn_m1(Minv, n)
+    ! Retrieve Bn-1 (stored in Bnm2 variable)
+    Bnm2 => val(M, n-1, n)
+
+    ! Split calculation into *fast*-slow
+    ! For n,m n<m*2 zgesv is faster than zgetrf+zgetri+zgemm
+    ! For n,m n>m*2 zgetrf+zgetri+zgemm is faster than zgesv
+    if ( sNm1 * 2 > sN ) then
+      call zcopy(sN*sNm1, Bnm2(1), 1, Yn(1), 1)
+      call zgesv(sNm1,sN,zwork,sNm1,ipiv,Yn,sNm1,ierr)
+    else
+      ! Here we know that sNm1 * 2 < sN and thus we
+      ! can use the result array (Yn) as work array
+      ! Since Yn has dimensions sNm1,sN > sNm1,sNm1
+      call zgetrf(sNm1, sNm1, zwork, sNm1, ipiv, ierr)
+      if ( ierr == 0 ) then
+        call zgetri(sNm1, zwork, sNm1, ipiv, Yn, sNm1SQ, ierr)
+        call GEMM ('N', 'N', sNm1, sN, sNm1, z1, &
+            zwork, sNm1, Bnm2, sNm1, z0, Yn, sNm1)
+      end if
+    end if
     if ( ierr /= 0 ) then
       write(cerr,'(3(a,i0))') &
           'Error on inverting Y',n,'/B',n-1,' with error: ',ierr

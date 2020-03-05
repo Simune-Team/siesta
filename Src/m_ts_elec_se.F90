@@ -181,12 +181,13 @@ contains
       if ( El%no_u /= El%no_used ) then
 
         call update_UC_expansion_A(no_u,no_s,El,nq, &
-            El%na_used,El%lasto_used,GS,work(1,1))
+            El%na_used,El%lasto_used,GS,Sigma(1,1))
 
-        call EYE(no_s,Sigma)
-
-        ! We have the matrix to invert in the first no_s**2 values.
-        call zgesv(no_s,no_s,work(1,1),no_s,ipvt,Sigma,no_s,ierr)
+        call zgetrf(no_s, no_s, Sigma, no_s, ipvt, ierr)
+        if ( ierr /= 0 ) &
+            write(*,'(a,i0)') &
+            'LU factorization of surface Green function failed: ',ierr
+        call zgetri(no_s, Sigma, no_s, ipvt, work(1,1), no_s*no_s, ierr)
         if ( ierr /= 0 ) &
             write(*,'(a,i0)') &
             'Inversion of surface Green function failed: ',ierr

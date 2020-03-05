@@ -1860,8 +1860,12 @@ contains
     ! All our work-arrays...
     complex(dp), pointer :: A(:), B(:), C(:), Y(:)
     complex(dp), parameter :: zi = cmplx(0._dp, 1._dp, dp)
+    complex(dp), parameter :: z0 = cmplx(0._dp, 0._dp, dp)
+    complex(dp), parameter :: z1 = cmplx(1._dp, 0._dp, dp)
+    complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp, dp)
 
     integer :: no, off, i, ii, j, ierr
+    integer :: sN, sNm1, sNSQ, sNm1SQ
     integer :: ip, itmp
 
     if ( cE%fake ) return
@@ -1896,52 +1900,71 @@ contains
     
     ! loop and convert..
     off = 0
-    do ip = 2 , np 
+    do ip = 2 , np
+
+      ! Store sizes
+      sNm1 = p(ip-1)
+      sNm1SQ = sNm1 * sNm1
+      sN = p(ip)
+      sNSQ = sN * sN
 
       ! Set up pointers
       i = 1
-      A => work(i:i-1+p(ip-1)**2)
-      i = i + p(ip-1)**2
-      B => work(i:i-1+p(ip)*p(ip-1))
-      i = i + p(ip)*p(ip-1)
-      C => work(i:i-1+p(ip)*p(ip-1))
+      A => work(i:i-1+sNm1SQ)
+      i = i + sNm1SQ
+      B => work(i:i-1+sN*sNm1)
+      i = i + sN*sNm1
+      C => work(i:i-1+sN*sNm1)
 
-      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
-          sc_off, kpt)
+      call prep_HS(cE%E,El,spH,spS,r,off,sNm1,off,sNm1,A, sc_off, kpt)
 
       if ( ip > 2 ) then
-        ii = p(ip-1) ** 2
-        call zaxpy(ii, cmplx(-1._dp, 0._dp, dp), Y, 1, A, 1)
+        call zaxpy(sNm1SQ, zm1, Y, 1, A, 1)
       end if
 
       ! Ensures that Y is not overwritten
-      i = off + p(ip-1)
-      call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
-          sc_off, kpt)
-      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),C, &
-          sc_off, kpt)
+      i = off + sNm1
+      call prep_HS(cE%E,El,spH,spS,r,i,sN,off,sNm1,B, sc_off, kpt)
+      call prep_HS(cE%E,El,spH,spS,r,off,sNm1,i,sN,C, sc_off, kpt)
 
       ! increment offset
-      off = off + p(ip-1)
+      off = off + sNm1
 
       ! re-point Y
       if ( ip == np ) then
         ! Sigma should have been emptied by the previous loops :)
         Y => El%Sigma(:)
-        if ( no /= p(np) ) call die('must be enforced')
+        if ( no /= sN ) call die('must be enforced')
       else
-        Y => work(nwork-p(ip)**2+1:nwork)
+        Y => work(nwork-sNSQ+1:nwork)
       end if
 
       ! Calculate: [An-1 - Yn-1] ^-1 Cn
-      call zgesv(p(ip-1),p(ip),A,p(ip-1),ipiv,C,p(ip-1),ierr)
+      ! Split calculation into *fast*-slow
+      ! For n,m n<m*2 zgesv is faster than zgetrf+zgetri+zgemm
+      ! For n,m n>m*2 zgetrf+zgetri+zgemm is faster than zgesv
+      ! Here n = sNm1, m = sN
+      if ( sNm1 * 2 > sN ) then
+        call zgesv(sNm1,sN,A,sNm1,ipiv,C,sNm1,ierr)
+      else
+        ! Here we know that sNm1 * 2 < sN and thus we
+        ! can use the result array (Y) as work array
+        ! Since Y has dimensions sNm1,sN > sNm1,sNm1
+        call zgetrf(sNm1, sNm1, A, sNm1, ipiv, ierr)
+        if ( ierr == 0 ) then
+          call zgetri(sNm1, A, sNm1, ipiv, Y, sNm1SQ, ierr)
+          call GEMM ('N', 'N', sNm1, sN, sNm1, z1, &
+              A, sNm1, C, sNm1, z0, Y, sNm1)
+          call zcopy(sNm1*sN, Y, 1, C, 1)
+        end if
+      end if
       if ( ierr /= 0 ) then
         write(*,'(a,2(tr1,i0))') 'Inversion of down-projection failed: ',ip, ierr
       end if
        
       ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
-      call GEMM ('N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
-          B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
+      call GEMM ('N','N',sN,sN,sNm1,z1, &
+          B,sN,C,sNm1,z0,Y,sN)
        
     end do
 
