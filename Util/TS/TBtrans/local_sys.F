@@ -129,7 +129,7 @@
       character(len=*), intent(in)  :: str
 
 #ifdef MPI
-      integer rc
+      integer rc, MPIerror
 #endif
       integer :: Node
       
