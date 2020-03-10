@@ -104,14 +104,12 @@
 
       use fdf,       only : fdf_boolean
       use atm_types, only : nspecies, species
-      use atmfuncs,  only : nofis, nkbfis, orb_gindex, kbproj_gindex
-      use atmfuncs,  only : vna_gindex, ldau_gindex
       use siesta_options, only : bornz
       use ldau_specs, only : switch_ldau
 
       implicit none
       ! Local Variables
-      integer             :: is, IO, KO, top, top_vna
+      integer             :: is, top, top_vna
       logical             :: optical
       logical,       save :: init = .false.
       TYPE(allocDefaults) :: OLDEFS
@@ -126,16 +124,17 @@
 
       CALL RESET_RADFFT( )
 
-      ! Get the number of orbitals and KB orbitals
-      IO = NOFIS( nspecies )
-      KO = NKBFIS( nspecies )
-      NUM_ORB = orb_gindex( nspecies, IO )
-      NUM_KB = kbproj_gindex( nspecies, -KO ) - NUM_ORB
-      NUM_VA = nspecies
+      ! Get the number of orbitals, KB projs, LDAU projs and Neutral-atom potentials
+
+      NUM_ORB = 0
+      NUM_KB = 0
       NUM_LDAU = 0
       do is= 1, nspecies
+        NUM_ORB  = NUM_ORB  + species(is)%norbs
+        NUM_KB   = NUM_KB   + species(is)%nprojs
         NUM_LDAU = NUM_LDAU + species(is)%nprojsldau
       enddo
+      NUM_VA = nspecies
 
       ! Find the spherical harmonic decomposition and
       ! Fourier transform of all the registry objects
