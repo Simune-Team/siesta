@@ -404,7 +404,7 @@ C If |R12| > RCUT(IS1,IO1) + RCUT(IS2,IO2), returns exactly zero.
       integer, intent(in) :: ig
       logical             :: res
 
-      integer :: top
+      integer :: top_vna
 
       top_vna = num_orb + num_kb + num_ldau + num_va
       
