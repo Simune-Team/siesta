@@ -531,11 +531,13 @@ contains
        mix%n_hist = max(2, mix%n_hist)
        if ( mix%v == 1 .or. mix%v == 3 ) then
           
-          ! The GR method requires an even number
-          ! of restart steps
-          ! And then we ensure the history to be aligned
-          ! with a restart (restart has precedence)
-          mix%restart = mix%restart + mod(mix%restart, 2)
+         ! The GR method requires an even number
+         ! of restart steps
+         ! And then we ensure the history to be aligned
+         ! with a restart (restart has precedence)
+         if ( mix%restart /= 0 ) then
+           mix%restart = mix%restart + mod(mix%restart, 2)
+         end if
 
        end if
        
@@ -2119,7 +2121,6 @@ contains
       if ( mod(current_itt(mix),mix%restart) == 0 ) then
         mix%action = IOR(mix%action, ACTION_RESTART)
       end if
-
     end if
 
     

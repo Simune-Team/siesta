@@ -14,6 +14,8 @@ module m_os
   
   public :: file_exist
   public :: dir_exist
+  public :: file_delete
+
 
 contains
 
@@ -135,5 +137,41 @@ contains
 #endif
 
   end function dir_exist
+
+
+  function file_delete(file) result(existed)
+
+    character(len=*), intent(in) :: file
+    logical :: existed
+    
+    integer :: lfile, iu, iostat
+    logical :: is_open
+
+    ! A directory of length 0 is the "top" directory,
+    ! of course it exists
+    lfile = len_trim(file)
+    if ( lfile == 0 ) then
+      existed = .false.
+      return
+    else if ( lfile == 1 .and. file(1:1) == '.' ) then
+      existed = .true.
+      return
+    end if
+
+    existed = file_exist(file)
+    if ( .not. existed ) return
+    
+    do iu = 1000, 10000
+      inquire(unit=iu, opened=is_open)
+      if ( is_open ) cycle
+    end do
+
+    ! Open file and close (delete it)
+    open(unit=iu, file=file, iostat=iostat, status='old')
+    if ( iostat == 0 ) then
+      close(iu, status='delete')
+    end if
+
+  end function file_delete
 
 end module m_os

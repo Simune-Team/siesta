@@ -48,6 +48,7 @@ module m_ts_electype
   public :: check_connectivity
   public :: delete
 
+  public :: Elec_ortho2semi_inf
   public :: Elec_box2grididx, Elec_frac
 
   public :: in_Elec
@@ -2406,5 +2407,39 @@ contains
     end do
     idx = 0
   end function Elec_idx
+
+  function Elec_ortho2semi_inf(this, vec) result(ortho)
+    type(Elec), intent(in) :: this
+    real(dp), intent(in) :: vec(3)
+    logical :: ortho
+    real(dp) :: proj
+
+    select case ( this%t_dir )
+    case ( 4 )
+      proj = abs(dot_product(this%cell(:, 2), vec))
+      ortho = proj < 1.e-9_dp
+      proj = abs(dot_product(this%cell(:, 3), vec))
+      ortho = ortho .and. proj < 1.e-9_dp
+    case ( 5 )
+      proj = abs(dot_product(this%cell(:, 1), vec))
+      ortho = proj < 1.e-9_dp
+      proj = abs(dot_product(this%cell(:, 3), vec))
+      ortho = ortho .and. proj < 1.e-9_dp
+    case ( 6 )
+      proj = abs(dot_product(this%cell(:, 1), vec))
+      ortho = proj < 1.e-9_dp
+      proj = abs(dot_product(this%cell(:, 2), vec))
+      ortho = ortho .and. proj < 1.e-9_dp
+    case ( 7 )
+      ! Only for the zero vector will it be *orthogonal*
+      proj = abs(dot_product(vec, vec))
+      ortho = proj < 1.e-9_dp
+    case default
+      ! Regular single direction
+      proj = abs(dot_product(this%cell(:, this%t_dir), vec))
+      ortho = proj < 1.e-9_dp
+    end select
+
+  end function Elec_ortho2semi_inf
   
 end module m_ts_electype

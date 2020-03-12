@@ -73,11 +73,8 @@ contains
     complex(dp), intent(out) :: uM(N,this%prod_B,N,this%prod_B)
 
     if ( this%prod_B == 1 ) then
-      
-!$OMP parallel workshare
-      uM(:,1,:,1) = M(:,:,1)
-!$OMP end parallel workshare
-      
+
+      call zcopy(N*N, M(1,1,1), 1, uM(1,1,1,1), 1)
       return
       
     end if
@@ -123,17 +120,15 @@ contains
     real(dp) :: w, k_A
     complex(dp) :: ph, phc, phA_step
 
+    ! Initialize un-folded matrix
+    uM(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+
 !$OMP parallel default(shared) private(i,j) &
 !$OMP& private(TMA,iMA,k_A,phA_step) &
 !$OMP& private(w,ph,phc)
 
     w = 1._dp / real(NA, dp)
     
-    ! Initialize un-folded matrix
-!$OMP workshare
-    uM(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
-
     ! TMA loop is over different matrices
     do TMA = 1, NA
 
@@ -180,9 +175,11 @@ contains
     !   uM(:,1,:,:)
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
     do iMA = 2, NA
-!$OMP workshare
-      uM(:,2:,:,iMA) = uM(:,:NA-1,:,iMA-1)
-!$OMP end workshare
+!$OMP do
+      do TMA = 2, NA
+        uM(:,TMA,:,iMA) = uM(:,TMA-1,:,iMA-1)
+      end do
+!$OMP end do
       ! we need to wait because we copy the previous columns
     end do
 
@@ -204,6 +201,8 @@ contains
     complex(dp) :: phB, phB_step
     complex(dp) :: ph, phc
 
+    uM(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+
 !$OMP parallel default(shared) private(i,j) &
 !$OMP& private(TMA,iMA,k_A,phA_step,phA) &
 !$OMP& private(TMB,iMB,k_B,phB_step,phB) &
@@ -212,10 +211,6 @@ contains
     ! Full weight
     w = 1._dp / real(NA*NB, dp)
     
-!$OMP workshare
-    uM(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
-
     ! TMB/A loop is over different matrices
     do TMB = 1, NB
 
@@ -324,24 +319,36 @@ contains
     end do
     
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
-    do iMB = 1, NB
+    do iMA = 2, NA
+!$OMP do
+      do TMA = 2, NA
+        uM(:,TMA,1,:,iMA,1) = uM(:,TMA-1,1,:,iMA-1,1)
+      end do
+!$OMP end do
+      ! we need a wait since it copies from the previous iMA
+    end do
+    do iMB = 2, NB
       do iMA = 2, NA
-!$OMP workshare
-        uM(:,2:,iMB,:,iMA,1) = uM(:,:NA-1,iMB,:,iMA-1,1)
-        uM(:,2:,1,:,iMA,iMB) = uM(:,:NA-1,1,:,iMA-1,iMB)
-!$OMP end workshare
+!$OMP do
+        do TMA = 2, NA
+          uM(:,TMA,iMB,:,iMA,1) = uM(:,TMA-1,iMB,:,iMA-1,1)
+          uM(:,TMA,1,:,iMA,iMB) = uM(:,TMA-1,1,:,iMA-1,iMB)
+        end do
+!$OMP end do
         ! we need a wait since it copies from the previous iMA
       end do
     end do
 
     ! Now copy all duplicated data
     do iMB = 2, NB
-
-!$OMP workshare
-      uM(:,:,2:,:,:,iMB) = uM(:,:,:NB-1,:,:,iMB-1)
-!$OMP end workshare
+!$OMP do
+      do TMB = 2, NB
+        do TMA = 1, NA
+          uM(:,TMA,TMB,:,TMA,iMB) = uM(:,TMA,TMB-1,:,TMA,iMB-1)
+        end do
+      end do
+!$OMP end do
       ! we need a wait since it copies from the previous iMB
-
     end do
 
 !$OMP end parallel
@@ -359,10 +366,8 @@ contains
 
     if ( this%prod_B == 1 ) then
       
-!$OMP parallel workshare
       uSZmH(:,1,:,1) = Z * S(:,:,1) - H(:,:,1)
-      uG(:,1,:,1) = G(:,:,1)
-!$OMP end parallel workshare
+      call zcopy(N*N, G(1,1,1), 1, uG(1,1,1,1), 1)
 
       return
     end if
@@ -410,18 +415,16 @@ contains
     complex(dp) :: phA_step
     complex(dp) :: ph, phc, phZ, phcZ
 
+    ! Initialize un-folded matrix
+    uSZmH(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+    uG(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+
 !$OMP parallel default(shared) private(i,j) &
 !$OMP& private(TMA,iMA,k_A,phA_step) &
 !$OMP& private(w,ph,phc,phZ,phcZ) firstprivate(Z)
 
     w = 1._dp / real(NA, dp)
     
-    ! Initialize un-folded matrix
-!$OMP workshare
-    uSZmH(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-    uG(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
-
     ! TMA loop is over different matrices
     do TMA = 1, NA
 
@@ -476,10 +479,12 @@ contains
     end do
 
     do iMA = 2, NA
-!$OMP workshare
-      uSZmH(:,2:,:,iMA) = uSZmH(:,:NA-1,:,iMA-1)
-      uG(:,2:,:,iMA) = uG(:,:NA-1,:,iMA-1)
-!$OMP end workshare
+!$OMP do
+      do TMA = 2, NA
+        uSZmH(:,TMA,:,iMA) = uSZmH(:,TMA-1,:,iMA-1)
+        uG(:,TMA,:,iMA) = uG(:,TMA-1,:,iMA-1)
+      end do
+!$OMP end do
       ! we need to wait because we copy the previous columns
     end do
 
@@ -502,6 +507,9 @@ contains
     complex(dp) :: phB, phB_step
     complex(dp) :: ph, phc, phZ, phcZ
 
+    uSZmH(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+    uG(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+
 !$OMP parallel default(shared) private(i,j) &
 !$OMP& private(TMA,iMA,k_A,phA_step,phA) &
 !$OMP& private(TMB,iMB,k_B,phB_step,phB) &
@@ -509,11 +517,6 @@ contains
 
     ! Full weight
     w = 1._dp / real(NA*NB, dp)
-    
-!$OMP workshare
-    uSZmH(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-    uG(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
 
     ! TMB/A loop is over different matrices
     do TMB = 1, NB
@@ -663,27 +666,40 @@ contains
     end do
     
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
-    do iMB = 1, NB
+    do iMA = 2, NA
+!$OMP do
+      do TMA = 2, NA
+        uSZmH(:,TMA,1,:,iMA,1) = uSZmH(:,TMA-1,1,:,iMA-1,1)
+        uG(:,TMA,1,:,iMA,1) = uG(:,TMA-1,1,:,iMA-1,1)
+      end do
+!$OMP end do
+        ! we need a wait since it copies from the previous iMA
+    end do
+    do iMB = 2, NB
       do iMA = 2, NA
-!$OMP workshare
-        uSZmH(:,2:,iMB,:,iMA,1) = uSZmH(:,:NA-1,iMB,:,iMA-1,1)
-        uSZmH(:,2:,1,:,iMA,iMB) = uSZmH(:,:NA-1,1,:,iMA-1,iMB)
-        uG(:,2:,iMB,:,iMA,1) = uG(:,:NA-1,iMB,:,iMA-1,1)
-        uG(:,2:,1,:,iMA,iMB) = uG(:,:NA-1,1,:,iMA-1,iMB)
-!$OMP end workshare
+!$OMP do
+        do TMA = 2, NA
+          uSZmH(:,TMA,iMB,:,iMA,1) = uSZmH(:,TMA-1,iMB,:,iMA-1,1)
+          uSZmH(:,TMA,1,:,iMA,iMB) = uSZmH(:,TMA-1,1,:,iMA-1,iMB)
+          uG(:,TMA,iMB,:,iMA,1) = uG(:,TMA-1,iMB,:,iMA-1,1)
+          uG(:,TMA,1,:,iMA,iMB) = uG(:,TMA-1,1,:,iMA-1,iMB)
+        end do
+!$OMP end do
         ! we need a wait since it copies from the previous iMA
       end do
     end do
 
     ! Now copy all duplicated data
     do iMB = 2, NB
-
-!$OMP workshare
-      uSZmH(:,:,2:,:,:,iMB) = uSZmH(:,:,:NB-1,:,:,iMB-1)
-      uG(:,:,2:,:,:,iMB) = uG(:,:,:NB-1,:,:,iMB-1)
-!$OMP end workshare
+!$OMP do
+      do TMB = 2, NB
+        do TMA = 1, NA
+          uSZmH(:,TMA,TMB,:,TMA,iMB) = uSZmH(:,TMA,TMB-1,:,TMA,iMB-1)
+          uG(:,TMA,TMB,:,TMA,iMB) = uG(:,TMA,TMB-1,:,TMA,iMB-1)
+        end do
+      end do
+!$OMP end do
       ! we need a wait since it copies from the previous iMB
-
     end do
 
 !$OMP end parallel
@@ -702,9 +718,7 @@ contains
 
     if ( this%prod_B == 1 ) then
       
-!$OMP parallel workshare
       uSZmH(:,1,:,1) = Z * S(:,:,1) - H(:,:,1)
-!$OMP end parallel workshare
 
       return
     end if
@@ -752,17 +766,15 @@ contains
     complex(dp) :: phA_step
     complex(dp) :: ph, phc, phZ, phcZ
 
+    ! Initialize un-folded matrix
+    uSZmH(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+
 !$OMP parallel default(shared) private(i,j) &
 !$OMP& private(TMA,iMA,k_A,phA_step) &
 !$OMP& private(w,ph,phc,phZ,phcZ) firstprivate(Z)
 
     w = 1._dp / real(NA, dp)
     
-    ! Initialize un-folded matrix
-!$OMP workshare
-    uSZmH(:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
-
     ! TMA loop is over different matrices
     do TMA = 1, NA
 
@@ -808,9 +820,11 @@ contains
     end do
 
     do iMA = 2, NA
-!$OMP workshare
-      uSZmH(:,2:,:,iMA) = uSZmH(:,:NA-1,:,iMA-1)
-!$OMP end workshare
+!$OMP do
+      do TMA = 2, NA
+        uSZmH(:,TMA,:,iMA) = uSZmH(:,TMA-1,:,iMA-1)
+      end do
+!$OMP end do
       ! we need to wait because we copy the previous columns
     end do
 
@@ -833,6 +847,8 @@ contains
     complex(dp) :: phB, phB_step
     complex(dp) :: ph, phc, phZ, phcZ
 
+    uSZmH(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
+
 !$OMP parallel default(shared) private(i,j) &
 !$OMP& private(TMA,iMA,k_A,phA_step,phA) &
 !$OMP& private(TMB,iMB,k_B,phB_step,phB) &
@@ -840,10 +856,6 @@ contains
 
     ! Full weight
     w = 1._dp / real(NA*NB, dp)
-    
-!$OMP workshare
-    uSZmH(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-!$OMP end workshare
 
     ! TMB/A loop is over different matrices
     do TMB = 1, NB
@@ -962,24 +974,36 @@ contains
     end do
     
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
-    do iMB = 1, NB
+    do iMA = 2, NA
+!$OMP do
+      do TMA = 2, NA
+        uSZmH(:,TMA,1,:,iMA,1) = uSZmH(:,TMA-1,1,:,iMA-1,1)
+      end do
+!$OMP end do
+      ! we need a wait since it copies from the previous iMA
+    end do
+    do iMB = 2, NB
       do iMA = 2, NA
-!$OMP workshare
-        uSZmH(:,2:,iMB,:,iMA,1) = uSZmH(:,:NA-1,iMB,:,iMA-1,1)
-        uSZmH(:,2:,1,:,iMA,iMB) = uSZmH(:,:NA-1,1,:,iMA-1,iMB)
-!$OMP end workshare
+!$OMP do
+        do TMA = 2, NA
+          uSZmH(:,TMA,iMB,:,iMA,1) = uSZmH(:,TMA-1,iMB,:,iMA-1,1)
+          uSZmH(:,TMA,1,:,iMA,iMB) = uSZmH(:,TMA-1,1,:,iMA-1,iMB)
+        end do
+!$OMP end do
         ! we need a wait since it copies from the previous iMA
       end do
     end do
 
     ! Now copy all duplicated data
     do iMB = 2, NB
-
-!$OMP workshare
-      uSZmH(:,:,2:,:,:,iMB) = uSZmH(:,:,:NB-1,:,:,iMB-1)
-!$OMP end workshare
+!$OMP do
+      do TMB = 2, NB
+        do TMA = 1, NA
+          uSZmH(:,TMA,TMB,:,TMA,iMB) = uSZmH(:,TMA,TMB-1,:,TMA,iMB-1)
+        end do
+      end do
+!$OMP end do
       ! we need a wait since it copies from the previous iMB
-
     end do
 
 !$OMP end parallel
