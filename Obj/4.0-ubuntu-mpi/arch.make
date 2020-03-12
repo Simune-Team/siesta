@@ -41,7 +41,7 @@ FPPFLAGS_free_F90=
 
 BLAS_LIBS=-lblas
 LAPACK_LIBS=-llapack
-BLACS_LIBS=-lblacs-openmpi -lblacsF77init-openmpi
+BLACS_LIBS= # -lblacs-openmpi -lblacsF77init-openmpi
 
 #SCALAPACK_LIBS= -lscalapack-openmpi -lblacs-openmpi -lblacsF77init-openmpi -L${MKLROOT}/lib -Wl,--start-group ${MKLROOT}/lib/intel64/libmkl_gf_lp64.a ${MKLROOT}/lib/intel64/libmkl_core.a ${MKLROOT}/lib/intel64/libmkl_sequential.a -Wl,--end-group -lpthread -lm -ldl
 
