@@ -18,7 +18,7 @@ SIESTA_ARCH=x86_64-mkl_mpi
 
 FPP=
 FPP_OUTPUT= 
-FC=mpif90 -I.   # gfortran v 4.1.2 ???
+FC=mpif90 -I. -DMPI  # gfortran v 4.1.2 ???
 FC_ASIS=gfortran 
 RANLIB=ranlib
 
@@ -29,7 +29,7 @@ DP_KIND=8
 KINDS=$(SP_KIND) $(DP_KIND)
 
 FFLAGS=-g -O2
-FPPFLAGS=-DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DMPI
+FPPFLAGS=-DFC_HAVE_FLUSH -DFC_HAVE_ABORT
 LDFLAGS= # -static
 
 ARFLAGS_EXTRA=

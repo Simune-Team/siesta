@@ -36,7 +36,7 @@ FPP = $(FC) -E -P -x c
 # a good idea to add options here, except when they are essential for
 # a proper operation.
 # In case of MPI compilation this should be the mpi compiler (mpifort).
-FC = mpif90
+FC = mpif90 -DMPI
 
 # The FC_SERIAL symbol is useful in at least two cases:
 #   1. When the "MPI compiler environment" is so complex that it might
@@ -88,7 +88,7 @@ DEFS_PREFIX =
 
 # Used only at the linking stage. For example, you might need "-static"
 LDFLAGS = # -static
-FPPFLAGS= -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
+FPPFLAGS= -DFC_HAVE_FLUSH -DFC_HAVE_ABORT
 
 # These symbols help to keep the building rules concise
 # This enables specific compilation options for certain
