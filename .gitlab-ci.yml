@@ -1,75 +1,12 @@
 stages:
-  - test
-  - test-debug
-  - package
-  - test-package
-  - installer
-  - coverage
-
+  - compile
 
 include:
   - gitlab-runner/bionic-runner.yml
-  - gitlab-runner/macos-runner.yml
-  - gitlab-runner/windows-desktop-runner.yml
-  - gitlab-runner/windows-laptop-runner.yml
 
 .load-linux:
-  variables:
-    PYTHONPATH: ${CI_PROJECT_DIR}
-    QT_QPA_PLATFORM: "offscreen"
-    QT_API: "PySide2"
-
-.load-linux-pyside2:
-  extends: .load-linux
   variables:
     PYTHONPATH: /home/kovalp/programs/ase:${CI_PROJECT_DIR}
   before_script:
     - source $HOME/envs/py36_pyside2/bin/activate
-    - pip install -r requirements.txt
     - export PATH=$PATH:/home/kovalp/programs/siesta/siesta-4.0.2/Obj
-
-
-.load-win:
-  variables:
-    PYTHONPATH: C:\Users\kovalp\programs\ase\;${CI_PROJECT_DIR}
-    ASAP_TESTING_RUN_JSON: asap_testing_win.json
-    ASAP_SYSCONFIG: sysconfig.win.json
-    QT_API: PySide2
-  before_script:
-    - $env:PATH+=";C:\msys64\mingw64\bin"
-    - $env:PATH+=";C:\Users\kovalp\programs\ASAP\simune\bin"
-    - $env:PATH+=";C:\msys64\home\kovalp\programs\siesta\siesta-simune\Obj\4.0-windows-serial"
-    - $env:PATH+=";C:\Program Files (x86)\NSIS"
-    - echo $env:PATH
-    - C:\Users\kovalp\asap-env\Scripts\Activate.ps1
-    - pip install -r requirements.txt
-
-.load-win-laptop:
-  before_script:
-    - $env:PYTHONPATH=$PWD
-    - $env:Path+=";C:\Users\grand\scoop\shims;C:\msys64\mingw64\bin"
-    - $env:Path+=";C:\Users\grand\scoop\apps\python\current\Scripts"
-    - $env:Path+=";C:\Users\grand\SIESTA-4.0.2-Windows-package\SIESTA-4.0.2-Windows-package\bin"
-    - $env:QT_API="PySide2"
-
-
-.load-mac:
-  variables:
-    PYTHONPATH: ${CI_PROJECT_DIR}
-    QT_QPA_PLATFORM: offscreen
-
-.load-pyside2-mac:
-  extends: .load-mac
-  variables:
-    QT_API: PySide2
-  before_script:
-    - if [ $USER == "simplay" ]; then source /Users/simplay/joseba/pyqt-env/bin/activate; else source /Users/kovalp/envs/py37-pyside2/bin/activate; fi
-    - pip install -r requirements.txt
-
-.load-pyqt5-mac:
-  extends: .load-mac
-  variables:
-    QT_API: PyQt5
-  before_script:
-    - if [ $USER == "simplay" ]; then source /Users/simplay/joseba/pyqt-env/bin/activate; else source /Users/kovalp/envs/py37-pyqt5/bin/activate; fi
-    - pip install -r requirements.txt

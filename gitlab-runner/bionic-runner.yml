@@ -1,93 +1,14 @@
-bionic-pyside2:
-  extends: .load-linux-pyside2
-  stage: test
-  script:
-    - export ASAP_SYSCONFIG=sysconfig.bionic.json
-    - cd simune/test/unittest
-    - pytest --color=yes --cov=$PWD/../.. --cov-report=html
-  tags:
-    - Linux-bionic-koval-00
-  artifacts:
-    paths:
-      - simune/test/unittest
-    expire_in: 1 day
-
-bionic-pyside2-docker:
+bionic:
   extends: .load-linux
-  stage: test
-  image: jalberdi004/debian-siesta
+  stage: compile
   script:
-    - pip install -r requirements.txt
-    - export ASAP_SYSCONFIG=sysconfig.debian.docker.json
-    - cd simune/test/unittest
-    - pytest --color=yes --cov=$PWD/../..
-  tags:
-    - LINUX
-  when: manual
+    - cd Obj/4.0-ubuntu-mpi/
+    - ../../Src/obj_setup.sh
+    - make
 
-
-bionic-pyqt5:
-  stage: test
-  script:
-    - source $HOME/envs/py36_pyqt5/bin/activate
-    - pip install -r requirements.txt
-    - export PYTHONPATH=/home/kovalp/programs/ase
-    - export PYTHONPATH=$PYTHONPATH:$PWD
-    - export PATH=$PATH:/home/kovalp/programs/siesta/siesta-4.0.2/Obj
-    - export QT_API=PyQt5
-    - export QT_QPA_PLATFORM=offscreen
-    - cd simune/test/unittest
-    - export ASAP_SYSCONFIG=sysconfig.bionic.json
-    - for f in test_*.py; do echo $f; python3 -m unittest $f; if [ $? -ne 0 ]; then exit $?; fi; done
   tags:
-    - Linux-bionic-koval-00
-  only:
-    - schedules
-
-asap-pkg-bionic-pyside2:
-  extends: .load-linux-pyside2
-  stage: package
-  script:
-    - cd packages
-    - export SIMUNE_PRODUCT_NAME=ASAP
-    - pyinstaller -y simune.spec
-  only:
-    - schedules
-  allow_failure: true
-  tags:
-    - Linux-bionic-koval-00
+    - linux-bionic-koval-00
   artifacts:
-    untracked: true
     paths:
-      - packages/dist
+      - Obj/4.0-ubuntu-mpi/siesta
     expire_in: 1 day
-
-asap-test-pkg-bionic-pyside2:
-  extends: .load-linux-pyside2
-  stage: test-package
-  dependencies:
-    - asap-pkg-bionic-pyside2
-  script:
-    - export ASAP_SYSCONFIG=sysconfig.bionic.json
-    - packages/dist/asap/asap --client-cert simune/certificates/bash_scripts/client/cert.pem --client-key simune/certificates/bash_scripts/client/key.pem --password aa1111 --ca-cert simune/certificates/bash_scripts/server-ca/ca.pem --test
-  allow_failure: true
-  only:
-    - schedules
-  tags:
-    - Linux-bionic-koval-00
-
-
-pages:
-  stage: coverage
-  dependencies:
-    - bionic-pyside2
-  script:
-    - mv simune/test/unittest/htmlcov/ public/
-  artifacts:
-    paths:
-      - public
-    expire_in: 30 days
-  tags:
-    - Linux-bionic-koval-00
-  only:
-    - master
