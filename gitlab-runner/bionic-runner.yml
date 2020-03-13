@@ -21,7 +21,7 @@ bionic-test:
   script:
     - echo $HOME
     - cd Tests
-    - make MPI="mpirun -np 4" SIESTA="../Obj/4.1-ubuntu-mpi/siesta"
+    - make MPI="mpirun -np 4" SIESTA="${CI_PROJECT_DIR}/Obj/4.1-ubuntu-mpi/siesta"
 
   dependencies:
     - bionic-compile
