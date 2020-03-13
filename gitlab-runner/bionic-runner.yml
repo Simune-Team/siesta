@@ -2,6 +2,7 @@ bionic:
   extends: .load-linux
   stage: compile
   script:
+    - echo $HOME
     - cd Obj/4.0-ubuntu-mpi/
     - ../../Src/obj_setup.sh
     - make
