@@ -1,4 +1,4 @@
-bionic:
+bionic-compile:
   extends: .load-linux
   stage: compile
   script:
@@ -12,4 +12,23 @@ bionic:
   artifacts:
     paths:
       - Obj/4.1-ubuntu-mpi/siesta
+    expire_in: 1 day
+
+
+bionic-test:
+  extends: .load-linux
+  stage: test
+  script:
+    - echo $HOME
+    - cd Tests
+    - make MPI="mpirun -np 4" SIESTA="../Obj/4.1-ubuntu-mpi/siesta"
+
+  dependencies:
+    - bionic-compile
+
+  tags:
+    - linux
+  artifacts:
+    paths:
+      - Tests/4.1-ubuntu-mpi/siesta
     expire_in: 1 day

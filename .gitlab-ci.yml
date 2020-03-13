@@ -1,5 +1,6 @@
 stages:
   - compile
+  - test
 
 include:
   - gitlab-runner/bionic-runner.yml
