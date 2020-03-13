@@ -6,7 +6,6 @@ include:
 
 .load-linux:
   variables:
-    PYTHONPATH: /home/kovalp/programs/ase:${CI_PROJECT_DIR}
+    PYTHONPATH: ${CI_PROJECT_DIR}
   before_script:
-    - source $HOME/envs/py36_pyside2/bin/activate
     - export PATH=$PATH:/home/kovalp/programs/siesta/siesta-4.0.2/Obj
