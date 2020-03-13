@@ -7,7 +7,7 @@ bionic:
     - make
 
   tags:
-    - linux-bionic-koval-00
+    - linux
   artifacts:
     paths:
       - Obj/4.0-ubuntu-mpi/siesta
