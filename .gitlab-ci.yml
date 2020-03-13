@@ -1,0 +1,11 @@
+stages:
+  - compile
+
+include:
+  - gitlab-runner/bionic-runner.yml
+
+.load-linux:
+  variables:
+    PYTHONPATH: ${CI_PROJECT_DIR}
+  before_script:
+    - export PATH=$PATH:/home/kovalp/programs/siesta/siesta-4.0.2/Obj

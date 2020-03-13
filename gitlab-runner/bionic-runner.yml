@@ -1,0 +1,15 @@
+bionic:
+  extends: .load-linux
+  stage: compile
+  script:
+    - echo $HOME
+    - cd Obj/4.1-ubuntu-mpi/
+    - ../../Src/obj_setup.sh
+    - make
+
+  tags:
+    - linux
+  artifacts:
+    paths:
+      - Obj/4.1-ubuntu-mpi/siesta
+    expire_in: 1 day
