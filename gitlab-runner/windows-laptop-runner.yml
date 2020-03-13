@@ -1,0 +1,30 @@
+win10:
+  stage: test
+  extends: .load-win-laptop
+  script:
+    - cd simune\test\unittest
+    - pytest --color=yes
+  tags:
+    - Windows10
+  when: manual
+  artifacts:
+    paths:
+      - simune\test\unittest
+    expire_in: 1 day
+    when: on_failure
+
+debug-win10:
+  stage: test-debug
+  extends: .load-win-laptop
+  script:
+    - cd simune\test\unittest
+    - $ff = Get-ChildItem "." -Filter test_*.py
+    - foreach ($f in $ff){ echo $f; python -m unittest $f; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE}}
+  tags:
+    - Windows10
+  when: manual
+  artifacts:
+    paths:
+      - simune\test\unittest
+    expire_in: 1 day
+    when: on_failure

@@ -1,0 +1,7 @@
+pyopenssl
+matplotlib
+pyside2
+qtpy
+scipy
+PyOpenGL
+pytest

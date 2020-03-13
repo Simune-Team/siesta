@@ -1,0 +1,135 @@
+test-win:
+  stage: test
+  extends: .load-win
+  script:
+    - echo $PATH
+    - cd simune\test\unittest
+    - pytest --color=yes --cov=$PWD\..\..
+  tags:
+    - Windows
+  artifacts:
+    paths:
+      - simune\test\unittest
+    expire_in: 1 day
+    when: on_failure
+
+
+debug-win:
+  stage: test-debug
+  extends: .load-win
+  script:
+    - cd simune\test\unittest
+    - $ff = Get-ChildItem "." -Filter test_*.py
+    - foreach ($f in $ff){ echo $f; python -m unittest $f; if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE}}
+  tags:
+    - Windows
+  when: on_failure
+  artifacts:
+    paths:
+      - simune\test\unittest
+    expire_in: 1 day
+    when: on_failure
+
+
+asap-pkg-win:
+  stage: package
+  extends: .load-win
+  script:
+    - cd packages
+    - pyinstaller -y simune.spec
+  only:
+    - schedules
+  tags:
+    - Windows
+  allow_failure: true
+  artifacts:
+    untracked: true
+    paths:
+      - packages/dist
+    expire_in: 1 day
+
+
+asap-test-pkg-win:
+  stage: test-package
+  extends: .load-win
+  dependencies:
+    - asap-pkg-win
+  script:
+    - packages/dist/asap/asap --client-cert simune/certificates/bash_scripts/client/cert.pem --client-key simune/certificates/bash_scripts/client/key.pem --password aa1111 --ca-cert simune/certificates/bash_scripts/server-ca/ca.pem --test
+  only:
+    - schedules
+  allow_failure: true
+  tags:
+    - Windows
+
+
+asap-inst-win:
+  stage: installer
+  extends: .load-win
+  dependencies:
+    - asap-pkg-win
+  script:
+    - cd packages/installer/windows/
+    - $env:SIMUNE_PRODUCT_NAME="ASAP"
+    - python -u make-installer.py
+  only:
+    - schedules
+  allow_failure: true
+  tags:
+    - Windows
+  artifacts:
+    paths:
+      - packages/installer/windows/*.exe
+    expire_in: 1 day
+
+
+modeler-pkg-win:
+  stage: package
+  extends: .load-win
+  script:
+    - cd packages
+    - $env:SIMUNE_PRODUCT_NAME="SIESTA Modeler"
+    - pyinstaller -y simune.spec
+  only:
+    - schedules
+  tags:
+    - Windows
+  artifacts:
+    untracked: true
+    paths:
+      - packages/dist
+    expire_in: 1 day
+
+
+
+modeler-test-pkg-win:
+  stage: test-package
+  extends: .load-win
+  dependencies:
+    - modeler-pkg-win
+  script:
+    - $env:SIMUNE_PRODUCT_NAME="SIESTA Modeler"
+    - packages/dist/siesta-modeler/siesta-modeler --client-cert simune/certificates/bash_scripts/client/cert.pem --client-key simune/certificates/bash_scripts/client/key.pem --password aa1111 --ca-cert simune/certificates/bash_scripts/server-ca/ca.pem --test
+  only:
+    - schedules
+  tags:
+    - Windows
+
+
+modeler-inst-win:
+  stage: installer
+  extends: .load-win
+  dependencies:
+    - modeler-pkg-win
+  script:
+    - $env:SIMUNE_PRODUCT_NAME="SIESTA Modeler"
+    - cd packages/installer/windows/
+    - python -u make-installer.py
+  only:
+    - schedules
+  tags:
+    - Windows
+  artifacts:
+    paths:
+      - packages/installer/windows/*.exe
+    expire_in: 1 day
