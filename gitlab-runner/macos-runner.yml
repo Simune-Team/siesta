@@ -1,0 +1,87 @@
+mac-pyqt5:
+  stage: test
+  extends: .load-pyqt5-mac
+  script:
+    - echo $USER
+    - cd simune/test/unittest
+    - export ASAP_SYSCONFIG=sysconfig.mac.json
+    - export ASAP_REMOTECONFIG=remote.imac.json
+    - pytest -v --color=yes --cov=$PWD/../..
+  tags:
+    - MACOS
+  artifacts:
+    paths:
+      - simune/test/unittest
+    expire_in: 1 day
+    when: on_failure
+
+mac-pyside2:
+  stage: test
+  extends: .load-pyside2-mac
+  script:
+    - echo $USER
+    - cd simune/test/unittest
+    - export ASAP_SYSCONFIG=sysconfig.mac.json
+#    - export ASAP_REMOTECONFIG=remote.mac2bionic.json
+#    - python ../../bin/make_ssh_tunnel.py asap koval-00.sw.ehu.eus 19191
+    - export ASAP_REMOTECONFIG=remote.mac2simune-server.json
+    - pytest -v --color=yes --cov=$PWD/../..
+  tags:
+    - MACOS
+  artifacts:
+    paths:
+      - simune/test/unittest
+    expire_in: 1 day
+    when: on_failure
+
+debug-mac-pyside2:
+  stage: test-debug
+  extends: .load-pyside2-mac
+  script:
+    - cd simune/test/unittest
+    - export ASAP_SYSCONFIG=sysconfig.mac.json
+#    - export ASAP_REMOTECONFIG=remote.mac2bionic.json
+#    - python ../../bin/make_ssh_tunnel.py asap koval-00.sw.ehu.eus 19191
+    - export ASAP_REMOTECONFIG=remote.mac2simune-server.json
+    - for f in t*.py; do echo $f; pytest -svx --color=yes $f; done
+  tags:
+    - MACOS
+  when: on_failure
+  artifacts:
+    paths:
+      - simune\test\unittest
+    expire_in: 1 day
+    when: on_failure
+
+asap-mac-pkg-pyside2:
+  stage: package
+  extends: .load-pyside2-mac
+  script:
+    - cd packages
+    - export SIMUNE_PRODUCT_NAME=ASAP
+    - pyinstaller -y simune.spec
+  only:
+    - schedules
+  allow_failure: true
+  tags:
+    - MACOS
+  artifacts:
+    untracked: true
+    paths:
+      - packages/dist
+    expire_in: 1 day
+
+asap-test-mac-pkg-pyside2:
+  stage: test-package
+  extends: .load-pyside2-mac
+  dependencies:
+    - asap-mac-pkg-pyside2
+  script:
+    - export ASAP_SYSCONFIG=sysconfig.mac.json
+    - packages/dist/ASAP/ASAP --client-cert simune/certificates/bash_scripts/client/cert.pem --client-key simune/certificates/bash_scripts/client/key.pem --password aa1111 --ca-cert simune/certificates/bash_scripts/server-ca/ca.pem --test
+  allow_failure: true
+  only:
+    - schedules
+  tags:
+    - MACOS
+

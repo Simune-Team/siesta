@@ -1,0 +1,390 @@
+#
+# DOCUMENTED arch.make template
+#
+# Most configuration parameters relevant for the build of SIESTA are explained
+# in this file. Before customizing it, we recommend that you copy it with the
+# name 'arch.make' to your SIESTA object directory.
+#
+# You can customize this file and/or directly set the variables it contains
+# in the command line when invoking make, e.g.:
+#
+#     make BUILD_PROFILE="debug" WITH_LIBINT=1 WITH_MPI=1
+#
+# Just remember that the command line will always have precedence over this
+# file.
+#
+
+                    # ------------------------------------ #
+
+# This string will be copied to the executable. You may write any
+# descriptive statement regarding the compilation setup.
+SIESTA_ARCH = x86_64-docker-gnu-mpi
+
+                    # ------------------------------------ #
+
+# The following variable will select predefined compiler flags to build
+# the SIESTA executable. Permitted values:
+#
+# - debug : set compilation parameters for debugging;
+# - optim : set compilation parameters for production / increased speed.
+#
+# If not defined, all build flags will be expected from the command line.
+BUILD_PROFILE = optim
+
+                    # ------------------------------------ #
+
+# Define the following variable to your SIESTA Bundle install prefix if
+# available (see https://gitlab.com/pouillon/siesta-bundle for details).
+#SIESTA_BUNDLE_ROOT = $(HOME)/siesta/bundle/$(SIESTA_ARCH)/install
+
+                    # ------------------------------------ #
+
+# Uncomment the following line to enable hybrid XC
+#WITH_LIBINT = 1
+
+# You must define the install prefix of Libint if hybrid XC is enabled,
+# unless you have defined the SIESTA_BUNDLE_ROOT variable above.
+#LIBINT_ROOT = $(EBROOTLIBINT)
+
+# You must define the install prefix of GAUFRE if hybrid XC is enabled,
+# unless you have defined the SIESTA_BUNDLE_ROOT variable above.
+#GAUFRE_ROOT = $(EBROOTGAUFRE)
+
+                    # ------------------------------------ #
+
+# Uncomment the following line to enable MPI
+WITH_MPI = 1
+
+                    # ------------------------------------ #
+
+# Uncomment the following line to enable NetCDF
+WITH_NETCDF = 1
+
+# If NetCDF is enabled, you must define the install prefixes of NetCDF and
+# NetCDF-Fortran, unless you have defined the SIESTA_BUNDLE_ROOT variable
+# above.
+NETCDF_ROOT = /usr
+NETCDF_FORTRAN_ROOT = /usr
+
+                    # ------------------------------------ #
+
+# CC is the C compiler. This currently need not be an MPI C compiler for MPI
+# compilation. You must define both the serial and MPI compiler to build
+# SIESTA in all supported configurations.
+CC_SERIAL = gcc
+CC_PARALLEL = mpicc
+
+# Here we define base flags, debug flags and optimized flags for C.
+CFLAGS_BASE = -fPIC -g $(CFLAGS_EXTRA)
+CFLAGS_DEBUG = $(CFLAGS_BASE) -g3 -ggdb -fno-omit-frame-pointer -O0
+CFLAGS_OPTIM = $(CFLAGS_BASE) -O2 -march=native
+
+                    # ------------------------------------ #
+
+# CXX is the C++ compiler. This currently need not be an MPI C++ compiler for
+# MPI compilation. You must define both the serial and MPI compiler to build
+# SIESTA in all supported configurations.
+CXX_SERIAL = g++
+CXX_PARALLEL = mpic++
+
+# Here we define base flags, debug flags and optimized flags for C++.
+CXXFLAGS_BASE = -fPIC -g -std=c++11 $(CXXFLAGS_EXTRA)
+CXXFLAGS_DEBUG = $(CXXFLAGS_BASE) -g3 -ggdb -fno-omit-frame-pointer -O0
+CXXFLAGS_OPTIM = $(CXXFLAGS_BASE) -O2 -march=native
+CXX_LIBS =
+
+                    # ------------------------------------ #
+
+# FC is typically the name of your fortran compiler. It is not always a good
+# idea to add options here, except when they are essential for a proper
+# operation. You must define both the serial and MPI compiler to build SIESTA
+# in all supported configurations.
+FC_SERIAL = gfortran
+FC_PARALLEL = mpifort
+
+# Here we define base flags, debug flags and optimized flags for Fortran.
+FCFLAGS_BASE = -fPIC -g $(FCFLAGS_EXTRA)
+FCFLAGS_DEBUG = $(FCFLAGS_BASE) -g3 -ggdb -fbacktrace -fcheck=bounds,do,mem,pointer,recursion -fimplicit-none -finit-real=snan -fno-automatic -fno-omit-frame-pointer -O0
+FCFLAGS_OPTIM = $(FCFLAGS_BASE) -O2 -march=native
+
+# This enables specific compilation options for certain source files
+# (rarely necessary but for compilers like IBM's).
+#FCFLAGS_fixed_f = -qsuffix=cpp=F:f=f -qfixed
+#FCFLAGS_free_f90 = -qsuffix=cpp=F90:f=f90 -qfree=f90
+
+# Used only at the linking stage. For example, you might need "-static"
+# or "-mkl=cluster".
+LDFLAGS =
+
+                    # ------------------------------------ #
+
+# If you want to use a specific archive function you may specify it here
+# Note that if you use LTO(gcc)/IPO(intel) specifying the correct AR
+# is REQUIRED
+AR = ar
+# Extra flags for library creation by the 'ar' command
+ARFLAGS_EXTRA =
+
+# Some systems do not have 'ranlib'. If so, use ":" or "echo" instead
+RANLIB = :
+
+                    # ------------------------------------ #
+
+# A compiler-specific file holding special versions of some routines
+# For most f95 compilers, "nag" should work. (The name is historical)
+# The currently supported systems are:
+#   nag (generic)
+#   bsd
+#   ibm
+#   ibm_pessl
+#   sgi
+#   t3e
+#   xlf
+SYS = nag
+
+# These symbols should not need to be specified. They will be detected
+# automatically at the time of compiling the MPI interface. Set them
+# only if the automatic detection fails and you are sure of their values.
+SP_KIND = 4
+DP_KIND = 8
+KINDS = $(SP_KIND) $(DP_KIND)
+
+                    # ------------------------------------ #
+
+# In case your compiler does not understand the special meaning of 
+# the .F and .F90 extensions ("files in need of preprocessing"), you
+# will need to use an explicit preprocessing step.
+#WITH_EXPLICIT_FPP = 1
+
+# Explicit Fortran preprocessor. Typically this is sufficient to be the
+# compiler with options '-E -P -x c'.
+#FPP = $(FC) -E -P -x c
+
+# This enables specific preprocessing options for certain source files.
+#FPPFLAGS_fixed_f = -qsuffix=cpp=F -qfixed
+#FPPFLAGS_free_f90 = -qsuffix=cpp=F90 -qfree=F90
+
+# Some compilers (notably IBM's) are not happy with the standard syntax for
+# definition of preprocessor symbols (-DSOME_SYMBOL), and thy need a prefix
+# (i.e. -WF,-DSOME_SYMBOL). This is used in some utility makefiles. Typically
+# this need not be defined.
+#DEFS_PREFIX = -WF,
+
+# -----------------------------------------------------------------------------
+#
+# Editing past this point is not recommended. Tune at your own risks.
+#
+
+# This is essential for MPI support
+ifdef WITH_MPI
+  CC = $(CC_PARALLEL)
+  CXX = $(CXX_PARALLEL)
+  FC = $(FC_PARALLEL)
+  MPI_INTERFACE = libmpi_f90.a
+  MPI_INCLUDE = .
+  DEFS_MPI = $(DEFS_PREFIX)-DMPI
+else
+  CC = $(CC_SERIAL)
+  CXX = $(CXX_SERIAL)
+  FC = $(FC_SERIAL)
+endif
+
+# Select build flags depending on the desired profile
+ifdef BUILD_PROFILE
+  ifeq ($(BUILD_PROFILE),debug)
+    CFLAGS = $(CFLAGS_DEBUG)
+    CXXFLAGS = $(CXXFLAGS_DEBUG)
+    FCFLAGS = $(FCFLAGS_DEBUG)
+  else ifeq ($(BUILD_PROFILE),optim)
+    CFLAGS = $(CFLAGS_OPTIM)
+    CXXFLAGS = $(CXXFLAGS_OPTIM)
+    FCFLAGS = $(FCFLAGS_OPTIM)
+  else
+    $(error Invalid BUILD_PROFILE setting in your arch.make)
+  endif
+endif
+
+                    # ------------------------------------ #
+
+# For compatibility with the rest of SIESTA (should be removed at some point).
+FFLAGS = $(FCFLAGS)
+
+                    # ------------------------------------ #
+
+# This is the most installation-dependent part
+# We can make things a bit easier by grouping symbols, and maybe
+# using the -L flag to define search directories (see examples
+# in this directory).
+# For the most simplistic compilation one requires the following
+# libraries:
+#   BLAS
+#   LAPACK
+#   ScaLAPACK (only for MPI compilation)
+BLAS_LIBS = -lblas
+LAPACK_LIBS = -llapack
+
+# The most recent ScaLAPACK versions have built in the BLACS library.
+# If BLACS is not included in the ScaLAPACK library you are
+# required to add it here as well:
+ifdef WITH_MPI
+  BLACS_LIBS =
+  SCALAPACK_LIBS = -lscalapack-openmpi
+endif
+
+# If you do not have BLAS/LAPACK installed on your machine
+# you may use the shipped BLAS/LAPACK versions.
+#
+# If you do not have the LAPACK library you may do:
+# COMP_LIBS = libsiestaLAPACK.a
+# If you have neither the BLAS, nor LAPACK library you may do:
+# COMP_LIBS = libsiestaLAPACK.a libsiestaBLAS.a
+#
+# You are HIGHLY encouraged to use an optimized BLAS/LAPACK
+# library as SIESTA performance is mainly governed by these
+# libraries.
+COMP_LIBS =
+
+# Some external dependencies require extra libraries. This is the place to
+# put them
+EXTRA_LIBS =
+
+                    # ------------------------------------ #
+
+# For NetCDF support. Make sure you get a version compatible
+# with the other options (for example, 32/64 bit). Don't forget
+# to set -DCDF below.
+# To use NetCDF define the installation directory of the library.
+# By default NetCDF is not used, but it may become mandatory in
+# later versions of SIESTA.
+ifdef WITH_NETCDF
+  ifndef NETCDF_ROOT
+    ifdef SIESTA_BUNDLE_ROOT
+      NETCDF_ROOT = $(SIESTA_BUNDLE_ROOT)
+    else
+      $(error You must define NETCDF_ROOT in your arch.make)
+    endif
+  endif
+  ifndef NETCDF_FORTRAN_ROOT
+    ifdef SIESTA_BUNDLE_ROOT
+      NETCDF_FORTRAN_ROOT = $(SIESTA_BUNDLE_ROOT)
+    else
+      $(error you must define NETCDF_ROOT in your arch.make)
+    endif
+  endif
+  NETCDF_INCFLAGS = -I$(NETCDF_ROOT)/include -I$(NETCDF_FORTRAN_ROOT)/include
+  NETCDF_LIBS = -L$(NETCDF_FORTRAN_ROOT)/lib -lnetcdff -L$(NETCDF_ROOT)/lib -lnetcdf
+  DEFS_NETCDF = $(DEFS_PREFIX)-DCDF
+endif
+
+                    # ------------------------------------ #
+
+# To fit natural orbitals on Gaussians for hybrid XC functionals.
+ifdef WITH_LIBINT
+  ifndef GAUFRE_ROOT
+    ifdef SIESTA_BUNDLE_ROOT
+      GAUFRE_ROOT = $(SIESTA_BUNDLE_ROOT)
+    else
+      $(error You must define GAUFRE_ROOT in your arch.make)
+    endif
+  endif
+  GAUFRE_VERSION="0.3.4"
+  GAUFRE_INCFLAGS = -I$(GAUFRE_ROOT)/include
+  GAUFRE_LIBS = $(GAUFRE_ROOT)/lib/libgaufre.a
+endif
+
+# For hybrid XC functionals. Make sure you get a version compatible
+# with the other options (for example, 32/64 bit).
+ifdef WITH_LIBINT
+  ifndef LIBINT_ROOT
+    ifdef SIESTA_BUNDLE_ROOT
+      LIBINT_ROOT = $(SIESTA_BUNDLE_ROOT)
+    else
+      $(error You must define LIBINT_ROOT in your arch.make)
+    endif
+  endif
+  DEFS_GRID = $(DEFS_PREFIX)-DGRID_SP
+  DEFS_LIBINT = $(DEFS_PREFIX)-DHAVE_LIBINT
+  LIBINT_INCFLAGS = -I$(LIBINT_ROOT)/include
+  LIBINT_LIBS = \
+    $(LIBINT_ROOT)/lib/libderiv.a \
+    $(LIBINT_ROOT)/lib/libint.a
+endif
+
+                    # ------------------------------------ #
+
+# Preprocessor definitions or flags.
+# Here we use FPPFLAGS (as 'configure' calls them), but historically
+# it was very common to use DEFS. Try to use only FPPFLAGS from now on,
+# converting any old arch.make files you might have lying around, and
+# remember that you have to change the final building rules at the end
+# to use only FPPFLAGS. DEFS is deprecated.
+DEFS_FORTRAN = $(DEFS_PREFIX)-DFC_HAVE_ABORT
+
+                    # ------------------------------------ #
+
+# CDF and MPI are self-explanatory
+# Other definitions might be needed to work around some glitch in the compiler
+# See the manual for more details.
+FPPFLAGS = $(DEFS_FORTRAN) $(DEFS_GRID) $(DEFS_LIBINT) $(DEFS_MPI) $(DEFS_NETCDF)
+
+# We put here all the neeeded libraries.
+# Sometimes the BLAS are included in LAPACK (or it could be that everything
+# is included in SCALAPACK...). You might need to experiment if you find 
+# duplicate symbols. See examples in this directory.
+#
+LIBS = $(GAUFRE_LIBS) $(NETCDF_LIBS) $(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) $(LIBINT_LIBS) $(MPI_LIBS) $(COMP_LIBS) $(EXTRA_LIBS)
+
+                    # ------------------------------------ #
+
+# Dependency rules
+#
+# This block tells make to consider only these suffixes in its operation
+# It is included in most makefiles in the source tree, but it does not
+# hurt to have it here too.
+.SUFFIXES:
+.SUFFIXES: .a .o .c .f .F .f90 .F90
+
+# Finally, the default building rules which will be used everywhere,
+# unless overriden.
+# These were created by a former run of 'configure'.
+# See other examples in this directory. If you cut and paste, 
+# MAKE SURE that there are TABS, not spaces, at the beginning.
+#
+# Important points to note:
+#
+# - INCFLAGS must be present. It is used in several utility makefiles.
+# - Either FPPFLAGS (preferred) or DEFS (deprecated) must be present
+#   (see above) -- Note that the use of DEFS might break Util compilations.
+#
+.c.o:
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(INCFLAGS) -o $@ -c $<
+.f.o:
+	$(FC) $(FCFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f) -o $@ -c $<
+.f90.o:
+	$(FC) $(FCFLAGS) $(INCFLAGS) $(FCFLAGS_free_f90) -o $@ -c $<
+
+ifdef WITH_EXPLICIT_FPP
+.F.o:
+	$(FPP) $(FPPFLAGS) $(FPPFLAGS_fixed_F) $< >tmp_$*.f
+	$(FC) $(FCFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_F) -c tmp_$*.f
+	@mv tmp_$*.o $*.o
+	@rm -f tmp_$*.f
+.F90.o:
+	$(FPP) $(FPPFLAGS) $(FPPFLAGS_free_F90) $< >tmp_$*.f90
+	$(FC) $(FCFLAGS) $(INCFLAGS) $(FCFLAGS_free_F90) -c tmp_$*.f90
+	@mv tmp_$*.o $*.o
+	@rm -f tmp_$*.f90
+else
+.F.o:
+	$(FC) $(FPPFLAGS) $(FPPFLAGS_fixed_F) $(FCFLAGS) $(INCFLAGS) -o $@ -c $< 
+.F90.o:
+	$(FC) $(FPPFLAGS) $(FPPFLAGS_free_F90) $(FCFLAGS) $(INCFLAGS) -o $@ -c $<
+endif
+
+                    # ------------------------------------ #
+
+# The atom.F code is very vulnerable. Particularly the Intel compiler
+# will make an erroneous compilation of atom.f with high optimization
+# levels.
+atom.o: atom.F
+	$(FC) $(FPPFLAGS) $(FPPFLAGS_fixed_F) $(FCFLAGS_DEBUG) $(INCFLAGS) -o $@ -c $<
