@@ -17,6 +17,7 @@ macos-compile:
 macos-test:
   extends: .load-linux
   stage: test
+  needs: ["macos-compile"]
   script:
     - echo $HOME
     - cd Tests
