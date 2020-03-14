@@ -4,6 +4,7 @@ stages:
 
 include:
   - gitlab-runner/bionic-runner.yml
+  - gitlab-runner/macos-runner.yml
 
 .load-linux:
   variables:

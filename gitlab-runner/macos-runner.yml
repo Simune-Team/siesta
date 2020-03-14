@@ -1,0 +1,31 @@
+macos-compile:
+  extends: .load-linux
+  stage: compile
+  script:
+    - echo $HOME
+    - cd Obj/4.1-ubuntu-mpi/
+    - ../../Src/obj_setup.sh
+    - make
+  tags:
+    - MACOS
+  artifacts:
+    paths:
+      - Obj/4.1-ubuntu-mpi/siesta
+    expire_in: 1 day
+
+
+macos-test:
+  extends: .load-linux
+  stage: test
+  script:
+    - echo $HOME
+    - cd Tests
+    - make MPI="mpirun -np 4" SIESTA="${CI_PROJECT_DIR}/Obj/4.1-ubuntu-mpi/siesta" h2o_2 h2o_dos force_constants
+  dependencies:
+    - bionic-compile
+  tags:
+    - MACOS
+  artifacts:
+    paths:
+      - Tests/4.1-ubuntu-mpi/siesta
+    expire_in: 1 day
