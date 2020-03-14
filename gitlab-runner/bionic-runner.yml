@@ -21,7 +21,9 @@ bionic-test:
   script:
     - echo $HOME
     - cd Tests
-    - make MPI="mpirun -np 4" SIESTA="${CI_PROJECT_DIR}/Obj/4.1-ubuntu-mpi/siesta" h2o_2 h2o_dos force_constants
+    - make MPI="mpirun -np 4" SIESTA="${CI_PROJECT_DIR}/Obj/4.1-ubuntu-mpi/siesta" h2o_2 benzene force_constants
+
+  needs: ["bionic-compile"]
 
   dependencies:
     - bionic-compile
