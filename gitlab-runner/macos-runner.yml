@@ -24,9 +24,11 @@ macos-test:
     - echo $HOME
     - cd Tests
     - make MPI="mpirun -np 4" SIESTA="${CI_PROJECT_DIR}/Obj/4.1-darwin-mpi/siesta" h2o_2 h2o_dos force_constants
+
   tags:
     - MACOS
+
   artifacts:
     paths:
-      - Tests/4.1-darwin-mpi/siesta
+      - Tests/
     expire_in: 1 day
