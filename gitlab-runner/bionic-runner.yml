@@ -17,7 +17,6 @@ bionic-compile:
 
 bionic-test:
   extends: .load-linux
-  needs: ["bionic-compile"]
   stage: test
   script:
     - echo $HOME

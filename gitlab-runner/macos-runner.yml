@@ -17,13 +17,13 @@ macos-compile:
 macos-test:
   extends: .load-linux
   stage: test
-  needs: ["macos-compile"]
+  needs:
+    -job: macos-compile
+    -artifacts: true
   script:
     - echo $HOME
     - cd Tests
     - make MPI="mpirun -np 4" SIESTA="${CI_PROJECT_DIR}/Obj/4.1-darwin-mpi/siesta" h2o_2 h2o_dos force_constants
-  dependencies:
-    - bionic-compile
   tags:
     - MACOS
   artifacts:
