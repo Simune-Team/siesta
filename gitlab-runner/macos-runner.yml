@@ -18,9 +18,7 @@ macos-test:
   extends: .load-linux
   stage: test
 
-  needs:
-    -job: macos-compile
-     artifacts: true
+  needs: ["macos-compile"]
 
   script:
     - echo $HOME
