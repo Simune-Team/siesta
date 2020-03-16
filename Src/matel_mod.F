@@ -129,12 +129,15 @@
       NUM_ORB = 0
       NUM_KB = 0
       NUM_LDAU = 0
+      NUM_VA = 0
       do is= 1, nspecies
         NUM_ORB  = NUM_ORB  + species(is)%norbs
         NUM_KB   = NUM_KB   + species(is)%nprojs
         NUM_LDAU = NUM_LDAU + species(is)%nprojsldau
+        if (species(is)%z > 0) then ! Not a floating orbital
+           NUM_VA = NUM_VA + 1
+        endif
       enddo
-      NUM_VA = nspecies
 
       ! Find the spherical harmonic decomposition and
       ! Fourier transform of all the registry objects
