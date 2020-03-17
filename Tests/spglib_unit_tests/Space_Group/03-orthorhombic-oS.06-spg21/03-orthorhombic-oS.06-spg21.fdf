@@ -1,0 +1,25 @@
+#--------------------------------------- 
+#Input Generated for Space Group Testing 
+#--------------------------------------- 
+SystemLabel  03-orthorombic-oS.06-spg21.inp 
+NumberOfSpecies 1 
+%block ChemicalSpeciesLabel 
+ 1  1  H 
+%endblock ChemicalSpeciesLabel 
+LatticeConstant  1.0 Ang   
+%block LatticeVectors 
+  3.5   4.0   0.0  
+  -3.5   4.0   0.0  
+  5.5109105962e-16   5.5109105962e-16   9.0  
+%endblock LatticeVectors 
+AtomicCoordinatesFormat  Fractional 
+%block AtomicCoordinatesAndAtomicSpecies 
+3.2000000000E-01   9.8000000000E-01   1.1000000000E-01  1  1   H 
+6.8000000000E-01   2.0000000000E-02   1.1000000000E-01  1  2   H 
+9.8000000000E-01   3.2000000000E-01   8.9000000000E-01  1  3   H 
+2.0000000000E-02   6.8000000000E-01   8.9000000000E-01  1  4   H 
+%endblock AtomicCoordinatesAndAtomicSpecies 
+MaxSCFIterations 	0  
+MD.TypeOfRun    CG   
+MD.NumCGsteps   0  
+SCF.MustConverge  .False. 

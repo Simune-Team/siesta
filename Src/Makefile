@@ -20,6 +20,9 @@ MAIN_OBJDIR=.
 AR ?= ar
 RANLIB ?= ranlib
 
+# default to be overridden in arch.make if needed
+LIBTOOLIZE ?= libtoolize
+
 default: siesta
 
 ARCH_MAKE?=$(MAIN_OBJDIR)/arch.make
@@ -189,6 +192,8 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_matdiag.o m_matswinvers.o iotdxv.o  m_inversemm.o \
         semicore_info_froyen.o hamann.o
 
+OBJS + = m_syms.o spglib_f03.o
+
 OBJS += kpoint_t.o kpoint_scf.o kpoint_dos.o kpoint_pdos.o kpoint_ldos.o
 
 OBJS += init_output.o
@@ -290,6 +295,40 @@ FC_SERIAL?=$(FC_DEFAULT)
 # makefiles. But in some other cases they are needed: VPATH, for
 # example, needs to be passed always.
 #
+
+# spglib whatnot
+# should get version number from file found in spglib subdirectory. obj_ script already accepts anything it finds in there.
+SPG_VER=1.11.1
+
+#spglib_extract=spglib/spglib-$(SPG_VER)
+#$(spglib_extract):
+#	( cd ./spglib ; tar -xzvf spglib-$(SPG_VER).tar.gz )
+#
+#spglib_configured=spglib/spglib-$(SPG_VER)/
+#$(spglib_configured): $(spglib_extract)
+#	( cd ./spglib/spglib-$(SPG_VER) ; touch arch.make ; \
+#            ./configure FC="$(FC_SERIAL)" FCFLAGS="$(FFLAGS)" --prefix=. )
+
+spglib_binary = spglib/spglib-$(SPG_VER)/src/.libs/libsymspg.a
+$(spglib_binary):
+	( cd ./spglib ; \
+	  tar -xzvf spglib-$(SPG_VER).tar.gz ; \
+	  cd spglib-$(SPG_VER) ; \
+	  aclocal ; \
+	  autoheader ; \
+	  $(LIBTOOLIZE)  ; \
+	  touch INSTALL NEWS README AUTHORS ; \
+	  automake -acf ; \
+	  autoconf ; \
+	  ./configure FC="$(FC_SERIAL)" CC="$(CC_SERIAL)" FCFLAGS="$(FFLAGS)" ; \
+	  $(MAKE) )
+
+SPG_LIBS="./$(spglib_binary)"
+
+spglib_f03.o: $(spglib_binary)
+# end spglib stuff
+
+#--------------------------------------------------------------
 NCPS=ncps/src/libncps.a
 $(NCPS): $(PSML)
 	(cd ncps/src ; $(MAKE) -j 1 VPATH="$(VPATH)/ncps/src" \
@@ -517,6 +556,7 @@ siesta: what version \
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MS)  \
                $(XC) $(MPI_INTERFACE) \
+               $(SPG_LIBS) \
                $(COMP_LIBS) $(LIBS) \
 	       $(NCPS) $(PSOP) $(PSML_LIBS) $(XMLF90_LIBS) \
 	       $(LIBS)
@@ -548,8 +588,8 @@ clean:
 	@if [ -d fdict/obj ] ; then $(MAKE) -C fdict/obj clean ; fi
 	@if [ -d ncdf/obj ] ; then $(MAKE) -C ncdf/obj clean ; fi
 	(cd Libs ; $(MAKE) clean )
+	(cd spglib ; rm -rf spglib-$(SPG_VER) )
 	(cd MatrixSwitch/src ; $(MAKE) clean )
-
 
 # DO NOT DELETE THIS LINE - used by make depend
 Fstack.o: basic_type.inc
@@ -980,6 +1020,7 @@ m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
 m_supercell.o: parallel.o parallelsubs.o precision.o
 m_svd.o: precision.o
+m_syms.o: spglib_f03.o
 m_target_stress.o: parallel.o precision.o sys.o units.o
 m_test_io.o: class_SpData2D.o class_Sparsity.o m_iodm.o m_matio.o parallel.o
 m_test_io.o: precision.o
@@ -1336,6 +1377,7 @@ siesta_init.o: kpoint_pdos.o kpoint_scf.o ksvinit.o local_DOS.o
 siesta_init.o: m_check_walltime.o m_cite.o m_energies.o m_eo.o m_fixed.o
 siesta_init.o: m_forces.o m_iostruct.o m_mpi_utils.o m_new_dm.o m_rmaxh.o
 siesta_init.o: m_spin.o m_steps.o m_supercell.o m_timer.o m_wallclock.o
+siesta_init.o: m_syms.o
 siesta_init.o: memory_log.o metaforce.o molecularmechanics.o object_debug.o
 siesta_init.o: parallel.o parallelsubs.o projected_DOS.o siesta_cmlsubs.o
 siesta_init.o: siesta_dicts.o siesta_geom.o siesta_options.o sparse_matrices.o
@@ -1365,6 +1407,7 @@ spinorbit.o: atm_types.o atmfuncs.o atmparams.o basis_types.o m_mpi_utils.o
 spinorbit.o: parallel.o parallelsubs.o precision.o
 state_analysis.o: atomlist.o born_charge.o flook_siesta.o m_energies.o
 state_analysis.o: m_fixed.o m_forces.o m_ntm.o m_spin.o m_stress.o
+state_analysis.o: m_syms.o
 state_analysis.o: m_ts_global_vars.o m_wallclock.o parallel.o
 state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
 state_analysis.o: siesta_options.o sparse_matrices.o units.o write_subs.o

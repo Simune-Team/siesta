@@ -32,6 +32,7 @@
      &                              qtots,
      &                              iza, rmaxo, zvaltot, superc,
      &                              initatomlists, no_l, rmaxldau
+      use m_syms
       use fdf
 
       use gridxc,             only: gridxc_init
@@ -120,6 +121,7 @@
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
       integer :: i, is, ispin, n_dm_items
+      integer :: j
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: not_using_auxcell
@@ -726,6 +728,23 @@ C     Initialise MPI and set processor number
       ! Build initial velocities according to Maxwell-Bolzmann distribution....
       if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
      &    call vmb( na_u, tempinit, amass, xa, isa, va )
+
+#ifdef SIESTA__HAS__SPGLIB
+      ! call init routine with main syms_global object from m_syms
+      call syms_init( syms_global, ucell, na_u, isa, xa )
+      if (IONode) call syms_print(syms_global)
+      if (impose_symmetries) then
+        call syms_cell( syms_global, na_u, xa, ucell )
+        call syms_pos( syms_global, na_u, xa, ucell )
+
+!  final check that the symops are restored - not costly but should be removed for production later
+        call syms_delete(syms_global)
+        call syms_init( syms_global, ucell, na_u, isa, xa )
+        if (IONode) call syms_print(syms_global)
+!  end debug stuff
+
+      end if
+#endif
 
       istp = 0
       

@@ -1,0 +1,18 @@
+Neighbors of:     1 H at:   0.4717  0.4085  4.0671
+    2 H                     0.5720  Ang. Really at:  -0.5897  0.2043  4.0671
+    3 H                     0.5720  Ang. Really at:   0.1179 -0.6128  4.0671
+Neighbors of:     2 H at:  -0.5897  0.2043  4.0671
+    1 H                     0.5720  Ang. Really at:   0.4717  0.4085  4.0671
+    3 H                     0.5720  Ang. Really at:   0.1179 -0.6128  4.0671
+Neighbors of:     3 H at:   0.1179 -0.6128  4.0671
+    2 H                     0.5720  Ang. Really at:  -0.5897  0.2043  4.0671
+    1 H                     0.5720  Ang. Really at:   0.4717  0.4085  4.0671
+Neighbors of:     4 H at:  -0.4717 -0.4085 24.3082
+    5 H                     0.5720  Ang. Really at:   0.5897 -0.2043 24.3082
+    6 H                     0.5720  Ang. Really at:  -0.1179  0.6128 24.3082
+Neighbors of:     5 H at:   0.5897 -0.2043 24.3082
+    4 H                     0.5720  Ang. Really at:  -0.4717 -0.4085 24.3082
+    6 H                     0.5720  Ang. Really at:  -0.1179  0.6128 24.3082
+Neighbors of:     6 H at:  -0.1179  0.6128 24.3082
+    5 H                     0.5720  Ang. Really at:   0.5897 -0.2043 24.3082
+    4 H                     0.5720  Ang. Really at:  -0.4717 -0.4085 24.3082

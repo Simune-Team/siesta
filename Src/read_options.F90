@@ -36,6 +36,7 @@ subroutine read_options( na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   use m_cite, only: add_citation
+  use m_syms, only: syms_prec
 #ifdef SIESTA__CHESS
   use m_chess, only: set_CheSS_parameter
 #endif
@@ -624,6 +625,12 @@ subroutine read_options( na, ns, nspin )
   ! Monitor forces and stresses during SCF loop
   monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
   monitor_forces_in_scf = fdf_get('SCF.MonitorForces',monitor_forces_in_scf)
+
+  ! MJVerstraete: symmetrize the positions atomic forces and stresses in m_fixed
+  impose_symmetries = fdf_get ('ImposeSymmetries', .true.)
+  syms_prec = fdf_get ('ToleranceSymmetries', 1.d-6)
+
+
 
   !--------------------------------------
   ! Initial spin density: Maximum polarization, Ferro (false), AF (true)

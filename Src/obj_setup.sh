@@ -65,6 +65,12 @@ destdir=$(pwd)
 sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile | \
 sed "s#MAIN_OBJDIR=\.#MAIN_OBJDIR=${objdir}#g" > ${destdir}/Makefile
 
+# spglib directory
+mkdir spglib
+( cd spglib ;
+  ln -s $srcdir/spglib/*.tar.gz .
+)
+
 #
 # Tests directory
 # Create a list of files and use tar to process the list and copy the files

@@ -1,0 +1,6 @@
+WARNING: Gamma-point calculation with interaction between periodic images
+WARNING: Some features might not work optimally:
+WARNING: e.g. DM initialization from atomic data
+WARNING: SCF_NOT_CONV: SCF did not converge  in maximum number of steps.
+ (info): Geom step, scf iteration, dmax:    0     0     0.000000
+INFO: Job completed

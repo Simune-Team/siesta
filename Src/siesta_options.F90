@@ -27,6 +27,8 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
+  logical :: impose_symmetries ! symmetrize pos, cell, forces in siesta_init then state_analysis?
+
   logical :: mix_scf_first ! Mix first SCF step?
   logical :: mix_scf_first_force ! Mix first SCF step? and force it!
   logical :: mix_charge    ! New: mix fourier components of rho
