@@ -207,9 +207,35 @@ program plstm
           else
              stepz = cell(3,3) / n3
           endif
-          write(6,"(a,3f12.5)") "Zmin, Zmax (bohr): ", zmin, zmax
 
+       allocate(rho(product(mesh(1:3))))
+       
+       call get_function(nspin, spin_code, mesh, gf%val, &
+            rho, tip_spin, fmin, fmax)
+       
+       select case (spin_code)
+       case ( 'q' )
+          write(6,*) "Using 'total charge' ('q') mode"
+       case ( 'x' )
+          write(6,*) "Using 'x-component of spin' ('x') mode"
+       case ( 'y' )
+          write(6,*) "Using 'y-component of spin' ('y') mode"
+       case ( 'z' )
+          write(6,*) "Using 'z-component of spin' ('z') mode"
+       case ( 's' )
+          write(6,*) "Using 'total spin' ('s') mode"
+       case ( 'v' )
+          write(6,"(a,3f10.5)") "Using a 'polarized tip' ('-v') " // &
+               "with spin: ", tip_spin(1:3)
+       end select
 
+       write(6,"(a,3f12.5)") "Zmin, Zmax (bohr): ", zmin, zmax
+       write(6,"(a,3g20.8,/)") "Range of values of processed function: ", fmin, fmax
+       if (get_current_range .or. get_height_range) then
+          ! Stopping after computing ranges, as requested
+          STOP
+       endif
+       
           if (mode .eq. 'constant-current') then
 
              if (n3==1) then
@@ -243,29 +269,6 @@ program plstm
          stop
        endif
        write(6,*)
-
-       allocate(rho(product(mesh(1:3))))
-       
-       call get_function(nspin, spin_code, mesh, gf%val, &
-            rho, tip_spin, fmin, fmax)
-       
-       select case (spin_code)
-       case ( 'q' )
-          write(6,*) "Using 'total charge' ('q') mode"
-       case ( 'x' )
-          write(6,*) "Using 'x-component of spin' ('x') mode"
-       case ( 'y' )
-          write(6,*) "Using 'y-component of spin' ('y') mode"
-       case ( 'z' )
-          write(6,*) "Using 'z-component of spin' ('z') mode"
-       case ( 's' )
-          write(6,*) "Using 'total spin' ('s') mode"
-       case ( 'v' )
-          write(6,"(a,3f10.5)") "Using a 'polarized tip' ('-v') " // &
-               "with spin: ", tip_spin(1:3)
-       end select
-
-       write(6,"(a,3g20.8,/)") "Range of values of processed function: ", fmin, fmax
 
        allocate(f2d(0:mesh(1)-1,0:mesh(2)-1))
 
@@ -350,8 +353,7 @@ program plstm
     write(0,"(a)") " "
     write(0,"(a)") " -o OUTPUT_FILE Set output file name, overriding conventions"
     write(0,"(a)") " "
-    write(0,"(a)") " -H             Return range of height (not implemented yet)"
-    write(0,"(a)") " -I             Return range of current (not implemented yet)"
+    write(0,"(a)") " -H/-I          Stop after computing ranges of heights and currents"
     write(0,"(a)") " -------------------"
 
   end subroutine manual
