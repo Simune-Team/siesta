@@ -192,7 +192,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	m_matdiag.o m_matswinvers.o iotdxv.o  m_inversemm.o \
         semicore_info_froyen.o hamann.o
 
-OBJS + = m_syms.o spglib_f03.o
+OBJS += m_syms.o spglib_f03.o
 
 OBJS += kpoint_t.o kpoint_scf.o kpoint_dos.o kpoint_pdos.o kpoint_ldos.o
 
