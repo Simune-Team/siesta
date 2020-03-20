@@ -21,6 +21,7 @@ WITH_EXTERNAL_ELPA_IN_ELSI=
 WITH_MPI=1
 WITH_NETCDF=1
 WITH_NCDF=1
+WITH_SPGLIB=1
 # This will not work until libgridxc 0.9.X
 WITH_GRID_SP=
 #
@@ -165,6 +166,10 @@ ifdef WITH_MPI
 else
  FC=$(FC_SERIAL)
  LIBS += $(LAPACK_LIBS) $(COMP_LIBS)
+endif
+#
+ifdef WITH_SPGLIB
+ FPPFLAGS += -DSIESTA__HAS__SPGLIB
 endif
 
 SYS=nag
