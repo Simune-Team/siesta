@@ -307,19 +307,11 @@ C     Initialise MPI and set processor number
          call wallclock('Start of run')
       end if
 
-!
-!     Nullify arrays
-      nullify(Dscf,Dold,Escf)
-      nullify(listh)
-      nullify(H,S)
-      nullify(xijo)
-
 !     Initialize some variables
       call init_Energies()
       
-!
+
 !     Set object debugging level
-!
       call set_object_debug_level(0)
       i = fdf_get('DebugObjects.Node',0)
       if (Node==i) then
@@ -498,13 +490,6 @@ C     Initialise MPI and set processor number
 
 !     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
-
-!     Initialise arrays
-      nullify( listhptr, numh )
-      call re_alloc( listhptr, 1, max(1,no_l), 'listhptr', 'sparseMat' )
-      call re_alloc( numh,     1, max(1,no_l), 'numh',     'sparseMat' )
-      listhptr    = 0
-      numh        = 0
 
       ! Get number of eigenstates that need to be calculated
       ! This generally needs to be set to halve the number of

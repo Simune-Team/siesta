@@ -167,12 +167,8 @@ contains
     ! **********************
     integer :: i
     real(dp), allocatable :: Q(:,:)
-    real(dp) :: sQtot
     integer :: ispin, lmethod
     logical :: has_buffer
-
-    ! Requested charge per spin if anti-ferromagnetic
-    sQtot = Qtot / real(nspin,dp)
 
     lmethod = TS_Q_INFO_FULL
     if ( present(method) ) lmethod = method
@@ -228,7 +224,7 @@ contains
         write(*,'(a,f12.5)') &
             'Other                         [O]  :',Q(0,1)
       end if
-      write(*,'(a,f12.5,/)') &
+      write(*,'(a,es12.5e1,/)') &
           'Excess charge                [dQ]  :',sum(Q) - Qtot
 
 
@@ -247,24 +243,22 @@ contains
         write(*,'(1x,a9)',advance='no') 'B'
       end if
       if ( nspin > 1 ) then
-        write(*,'(2(1x,a9))') 'dQ','dQtot'
+        write(*,'(2(1x,a9))') 'dQ','Qup-Qdn'
       else
         write(*,'(1x,a9)') 'dQ'
       end if
-      do ispin = 1 , nspin
-        write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', Q(2,ispin)
-        do i = 1 , N_Elec
-          write(*,'(2(1x,f9.3))',advance='no') Q(3+(i-1)*2,ispin),Q(4+(i-1)*2,ispin)
-        end do
-        if ( has_buffer ) then
-          write(*,'(1x,f9.3)',advance='no') Q(1,ispin)
-        end if
-        if ( ispin > 1 .and. ispin == nspin ) then
-          write(*,'(2(1x,es9.3e1))') sum(Q(:,ispin)) - sQtot,sum(Q) - Qtot
-        else
-          write(*,'(1x,es9.3e1)') sum(Q(:,ispin)) - sQtot
-        end if
+      write(*,'(a,1x,f9.3)',advance='no') 'ts-q:', sum(Q(2,:))
+      do i = 1 , N_Elec
+        write(*,'(2(1x,f9.3))',advance='no') sum(Q(3+(i-1)*2,:)),sum(Q(4+(i-1)*2,:))
       end do
+      if ( has_buffer ) then
+        write(*,'(1x,f9.3)',advance='no') sum(Q(1,:))
+      end if
+      if ( nspin == 2 ) then
+        write(*,'(2(1x,es9.3e1))') sum(Q) - Qtot, sum(Q(:,1)) - sum(Q(:,2))
+      else
+        write(*,'(1x,es9.3e1)') sum(Q) - Qtot
+      end if
 
     end if
 
