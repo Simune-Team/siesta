@@ -217,6 +217,10 @@ Please see the relevant section of the manual for more information.
 numerous cosmetic changes to the output and the code itself. See Docs/CHANGES
 for a full list.
 
+## 3.X 2.X 1.X 0.X  Older releases
+
+See the files in `Docs/older_release_notes`
+
 <!--
 Local Variables:
 mode: fundamental
