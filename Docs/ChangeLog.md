@@ -1,8 +1,25 @@
 # ChangeLog for Siesta
 
-## 4.0.3 (2020- ) Bug fix release
+## 4.0.3 (2020- ) FUTURE Bug fix release
 
--
+### Changes
+
+See Docs/CHANGES for more details
+
+* Add ChangeLog.md since 4.0
+
+* Fixed cell transpose for socket communication, fixes lp:1835196
+
+* Make matel registry pool re-sizeable
+
+* Fixed vibra utility precision issue, fixed lp:1816719
+
+* Increase flexibility in the handling of pseudopotentials
+
+* Fix some issues with polarization orbitals. Bessel orbs improvements.
+
+* Fix C10 computation in molecularmechanics
+
 
 ## 4.0.2 (2018-07-19) Bug fix release
 
