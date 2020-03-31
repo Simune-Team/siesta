@@ -1181,8 +1181,6 @@ mulliken.o: alloc.o atmfuncs.o m_spin.o parallel.o parallelsubs.o precision.o
 mulliken.o: siesta_cml.o
 naefs.o: atmfuncs.o m_mpi_inplace.o matel_mod.o mneighb.o parallel.o
 naefs.o: precision.o
-new_matel.o: alloc.o errorf.o interpolation.o matel_registry.o parallel.o
-new_matel.o: precision.o radfft.o spher_harm.o sys.o
 nlefsm.o: alloc.o atm_types.o atmfuncs.o atomlist.o chemical.o matel_mod.o
 nlefsm.o: mneighb.o parallel.o parallelsubs.o precision.o siesta_options.o
 nlefsm.o: sparse_matrices.o
@@ -1555,7 +1553,6 @@ m_matel_registry.o: matel_registry.o
 m_minvec.o: minvec.o
 m_mixer.o: mixer.o
 m_naefs.o: naefs.o
-m_new_matel.o: new_matel.o
 m_nlefsm.o: nlefsm.o
 m_norm.o: compute_norm.o
 m_normalize_dm.o: normalize_dm.o
