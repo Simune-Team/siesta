@@ -180,7 +180,6 @@ OBJS =  automatic_cell.o atom_options.o \
         m_svd.o m_matio.o\
         rusage.o memory_snapshot.o compute_ebs_shift.o memory_all.o \
 	matel_registry.o matel_params.o matel_ylm.o matel_table.o matel_mod.o register_rfs.o\
-        new_matel.o \
 	kpoint_convert.o \
 	m_target_stress.o compute_max_diff.o \
         m_spin_orbit_potentials.o \
