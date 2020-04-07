@@ -1440,7 +1440,7 @@ MODULE fdf
     SUBROUTINE fdf_addline(line)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH)  :: line
+      character(len=*)  :: line
 
 !--------------------------------------------------------------- Local Variables
       integer(ip)                :: ntok
@@ -1469,7 +1469,7 @@ MODULE fdf
     SUBROUTINE fdf_removelabel(label)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH)  :: label
+      character(len=*)  :: label
 
 !--------------------------------------------------------------- Local Variables
       type(line_dlist), pointer  :: mark
@@ -1517,7 +1517,7 @@ MODULE fdf
 !
     SUBROUTINE fdf_overwrite(line)
 !--------------------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH)   :: line
+      character(len=*) :: line
 
 !--------------------------------------------------------------- Local Variables
       type(parsed_line), pointer  :: pline
