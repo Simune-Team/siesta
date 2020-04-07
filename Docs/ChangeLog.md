@@ -16,6 +16,8 @@
 * Siesta is now developed on the GitLab platform: www.gitlab.com/siesta-project/siesta
   A number of Siesta-related packages are developed here: www.gitlab.com/siesta-project
 
+* Added interface code to use GPUs with the ELPA library.
+
 * Added Docs/ChangeLog.md file
 
 * Removed a small memory leak (from siesta_init)
