@@ -1422,7 +1422,7 @@ MODULE fdf
     SUBROUTINE fdf_addtoken(line, pline)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(len=MAX_LENGTH)  :: line
+      character(len=*)  :: line
       type(parsed_line), pointer :: pline
 
 !--------------------------------------------------------------- Local Variables
