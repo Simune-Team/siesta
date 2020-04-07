@@ -21,7 +21,7 @@
       use zmatrix,       only : lUseZmatrix, iofaZmat,
      &                          CartesianForce_to_ZmatForce
       use atomlist,      only : iaorb, iphorb, amass, no_u, lasto
-      use atomlist,      only : indxuo
+      use atomlist,      only : indxuo, Qtot
       use m_spin,        only : spin
       use m_fixed,       only : fixed
       use sparse_matrices
@@ -187,7 +187,7 @@
       if ( TSrun ) then
         call ts_charge_print(N_Elec,Elecs, Qtot,
      &      block_dist, sparse_pattern,
-     &      nspin, maxnh, Dscf, S, TS_Q_INFO_FULL)
+     &      spin%DM, maxnh, Dscf, S, TS_Q_INFO_FULL)
       end if
 
 !
