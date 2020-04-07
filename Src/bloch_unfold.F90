@@ -70,7 +70,7 @@ contains
     real(dp), intent(in) :: bk(3)
     integer, intent(in) :: N
     complex(dp), intent(in) :: M(N,N,this%prod_B)
-    complex(dp), intent(out) :: uM(N,this%prod_B,N,this%prod_B)
+    complex(dp), intent(inout) :: uM(N,this%prod_B,N,this%prod_B)
 
     if ( this%prod_B == 1 ) then
 
@@ -113,7 +113,7 @@ contains
     integer, intent(in) :: N, NA
     complex(dp), intent(in) :: M(N,N,NA)
     real(dp), intent(in) :: kA
-    complex(dp), intent(out) :: uM(N,NA,N,NA)
+    complex(dp), intent(inout) :: uM(N,NA,N,NA)
 
     integer :: TMA, iMA
     integer :: i, j
@@ -170,12 +170,14 @@ contains
 
     end do
 
+!$OMP barrier
+
     ! At this point the following has been calculated:
     !   uM(:,:,:,1)
     !   uM(:,1,:,:)
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
     do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
       do TMA = 2, NA
         uM(:,TMA,:,iMA) = uM(:,TMA-1,:,iMA-1)
       end do
@@ -192,7 +194,7 @@ contains
     integer, intent(in) :: N, NA, NB
     complex(dp), intent(in) :: M(N,N,NA,NB)
     real(dp), intent(in) :: kA, kB
-    complex(dp), intent(out) :: uM(N,NA,NB,N,NA,NB)
+    complex(dp), intent(inout) :: uM(N,NA,NB,N,NA,NB)
 
     integer :: TMA, iMA, TMB, iMB
     integer :: i, j
@@ -317,10 +319,12 @@ contains
       end do
       
     end do
-    
+
+!$OMP barrier
+
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
     do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
       do TMA = 2, NA
         uM(:,TMA,1,:,iMA,1) = uM(:,TMA-1,1,:,iMA-1,1)
       end do
@@ -329,7 +333,7 @@ contains
     end do
     do iMB = 2, NB
       do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
         do TMA = 2, NA
           uM(:,TMA,iMB,:,iMA,1) = uM(:,TMA-1,iMB,:,iMA-1,1)
           uM(:,TMA,1,:,iMA,iMB) = uM(:,TMA-1,1,:,iMA-1,iMB)
@@ -341,7 +345,7 @@ contains
 
     ! Now copy all duplicated data
     do iMB = 2, NB
-!$OMP do
+!$OMP do schedule(static)
       do TMB = 2, NB
         do TMA = 1, NA
           uM(:,TMA,TMB,:,TMA,iMB) = uM(:,TMA,TMB-1,:,TMA,iMB-1)
@@ -362,7 +366,7 @@ contains
     integer, intent(in) :: N
     complex(dp), dimension(N,N,this%prod_B), intent(in) :: H, S, G
     complex(dp), intent(in) :: Z
-    complex(dp), dimension(N,this%prod_B,N,this%prod_B), intent(out) :: uSZmH, uG
+    complex(dp), dimension(N,this%prod_B,N,this%prod_B), intent(inout) :: uSZmH, uG
 
     if ( this%prod_B == 1 ) then
       
@@ -407,7 +411,7 @@ contains
     complex(dp), dimension(N,N,NA), intent(in) :: H, S, G
     complex(dp), intent(in) :: Z
     real(dp), intent(in) :: kA
-    complex(dp), dimension(N,NA,N,NA), intent(out) :: uSZmH, uG
+    complex(dp), dimension(N,NA,N,NA), intent(inout) :: uSZmH, uG
 
     integer :: TMA, iMA
     integer :: i, j
@@ -478,8 +482,10 @@ contains
 
     end do
 
+!$OMP barrier
+
     do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
       do TMA = 2, NA
         uSZmH(:,TMA,:,iMA) = uSZmH(:,TMA-1,:,iMA-1)
         uG(:,TMA,:,iMA) = uG(:,TMA-1,:,iMA-1)
@@ -498,7 +504,7 @@ contains
     complex(dp), dimension(N,N,NA,NB), intent(in) :: H, S, G
     complex(dp), intent(in) :: Z
     real(dp), intent(in) :: kA, kB
-    complex(dp), dimension(N,NA,NB,N,NA,NB), intent(out) :: uSZmH, uG
+    complex(dp), dimension(N,NA,NB,N,NA,NB), intent(inout) :: uSZmH, uG
 
     integer :: TMA, iMA, TMB, iMB
     integer :: i, j
@@ -664,10 +670,12 @@ contains
       end do
       
     end do
-    
+
+!$OMP barrier
+
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
     do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
       do TMA = 2, NA
         uSZmH(:,TMA,1,:,iMA,1) = uSZmH(:,TMA-1,1,:,iMA-1,1)
         uG(:,TMA,1,:,iMA,1) = uG(:,TMA-1,1,:,iMA-1,1)
@@ -677,12 +685,12 @@ contains
     end do
     do iMB = 2, NB
       do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
         do TMA = 2, NA
-          uSZmH(:,TMA,iMB,:,iMA,1) = uSZmH(:,TMA-1,iMB,:,iMA-1,1)
           uSZmH(:,TMA,1,:,iMA,iMB) = uSZmH(:,TMA-1,1,:,iMA-1,iMB)
-          uG(:,TMA,iMB,:,iMA,1) = uG(:,TMA-1,iMB,:,iMA-1,1)
+          uSZmH(:,TMA,iMB,:,iMA,1) = uSZmH(:,TMA-1,iMB,:,iMA-1,1)
           uG(:,TMA,1,:,iMA,iMB) = uG(:,TMA-1,1,:,iMA-1,iMB)
+          uG(:,TMA,iMB,:,iMA,1) = uG(:,TMA-1,iMB,:,iMA-1,1)
         end do
 !$OMP end do
         ! we need a wait since it copies from the previous iMA
@@ -691,7 +699,7 @@ contains
 
     ! Now copy all duplicated data
     do iMB = 2, NB
-!$OMP do
+!$OMP do schedule(static)
       do TMB = 2, NB
         do TMA = 1, NA
           uSZmH(:,TMA,TMB,:,TMA,iMB) = uSZmH(:,TMA,TMB-1,:,TMA,iMB-1)
@@ -714,7 +722,7 @@ contains
     integer, intent(in) :: N
     complex(dp), dimension(N,N,this%prod_B), intent(in) :: H, S
     complex(dp), intent(in) :: Z
-    complex(dp), dimension(N,this%prod_B,N,this%prod_B), intent(out) :: uSZmH
+    complex(dp), dimension(N,this%prod_B,N,this%prod_B), intent(inout) :: uSZmH
 
     if ( this%prod_B == 1 ) then
       
@@ -758,7 +766,7 @@ contains
     complex(dp), dimension(N,N,NA), intent(in) :: H, S
     complex(dp), intent(in) :: Z
     real(dp), intent(in) :: kA
-    complex(dp), intent(out) :: uSZmH(N,NA,N,NA)
+    complex(dp), intent(inout) :: uSZmH(N,NA,N,NA)
 
     integer :: TMA, iMA
     integer :: i, j
@@ -819,8 +827,10 @@ contains
 
     end do
 
+!$OMP barrier
+
     do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
       do TMA = 2, NA
         uSZmH(:,TMA,:,iMA) = uSZmH(:,TMA-1,:,iMA-1)
       end do
@@ -838,7 +848,7 @@ contains
     complex(dp), dimension(N,N,NA,NB), intent(in) :: H, S
     complex(dp), intent(in) :: Z
     real(dp), intent(in) :: kA, kB
-    complex(dp), intent(out) :: uSZmH(N,NA,NB,N,NA,NB)
+    complex(dp), intent(inout) :: uSZmH(N,NA,NB,N,NA,NB)
 
     integer :: TMA, iMA, TMB, iMB
     integer :: i, j
@@ -972,10 +982,12 @@ contains
       end do
       
     end do
-    
+
+!$OMP barrier
+
     ! Due to uM being a Toeplitz matrix, we simply copy around the data!
     do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
       do TMA = 2, NA
         uSZmH(:,TMA,1,:,iMA,1) = uSZmH(:,TMA-1,1,:,iMA-1,1)
       end do
@@ -984,7 +996,7 @@ contains
     end do
     do iMB = 2, NB
       do iMA = 2, NA
-!$OMP do
+!$OMP do schedule(static)
         do TMA = 2, NA
           uSZmH(:,TMA,iMB,:,iMA,1) = uSZmH(:,TMA-1,iMB,:,iMA-1,1)
           uSZmH(:,TMA,1,:,iMA,iMB) = uSZmH(:,TMA-1,1,:,iMA-1,iMB)
@@ -996,7 +1008,7 @@ contains
 
     ! Now copy all duplicated data
     do iMB = 2, NB
-!$OMP do
+!$OMP do schedule(static)
       do TMB = 2, NB
         do TMA = 1, NA
           uSZmH(:,TMA,TMB,:,TMA,iMB) = uSZmH(:,TMA,TMB-1,:,TMA,iMB-1)

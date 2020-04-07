@@ -77,12 +77,12 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out), target :: GS(no*no)
+    complex(dp), intent(inout), target :: GS(no*no)
     complex(dp), intent(inout), target :: zwork(nwork)
     real(dp), intent(inout) :: DOS(no)
     real(dp), intent(inout) :: T
 
-    integer, intent(out), optional :: iterations
+    integer, intent(inout), optional :: iterations
 
 ! ***********************
 ! * LOCAL variables     *
@@ -542,10 +542,10 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    complex(dp), intent(out), target :: GS(no*no)
+    complex(dp), intent(inout), target :: GS(no*no)
     complex(dp), intent(inout), target :: zwork(nwork)
 
-    integer, intent(out), optional :: iterations
+    integer, intent(inout), optional :: iterations
 
 ! ***********************
 ! * LOCAL variables     *
@@ -890,8 +890,8 @@ contains
 ! ***********************
 ! * OUTPUT variables    *
 ! ***********************
-    real(dp), intent(out), optional :: DOS(El%no_u,NEn,El%nspin)
-    real(dp), intent(out), optional :: T(NEn,El%nspin) 
+    real(dp), intent(inout), optional :: DOS(El%no_u,NEn,El%nspin)
+    real(dp), intent(inout), optional :: T(NEn,El%nspin)
 
 ! ***********************
 ! * LOCAL variables     *
@@ -1765,7 +1765,7 @@ contains
     complex(dp), intent(inout), target :: in_zwork(nzwork)
     ! Possibly the bulk density of states from the electrode
     ! If the DOS, also BULK transmission
-    real(dp), intent(out), optional :: DOS(:), T
+    real(dp), intent(inout), optional :: DOS(:), T
 
     ! ***********************
     ! * LOCAL variables     *
@@ -2013,7 +2013,7 @@ contains
       logical, intent(in) :: is_left
       integer, intent(in) :: fS, tS, off
       complex(dp), intent(in) :: from(fS,fS)
-      complex(dp), intent(out) :: to(tS,tS)
+      complex(dp), intent(inout) :: to(tS,tS)
 
       integer :: i, j, ioff
 
