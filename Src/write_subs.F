@@ -841,7 +841,7 @@
       call analyze_force(na_u, ts_fa(:,:,2), cfmax, cftot, fres)
       call analyze_force(na_u, ts_fa(:,:,1), fmax, ftot, fres)
       ! Correct residual for uncounted atoms
-      fres = fres * na_u / ts_na 
+      fres = fres * sqrt(real(na_u, dp) / real(ts_na, dp))
       
       ! Almost the same forces output whether during simulation
       ! or at the end. Unfortunately not quite, therefore slightly

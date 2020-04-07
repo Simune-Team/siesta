@@ -890,7 +890,9 @@ libraries
   \index{External library!ELPA}%
   The ELPA\cite{ELPA,ELPA-1} library provides faster diagonalization routines.
 
-  The required version of ELPA \emph{must} be 2017.05.003 or later.
+  The version of ELPA \emph{must} be 2017.05.003 or later, since the
+  new ELPA API is used. 
+  
   Add these flags to your \file{arch.make} file to enable ELPA
 \begin{shellexample}
   LIBS += -L/opt/elpa/lib -lelpa <>
@@ -6436,6 +6438,22 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   
 \end{fdfentry}
 
+\begin{fdflogicalF}{Diag!ELPA!UseGPU}
+
+  Newer versions of the ELPA library have optional support for GPUs. 
+  This flag will request that GPU-specific code be used by the
+  library.
+
+  To use this feature, GPU support has to be explicitly enabled during
+  compilation of the ELPA library. At present, detection of GPU
+  support in the code is not fool-proof, so this flag should only be
+  enabled if GPU support is indeed available.
+
+  At present, ELPA offers GPU support in the 'elpa-1' solver in
+  released versions, whereas GPU support for the 'elpa-2' solver has
+  not been released officially.
+
+\end{fdflogicalF}
 
 \begin{fdflogicalF}{Diag!ParallelOverK}
   
