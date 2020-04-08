@@ -1,5 +1,50 @@
 # ChangeLog for Siesta
 
+## Master version updates
+
+*(Initial list of updates taken on April 8, 2020 from the output of `git see --first-parent rel-4.1..`,
+filtering the direct merges from 4.1 series, but kept mostly in raw form,
+with commit hash and date, for further editing, if needed.  Even
+though the 4.1 and `master` progress was in parallel, one needs to
+look at the 4.1 ChangeLog to get a complete picture of the changes in
+`master` -- for example: GPU support)*
+
+* 147db2b3 2020-03-05 Nick Papior   enh: performance increase for tall+skinny matrices in TS
+
+* 586b553e 2019-10-21 Nick Papior   New 'random' experimental option to initialize the DM
+
+* e4c44a01 2019-09-16 Jose M Soler   Implementation of a band unfolding utility
+
+* 55b5f907 2019-03-06 Alberto Garcia   Benchmark support: dummy solver and scf-step granularity
+
+* 2de79ac6 2018-12-07 Alberto Garcia   Compliance of code to F2003 standard plus further cleaning
+
+* 8ed60c2e 2018-11-23 Nick Papior   Added class_*3D to allow for NC/SOC transiesta implementation
+
+* 7f5ade48 2018-07-09 Nick Papior   Output gradient of S to nc file
+
+* 17bee605 2018-07-09 Nick Papior   Enabled pjnl_j in ion.nc files
+
+* 707d71f6 2018-06-18 Nick Papior   Enabled kgrid.MonkhorstPack as list input (only if block is not present)
+
+* 2abadff2 2018-05-27 Nick Papior   Restructured k-point sampling, allowing user-supplied k-points
+
+* f17ad461 2018-04-30 Ramon Cuadrado   Merge the 'offsite spin-orbit' (full) implementation by Ramon Cuadrado.
+
+* 4b52c778 2018-01-03 Nick Papior   Initialize some components in the species_info derived type
+
+* 6150be62 2017-11-20 Alberto Garcia   Remove old data structures and routines related to 'atom'
+
+* c142809d 2017-10-10 Nick Papior   Update TD-DFT: k-points, H extrapolation, more parallelization, code readability
+
+* 01356192 2017-08-22 Nick Papior   Interface to the CheSS linear-scaling library
+
+* 8d69f1cf 2017-02-02 Nick Papior   Update of the siesta_forces logic wrt TDDFT
+
+* e2f7686c 2016-09-28 Rafi Ullah   Implementation of Real-Time TDDFT
+
+* cad6b290 2016-08-29 Nick Papior   Added OpenMP nesting information
+
 ## 4.1 (2020-   )   FUTURE Feature release
 
 ### Changes to defaults
