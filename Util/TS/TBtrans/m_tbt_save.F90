@@ -2038,9 +2038,6 @@ contains
 
       integer :: iu, ik, i
 
-!$OMP parallel default(shared)
-
-!$OMP master
       call io_assign(iu)
       open( iu, file=trim(fname), form='formatted', status='unknown' ) 
 
@@ -2051,10 +2048,8 @@ contains
 #else
       write(iu,'(a,a9,tr1,a16)')"#","E [eV]", value
 #endif
-!$OMP end master ! no implicit barrier
 
       do ik = 1 , nkpt 
-!$OMP master
         if ( nkpt > 1 ) then
           write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') '# kb= ',kpt(:,ik) ,'w= ',wkpt(ik)
         end if
@@ -2065,26 +2060,17 @@ contains
           write(iu,'(f10.5,tr1,e16.8)') E(ipiv(i)), DAT(ipiv(i),ik)
 #endif
         end do
-!$OMP end master ! no implicit barrier
         if ( nkpt > 1 ) then
           ! Update the average values in the first entry
           if ( ik == 1 ) then
-!$OMP workshare
-            DAT(:,1) = DAT(:,1) * wkpt(ik)
-!$OMP end workshare
+            call dscal(NE, wkpt(1), DAT(1,1), 1)
           else
-!$OMP workshare
-            DAT(:,1) = DAT(:,1) + DAT(:,ik) * wkpt(ik)
-!$OMP end workshare
+            call daxpy(NE, wkpt(ik), DAT(1,ik), 1, DAT(1,1), 1)
           end if
         end if
       end do
 
-!$OMP master
       call io_close(iu)
-!$OMP end master ! no implicit barrier
-
-!$OMP end parallel
 
     end subroutine save_DAT
 
@@ -2095,12 +2081,9 @@ contains
       real(dp), intent(inout) :: EIG(neig,NE,nkpt)
       character(len=*), intent(in) :: value, header
 
-      integer :: iu, ik, i
+      integer :: iu, ik, i, ie
       character(len=20) :: fmt
 
-!$OMP parallel default(shared)
-
-!$OMP master
       ! Create format
       write(fmt,'(a,i0,a)')'(f10.5,tr1,',neig,'e16.8)'
       call io_assign(iu)
@@ -2113,9 +2096,7 @@ contains
 #else
       write(iu,'(a,a9,tr1,a16)')"#","E [eV]", value
 #endif
-!$OMP end master ! no implicit barrier
       do ik = 1 , nkpt 
-!$OMP master
         if ( nkpt > 1 ) then
           write(iu,'(/,a6,3(e16.8,'' ''),a,e15.8)') &
               '# kb= ',kpt(:,ik) ,'w= ',wkpt(ik)
@@ -2123,26 +2104,17 @@ contains
         do i = 1 , NE
           write(iu,fmt) E(ipiv(i)), EIG(:,ipiv(i),ik)
         end do
-!$OMP end master
         if ( nkpt > 1 ) then
           ! Update the average values in the first entry
           if ( ik == 1 ) then
-!$OMP workshare
-            EIG(:,:,1) = EIG(:,:,1) * wkpt(ik)
-!$OMP end workshare
+            call dscal(NE*neig, wkpt(1), EIG(1,1,1), 1)
           else
-!$OMP workshare
-            EIG(:,:,1) = EIG(:,:,1) + EIG(:,:,ik) * wkpt(ik)
-!$OMP end workshare
+            call daxpy(NE*neig, wkpt(ik), EIG(1,1,ik), 1, EIG(1,1,1), 1)
           end if
         end if
       end do
 
-!$OMP master
       call io_close(iu)
-!$OMP end master
-
-!$OMP end parallel
 
     end subroutine save_EIG
 

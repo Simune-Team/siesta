@@ -111,6 +111,7 @@ Diag.ParallelOverK      yes
 # Transiesta information
 
 TS.Voltage    1.00000 eV
+TS.Voltage.FromSiesta true
 %block TS.ChemPots
   Left
   Right

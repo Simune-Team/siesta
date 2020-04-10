@@ -1,0 +1,30 @@
+#
+# Default compilation directory
+#
+Obj/*
+#
+/.git
+#
+# A potentially useful convention: Use directories that start with _ as
+# Obj alternates.
+#
+/_*/
+#
+#  Auxiliary LaTeX files
+#
+Docs/*.aux
+Docs/*.fdf
+Docs/*.idx
+Docs/*.ilg
+Docs/*.ind
+Docs/*.bbl
+Docs/*.blg
+Docs/*.log
+Docs/*.out
+Docs/*.pdf
+Docs/*.toc
+#
+# Object and module files in Util
+#
+Util/**/*.[oa]
+Util/**/*.mod

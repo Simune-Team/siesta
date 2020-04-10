@@ -220,9 +220,7 @@ contains
     end if
     
     ! Align potential
-!$OMP parallel workshare default(shared)
     Vscf(:,:,:) = Vscf(:,:,:) - Vav
-!$OMP end parallel workshare
 
 #ifdef TRANSIESTA_DEBUG
     call write_debug( 'POS TS_VH_fix' )

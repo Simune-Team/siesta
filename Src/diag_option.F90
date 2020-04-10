@@ -73,7 +73,10 @@ module m_diag_option
   real(dp) :: mem_factor = 1._dp
 
   logical :: ParallelOverK = .false.
-
+#ifdef SIESTA__ELPA
+  logical :: elpa_use_gpu = .false.
+#endif
+  
 contains
 
   subroutine read_diag(Gamma, nspin)
@@ -96,7 +99,6 @@ contains
 #ifdef MPI
     if ( Nodes > 1 .and. .not. Gamma ) then
        ParallelOverK = fdf_get( 'Diag.ParallelOverK', .false.)
-       if ( nspin > 2 ) ParallelOverK = .false.
     end if
 
     if ( Nodes == 1 ) then
@@ -303,6 +305,9 @@ contains
 
     end if
 
+#ifdef SIESTA__ELPA
+    elpa_use_gpu = fdf_get('Diag.ELPA.UseGPU',.false.)
+#endif
 
     ! Retrieve tolerances for the expert drivers
     abstol = fdf_get('Diag.AbsTol', 1.e-16_dp)
