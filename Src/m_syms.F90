@@ -323,6 +323,7 @@ end subroutine syms_cell
 ! remember: in reciprocal space the inverse transpose matrices should be used...
 ! TMP in abinit this routine is  in
 subroutine syms_forces(syms_this, na, fa)
+  use parallel, only: IOnode
   type(SpglibDataset_ext), intent(in) :: syms_this
   integer, intent(in) :: na
   double precision, intent(inout) :: fa(3,na)
@@ -353,16 +354,19 @@ subroutine syms_forces(syms_this, na, fa)
       if (force_sym_flag(jatom) /= 0) cycle
       fa_sym(:,jatom) = matmul (syms_this%symops_cart(:,:,isym), avgforce)
 !DEBUG
-print '(a,2I6,2x,3E30.20)', 'change in fa due to symmetrization = ', &
-&     iatom, jatom, fa(:,jatom)-fa_sym(:,jatom)
+!print '(a,2I6,2x,3E30.20)', 'change in fa due to symmetrization = ', &
+!&     iatom, jatom, fa(:,jatom)-fa_sym(:,jatom)
 !END DEBUG
       force_sym_flag(jatom) = 1
     end do
   end do
   maxdiff = maxval(abs(fa(:,:)-fa_sym(:,:)))
-  print '(a,E20.10)', 'Max change in any component of fa due to symmetrization = ', maxdiff
+  if (IOnode ) &
+    print '(a,E20.10)', &
+      'Max change in any component of fa due to symmetrization = ', maxdiff
   maxdiff = maxval(abs((fa(:,:)-fa_sym(:,:))/(1.d-16+fa(:,:))))
-  print '(a,E20.10)', 'Max relative change = ', maxdiff
+  if (IOnode ) &
+    print '(a,E20.10)', 'Max relative change = ', maxdiff
   fa = fa_sym
   deallocate (fa_sym)
 
