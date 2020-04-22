@@ -212,9 +212,8 @@ contains
     call memory('A', 'Z', io, 'prep_LHS')
     allocate( mum%A( io ) )
 
-!$OMP parallel do default(shared), &
-!$OMP&private(io,ioff,ind)
-    do io = 1, nr
+!$OMP parallel do default(shared), private(io,ioff,ind)
+    do io = 1 , nr
 
        if ( l_ncol(io) /= 0 ) then
        
@@ -315,16 +314,11 @@ contains
 
     call allocate_mum(mum,nzs,N_Elec,Elecs,GF)
 
-!$OMP parallel default(shared), &
-!$OMP&private(io,j,ind)
-
     ! TODO, this requires that the sparsity pattern is symmetric
     ! Which it always is!
-!$OMP workshare
     mum%IRHS_PTR(:) = 1 
-!$OMP end workshare
 
-!$OMP do
+!$OMP parallel do default(shared), private(io,j,ind)
     do io = 1 , nr
        if ( orb_type(io) /= TYP_BUFFER ) then
        mum%IRHS_PTR(io-orb_offset(io)) = l_ptr(io) + 1
@@ -339,15 +333,9 @@ contains
        end if
 
     end do
-!$OMP end do nowait
+!$OMP end parallel do
 
-!$OMP end parallel
     mum%IRHS_PTR(no_u_TS+1) = nzs + 1
-
-    if ( ind /= mum%NZ_RHS ) then
-       write(*,*)ind,mum%NZ_RHS
-       call die('Error in sparsity pattern of equilibrium')
-    end if
 
   end subroutine prep_RHS_Eq
 

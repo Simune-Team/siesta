@@ -117,6 +117,7 @@
 
       use m_ts_global_vars,only: TSmode
       use m_ts_options,   only : IsVolt, N_Elec, Elecs
+      use m_ts_electype,  only : Elec_ortho2semi_inf
       use m_ts_voltage,   only : ts_init_voltage
 
       implicit none
@@ -145,7 +146,7 @@
       
       ! Transport direction (unit-cell aligned)
       integer                 :: iE
-      real(dp)                :: ortho, field(3), field2(3)
+      logical :: is_ortho
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '    PRE dhscf_init' )
@@ -402,7 +403,7 @@ C     Create Rhoatm using UNIFORM distr, in sequential form
         endif
 
 C     Allocate Temporal array
-      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
+      call re_alloc( Vscf, 1, ntpl, 1, 1, 'Vscf', 'dhscf_init' )
 
 C     Vscf is filled here but not used later
 C     Uharrs is computed (and saved)
@@ -466,37 +467,33 @@ C ----------------------------------------------------------------------
          end if
 
          ! This is either dipole or user, or both
-         field(:) = user_specified_field(:)
-         ortho = 0._dp
-         do iE = 1 , N_Elec
-           select case ( Elecs(iE)%t_dir )
-           case ( 4 )           ! B-C
-             field2 = Elecs(iE)%cell(:,2)
-             ortho = abs(ddot(3,field2,1,field,1))
-             field2 = Elecs(iE)%cell(:,3)
-             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
-           case ( 5 )           ! A-C
-             field2 = Elecs(iE)%cell(:,1)
-             ortho = abs(ddot(3,field2,1,field,1))
-             field2 = Elecs(iE)%cell(:,3)
-             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
-           case ( 6 )           ! A-B
-             field2 = Elecs(iE)%cell(:,1)
-             ortho = abs(ddot(3,field2,1,field,1))
-             field2 = Elecs(iE)%cell(:,2)
-             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
-           case ( 7 )           ! A-B-C
-             call die('dhscf: cannot use dipole correction when
-     &having all directions semi-infinite.')
-           case default
-             field2 = Elecs(iE)%cell(:,Elecs(iE)%t_dir)
-             ortho = ddot(3,field2,1,field,1)
+         is_ortho = .true.
+         if ( N_Elec == 1 ) then
+           ! When using a single electrode
+           ! one may always have an electric field.
+           ! For fields along the semi-infinite direction
+           ! it corresponds to a capacitor setup
+           ! For other fields it is simply a gate-like field.
+           ! However, when the electrode uses real space self-energies
+           ! then we do not allow *any* fields along the semi-inf
+           ! directions since that would mean an infinite field.
+           select case ( Elecs(1)%t_dir )
+           case ( 4 , 5 , 6, 7 )
+             is_ortho = Elec_ortho2semi_inf(Elecs(1),
+     &           user_specified_field)
            end select
-           if ( abs(ortho) > 1.e-9_dp ) then
-             call die('User defined E-field must be
+         else
+           ! For more than 1 electrode we do not allow any electric
+           ! fields along the semi-infinite directions.
+           do iE = 1 , N_Elec
+             is_ortho = is_ortho .and.
+     &           Elec_ortho2semi_inf(Elecs(iE), user_specified_field)
+           end do
+         end if
+         if ( .not. is_ortho ) then
+           call die('User defined E-field must be
      &perpendicular to semi-infinite directions.')
-           end if
-         end do
+         end if
         end if ! acting_efield
          
         ! We know that we currently allow people to do more than

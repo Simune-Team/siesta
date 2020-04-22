@@ -139,13 +139,11 @@ contains
 
     call reclat(cell,rcell,1)
 
-!$OMP parallel default(shared), &
-!$OMP&private(il,i,io,lio,kn,ind,jo,ind_k,bk,k,ro)
-
-!$OMP workshare
     zH(:) = cmplx(0._dp,0._dp,dp)
     zS(:) = cmplx(0._dp,0._dp,dp)
-!$OMP end workshare
+
+!$OMP parallel default(shared), &
+!$OMP&private(il,i,io,lio,kn,ind,jo,ind_k,bk,k,ro)
 
 ! No data race condition as each processor takes a separate row
     do il = 0 , n_k

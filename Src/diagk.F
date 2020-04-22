@@ -75,7 +75,7 @@ C integer e_spin_dim          : Number of spin components of E_dm
 C real*8 Haux(2,nuotot,nuo) : Auxiliary space for the hamiltonian matrix
 C real*8 Saux(2,nuotot,nuo) : Auxiliary space for the overlap matrix
 C real*8 psi(2,nuotot,nuo)  : Auxiliary space for the eigenvectors
-C real*8 aux(2,nuotot*5)    : Extra auxiliary space
+C real*8 aux(2,nuotot)      : Extra auxiliary space
 C real*8 Dk(2,nuotot,nuo)   : Aux. space that may be the same as Haux
 C real*8 Ek(2,nuotot,nuo)   : Aux. space that may be the same as Saux
 C *************************** UNITS ***********************************
@@ -130,7 +130,7 @@ C
      .                  xij(3,maxnh), qs(spinor_dim)
       real(dp)          Dk(2,nuotot,nuo), Ek(2,nuotot,nuo),
      .                  Haux(2,nuotot,nuo), Saux(2,nuotot,nuo)
-      real(dp), target :: psi(2,nuotot,nuo), aux(2,nuotot*5)
+      real(dp), target :: psi(2,nuotot,nuo), aux(2,nuotot)
       logical           getD, getPSI, fixspin
       external          cdiag
 
@@ -341,7 +341,7 @@ C Repeat diagonalisation with increased memory to handle clustering
              if (.not. getD) then
                 ! Fill in the missing eigenvalue information
                 ! This is useful if we are requesting WFS in a "bands" setting
-                call kludge_copy(nuotot,eo(1,ispin,ik),aux)
+               call dcopy(nuotot, aux(1,1), 1, eo(1,ispin,ik), 1)
              endif
              call c_f_pointer(c_loc(psi),psi_real_1d,[size(psi)])
              call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
@@ -445,18 +445,5 @@ C Global operation to form new density matrix
         enddo
       enddo
       deallocate(done_juo)
-
-      CONTAINS
-
-      ! Work around shape of aux array
-      subroutine kludge_copy(n,a,b)
-      integer, intent(in) :: n
-      real(dp), intent(out) :: a(n)
-      real(dp), intent(in)  :: b(n)
-!$OMP parallel workshare default(shared)
-      a(1:n) = b(1:n)
-!$OMP end parallel workshare
-      end subroutine kludge_copy
-
 
       end subroutine diagk

@@ -55,8 +55,7 @@ function popd {
 
 # This may actually not be changed, but is useful
 # throughout.
-main_dir=$(bzr root)
-shared_dir=$(dirname $main_dir)
+main_dir=$(git rev-parse --show-toplevel)
 # Ensure we are at the root of this file
 pushd $main_dir
 
@@ -67,10 +66,14 @@ pushd $main_dir
 _reldir=$(dirname $main_dir)/siesta-releases
 _sign=1
 
+function _git_tag_cmd {
+    git tag --list 'v*' --sort=-v:refname
+}
+
 # Get the previous major release tag
-_prev_tag=$(bzr tags --sort=time | grep -e '^v' | grep -v '-' | tail -2 | head -1 | awk '{print $1}')
+_prev_tag=$(_git_tag_cmd | head -2 | tail -1)
 # Get the latest tag
-_tag=$(bzr tags --sort=time | grep -e '^v' | tail -1 | awk '{print $1}')
+_tag=$(_git_tag_cmd | head -1)
 
 # Get default output file (siesta-<>.tar.gz)
 _out=
@@ -80,7 +83,7 @@ function has_tag {
     local tag=$1
     shift
     local ret=1
-    for T in $(bzr tags | awk '{print $1}')
+    for T in $(_git_tag_cmd)
     do
 	if [ "$tag" == "$T" ]; then
 	    ret=0
@@ -98,9 +101,9 @@ function help {
     echo "The following options may be used to control the archive."
     echo ""
     echo "  --prev-tag instead of selecting the second-latest tag, choose this tag as the"
-    echo "             reference tag for creating a diff with regards to the --tag tag [bzr tags --sort=time]"
+    echo "             reference tag for creating a diff with regards to the --tag tag [git tag --list 'v*' --sort=-v:refname]"
     echo "  --tag      instead of selecting the latest tag, choose this tag as the"
-    echo "             reference tag for creating a release archive [bzr tags --sort=time]"
+    echo "             reference tag for creating a release archive [git tag --list 'v*' --sort=-v:refname]"
     echo "  --out      the default output file is siesta-<tag>.tar.gz. Do *not* specify tar.gz, "
     echo "  --no-sign  do not sign the output files (useful for test-runs)"
     echo "  --help|-h  show this help."
@@ -163,7 +166,7 @@ while [ $# -gt 0 ]; do
 		echo "A release tag *MUST* exist before a release can be created"
 		echo ""
 		echo "The available tags are:"
-		bzr tags | awk '{print " ",$1}'
+		_git_tag_cmd | sed 's/^\(.*\)/  \1/g'
 		exit 1
 	    fi
 	    shift
@@ -176,7 +179,7 @@ while [ $# -gt 0 ]; do
 		echo "$0 could not find tag: '$_prev_tag' in the tags list."
 		echo ""
 		echo "The available tags are:"
-		bzr tags | awk '{print " ",$1}'
+		_git_tag_cmd | sed 's/^\(.*\)/  \1/g'
 		exit 1
 	    fi
 	    shift
@@ -254,24 +257,20 @@ mkdir -p $_reldir/$_tag-files
 
 
 # Create a temporary work-directory
-bzr export -r $_tag $_reldir/$_out $main_dir
+git archive -o $_reldir/$_out.tar.gz --prefix=$_out/ $_tag $main_dir
+pushd $_reldir
+tar xfz $_out.tar.gz ; rm $_out.tar.gz
+popd
 
 # Create the changes files
 # This is necessary to do here as the previous
 # siesta versions may not have the tags related.
 {
     echo "##############################################"
-    echo " Changes between $_prev_tag and $_tag"
-    echo "##############################################"
-    echo ""
-    bzr log -r$_prev_tag..$_tag
-} > $_reldir/$_out/CHANGES
-{
-    echo "##############################################"
     echo " Detailed Changes between $_prev_tag and $_tag"
     echo "##############################################"
     echo ""
-    bzr log -n 0 -r$_prev_tag..$_tag
+    git log --first-parent --pretty="   commit: %H%n   Author [Date]: %an [%ad]%n   Title: %s%n%b" v4.1-b4...v4.1-rc1 | sed -e '/Signed-off-by/{d;d;}'
 } > $_reldir/$_out/CHANGES_DETAILED
 
 
@@ -303,6 +302,8 @@ make final
 make clean
 # Also do not ship the release script
 rm release.sh
+# Remove all .git related files
+rm -f .git*
 
 # Create signatures and move files
 for f in *.pdf ; do
@@ -323,7 +324,7 @@ popd
 # In some future cases will the tag and out name
 # be equivalent and we shouldn't delete what we should process!
 
-# Create the archive... (without any .bzr files)
+# Create the archive... (without any .git files)
 tar -czf $_out.tar.gz $_out
 sign $_out.tar.gz
 store $_out.tar.gz
