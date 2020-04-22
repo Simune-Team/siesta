@@ -32,7 +32,7 @@ contains
 #endif
     
     val = 0.0_dp
-!$OMP parallel do default(shared), private(is,io), reduction(+:qsol)
+!$OMP parallel do default(shared), private(is,io), reduction(+:val)
     do is = 1 , spin%spinor
        do io = 1 , maxnh
           val = val + Mat(io,is) * S(io)
