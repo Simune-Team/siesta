@@ -231,7 +231,7 @@ contains
     call rgn_delete(r_Els)
 
     if ( r_aDev%n == 0 ) then
-       call die('Zero atoms are in the device region...???')
+       call die('Zero atoms are in the device region...?')
     end if
 
     ! Create device region
