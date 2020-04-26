@@ -455,6 +455,7 @@ contains
   
   subroutine ts_dq_Fermi_file(Ef, dEf)
 
+    USE, INTRINSIC :: IEEE_ARITHMETIC, ONLY: IEEE_IS_NAN
     use parallel, only : Node
     use units, only : eV
     use m_interpolate
@@ -553,7 +554,7 @@ contains
         if ( N - i_start > 1 ) then ! len(i_start:N) >= 2
           ! Interpolate the new fermi level by using first entry
           call interp_spline(N-i_start+1,Q_Ef(i_start:N,2),Q_Ef(i_start:N,1),0._dp,Ef_new)
-          if ( ISNAN(Ef_new) ) Ef_new = Ef
+          if ( IEEE_IS_NAN(Ef_new) ) Ef_new = Ef
           dEf = TS_DQ_FACTOR * (Ef_new - Ef)
         end if
 
