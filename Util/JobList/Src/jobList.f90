@@ -467,7 +467,7 @@ subroutine readLine( unit, line, iostat )
     ! Find last character and remove continuation mark
     newc = len(trim(newLine))            ! nonblank characters in new line
     lastChar = newLine(newc:newc)        ! last nonblank character
-    if (lastChar=='\') then              ! line will continue
+    if (lastChar==char(92)) then         ! line will continue  (backslash) '\'
       newLine(newc:newc) = ' '           ! remove '\' mark
       newc = len(trim(newLine))          ! remaining nonblank characters
       keepReading = .true.
