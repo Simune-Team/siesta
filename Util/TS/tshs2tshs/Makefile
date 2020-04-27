@@ -11,6 +11,9 @@ VPATH:=$(shell pwd)/../../../Src
 
 OBJDIR=Obj
 
+EXE = tshs2tshs
+default: $(EXE)
+
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
 
@@ -18,8 +21,6 @@ include $(ARCH_MAKE)
 FC_DEFAULT  := $(FC)
 FC_SERIAL   ?= $(FC_DEFAULT)
 
-EXE = tshs2tshs
-default: $(EXE)
 
 dep:
 	-sfmakedepend --depend=obj  --modext=o \

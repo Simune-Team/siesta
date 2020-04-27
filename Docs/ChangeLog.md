@@ -61,6 +61,8 @@ look at the 4.1 ChangeLog to get a complete picture of the changes in
 * Siesta is now developed on the GitLab platform: www.gitlab.com/siesta-project/siesta
   A number of Siesta-related packages are developed here: www.gitlab.com/siesta-project
 
+* Added Obj/ARCH-EXPERIMENTAL for suggested more modular building scheme
+
 * Added interface code to use GPUs with the ELPA library.
 
 * Added Docs/ChangeLog.md file

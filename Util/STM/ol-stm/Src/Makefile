@@ -21,16 +21,6 @@
 #  define an FC_SERIAL symbol in your top arch.make, to avoid linking
 #  in the mpi libraries even if we explicitly undefine MPI below.
 #  
-#------------- NOTE
-# Special needs for the use of FFTW
-# You must set these symbols properly, either here or 
-# (better) in your top arch.make
-# 
-FFTW_ROOT ?=/usr/local
-FFTW_INCFLAGS ?= -I$(FFTW_ROOT)/include
-FFTW_LIBS ?= -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
-#-----------------------------------------
-
 OBJDIR=Obj
 
 .SUFFIXES:
@@ -54,6 +44,16 @@ dep:
 
 ARCH_MAKE=../../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
+
+#------------- NOTE
+# Special needs for the use of FFTW
+# You must set these symbols properly, either here or 
+# (better) in your top arch.make
+# 
+#FFTW_ROOT ?=/usr/local
+FFTW_INCFLAGS ?= -I$(FFTW_ROOT)/include
+FFTW_LIBS ?= -L$(FFTW_ROOT)/lib -lfftw3f -lfftw3
+#-----------------------------------------
 
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)

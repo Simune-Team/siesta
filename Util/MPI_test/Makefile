@@ -25,8 +25,8 @@ FPPFLAGS := $(filter-out -DMPI_TIMING, $(FPPFLAGS))
 
 MPI_INTERFACE= libmpi_f90.a 
 
-pi3: $(MPI_INTERFACE) pi3.o
-	$(FC) -o pi3 $(LDFLAGS) pi3.o $(MPI_INTERFACE)
+pi3: $(MPI_INTERFACE) pi3.o timer_stub.o
+	$(FC) -o pi3 $(LDFLAGS) pi3.o $(MPI_INTERFACE) timer_stub.o
 
 newcomm:    MPI newcomm.o 
 	$(FC) -o newcomm $(LDFLAGS) newcomm.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
@@ -65,6 +65,9 @@ mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
 	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS)
 
 
+# Note that -DMPI_TIMING might not be removed here in some systems,
+# hence the timer_stub routine.
+#
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
 libmpi_f90.a: 
 	-mkdir -p MPI
