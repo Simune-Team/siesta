@@ -137,3 +137,11 @@
       call die(str)
 
       end subroutine psml_die
+
+      subroutine gridxc_timer_start(str)
+      character(len=*), intent(in)  :: str
+      end subroutine gridxc_timer_start
+!
+      subroutine gridxc_timer_stop(str)
+      character(len=*), intent(in)  :: str
+      end subroutine gridxc_timer_stop
