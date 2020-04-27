@@ -1,0 +1,34 @@
+Experimental mechanism for building.
+
+The file 'master-raw.make' contains the logic for building Siesta,
+valid for (most) versions, and with the ability to select the desired
+capabilities. It is structured in three sections:
+
+-------------------
+A) Features needed.
+
+They are selected by setting the 'WITH_XXX' variables to 1.
+
+B) Symbols related to location of libraries.
+
+They can refer to the location of a specific package (e.g. PSML_ROOT),
+or to the actual libraries (e.g. SCALAPACK_LIBS). In some cases (such
+as netCDF) several package-location symbols might be needed, and it might be necessary to
+override directly the NETCDF_LIBS and NETCDF_INCFLAGS in hard cases.
+
+C) Compiler names and options
+
+-------------------
+
+These sections can be completed in-situ in the file, or read from a
+'fortran.mk' file. Examples of the latter can be found in the .mk
+files in this directory. It is not yet decided which is best, or
+whether an intermediate approach (e.g. defining the capabilities in
+the master file and the compiler and library symbols in the .mk file)
+might be more appopriate.
+
+The master file logic works for versions of Siesta >= 4.1
+
+There are many possibilities. Suggestions and comments are welcome.
+
+
