@@ -50,5 +50,5 @@ plsts: plsts.o m_gridfunc.o
 
 
 clean: 
-	rm -f *.o plstm plsts
+	rm -f *.o *.mod plstm plsts
 
