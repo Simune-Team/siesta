@@ -2,7 +2,7 @@ Experimental mechanism for building.
 
 The file 'master-raw.make' contains the logic for building Siesta,
 valid for (most) versions, and with the ability to select the desired
-capabilities. It is structured in three sections:
+capabilities. It is structured in four sections:
 
 -------------------
 A) Features needed.
@@ -18,6 +18,8 @@ override directly the NETCDF_LIBS and NETCDF_INCFLAGS in hard cases.
 
 C) Compiler names and options
 
+D) Specific needs for certain files (for example, compilation without optimization)
+
 -------------------
 
 These sections can be completed in-situ in the file, or read from a
@@ -26,6 +28,15 @@ files in this directory. It is not yet decided which is best, or
 whether an intermediate approach (e.g. defining the capabilities in
 the master file and the compiler and library symbols in the .mk file)
 might be more appopriate.
+
+Regarding block D): if the modified dependency lines are now at the
+top of the arch.make file, they might cause an unwanted setting of the
+"default" target in some makefiles. For example, in Util/TS/tshs2tshs,
+the 'default' target line was placed *after* including the arch.make
+file. The 'atom.o' dependency line in the mn-intel.mk helper file
+forced the creation of 'atom.o', which was wrong.
+To fix this, the 'default' target line has to come near the top of the makefile.
+
 
 The master file logic works for versions of Siesta >= 4.1
 

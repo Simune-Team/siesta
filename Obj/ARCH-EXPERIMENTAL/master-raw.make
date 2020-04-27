@@ -183,10 +183,10 @@ ifdef WITH_NETCDF
      $(error you need to define NETCDF_FORTRAN_ROOT in your arch.make)
    endif
    NETCDF_INCFLAGS = -I$(NETCDF_ROOT)/include -I$(NETCDF_FORTRAN_ROOT)/include
-   NETCDF_LIBS = $(NETCDF_FORTRAN_ROOT)/lib/libnetcdff.a $(NETCDF_ROOT)/lib/libnetcdf.a
+   NETCDF_LIBS = -L$(NETCDF_FORTRAN_ROOT)/lib -lnetcdff -L$(NETCDF_ROOT)/lib -lnetcdf
  else
    NETCDF_INCFLAGS = -I$(NETCDF_ROOT)/include
-   NETCDF_LIBS = $(NETCDF_ROOT)/lib/libnetcdff.a 
+   NETCDF_LIBS = -L$(NETCDF_ROOT)/lib -lnetcdff
  endif
  NETCDF_LIBS += $(HDF5_LIBS)
  FPPFLAGS_CDF = $(DEFS_PREFIX)-DCDF
@@ -266,7 +266,7 @@ endif
 # make sure that your installation is 'single'...
 #
 ifdef WITH_GRIDXC
-  ifdef WITH_LEGACY_GRIDXC_INSTALLATION
+  ifdef WITH_LEGACY_GRIDXC_INSTALL
     include $(GRIDXC_ROOT)/gridxc.mk
   else
     include $(GRIDXC_ROOT)/share/org.siesta-project/gridxc_$(GRIDXC_CONFIG_PREFIX).mk
