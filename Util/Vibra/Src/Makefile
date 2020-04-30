@@ -22,69 +22,55 @@
 #  in the mpi libraries even if we explicitly undefine MPI below.
 #  
 .SUFFIXES:
-.SUFFIXES: .f .o .a 
-#
+.SUFFIXES: .f .F .o .a .f90 .F90
+
 default: fcbuild vibra
-#
+
 # You should have compiled Siesta in the main Src directory (or
 # in an architecture-specific object directory) before attempting 
 # to compile the Vibra package.
-#
+
+VPATH:=$(shell pwd)/../../../Src
 OBJDIR=Obj
 ARCH_MAKE=../../../$(OBJDIR)/arch.make
 include $(ARCH_MAKE)
-#
-.SUFFIXES: .f .F .o .a  .f90 .F90
-#
-# this path is as seen from the fdf subdir...
-TOPSRC:=../../../../Src
-#
+
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
 FC:=$(FC_SERIAL)         # Make it non-recursive
-#
+
 DEFS:=$(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF $(DEFS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
 FPPFLAGS:=$(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF $(FPPFLAGS) $(DEFS_PREFIX)-UMPI $(DEFS_PREFIX)-UCDF
-#
+
 FDF=libfdf.a
-FDF_MAKEFILE=$(TOPSRC)/fdf/makefile
-FDF_INCFLAGS:=-I $(TOPSRC)/fdf $(INCFLAGS)
+FDF_MAKEFILE=$(VPATH)/fdf/makefile
+FDF_INCFLAGS:=-I$(VPATH)/fdf $(INCFLAGS)
 $(FDF): 
 	(mkdir -p fdf; cd fdf ; $(MAKE) -f $(FDF_MAKEFILE) "FC=$(FC_SERIAL)" \
-                          "VPATH=$(TOPSRC)/fdf" \
+                          "VPATH=$(VPATH)/fdf" \
                           "ARCH_MAKE=../$(ARCH_MAKE)" \
                           "DEFS=$(DEFS)" \
                           "FPPFLAGS=$(FPPFLAGS)" \
                           "MPI_INTERFACE= " \
                           "INCFLAGS=$(FDF_INCFLAGS)" "FFLAGS=$(FFLAGS)" module)
-#
-# Uncomment the following line for debugging support
-#
-#FFLAGS=$(FFLAGS_DEBUG)
-#
-BUILD-SRCS= fcbuild.f chkdim.f recoor.f io.f
-BUILD-OBJS=$(BUILD-SRCS:.f=.o)
 
-VIBRA-SRCS= vibra.f chkdim.f recoor.f hermdp.f klines.f outbands.f \
-            reclat.f parse.f io.f
-VIBRA-OBJS=$(VIBRA-SRCS:.f=.o)
+SIESTA_OBJS = precision.o units.o
 
-#
-fcbuild.o vibra.o:  vibra.h
-#
-fcbuild: $(FDF) $(BUILD-OBJS)
+BUILD-OBJS= fcbuild.o chkdim.o recoor.o io.o
+VIBRA-OBJS= vibra.o chkdim.o recoor.o hermdp.o klines.o outbands.o \
+            reclat.o parse.o io.o
+
+fcbuild.o: vibra.h
+
+fcbuild: $(FDF) $(BUILD-OBJS) $(SIESTA_OBJS)
 	$(FC) -o fcbuild \
-	       $(LDFLAGS) $(BUILD-OBJS) $(FDF)
+	       $(LDFLAGS) $(BUILD-OBJS) $(SIESTA_OBJS) $(FDF)
 
-vibra : $(FDF) $(VIBRA-OBJS) 
+vibra : $(FDF) $(VIBRA-OBJS) $(SIESTA_OBJS)
 	$(FC) -o vibra \
-	       $(LDFLAGS) $(VIBRA-OBJS) $(FDF)
-#
+	       $(LDFLAGS) $(VIBRA-OBJS) $(SIESTA_OBJS) $(FDF) $(LIBS)
+
 clean: 
 	@echo "==> Cleaning object and executable files"
 	rm -f fcbuild vibra *.o *.mod libfdf.a
 	rm -rf ./fdf
-
-
-
-
