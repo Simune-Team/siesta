@@ -5,7 +5,8 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 
-#define VIBRA_DEBUG
+!#define SANKEY_DIAG
+!#define VIBRA_DEBUG
       program vibra
 
 c *********************************************************************
@@ -29,9 +30,7 @@ c **********************************************************************
 
 c Internal variables ...
 
-      logical eigen, intensity
-
-      character(len=150)::
+      character(len=150) ::
      .  filein, fileout, fname, 
      .  slabel, sname
 
@@ -64,6 +63,7 @@ c Internal variables ...
       real(dp) :: dx, alat, alp, blp, clp, alplp, betlp, gamlp, xxx
 
       real(dp) :: zpe, planck
+      logical :: eigen, intensity
 
       ! ek(maxd,maxk)
       real(dp), allocatable :: ek(:,:)
@@ -100,8 +100,7 @@ c Work space for diagonalization.
       real(dp), allocatable :: omega(:)
 
 c Conversion factor from sqrt(K/M) in eV and Ang to cm**-1 is 519.6
-      real(dp) xmagic
-      parameter (xmagic=519.6d0)
+      real(dp), parameter :: xmagic = 519.6_dp
 
       data nk / 0 /
 
@@ -634,7 +633,7 @@ c Loop over k points
 #endif
 c           qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
             do in = 1,neq
-              phase = cmplx(cos(qr(in)), sin(qr(in)), dp)
+              phase = cmplx(cos(qr(in)), sin(qr(in)), dp)/neq
 #ifdef VIBRA_DEBUG
               print "(tr2,2(tr1,es16.7))", phase
 #endif
@@ -642,7 +641,7 @@ c           qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
               jx = (j-1)*3+ij
               do ii=1,3
                 ix = (i-1)*3+ii
-                dc(ix,jx)=dc(ix,jx)+phi(ii,i,ij,j,lx,ly,lz)*phase/neq
+                dc(ix,jx)=dc(ix,jx)+phi(ii,i,ij,j,lx,ly,lz)*phase
               enddo
               enddo
             enddo
@@ -652,19 +651,23 @@ c           qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
         enddo
         enddo
 
-        do jx=1,ndof
-        j = (jx-mod(jx-1,3))/3+1
-        do ix=1,ndof
-          i = (ix-mod(ix-1,3))/3+1
-          dc(ix,jx) = dc(ix,jx) / sqrt(xmass(i)*xmass(j))
-        enddo
-        enddo
+        do j = 1, natoms
+          do ij = 1, 3
+            jx = (j-1)*3+ij
+            do i = 1, natoms
+              do ii = 1, 3
+                ix = (i-1)*3+ii
+                dc(ix,jx) = dc(ix,jx) / sqrt(xmass(i)*xmass(j))
+              end do
+            end do
+          end do
+        end do
 
 #ifdef VIBRA_DEBUG
         print '(a)', "DEBUG"
         print '(a,tr1,3(tr1,f10.3))', "dc @ ", q(:)
-        do ix=1,3*natoms
-          print '(tr1,2000(tr1,es16.8))', real(dc(1:3*natoms,ix), dp)
+        do ix=1,ndof
+          print '(tr1,2000(tr1,es16.8))', real(dc(1:ndof,ix), dp)
         enddo
         print '(a)', ""
 #endif
@@ -693,7 +696,7 @@ c Compute the IR intensities if requested
       if (intensity) then
 
 c Loop over modes
-        do i = 1,3*natoms
+        do i = 1,ndof
           IRinten(i) = 0._dp
           do ij = 1,3
             IRtrm = cmplx(0._dp,0._dp, dp)
