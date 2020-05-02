@@ -139,10 +139,8 @@
     endif
 
     call re_alloc(this%data%val,1,n,1,m, &
-        name="val "//trim(this%data%name),routine=STR_TYPE_NAME)        
-!$OMP parallel workshare default(shared)
+        name="val "//trim(this%data%name),routine=STR_TYPE_NAME)	
     this%data%val(:,:) = val(:,:)
-!$OMP end parallel workshare
 
     call tag_new_object(this)
     
@@ -218,10 +216,8 @@
    VAR_TYPE, pointer       :: p(:,:) !=> null()
 #endif
     
-   p      => val(this)
-!$OMP parallel workshare default(shared)
-   p(:,:) =  VAR_INIT
-!$OMP end parallel workshare
+   p => val(this)
+   p(:,:) = VAR_INIT
 
  end subroutine initializeData2D
 

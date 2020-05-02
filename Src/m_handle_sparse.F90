@@ -1300,9 +1300,8 @@ contains
     end if
     if ( size(H_orig,dim=dim_spin) == 1 ) then
       if ( present(Ef) .and. present(S_1D) ) then
-!$OMP parallel workshare default(shared)
-        H_orig(:,1) = H_orig(:,1) - Ef * S_orig(:)
-!$OMP end parallel workshare
+!        H_orig(:,1) = H_orig(:,1) - Ef * S_orig(:)
+        call daxpy(size(H_orig,1),-Ef,S_orig(1),1,H_orig(1,1),1)
       end if
     else
 
@@ -1312,13 +1311,9 @@ contains
       call newdSpData2D(sp,1,dit,tmp)
       H_new => val(tmp)
       if ( present(Ef) .and. present(S_1D) ) then
-!$OMP parallel workshare default(shared)
         H_new(:,1) = H_orig(:,ispin) - Ef * S_orig(:)
-!$OMP end parallel workshare
       else
-!$OMP parallel workshare default(shared)
         H_new(:,1) = H_orig(:,ispin)
-!$OMP end parallel workshare
       end if
 
       ! Copy/delete/clean to the old array

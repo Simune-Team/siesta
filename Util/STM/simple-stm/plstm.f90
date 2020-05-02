@@ -54,6 +54,9 @@ program plstm
 ! In the filenames, '*' stands for the 'spin code'
 ! (as entered with the '-s' flag).
 
+! The output file name can be overridden in the command line with
+! the '-o' flag  
+
   use m_gridfunc, only: monoclinic_z
   use m_gridfunc, only: gridfunc_t, read_gridfunc
   use m_getopts
@@ -85,18 +88,23 @@ program plstm
   real(dp) :: tip_spin(3)
   logical  :: get_current_range, get_height_range
   integer  :: nx, ny
+  logical  :: output_filename_set
+  character(len=256) :: requested_output_filename
+  character(len=256) :: output_filename
 !
 !     Process options
 !
   ! defaults  
   get_current_range = .false.
   get_height_range = .false.
+  output_filename_set = .false.
+  requested_output_filename = ""
   spin_code = 'q'   ! default value
   nx = 1
   ny = 1
   n_opts = 0
   do
-     call getopts('hdz:i:s:v:X:Y:IH',opt_name,opt_arg,n_opts,iostat)
+     call getopts('hdz:i:o:s:v:X:Y:IH',opt_name,opt_arg,n_opts,iostat)
      if (iostat /= 0) exit
      select case(opt_name)
      case ('d')
@@ -120,6 +128,9 @@ program plstm
         get_current_range = .true.
      case ('H')
         get_height_range = .true.
+     case ('o')
+        output_filename_set = .true.
+        read(opt_arg,*) requested_output_filename
      case ('h')
         call manual()
         STOP
@@ -196,9 +207,35 @@ program plstm
           else
              stepz = cell(3,3) / n3
           endif
-          write(6,"(a,3f12.5)") "Zmin, Zmax (bohr): ", zmin, zmax
 
+       allocate(rho(product(mesh(1:3))))
+       
+       call get_function(nspin, spin_code, mesh, gf%val, &
+            rho, tip_spin, fmin, fmax)
+       
+       select case (spin_code)
+       case ( 'q' )
+          write(6,*) "Using 'total charge' ('q') mode"
+       case ( 'x' )
+          write(6,*) "Using 'x-component of spin' ('x') mode"
+       case ( 'y' )
+          write(6,*) "Using 'y-component of spin' ('y') mode"
+       case ( 'z' )
+          write(6,*) "Using 'z-component of spin' ('z') mode"
+       case ( 's' )
+          write(6,*) "Using 'total spin' ('s') mode"
+       case ( 'v' )
+          write(6,"(a,3f10.5)") "Using a 'polarized tip' ('-v') " // &
+               "with spin: ", tip_spin(1:3)
+       end select
 
+       write(6,"(a,3f12.5)") "Zmin, Zmax (bohr): ", zmin, zmax
+       write(6,"(a,3g20.8,/)") "Range of values of processed function: ", fmin, fmax
+       if (get_current_range .or. get_height_range) then
+          ! Stopping after computing ranges, as requested
+          STOP
+       endif
+       
           if (mode .eq. 'constant-current') then
 
              if (n3==1) then
@@ -233,29 +270,6 @@ program plstm
        endif
        write(6,*)
 
-       allocate(rho(product(mesh(1:3))))
-       
-       call get_function(nspin, spin_code, mesh, gf%val, &
-            rho, tip_spin, fmin, fmax)
-       
-       select case (spin_code)
-       case ( 'q' )
-          write(6,*) "Using 'total charge' ('q') mode"
-       case ( 'x' )
-          write(6,*) "Using 'x-component of spin' ('x') mode"
-       case ( 'y' )
-          write(6,*) "Using 'y-component of spin' ('y') mode"
-       case ( 'z' )
-          write(6,*) "Using 'z-component of spin' ('z') mode"
-       case ( 's' )
-          write(6,*) "Using 'total spin' ('s') mode"
-       case ( 'v' )
-          write(6,"(a,3f10.5)") "Using a 'polarized tip' ('-v') " // &
-               "with spin: ", tip_spin(1:3)
-       end select
-
-       write(6,"(a,3g20.8,/)") "Range of values of processed function: ", fmin, fmax
-
        allocate(f2d(0:mesh(1)-1,0:mesh(2)-1))
 
        if (mode .eq. 'constant-current') then
@@ -283,9 +297,14 @@ program plstm
        endif
 
        ! Write 2D file info
-       
-       OPEN( unit=2, file=oname )
-       write(6,*) 'Writing STM image in file ', trim(oname)
+
+       if (output_filename_set) then
+          output_filename = requested_output_filename
+       else
+          output_filename = oname
+       endif
+       OPEN( unit=2, file=output_filename )
+       write(6,*) 'Writing STM image in file ', trim(output_filename)
 
           DO IC = 1,2
              DO IX = 1,2
@@ -332,8 +351,9 @@ program plstm
     write(0,"(a)") " -X NX          Request multiple copies of plot domain along X"
     write(0,"(a)") " -Y NY          Request multiple copies of plot domain along Y"
     write(0,"(a)") " "
-    write(0,"(a)") " -H             Return range of height (not implemented yet)"
-    write(0,"(a)") " -I             Return range of current (not implemented yet)"
+    write(0,"(a)") " -o OUTPUT_FILE Set output file name, overriding conventions"
+    write(0,"(a)") " "
+    write(0,"(a)") " -H/-I          Stop after computing ranges of heights and currents"
     write(0,"(a)") " -------------------"
 
   end subroutine manual
@@ -510,7 +530,6 @@ end program plstm
 ! REAL    F(*)         : Function such that F=FVALUE determines
 !                        the shape of the solid surface.
 ! REAL    ZVALUE       : Z level where the function is written
-! CHARACTER*80 ONAME   : Output file name
 ! ************************* OUTPUT **********************************
 ! real f2d(:,:)
 ! *******************************************************************

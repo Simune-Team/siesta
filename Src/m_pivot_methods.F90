@@ -2507,8 +2507,7 @@ contains
       do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
         ! figure out the pivoting place
         j = pvt%r(l_col(ind))
-        if ( j <= 0 ) cycle
-        beta = max(beta,i-j)
+        beta = max(beta, j - i)
       end do
     end do
 
@@ -2532,14 +2531,13 @@ contains
     p = 0
     do i = 1 , sub%n
       idx = sub%r(i)
-      beta = 0
+      beta = i
       do ind = l_ptr(idx) + 1 , l_ptr(idx) + n_col(idx)
         ! figure out the pivoting place
         j = pvt%r(l_col(ind))
-        if ( j <= 0 ) cycle
-        beta = max(beta,i-j)
+        beta = max(beta, j)
       end do
-      p = p + beta
+      p = p + beta - i
     end do
 
     call rgn_delete(pvt)
