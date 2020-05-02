@@ -1,0 +1,1019 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<cml convention="CMLComp" xmlns="http://www.xml-cml.org/schema"
+ xmlns:siesta="http://www.uam.es/siesta/namespace"
+ xmlns:siestaUnits="http://www.uam.es/siesta/namespace/units"
+ xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+ xmlns:fpx="http://www.uszla.me.uk/fpx"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:units="http://www.uszla.me.uk/FoX/units"
+ xmlns:cmlUnits="http://www.xml-cml.org/units/units"
+ xmlns:siUnits="http://www.xml-cml.org/units/siUnits"
+ xmlns:atomicUnits="http://www.xml-cml.org/units/atomic">
+ <metadataList>
+  <metadata name="siesta:Program" content="Siesta" />
+  <metadata name="siesta:Version" content="master-post-4.1-245-g432ae317" />
+  <metadata name="siesta:Arch" content="x86_64-mkl_mpi" />
+  <metadata name="siesta:Flags" content="mpif90 -I. -DMPI   -g -O2" />
+  <metadata name="siesta:PPFlags"
+   content="-DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DHAVE_MPI -DHAVE_SCALAPACK" />
+  <metadata name="siesta:StartTime" content="2020-03-14T01-37-21" />
+  <metadata name="siesta:run_UUID"
+   content="c89e1bd0-659c-11ea-4ffd-19315f7a31ea" />
+  <metadata name="siesta:Mode" content="Parallel" />
+  <metadata name="siesta:Nodes" content="         2" />
+  <metadata name="siesta:NetCDF" content="false" />
+ </metadataList>
+ <module title="Initial System">
+  <molecule>
+   <atomArray>
+    <atom elementType="O" id="a1" ref="siesta:e001"
+     x3="    0.19000000                               "
+     y3="    3.68000000                               "
+     z3="    6.47000000                               " />
+    <atom elementType="H" id="a2" ref="siesta:e002"
+     x3="   -0.63000000                               "
+     y3="    4.11000000                               "
+     z3="    6.86000000                               " />
+    <atom elementType="H" id="a3" ref="siesta:e002"
+     x3="   -0.09000000                               "
+     y3="    2.95000000                               "
+     z3="    5.84000000                               " />
+    <atom elementType="O" id="a4" ref="siesta:e001"
+     x3="    1.49000000                               "
+     y3="    7.03000000                               "
+     z3="    7.17000000                               " />
+    <atom elementType="H" id="a5" ref="siesta:e002"
+     x3="    2.06000000                               "
+     y3="    7.81000000                               "
+     z3="    6.92000000                               " />
+    <atom elementType="H" id="a6" ref="siesta:e002"
+     x3="    0.89000000                               "
+     y3="    7.29000000                               "
+     z3="    7.93000000                               " />
+    <atom elementType="O" id="a7" ref="siesta:e001"
+     x3="    6.85000000                               "
+     y3="    0.26000000                               "
+     z3="    6.65000000                               " />
+    <atom elementType="H" id="a8" ref="siesta:e002"
+     x3="    7.54000000                               "
+     y3="    0.10000000                               "
+     z3="    7.35000000                               " />
+    <atom elementType="H" id="a9" ref="siesta:e002"
+     x3="    6.12000000                               "
+     y3="    0.83000000                               "
+     z3="    7.03000000                               " />
+    <atom elementType="O" id="a10" ref="siesta:e001"
+     x3="    6.06000000                               "
+     y3="    9.64000000                               "
+     z3="    1.23000000                               " />
+    <atom elementType="H" id="a11" ref="siesta:e002"
+     x3="    6.13000000                               "
+     y3="   10.48000000                               "
+     z3="    0.69000000                               " />
+    <atom elementType="H" id="a12" ref="siesta:e002"
+     x3="    6.52000000                               "
+     y3="    9.77000000                               "
+     z3="    2.11000000                               " />
+    <atom elementType="O" id="a13" ref="siesta:e001"
+     x3="    5.98000000                               "
+     y3="    7.29000000                               "
+     z3="    2.70000000                               " />
+    <atom elementType="H" id="a14" ref="siesta:e002"
+     x3="    6.22000000                               "
+     y3="    7.98000000                               "
+     z3="    2.02000000                               " />
+    <atom elementType="H" id="a15" ref="siesta:e002"
+     x3="    5.20000000                               "
+     y3="    7.62000000                               "
+     z3="    3.24000000                               " />
+    <atom elementType="O" id="a16" ref="siesta:e001"
+     x3="    0.05000000                               "
+     y3="    4.10000000                               "
+     z3="    2.56000000                               " />
+    <atom elementType="H" id="a17" ref="siesta:e002"
+     x3="   -0.72000000                               "
+     y3="    4.44000000                               "
+     z3="    3.10000000                               " />
+    <atom elementType="H" id="a18" ref="siesta:e002"
+     x3="   -0.29000000                               "
+     y3="    3.59000000                               "
+     z3="    1.77000000                               " />
+    <atom elementType="O" id="a19" ref="siesta:e001"
+     x3="    0.55000000                               "
+     y3="    7.01000000                               "
+     z3="    4.29000000                               " />
+    <atom elementType="H" id="a20" ref="siesta:e002"
+     x3="    0.81000000                               "
+     y3="    6.97000000                               "
+     z3="    5.25000000                               " />
+    <atom elementType="H" id="a21" ref="siesta:e002"
+     x3="   -0.30000000                               "
+     y3="    6.50000000                               "
+     z3="    4.15000000                               " />
+    <atom elementType="O" id="a22" ref="siesta:e001"
+     x3="    5.50000000                               "
+     y3="    1.96000000                               "
+     z3="    8.85000000                               " />
+    <atom elementType="H" id="a23" ref="siesta:e002"
+     x3="    5.45000000                               "
+     y3="    1.91000000                               "
+     z3="    9.85000000                               " />
+    <atom elementType="H" id="a24" ref="siesta:e002"
+     x3="    5.52000000                               "
+     y3="    2.92000000                               "
+     z3="    8.56000000                               " />
+    <atom elementType="O" id="a25" ref="siesta:e001"
+     x3="    3.82000000                               "
+     y3="    7.00000000                               "
+     z3="    4.80000000                               " />
+    <atom elementType="H" id="a26" ref="siesta:e002"
+     x3="    4.27000000                               "
+     y3="    6.10000000                               "
+     z3="    4.77000000                               " />
+    <atom elementType="H" id="a27" ref="siesta:e002"
+     x3="    2.88000000                               "
+     y3="    6.89000000                               "
+     z3="    5.13000000                               " />
+    <atom elementType="O" id="a28" ref="siesta:e001"
+     x3="    9.22000000                               "
+     y3="    5.03000000                               "
+     z3="    8.99000000                               " />
+    <atom elementType="H" id="a29" ref="siesta:e002"
+     x3="    8.97000000                               "
+     y3="    4.94000000                               "
+     z3="    8.03000000                               " />
+    <atom elementType="H" id="a30" ref="siesta:e002"
+     x3="    9.70000000                               "
+     y3="    4.21000000                               "
+     z3="    9.30000000                               " />
+    <atom elementType="O" id="a31" ref="siesta:e001"
+     x3="    5.39000000                               "
+     y3="    0.64000000                               "
+     z3="    5.12000000                               " />
+    <atom elementType="H" id="a32" ref="siesta:e002"
+     x3="    4.58000000                               "
+     y3="    0.65000000                               "
+     z3="    5.70000000                               " />
+    <atom elementType="H" id="a33" ref="siesta:e002"
+     x3="    5.42000000                               "
+     y3="    1.47000000                               "
+     z3="    4.57000000                               " />
+    <atom elementType="O" id="a34" ref="siesta:e001"
+     x3="    5.61000000                               "
+     y3="    2.22000000                               "
+     z3="    1.61000000                               " />
+    <atom elementType="H" id="a35" ref="siesta:e002"
+     x3="    5.99000000                               "
+     y3="    1.38000000                               "
+     z3="    1.98000000                               " />
+    <atom elementType="H" id="a36" ref="siesta:e002"
+     x3="    4.73000000                               "
+     y3="    2.41000000                               "
+     z3="    2.05000000                               " />
+    <atom elementType="O" id="a37" ref="siesta:e001"
+     x3="    7.05000000                               "
+     y3="    0.64000000                               "
+     z3="    3.68000000                               " />
+    <atom elementType="H" id="a38" ref="siesta:e002"
+     x3="    6.91000000                               "
+     y3="    0.71000000                               "
+     z3="    4.67000000                               " />
+    <atom elementType="H" id="a39" ref="siesta:e002"
+     x3="    7.89000000                               "
+     y3="    0.13000000                               "
+     z3="    3.50000000                               " />
+    <atom elementType="O" id="a40" ref="siesta:e001"
+     x3="    5.66000000                               "
+     y3="    5.37000000                               "
+     z3="    8.65000000                               " />
+    <atom elementType="H" id="a41" ref="siesta:e002"
+     x3="    5.78000000                               "
+     y3="    6.03000000                               "
+     z3="    7.91000000                               " />
+    <atom elementType="H" id="a42" ref="siesta:e002"
+     x3="    6.12000000                               "
+     y3="    5.71000000                               "
+     z3="    9.48000000                               " />
+    <atom elementType="O" id="a43" ref="siesta:e001"
+     x3="    2.23000000                               "
+     y3="    5.25000000                               "
+     z3="    2.75000000                               " />
+    <atom elementType="H" id="a44" ref="siesta:e002"
+     x3="    2.36000000                               "
+     y3="    4.41000000                               "
+     z3="    3.29000000                               " />
+    <atom elementType="H" id="a45" ref="siesta:e002"
+     x3="    1.94000000                               "
+     y3="    5.99000000                               "
+     z3="    3.35000000                               " />
+    <atom elementType="O" id="a46" ref="siesta:e001"
+     x3="    7.32000000                               "
+     y3="    6.34000000                               "
+     z3="    0.78000000                               " />
+    <atom elementType="H" id="a47" ref="siesta:e002"
+     x3="    7.91000000                               "
+     y3="    6.08000000                               "
+     z3="    0.02000000                               " />
+    <atom elementType="H" id="a48" ref="siesta:e002"
+     x3="    7.04000000                               "
+     y3="    7.30000000                               "
+     z3="    0.67000000                               " />
+    <atom elementType="O" id="a49" ref="siesta:e001"
+     x3="    3.07000000                               "
+     y3="    0.63000000                               "
+     z3="    6.18000000                               " />
+    <atom elementType="H" id="a50" ref="siesta:e002"
+     x3="    2.96000000                               "
+     y3="    1.57000000                               "
+     z3="    6.51000000                               " />
+    <atom elementType="H" id="a51" ref="siesta:e002"
+     x3="    3.02000000                               "
+     y3="    0.00000000                               "
+     z3="    6.95000000                               " />
+    <atom elementType="O" id="a52" ref="siesta:e001"
+     x3="    0.37000000                               "
+     y3="    7.66000000                               "
+     z3="    9.66000000                               " />
+    <atom elementType="H" id="a53" ref="siesta:e002"
+     x3="    0.52000000                               "
+     y3="    7.87000000                               "
+     z3="   10.62000000                               " />
+    <atom elementType="H" id="a54" ref="siesta:e002"
+     x3="    0.07000000                               "
+     y3="    6.71000000                               "
+     z3="    9.57000000                               " />
+    <atom elementType="O" id="a55" ref="siesta:e001"
+     x3="    3.19000000                               "
+     y3="    8.10000000                               "
+     z3="    9.49000000                               " />
+    <atom elementType="H" id="a56" ref="siesta:e002"
+     x3="    4.12000000                               "
+     y3="    8.46000000                               "
+     z3="    9.54000000                               " />
+    <atom elementType="H" id="a57" ref="siesta:e002"
+     x3="    3.13000000                               "
+     y3="    7.25000000                               "
+     z3="   10.01000000                               " />
+    <atom elementType="O" id="a58" ref="siesta:e001"
+     x3="    3.39000000                               "
+     y3="    5.09000000                               "
+     z3="    0.20000000                               " />
+    <atom elementType="H" id="a59" ref="siesta:e002"
+     x3="    2.87000000                               "
+     y3="    4.26000000                               "
+     z3="    0.03000000                               " />
+    <atom elementType="H" id="a60" ref="siesta:e002"
+     x3="    4.16000000                               "
+     y3="    5.14000000                               "
+     z3="   -0.44000000                               " />
+    <atom elementType="O" id="a61" ref="siesta:e001"
+     x3="    8.15000000                               "
+     y3="    5.72000000                               "
+     z3="    3.25000000                               " />
+    <atom elementType="H" id="a62" ref="siesta:e002"
+     x3="    8.22000000                               "
+     y3="    4.83000000                               "
+     z3="    2.79000000                               " />
+    <atom elementType="H" id="a63" ref="siesta:e002"
+     x3="    7.21000000                               "
+     y3="    6.06000000                               "
+     z3="    3.17000000                               " />
+    <atom elementType="O" id="a64" ref="siesta:e001"
+     x3="    4.73000000                               "
+     y3="    5.00000000                               "
+     z3="    1.91000000                               " />
+    <atom elementType="H" id="a65" ref="siesta:e002"
+     x3="    5.34000000                               "
+     y3="    5.80000000                               "
+     z3="    1.95000000                               " />
+    <atom elementType="H" id="a66" ref="siesta:e002"
+     x3="    3.78000000                               "
+     y3="    5.31000000                               "
+     z3="    1.98000000                               " />
+    <atom elementType="O" id="a67" ref="siesta:e001"
+     x3="    3.16000000                               "
+     y3="    8.55000000                               "
+     z3="    3.09000000                               " />
+    <atom elementType="H" id="a68" ref="siesta:e002"
+     x3="    2.30000000                               "
+     y3="    8.24000000                               "
+     z3="    3.51000000                               " />
+    <atom elementType="H" id="a69" ref="siesta:e002"
+     x3="    3.12000000                               "
+     y3="    8.41000000                               "
+     z3="    2.10000000                               " />
+    <atom elementType="O" id="a70" ref="siesta:e001"
+     x3="    0.83000000                               "
+     y3="    2.72000000                               "
+     z3="    0.36000000                               " />
+    <atom elementType="H" id="a71" ref="siesta:e002"
+     x3="    0.78000000                               "
+     y3="    2.71000000                               "
+     z3="    1.36000000                               " />
+    <atom elementType="H" id="a72" ref="siesta:e002"
+     x3="    0.00000000                               "
+     y3="    2.31000000                               "
+     z3="   -0.02000000                               " />
+    <atom elementType="O" id="a73" ref="siesta:e001"
+     x3="    9.03000000                               "
+     y3="    0.86000000                               "
+     z3="    1.33000000                               " />
+    <atom elementType="H" id="a74" ref="siesta:e002"
+     x3="    9.54000000                               "
+     y3="    0.87000000                               "
+     z3="    0.47000000                               " />
+    <atom elementType="H" id="a75" ref="siesta:e002"
+     x3="    9.59000000                               "
+     y3="    0.44000000                               "
+     z3="    2.04000000                               " />
+    <atom elementType="O" id="a76" ref="siesta:e001"
+     x3="    2.63000000                               "
+     y3="    3.26000000                               "
+     z3="    7.20000000                               " />
+    <atom elementType="H" id="a77" ref="siesta:e002"
+     x3="    1.84000000                               "
+     y3="    3.77000000                               "
+     z3="    6.86000000                               " />
+    <atom elementType="H" id="a78" ref="siesta:e002"
+     x3="    2.54000000                               "
+     y3="    3.11000000                               "
+     z3="    8.18000000                               " />
+    <atom elementType="O" id="a79" ref="siesta:e001"
+     x3="    9.16000000                               "
+     y3="    9.10000000                               "
+     z3="    2.91000000                               " />
+    <atom elementType="H" id="a80" ref="siesta:e002"
+     x3="    9.79000000                               "
+     y3="    9.48000000                               "
+     z3="    2.23000000                               " />
+    <atom elementType="H" id="a81" ref="siesta:e002"
+     x3="    9.56000000                               "
+     y3="    8.27000000                               "
+     z3="    3.30000000                               " />
+    <atom elementType="O" id="a82" ref="siesta:e001"
+     x3="    0.72000000                               "
+     y3="    1.66000000                               "
+     z3="    3.18000000                               " />
+    <atom elementType="H" id="a83" ref="siesta:e002"
+     x3="    0.55000000                               "
+     y3="    2.49000000                               "
+     z3="    2.64000000                               " />
+    <atom elementType="H" id="a84" ref="siesta:e002"
+     x3="    1.62000000                               "
+     y3="    1.29000000                               "
+     z3="    2.96000000                               " />
+    <atom elementType="O" id="a85" ref="siesta:e001"
+     x3="    2.39000000                               "
+     y3="    3.25000000                               "
+     z3="    4.49000000                               " />
+    <atom elementType="H" id="a86" ref="siesta:e002"
+     x3="    3.04000000                               "
+     y3="    2.51000000                               "
+     z3="    4.38000000                               " />
+    <atom elementType="H" id="a87" ref="siesta:e002"
+     x3="    2.59000000                               "
+     y3="    3.75000000                               "
+     z3="    5.33000000                               " />
+    <atom elementType="O" id="a88" ref="siesta:e001"
+     x3="    5.94000000                               "
+     y3="    7.45000000                               "
+     z3="    6.52000000                               " />
+    <atom elementType="H" id="a89" ref="siesta:e002"
+     x3="    6.44000000                               "
+     y3="    8.30000000                               "
+     z3="    6.33000000                               " />
+    <atom elementType="H" id="a90" ref="siesta:e002"
+     x3="    5.06000000                               "
+     y3="    7.47000000                               "
+     z3="    6.04000000                               " />
+    <atom elementType="O" id="a91" ref="siesta:e001"
+     x3="    8.59000000                               "
+     y3="    9.56000000                               "
+     z3="    8.61000000                               " />
+    <atom elementType="H" id="a92" ref="siesta:e002"
+     x3="    9.13000000                               "
+     y3="    8.87000000                               "
+     z3="    9.09000000                               " />
+    <atom elementType="H" id="a93" ref="siesta:e002"
+     x3="    8.27000000                               "
+     y3="   10.25000000                               "
+     z3="    9.27000000                               " />
+    <atom elementType="O" id="a94" ref="siesta:e001"
+     x3="    4.28000000                               "
+     y3="    4.24000000                               "
+     z3="    5.20000000                               " />
+    <atom elementType="H" id="a95" ref="siesta:e002"
+     x3="    4.58000000                               "
+     y3="    3.52000000                               "
+     z3="    4.58000000                               " />
+    <atom elementType="H" id="a96" ref="siesta:e002"
+     x3="    3.89000000                               "
+     y3="    3.84000000                               "
+     z3="    6.03000000                               " />
+   </atomArray>
+  </molecule>
+  <lattice dictRef="siesta:ucell">
+   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
+  1.864215564924E+01  0.000000000000E+00  0.000000000000E+00
+
+   </latticeVector>
+   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
+  0.000000000000E+00  1.864215564924E+01  0.000000000000E+00
+
+   </latticeVector>
+   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
+  0.000000000000E+00  0.000000000000E+00  1.864215564924E+01
+
+   </latticeVector>
+  </lattice>
+  <property dictRef="siesta:shape">
+   <scalar>bulk
+   </scalar>
+  </property>
+ </module>
+ <parameterList title="Input Parameters">
+  <parameter name="SystemName" dictRef="siesta:sname">
+   <scalar dataType="xsd:string">Heavy liquid water, 32 molecules
+   </scalar>
+  </parameter>
+  <parameter name="SystemLabel" dictRef="siesta:slabel">
+   <scalar dataType="xsd:string">32_h2o
+   </scalar>
+  </parameter>
+  <parameter name="LongOutput" dictRef="siesta:verbosity">
+   <scalar dataType="xsd:boolean">true
+   </scalar>
+  </parameter>
+  <parameter title="NumberOfSpecies" dictRef="siesta:ns">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">2
+   </scalar>
+  </parameter>
+  <parameter name="WriteDenChar">
+   <scalar dataType="xsd:boolean">false
+   </scalar>
+  </parameter>
+  <parameter name="WriteMullikenPop">
+   <scalar dataType="xsd:integer" units="cmlUnits:dimensionless">1
+   </scalar>
+  </parameter>
+  <parameter name="MatelNRTAB" dictRef="siesta:matel_nrtab">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">1024
+   </scalar>
+  </parameter>
+  <parameter name="MeshCutOff" dictRef="siesta:g2max">
+   <scalar dataType="xsd:double" units="siestaUnits:Ry">150.000000000                                                                                       
+   </scalar>
+  </parameter>
+  <parameter name="NetCharge" dictRef="siesta:NetCharge">
+   <scalar dataType="xsd:double" units="siestaUnits:e__">0.00000000000                                                                                       
+   </scalar>
+  </parameter>
+  <parameter name="MaxSCFIterations" dictRef="siesta:maxscf">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">1000
+   </scalar>
+  </parameter>
+  <parameter name="MinSCFIterations" dictRef="siesta:minscf">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">0
+   </scalar>
+  </parameter>
+  <parameter name="DM.NumberPulay" dictRef="siesta:maxsav">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">3
+   </scalar>
+  </parameter>
+  <parameter name="DM.NumberBroyden" dictRef="siesta:broyden_maxit">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">0
+   </scalar>
+  </parameter>
+  <parameter name="DM.MixSCF1" dictRef="siesta:mix">
+   <scalar dataType="xsd:boolean">true
+   </scalar>
+  </parameter>
+  <parameter name="DM.PulayOnFile" dictRef="siesta:pulfile">
+   <scalar dataType="xsd:boolean">false
+   </scalar>
+  </parameter>
+  <parameter name="DM.MixingWeight" dictRef="siesta:wmix">
+   <scalar dataType="xsd:double" units="cmlUnits:dimensionless">0.100000000000                                                                                      
+   </scalar>
+  </parameter>
+  <parameter name="DM.OccupancyTolerance" dictRef="siesta:occtol">
+   <scalar dataType="xsd:double" units="cmlUnits:dimensionless">
+   0.100000000000E-11                                                                                  
+   </scalar>
+  </parameter>
+  <parameter name="DM.NumberKick" dictRef="siesta:nkick">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">0
+   </scalar>
+  </parameter>
+  <parameter name="DM.KickMixingWeight" dictRef="siesta:wmixkick">
+   <scalar dataType="xsd:double" units="cmlUnits:dimensionless">0.500000000000                                                                                      
+   </scalar>
+  </parameter>
+  <parameter name="SCF.Harris.Converge" dictRef="siesta:ReqHarrisConv">
+   <scalar dataType="xsd:boolean">false
+   </scalar>
+  </parameter>
+  <parameter name="SCF.Harris.Tolerance" dictRef="siesta:Harris_tolerance">
+   <scalar dataType="xsd:double" units="siestaUnits:eV">0.100000000000E-03                                                                                  
+   </scalar>
+  </parameter>
+  <parameter name="SCF.DM.Converge" dictRef="siesta:ReqDMConv">
+   <scalar dataType="xsd:boolean">true
+   </scalar>
+  </parameter>
+  <parameter name="SCF.DM.Tolerance" dictRef="siesta:dDtol">
+   <scalar dataType="xsd:double" units="siestaUnits:eAng_3">0.100000000000E-03                                                                                  
+   </scalar>
+  </parameter>
+  <parameter name="SCF.EDM.Converge" dictRef="siesta:ReqEDMConv">
+   <scalar dataType="xsd:boolean">false
+   </scalar>
+  </parameter>
+  <parameter name="SCF.EDM.Tolerance" dictRef="siesta:EDM_tolerance">
+   <scalar dataType="xsd:double" units="siestaUnits:eVeAng_3">
+   0.100000000000E-02                                                                                  
+   </scalar>
+  </parameter>
+  <parameter name="SCF.H.Converge" dictRef="siesta:ReqHConv">
+   <scalar dataType="xsd:boolean">true
+   </scalar>
+  </parameter>
+  <parameter name="SCF.H.Tolerance" dictRef="siesta:dHtol">
+   <scalar dataType="xsd:double" units="siestaUnits:eV">0.100000000000E-02                                                                                  
+   </scalar>
+  </parameter>
+  <parameter name="SCF.FreeE.Converge" dictRef="siesta:ReqEnergyConv">
+   <scalar dataType="xsd:boolean">false
+   </scalar>
+  </parameter>
+  <parameter name="SCF.FreeE.Tolerance" dictRef="siesta:dEtol">
+   <scalar dataType="xsd:double" units="siestaUnits:eV">0.100000000000E-03                                                                                  
+   </scalar>
+  </parameter>
+  <parameter name="DM.UseSaveDM" dictRef="siesta:usesavedm">
+   <scalar dataType="xsd:boolean">true
+   </scalar>
+  </parameter>
+  <parameter name="NeglNonOverlapInt" dictRef="siesta:negl">
+   <scalar dataType="xsd:boolean">false
+   </scalar>
+  </parameter>
+  <parameter name="SolutionMethod" dictRef="siesta:SCFmethod">
+   <scalar dataType="xsd:string">diagon
+   </scalar>
+  </parameter>
+  <parameter name="ElectronicTemperature" dictRef="siesta:etemp">
+   <scalar dataType="xsd:double" units="siestaUnits:Ry">0.367489942245E-03                                                                                  
+   </scalar>
+  </parameter>
+  <parameter name="FixSpin" dictRef="siesta:fixspin">
+   <scalar dataType="xsd:boolean">false
+   </scalar>
+  </parameter>
+  <parameter name="TotalSpin" dictRef="siesta:totalspin">
+   <scalar dataType="xsd:double" units="siestaUnits:eSpin">0.00000000000                                                                                       
+   </scalar>
+  </parameter>
+  <parameter name="MD.TypeOfRun">
+   <scalar dataType="xsd:string">Single-Point
+   </scalar>
+  </parameter>
+  <parameter name="MD.BulkModulus">
+   <scalar dataType="xsd:double" units="siestaUnits:Ry_Bohr__3">
+   0.679773000000E-02                                                                                  
+   </scalar>
+  </parameter>
+ </parameterList>
+ <propertyList title="k-points" dictRef="siesta:kpoints">
+  <property dictRef="siesta:nkpnt">
+   <scalar dataType="xsd:integer" units="cmlUnits:countable">1
+   </scalar>
+  </property>
+  <kpoint coords="  0.00000000  0.00000000  0.00000000" weight="  1.00000000" />
+ </propertyList>
+ <module dictRef="Single-Point" role="step" serial="1">
+  <molecule>
+   <atomArray>
+    <atom elementType="O" id="a1" ref="siesta:e001"
+     x3="    0.19000000                               "
+     y3="    3.68000000                               "
+     z3="    6.47000000                               " />
+    <atom elementType="H" id="a2" ref="siesta:e002"
+     x3="   -0.63000000                               "
+     y3="    4.11000000                               "
+     z3="    6.86000000                               " />
+    <atom elementType="H" id="a3" ref="siesta:e002"
+     x3="   -0.09000000                               "
+     y3="    2.95000000                               "
+     z3="    5.84000000                               " />
+    <atom elementType="O" id="a4" ref="siesta:e001"
+     x3="    1.49000000                               "
+     y3="    7.03000000                               "
+     z3="    7.17000000                               " />
+    <atom elementType="H" id="a5" ref="siesta:e002"
+     x3="    2.06000000                               "
+     y3="    7.81000000                               "
+     z3="    6.92000000                               " />
+    <atom elementType="H" id="a6" ref="siesta:e002"
+     x3="    0.89000000                               "
+     y3="    7.29000000                               "
+     z3="    7.93000000                               " />
+    <atom elementType="O" id="a7" ref="siesta:e001"
+     x3="    6.85000000                               "
+     y3="    0.26000000                               "
+     z3="    6.65000000                               " />
+    <atom elementType="H" id="a8" ref="siesta:e002"
+     x3="    7.54000000                               "
+     y3="    0.10000000                               "
+     z3="    7.35000000                               " />
+    <atom elementType="H" id="a9" ref="siesta:e002"
+     x3="    6.12000000                               "
+     y3="    0.83000000                               "
+     z3="    7.03000000                               " />
+    <atom elementType="O" id="a10" ref="siesta:e001"
+     x3="    6.06000000                               "
+     y3="    9.64000000                               "
+     z3="    1.23000000                               " />
+    <atom elementType="H" id="a11" ref="siesta:e002"
+     x3="    6.13000000                               "
+     y3="   10.48000000                               "
+     z3="    0.69000000                               " />
+    <atom elementType="H" id="a12" ref="siesta:e002"
+     x3="    6.52000000                               "
+     y3="    9.77000000                               "
+     z3="    2.11000000                               " />
+    <atom elementType="O" id="a13" ref="siesta:e001"
+     x3="    5.98000000                               "
+     y3="    7.29000000                               "
+     z3="    2.70000000                               " />
+    <atom elementType="H" id="a14" ref="siesta:e002"
+     x3="    6.22000000                               "
+     y3="    7.98000000                               "
+     z3="    2.02000000                               " />
+    <atom elementType="H" id="a15" ref="siesta:e002"
+     x3="    5.20000000                               "
+     y3="    7.62000000                               "
+     z3="    3.24000000                               " />
+    <atom elementType="O" id="a16" ref="siesta:e001"
+     x3="    0.05000000                               "
+     y3="    4.10000000                               "
+     z3="    2.56000000                               " />
+    <atom elementType="H" id="a17" ref="siesta:e002"
+     x3="   -0.72000000                               "
+     y3="    4.44000000                               "
+     z3="    3.10000000                               " />
+    <atom elementType="H" id="a18" ref="siesta:e002"
+     x3="   -0.29000000                               "
+     y3="    3.59000000                               "
+     z3="    1.77000000                               " />
+    <atom elementType="O" id="a19" ref="siesta:e001"
+     x3="    0.55000000                               "
+     y3="    7.01000000                               "
+     z3="    4.29000000                               " />
+    <atom elementType="H" id="a20" ref="siesta:e002"
+     x3="    0.81000000                               "
+     y3="    6.97000000                               "
+     z3="    5.25000000                               " />
+    <atom elementType="H" id="a21" ref="siesta:e002"
+     x3="   -0.30000000                               "
+     y3="    6.50000000                               "
+     z3="    4.15000000                               " />
+    <atom elementType="O" id="a22" ref="siesta:e001"
+     x3="    5.50000000                               "
+     y3="    1.96000000                               "
+     z3="    8.85000000                               " />
+    <atom elementType="H" id="a23" ref="siesta:e002"
+     x3="    5.45000000                               "
+     y3="    1.91000000                               "
+     z3="    9.85000000                               " />
+    <atom elementType="H" id="a24" ref="siesta:e002"
+     x3="    5.52000000                               "
+     y3="    2.92000000                               "
+     z3="    8.56000000                               " />
+    <atom elementType="O" id="a25" ref="siesta:e001"
+     x3="    3.82000000                               "
+     y3="    7.00000000                               "
+     z3="    4.80000000                               " />
+    <atom elementType="H" id="a26" ref="siesta:e002"
+     x3="    4.27000000                               "
+     y3="    6.10000000                               "
+     z3="    4.77000000                               " />
+    <atom elementType="H" id="a27" ref="siesta:e002"
+     x3="    2.88000000                               "
+     y3="    6.89000000                               "
+     z3="    5.13000000                               " />
+    <atom elementType="O" id="a28" ref="siesta:e001"
+     x3="    9.22000000                               "
+     y3="    5.03000000                               "
+     z3="    8.99000000                               " />
+    <atom elementType="H" id="a29" ref="siesta:e002"
+     x3="    8.97000000                               "
+     y3="    4.94000000                               "
+     z3="    8.03000000                               " />
+    <atom elementType="H" id="a30" ref="siesta:e002"
+     x3="    9.70000000                               "
+     y3="    4.21000000                               "
+     z3="    9.30000000                               " />
+    <atom elementType="O" id="a31" ref="siesta:e001"
+     x3="    5.39000000                               "
+     y3="    0.64000000                               "
+     z3="    5.12000000                               " />
+    <atom elementType="H" id="a32" ref="siesta:e002"
+     x3="    4.58000000                               "
+     y3="    0.65000000                               "
+     z3="    5.70000000                               " />
+    <atom elementType="H" id="a33" ref="siesta:e002"
+     x3="    5.42000000                               "
+     y3="    1.47000000                               "
+     z3="    4.57000000                               " />
+    <atom elementType="O" id="a34" ref="siesta:e001"
+     x3="    5.61000000                               "
+     y3="    2.22000000                               "
+     z3="    1.61000000                               " />
+    <atom elementType="H" id="a35" ref="siesta:e002"
+     x3="    5.99000000                               "
+     y3="    1.38000000                               "
+     z3="    1.98000000                               " />
+    <atom elementType="H" id="a36" ref="siesta:e002"
+     x3="    4.73000000                               "
+     y3="    2.41000000                               "
+     z3="    2.05000000                               " />
+    <atom elementType="O" id="a37" ref="siesta:e001"
+     x3="    7.05000000                               "
+     y3="    0.64000000                               "
+     z3="    3.68000000                               " />
+    <atom elementType="H" id="a38" ref="siesta:e002"
+     x3="    6.91000000                               "
+     y3="    0.71000000                               "
+     z3="    4.67000000                               " />
+    <atom elementType="H" id="a39" ref="siesta:e002"
+     x3="    7.89000000                               "
+     y3="    0.13000000                               "
+     z3="    3.50000000                               " />
+    <atom elementType="O" id="a40" ref="siesta:e001"
+     x3="    5.66000000                               "
+     y3="    5.37000000                               "
+     z3="    8.65000000                               " />
+    <atom elementType="H" id="a41" ref="siesta:e002"
+     x3="    5.78000000                               "
+     y3="    6.03000000                               "
+     z3="    7.91000000                               " />
+    <atom elementType="H" id="a42" ref="siesta:e002"
+     x3="    6.12000000                               "
+     y3="    5.71000000                               "
+     z3="    9.48000000                               " />
+    <atom elementType="O" id="a43" ref="siesta:e001"
+     x3="    2.23000000                               "
+     y3="    5.25000000                               "
+     z3="    2.75000000                               " />
+    <atom elementType="H" id="a44" ref="siesta:e002"
+     x3="    2.36000000                               "
+     y3="    4.41000000                               "
+     z3="    3.29000000                               " />
+    <atom elementType="H" id="a45" ref="siesta:e002"
+     x3="    1.94000000                               "
+     y3="    5.99000000                               "
+     z3="    3.35000000                               " />
+    <atom elementType="O" id="a46" ref="siesta:e001"
+     x3="    7.32000000                               "
+     y3="    6.34000000                               "
+     z3="    0.78000000                               " />
+    <atom elementType="H" id="a47" ref="siesta:e002"
+     x3="    7.91000000                               "
+     y3="    6.08000000                               "
+     z3="    0.02000000                               " />
+    <atom elementType="H" id="a48" ref="siesta:e002"
+     x3="    7.04000000                               "
+     y3="    7.30000000                               "
+     z3="    0.67000000                               " />
+    <atom elementType="O" id="a49" ref="siesta:e001"
+     x3="    3.07000000                               "
+     y3="    0.63000000                               "
+     z3="    6.18000000                               " />
+    <atom elementType="H" id="a50" ref="siesta:e002"
+     x3="    2.96000000                               "
+     y3="    1.57000000                               "
+     z3="    6.51000000                               " />
+    <atom elementType="H" id="a51" ref="siesta:e002"
+     x3="    3.02000000                               "
+     y3="    0.00000000                               "
+     z3="    6.95000000                               " />
+    <atom elementType="O" id="a52" ref="siesta:e001"
+     x3="    0.37000000                               "
+     y3="    7.66000000                               "
+     z3="    9.66000000                               " />
+    <atom elementType="H" id="a53" ref="siesta:e002"
+     x3="    0.52000000                               "
+     y3="    7.87000000                               "
+     z3="   10.62000000                               " />
+    <atom elementType="H" id="a54" ref="siesta:e002"
+     x3="    0.07000000                               "
+     y3="    6.71000000                               "
+     z3="    9.57000000                               " />
+    <atom elementType="O" id="a55" ref="siesta:e001"
+     x3="    3.19000000                               "
+     y3="    8.10000000                               "
+     z3="    9.49000000                               " />
+    <atom elementType="H" id="a56" ref="siesta:e002"
+     x3="    4.12000000                               "
+     y3="    8.46000000                               "
+     z3="    9.54000000                               " />
+    <atom elementType="H" id="a57" ref="siesta:e002"
+     x3="    3.13000000                               "
+     y3="    7.25000000                               "
+     z3="   10.01000000                               " />
+    <atom elementType="O" id="a58" ref="siesta:e001"
+     x3="    3.39000000                               "
+     y3="    5.09000000                               "
+     z3="    0.20000000                               " />
+    <atom elementType="H" id="a59" ref="siesta:e002"
+     x3="    2.87000000                               "
+     y3="    4.26000000                               "
+     z3="    0.03000000                               " />
+    <atom elementType="H" id="a60" ref="siesta:e002"
+     x3="    4.16000000                               "
+     y3="    5.14000000                               "
+     z3="   -0.44000000                               " />
+    <atom elementType="O" id="a61" ref="siesta:e001"
+     x3="    8.15000000                               "
+     y3="    5.72000000                               "
+     z3="    3.25000000                               " />
+    <atom elementType="H" id="a62" ref="siesta:e002"
+     x3="    8.22000000                               "
+     y3="    4.83000000                               "
+     z3="    2.79000000                               " />
+    <atom elementType="H" id="a63" ref="siesta:e002"
+     x3="    7.21000000                               "
+     y3="    6.06000000                               "
+     z3="    3.17000000                               " />
+    <atom elementType="O" id="a64" ref="siesta:e001"
+     x3="    4.73000000                               "
+     y3="    5.00000000                               "
+     z3="    1.91000000                               " />
+    <atom elementType="H" id="a65" ref="siesta:e002"
+     x3="    5.34000000                               "
+     y3="    5.80000000                               "
+     z3="    1.95000000                               " />
+    <atom elementType="H" id="a66" ref="siesta:e002"
+     x3="    3.78000000                               "
+     y3="    5.31000000                               "
+     z3="    1.98000000                               " />
+    <atom elementType="O" id="a67" ref="siesta:e001"
+     x3="    3.16000000                               "
+     y3="    8.55000000                               "
+     z3="    3.09000000                               " />
+    <atom elementType="H" id="a68" ref="siesta:e002"
+     x3="    2.30000000                               "
+     y3="    8.24000000                               "
+     z3="    3.51000000                               " />
+    <atom elementType="H" id="a69" ref="siesta:e002"
+     x3="    3.12000000                               "
+     y3="    8.41000000                               "
+     z3="    2.10000000                               " />
+    <atom elementType="O" id="a70" ref="siesta:e001"
+     x3="    0.83000000                               "
+     y3="    2.72000000                               "
+     z3="    0.36000000                               " />
+    <atom elementType="H" id="a71" ref="siesta:e002"
+     x3="    0.78000000                               "
+     y3="    2.71000000                               "
+     z3="    1.36000000                               " />
+    <atom elementType="H" id="a72" ref="siesta:e002"
+     x3="    0.00000000                               "
+     y3="    2.31000000                               "
+     z3="   -0.02000000                               " />
+    <atom elementType="O" id="a73" ref="siesta:e001"
+     x3="    9.03000000                               "
+     y3="    0.86000000                               "
+     z3="    1.33000000                               " />
+    <atom elementType="H" id="a74" ref="siesta:e002"
+     x3="    9.54000000                               "
+     y3="    0.87000000                               "
+     z3="    0.47000000                               " />
+    <atom elementType="H" id="a75" ref="siesta:e002"
+     x3="    9.59000000                               "
+     y3="    0.44000000                               "
+     z3="    2.04000000                               " />
+    <atom elementType="O" id="a76" ref="siesta:e001"
+     x3="    2.63000000                               "
+     y3="    3.26000000                               "
+     z3="    7.20000000                               " />
+    <atom elementType="H" id="a77" ref="siesta:e002"
+     x3="    1.84000000                               "
+     y3="    3.77000000                               "
+     z3="    6.86000000                               " />
+    <atom elementType="H" id="a78" ref="siesta:e002"
+     x3="    2.54000000                               "
+     y3="    3.11000000                               "
+     z3="    8.18000000                               " />
+    <atom elementType="O" id="a79" ref="siesta:e001"
+     x3="    9.16000000                               "
+     y3="    9.10000000                               "
+     z3="    2.91000000                               " />
+    <atom elementType="H" id="a80" ref="siesta:e002"
+     x3="    9.79000000                               "
+     y3="    9.48000000                               "
+     z3="    2.23000000                               " />
+    <atom elementType="H" id="a81" ref="siesta:e002"
+     x3="    9.56000000                               "
+     y3="    8.27000000                               "
+     z3="    3.30000000                               " />
+    <atom elementType="O" id="a82" ref="siesta:e001"
+     x3="    0.72000000                               "
+     y3="    1.66000000                               "
+     z3="    3.18000000                               " />
+    <atom elementType="H" id="a83" ref="siesta:e002"
+     x3="    0.55000000                               "
+     y3="    2.49000000                               "
+     z3="    2.64000000                               " />
+    <atom elementType="H" id="a84" ref="siesta:e002"
+     x3="    1.62000000                               "
+     y3="    1.29000000                               "
+     z3="    2.96000000                               " />
+    <atom elementType="O" id="a85" ref="siesta:e001"
+     x3="    2.39000000                               "
+     y3="    3.25000000                               "
+     z3="    4.49000000                               " />
+    <atom elementType="H" id="a86" ref="siesta:e002"
+     x3="    3.04000000                               "
+     y3="    2.51000000                               "
+     z3="    4.38000000                               " />
+    <atom elementType="H" id="a87" ref="siesta:e002"
+     x3="    2.59000000                               "
+     y3="    3.75000000                               "
+     z3="    5.33000000                               " />
+    <atom elementType="O" id="a88" ref="siesta:e001"
+     x3="    5.94000000                               "
+     y3="    7.45000000                               "
+     z3="    6.52000000                               " />
+    <atom elementType="H" id="a89" ref="siesta:e002"
+     x3="    6.44000000                               "
+     y3="    8.30000000                               "
+     z3="    6.33000000                               " />
+    <atom elementType="H" id="a90" ref="siesta:e002"
+     x3="    5.06000000                               "
+     y3="    7.47000000                               "
+     z3="    6.04000000                               " />
+    <atom elementType="O" id="a91" ref="siesta:e001"
+     x3="    8.59000000                               "
+     y3="    9.56000000                               "
+     z3="    8.61000000                               " />
+    <atom elementType="H" id="a92" ref="siesta:e002"
+     x3="    9.13000000                               "
+     y3="    8.87000000                               "
+     z3="    9.09000000                               " />
+    <atom elementType="H" id="a93" ref="siesta:e002"
+     x3="    8.27000000                               "
+     y3="   10.25000000                               "
+     z3="    9.27000000                               " />
+    <atom elementType="O" id="a94" ref="siesta:e001"
+     x3="    4.28000000                               "
+     y3="    4.24000000                               "
+     z3="    5.20000000                               " />
+    <atom elementType="H" id="a95" ref="siesta:e002"
+     x3="    4.58000000                               "
+     y3="    3.52000000                               "
+     z3="    4.58000000                               " />
+    <atom elementType="H" id="a96" ref="siesta:e002"
+     x3="    3.89000000                               "
+     y3="    3.84000000                               "
+     z3="    6.03000000                               " />
+   </atomArray>
+  </molecule>
+  <lattice dictRef="siesta:ucell">
+   <latticeVector units="siestaUnits:Ang" dictRef="cml:latticeVector">
+  9.865000000000E+00  0.000000000000E+00  0.000000000000E+00
+
+   </latticeVector>
+   <latticeVector units="siestaUnits:Ang" dictRef="cml:latticeVector">
+  0.000000000000E+00  9.865000000000E+00  0.000000000000E+00
+
+   </latticeVector>
+   <latticeVector units="siestaUnits:Ang" dictRef="cml:latticeVector">
+  0.000000000000E+00  0.000000000000E+00  9.865000000000E+00
+
+   </latticeVector>
+  </lattice>
+  <crystal title="Lattice Parameters">
+   <scalar title="a" dictRef="cml:a" units="units:angstrom                ">
+   9.865000                                                                                            
+   </scalar>
+   <scalar title="b" dictRef="cml:b" units="units:angstrom                ">
+   9.865000                                                                                            
+   </scalar>
+   <scalar title="c" dictRef="cml:c" units="units:angstrom                ">
+   9.865000                                                                                            
+   </scalar>
+   <scalar title="alpha" dictRef="cml:alpha"
+    units="units:degree                  ">90.000000                                                                                           
+   </scalar>
+   <scalar title="beta" dictRef="cml:beta"
+    units="units:degree                  ">90.000000                                                                                           
+   </scalar>
+   <scalar title="gamma" dictRef="cml:gamma"
+    units="units:degree                  ">90.000000                                                                                           
+   </scalar>
+  </crystal>
+  <propertyList title="Orbital info">
+   <property title="Number of orbitals in unit cell" dictRef="siesta:no_u">
+    <scalar dataType="xsd:integer" units="cmlUnits:countable">192

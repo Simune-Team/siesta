@@ -71,7 +71,7 @@ C *************************** AUXILIARY *******************************
 C real*8 Haux(2,2,nuotot,2,nuo) : Aux. space for the hamiltonian matrix
 C real*8 Saux(2,2,nuotot,2,nuo) : Aux. space for the overlap matrix
 C real*8 psi(2,2,nuotot,2*nuo)  : Aux. space for the eigenvectors
-C real*8 aux(4,2*nuotot)        : Extra auxiliary space
+C real*8 aux(5,2*nuotot)        : Extra auxiliary space
 C real*8 Dk(2,2,nuotot,2,nuo)   : Aux. space that may be the same as Haux
 C real*8 Ek(2,2,nuotot,2,nuo)   : Aux. space that may be the same as Saux
 C *************************** UNITS ***********************************

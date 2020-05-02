@@ -47,10 +47,7 @@ module m_ts_contour_eq
   public :: print_contour_eq_block
   public :: io_contour_eq
   public :: N_Eq_E
-  public :: get_c_io_index
-  public :: Eq_linear_index
   public :: Eq_E
-  public :: c2energy
   public :: c2weight_eq
   public :: ID2idx
 
@@ -584,14 +581,6 @@ contains
     ZW = W * Eq_c(c%idx(2))%c(c%idx(3))
     
   end subroutine c2weight_eq
-
-  pure function c2energy(c) result(Z)
-    type(ts_c_idx), intent(in) :: c
-    complex(dp) :: Z
-    
-    Z = Eq_c(c%idx(2))%c(c%idx(3))
-    
-  end function c2energy
 
   subroutine contour_Circle(c,mu,R,cR)
     use fdf, only: leqi
@@ -1429,8 +1418,10 @@ contains
       allocate(A(nn,nn), B(nn,nn))
       allocate(we(nn),work(3*nn))
 
+!$OMP parallel workshare default(shared)
       A = 0._dp
       B = 0._dp
+!$OMP end parallel workshare
       do i = 1 , nn - 1
          B(i,i) = 2._dp * i - 1._dp
          A(i,i+1) = -0.5_dp
@@ -1615,7 +1606,7 @@ contains
        if ( i <= Eq_c(j)%c_io%N ) then
           c%exist = .true.
           c%e     = Eq_c(j)%c(i)
-          c%idx(1) = CONTOUR_EQ ! designates the equilibrium contours
+          c%idx(1) = 1 ! designates the equilibrium contours
           c%idx(2) = j ! designates the index of the equilibrium contour
           c%idx(3) = i ! is the index of the equilibrium contour
           return
@@ -1628,28 +1619,9 @@ contains
     integer :: N, i
     N = 0
     do i = 1 , N_Eq
-       N = N + Eq_c(i)%c_io%N
+       N = N + size(Eq_c(i)%c)
     end do
   end function N_Eq_E
-
-  !< Calculate the linear (total) index of a given index+local contour index
-  function Eq_linear_index(idx, ie) result(lidx)
-    !< The index of the equilibrium contour
-    integer, intent(in) :: idx
-    !< The index of the energy on the `idx` contour
-    integer, intent(in) :: ie
-    !< The global index of the `idx,ie` contour point
-    integer :: lidx
-
-    integer :: i
-
-    lidx = ie
-    do i = 1, idx - 1
-      lidx = lidx + Eq_c(i)%c_io%N
-    end do
-
-  end function Eq_linear_index
-    
 
   subroutine print_contour_eq_block(prefix)
     use fdf, only: leqi

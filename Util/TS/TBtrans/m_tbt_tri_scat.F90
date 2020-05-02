@@ -55,11 +55,6 @@ module m_tbt_tri_scat
   complex(dp), parameter :: z1  = cmplx( 1._dp, 0._dp, dp)
   complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp, dp)
   complex(dp), parameter :: zi  = cmplx( 0._dp, 1._dp, dp)
-#ifdef USE_GEMM3M
-# define GEMM zgemm3m
-#else
-# define GEMM zgemm
-#endif
 
 contains
 
@@ -165,14 +160,19 @@ contains
       integer, intent(in) :: m,n
       complex(dp), pointer :: Gf(:), Mnn(:), XY(:)
 
-      XY => val(Gfd_tri,m,n)
+      XY  => val(Gfd_tri,m,n)
       Mnn => val(Gfd_tri,n,n)
-      Gf => val(Gfo_tri,m,n)
+      Gf  => val(Gfo_tri,m,n)
       
       ! We need to calculate the 
       ! Mnm1n/Mnp1n Green's function
-      call GEMM ('N','N',no_i,no_o,no_o, &
-          zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
+#ifdef USE_GEMM3M
+      call zgemm3m( &
+#else
+      call zgemm( &
+#endif
+           'N','N',no_i,no_o,no_o, &
+           zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
       
     end subroutine calc
 
@@ -337,9 +337,13 @@ contains
     Gfd => val(Gfd_tri)
     Gfo => val(Gfo_tri)
 
-    C(:) = 0._dp
+!$OMP parallel default(shared), private(br,io,ind,iind,bc,ss,GfGfd)
 
-!$OMP parallel do default(shared), private(br,io,ind,iind,bc,ss,GfGfd)
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+    
+!$OMP do
     do br = 1, r%n
       io = r%r(br)
       
@@ -366,7 +370,8 @@ contains
       end do
           
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-COP',2)
@@ -611,9 +616,13 @@ contains
 
     A => val(A_tri)
 
-    C(:) = 0._dp
+!$OMP parallel default(shared), private(br,io,ind,iind,bc,ss)
 
-!$OMP parallel do default(shared), private(br,io,ind,iind,bc,ss)
+!$OMP workshare
+    C(:) = 0._dp
+!$OMP end workshare
+
+!$OMP do
     do br = 1, r%n
       io = r%r(br)
 
@@ -640,7 +649,8 @@ contains
       end do
           
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
 #ifdef TBTRANS_TIMING
     call timer('A-COP',2)
@@ -810,7 +820,9 @@ contains
     call attach(sp,n_col=ncol,list_ptr=l_ptr,list_col=l_col)
     
     ! Initialize DOS to 0
+!$OMP parallel workshare default(shared)
     DOS(:) = 0._dp
+!$OMP end parallel workshare
 
     off2 = 0
     np = parts(Gf_tri)
@@ -844,11 +856,11 @@ contains
     do n = 1 , np
 
       no_o = nrows_g(Gf_tri,n)
-
+      
       ! Calculate the step size for the projection
       ! on this column
       step_o = min(max_p,no_o)
-
+      
       ! Loop over smaller group of columns in this block-column
       do i_o = 1 , no_o, step_o
         
@@ -894,17 +906,22 @@ contains
             
           else
             
-            XY => val(Gf_tri,in,n)
+            XY  => val(Gf_tri,in,n)
             Mnn => val(Gf_tri,n,n)
             ! re-point
             Mnn => Mnn((i_o-1)*no_o+1:)
             
-            Gf => work(1:no_o*no_i)
+            Gf  => work(1:no_o*no_i)
             
             ! We need to calculate the 
             ! Mnm1n/Mnp1n Green's function
-            call GEMM ('N','N',no_i,step_o,no_o, &
-                zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
+#ifdef USE_GEMM3M
+            call zgemm3m( &
+#else
+            call zgemm( &
+#endif
+                  'N','N',no_i,step_o,no_o, &
+                  zm1, XY,no_i, Mnn,no_o,z0, Gf,no_i)
 
           end if
 
@@ -935,8 +952,10 @@ contains
       end do
       
     end do
-
-    call dscal(r%n, 1._dp / Pi, DOS, 1)
+    
+!$OMP parallel workshare default(shared)
+    DOS(:) = DOS(:) / Pi
+!$OMP end parallel workshare
 
   contains
     
@@ -1132,7 +1151,12 @@ contains
         ! if the entire electrode sits in one block
         A => val(A_tri,in,in)
 
-        call GEMM ('N','N',no,no,no, z1, A(A_i*(isN+1)+1), isN, &
+#ifdef USE_GEMM3M
+        call zgemm3m( &
+#else
+        call zgemm( &
+#endif
+            'N','N',no,no,no, z1, A(A_i*(isN+1)+1), isN, &
             El%Gamma(1), no, z0, work(1), no)
 
         ! Quick break of loop
@@ -1157,7 +1181,12 @@ contains
           A_j = El%inDpvt%r(j_Elec) - crows(jn-1)
         end if
 
-        call GEMM ('N','N',jj,no,ii, z1, A(A_i*jsN + A_j), jsN, &
+#ifdef USE_GEMM3M
+        call zgemm3m( &
+#else
+        call zgemm( &
+#endif
+            'N','N',jj,no,ii, z1, A(A_i*jsN + A_j), jsN, &
             El%Gamma(i_Elec), no, z, work(j_Elec), no)
 
         j_Elec = j_Elec + jj
@@ -1201,10 +1230,11 @@ contains
 #endif
 
     ! To remove any singular values we add a 1e-3 to the diagonal
+!$OMP parallel do default(shared), private(i)
     do i = 1 , n
       tt((i-1)*n+i) = tt((i-1)*n+i) + 1.e-3_dp
     end do
-
+!$OMP end parallel do
     call zgeev('N','N',n,tt,n,eig,work(1),1,work(1),1, &
         work,nwork,rwork,i)
     if ( i /= 0 ) then
@@ -1391,8 +1421,13 @@ contains
       i = i + El%inDpvt%r(i_Elec) - (crows(n)-sN) - 1
 
       ! Calculate the G \Gamma
-      call GEMM ('N','T',nb,no,no, z1, z(i),sN, &
-          El%Gamma(1), no, z0, zwork(i_Elec), no)
+#ifdef USE_GEMM3M
+      call zgemm3m( &
+#else
+      call zgemm( &
+#endif
+           'N','T',nb,no,no, z1, z(i),sN, &
+           El%Gamma(1), no, z0, zwork(i_Elec), no)
        
       i_Elec = i_Elec + nb
 
@@ -1423,8 +1458,13 @@ contains
 
       ii = ( i_Elec-1 ) * no + 1
       ! Calculate the G \Gamma G^\dagger
-      call GEMM ('N','C',no,nb,no, z1, zwork(1),no, &
-          z(i), sN, z0, z(ii), no)
+#ifdef USE_GEMM3M
+      call zgemm3m( &
+#else
+      call zgemm( &
+#endif
+           'N','C',no,nb,no, z1, zwork(1),no, &
+           z(i), sN, z0, z(ii), no)
        
       i_Elec = i_Elec + nb
 
@@ -1573,7 +1613,7 @@ contains
          n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     i_sp => spar(orb_J)
-    J => val (orb_J)
+    J    => val (orb_J)
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
     ! Create the phases
@@ -1588,11 +1628,14 @@ contains
     end do
 
     A => val(A_tri)
+!$OMP parallel default(shared), private(iu,io,ju,jo,iind,ind,Hi,ss)
 
     ! we need this in case the device region gets enlarged due to dH
+!$OMP workshare
     J(:) = 0._dp
-
-!$OMP parallel do default(shared), private(iu,io,ju,jo,iind,ind,Hi,ss)
+!$OMP end workshare
+    
+!$OMP do
     do iu = 1, r%n
       io = r%r(iu)
 
@@ -1634,7 +1677,8 @@ contains
 
       end do
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
 #ifdef TBTRANS_TIMING
     call timer('orb-current',2)
@@ -1695,7 +1739,6 @@ contains
     end do
 
     A => val(A_tri)
-
 !$OMP parallel do default(shared), &
 !$OMP&private(iu,io,iind,jo,ju,ind,col,jj,p)
     do iu = 1, r%n
@@ -1840,11 +1883,15 @@ contains
 
     Gfd => val(Gfd_tri)
     Gfo => val(Gfo_tri)
+    
+!$OMP parallel default(shared), private(iu,io,ind,ju,GfGfd)
 
     ! we need this in case the device region gets enlarged due to dH
+!$OMP workshare
     DM(:) = 0._dp
-
-!$OMP parallel do default(shared), private(iu,io,ind,ju,GfGfd)
+!$OMP end workshare
+    
+!$OMP do
     do iu = 1, r%n
       io = r%r(iu)
 
@@ -1862,7 +1909,8 @@ contains
 
       end do
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
 #ifdef TBTRANS_TIMING
     call timer('Gf-DM',2)
@@ -1935,11 +1983,14 @@ contains
     end do
 
     A => val(A_tri)
+!$OMP parallel default(shared), private(iu,io,ind,ju)
 
     ! we need this in case the device region gets enlarged due to dH
+!$OMP workshare
     DM(:) = 0._dp
-
-!$OMP parallel do default(shared), private(iu,io,ind,ju)
+!$OMP end workshare
+    
+!$OMP do
     do iu = 1, r%n
       io = r%r(iu)
 
@@ -1957,7 +2008,8 @@ contains
 
       end do
     end do
-!$OMP end parallel do
+!$OMP end do
+!$OMP end parallel
 
 #ifdef TBTRANS_TIMING
     call timer('A-DM',2)
@@ -1982,6 +2034,10 @@ contains
     ! local variables
     integer :: j, je, i, ie, no, idx
 
+#ifdef TBTRANS_TIMING
+    call timer('insert-SE',1)
+#endif
+
     idx = El%idx_o - 1
     no = TotUsedOrbs(El)
 
@@ -1992,36 +2048,44 @@ contains
     ! not bulk) A non-bulk electrode
 
     if ( El%Bulk ) then
-!$OMP do private(j,je,i,ie)
+!$OMP parallel do default(shared), private(j,je,i,ie)
       do j = 1 , n2
         je = r%r(off2+j) - idx
         if ( 1 <= je .and. je <= no ) then
           je = (je - 1) * no
           do i = 1 , n1
             ie = r%r(off1+i) - idx
-            if ( 1 <= ie .and. ie <= no ) then
-              M(i,j) = El%Sigma(je + ie)
-            end if
+            if ( ie < 1 ) cycle
+            if ( no < ie ) cycle
+             
+            M(i,j) = El%Sigma(je + ie)
+            
           end do
         end if
       end do
-!$OMP end do
+!$OMP end parallel do
     else
-!$OMP do private(j,je,i,ie)
+!$OMP parallel do default(shared), private(j,je,i,ie)
       do j = 1 , n2
         je = r%r(off2+j) - idx
         if ( 1 <= je .and. je <= no ) then
           je = (je - 1) * no
           do i = 1 , n1
             ie = r%r(off1+i) - idx
-            if ( 1 <= ie .and. ie <= no ) then
-              M(i,j) = M(i,j) - El%Sigma(je + ie)
-            end if
+            if ( ie < 1 ) cycle
+            if ( no < ie ) cycle
+
+            M(i,j) = M(i,j) - El%Sigma(je + ie)
+
           end do
         end if
       end do
-!$OMP end do
+!$OMP end parallel do
     end if
+
+#ifdef TBTRANS_TIMING
+    call timer('insert-SE',2)
+#endif
 
   end subroutine insert_Self_energy
 
@@ -2037,13 +2101,17 @@ contains
     ! local variables
     integer :: j, je, i, ii, idx, no
 
+#ifdef TBTRANS_TIMING
+    call timer('insert-SED',1)
+#endif
+
     no = El%o_inD%n
 
     ! A down-folded self-energy, this
     ! is always considered to be "non-bulk" as
     ! we have it downfolded.
 
-!$OMP do private(j,ii,je,i,idx)
+!$OMP parallel do default(shared), private(j,ii,je,i,idx)
     do j = 1 , no
       ii = (j-1)*no
       ! grab the index in the full tri-diagonal matrix
@@ -2056,10 +2124,12 @@ contains
         
       end do
     end do
-!$OMP end do
+!$OMP end parallel do
 
+#ifdef TBTRANS_TIMING
+    call timer('insert-SED',2)
+#endif
+    
   end subroutine insert_Self_energy_Dev
-
-#undef GEMM
 
 end module m_tbt_tri_scat

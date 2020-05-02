@@ -14,7 +14,8 @@ program unfold
 !       arXiv:1812.03925          ( https://arxiv.org/abs/1812.03925 )
 ! S.G.Mayo and J.M.Soler, Oct.2018
 
-  use alloc,        only: alloc_report, de_alloc, re_alloc
+  use alloc,        only: de_alloc, re_alloc
+  use memory_log,   only: memory_report
   use atmfuncs,     only: lofio, mofio, nofis, rcut, rphiatm, zetafio
   use basis_types,  only: nsp
   use basis_types,  only: basis_parameters, initialize
@@ -127,7 +128,7 @@ program unfold
   ! Set allocation report parameters
   level = fdf_get( 'AllocReportLevel', AllocReportLevelDefault )
   threshold = fdf_get( 'AllocReportThreshold', 0._dp )
-  call alloc_report( level, file='unfold.alloc', printNow=.false., threshold=threshold )
+  call memory_report( level, file='unfold.alloc', printNow=.false., threshold=threshold )
 
    ! Read Fermi level from SystemLabel.out file
 !   if (myNode==0) then
@@ -646,7 +647,7 @@ if (myNode==0) print*,'unfold: writing output files'
   call timer_stop(myName//'main loop')
 
   ! Write allocation report
-  call alloc_report( printNow=.true. )
+  call memory_report( printNow=.true. )
 
   ! Write timer report
   call timer_report( printNow=.true. )

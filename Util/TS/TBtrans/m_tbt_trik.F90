@@ -50,12 +50,6 @@ module m_tbt_trik
 
   public :: tbt_trik
 
-#ifdef USE_GEMM3M
-# define GEMM zgemm3m
-#else
-# define GEMM zgemm
-#endif
-
   private
   
 contains
@@ -1087,7 +1081,7 @@ contains
              if ( .not. cE%fake ) then
                 call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
-                call dscal(r_oDev%n, 2._dp * omega, DOS(1,1), 1)
+                DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
              end if
              
@@ -1095,7 +1089,7 @@ contains
              if ( calc_DM_Gf ) then
                call Gf_DM(TSHS%sc_off,kpt,phase,Gf_tri,zwork_tri,r_oDev,pvt, dev_M)
 #ifdef TBT_PHONON
-               call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M)
              end if
@@ -1103,7 +1097,7 @@ contains
                call GF_COP(r_oDev,Gf_tri,zwork_tri,pvt, &
                    TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
 #ifdef TBT_PHONON
-               call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M)
              end if
@@ -1115,7 +1109,7 @@ contains
                      phase, Gf_tri, zwork_tri, r_oDev, dev_M, pvt)
                end if
 #ifdef TBT_PHONON
-               call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+               val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M)
              end if
@@ -1197,7 +1191,7 @@ contains
                    ! Calculate the DOS from the spectral function
                    call A_DOS(r_oDev,zwork_tri,spS,pvt,DOS(:,1+iEl))
 #ifdef TBT_PHONON
-                   call dscal(r_oDev%n, 2._dp * omega, DOS(1,1+iEl), 1)
+                   DOS(:,1+iEl) = 2._dp * omega * DOS(:,1+iEl)
 #endif
                 end if
                 
@@ -1205,7 +1199,7 @@ contains
                 if ( calc_DM_A ) then
                   call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
 #ifdef TBT_PHONON
-                  call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'DM', dev_M, &
                       Elecs(iEl))
@@ -1214,7 +1208,7 @@ contains
                   call A_COP(r_oDev,zwork_tri,pvt, &
                       TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
 #ifdef TBT_PHONON
-                  call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COOP', dev_M, &
                       Elecs(iEl))
@@ -1227,7 +1221,7 @@ contains
                         kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                   end if
 #ifdef TBT_PHONON
-                  call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+                  val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                   call state_cdf_save_sp_dev(TBTcdf, ikpt, nE, 'COHP', dev_M, &
                       Elecs(iEl))
@@ -1359,7 +1353,7 @@ contains
             !   if ( .not. cE%fake ) then
             !      call GF_DOS(r_oDev,Gf_tri,zwork_tri,spS,pvt,DOS(:,1))
 #ifdef TBT_PHONON
-            !      call dscal(r_oDev%n, 2._dp * omega, DOS(1,1), 1)
+            !       DOS(:,1) = 2._dp * omega * DOS(:,1)
 #endif
             !   end if
             !end if
@@ -1436,14 +1430,14 @@ contains
                ! Calculate the DOS from the spectral function
                call A_DOS(r_oDev,zwork_tri,spS,pvt,pDOS(:,2,ipt))
 #ifdef TBT_PHONON
-               call dscal(r_oDev%n, 2._dp * omega, pDOS(1,2,ipt), 1)
+               pDOS(:,2,ipt) = 2._dp * omega * pDOS(:,2,ipt)
 #endif
                
 #ifdef NCDF_4
                if ( calc_proj_DM_A ) then
                  call A_DM(TSHS%sc_off,kpt,phase,zwork_tri,r_oDev,pvt, dev_M)
 #ifdef TBT_PHONON
-                 call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'DM', p_E, dev_M)
                end if
@@ -1451,7 +1445,7 @@ contains
                  call A_COP(r_oDev,zwork_tri,pvt, &
                      TSHS%sp,S,TSHS%sc_off, kpt, phase, dev_M)
 #ifdef TBT_PHONON
-                 call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COOP', p_E, dev_M)
                end if
@@ -1463,7 +1457,7 @@ contains
                        kpt, phase, zwork_tri, r_oDev, dev_M, pvt)
                  end if
 #ifdef TBT_PHONON
-                 call dscal(size(val_dev_M), 2._dp * omega, val_dev_M(1), 1)
+                 val_dev_M(:) = 2._dp * omega * val_dev_M(:)
 #endif
                  call proj_cdf_save_sp_dev(PROJcdf, ikpt, nE, 'COHP', p_E, dev_M)
                end if
@@ -1681,9 +1675,6 @@ contains
     call end_save(iounits)
     call end_save(iounits_El)
     deallocate(iounits, iounits_El)
-    if ( IONode ) then
-      write(*,'(a)') 'Currents will only be calculated if compiled with -DNCDF -DNCDF_4 (NetCDF support)'
-    end if
 #endif
 
 #ifdef MPI
@@ -1779,15 +1770,18 @@ contains
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     Gfinv => val(Gfinv_tri)
+
+!$OMP parallel default(shared), private(iu,io,ind,ju,idx)
+
     ! Initialize
+!$OMP workshare
     GFinv(:) = cmplx(0._dp,0._dp,dp)
+!$OMP end workshare
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain
     ! values in this part...
-!$OMP parallel default(shared), private(iu,io,ind,ju,idx)
-
-!$OMP do
+!$OMP do 
     do iu = 1, r%n
        io = r%r(iu) ! get the orbital in the big sparsity pattern
           
@@ -1809,13 +1803,13 @@ contains
        end do
              
     end do
-!$OMP end do
+!$OMP end do nowait
+
+!$OMP end parallel
 
     do io = 1 , N_Elec
        call insert_self_energy_dev(Gfinv_tri,Gfinv,r,Elecs(io))
     end do
-
-!$OMP end parallel
 
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
@@ -1860,39 +1854,37 @@ contains
     ! All our work-arrays...
     complex(dp), pointer :: A(:), B(:), C(:), Y(:)
     complex(dp), parameter :: zi = cmplx(0._dp, 1._dp, dp)
-    complex(dp), parameter :: z0 = cmplx(0._dp, 0._dp, dp)
-    complex(dp), parameter :: z1 = cmplx(1._dp, 0._dp, dp)
-    complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp, dp)
 
     integer :: no, off, i, ii, j, ierr
-    integer :: sN, sNm1, sNSQ, sNm1SQ
     integer :: ip, itmp
 
     if ( cE%fake ) return
+
+    ip = maxval(p)
 
     ! Copy down the downfolded size...
     no = El%o_inD%n
 
     if ( p(np) /= no ) then
-      call die('Something went wrong... The last segment MUST be &
-          &equivalent to the down-folded region. No more, no less.')
+       call die('Something went wrong... The last segment MUST be &
+            &equivalent to the down-folded region. No more, no less.')
     end if
 
     ! Check that there is space enough in the work array.
     do ip = 1 , np - 1
-      itmp = p(ip) * p(ip+1) * 2 ! B,C
-      itmp = itmp  + p(ip) ** 2   ! A
-      itmp = itmp  + p(ip+1) ** 2 ! Y
-      if ( itmp > nwork ) then
-        call die('Work array is too small... A, B, C, Y')
-      end if
+       itmp = p(ip) * p(ip+1) * 2 ! B,C
+       itmp = itmp  + p(ip) ** 2   ! A
+       itmp = itmp  + p(ip+1) ** 2 ! Y
+       if ( itmp > nwork ) then
+          call die('Work array is too small... A, B, C, Y')
+       end if
     end do
 
     ! check that the last segment also holds...
     itmp = p(np-1) ** 2 ! A
     itmp = itmp + p(np) ** 2 ! Y
     if ( itmp > nwork ) then ! we do not need y here...
-      call die('Work array is too small..., A, Y-next')
+       call die('Work array is too small..., A, Y-next')
     end if
     ! We start by pointing the Y array to the far back of the
     ! work-array. In that way we ensure that no elements overlap
@@ -1900,79 +1892,69 @@ contains
     
     ! loop and convert..
     off = 0
-    do ip = 2 , np
+    do ip = 2 , np 
 
-      ! Store sizes
-      sNm1 = p(ip-1)
-      sNm1SQ = sNm1 * sNm1
-      sN = p(ip)
-      sNSQ = sN * sN
+       ! Set up pointers
+       i = 1
+       A => work(i:i-1+p(ip-1)**2)
+       i = i + p(ip-1)**2
+       B => work(i:i-1+p(ip)*p(ip-1))
+       i = i + p(ip)*p(ip-1)
+       C => work(i:i-1+p(ip)*p(ip-1))
 
-      ! Set up pointers
-      i = 1
-      A => work(i:i-1+sNm1SQ)
-      i = i + sNm1SQ
-      B => work(i:i-1+sN*sNm1)
-      i = i + sN*sNm1
-      C => work(i:i-1+sN*sNm1)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
+            sc_off, kpt)
 
-      call prep_HS(cE%E,El,spH,spS,r,off,sNm1,off,sNm1,A, sc_off, kpt)
+       if ( ip > 2 ) then
+          ii = p(ip-1) ** 2
+!$OMP parallel do default(shared) private(i)
+          do i = 1 , ii
+             A(i) = A(i) - Y(i)
+          end do
+!$OMP end parallel do
+       end if
 
-      if ( ip > 2 ) then
-        call zaxpy(sNm1SQ, zm1, Y, 1, A, 1)
-      end if
+       ! Ensures that Y is not overwritten
+       i = off + p(ip-1)
+       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
+            sc_off, kpt)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),C, &
+            sc_off, kpt)
 
-      ! Ensures that Y is not overwritten
-      i = off + sNm1
-      call prep_HS(cE%E,El,spH,spS,r,i,sN,off,sNm1,B, sc_off, kpt)
-      call prep_HS(cE%E,El,spH,spS,r,off,sNm1,i,sN,C, sc_off, kpt)
+       ! increment offset
+       off = off + p(ip-1)
 
-      ! increment offset
-      off = off + sNm1
+       ! re-point Y
+       if ( ip == np ) then
+          ! Sigma should have been emptied by the previous loops :)
+          Y => El%Sigma(:)
+          if ( no /= p(np) ) call die('must be enforced')
+       else
+          Y => work(nwork-p(ip)**2+1:nwork)
+       end if
 
-      ! re-point Y
-      if ( ip == np ) then
-        ! Sigma should have been emptied by the previous loops :)
-        Y => El%Sigma(:)
-        if ( no /= sN ) call die('must be enforced')
-      else
-        Y => work(nwork-sNSQ+1:nwork)
-      end if
-
-      ! Calculate: [An-1 - Yn-1] ^-1 Cn
-      ! Split calculation into *fast*-slow
-      ! For n,m n<m*2 zgesv is faster than zgetrf+zgetri+zgemm
-      ! For n,m n>m*2 zgetrf+zgetri+zgemm is faster than zgesv
-      ! Here n = sNm1, m = sN
-      if ( sNm1 * 2 > sN ) then
-        call zgesv(sNm1,sN,A,sNm1,ipiv,C,sNm1,ierr)
-      else
-        ! Here we know that sNm1 * 2 < sN and thus we
-        ! can use the result array (Y) as work array
-        ! Since Y has dimensions sNm1,sN > sNm1,sNm1
-        call zgetrf(sNm1, sNm1, A, sNm1, ipiv, ierr)
-        if ( ierr == 0 ) then
-          call zgetri(sNm1, A, sNm1, ipiv, Y, sNm1SQ, ierr)
-          call GEMM ('N', 'N', sNm1, sN, sNm1, z1, &
-              A, sNm1, C, sNm1, z0, Y, sNm1)
-          call zcopy(sNm1*sN, Y, 1, C, 1)
-        end if
-      end if
-      if ( ierr /= 0 ) then
-        write(*,'(a,2(tr1,i0))') 'Inversion of down-projection failed: ',ip, ierr
-      end if
+       ! Calculate: [An-1 - Yn-1] ^-1 Cn
+       call zgesv(p(ip-1),p(ip),A,p(ip-1),ipiv,C,p(ip-1),ierr)
+       if ( ierr /= 0 ) then
+          write(*,'(a,i0)') 'Inversion of down-projection failed: ',ierr
+       end if
        
-      ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
-      call GEMM ('N','N',sN,sN,sNm1,z1, &
-          B,sN,C,sNm1,z0,Y,sN)
+       ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+            B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
        
     end do
 
     ! At this point we should be left with the last segment
     ! which is the self-energy projected into the device region...
     if ( r%n /= off + p(np) ) then
-      print *,r%n,off+p(np)
-      call die('Error in regional size, should not be encountered')
+       print *,r%n,off+p(np)
+       call die('Error in regional size, should not be encountered')
     end if
         
     ! Create Gamma...
@@ -1980,16 +1962,16 @@ contains
     ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
-      ii = no * ( j - 1 )
-      ip = j - no
-      do i = 1 , j - 1
-        ii = ii + 1
-        ip = ip + no
-        El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
-        El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
-      end do
-      ii = no*(j-1) + j
-      El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
+       ii = no * ( j - 1 )
+       ip = j - no
+       do i = 1 , j - 1
+          ii = ii + 1
+          ip = ip + no
+          El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
+       end do
+       ii = no*(j-1) + j
+       El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -2038,29 +2020,31 @@ contains
 
     if ( cE%fake ) return
 
+    ip = maxval(p)
+
     ! Copy down the downfolded size...
     no = El%o_inD%n
 
     if ( p(np) /= no ) then
-      call die('Something went wrong... The last segment MUST be &
-          &equivalent to the down-folded region. No more, no less.')
+       call die('Something went wrong... The last segment MUST be &
+            &equivalent to the down-folded region. No more, no less.')
     end if
 
     ! Check that there is space enough in the work array.
     do ip = 1 , np - 1
-      itmp = p(ip) * p(ip+1) * 2 ! B,C
-      itmp = itmp  + p(ip) ** 2   ! A
-      itmp = itmp  + p(ip+1) ** 2 ! Y
-      if ( itmp > nwork ) then
-        call die('Work array is too small... A, B, C, Y')
-      end if
+       itmp = p(ip) * p(ip+1) * 2 ! B,C
+       itmp = itmp  + p(ip) ** 2   ! A
+       itmp = itmp  + p(ip+1) ** 2 ! Y
+       if ( itmp > nwork ) then
+          call die('Work array is too small... A, B, C, Y')
+       end if
     end do
 
     ! check that the last segment also holds...
     itmp = p(np-1) ** 2 ! A
     itmp = itmp + p(np) ** 2 ! Y
     if ( itmp > nwork ) then ! we do not need y here...
-      call die('Work array is too small..., A, Y-next')
+       call die('Work array is too small..., A, Y-next')
     end if
     ! We start by pointing the Y array to the far back of the
     ! work-array. In that way we ensure that no elements overlap
@@ -2070,109 +2054,131 @@ contains
     off = 0
     do ip = 2 , np 
 
-      ! Set up pointers
-      i = 1
-      A => work(i:i-1+p(ip-1)**2)
+       ! Set up pointers
+       i = 1
+       A => work(i:i-1+p(ip-1)**2)
 
-      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
-          sc_off, kpt)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),off,p(ip-1),A, &
+            sc_off, kpt)
 
-      ! Now we can calculate the life-time of the electrons
-      ! The life-time is the g_ii (local Green function)
-      !   Tr[Gf_ii^0\Gamma Gf_ii^0^\dagger \Gamma]
-      ! First calculate Gf, but we retain A
+       ! Now we can calculate the life-time of the electrons
+       ! The life-time is the g_ii (local Green function)
+       !   Tr[Gf_ii^0\Gamma Gf_ii^0^\dagger \Gamma]
+       ! First calculate Gf, but we retain A
        
-      ierr = p(ip-1)
-      if ( size(El%Sigma) >= ierr**2 ) then
-        C => El%Sigma
-      else
-        call die('Sigma array too small')
-      end if
+       ierr = p(ip-1)
+       if ( size(El%Sigma) >= ierr**2 ) then
+          C => El%Sigma
+       else
+          call die('Sigma array too small')
+       end if
        
-      i = 1 + ierr**2
-      B => work(i:i-1+ierr**2)
+       i = 1 + ierr**2
+       B => work(i:i-1+ierr**2)
 
-      if ( ip > 2 ) then
-        A(:) = A(:) - Y(:)
-      else
-        Y => El%Sigma
-      end if
+       if ( ip > 2 ) then
+!$OMP parallel workshare default(shared)
+          A(:) = A(:) - Y(:)
+!$OMP end parallel workshare
+       else
+          Y => El%Sigma
+       end if
        
-      ! Calculate Gf^0
-      call mat_invert(A,B,ierr,MI_IN_PLACE_LAPACK)
+       ! Calculate Gf^0
+       call mat_invert(A,B,ierr,MI_IN_PLACE_LAPACK)
        
-      ! Calculate the Gamma function
-      ! I.e. store the transposed Gamma.
-      ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
+       ! Calculate the Gamma function
+       ! I.e. store the transposed Gamma.
+       ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,jj)
-      do j = 1 , ierr
-        ii = ierr * ( j - 1 )
-        jj = j - ierr
-        do i = 1 , j - 1
-          ii = ii + 1
-          jj = jj + ierr
-          C(ii) = zi * (Y(jj) - conjg( Y(ii) ))
-          C(jj) = zi * (Y(ii) - conjg( Y(jj) ))
-        end do
-        ii = ierr*(j-1) + j
-        C(ii) = zi * (Y(ii) - conjg( Y(ii) ))
-      end do
+       do j = 1 , ierr
+          ii = ierr * ( j - 1 )
+          jj = j - ierr
+          do i = 1 , j - 1
+             ii = ii + 1
+             jj = jj + ierr
+             C(ii) = zi * (Y(jj) - conjg( Y(ii) ))
+             C(jj) = zi * (Y(ii) - conjg( Y(jj) ))
+          end do
+          ii = ierr*(j-1) + j
+          C(ii) = zi * (Y(ii) - conjg( Y(ii) ))
+       end do
 !$OMP end parallel do
 
-      ! Calculate matrix product
-      call GEMM ('N','T',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
-          A,ierr,C,ierr,cmplx(0._dp,0._dp,dp),B,ierr)
-      call GEMM ('N','C',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
-          B,ierr,A,ierr,cmplx(0._dp,0._dp,dp),El%Sigma,ierr)
+       ! Calculate matrix product
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','T',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
+            A,ierr,C,ierr,cmplx(0._dp,0._dp,dp),B,ierr)
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','C',ierr,ierr,ierr,cmplx(1._dp,0._dp,dp), &
+            B,ierr,A,ierr,cmplx(0._dp,0._dp,dp),El%Sigma,ierr)
 
-      ! Calculate trace
-      do i = 1 , ierr
-        ! Calculate offset
-        j = (i-1) * ierr + 1
-        life(off+i) = - aimag( zdotu(ierr,El%Sigma(j),1,C(j),1) )
-      end do
+       ! Calculate trace
+       do i = 1 , ierr
+          ! Calculate offset
+          j = (i-1) * ierr + 1
+          life(off+i) = - aimag( zdotu(ierr,El%Sigma(j),1,C(j),1) )
+       end do
 
-      ! Reassign pointers
-      i = 1 + p(ip-1)**2
-      B => work(i:i-1+p(ip)*p(ip-1))
-      i = i + p(ip)*p(ip-1)
-      C => work(i:i-1+p(ip)*p(ip-1))
-      
-      ! Ensures that Y is not overwritten
-      i = off + p(ip-1)
-      call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),B, &
-          sc_off, kpt)
+       ! Reassign pointers
+       i = 1 + p(ip-1)**2
+       B => work(i:i-1+p(ip)*p(ip-1))
+       i = i + p(ip)*p(ip-1)
+       C => work(i:i-1+p(ip)*p(ip-1))
 
-      ! increment offset
-      off = off + p(ip-1)
+       ! Ensures that Y is not overwritten
+       i = off + p(ip-1)
+       call prep_HS(cE%E,El,spH,spS,r,off,p(ip-1),i,p(ip),B, &
+            sc_off, kpt)
 
-      ! re-point Y
-      if ( ip == np ) then
-        ! Sigma should have been emptied by the previous loops :)
-        Y => El%Sigma(:)
-        if ( no /= p(np) ) call die('must be enforced')
-      else
-        Y => work(nwork-p(ip)**2+1:nwork)
-      end if
+       ! increment offset
+       off = off + p(ip-1)
 
-      ! Calculate: [An-1 - Yn-1] ^-1 Cn
-      call GEMM ('N','N',p(ip-1),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
-          A,p(ip-1),B,p(ip-1),cmplx(0._dp,0._dp,dp),C,p(ip))
+       ! re-point Y
+       if ( ip == np ) then
+          ! Sigma should have been emptied by the previous loops :)
+          Y => El%Sigma(:)
+          if ( no /= p(np) ) call die('must be enforced')
+       else
+          Y => work(nwork-p(ip)**2+1:nwork)
+       end if
 
-      call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
-          sc_off, kpt)
+       ! Calculate: [An-1 - Yn-1] ^-1 Cn
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',p(ip-1),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+            A,p(ip-1),B,p(ip-1),cmplx(0._dp,0._dp,dp),C,p(ip))
 
-      ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
-      call GEMM ('N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
-          B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
+       call prep_HS(cE%E,El,spH,spS,r,i,p(ip),off,p(ip-1),B, &
+            sc_off, kpt)
+
+       ! Calculate: Bn-1 [An-1 - Yn-1] ^-1 Cn
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','N',p(ip),p(ip),p(ip-1),cmplx(1._dp,0._dp,dp), &
+            B,p(ip),C,p(ip-1),cmplx(0._dp,0._dp,dp),Y,p(ip))
 
     end do
 
     ! At this point we should be left with the last segment
     ! which is the self-energy projected into the device region...
     if ( r%n /= off + p(np) ) then
-      print *,r%n,off+p(np)
-      call die('Error in regional size, should not be encountered')
+       print *,r%n,off+p(np)
+       call die('Error in regional size, should not be encountered')
     end if
         
     ! Create Gamma...
@@ -2180,16 +2186,16 @@ contains
     ! \Gamma ^ T = i (\Sigma - \Sigma^\dagger)^T
 !$OMP parallel do default(shared), private(j,i,ii,ip)
     do j = 1 , no
-      ii = no * ( j - 1 )
-      ip = j - no
-      do i = 1 , j - 1
-        ii = ii + 1
-        ip = ip + no
-        El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
-        El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
-      end do
-      ii = no*(j-1) + j
-      El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
+       ii = no * ( j - 1 )
+       ip = j - no
+       do i = 1 , j - 1
+          ii = ii + 1
+          ip = ip + no
+          El%Gamma(ii) = zi * (El%Sigma(ip) - conjg( El%Sigma(ii) ))
+          El%Gamma(ip) = zi * (El%Sigma(ii) - conjg( El%Sigma(ip) ))
+       end do
+       ii = no*(j-1) + j
+       El%Gamma(ii) = zi * (El%Sigma(ii) - conjg( El%Sigma(ii) ))
     end do
 !$OMP end parallel do
 
@@ -2218,7 +2224,7 @@ contains
 
     ! the current energy point
     complex(dp), intent(in) :: Z
-    ! Electrode
+    ! Electrodes...
     type(Elec), intent(inout) :: El
     ! The Hamiltonian and overlap sparse matrices
     type(zSpData1D), intent(in) :: spH,  spS
@@ -2243,21 +2249,19 @@ contains
     call attach(sp, n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! We will only loop in the region
-!$OMP parallel default(shared), private(iu,io,ind,ju,ss)
-
-!$OMP do
+!$OMP parallel do default(shared), private(iu,io,ind,ju,ss)
     do iu = 1 , n2
-      io = r%r(off2+iu) ! get the orbital in the sparsity pattern
+       io = r%r(off2+iu) ! get the orbital in the sparsity pattern
 
-      ! Initialize to zero
-      M(:,iu) = cmplx(0._dp,0._dp,dp)
+       ! Initialize to zero
+       M(:,iu) = cmplx(0._dp,0._dp,dp)
 
-      if ( l_ncol(io) /= 0 ) then
+       if ( l_ncol(io) /= 0 ) then
 
-        call ssearch_init(ss, l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)))
+       call ssearch_init(ss, l_col(l_ptr(io)+1:l_ptr(io) + l_ncol(io)))
        
-        ! Loop on entries here...
-        do ju = 1 , n1
+       ! Loop on entries here...
+       do ju = 1 , n1
  
           ! Check if the orbital exists in the region
           ! We are dealing with a UC sparsity pattern.
@@ -2269,28 +2273,24 @@ contains
           ! See symmetrize_HS_kpt
           M(ju,iu) = Z * S(ind) - H(ind)
 
-        end do
-      end if
+       end do
+       end if
     end do
-!$OMP end do
+!$OMP end parallel do
 
     call insert_Self_Energy(n1,n2,M,r,El,off1,off2)
 
-!$OMP end parallel
-
 #ifdef NCDF_4
     if ( dH%lvl > 0 ) then
-      ! Add dH
-      call add_zdelta_Mat(dH%d, r, off1,n1,off2,n2, M, sc_off, kpt)
+       ! Add dH
+       call add_zdelta_Mat(dH%d, r, off1,n1,off2,n2, M, sc_off, kpt)
     end if
     if ( dSE%lvl > 0 ) then
-      ! Add dSE
-      call add_zdelta_Mat(dSE%d, r, off1,n1,off2,n2, M, sc_off, kpt)
+       ! Add dSE
+       call add_zdelta_Mat(dSE%d, r, off1,n1,off2,n2, M, sc_off, kpt)
     end if
 #endif
 
   end subroutine prep_HS
-
-#undef GEMM
 
 end module m_tbt_trik

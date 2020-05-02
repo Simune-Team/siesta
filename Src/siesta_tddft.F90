@@ -18,7 +18,6 @@ contains
 #ifdef MPI
     use mpi_siesta
 #endif
-    use sys, only : die, bye
     use precision, only: dp
     use parallel,     only : IOnode, SIESTA_worker
 
@@ -61,7 +60,7 @@ contains
 #ifdef SIESTA__PEXSI
     ! Broadcast relevant things for program logic
     ! These were set in read_options, called only by "SIESTA_workers".
-    call broadcast(nscf,comm=true_MPI_Comm_World)
+    call broadcast(nscf,comm=MPI_Comm_DFT)
 #endif
 
     if ( SIESTA_worker )  then

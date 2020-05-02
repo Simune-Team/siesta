@@ -165,10 +165,10 @@
 \hrulefill
 \vspace{0.5cm}
 
-{\Large \printdate}
+{\Large Jan 20, 2020 }
 
 \vspace{1.5cm}
-{\Large \url{http://www.uam.es/siesta}}
+{\Large \url{http://www.icmab.es/siesta}}
 
 \vspace{2.5cm}
 \siesta\ Steering Committee:
@@ -306,8 +306,6 @@ which still uses many of the algorithms developed by them.
   tutorial material prepared for \siesta\ schools and workshops at
   the project's web page} \url{http://www.uam.es/siesta}.
 
-
-\textbf{NOTE: See the description of changes in the logic of the SCF loop}
 
 \siesta\index{Siesta@\siesta} (Spanish Initiative for
 Electronic Simulations with
@@ -596,11 +594,9 @@ To enable MPI in \siesta\ the compilation options are required to be
 changed accordingly, here is the most basic changes to the
 \file{arch.make} for standard binary names
 \begin{shellexample}
+  FC_PARALLEL = mpifort # or mpif90
   CC = mpicc
-  FC = mpifort # or mpif90
-  MPI_INTERFACE = libmpi_f90.a
-  MPI_INCLUDE = .
-  FPPFLAGS += -DMPI
+  WITH_MPI=1
 \end{shellexample}
 \index{compile!pre-processor!-DMPI}
 
@@ -713,6 +709,27 @@ installation scripts finishes by telling \emph{what} to add to the
 
 \begin{description}
 
+  \item[XMLF90] %
+  \index{External library!xmlf90}%
+  is required as a prerequisite for libPSML.
+  (\href{https://launchpad.net/xmlf90}). See the \texttt{000\_INSTALL} file.
+
+  \item[libPSML] %
+  \index{External library!libPSML}%
+  is required to use pseudopotentials in PSML format
+  (\href{https://launchpad.net/libPSML}) See the \texttt{000\_INSTALL} file.
+
+  \item[libGridXC] %
+  \index{External library!libGridXC}%
+  is required.
+  (\href{https://launchpad.net/libgridxc}) See the \texttt{000\_INSTALL} file.
+
+  \item[libXC] %
+  \index{External library!libXC}%
+  is optional, depending on the options used in the compilation of libGridXC.
+  (\href{https://gitlab.com/libxc/libxc})
+
+    
   \item[BLAS] %
   \index{External library!BLAS}%
   it is recommended to use a high-performance library
@@ -954,6 +971,44 @@ libraries
 \begin{shellexample}
   LIBS += -Wl,--allow-multiple-definition -lpexsi_linux <>
 \end{shellexample}
+
+  \item[\href{http://elsi-interchange.org}{ELSI}]%
+  \index{ELSI}%
+  \index{External library!ELSI}%
+  The ELSI library may be used with \siesta\ for access to a range of
+  solvers, see Sec.~\ref{SolverELSI}. Currently the interface is
+  implemented (tested) for ELSI 2.2.0 to 2.4.1 (avoid 2.4.0, as it is buggy). If
+  newer versions retain the same interface they may also be used.
+
+  (This description applies to the standard ELSI library without
+  external libraries. For a fuller description of compilation options,
+  see the \texttt{README\_ELSI} file in the top directory of the
+  \siesta\ distribution.)
+  
+  Add these flags to your \file{arch.make} file to enable ELSI
+\begin{shellexample}
+  INCFLAGS += -I/opt/elsi/include
+  LIBS += -L/opt/elsi/lib <>
+  FPPFLAGS += -DSIESTA__ELSI
+\end{shellexample}
+  \index{compile!pre-processor!-DSIESTA\_\_ELSI}
+  \index{compile!pre-processor!-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}
+  where \shell{<>} represents the appropriate ELSI libraries (see the
+  ELSI installation instructions). Support for the EigenExa and
+  MAGMA solvers is not compiled-in by default. To enable it, add the
+  flag
+\begin{shellexample}
+  FPPFLAGS += -DSIESTA__ELSI_2_4_SOLVERS
+\end{shellexample}
+  %
+  If one experiences linker failures, one possible solution that may
+  help is
+\begin{shellexample}
+  LIBS += -lmpi_cxx -lstdc++
+\end{shellexample}
+  which is due to ELSI containing some parts written in C++, while the
+  linking is done by the Fortran compiler. The exact library name for
+  your MPI vendor may vary.
 
 
   \item[CheSS]%
@@ -1562,12 +1617,46 @@ for each defined species (species defined either in block
 The name of the files should be:
 
 \textit{Chemical\_label}\texttt{.vps} (unformatted) or
-\textit{Chemical\_label}\texttt{.psf} (ASCII)
+\textit{Chemical\_label}\texttt{.psf} (ASCII) or
+{\textit{Chemical\_label}\texttt{.psml} (PSML format)
+
 
 \noindent
 where \textit{Chemical\_label} corresponds to the label defined in the
 \fdf{ChemicalSpeciesLabel} block.
 
+\index{PSML format}\index{pseudopotential!PSML format}
+Siesta can handle pseudopotential files in the PSML format
+(García, A., Verstraete, M. J., Pouillon, Y., and Junquera, J. ``The
+PSML format and library for norm-conserving pseudopotential data
+curation and interoperability'', Computer Physics Communications 227
+51-71 (2018), \url{https://doi.org/10.1016/j.cpc.2018.02.011}).
+In particular, Siesta can:
+\begin{itemize}
+\item Read the semilocal potentials from the PSML file and proceed as
+  usual, generating the PAOs, the Siesta-style local potential, and
+  the KB projectors.
+\item Read the semilocal potentials \emph{and} the local potential from
+  the PSML file, and generate the PAOs and the KB projectors. For
+  this, the option \fdf{use-psml-vlocal} must be set to \fdftrue (the default).
+\item Read the semilocal potentials \emph{and} the local potential,
+  \emph{and} the non-local projectors from
+  the PSML file. In this case, the PAOs are still generated from the
+  semi-local potentials. In the future there will be an option to
+  generate the PAOs directly from the complete pseudopotential operator. For
+  this, the options \fdf{use-psml-vlocal} and
+  \fdf{use-psml-kb-projectors} must be set to \fdftrue (the default).
+\end{itemize}
+Currently, PSML files can be produced in a form fully compatible with
+the Siesta procedures to generate the non-local pseudopotential
+operator (see directory \shell{Pseudo/vnl-operator})\index{PSML!from
+  Siesta's vnl-operator} and by suitably patched versions of
+D.R. Hamann's \texttt{oncvpsp} program (see directory
+\shell{Pseudo/Third-Party-Tools/ONCVPSP}).\index{pseudopotential!oncvpsp
+  code}\index{PSML!from oncvpsp code}.
+
+See also the file \shell{README\_PSML} in the top directory for more
+PSML-related information.
 
 \subsection{Basis set and KB projectors}
 
@@ -1890,14 +1979,14 @@ set to their problem under consideration.
   \begin{fdfoptions}
 
     \option[split]%
-    \fdfindex*{PAO!BasisType:split}%
+    \fdfindex*{PAO!BasisType:split}
 
     Split-valence scheme for multiple-zeta.
     The split is based on different radii.
 
 
     \option[splitgauss]%
-    \fdfindex*{PAO!BasisType:splitgauss}%
+    \fdfindex*{PAO!BasisType:splitgauss}
     
     Same as \texttt{split} but using gaussian functions
     $e^{-(x/\alpha_i)^2}$. The gaussian widths $\alpha_i$ are read
@@ -1907,20 +1996,20 @@ set to their problem under consideration.
     
 
     \option[nodes]%
-    \fdfindex*{PAO!BasisType:nodes}%
+    \fdfindex*{PAO!BasisType:nodes}
     
     Generalized PAO's.
 
 
     \option[nonodes]%
-    \fdfindex*{PAO!BasisType:nonodes}%
+    \fdfindex*{PAO!BasisType:nonodes}
 
     The original PAO's are used, multiple-zeta is generated by
     changing the scale-factors, instead of using the excited orbitals.
 
     
     \option[filteret]
-    \fdfindex*{PAO!BasisType:filteret}%
+    \fdfindex*{PAO!BasisType:filteret}
     
     Use the filterets as a systematic basis set.  The size of the
     basis set is controlled by the filter cut-off for the orbitals.
@@ -1948,8 +2037,8 @@ set to their problem under consideration.
   \begin{fdfoptions}
 
     \option[SZ|minimal]%
-    \fdfindex*{PAO!BasisSize:SZ}%
-    \fdfindex*{PAO!BasisSize:minimal}%
+    \fdfindex*{PAO!BasisSize:SZ}
+    \fdfindex*{PAO!BasisSize:minimal}
     \index{basis!minimal}
     \index{single-$\zeta$}
 
@@ -1957,34 +2046,40 @@ set to their problem under consideration.
 
 
     \option[DZ]%
-    \fdfindex*{PAO!BasisSize:DZ}%
+    \fdfindex*{PAO!BasisSize:DZ}
     \index{double-$\zeta$}
 
     Double zeta basis, in the scheme defined by \fdf{PAO!BasisType}.
 
 
     \option[SZP]%
-    \fdfindex*{PAO!BasisSize:SZP}%
+    \fdfindex*{PAO!BasisSize:SZP}
 
     Single-zeta basis plus polarization orbitals.
 
     
     \option[DZP|standard]%
-    \fdfindex*{PAO!BasisSize:DZP}%
+    \fdfindex*{PAO!BasisSize:DZP}
     
-    Like \fdf*{DZ} plus polarization orbitals. Polarization orbitals
-    are constructed from perturbation theory,\index{perturbative
-        polarization} and they are defined so they
-    have\index{basis!polarization} the minimum angular momentum $l$
-    such that there are not occupied orbitals with the same $l$ in the
-    valence shell of the ground-state atomic configuration. They
-    polarize the corresponding $l-1$ shell.
+    Like \fdf*{DZ} plus polarization orbitals. 
 
     \note The ground-state atomic configuration used internally by
     \siesta\ is defined in the source file
     \shell{Src/periodic\_table.f}.  For some elements (e.g., Pd), the
     configuration might not be the standard one\index{Ground-state
         atomic configuration}.
+
+    \note By default, polarization orbitals
+    are constructed from perturbation theory,\index{perturbative
+        polarization} and they are defined so they
+    have\index{basis!polarization} the minimum angular momentum $l$
+    such that there are no occupied orbitals with the same $l$ in the
+    valence shell of the ground-state atomic configuration. They
+    polarize the corresponding $l-1$ shell.
+
+    See \fdf{PAO!NonPerturbativePolarizationOrbitals} and
+    \fdf{PAO!PolarizationScheme} in Sec.~\ref{sec:non-pert-pols} for
+    options to generate polarization orbitals non-perturbatively.
     
   \end{fdfoptions}
 
@@ -2160,6 +2255,80 @@ As a summary of the above options:
   
 \end{fdfentry}
 
+\subsubsection{Polarization-orbital options}
+\label{sec:non-pert-pols}
+
+Polarization orbitals can be requested through an automatic basis-size
+specification such as DZP, or TZP, etc, or through the use of the 'P'
+shell option in the \fdf{PAO!Basis} block. 
+
+In these cases, by default, polarization orbitals are generated
+perturbatively, by formally applying an electric field to the orbital
+being polarized.
+
+Polarization shells can also be put explicitly in the \fdf{PAO!Basis}
+block. In this case, the orbitals are generated in the standard way,
+using the appropriate confinement and split-norm options.
+
+If the perturbative method is not wanted, even when using the standard
+basis specifications, the following global option
+can be used:
+
+\begin{fdflogicalF}{PAO!non-perturbative-polarization-orbitals}
+  \index{basis!polarization orbitals}
+
+  If enabled, it will promote any polarization shells to the status
+  of explicit shells, thus using the standard generation options.
+  
+\end{fdflogicalF}
+
+Also, this setting can be controlled species by species, by using
+a block
+
+\begin{fdfentry}{PAO!PolarizationScheme}[block]
+  \index{basis!polarization orbitals}
+
+  Block which allows to specify a different polarization scheme
+  for each species. For example,
+  \begin{fdfexample}
+     %block PAO.PolarizationScheme
+         Si      non-perturbative
+         H       perturbative
+     %endblock PAO.PolarizationScheme
+  \end{fdfexample}
+
+  If a species does not appear in the block, the setting of 
+  \fdf{PAO!non-perturbative-polarization-orbitals} applies.
+  The default scheme is perturbative.
+  
+\end{fdfentry}
+
+The perturbative method does not require any extra information
+regarding confinement, since the $r_c$ value for the polarization
+shell is the same as the one for the polarized shell.  If the
+perturbative method is turned off, the new explicit shell created for
+the polarization orbital will be assigned an $r_c$ equal to the one
+actually used for the polarized shell (for the 1st zeta). The only
+extra control offered at this point is a possible expansion of this
+value through the (global) option:
+
+\begin{fdfentry}{PAO!polarization-rc-expansion-factor}[real]<$1.0$>
+  \index{basis!confinement radius expansion} 
+
+  When turning off the perturbative method for the generation of
+  polarization orbitals, assign to the 1st zeta of the explicit
+  polarization shell the $r_c$ of the polarized shell multiplied by
+  this factor.
+  
+\end{fdfentry}
+
+Note that, empirically, the perturbative method seems to give better
+results (in the variational sense), so the alternative should only be
+used when the default fails for some reason, for full basis-set optimization,
+or for experimentation purposes.
+
+A proper basis-set optimization should be carried out using
+a PAO.Basis block, which allows a full set of options.
 
 
 \subsubsection{Soft-confinement options}
@@ -2198,6 +2367,13 @@ As a summary of the above options:
 
 
 \subsubsection{Kleinman-Bylander projectors}
+
+\index{PSML}{\index{Kleinman-Bylander projectors!from PSML file} NOTE:
+  {\sc Siesta} is now able to read directly the non-local projectors
+  from a PSML file. For this, the options \fdf{use-psml-vlocal} and
+  \fdf{use-psml-kb-projectors} must be set to \fdftrue, and a
+  \shell{SystemLabel.psml} file must be present. The rest of the
+  options discussed in this section will have no effect in that case.
 
 
 \begin{fdfentry}{PS!lmax}[block]
@@ -2317,7 +2493,8 @@ For full spin-orbit calculations, the program generates $lj$
 projectors using the $l+1/2$ and $l-1/2$ components of the
 (relativistic) pseudopotentials. In this case the specification of the
 reference energies for projectors is not changed: only $l$ is
-relevant.
+relevant. Fully relativistic projectors can also be read from a
+suitably generated PSML file.
 
 \end{fdfentry}  
 
@@ -2563,8 +2740,8 @@ but neither pseudopotential nor electrons are considered for that
 ghost atom. Useful for BSSE\index{basis!basis set superposition
 error (BSSE)} correction.
 
-\textit{Use:} This block is optional, except when Bessel functions or
-semicore states are present.
+\textit{Use:} This block is optional, except when Bessel functions
+are present.
 
 \textit{Default:} Basis characteristics defined by global definitions given
 above.
@@ -2914,28 +3091,28 @@ modified xyz format) which must be described within a
 
   \begin{fdfoptions}
     \option[Bohr|NotScaledCartesianBohr]%
-    \fdfindex*{AtomicCoordinatesFormat:Bohr}%
-    \fdfindex*{AtomicCoordinatesFormat:NotScaledCartesianBohr}%
+    \fdfindex*{AtomicCoordinatesFormat:Bohr}
+    \fdfindex*{AtomicCoordinatesFormat:NotScaledCartesianBohr} 
 
     atomic positions are given directly in Bohr, in Cartesian
     coordinates
 
     \option[Ang|NotScaledCartesianAng]%
-    \fdfindex*{AtomicCoordinatesFormat:Ang}%
-    \fdfindex*{AtomicCoordinatesFormat:NotScaledCartesianAng}%
+    \fdfindex*{AtomicCoordinatesFormat:Ang}
+    \fdfindex*{AtomicCoordinatesFormat:NotScaledCartesianAng}
 
     atomic positions are given directly in \AA ngstr\"om, in Cartesian
     coordinates
 
     \option[ScaledCartesian]%
-    \fdfindex*{AtomicCoordinatesFormat:ScaledCartesian}%
+    \fdfindex*{AtomicCoordinatesFormat:ScaledCartesian}
 
     atomic positions are given in Cartesian coordinates, in units of
     the lattice constant
 
     \option[Fractional|ScaledByLatticeVectors]%
-    \fdfindex*{AtomicCoordinatesFormat:Fractional}%
-    \fdfindex*{AtomicCoordinatesFormat:ScaledByLatticeVectors}%
+    \fdfindex*{AtomicCoordinatesFormat:Fractional}
+    \fdfindex*{AtomicCoordinatesFormat:ScaledByLatticeVectors}
 
     atomic positions are given referred to the lattice vectors
 
@@ -3637,6 +3814,11 @@ are always stored in the file \sysfile{KP}.
 \subsection{Exchange-correlation functionals}
 
 
+(Apart from the built-in functionals, \siesta\ can use the functionals
+provided by the LibXC library, if support for it is compiled-in in the
+libGridXC library. See the description of the \fdf{XC.cocktail} block
+below for the appropriate syntax. \index{LibXC library})
+
 \begin{fdfentry}{XC!Functional}[string]<LDA>
   
   Exchange-correlation functional type. May be \fdf*{LDA} (local
@@ -3778,15 +3960,11 @@ are always stored in the file \sysfile{KP}.
 \end{fdfentry}
 
 
-\begin{fdfentry}{XC!Hybrid}[block]
-  
+\begin{fdfentry}{XC!Cocktail}[block]
+
   This data block allows the user to create a ``cocktail'' functional by
   mixing the desired amounts of exchange and correlation from each of
-  the functionals described under XC.authors. Note that these ``mixed''
-  functionals do \emph{not} have the exact Hartree-Fock exchange which
-  is a key ingredient of the true ``hybrid'' functionals. The use of
-  the word ``hybrid'' in the label is unfortunate in this regard, and
-  might be deprecated in a future version.
+the functionals described under XC.authors.
 
   The first line of the block must contain the number of functionals to
   be mixed. On the subsequent lines the values of XC.functl and
@@ -3799,12 +3977,49 @@ are always stored in the file \sysfile{KP}.
   energy:
   
   \begin{fdfexample}
-     %block XC.hybrid
+     %block XC.cocktail
         2
         LDA CA  0.5 0.75
         GGA PBE 0.5 0.25
-     %endblock XC.hybrid
+     %endblock XC.cocktail
   \end{fdfexample}
+
+These blocks can also be used to request the use of LibXC functionals
+(if the version of libGridXC in use is 0.7 or later and was compiled
+with LibXC support).  \index{LibXC library} For example:
+
+\begin{fdfexample}
+     %block XC.cocktail
+     2
+     GGA LIBXC-00-GGA_X_PBE 1.0 0.0
+     GGA LIBXC-00-GGA_C_PBE 0.0 1.0
+     %endblock XC.cocktail
+\end{fdfexample}
+
+The weights reflect the ``exchange'' or ``correlation''
+character of each individual functional. In the above example we use
+mnemonic symbols for the functionals and leave the numerical
+functional id field as zero. It is also possible to use only the
+numerical id:
+
+\begin{fdfexample}
+     %block XC.cocktail
+     2
+     GGA LIBXC-101 1.0 0.0
+     GGA LIBXC-130 0.0 1.0
+     %endblock XC.cocktail
+\end{fdfexample}
+
+
+If both fields are used the information must be compatible. Also, the
+``family'' field (GGA, LDA) must be compatible with the functional
+specified.
+
+\textbf{NOTE:} In previous versions of the program this block was named,
+confusingly, \textbf{XC.Hybrid}
+
+\textit{Default value:} If the block is not present, the XC
+information is read from the fdf variables above.
 
 \end{fdfentry}
 
@@ -3865,13 +4080,14 @@ are always stored in the file \sysfile{KP}.
   needed. This may be used to greatly increase convergence.
 
   Certain options may not be used together with specific
-  parallelization routines.
+  parallelization routines.  For instance only a spin-polarized
+  calculation may use the \fdf{Diag!ParallelOverK} option.
 
 \end{fdfentry}
 
 \begin{fdflogicalF}{Spin!Fix}
   \index{fixed spin state}\index{LSD}
-  \fdfindex*{FixSpin}[|Spin!Fix]%
+  \fdfindex*{FixSpin}[|Spin!Fix]
 
   If \fdftrue, the calculation is done with a fixed value of the spin
   of the system, defined by variable \fdf{Spin!Total}. This option can
@@ -4006,8 +4222,10 @@ could still be difficult.
   spin-orbit interaction from zero to any positive value. It can be
   used for both the on-site and off-site SOC flavors, but only for
   debugging and testing purposes, as the only physical value is 1.0.
-  Note that this feature is implemented by modifying the SO parts of the
-  semilocal potentials read from a \code{.psf} file. Care must be
+  Note that this feature is currently implemented by modifying the SO parts of the
+  semilocal potentials read from a \code{.psf} file. It will not work
+  when reading the $lj$ projectors directly from a PSML file (or from
+  a previous run's \code{.ion} file). Care must be
   taken when re-using any \code{.ion} files produced.
   
 \end{fdfentry}
@@ -6169,6 +6387,11 @@ pole expansion of the Fermi-Dirac function and the direct computation
 of the density matrix via an efficient scheme of selected
 inversion (see Sec~\ref{SolverPEXSI}).
 
+Additionally, \siesta\ can use the ELSI library (see
+Sec.~\ref{SolverELSI}) of solvers (which provides its own versions of OMM
+and PEXSI, in addition to diagonalization and other solvers), and the new linear-scaling
+CheSS library (see Sec.~\ref{SolverCheSS})
+
 The calculation of the H and S matrix elements is always done with an
 O(N) method. The actual scaling is not linear for small systems, but
 it becomes O(N) when the system dimensions are larger than the scale
@@ -6192,12 +6415,12 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   Character string to choose among diagonalization (\fdf*{diagon}),
   cubic-scaling minimization (\fdf*{OMM}), Order-N (\fdf*{OrderN})
   solution of the Kohn-Sham Hamiltonian, \fdf*{transiesta}, the
-  PEXSI method (\fdf*{PEXSI}) or the \fdf*{CheSS} solver.
+  PEXSI method (\fdf*{PEXSI}), ELSI family of solvers (\fdf*{ELSI}) or the \fdf*{CheSS} solver.
   In addition, the \fdf*{Dummy} solver will just return a
   slightly perturbed density-matrix without actually solving for
   the electronic structure. This is useful for timing other routines.
 
-  
+
 \end{fdfentry}
 
 
@@ -6251,13 +6474,13 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   \begin{fdfoptions}
 
     \option[none]%
-    \fdfindex*{Diag!WFS.Cache:none}%
+    \fdfindex*{Diag!WFS.Cache!none}%
 
     The wavefunctions will not be cached and the standard two-pass
     diagonalization method is used.
 
     \option[cdf]%
-    \fdfindex*{Diag!WFS.Cache:cdf}%
+    \fdfindex*{Diag!WFS.Cache!cdf}%
 
     The wavefunctions are stored in \file{WFS.nc} (NetCDF format) and
     created from a single root node. This requires NetCDF support, see
@@ -7028,6 +7251,176 @@ necessary.
 
 \end{fdflogicalF}
 
+\subsection{The ELSI solver family}
+\label{SolverELSI}
+\index{ELSI solvers}
+
+The ELSI library provides a unified interface to a range of solvers,
+including ELPA (diagonalization), PEXSI, OMM, density-matrix
+purification (using NTPoly), SIPS (based on spectrum
+slicing), EigenExa, and MAGMA (the latter two available after version
+2.4.0 of the ELSI library, and enabled via the preprocessor flag
+\texttt{-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}). It can be downloaded and installed freely from
+\url{http://elsi-interchange.org}.
+
+The current interface in \siesta\ is based on the ``DM'' mode in ELSI:
+sparse H and S matrices are passed to the library, and sparse DM and
+EDM matrices are returned. Internally, the library performs any extra
+operations needed.  K-points and/or spin-polarization (in collinear
+form) are also supported, in fully parallel mode. This means that
+k-points/spin-polarized calculations will be carried out splitting the
+communicator for orbital distribution into nk$\times$nspin copies,
+where nk is the number of k-points and nspin the number of spin
+components. The total number of MPI processors must be a multiple of
+nk$\times$nspin.
+
+See Sec.~\ref{sec:libs} for details on installing \siesta\ with ELSI support.
+
+\subsubsection{Input parameters}
+
+The most important parameter is the solver to be used. Most other
+options are given default values by the program which are nearly
+always appropriate.
+
+\begin{fdfentry}{ELSI!Solver}[string]<ELPA>
+  A specification of the solver wanted. Possible values are
+  \begin{itemize}
+  \item elpa
+  \item omm
+  \item pexsi
+  \item ntpoly
+  \item sips
+  \item eigenexa
+  \item magma
+  \end{itemize}
+\end{fdfentry}
+
+The EigenExa and MAGMA solvers are available after version
+2.4.1 of the ELSI library, and enabled via the preprocessor flag
+\texttt{-DSIESTA\_\_ELSI\_2\_4\_SOLVERS}).
+
+Note that the native interface in \siesta\ for an older version of the
+PEXSI solver is still available (preprocessor flag
+\texttt{-DSIESTA\_\_PEXSI}), but it might not be possible to compile
+it at the same time as the ELSI interface, due to duplicate symbols at
+the linking stage. A similar situation arises with the native support
+for the ELPA library (preprocessor flag \texttt{-DSIESTA\_\_ELPA}),
+but in this case the ELSI interface with an external ELPA library can
+still coexist.  The native OMM interface in \siesta\ (enabled by
+default) has no coexistence problems with ELSI.
+
+\begin{fdfentry}{ELSI!Broadening!Method}[string]<''fermi''>
+The scheme for level broadening. Valid options are ``fermi'',
+``gauss'', ``mp'' (Methfessel-Paxton), ``cold''
+(Marzari-Vanderbilt cold smearing).
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Output!Level}[integer]<0>
+ The level of detail provided in the output. Possible values are 0, 1,
+ 2, and 3.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Output!Json}[integer]<1>
+  If not 0, a separate log file in JSON format will be written out.
+\end{fdfentry}
+
+Other fdf options are mapped in a direct way to the options described in the
+ELSI manual:
+
+\begin{fdfentry}{ELSI!Broadening!MPOrder}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Ill-Condition!Check}[integer]<0>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!Ill-Condition!Tolerance}[real]<$10^{-5}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!Flavor}[integer]<2>
+  Use the two-stage (banded, then tridiagonal conversion) of the ELPA
+  solver by default.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!NSinglePrecision}[integer]<0>
+  Number of initial scf steps carried out in single precision (if
+  supported by the externally compiled version of the ELPA
+  library). Typically, most scf steps can be computed in single
+  precision, with only a final one or two in double precision, to
+  achieve the standard results. The use of this option increases
+  performance significantly.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!Autotune}[integer]<0>
+  Use the auto-tune feature (if supported by the externally
+  compiled version of the ELPA library). See the ELPA documentation
+  for more details.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!ELPA!GPU}[integer]<0>
+  Request use of GPU acceleration (if supported by the compiled
+  version of the ELPA library).
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!Flavor}[integer]<0>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!ELPA!Steps}[integer]<3>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!OMM!Tolerance}[real]<$10^{-9}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!TasksPerPole}[integer]< {\bf no default}>
+  See the discussion on the three-level PEXSI parallelism in the ELSI manual.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!TasksSymbolic}[integer]<1>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Number-of-Poles}[integer]<20>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Number-of-Mu-Points}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Inertia-Tolerance}[real]<$0.05$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Initial-Mu-Min}[real]<$-1.0\,\mathrm{Ry}$>
+Initial lower bound for $\mu$ at the beginning of the scf loop.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!PEXSI!Initial-Mu-Max}[real]<$0.0\,\mathrm{Ry}$>
+Initial upper bound for $\mu$ at the beginning of the scf loop.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Method}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Filter}[real]<$10^{-9}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!NTPoly!Tolerance}[real]<$10^{-6}$>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!SIPS!Slices}[integer]<{\bf no default}>
+  See the discussion in the ELSI manual.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!SIPS!ELPA!Steps}[integer]<2>
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!EigenExa!Method}[integer]<2>
+Selects between the tridiagonalization (1) and pentadiagonalization
+(2) methods. The latter is usually faster and more scalable.
+\end{fdfentry}
+
+\begin{fdfentry}{ELSI!MAGMA!Solver-Method}[integer]<1>
+Selects between the 1-stage (1) and 2-stage (2) solvers in the MAGMA
+library. Please see the documentation of the MAGMA library for the
+details about compilation and support for accelerator devices.
+\end{fdfentry}
 
 \subsection{The CheSS solver}
 \label{SolverCheSS}
@@ -10577,12 +10970,10 @@ involving molecules.
     \option[stress]%
     Control which of the 6 stress components are constrained.
 
-    Numbers $1\le i\le6$ where $1$ corresponds
-    to the \emph{XX} stress-component, $2$ is \emph{YY}, $3$ is
-    \emph{ZZ}, $4$ is \emph{YZ}/\emph{ZY}, $5$ is \emph{XZ}/\emph{ZX}
-    and $6$ is \emph{XY}/\emph{YX}.
-
-    The text specifications are also allowed.
+    This takes a number of integers $1\le i\le6$ where $1$ corresponds
+    to the \emph{AA} stress-component, $2$ is \emph{BB}, $3$ is
+    \emph{CC}, $4$ is \emph{BC}/\emph{CB}, $5$ is \emph{AC}/\emph{CA}
+    and $6$ is \emph{AB}/\emph{BA}.
 
 
     \option[routine]%
@@ -10619,12 +11010,10 @@ involving molecules.
   It is instructive to give an example of the input options presented.
 
   Consider a benzene molecule ($\mathrm{C}_6\mathrm{H}_6$) and we wish
-  to relax all Hydrogen atoms (and no stress in $x$ and $y$
-  directions). This may be accomplished with this
+  to relax all Hydrogen atoms. This may be accomplished in this fashion
   \begin{fdfexample}
     %block Geometry.Constraints
       Z 6
-      stress 1 2
     %endblock
   \end{fdfexample}
   Or as in this example
@@ -10642,20 +11031,16 @@ involving molecules.
       ... ... ... 2   # H 10
       ... ... ... 1   # C 11
       ... ... ... 2   # H 12
-      stress XX YY
     %endblock
     %block Geometry.Constraints
       atom from 1 to 12 step 2
-      stress XX YY
     %endblock
     %block Geometry.Constraints
       atom [1 -- 12 step 2]
-      stress XX 2
     %endblock
     %block Geometry.Constraints
       atom all
       clear-prev [2 -- 12 step 2]
-      stress 1 YY
     %endblock
   \end{fdfexample}
   where the 3 last blocks all create the same result.
@@ -12001,50 +12386,11 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
 
 \end{fdflogicalT}
 
-\begin{fdfentry}{TS!dQ}[string]<none|buffer|fermi>
-  \fdfindex*{TS!dQ:fermi}
+\begin{fdfentry}{TS!ChargeCorrection}[string]<none|buffer|fermi>
 
   Any excess/deficiency of charge can be re-adjusted after each
   \tsiesta\ cycle to reduce charge fluctuations in the cell.
-
-  The non-neutral charge in \tsiesta\ cycles is an expression of one
-  of the following things:
-  \begin{enumerate}
-    \item An incorrect screening towards the electrodes. To check
-    this, simply add more electrode layers towards the device at each
-    electrode and see how the charge evolves. It should tend to zero.
-
-    The best way to check this is to follow these steps:
-    \begin{enumerate}
-      \item Perform a \siesta-only calculation (the resulting DM
-      should be used as the starting point for both following calculations)
-      \item Perform a \tsiesta\ calculation with the option
-      \fdf{TS!Elecs!DM.Init:diagon} (please note that the electrode
-      option has precedence, so remove the entry from the
-      \fdf{TS!Elec.<>} block)
-      
-      \item Perform a \tsiesta\ calculation with the option
-      \fdf{TS!Elecs!DM.init:bulk}
-       (please note that the electrode
-      option has precedence, so remove the entry from the
-      \fdf{TS!Elec.<>} block)
-
-    \end{enumerate}
-
-    \item An incorrect reference energy level. In \tsiesta\ the Fermi
-    level is calculated from the \siesta\ SCF. However, the \siesta\
-    Fermi level corresponds to a periodic calculation and \emph{not}
-    an open system calculation such as NEGF.
-
-    If the first step shows a good screening towards the electrode it
-    is usually the reference energy level, then use \fdf{TS!dQ:fermi}.
-
-    \item A combination of the above, this is the typical case.
-  \end{enumerate}
-
-  \note we recommend only to use charge corrections for
-  $0\,\mathrm{V}$ calculations. 
-
+  
   \begin{fdfoptions}
 
     \option[none]%
@@ -12055,42 +12401,37 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
     atoms are required to exist)
 
     \option[fermi] %
-    Correct the charge filling by calculating a new reference energy
-    level (referred to as the Fermi level). \\
+    Correct the filling by calculating a new Fermi-level (reference energy). \\
     We approximate the contribution to be constant around the Fermi
     level and find
     \begin{equation}
       \label{eq:fermi-shift}
       \mathrm{d}E_F = \frac{Q'-Q}{Q|_{E_F}},
     \end{equation}
-    where $Q'$ is the charge from a \tsiesta\ SCF step
+    where $Q'$ is the charge from a converged \tsiesta\ calculation
     and $Q|_{E_F}$ is the equilibrium charge at the current Fermi
     level, $Q$ is the supposed charge to reside in the
-    calculation. Fermi correction utilizes Eq.~\eqref{eq:fermi-shift} for
+    calculation. Fermi correction utilizes Eq. \eqref{eq:fermi-shift} for
     the first correction and all subsequent corrections are based on a
-    cubic spline interpolation to faster converge the
+    cubic spline interpolation to much faster converge to the
     ``correct'' Fermi level.
     
     This method will create a file called \file{TS\_FERMI}.
-
-    \note correcting the reference energy level is a costly
-    operation since the SCF cycle typically gets
-    \emph{corrupted} resulting in many more SCF cycles.
-
+    
   \end{fdfoptions}
 
 \end{fdfentry}
 
-\begin{fdfentry}{TS!dQ!Factor}[real]<0.8>
+\begin{fdfentry}{TS!ChargeCorrection!Factor}[real]<0.75>
 
-  Any positive value close to $1$. $0$ means no charge correction. $1$
-  means total charge correction. This will reduce the fluctuations in
-  the SCF and setting this to $1$ may result in difficulties in
-  converging.
+  Should be between $0$ and $1$ to lower the charge adjustment. $0$
+  means no charge correction. $1$ means total charge correction. This
+  will reduce the fluctuations in the SCF and setting this to $1$ may
+  result in difficulties in converging.
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!dQ!Fermi.Tolerance}[real]<0.01>
+\begin{fdfentry}{TS!ChargeCorrection!Fermi.Tolerance}[real]<0.01>
 
   The tolerance at which the charge correction will converge. Any
   excess/missing charge ($|Q'-Q|>\mathrm{Tol}$) will result in a
@@ -12098,26 +12439,17 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!dQ!Fermi.Max}[energy]<$1.5\,\mathrm{eV}$>%
+\begin{fdfentry}{TS!ChargeCorrection!Fermi.Max}[energy]<$1.5\,\mathrm{eV}$>%
 
   The maximally allowed value that the Fermi level will change from a
   charge correction using the Fermi correction method. In case the
   Fermi level lies in between two bands a DOS of $0$ at the Fermi
   level will make the Fermi change equal to $\infty$. This is not
   physical and the user can thus truncate the correction.
-
-  \note If you know the band-gab, setting this to $1/4$ (or smaller)
-  of the band gab seems like a better value than the rather
-  arbitrarily default one.
-
-\end{fdfentry}
-
-\begin{fdfentry}{TS!dQ!Fermi.Eta}[energy]<$1\,\mathrm{meV}$>%
-
-  The $\eta$ value that we extrapolate the charge at the poles to.
-  Usually a smaller $\eta$ value will mean larger changes in the
-  Fermi level. If the charge convergence w.r.t. the Fermi level is
-  fluctuating a lot one should increase this $\eta$ value.
+  
+  \emph{If you know the band-gab, setting this to $1/4$ (or smaller)
+      of the band gab seems like a better value than the rather
+      arbitrarily default one.}
 
 \end{fdfentry}
 
@@ -12551,8 +12883,7 @@ electrodes in a generic input format.
 
   \note Options prefixed with \fdf*{tbt} are neglected in \tsiesta\
   calculations. In \tbtrans\ calculations these flags has precedence
-  over the other options and \emph{must} be placed at the end of the
-  block.
+  over the other options.
 
   \begin{fdfoptions}
 
@@ -12632,8 +12963,6 @@ electrodes in a generic input format.
 
     \option[DM-init]%
     \fdfindex*{TS!Elec.<>!DM-init}%
-    \fdfindex*{TS!Elec.<>!DM-init:diagon}%
-    \fdfindex*{TS!Elec.<>!DM-init:bulk}%
     \fdfdepend{TS!Elecs!DM.Init}%
     String of values \fdf*{bulk}, \fdf*{diagon} or \fdf*{force-bulk}
     which controls whether the DM is initially overwritten by the DM
@@ -12644,13 +12973,8 @@ electrodes in a generic input format.
     For bias calculations this is defaulted to \fdf*{diagon}.
 
     Using the truly bulk DM will force a bulk-like charge density in
-    the electrode region by copying the fully periodic electrode DM
-    into the scattering region DM. If one uses
-    \fdf{TS!Elec.<>!Bulk:false} it may be advantageous to set this to
-    \fdf*{diagon}, always.
-
-    This option may be used to check how good the electrodes are
-    screened (see \fdf{TS!dQ:fermi}).
+    the electrode region. If one uses \fdf{TS!Elec.<>!Bulk}[ false] it
+    may be advantageous to set this to \fdf*{diagon}, always.
 
     \option[Gf]%
     \fdfindex*{TS!Elec.<>!Gf}%
@@ -12699,7 +13023,8 @@ electrodes in a generic input format.
     \fdfindex*{TS!Elec.<>!DE}%
     Density and energy density matrix file for the electrode. This may
     be used to initialize the density matrix elements in the electrode
-    region by the bulk values. See \fdf{TS!Elec.<>!DM-init:bulk}.
+    region by the bulk values. This may be used to increase the
+    bulk-like behavior of the electrodes. 
 
     \note this should only be performed on one \tsiesta\ calculation
     as then the scattering region \sysfile{TSDE} contains the
@@ -12860,8 +13185,6 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
 \end{fdfentry}
 
 \begin{fdfentry}{TS!Elecs!DM.Init}[string]<bulk|diagon|force-bulk>
-  \fdfindex*{TS!Elecs!DM.Init:bulk}%
-  \fdfindex*{TS!Elecs!DM.Init:diagon}%
 
   The density matrix elements in the electrodes may be forcefully set
   to the bulk values by reading in the DM of the corresponding
@@ -13052,7 +13375,7 @@ calculated via \tbtrans\ relative to the average chemical potential.
 In this section the equilibrium contours are defined, and in the next
 section the non-equilibrium contours are defined.
 
-\begin{fdfentry}{TS!Contours!Eq.Pole}[energy]<$1.5\,\mathrm{eV}$>
+\begin{fdfentry}{TS!Contours!Eq.Pole}[energy]<$2.5\,\mathrm{eV}$>
 
   The imaginary part of the line integral crossing the chemical
   potential. Note that the actual number of poles may differ between

@@ -119,26 +119,38 @@
       call re_alloc(H_tmp, 1,maxnh, 1, spin%H,
      $             'H_tmp','final_H_f_stress')
 
-      H_tmp(:,:) = 0.0_dp
+!$OMP parallel default(shared)
 
+!$OMP workshare
+      H_tmp = 0.0_dp
+!$OMP end workshare nowait
+
+!$OMP single
 !     Initialize forces and stress ...................
       nullify(fal)
       call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'final_H_f_stress' )
+!$OMP end single
       
+!$OMP workshare
       fa(1:3,1:na_u)   = 0.0_dp
       fal(1:3,1:na_u)  = 0.0_dp
       stress(1:3,1:3)  = 0.0_dp
       stressl(1:3,1:3) = 0.0_dp
+!$OMP end workshare nowait
+
+!$OMP end parallel
       
 
 ! Neutral-atom: energy, forces and stress ............................
+      ! These routines parallelize fa and stress over atoms
       call naefs( na_u, na_s, scell, xa, indxua, rmaxv,
-     &            isa, Ena, fa, stress, forces_and_stress=.true. )
+     &            isa, Ena, fal, stressl, forces_and_stress=.true. )
       call dnaefs( na_u, na_s, scell, xa, indxua, rmaxv,
-     &            isa, DEna, fa, stress, forces_and_stress=.true. )
+     &            isa, DEna, fal, stressl, forces_and_stress=.true. )
       Ena = Ena + DEna
 
 !     Kinetic: energy, forces, stress and matrix elements .................
+      ! Forces and stresses parallelized over orbitals
       call kinefsm( na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &              maxnh, maxnh, lasto, iphorb, isa, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -156,6 +168,7 @@
       Eso = 0.0_dp
       
       if ( .not.spin%SO_offsite ) then
+      ! Forces and stresses parallelized over orbitals
        call nlefsm( scell, na_u, na_s, isa, xa, indxua, 
      &              maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      &              numh, listhptr, listh, numh, listhptr, listh, 
@@ -169,6 +182,7 @@
 #endif
       else
         H_so_off => val(H_so_off_2D)
+      ! Forces and stresses parallelized over orbitals
        call nlefsm_SO_off(scell, na_u, na_s, isa, xa, indxua,
      &                maxnh, maxnh, lasto, lastkb, iphorb, iphKB,
      &                numh, listhptr, listh, numh, listhptr, listh,
@@ -197,6 +211,7 @@
 ! Hubbard term for LDA+U: energy, forces, stress and matrix elements ....
       if( switch_ldau ) then
          H_ldau => val(H_ldau_2D)
+         ! Forces and stresses parallelized over orbitals
          call hubbard_term(scell, na_u, na_s, isa, xa, indxua,
      .        maxnh, maxnh, lasto, iphorb, no_u, no_l, 
      .        numh, listhptr, listh, numh, listhptr, listh,
@@ -252,12 +267,16 @@
       call re_alloc( fatmp, 1, 3, 1, na_u, 'fatmp', 'final_H_f_stress' )
       call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
       call globalize_sum( fal(1:3,1:na_u), fatmp(1:3,1:na_u) )
+!$OMP parallel workshare default(shared)
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
+!$OMP end parallel workshare
       call de_alloc( fatmp, 'fatmp', 'final_H_f_stress' )
 #else
+!$OMP parallel workshare default(shared)
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
+!$OMP end parallel workshare
 #endif
 
       ! If backward compatibility is requested, recover

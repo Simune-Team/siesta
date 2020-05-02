@@ -123,7 +123,7 @@ real(dp), save :: previous_pexsi_temperature
 !
 ! Our global communicator is a duplicate of the passed communicator
 !
-call MPI_Comm_Dup(true_MPI_Comm_World, World_Comm, ierr)
+call MPI_Comm_Dup(MPI_Comm_DFT, World_Comm, ierr)
 call mpi_comm_rank( World_Comm, mpirank, ierr )
 
 ! NOTE:  fdf calls will assign values to the whole processor set,

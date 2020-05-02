@@ -11,8 +11,9 @@
 !     fraction to simulate "fractional occupation" in the VCA
 !
       use precision,       only: dp
-      use pseudopotential, only: pseudopotential_t,
-     $                           pseudo_read, pseudo_write_formatted
+      use m_ncps, only: pseudopotential_t => froyen_ps_t
+      use m_ncps, only: pseudo_read, pseudo_write_formatted
+      use m_psml, only: psml_t => ps_t
       use periodic_table,  only: cnfig, qvlofz
       use f2kcli
 
@@ -20,7 +21,9 @@
 
       type(pseudopotential_t), target :: pot1, pmix
       type(pseudopotential_t), pointer :: p1,  p
+      type(psml_t), target             :: psml_handle
       
+      logical  :: has_psml_ps
       real(dp) :: xfraction, z1
       integer  :: i, iostat, nargs, l
       character(len=200) :: name, name1, xmixstr
@@ -36,7 +39,7 @@
 
       call get_command_argument(1,value=name1,status=iostat)
       if (iostat == 0) then
-         call pseudo_read(trim(name1), pot1)
+         call pseudo_read(trim(name1), pot1, psml_handle, has_psml_ps)
       else
          call die("Cannot get first argument")
       endif

@@ -36,6 +36,7 @@ subroutine read_options( na, ns, nspin )
   use m_mixing_scf, only: mixers_scf_print, mixers_scf_print_block
 
   use m_cite, only: add_citation
+  use m_syms, only: syms_prec
 #ifdef SIESTA__CHESS
   use m_chess, only: set_CheSS_parameter
 #endif
@@ -76,6 +77,7 @@ subroutine read_options( na, ns, nspin )
   !                                                 4   = PEXSI
   !                                                 5   = (Matrix write)
   !                                                 6   = CheSS
+  !                                                 7   = ELSI
   !                                                10   = Dummy
   ! real*8 temp              : Temperature for Fermi smearing (Ry)
   ! logical fixspin          : Fix the spin of the system?
@@ -624,6 +626,12 @@ subroutine read_options( na, ns, nspin )
   monitor_forces_in_scf = fdf_get('MonitorForcesInSCF',.false.)
   monitor_forces_in_scf = fdf_get('SCF.MonitorForces',monitor_forces_in_scf)
 
+  ! MJVerstraete: symmetrize the positions atomic forces and stresses in m_fixed
+  impose_symmetries = fdf_get ('ImposeSymmetries', .true.)
+  syms_prec = fdf_get ('ToleranceSymmetries', 1.d-6)
+
+
+
   !--------------------------------------
   ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
   if ( nspin .eq. 2 ) then
@@ -714,10 +722,25 @@ subroutine read_options( na, ns, nspin )
      isolve = SOLVE_PEXSI
      if (ionode) then
         call add_citation("10.1088/0953-8984/26/30/305503")
-        write(*,3) 'redata: Method of Calculation', 'PEXSI'
+        call add_citation("projecteuclid.org/euclid.cms/12565628222")
+        write(*,3) 'redata: Method of Calculation', 'PEXSI-builtin'
      endif
 #else
      call die("PEXSI solver is not compiled in. Use -DSIESTA__PEXSI")
+#endif
+  else if (leqi(method,"elsi")) then
+#ifdef SIESTA__ELSI
+     isolve = SOLVE_ELSI
+     if (converge_EDM) then
+        write(6,"(a)") "**Warning: Cannot monitor EDM convergence with ELSI"
+        converge_EDM = .false.
+     endif
+     if (ionode) then
+        call add_citation("10.1016/j.cpc.2017.09.007")
+        write(*,3) 'redata: Method of Calculation', 'ELSI solvers'
+     endif
+#else
+     call die("ELSI library is not compiled in. Use -DSIESTA__ELSI")
 #endif
 
 #ifdef SIESTA__CHESS
@@ -864,7 +887,8 @@ subroutine read_options( na, ns, nspin )
   ! For SOC calculations: If .false., Enl will contain
   ! the SO part of the energy.
   if (spin%SO) then
-     split_sr_so = fdf_get('SOC.Split.SR.SO',.true.)
+     ! Avoid splitting if we are using the 'offsite' flavor of SOC
+     split_sr_so = fdf_get('SOC.Split.SR.SO',(.not. spin%SO_offsite))
      if (ionode) then
         write(6,1) 'redata: Split SR and SO contributions', split_sr_so
      endif

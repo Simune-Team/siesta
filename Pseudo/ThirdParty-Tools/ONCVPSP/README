@@ -1,0 +1,12 @@
+Don Hamann's ONCVPSP program (http://www.mat-simresearch.com/)
+can be patched to generate PSML files.
+
+The PSML files will contain the semilocal versions of the
+pseudopotentials, in addition to the local potential and
+fully-nonlocal projectors.
+
+Instead of re-distributing a patched version, we make available
+patch packages in:
+
+        https://launchpad.net/pspgenpatch
+

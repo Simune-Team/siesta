@@ -369,6 +369,7 @@ C
       use t_spin, only: tSpin
 
       use m_diag_option, only: ParallelOverK, Serial
+      use m_diag_option, only: print_diag
       use m_diag, only: diag_init
 
 
@@ -449,25 +450,26 @@ C     Allocate local arrays - only aux is relevant here
 
         call io_close(iu_wfs)
       endif
-      
-C Handle parallel over K points option which is not allowed for here
-      SaveParallelOverK = ParallelOverK
-      if ( ParallelOverK ) then
-        if ( Node .eq. 0 ) then
-          write(*,"(a)")
-     $        "*** Note: ParallelOverK option not used for Bands"
-        end if
-        ParallelOverK = .false.
-        Serial = Nodes == 1
-        call diag_init()
-      end if
 
 C Find the band energies
-      if ( spin%none .or. spin%Col ) then
+      if ( spin%Grid < 4 ) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
         qs(1) = 0.0_dp
         qs(2) = 0.0_dp
 
+C Handle parallel over K points option which is not allowed for here
+        SaveParallelOverK = ParallelOverK
+        if ( ParallelOverK ) then
+           if ( Node .eq. 0 ) then
+              write(*,"(a)")
+     $             "*** Note: ParallelOverK option not used for Bands"
+           end if
+           ParallelOverK = .false.
+           Serial = Nodes == 1
+           call diag_init()
+        end if
+        call print_diag()
+        
         call diagk( spin%H, no_l, no_s, spin%spinor, 
      .              maxnh, maxnh, 
      .              no_u, numh, listhptr, listh, numh, listhptr,
@@ -477,7 +479,11 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              no_u, occtol, 1, no_u )
 
+        ParallelOverK = SaveParallelOverK
+        if ( ParallelOverK ) Serial = .true.
+
       elseif ( spin%NCol ) then
+        call print_diag()
         call diag2k(no_l, no_s, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr,
      .              listh, H, S, getD, getPSI, qtot, temp, e1, e2,
@@ -487,6 +493,7 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
      .              no_u, occtol, 1, no_u )
 
       elseif ( spin%SO ) then
+        call print_diag()
         call diag3k(no_l, no_s, maxnh, maxnh, no_u, numh,
      .              listhptr, listh, numh, listhptr, listh,
      .              H, S, getD, getPSI, qtot, temp, e1, e2, xij,
@@ -497,10 +504,6 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
       else
         call die( 'bands: ERROR: incorrect value of spin%H')
       endif
-
-      ! Restore parallel over k
-      ParallelOverK = SaveParallelOverK
-      if ( ParallelOverK ) Serial = .true.
 
 C Write bands
       if (writeb.and.Node.eq.0) then

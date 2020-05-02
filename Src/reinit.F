@@ -26,7 +26,6 @@ C
       use files,       only : slabel
       use files,       only : stdin_file, stdout_file
       use siesta_master, only: input_file  ! fdf data file
-      use sys, only : bye
 
       implicit none
 
@@ -40,6 +39,7 @@ C  Internal variables .................................................
       character(len=256) :: line, val
 
       logical debug_input, file_exists
+      external :: bye
 
 C     Print Welcome and Presentation .......................................
 

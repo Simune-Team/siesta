@@ -14,7 +14,8 @@
       
 C     Computes non-self-consistent part of the Hamiltonian
 C     and initializes data structures on the grid.
-      
+      use parallel,  only : Node
+
       USE siesta_options,  only: g2cut, split_sr_so
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
       use sparse_matrices, only: H_so_on_2D, H_so_off_2D
@@ -68,6 +69,8 @@ C     and initializes data structures on the grid.
 
       logical :: ill_defined_sr_so_split
       
+      real(dp)           :: lo_time
+
 #ifdef DEBUG
       call write_debug( '    PRE setup_H0' )
 #endif
@@ -90,9 +93,14 @@ C     Self-energy of isolated ions
       call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &           isa, Ena, dummy_fa, dummy_stress,
      &           forces_and_stress=.false.)
+
+      call timer('dnaefs', 1)
       call dnaefs(na_u, na_s, scell, xa, indxua, rmaxv,
      &            isa, DEna, dummy_fa, dummy_stress,
      &            forces_and_stress=.false.) 
+      call timer('dnaefs', 2)
+
+      call timer('two-body', 1)
       Ena = Ena + DEna
  
 C     Metadynamics energy
@@ -104,6 +112,7 @@ C     Metadynamics energy
 C     Add on force field contribution to energy
       call twobody( na_u,xa,isa,ucell,Emm,
      &              ifa=0,fa=dummy_fa,istr=0,stress=dummy_stress)
+      call timer('two-body', 2)
 
 !
 !     Now we compute matrix elements of the Kinetic and Non-local
@@ -111,7 +120,9 @@ C     Add on force field contribution to energy
 
 !     Kinetic: matrix elements only
       H_val => val(H_kin_1D)
+!$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
+!$OMP end parallel workshare
       call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
@@ -122,7 +133,10 @@ C     Add on force field contribution to energy
 
 !     Non-local-pseudop:  matrix elements only
       H_val => val(H_vkb_1D)
+!$OMP parallel workshare default(shared)
       H_val(:) = 0.0_dp
+!$OMP end parallel workshare
+
       Eso = 0.0d0
 
       if ( .not.spin%SO_offsite ) then
@@ -196,7 +210,9 @@ C     Add on force field contribution to energy
 !
       if ( spin%SO_onsite ) then
          H_so_on => val(H_so_on_2D)
+!$OMP parallel workshare default(shared)
          H_so_on(:,:) = 0._dp
+!$OMP end parallel workshare
          call spinorb(no_u,no_l,iaorb,iphorb,isa,indxuo,
      &        maxnh,numh,listhptr,listh,Dscf,H_so_on,Eso)
       end if

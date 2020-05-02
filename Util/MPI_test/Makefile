@@ -25,8 +25,8 @@ FPPFLAGS := $(filter-out -DMPI_TIMING, $(FPPFLAGS))
 
 MPI_INTERFACE= libmpi_f90.a 
 
-pi3: $(MPI_INTERFACE) pi3.o
-	$(FC) -o pi3 $(LDFLAGS) pi3.o $(MPI_INTERFACE)
+pi3: $(MPI_INTERFACE) pi3.o handlers.o
+	$(FC) -o pi3 $(LDFLAGS) pi3.o handlers.o $(MPI_INTERFACE)
 
 newcomm:    MPI newcomm.o 
 	$(FC) -o newcomm $(LDFLAGS) newcomm.o $(MPI_INTERFACE_LIB) $(MPI_LIBS) 
@@ -39,7 +39,7 @@ dist:    MPI $(DISTOBJS)
 # Blacs test
 #
 blacs_prb: blacs_prb.o
-	$(FC) -o blacs_prb $(LDFLAGS) blacs_prb.o $(LIBS)
+	$(FC) -o blacs_prb $(LDFLAGS) blacs_prb.o $(MPI_INTERFACE) $(SCALAPACK_LIBS)
 
 #
 # Pblas test. You might need to uncomment the following line
@@ -54,15 +54,15 @@ pblas_prb: pblas_prb.o $(EXTRA_ROUTINE)
 	@echo --if that routine is not in the standard library on your system...
 	@echo --..or if its interface is not compatible, i.e., segfaults
 	@echo
-	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o $(EXTRA_ROUTINE) $(LIBS)
+	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o $(EXTRA_ROUTINE) $(SCALAPACK_LIBS) $(LAPACK_LIBS)
 
 #
 # Siesta-specific MPI test --- iffy on some systems
 #----------------------------------------------------------------------------
-MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o pxf.o
+MT_OBJS=precision.o m_mpi_utils.o parallel.o local_sys.o pxf.o handlers.o
 mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
 	$(FC) -o mpi_test \
-	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS)
+	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(SCALAPACK_LIBS)
 
 
 MPI_MAKEFILE=$(VPATH)/MPI/Makefile
@@ -83,5 +83,5 @@ clean:
 	rm -rf MPI $(MPI_INTERFACE)
 
 # Manual dependencies
-m_mpi_utils.o: sys.o
-sys.o: parallel.o
+m_mpi_utils.o: local_sys.o
+local_sys.o: parallel.o

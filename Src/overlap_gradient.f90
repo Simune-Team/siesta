@@ -22,8 +22,8 @@ contains
     use class_dSpData2D
     use geom_helper, only : iaorb, ucorb
     use atmfuncs,      only : orb_gindex
-    use m_new_matel,   only : new_matel
-    
+    use matel_mod,     only : new_matel
+
     ! *********************************************************************
     ! Calculate the gradient of the overlap matrix
     ! Energies in Ry. Lengths in Bohr.
@@ -55,6 +55,7 @@ contains
     integer :: jo, ja, joa, js, jg
     
     real(dp) :: Sij, grSij(3)
+!    real(dp) :: Sij2, grSij2(3)
 
     ! Start timer
     call timer( 'overlap_grad', 1 )
@@ -84,6 +85,7 @@ contains
         jg = orb_gindex(js,joa)
 
         call new_MATEL('S', ig, jg, xijo(:,ind), Sij, grSij )
+
         grS(ind, 1) = grSij(1)
         grS(ind, 2) = grSij(2)
         grS(ind, 3) = grSij(3)
@@ -91,7 +93,6 @@ contains
       end do
       
     end do
-    
     ! Finish timer
     call timer( 'overlap_grad', 2 )
     

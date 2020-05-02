@@ -778,7 +778,7 @@ contains
        if ( i <= nEq_c(j)%c_io%N ) then
           c%exist = .true.
           c%e     = nEq_c(j)%c(i)
-          c%idx(1) = CONTOUR_NEQ ! designates the non-equilibrium contours
+          c%idx(1) = 2 ! designates the non-equilibrium contours
           c%idx(2) = j ! designates the index of the non-equilibrium contour
           c%idx(3) = i ! is the index of the non-equilibrium contour
           return

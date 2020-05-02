@@ -67,7 +67,7 @@ C
 
       use basis_types,     only: basis_parameters
       use atm_types,       only: nspecies
-      use pseudopotential, only: pseudopotential_t
+      use m_ncps,          only: pseudopotential_t => froyen_ps_t
       use atmparams,       only: lmaxd
       use parallel,        only: Node
       use m_mpi_utils,     only: broadcast

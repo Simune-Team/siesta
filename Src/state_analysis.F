@@ -28,6 +28,7 @@
       use siesta_geom
 
       USE siesta_options
+      use m_syms
       use units, only: amu, eV
       use m_stress
       use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
@@ -112,6 +113,14 @@
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)
       endif
 
+#ifdef SIESTA__HAS__SPGLIB
+!     symmetrize forces and stresses
+      if (impose_symmetries) then
+        call syms_forces(syms_global, na_u, fa)
+        call syms_stresses(syms_global, stress)
+      end if
+#endif
+
       if (IOnode) call write_raw_efs(stress,na_u,fa,FreeE)
 
 !     Compute stress without internal molecular pressure
@@ -123,11 +132,11 @@
 !        kind of constraint
          call fixed( ucell, mstress, na_u, isa, amass, xa, fa,
      &               cstress, cfa, ntcon , 
-     &               magnitude_usage = idyn==0 )
+     &               magnitude_usage = idyn==0)
       else
          call fixed( ucell, stress, na_u, isa, amass, xa, fa,
      &               cstress, cfa, ntcon ,
-     &               magnitude_usage = idyn==0 )
+     &               magnitude_usage = idyn==0)
       endif
 
 #ifdef SIESTA__FLOOK

@@ -20,7 +20,6 @@ contains
 #endif
     use units, only: eV, Ang
     use precision, only: dp
-    use sys, only: bye
     
     use files, only: slabel
     use siesta_cml
@@ -84,19 +83,21 @@ contains
 #ifdef SIESTA__PEXSI
     use m_pexsi, only: pexsi_finalize_scfloop
 #endif
+#ifdef SIESTA__ELSI
+    use m_elsi_interface, only: elsi_finalize_scfloop
+#endif
     use m_check_walltime
 
-    use m_ts_options, only : N_Elec, N_mu, mus
+    use m_ts_options, only : N_Elec
     use m_ts_method
     use m_ts_global_vars,      only: TSmode, TSinit, TSrun
     use siesta_geom,           only: nsc, na_u, xa, ucell, isc_off
     use sparse_matrices,       only: sparse_pattern, block_dist
     use sparse_matrices,       only: Escf, S, maxnh
-    use ts_dq_m,               only: TS_DQ_METHOD
-    use ts_dq_m,               only: TS_DQ_METHOD_FERMI
-    use ts_dq_m,               only: TS_DQ_FERMI_TOLERANCE
-    use ts_dq_m,               only: TS_DQ_FERMI_SCALE
-    use ts_dq_m,               only: ts_dq
+    use m_ts_charge, only : ts_get_charges
+    use m_ts_charge,           only: TS_RHOCORR_METHOD
+    use m_ts_charge,           only: TS_RHOCORR_FERMI
+    use m_ts_charge,           only: TS_RHOCORR_FERMI_TOLERANCE
     use m_transiesta,          only: transiesta
     use kpoint_scf_m, only : gamma_scf
     use m_energies, only : Ef
@@ -134,17 +135,16 @@ contains
 #ifdef MPI
     integer :: MPIerror
 #endif
-
-    external :: die, message
+    external :: die, bye, message
 
 #ifdef DEBUG
     call write_debug( '    PRE siesta_forces' )
 #endif
 
-#ifdef SIESTA__PEXSI
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
     ! Broadcast relevant things for program logic
     ! These were set in read_options, called only by "SIESTA_workers".
-    call broadcast(nscf, comm=true_MPI_Comm_World)
+    call broadcast(nscf, comm=mpi_comm_dft)
 #endif
 
     if ( SIESTA_worker )  then
@@ -162,11 +162,6 @@ contains
           call timer( 'all', 3 )
        end if
        call bye("S only")
-    end if
-
-    if ( TS_DQ_METHOD == TS_DQ_METHOD_FERMI ) then
-      ! Initialize the charge correction
-      call ts_dq%initialize(N_mu, mus)
     end if
 
     Qcur = Qtot
@@ -375,32 +370,9 @@ contains
 
           ! Calculate current charge based on the density matrix
           call dm_charge(spin, DM_2D, S_1D, Qcur)
-          
-          ! In case the user has requested a Fermi-level correction
-          ! Then we start by correcting the fermi-level
-          if ( TSrun .and. TS_DQ_METHOD == TS_DQ_METHOD_FERMI ) then
-            ! Signal for next SCF
-            ts_dq%run = .true.
-            if ( converge_DM ) &
-                ts_dq%run = ts_dq%run .and. &
-                dDtol * TS_DQ_FERMI_SCALE > dDmax
-            if ( converge_H ) &
-                ts_dq%run = ts_dq%run .and. &
-                dHtol * TS_DQ_FERMI_SCALE > dHmax
-            if ( converge_EDM ) &
-                ts_dq%run = ts_dq%run .and. &
-                tolerance_EDM * TS_DQ_FERMI_SCALE > dEmax
-            if ( abs(Qcur - Qtot) > TS_DQ_FERMI_TOLERANCE ) then
-              if ( IONode .and. SCFconverged ) then
-                write(6,"(2a)") "SCF cycle continued due ", &
-                    "to TranSiesta charge deviation"
-              end if
-              SCFconverged = .false.
-            end if
-          end if
 
-          ! Check whether we should step to the next mixer (if we do that
-          ! then we force it to not converge
+          
+          ! Check whether we should step to the next mixer
           call mixing_scf_converged( SCFconverged )
 
           if ( SCFconverged .and. iscf < min_nscf ) then
@@ -411,7 +383,28 @@ contains
                      min_nscf
              end if
           end if
+          
+          ! In case the user has requested a Fermi-level correction
+          ! Then we start by correcting the fermi-level
+          if ( TSrun .and. SCFconverged .and. &
+               TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
 
+             if ( abs(Qcur - Qtot) > TS_RHOCORR_FERMI_TOLERANCE ) then
+
+                ! Call transiesta with fermi-correct
+                call transiesta(iscf,spin%H, &
+                     block_dist, sparse_pattern, Gamma_Scf, ucell, nsc, &
+                     isc_off, no_u, na_u, lasto, xa, maxnh, H, S, &
+                     Dscf, Escf, Ef, Qtot, .true.)
+
+                ! We will not have not converged as we have just
+                ! changed the Fermi-level
+                SCFconverged = .false.
+
+             end if
+
+          end if
+          
           if ( monitor_forces_in_scf ) call compute_forces()
 
           ! Mix_after_convergence preserves the old behavior of
@@ -498,9 +491,9 @@ contains
           
        end if
 
-#ifdef SIESTA__PEXSI
-       call broadcast(iscf, comm=true_MPI_Comm_World)
-       call broadcast(SCFconverged, comm=true_MPI_Comm_World)
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
+       call broadcast(iscf, comm=mpi_comm_dft)
+       call broadcast(SCFconverged, comm=mpi_comm_dft)
 #endif
 
        ! Exit if converged
@@ -514,11 +507,8 @@ contains
     end if
 #endif
 
-    ! Clean up the charge correction object
-      call ts_dq%delete()
-
-    if ( .not. SIESTA_worker ) return
-
+    if ( SIESTA_worker ) then
+!===
     call end_of_cycle_save_operations(SCFconverged)
 
     if ( .not. SCFconverged ) then
@@ -555,11 +545,18 @@ contains
     ! Clean-up here to limit memory usage
     call mixers_scf_history_init( )
     
+!===
+    endif  ! Siesta_Worker
+
     ! End of standard SCF loop.
     ! Do one more pass to compute forces and stresses
     
     ! Note that this call will no longer overwrite H while computing the
     ! final energies, forces and stresses...
+
+    ! If we want to preserve the "Siesta_Worker" subset implementation for ELSI,
+    ! this block needs to be executed by everybody
+    ! as it contains a call to the ELSI interface to get the EDM
     
     if ( fdf_get("compute-forces",.true.) ) then
        call post_scf_work( istep, iscf , SCFconverged )
@@ -567,6 +564,15 @@ contains
        if (ionode) call memory_snapshot("after post_scf_work")
 #endif
     end if
+
+#ifdef SIESTA__ELSI
+    ! Recall that there could be an extra call after the scf loop to get the EDM
+    if ( isolve == SOLVE_ELSI ) then
+       call elsi_finalize_scfloop()
+    end if
+#endif
+
+    if (.not. Siesta_Worker) RETURN
     
     ! ... so H at this point is the latest generator of the DM, except
     ! if mixing H beyond self-consistency or terminating the scf loop

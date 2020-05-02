@@ -90,7 +90,7 @@ contains
        ! IF parts == 0 will create new partition
        call ts_rgn2TriMat(1, Elecs(i:i), .false., &
             dit, tmpSp1, r_oElpD(i), ElTri(i)%n, ElTri(i)%r, &
-            BTD_method, last_block = Elecs(i)%o_inD%n , par = .false. )
+            BTD_method, last_eq = Elecs(i)%o_inD%n , par = .false. )
        call delete(tmpSp1)
 
     end do
@@ -229,7 +229,7 @@ contains
     ! Create tri-diagonal parts for this one...
     call ts_rgn2TriMat(N_Elec, Elecs, .true., &
        dit, tmpSp2, r_oDev, DevTri%n, DevTri%r, &
-       BTD_method, last_block = 0, par = .true. )
+       BTD_method, last_eq = 0, par = .true. )
     call delete(tmpSp2) ! clean up
 
     i = nrows_g(sp)

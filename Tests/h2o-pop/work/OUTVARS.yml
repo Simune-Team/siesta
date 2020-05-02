@@ -1,0 +1,44 @@
+%YAML 1.2
+---
+
+siesta:
+  version: "master-post-4.1-245-g432ae317"
+  arch: "x86_64-mkl_mpi"
+  compiler: "GNU Fortran (Ubuntu 6.5.0-2ubuntu1~16.04) 6.5.0 20181026"
+  fflags: "mpif90 -I. -DMPI   -g -O2"
+  fppflags: "-DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DHAVE_MPI -DHAVE_SCALAPACK"
+  libs: "-lscalapack-openmpi -lpthread -lm -ldl -lblacs-openmpi -lblacsF77init-openmppi -llapack -lblas"
+  build: "mpi"
+  openmp: "no"
+  gemm3m: "no"
+  netcdf: "no"
+  netcdf4: "no"
+  netcdf4_mpi: "no"
+  metis: "no"
+  chess: "no"
+  elpa: "no"
+  flook: "no"
+  pexsi: "no"
+
+energies:
+  Ebs:          -0.76676283E+01
+  Eions:           0.59963727E+02
+  Ena:           0.12873605E+02
+  Ekin:           0.25991598E+02
+  Enl:          -0.46326473E+01
+  Eso:           0.00000000E+00
+  Eldau:           0.00000000E+00
+  DEna:          -0.24206091E+00
+  DUscf:           0.55401649E-01
+  DUext:           0.00000000E+00
+  Exc:          -0.83178919E+01
+  Ecorrec:           0.00000000E+00
+  Emadel:           0.00000000E+00
+  Emeta:           0.00000000E+00
+  Emolmec:           0.00000000E+00
+  Ekinion:           0.00000000E+00
+  Eharris:          -0.34235722E+02
+  Etot:          -0.34235722E+02
+  FreeEng:          -0.34235722E+02
+
+...

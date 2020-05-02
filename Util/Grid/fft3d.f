@@ -27,7 +27,7 @@ C
 C
 !     Use Temperton's GPFA package
 !
-      use m_fft_gpfa, only: fft_gpfa
+      use gpfa_fft, only: fft_gpfa
 
       implicit none
 
@@ -53,19 +53,21 @@ C
 C
 C FFT in X direction
 C
-      call fft_gpfa(f,f(2),2,2*n1,n1,n2*n3,isn)
+      ! Note: The new interface in the GPFA module requires
+      ! upper bounds. These have been set to 2*n for simplicity
+      call fft_gpfa(f(1:2*n),f(2:2*n),2,2*n1,n1,n2*n3,isn)
 C
 C FFT in Y direction
 C
       do i=0,n3-1
          IOffSet=2*n1*n2*i
-         call fft_gpfa(f(IOffSet+1),f(IOffSet+2),
+         call fft_gpfa(f(IOffSet+1:2*n),f(IOffSet+2:2*n),
      . 2*n1,2,n2,n1,isn)
       enddo
 C
 C FFT in Z direction
 C
-      call fft_gpfa(f,f(2),2*n1*n2,2,n3,n1*n2,isn)
+      call fft_gpfa(f(1:2*n),f(2:2*n),2*n1*n2,2,n3,n1*n2,isn)
 C
 C Scale values
 C

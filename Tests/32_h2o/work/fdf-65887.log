@@ -1,0 +1,522 @@
+SystemName     Heavy liquid water, 32 molecules                                                
+SystemLabel     32_h2o                                                                          
+MPI.Nprocs.SIESTA         2     # default value
+SpinPolarized              F     # default value
+NonCollinearSpin              F     # default value
+SpinOrbit              F     # default value
+#:block? SpinPolarized              F
+#:defined? SpinPolarized              F
+#:block? NonCollinearSpin              F
+#:defined? NonCollinearSpin              F
+#:block? SpinOrbit              F
+#:defined? SpinOrbit              F
+Spin     none                                 # default value
+TimeReversalSymmetry              T     # default value
+DebugObjects.Node         0     # default value
+DebugObjects              F     # default value
+XML.Write              T     # label by itself
+timer_report_threshold          0.000000000         # default value
+UseParallelTimer              T     # default value
+UseTreeTimer              F     # default value
+timing-split-scf-steps              F     # default value
+alloc_report_level         0     # default value
+alloc_report_threshold          0.000000000         # default value
+xc.functional     GGA                                                                             
+xc.authors     LYP                                                                             
+MM.Cutoff          30.00000000     Bohr     # default value
+MM.UnitsEnergy     eV     # default value
+MM.UnitsDistance     Ang     # default value
+WriteIonPlotFiles              F     # default value
+Atom.Debug.KB.Generation              F     # default value
+KB.New.Reference.Orbitals              F     # default value
+user-basis              F     # default value
+user-basis-netcdf              F     # default value
+#:block? LDAU.proj              F
+#:defined? LDAU.proj              F
+Number_of_species              2
+%block Chemical_species_label
+   1   8  O_lyp
+   2   1  H_lyp
+%endblock Chemical_species_label
+ReparametrizePseudos              F     # default value
+Restricted.Radial.Grid              T     # default value
+Rmax.Radial.Grid          0.000000000         # default value
+PAO.BasisSize     standard            # default value
+PAO.BasisType     split          # default value
+PAO.SoftDefault              F     # default value
+PAO.SoftInnerRadius         0.9000000000         # default value
+PAO.SoftPotential          40.00000000         # default value
+PAO.SplitNorm         0.1500000000         # default value
+PAO.SplitNormH         -1.000000000         # default value
+%block AtomicMass
+   2   2.0
+%endblock AtomicMass
+%block PAO.Basis
+ O_lyp    2     -0.24233
+ n=2   0   1   E    23.36061     3.39721
+      4.50769
+      1.00000
+ n=2   1   1   E     2.78334     5.14253
+      6.14996
+      1.00000
+ H_lyp    1      0.46527
+ n=1   0   1   E    99.93138     2.59932
+      4.20357
+      1.00000
+%endblock PAO.Basis
+LDAU.ProjectorGenerationMethod         2     # default value
+LDAU.EnergyShift         0.5000000000E-01 Ry     # default value
+LDAU.CutoffNorm         0.9000000000         # default value
+PAO.SoftDefault              F     # default value
+PAO.SoftInnerRadius         0.9000000000         # default value
+PAO.SoftPotential          40.00000000         # default value
+LDAU.ThresholdTol         0.1000000000E-01     # default value
+LDAU.PopTol         0.1000000000E-02     # default value
+LDAU.PotentialShift              F     # default value
+LDAU.FirstIteration              F     # default value
+FilterCutoff          0.000000000     Ry     # default value
+FilterTol          0.000000000     Ry     # default value
+keep-npotu-bug              F     # default value
+spin-orbit-strength          1.000000000         # default value
+KB.Rmax          6.000000000     Bohr     # default value
+PAO.EnergyShift         0.2000000000E-01 Ry     # default value
+PAO.SplitTailNorm              F     # default value
+PAO.FixSplitTable              F     # default value
+PAO.NewSplitCode              F     # default value
+PAO.Filter              F     # default value
+PAO.Filter              F     # default value
+PAO.OldStylePolorbs              T     # default value
+PAO.SplitTailNorm              F     # default value
+PAO.FixSplitTable              F     # default value
+PAO.NewSplitCode              F     # default value
+Vna.Filter              F     # default value
+PCC.Filter              F     # default value
+FilterCutoff          0.000000000     Ry     # default value
+FilterTol          0.000000000     Ry     # default value
+keep-npotu-bug              F     # default value
+spin-orbit-strength          1.000000000         # default value
+KB.Rmax          6.000000000     Bohr     # default value
+PAO.EnergyShift         0.2000000000E-01 Ry     # default value
+PAO.SplitTailNorm              F     # default value
+PAO.FixSplitTable              F     # default value
+PAO.NewSplitCode              F     # default value
+PAO.Filter              F     # default value
+PAO.OldStylePolorbs              T     # default value
+PAO.SplitTailNorm              F     # default value
+PAO.FixSplitTable              F     # default value
+PAO.NewSplitCode              F     # default value
+Vna.Filter              F     # default value
+PAO.BasisType     split          # default value
+Atom-Setup-Only              F     # default value
+UseStructFile              F     # default value
+MD.UseStructFile              F     # default value
+LatticeConstant          18.64215565           Bohr
+# above item originally: LatticeConstant          9.865000000     Ang       
+#:block? LatticeParameters              F
+%block LatticeVectors
+   1.0  0.0  0.0
+   0.0  1.0  0.0
+   0.0  0.0  1.0
+%endblock LatticeVectors
+AtomicCoordinatesFormat     NotScaledCartesianAng                                                           
+NumberOfAtoms             96
+ZM.UnitsLength     Bohr           # default value
+ZM.UnitsAngle     rad            # default value
+ZM.ForceTolLength         0.1555740000E-02 Ry/Bohr     # default value
+ZM.ForceTolAngle         0.3565490000E-02 Ry/rad     # default value
+ZM.MaxDisplLength         0.2000000000     Bohr     # default value
+ZM.MaxDisplAngle         0.3000000000E-02 rad     # default value
+ZM.CalcAllForces              F     # default value
+%block AtomicCoordinatesAndAtomicSpecies
+        0.190000       3.680000       6.470000  1
+       -0.630000       4.110000       6.860000  2
+       -0.090000       2.950000       5.840000  2
+        1.490000       7.030000       7.170000  1
+        2.060000       7.810000       6.920000  2
+        0.890000       7.290000       7.930000  2
+        6.850000       0.260000       6.650000  1
+        7.540000       0.100000       7.350000  2
+        6.120000       0.830000       7.030000  2
+        6.060000       9.640000       1.230000  1
+        6.130000      10.480000       0.690000  2
+        6.520000       9.770000       2.110000  2
+        5.980000       7.290000       2.700000  1
+        6.220000       7.980000       2.020000  2
+        5.200000       7.620000       3.240000  2
+        0.050000       4.100000       2.560000  1
+       -0.720000       4.440000       3.100000  2
+       -0.290000       3.590000       1.770000  2
+        0.550000       7.010000       4.290000  1
+        0.810000       6.970000       5.250000  2
+       -0.300000       6.500000       4.150000  2
+        5.500000       1.960000       8.850000  1
+        5.450000       1.910000       9.850000  2
+        5.520000       2.920000       8.560000  2
+        3.820000       7.000000       4.800000  1
+        4.270000       6.100000       4.770000  2
+        2.880000       6.890000       5.130000  2
+        9.220000       5.030000       8.990000  1
+        8.970000       4.940000       8.030000  2
+        9.700000       4.210000       9.300000  2
+        5.390000       0.640000       5.120000  1
+        4.580000       0.650000       5.700000  2
+        5.420000       1.470000       4.570000  2
+        5.610000       2.220000       1.610000  1
+        5.990000       1.380000       1.980000  2
+        4.730000       2.410000       2.050000  2
+        7.050000       0.640000       3.680000  1
+        6.910000       0.710000       4.670000  2
+        7.890000       0.130000       3.500000  2
+        5.660000       5.370000       8.650000  1
+        5.780000       6.030000       7.910000  2
+        6.120000       5.710000       9.480000  2
+        2.230000       5.250000       2.750000  1
+        2.360000       4.410000       3.290000  2
+        1.940000       5.990000       3.350000  2
+        7.320000       6.340000       0.780000  1
+        7.910000       6.080000       0.020000  2
+        7.040000       7.300000       0.670000  2
+        3.070000       0.630000       6.180000  1
+        2.960000       1.570000       6.510000  2
+        3.020000       0.000000       6.950000  2
+        0.370000       7.660000       9.660000  1
+        0.520000       7.870000      10.620000  2
+        0.070000       6.710000       9.570000  2
+        3.190000       8.100000       9.490000  1
+        4.120000       8.460000       9.540000  2
+        3.130000       7.250000      10.010000  2
+        3.390000       5.090000       0.200000  1
+        2.870000       4.260000       0.030000  2
+        4.160000       5.140000      -0.440000  2
+        8.150000       5.720000       3.250000  1
+        8.220000       4.830000       2.790000  2
+        7.210000       6.060000       3.170000  2
+        4.730000       5.000000       1.910000  1
+        5.340000       5.800000       1.950000  2
+        3.780000       5.310000       1.980000  2
+        3.160000       8.550000       3.090000  1
+        2.300000       8.240000       3.510000  2
+        3.120000       8.410000       2.100000  2
+        0.830000       2.720000       0.360000  1
+        0.780000       2.710000       1.360000  2
+        0.000000       2.310000      -0.020000  2
+        9.030000       0.860000       1.330000  1
+        9.540000       0.870000       0.470000  2
+        9.590000       0.440000       2.040000  2
+        2.630000       3.260000       7.200000  1
+        1.840000       3.770000       6.860000  2
+        2.540000       3.110000       8.180000  2
+        9.160000       9.100000       2.910000  1
+        9.790000       9.480000       2.230000  2
+        9.560000       8.270000       3.300000  2
+        0.720000       1.660000       3.180000  1
+        0.550000       2.490000       2.640000  2
+        1.620000       1.290000       2.960000  2
+        2.390000       3.250000       4.490000  1
+        3.040000       2.510000       4.380000  2
+        2.590000       3.750000       5.330000  2
+        5.940000       7.450000       6.520000  1
+        6.440000       8.300000       6.330000  2
+        5.060000       7.470000       6.040000  2
+        8.590000       9.560000       8.610000  1
+        9.130000       8.870000       9.090000  2
+        8.270000      10.250000       9.270000  2
+        4.280000       4.240000       5.200000  1
+        4.580000       3.520000       4.580000  2
+        3.890000       3.840000       6.030000  2
+%endblock AtomicCoordinatesAndAtomicSpecies
+MD.UseSaveXV              F     # default value
+MD.UseSaveZM              F     # default value
+WriteCoorInitial              T     # default value
+MD.TypeOfRun     CG     # default value
+MD.TypeOfRun     none     # default value
+MaxBondDistance          6.000000000     Bohr     # default value
+LatticeConstant          18.64215565           Bohr
+# above item originally: LatticeConstant          9.865000000     Ang       
+Output-Structure-Only              F     # default value
+WriteCoorXmol              T     # label by itself
+#:physical? MaxWalltime              F
+MaxWalltime         0.1797693135+309     # default value
+#:physical? MaxWalltime.Slack              F
+MaxWalltime.Slack          5.000000000         # default value
+HSetupOnly              F     # default value
+LongOutput              T     # label by itself
+WriteDenchar              F     # default value
+WriteMullikenPop         0     # default value
+WriteOrbMom              F     # default value
+WriteHirshfeldPop              F     # default value
+WriteVoronoiPop              F     # default value
+PartialChargesAtEveryGeometry              F     # default value
+PartialChargesAtEveryScfStep              F     # default value
+MeshCutoff          150.0000000             Ry
+# above item originally: MeshCutoff          150.0000000     Ry        
+NetCharge          0.000000000         # default value
+MinSCFIterations         0     # default value
+MaxSCFIterations      1000     # default value
+SCF.MustConverge              T     # default value
+#:block? TS.MixH              F
+#:defined? TS.MixH              F
+#:block? MixHamiltonian              F
+#:defined? MixHamiltonian              F
+#:block? MixCharge              F
+#:defined? MixCharge              F
+TS.MixH              T     # default value
+MixHamiltonian              T     # default value
+MixCharge              F     # default value
+SCF.Mix     Hamiltonian     # default value
+Compat-pre-v4-DM-H              F     # default value
+SCF.MixAfterConvergence              F     # default value
+SCF.Recompute-H-After-Scf              F     # default value
+DM.NumberPulay              3
+DM.NumberBroyden         0     # default value
+DM.FIRE.Mixing              F     # default value
+DM.MixSCF1              T     # default value
+SCF.Mix.First              T     # default value
+SCF.Mix.First.Force              F     # default value
+DM.PulayOnFile              F     # default value
+DM.MixingWeight         0.1000000000    
+DM.OccupancyTolerance         0.1000000000E-11     # default value
+DM.NumberKick         0     # default value
+DM.KickMixingWeight         0.5000000000         # default value
+DM.RequireHarrisConvergence              F     # default value
+SCF.Harris.Converge              F     # default value
+DM.HarrisTolerance         0.7349806700E-05 Ry     # default value
+SCF.Harris.Tolerance         0.7349806700E-05 Ry     # default value
+SCF.DM.Converge              T     # default value
+DM.Tolerance         0.1000000000E-03
+SCF.DM.Tolerance         0.1000000000E-03     # default value
+SCF.EDM.Converge              F     # default value
+SCF.EDM.Tolerance         0.7349806700E-04 Ry     # default value
+SCF.H.Converge              T     # default value
+SCF.H.Tolerance         0.7349806700E-04 Ry     # default value
+DM.RequireEnergyConvergence              F     # default value
+SCF.FreeE.Converge              F     # default value
+DM.EnergyTolerance         0.7349806700E-05 Ry     # default value
+SCF.FreeE.Tolerance         0.7349806700E-05 Ry     # default value
+MonitorForcesInSCF              F     # default value
+SCF.MonitorForces              F     # default value
+UseSaveData              F     # default value
+DM.UseSaveDM              T     # label by itself
+NeglNonOverlapInt              F     # default value
+SolutionMethod     diagon                                                                          
+ElectronicTemperature         0.3674899422E-03         Ry
+# above item originally: ElectronicTemperature          5.000000000     meV       
+FixSpin              F     # default value
+Spin.Fix              F     # default value
+ON.MaxNumIter      1000     # default value
+ON.etol         0.1000000000E-07     # default value
+ON.eta          0.000000000     Ry     # default value
+ON.eta_alpha          0.000000000     Ry     # default value
+ON.eta_beta          0.000000000     Ry     # default value
+On.RcLWF          9.500000000     Bohr     # default value
+ON.UseSaveLWF              F     # default value
+ON.functional     kim     # default value
+ON.ChemicalPotentialUse              F     # default value
+ON.ChemicalPotential              F     # default value
+ON.ChemicalPotentialRc          9.500000000     Bohr     # default value
+ON.ChemicalPotentialTemperature         0.5000000000E-01 Ry     # default value
+ON.ChemicalPotentialOrder       100     # default value
+TDED.WF.Initialize              F     # default value
+TDED.Saverho              F     # default value
+TDED.Nsaverho       100     # default value
+TDED.Write.Etot              T     # default value
+TDED.Write.Eig              F     # default value
+TDED.Write.Dipole              F     # default value
+TDED.Extrapolate              F     # default value
+TDED.TimeStep         0.1000000000E-02 fs     # default value
+TDED.Nsteps         1     # default value
+TDED.Extrapolate.Substeps         3     # default value
+TDED.Inverse.Linear              T     # default value
+TDED.WF.Save              F     # default value
+MD.VariableCell              F     # default value
+compat-pre-v4-dynamics              F     # default value
+MD.TypeOfRun     cg     # default value
+MD.UseSaveCG              F     # default value
+Optim.Broyden              F     # default value
+#:block? Optim.Broyden              F
+#:defined? Optim.Broyden              F
+MD.NumCGsteps         0     # default value
+MD.Steps         0     # default value
+MD.MaxCGDispl         0.2000000000     Bohr     # default value
+MD.MaxDispl         0.2000000000     Bohr     # default value
+MD.MaxForceTol         0.1555740000E-02 Ry/Bohr     # default value
+MD.MaxStressTol         0.6797730000E-04 Ry/Bohr**3     # default value
+GeometryMustConverge              F     # default value
+MD.InitialTimeStep         1     # default value
+#:block? MD.Steps              F
+#:defined? MD.Steps              F
+MD.FinalTimeStep         1     # default value
+MD.LengthTimeStep          1.000000000     fs     # default value
+MD.Quench              F     # default value
+MD.FireQuench              F     # default value
+MD.InitialTemperature          0.000000000     K     # default value
+MD.TargetTemperature          0.000000000     K     # default value
+MD.TargetPressure          0.000000000     Ry/Bohr**3     # default value
+MD.NoseMass          100.0000000     Ry*fs**2     # default value
+MD.ParrinelloRahmanMass          100.0000000     Ry*fs**2     # default value
+MD.AnnealOption     TemperatureAndPressure     # default value
+MD.TauRelax          100.0000000     fs     # default value
+MD.BulkModulus         0.6797730000E-02 Ry/Bohr**3     # default value
+MD.FCDispl         0.4000000000E-01 Bohr     # default value
+MD.FCfirst         1     # default value
+MD.FClast        96     # default value
+UseSpatialDecomposition              F     # default value
+UseDomainDecomposition              F     # default value
+SCF.Mix.Spin     all     # default value
+Mixer.Debug              F     # default value
+Mixer.Debug.MPI              F     # default value
+DM.NumberPulay              3
+DM.NumberBroyden         0     # default value
+DM.MixingWeight         0.1000000000    
+DM.NumberKick         0     # default value
+DM.KickMixingWeight         0.5000000000         # default value
+SCF.LinearMixingAfterPulay              F     # default value
+SCF.MixingWeightAfterPulay         0.1000000000         # default value
+SCF.Mixer.History         3     # default value
+SCF.Mixer.Weight         0.1000000000         # default value
+SCF.Mixer.Kick         0     # default value
+SCF.Mixer.Kick.Weight         0.5000000000         # default value
+SCF.Mixer.Restart         0     # default value
+SCF.Mixer.Restart.Save         1     # default value
+SCF.Mixer.Method     Pulay     # default value
+SCF.Mixer.Variant     original     # default value
+SCF.Mixer.Linear.After        -1     # default value
+SCF.Mixer.Linear.After.Weight         0.1000000000         # default value
+#:block? ChargeGeometries              F
+#:defined? ChargeGeometries              F
+#:block? ChargeGeometries              F
+#:defined? ChargeGeometries              F
+Harris_functional              F     # default value
+ForceAuxCell              F     # default value
+#:block? Optim.Broyden.History.Steps              F
+#:defined? Optim.Broyden.History.Steps              F
+#:block? Optim.Broyden.Cycle.On.Maxit              F
+#:defined? Optim.Broyden.Cycle.On.Maxit              F
+#:block? Optim.Broyden.Variable.Weight              F
+#:defined? Optim.Broyden.Variable.Weight              F
+#:block? Optim.Broyden.Debug              F
+#:defined? Optim.Broyden.Debug              F
+#:block? Optim.Broyden.Initial.Inverse.Jacobian              F
+#:defined? Optim.Broyden.Initial.Inverse.Jacobian              F
+Write.Kpoints              T     # default value
+Write.Forces              T     # default value
+Write.DM              T     # default value
+Write.DM.End.Of.Cycle              T     # default value
+Write.H              F     # default value
+Write.H.End.Of.Cycle              F     # default value
+Write.DM.NetCDF              F     # default value
+WriteDM.History.NetCDF              F     # default value
+WriteDMHS.NetCDF              F     # default value
+WriteDMHS.History.NetCDF              F     # default value
+SCF.Read.Charge.NetCDF              F     # default value
+SCF.Read.Deformation.Charge.NetCDF              F     # default value
+Write.TSHS.History              F     # default value
+SaveInitialChargeDensity              F     # default value
+AnalyzeChargeDensityOnly              F     # default value
+UseNewDiagk              F     # default value
+Diag.WFS.Cache     none     # default value
+WriteBands              T     # default value
+WriteKbands              T     # default value
+WriteEigenvalues              T     # default value
+WriteCoorStep              T     # default value
+WriteMDhistory              F     # default value
+WriteMDXmol              F     # default value
+WriteOrbitalIndex              T     # default value
+Write.Graphviz     none     # default value
+WriteCoorStep              T     # default value
+SaveHS              F     # default value
+ReInitialiseDM              T     # default value
+DM.AllowReuse              T     # default value
+DM.AllowExtrapolation              T     # default value
+DM.History.Depth         1     # default value
+DM.NormalizationTolerance         0.1000000000E-04     # default value
+DM.NormalizeDuringSCF              T     # default value
+MullikenInSCF              F     # default value
+SpinInSCF              F     # default value
+WarningMinimumAtomicDistance          1.000000000     Bohr     # default value
+BornCharge              F     # default value
+ChangeKgridInMD              F     # default value
+MD.RelaxCellOnly              F     # default value
+MD.RemoveIntraMolecularPressure              F     # default value
+COOP.Write              F     # default value
+SaveRho              F     # default value
+SaveDeltaRho              F     # default value
+SaveRhoXC              F     # default value
+SaveElectrostaticPotential              F     # default value
+SaveNeutralAtomPotential              F     # default value
+SaveTotalPotential              F     # default value
+SaveIonicCharge              F     # default value
+SaveBaderCharge              F     # default value
+SaveTotalCharge              F     # default value
+Siesta2Wannier90.WriteMmn              F     # default value
+Siesta2Wannier90.WriteUnk              F     # default value
+Siesta2Wannier90.WriteAmn              F     # default value
+Siesta2Wannier90.WriteEig              F     # default value
+#:block? Siesta2Wannier90.NumberOfBandsUp              F
+#:defined? Siesta2Wannier90.NumberOfBandsUp              F
+#:block? Siesta2Wannier90.NumberOfBandsDown              F
+#:defined? Siesta2Wannier90.NumberOfBandsDown              F
+#:block? Siesta2Wannier90.NumberOfBands              F
+#:defined? Siesta2Wannier90.NumberOfBands              F
+Siesta2Wannier90.NumberOfBandsUp         0     # default value
+Siesta2Wannier90.NumberOfBandsDown         0     # default value
+Siesta2Wannier90.NumberOfBands         0     # default value
+DM.AllowReuse              T     # default value
+DM.AllowExtrapolation              T     # default value
+DM.AllowExtrapolation              F     # default value
+RcSpatial          0.000000000     Bohr     # default value
+ProcessorGridX         1     # default value
+ProcessorGridY         1     # default value
+ProcessorGridZ         1     # default value
+processorY         1     # default value
+blocksize        24     # default value
+NumberOfEigenStates       192     # default value
+Spin.Spiral              F     # default value
+TimeReversalSymmetryForKpoints              T     # default value
+#:list? kgrid.MonkhorstPack                                                                                                                                                                                                                                                           F
+#:block? kgrid.Cutoff                                                                                                                                                                                                                                                                  F
+#:defined? kgrid.Cutoff                                                                                                                                                                                                                                                                  F
+#:block? kgrid.File                                                                                                                                                                                                                                                                    F
+#:defined? kgrid.File                                                                                                                                                                                                                                                                    F
+#:block? ProjectedDensityOfStates              F
+#:block? LocalDensityOfStates              F
+Diag.ProcessorY         1     # default value
+Diag.BlockSize        24     # default value
+Diag.Use2D              F     # default value
+Diag.UpperLower     lower     # default value
+Diag.DivideAndConquer              T     # default value
+Diag.NoExpert              F     # default value
+Diag.Algorithm     Divide-and-Conquer     # default value
+Diag.AbsTol         0.1000000000E-15     # default value
+Diag.OrFac         0.1000000000E-05     # default value
+Diag.Memory          1.000000000         # default value
+#:block? BandLines              F
+#:defined? BandLines              F
+#:block? BandPoints              F
+#:defined? BandPoints              F
+LongOutput              T     # label by itself
+WriteWaveFunctions              T     # default value
+#:block-line-count? MetaForce (iirrr)   0
+#:block? TS.BufferAtomsLeft              F
+#:defined? TS.BufferAtomsLeft              F
+#:block? TS.BufferAtomsRight              F
+#:defined? TS.BufferAtomsRight              F
+#:list? TS.Atoms.Buffer              F
+TS.HS.Save              F     # default value
+TS.DE.Save              F     # default value
+TS.onlyS              F     # default value
+TS.S.Save              F     # default value
+Spin.Spiral              F     # default value
+TimeReversalSymmetryForKpoints              T     # default value
+#:list? TS.kgrid.MonkhorstPack                                                                                                                                                                                                                                                        F
+#:block? TS.kgrid.Cutoff                                                                                                                                                                                                                                                               F
+#:defined? TS.kgrid.Cutoff                                                                                                                                                                                                                                                               F
+#:block? TS.kgrid.File                                                                                                                                                                                                                                                                 F
+#:defined? TS.kgrid.File                                                                                                                                                                                                                                                                 F
+AtomicCoordinatesFormat     NotScaledCartesianAng                                                           
+AtomCoorFormatOut     NotScaledCartesianAng      # default value
+LatticeConstant          18.64215565           Bohr
+# above item originally: LatticeConstant          9.865000000     Ang       
+debug-folding              F     # default value
+Sonly              F     # default value
+Save.Overlap.Gradient              F     # default value

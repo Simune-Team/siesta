@@ -173,13 +173,17 @@ contains
             k(2) * sc_off(2,jo) + &
             k(3) * sc_off(3,jo),kind=dp))
     end do
+    
+!$OMP parallel default(shared), &
+!$OMP&private(lio,io,io_T,kn,ind,jo,jo_T,ind_k)
 
+!$OMP workshare
     zH(:) = cmplx(0._dp,0._dp,dp)
     zS(:) = cmplx(0._dp,0._dp,dp)
+!$OMP end workshare
 
 ! No data race condition as each processor takes a separate row
-!$OMP parallel do default(shared), &
-!$OMP&private(lio,io,io_T,kn,ind,jo,jo_T,ind_k)
+!$OMP do 
     do lio = 1 , no_l
 
        ! obtain the global index of the orbital.
@@ -237,7 +241,8 @@ contains
       end if
 
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+!$OMP end parallel
      
 #ifdef MPI
     if ( dist_nodes(dit) > 1 ) then
@@ -451,11 +456,16 @@ contains
     dH => val(SpArrH)
     dS => val(SpArrS)
 
+!$OMP parallel default(shared), &
+!$OMP&private(lio,io,io_T,ind,jo,jo_T,ind_k)
+
+    ! initialize to 0
+!$OMP workshare
     dH(:) = 0._dp
     dS(:) = 0._dp
+!$OMP end workshare
 
-!$OMP parallel do default(shared), &
-!$OMP&private(lio,io,io_T,ind,jo,jo_T,ind_k)
+!$OMP do 
     do lio = 1 , no_l
 
       ! obtain the global index of the orbital.
@@ -505,7 +515,8 @@ contains
       end if
 
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+!$OMP end parallel
      
 #ifdef MPI
     ! Note that dH => val(SpArrH)
@@ -685,10 +696,14 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
+!$OMP parallel default(shared), private(i,io,lio,ind,j,idx)
+
+!$OMP workshare
     A_UT(:) = 0._dp
+!$OMP end workshare
 
     ! Loop over region orbitals
-!$OMP parallel do default(shared), private(i,io,lio,ind,j,idx)
+!$OMP do
     do i = 1 , no
        
        ! Global orbital
@@ -734,7 +749,9 @@ contains
        end if
 
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+
+!$OMP end parallel
      
   end subroutine create_Gamma_U
 
@@ -780,10 +797,14 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
+!$OMP parallel default(shared), private(i,io,lio,ind,jo)
+
+!$OMP workshare
     A_full(:,:) = 0._dp
+!$OMP end workshare
 
     ! Loop over region orbitals
-!$OMP parallel do default(shared), private(i,io,lio,ind,jo)
+!$OMP do
     do i = 1 , no
        
        ! Global orbital
@@ -817,7 +838,9 @@ contains
        end if
 
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+
+!$OMP end parallel
      
   end subroutine create_Gamma_Full
 
@@ -867,11 +890,16 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
+!$OMP parallel default(shared), &
+!$OMP&private(i,io,lio,ind,j,is,ph,idx,w)
+
+!$OMP workshare
     A_UT(:) = cmplx(0._dp,0._dp,dp)
+!$OMP end workshare
     w = log(0.5)
 
-!$OMP parallel do default(shared), firstprivate(w), &
-!$OMP&private(i,io,lio,ind,j,is,ph,idx)
+    ! Loop over region orbitals
+!$OMP do
     do i = 1 , no
        
        ! Global orbital
@@ -928,7 +956,9 @@ contains
        end if
 
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+
+!$OMP end parallel
      
   end subroutine create_kpt_U
 
@@ -984,10 +1014,15 @@ contains
             k(3) * sc_off(3,is),kind=dp))
     end do
 
+!$OMP parallel default(shared), &
+!$OMP&private(i,io,lio,ind,jo,is)
+
+!$OMP workshare
     A_full(:,:) = cmplx(0._dp,0._dp,dp)
+!$OMP end workshare
 
     ! Loop over region orbitals
-!$OMP parallel do default(shared), private(i,io,lio,ind,jo,is)
+!$OMP do
     do i = 1 , no
        
        ! Global orbital
@@ -1021,7 +1056,9 @@ contains
        end if
 
     end do
-!$OMP end parallel do
+!$OMP end do nowait
+
+!$OMP end parallel
      
   end subroutine create_kpt_full
 
@@ -1043,16 +1080,20 @@ contains
     complex(dp), intent(inout) :: work(nwork)
     integer :: MPIerror, i
     i = 0
-    do while ( i + nwork <= nnzs )
-      call zcopy(nwork,arr(i+1),1,work(1),1)
-      call MPI_AllReduce(work(1),arr(i+1),nwork, &
-          MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
-      i = i + nwork
+    do while ( i + nwork <= nnzs ) 
+!$OMP parallel workshare default(shared)
+       work(1:nwork) = arr(i+1:i+nwork)
+!$OMP end parallel workshare
+       call MPI_AllReduce(work(1),arr(i+1),nwork, &
+            MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
+       i = i + nwork
     end do
     if ( i < nnzs ) then
-      call zcopy(nnzs-i,arr(i+1),1,work(1),1)
-      call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
-          MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
+!$OMP parallel workshare default(shared)
+       work(1:nnzs-i) = arr(i+1:nnzs)
+!$OMP end parallel workshare
+       call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
+            MPI_Double_Complex, MPI_Sum, MPI_Comm_World, MPIerror)
     end if
   end subroutine AllReduce_z1D
 
@@ -1096,16 +1137,20 @@ contains
     real(dp), intent(inout) :: work(nwork)
     integer :: MPIerror, i
     i = 0
-    do while ( i + nwork <= nnzs )
-      call dcopy(nwork,arr(i+1),1,work(1),1)
-      call MPI_AllReduce(work(1),arr(i+1),nwork, &
-          MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
-      i = i + nwork
+    do while ( i + nwork <= nnzs ) 
+!$OMP parallel workshare default(shared)
+       work(1:nwork) = arr(i+1:i+nwork)
+!$OMP end parallel workshare
+       call MPI_AllReduce(work(1),arr(i+1),nwork, &
+            MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
+       i = i + nwork
     end do
     if ( i < nnzs ) then
-      call dcopy(nnzs-i,arr(i+1),1,work(1),1)
-      call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
-          MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
+!$OMP parallel workshare default(shared)
+       work(1:nnzs-i) = arr(i+1:nnzs)
+!$OMP end parallel workshare
+       call MPI_AllReduce(work(1),arr(i+1),nnzs-i, &
+            MPI_Double_Precision, MPI_Sum, MPI_Comm_World, MPIerror)
     end if
   end subroutine AllReduce_d1D
   

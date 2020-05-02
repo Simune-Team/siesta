@@ -22,7 +22,6 @@
       use siesta_geom
       use atomlist, only: qa, lasto, no_u, no_s, indxuo, 
      &                    qtot, Qtots, no_l
-      use sys, only: die, bye
       use kpoint_scf_m, only: kpoint_scf, gamma_scf
       use m_energies,   only: Ebs, Ecorrec, Entropy
       use m_energies,   only: Ef, Efs
@@ -35,6 +34,9 @@
       use m_compute_ebs_shift, only: compute_ebs_shift
 #ifdef SIESTA__PEXSI
       use m_pexsi_solver,  only: pexsi_solver
+#endif
+#ifdef SIESTA__ELSI
+      use m_elsi_interface,  only: elsi_getdm
 #endif
       use m_hsx, only      : write_hs_formatted
 #ifdef MPI
@@ -69,20 +71,32 @@
       real(dp)            :: buffer1, qsol
       integer             :: mpierr
 
+      external            :: die, bye
+
 !-------------------------------------------------------------------- BEGIN
 
       if (SIESTA_worker) call timer( 'compute_dm', 1 )
 
 #ifdef MPI
-      call MPI_Bcast(isolve,1,MPI_integer,0,true_MPI_Comm_World,mpierr)
+      call MPI_Bcast(isolve,1,MPI_integer,0,MPI_Comm_DFT,mpierr)
 #endif     
 
       if (SIESTA_worker) then
-        ! Save present density matrix
-        call dcopy(size(Dscf), Dscf(1,1), 1, Dold(1,1), 1)
-        if ( converge_EDM ) then
-          call dcopy(size(Escf), Escf(1,1), 1, Eold(1,1), 1)
-        end if
+         ! Save present density matrix
+!$OMP parallel default(shared)
+         if ( converge_EDM ) then
+!$OMP workshare
+            ! Not all solvers handle Escf during the SCF cycle
+            ! For those, converge_EDM should be disabled
+            Eold(:,:) = Escf(:,:)  
+            Dold(:,:) = Dscf(:,:)
+!$OMP end workshare
+         else
+!$OMP workshare
+            Dold(:,:) = Dscf(:,:)
+!$OMP end workshare
+         end if
+!$OMP end parallel
       end if
 
       ! Compute shift in Tr(H*DM) for fermi-level bracketting
@@ -125,6 +139,27 @@
      $              maxnh, numh, listhptr, listh,
      $              H, S, qtot, Dscf, Escf,
      $              ef, Entropy, temp, delta_Ef)
+      endif
+      if (.not. SIESTA_worker) RETURN
+#endif
+#ifdef SIESTA__ELSI
+      if (isolve .eq. SOLVE_ELSI) then
+        ! This test done in node 0 since NonCol and SpOrb
+        ! are not set for ELSI-solver-only processes
+         if (ionode) then
+            if (spin%NCol .or. spin%SO) call die(
+     $               "The ELSI solver does not implement "//
+     $               "non-coll spins or Spin-orbit yet")
+         endif
+         call elsi_getdm(iscf, no_s, spin%spinor, 
+     &              no_l, maxnh, no_u,
+     &              numh, listhptr, listh,
+     &              H, S, qtot, temp, 
+     &              xijo,
+     &              kpoint_scf%N, kpoint_scf%k, kpoint_scf%w,
+     &              Dscf, ef, Entropy,
+     &              occtol, neigwanted, Get_EDM_Only=.false.)
+         Ecorrec = 0.0_dp
       endif
       if (.not. SIESTA_worker) RETURN
 #endif
@@ -255,7 +290,7 @@ c$$$     &           S, 'S.matrix')
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        no_u == no_s, ucell, nsc, isc_off, no_u, na_u,
      &        lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot)
+     &        H, S, Dscf, Escf, Ef, Qtot, .false.)
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

@@ -19,7 +19,7 @@ subroutine tbt_init()
   use precision, only : dp
   use parallel, only : parallel_init, Node, Nodes, IONode
   use m_timer, only : timer_report
-  use alloc, only   : alloc_report
+  use memory_log,      only : memory_report
   use files, only   : slabel
   use m_timestamp, only : timestamp
   use m_wallclock, only : wallclock
@@ -197,7 +197,7 @@ subroutine tbt_init()
   level = fdf_get('alloc_report_level', 0)
   threshold = fdf_get('alloc_report_threshold', 0._dp)
   call name_save(1,1,fname,end='alloc')
-  call alloc_report( level=level, file=trim(fname), &
+  call memory_report( level=level, file=trim(fname), &
        threshold=threshold, printNow=.false. )
 
 #ifdef NCDF_4

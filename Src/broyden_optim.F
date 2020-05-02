@@ -68,7 +68,7 @@ C
      $                     broyden_destroy, broyden_init,
      $                     broyden_is_setup
 
-      use m_memory, only: memory, mem_stat
+      use memory_log, only: memory, mem_stat
       use parallel, only : ionode
 
 ! Subroutine arguments:

@@ -1,0 +1,144 @@
+--------------------------------------------------------------
+May 20, 2014   Alberto Garcia   trunk-427--ncps-3--shells-6
+Re-organize plotting in 'wrapup'
+
+The plotting is now done only for the final "down" pseudopotentials.
+Removed the plotting of the screened pseudopotential.
+
+Added comments for possible extensions and clarifications.
+
+removed:
+  Pseudo/atom/Tutorial/Utils/scrpots.gplot
+  Pseudo/atom/Tutorial/Utils/scrpots.gps
+modified:
+  Pseudo/atom/Docs/atom.tex
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
+May 17, 2014   Alberto Garcia   trunk-427--ncps-3--shells-5
+Fix subtle bug regarding counting of up and down potentials
+
+In the relativistic case, npotd and npotu have to be recalculated
+after the change of character for the s channel.
+
+modified:
+  Pseudo/atom/version.h
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
+May 15, 2014   Alberto Garcia   trunk-427--ncps-3--shells-4
+Preserve backward compatibility, but allow forcing new scheme
+
+To preserve backward compatibility without the need to change
+the INP file, the old method for dealing with the valence complex
+will be used unless there are multiple shells with the same l.
+
+The use of the new scheme can be forced by inserting
+ 
+   %define FORCE_MULTISHELL_METHOD
+
+in the input file.
+
+(+ fix issue with gnuplot script that was preventing log-derivs to
+appear)
+
+(+ add new input file for Ti example)
+
+added:
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.sc-ionic.inp
+modified:
+  Pseudo/atom/Tutorial/PS_Generation/Guide.txt
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.semicore.inp
+  Pseudo/atom/Tutorial/Utils/subps.gplot
+  Pseudo/atom/param.h
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
+May 14, 2014   Alberto Garcia   trunk-427--ncps-3--shells-3
+New scheme for dealing with multiple shells in the valence
+
+Use the screened PS to compute the pseudo-wavefunctions for all
+the valence levels, hence obtaining a proper pseudized charge
+density for de-screening later.
+
+There are small changes in the eigenvalues (and slightly larger
+changes in the energies) with respect to previous results.
+Use
+ 
+   %define V3
+
+in the input file to fall back to the previous behavior of using as
+pseudo-valence charge the one constructed directly by the pseudization
+scheme.
+
+removed:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.multiple.shells.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.test-gs-last.inp
+  Pseudo/atom/wf_nonpseudized.f
+added:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.sc-full.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.testGS.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ti/
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.inp
+  Pseudo/atom/Tutorial/PS_Generation/Ti/Ti.semicore.inp
+renamed:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.semicore.inp => Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.sc-ionic.inp
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/Tutorial/PS_Generation/Guide.txt
+  Pseudo/atom/Tutorial/Utils/ae.gplot
+  Pseudo/atom/Tutorial/Utils/pots.gplot
+  Pseudo/atom/Tutorial/Utils/pt.gplot
+  Pseudo/atom/Tutorial/Utils/scrpots.gplot
+  Pseudo/atom/Tutorial/Utils/subps.gplot
+  Pseudo/atom/Tutorial/Utils/vcharge.gplot
+  Pseudo/atom/Tutorial/Utils/vspin.gplot
+  Pseudo/atom/ker.f
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/wrapup.f
+
+--------------------------------------------------------------
+October X, 2013   Alberto Garcia   trunk-427--ncps-3--shells-2
+Add (AE...) charge density of non-pseudized states for descreening
+
+(This was committed later...)
+
+To fix the overall charge descreening, subroutine 'pseudo' now
+adds the charge density of the non-pseudized valence states to the
+array to be used in de-screening.
+
+A new routine 'wf_nonpseudized' is used to find the proper wfs.
+
+This actually gives oscillation problems due to the AE nodes in the
+non-pseudized functions... Another tack should be tried: a form of
+"pseudo test" with the total valence charge and a descreening with the
+"pseudo charge density", which will include just a single node for the
+upper states. (See mention of this in Paolo Giannozzi's "Notes on
+pseudopotential generation").
+
+added:
+  Pseudo/atom/wf_nonpseudized.f
+modified:
+  Pseudo/atom/Makefile
+  Pseudo/atom/pseudo.f
+
+--------------------------------------------------------------
+October 9, 2013   Alberto Garcia   trunk-427--ncps-3--shells-1
+Lift the restriction on multiple l-shells in atom
+
+ATOM can now work with several valence shells of the same angular
+momentum (for example, 5s and 6s in Ba, when treating 5s as semicore).
+
+There is no need to use ionized configurations for these kinds of
+problems. ATOM will pseudize the state with the lowest n for a given
+l, so the input format does not change.
+
+added:
+  Pseudo/atom/Tutorial/PS_Generation/Ba/Ba.multiple.shells.inp
+modified:
+  Pseudo/atom/pseudo.f
+  Pseudo/atom/wrapup.f
+
+
+

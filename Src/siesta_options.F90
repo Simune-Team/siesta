@@ -27,6 +27,8 @@ MODULE siesta_options
   ! -- pre 4.0 coordinate output logic -- to be implemented
   logical :: compat_pre_v4_dynamics      ! General switch
 
+  logical :: impose_symmetries ! symmetrize pos, cell, forces in siesta_init then state_analysis?
+
   logical :: mix_scf_first ! Mix first SCF step?
   logical :: mix_scf_first_force ! Mix first SCF step? and force it!
   logical :: mix_charge    ! New: mix fourier components of rho
@@ -204,7 +206,6 @@ MODULE siesta_options
   integer :: min_nscf      ! Minimum number of SCF iteration steps
   integer :: pmax          
   integer :: neigwanted    ! Wanted number of eigenstates (per k point)
-  integer :: level         ! Option for allocation report level of detail
   integer :: call_diagon_default    ! Default number of SCF steps for which to use diagonalization before OMM
   integer :: call_diagon_first_step ! Number of SCF steps for which to use diagonalization before OMM (first MD step)
 
@@ -231,7 +232,6 @@ MODULE siesta_options
   real(dp) :: taurelax      ! Relaxation time to reach desired T and P in anneal
   real(dp) :: temp          
   real(dp) :: tempinit      ! Initial ionic temperature read in redata
-  real(dp) :: threshold     ! Min. size of arrays printed by alloc_report
   real(dp) :: tp            ! Target pressure. Read in redata. Used in dynamics routines
   real(dp) :: total_spin    ! Total spin used in spin-polarized calculations
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.
@@ -247,6 +247,7 @@ MODULE siesta_options
   integer,  parameter :: SOLVE_PEXSI  = 4
   integer,  parameter :: MATRIX_WRITE = 5
   integer,  parameter :: SOLVE_CHESS  = 6
+  integer,  parameter :: SOLVE_ELSI   = 7
   integer,  parameter :: SOLVE_DUMMY  = 10
   
 #ifdef SIESTA__FLOOK

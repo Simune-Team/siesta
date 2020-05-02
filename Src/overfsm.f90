@@ -13,7 +13,7 @@ module m_overfsm
   use atmfuncs,      only : rcut, orb_gindex
   use neighbour,     only : jna=>jan, r2ij, xij, mneighb, reset_neighbour_arrays
   use alloc,         only : re_alloc, de_alloc
-  use m_new_matel,   only : new_matel
+  use matel_mod,     only : new_matel
   use t_spin, only: tSpin
   
   implicit none
@@ -72,6 +72,7 @@ contains
     integer :: j, ja, jn, jo, joa, js, jua, jx, nnia
     
     real(dp) :: fij(3), grSij(3), rij, Sij, volcel, volume
+    real(dp) :: grSij2(3), Sij2
 
     real(dp), dimension(:), pointer ::  Di => null()
 
@@ -120,7 +121,7 @@ contains
               
               if ( rcut(is,ioa) + rcut(js,joa) > rij ) then
                 jg = orb_gindex(js,joa)
-                call new_MATEL( 'S', ig, jg, xij(1:3,jn), Sij, grSij )
+                call new_matel( 'S', ig, jg, xij(1:3,jn), Sij, grSij )
                 do ix = 1,3
                   fij(ix) = - Di(jo) * grSij(ix)
                   fa(ix,ia)  = fa(ix,ia)  + fij(ix)

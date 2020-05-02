@@ -116,9 +116,11 @@
 !     in the last computation of the electronic structure.
 !     See the comments below for explanation
 
+!$OMP parallel workshare default(shared)
          xa(1:3,1:na_s) = xa_last(1:3,1:na_s)
          ucell(1:3,1:3) = ucell_last(1:3,1:3)
          scell(1:3,1:3) = scell_last(1:3,1:3)
+!$OMP end parallel workshare
 
       endif
 

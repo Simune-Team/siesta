@@ -31,7 +31,9 @@
    a_out => val(a2d_out)
 
    ! Simple linear extrapolation for now
+!$OMP parallel workshare default(shared)
    a_out(:,:) = 2.0_dp * a_2(:,:) - a_1(:,:)
+!$OMP end parallel workshare
 
    call newdSpData2D(sp_out,a2d_out,dist(SpM1), &
         SpMout,name="Extrapolated SpM")

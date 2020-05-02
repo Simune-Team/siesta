@@ -48,12 +48,13 @@ module m_ts_rgn2trimat
   
 contains
 
-  ! IF nblocks == 0 will create new partition
+  ! IF parts == 0 will create new partition
   subroutine ts_rgn2TriMat(N_Elec, Elecs, IsVolt, &
-       dit, sp, r, nblocks, blocks, method, last_block, par)
+       dit, sp, r, parts, n_part, method, last_eq, par)
 
     use class_OrbitalDistribution
     use class_Sparsity
+    use create_Sparsity_Union
     use parallel, only : IONode, Node, Nodes
     use fdf, only : fdf_get
 #ifdef MPI
@@ -73,27 +74,26 @@ contains
     type(Sparsity), intent(inout) :: sp
     ! The region that we will create a tri-diagonal matrix on.
     type(tRgn), intent(in) :: r
-    ! The sizes of the blocks in the tri-diagonal matrix
-    integer, intent(inout) :: nblocks
-    integer, pointer :: blocks(:)
+    ! The sizes of the parts in the tri-diagonal matrix
+    integer, intent(out) :: parts
+    integer, pointer :: n_part(:)
     ! Which kind of method should be used to create the tri-diagonal
     integer, intent(in) :: method
-    ! Whether we should retain the last block to a fixed size.
-    integer, intent(in) :: last_block
+    ! Whether we should retain the last partition to a fixed size.
+    integer, intent(in) :: last_eq
     ! Whether the search should be performed in parallel or not
     logical, intent(in), optional :: par
 
     ! Local variables
-    integer, pointer :: blocks_guess(:) => null()
+    integer, pointer :: guess_part(:) => null()
     integer, pointer :: mm_col(:,:) => null()
-    integer, pointer :: iwork(:,:) => null()
-
-    integer :: ind
-    integer :: i, nblock_guess
+    integer :: i, no, guess_parts, max_block
     ! In case of parallel
-    integer :: init_min_b, init_max_b
-    integer :: guess_start, guess_step, guess_end
-    logical :: lpar
+    integer :: guess_start, guess_step
+    logical :: copy_first, lpar
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
+    character(len=64) :: fname
+    integer :: io, jo, jr, j, ind, no_u, iu
 #ifdef MPI
     integer :: MPIerror
 #endif
@@ -102,14 +102,19 @@ contains
 
     lpar = .true.
     if ( present(par) ) lpar = par
+    if ( Nodes == 1 ) lpar = .false.
 
-    if ( r%n == 1 ) then
+    ! This is the size of the regional 3-diagonal matrix
+    no = r%n
+
+    if ( no == 1 ) then
        
        ! Simple case, return immediately with default block-size
        
-       call re_alloc(blocks, 1, 1, 'blocks', 'tsR2TM')
-       blocks(1) = 1
-       nblocks = 1
+       call re_alloc(n_part , 1, 1, &
+            routine='tsR2TM', name='n_part')
+       n_part(1) = 1
+       parts = 1
 
        call timer('TS-rgn2tri', 2)
        return
@@ -118,38 +123,44 @@ contains
 
     ! Establish a guess on the partition of the tri-diagonal 
     ! matrix...
-    call re_alloc(blocks_guess, 1, r%n, 'blocks_guess', 'tsR2TM')
-    call re_alloc(blocks, 1, r%n, 'blocks', 'tsR2TM')
-    call re_alloc(iwork, 1, r%n, 1, 2, 'iwork', 'tsR2TM')
-    blocks_guess(:) = 0
+    call re_alloc(guess_part, 1, no, &
+         routine='tsR2TM', name='guess_part')
+    call re_alloc(n_part    , 1, no, &
+         routine='tsR2TM', name='n_part')
+    guess_part(:) = 0
 
     ! create array containing max-min for each ts-orbital
-    call re_alloc(mm_col, 1, 2, 1, r%n, 'mm_col', 'tsR2TM')
+    call re_alloc(mm_col, 1, 2, 1, no, &
+         routine='tsR2TM', name='mm_col')
 
     ! Set the min/max column indices in the pivoted matrix
     call set_minmax_col(sp, r, mm_col)
 
-    nblocks = 2
-    blocks(1) = r%n / 2
-    blocks(2) = r%n / 2 + mod(r%n,2)
-    if ( last_block > 0 ) then
-       nblocks = 2
-       blocks(2) = last_block
-       blocks(1) = r%n - last_block
+    parts = 2
+    n_part(1) = no / 2
+    n_part(2) = no / 2 + mod(no,2)
+    if ( last_eq > 0 ) then
+       parts = 2
+       n_part(2) = last_eq
+       n_part(1) = no - last_eq
        ! Initialize the guess for the 
-       call guess_TriMat_last(r%n,mm_col,nblock_guess,blocks_guess,last_block)
-       if ( valid_tri(r%n,mm_col,nblock_guess, blocks_guess,last_block) == VALID ) then
-          nblocks = nblock_guess
-          blocks(1:nblocks) = blocks_guess(1:nblocks)
+       call guess_TriMat_last(no,mm_col,guess_parts,guess_part,last_eq)
+       if ( valid_tri(no,mm_col,guess_parts, guess_part,last_eq) == VALID ) then
+          parts = guess_parts
+          n_part(1:parts) = guess_part(1:parts)
        end if
     end if
 
     if ( lpar ) guess_step = Nodes
 
+    ! If the first one happens to be the best partition, 
+    ! but non-valid, we need to make sure to overwrite it
+    copy_first = .false. ! currently TODO THIS COULD BE A PROBLEM
+
     ! If the blocks are known by the user to not exceed a certain
     ! size, then we can greatly reduce the guessing step
-    ! for huge systems: mm_col(2, 1)
-
+    ! for huge systems
+    ind = mm_col(2,1)
     ! Now figure out the min/max connections.
     ! We do this by cheking the first connection-block and the
     ! min/max ranges
@@ -158,67 +169,72 @@ contains
     ! that connects to the fewest amount of parent orbitals.
     ! This means that the block *could* potentially be as small
     ! as the one found.
-    init_min_b = r%n
-    init_max_b = 0
-    do i = 1, mm_col(2, 1)
+    io = no
+    jo = 0
+    do i = 1, ind
       ! bandwidth at row i
-      init_min_b = min(init_min_b, mm_col(2, i) - mm_col(1, i))
-      ! End guess at end
-      init_max_b = max(init_max_b, mm_col(2, i))
+      j = mm_col(2, i) - mm_col(1, i)
+      io = min(io, j)
+      jo = max(jo, j)
     end do
     ! Allow 5% of the minimum block size +/- to search
     ! This *is* too much but to be on the safe side...
-    i = max(nint(init_min_b * 0.05), 2)
+    ! On this note we also increase the step to 1%
+    i = max(int(io * 0.05), 2)
     ! We allow the splitting of blocks to:
     !   [1 , 4]
     ! but this does not allow any
     !   [1 , >4]
     ! splittings.
-    guess_start = max(1, init_min_b / 4 - i)
+    guess_start = max(1, io / 4 - i)
     guess_start = fdf_get('TS.BTD.Guess1.Min',guess_start)
 #ifdef TBTRANS
     guess_start = fdf_get('TBT.BTD.Guess1.Min',guess_start)
 #endif
-    ! Stepping default to be 1% of minimium bandwith
-    guess_step = max(1, nint(init_min_b * 0.01))
-    guess_step = fdf_get('TS.BTD.Guess1.Step',guess_step)
+    ! Define the stepping
+    guess_step = max(int(io * 0.01), 1)
+    max_block = max(min( no / 4, jo + i), 1)
+    max_block = fdf_get('TS.BTD.Guess1.Max',max_block)
 #ifdef TBTRANS
-    guess_step = fdf_get('TBT.BTD.Guess1.Step',guess_step)
+    max_block = fdf_get('TBT.BTD.Guess1.Max',max_block)
 #endif
-    guess_end = max(1, min( r%n / 4, init_max_b + i))
-    guess_end = fdf_get('TS.BTD.Guess1.Max',guess_end)
-#ifdef TBTRANS
-    guess_end = fdf_get('TBT.BTD.Guess1.Max',guess_end)
-#endif
-
     ! In case the orbitals of this region is much smaller than
     ! max-block, then use the half 'no'
-    guess_end = max(guess_end, guess_start + guess_step)
-    guess_end = min(guess_end, r%n / 2)
-    guess_start = max(1, min(guess_start, guess_end))
+    max_block = max(max_block , guess_start + guess_step)
+    max_block = min(max_block , no / 2)
+    guess_start = max(min(guess_start, max_block), 1)
 
     ! Correct starting guess for the node
-    if ( lpar ) guess_start = min(guess_start + Node, guess_end)
-
+    if ( lpar ) guess_start = min(guess_start + Node, max_block)
+    
     ! We loop over all possibilities from the first part having size
     ! 2 up to and including total number of orbitals in the 
     ! In cases of MPI we do it distributed (however, the collection routine
     ! below could be optimized)
-    do i = guess_start , guess_end , guess_step
+    do i = guess_start , max_block , guess_step
 
       ! Make new guess...
-      call guess_btd_blocks(r%n,mm_col,i,nblock_guess,blocks_guess,last_block)
+      call guess_TriMat(no,mm_col,i,guess_parts,guess_part,last_eq)
 
-      ! Quick escape if the first part is zero (signal from guess_btd_blocks)
-      if ( blocks_guess(1) == 0 ) cycle
+      ! Quick escape if the first part is zero (signal from guess_trimat)
+      if ( guess_part(1) == 0 ) cycle
 
-      if ( valid_tri(r%n,mm_col,nblock_guess,blocks_guess,last_block) == VALID ) then
+      ! If not valid tri-pattern, simply jump...
+      if ( valid_tri(no,mm_col,guess_parts, guess_part,last_eq) /= VALID ) then
+        cycle
+      end if
 
-        ! Try and even out the different blocks
-        call smoothen_blocks(method,r%n,mm_col,nblock_guess,blocks_guess,last_block,iwork)
+      ! Try and even out the different parts
+      call full_even_out_parts(N_Elec,Elecs,IsVolt,method, &
+          no,mm_col,guess_parts,guess_part,last_eq)
 
-        call select_better(method, nblocks, blocks, nblock_guess, blocks_guess)
-
+      if ( copy_first ) then
+        ! ensure to copy it over (the initial one was not valid)
+        copy_first = .false.
+        parts = guess_parts
+        n_part(1:parts) = guess_part(1:parts)
+      else
+        call select_better(method, parts,n_part, guess_parts, guess_part)
       end if
 
     end do
@@ -229,60 +245,61 @@ contains
        ! Only check up-till the largest block that is actually searched
        do i = 0 , Nodes - 1
           if ( i == Node ) then
-             call MPI_Bcast(nblocks, 1, MPI_Integer, i, &
+             call MPI_Bcast(parts, 1, MPI_Integer, i, &
                   MPI_Comm_World, MPIerror)
-             call MPI_Bcast(blocks(1), nblocks, MPI_Integer, i, &
+             call MPI_Bcast(n_part(1), parts, MPI_Integer, i, &
                   MPI_Comm_World, MPIerror)
           else
-             call MPI_Bcast(nblock_guess, 1, MPI_Integer, i, &
+             call MPI_Bcast(guess_parts, 1, MPI_Integer, i, &
                   MPI_Comm_World, MPIerror)
-             call MPI_Bcast(blocks_guess(1), nblock_guess, MPI_Integer, i, &
+             call MPI_Bcast(guess_part(1), guess_parts, MPI_Integer, i, &
                   MPI_Comm_World, MPIerror)
              ! Only all the other nodes are allowed to check...
              ! TODO this could be made to a communication tree to limit communication
              call select_better(method, &
-                  nblocks,blocks, nblock_guess, blocks_guess)
+                  parts,n_part, guess_parts, guess_part)
           end if
        end do
     end if
 #endif
 
-    call de_alloc(blocks_guess, 'blocks_guess', 'tsR2TM')
-    ! Shrink to the found blocks
-    call re_alloc(blocks,1, nblocks, 'blocks', 'tsR2TM', copy=.true., shrink=.true.)
+    call de_alloc(guess_part,routine='tsR2TM',name='guess_part')
+    ! Shrink to the found parts
+    call re_alloc(n_part,1, parts, copy=.true., shrink=.true., &
+         routine='tsR2TM', name='n_part')
 
-    if ( nblocks < 2 ) then
+    if ( parts < 2 ) then
        
        if ( IONode ) then 
           write(*,'(a)') 'Could not determine an optimal tri-diagonalization &
                &partition'
           write(*,'(2a)') 'Running on region: ',trim(r%name)
-          if ( nblocks > 0 ) then
-             write(*,'(a,i0)') 'Found: ',nblocks
-             write(*,'(1000000(tr1,i0))') blocks
+          if ( parts > 0 ) then
+             write(*,'(a,i0)') 'Found: ',parts
+             write(*,'(1000000(tr1,i0))') n_part
           else
              write(*,'(a)') 'None found...'
           end if
        end if
-       call re_alloc(blocks, 1, 3, 'blocks', 'tsR2TM')
+       call re_alloc(n_part, 1, 3, routine='tsR2TM',name='n_part')
        call die('Not yet implemented')
 
     end if
 
-    ! The blocks now have almost the same size and we will check that it
+    ! The parts now have almost the same size and we will check that it
     ! is a valid thing, if not, we will revert to the other method of
     ! creating the tri-diagonal sparsity pattern
     ! We do not expect this to fail. After all we check that we can
     ! even out the partitions.
     ! The most probable thing is that the electrodes are not
-    ! contained in the first two blocks.
-    i = valid_tri(r%n, mm_col, nblocks, blocks, last_block)
+    ! contained in the first two parts.
+    i = valid_tri(no,mm_col,parts, n_part,last_eq)
     if ( i /= VALID ) then
        write(*,'(2a)') 'Running on region: ',trim(r%name)
-       write(*,'(a,i0)') 'TranSiesta system size: ',r%n
-       write(*,'(a,i0)') 'Current number of blocks: ',nblocks
-       write(*,'(10000000(tr1,i0))') blocks
-       write(*,'(a,i0)') 'Current part size: ',sum(blocks(:))
+       write(*,'(a,i0)') 'TranSiesta system size: ',no
+       write(*,'(a,i0)') 'Current parts: ',parts
+       write(*,'(10000000(tr1,i0))') n_part
+       write(*,'(a,i0)') 'Current part size: ',sum(n_part(:))
        select case ( i )
        case ( NONVALID_SIZE )
           write(*,'(a)') 'The size is not valid.'
@@ -297,35 +314,75 @@ contains
             &You appear to have a special form of electrode.')
     end if
 
-    call de_alloc(mm_col, 'mm_col', 'tsR2TM')
-    call de_alloc(iwork, 'iwork', 'tsR2TM')
+    call de_alloc(mm_col,routine='tsR2TM',name='mm_col')
 
     call timer('TS-rgn2tri',2)
 
-    ! Write data (if user requests it, otherwise return immediately!)
-    call write_pvt_btd(sp, r, nblocks, blocks)
+    if ( .not. IONode ) return
+
+    fname = fdf_get('TS.BTD.Output',' ')
+    if ( len_trim(fname) == 0 ) return
+    
+    call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
+         nrows_g=no_u)
+
+    ! Write out the BTD format in a file to easily be processed
+    ! by python, this is the pivoted sparsity pattern
+    call io_assign(iu)
+    open(iu, file=trim(fname)//'.sp',action='write')
+    write(iu,'(i0)') no
+    do i = 1 , no
+       io = r%r(i)
+       if ( l_ncol(io) == 0 ) cycle
+       do j = 1 , l_ncol(io)
+          ind = l_ptr(io) + j
+          jo = UCORB(l_col(ind),no_u)
+          jr = rgn_pivot(r,jo)
+          if ( jr > i ) cycle ! only print lower half
+          if ( jr <= 0 ) cycle
+          write(iu,'(2(i0,tr1),i1)') i, jr, 1
+       end do
+    end do
+    call io_close(iu)
+
+    call io_assign(iu)
+    open(iu, file=trim(fname)//'.pvt',action='write')
+    write(iu,'(i0)') no
+    do i = 1 , no
+       ! store the pivoting table such that sp[i,j] = orig[ pvt[i] , pvt[j] ]
+       write(iu,'(i0,tr1,i0)') i, r%r(i)
+    end do
+    call io_close(iu)
+
+    call io_assign(iu)
+    open(iu, file=trim(fname)//'.btd',action='write')
+    ! write the tri-mat blocks
+    write(iu,'(i0)') parts
+    do i = 1 , parts
+       write(iu,'(i0)') n_part(i)
+    end do
+    call io_close(iu)
 
   contains 
 
-    subroutine select_better(method, nblock_cur, blocks_cur, nblock_guess, blocks_guess)
-
-      integer, intent(in) :: method
-      integer, intent(inout) :: nblock_cur
-      integer, intent(in) :: nblock_guess
-      integer, intent(inout) :: blocks_cur(max(nblock_cur,nblock_guess))
-      integer, intent(in) :: blocks_guess(nblock_guess)
+    subroutine select_better(method, cur_parts, cur_part, guess_parts, guess_part)
       
+      integer, intent(in)    :: method
+      integer, intent(inout) :: cur_parts
+      integer, intent(in)    :: guess_parts
+      integer, intent(inout) :: cur_part(max(cur_parts,guess_parts))
+      integer, intent(in)    :: guess_part(guess_parts)
       logical :: copy
       integer :: cur_work, guess_work
       integer :: cur_pad, guess_pad
 
       ! We check whether the number of elements is smaller
-      ! or that the number of blocks is greater (however, this should
+      ! or that the number of parts is greater (however, this should
       ! in principle always go together)
       ! If the method of optimization is memory:
       if ( method == 0 ) then
         
-        copy = faster_blocks(nblock_cur,blocks_cur,nblock_guess,blocks_guess)
+        copy = faster_parts(cur_parts,cur_part,guess_parts,guess_part)
         
       else if ( method == 1 ) then
         
@@ -333,9 +390,9 @@ contains
         ! in this regard we also check whether we should allocate
         ! a work-array in case of bias calculations.
         if ( IsVolt .and. ts_A_method == TS_BTD_A_COLUMN ) then
-          call GFGGF_needed_worksize(nblock_guess, blocks_guess, &
+          call GFGGF_needed_worksize(guess_parts, guess_part, &
               N_Elec, Elecs, guess_pad, guess_work)
-          call GFGGF_needed_worksize(nblock_cur, blocks_cur, &
+          call GFGGF_needed_worksize(cur_parts, cur_part, &
               N_Elec, Elecs, cur_pad, cur_work)
 
           ! Update values
@@ -350,8 +407,8 @@ contains
         end if
 
         ! Difference between the two BTD matrices
-        guess_pad = nnzs_tri_i8b(nblock_cur, blocks_cur) - &
-            nnzs_tri_i8b(nblock_guess, blocks_guess)
+        guess_pad = nnzs_tri_i8b(cur_parts, cur_part) - &
+            nnzs_tri_i8b(guess_parts, guess_part)
 
         ! total difference in number of elements
         ! If this is positive the guessed BTD matrix has fewer
@@ -362,7 +419,7 @@ contains
         if ( .not. copy ) then
           ! in case the work-size is the same we fall-back to the fastests method
           if ( cur_pad == 0 ) then
-            copy = faster_blocks(nblock_cur,blocks_cur,nblock_guess,blocks_guess)
+            copy = faster_parts(cur_parts,cur_part,guess_parts,guess_part)
           end if
         end if
 
@@ -371,219 +428,162 @@ contains
       end if
 
       if ( copy ) then
-        nblock_cur = nblock_guess
-        blocks_cur(1:nblock_cur) = blocks_guess(1:nblock_cur)
+        cur_parts = guess_parts
+        cur_part(1:cur_parts) = guess_part(1:cur_parts)
       end if
 
     end subroutine select_better
 
-    subroutine write_pvt_btd(sp, r, nblocks, blocks)
-      type(Sparsity), intent(inout) :: sp
-      type(tRgn), intent(in) :: r
-      integer, intent(in) :: nblocks
-      integer, intent(in) :: blocks(nblocks)
-      character(len=64) :: fname
-
-      type(tRgn) :: pvt
-      integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-      integer :: i, io, j, jo, ind, no_u, iu
-
-      if ( .not. IONode ) return
-
-      fname = fdf_get('TS.BTD.Output',' ')
-      if ( len_trim(fname) == 0 ) return
-
-      call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-          nrows_g=no_u)
-
-      call rgn_init(pvt, no_u, val=0)
-      ! Create the back-pivoting array
-      do i = 1 , r%n
-        pvt%r(r%r(i)) = i
-      end do
-
-      ! Write out the BTD format in a file to easily be processed
-      ! by python, this is the pivoted sparsity pattern
-      call io_assign(iu)
-      open(iu, file=trim(fname)//'.sp',action='write')
-      write(iu,'(i0)') r%n
-      do i = 1 , r%n
-        io = r%r(i)
-        if ( l_ncol(io) == 0 ) cycle
-        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-          jo = UCORB(l_col(ind),no_u)
-          j = pvt%r(jo)
-          if ( j > i ) cycle ! only print upper half (it is hermitian)
-          write(iu,'(2(i0,tr1),i1)') i, j, 1
-        end do
-      end do
-      call io_close(iu)
-
-      call io_assign(iu)
-      open(iu, file=trim(fname)//'.pvt',action='write')
-      write(iu,'(i0)') r%n
-      do i = 1 , r%n
-        ! store the pivoting table such that sp[i,j] = orig[ pvt[i] , pvt[j] ]
-        write(iu,'(i0,tr1,i0)') i, r%r(i)
-      end do
-      call io_close(iu)
-
-      call io_assign(iu)
-      open(iu, file=trim(fname)//'.btd',action='write')
-      ! write the tri-mat blocks
-      write(iu,'(i0)') nblocks
-      do i = 1 , nblocks
-        write(iu,'(i0)') blocks(i)
-      end do
-      call io_close(iu)
-
-      call rgn_delete(pvt)
-
-    end subroutine write_pvt_btd
-
   end subroutine ts_rgn2TriMat
 
-  subroutine guess_btd_blocks(no,mm_col,first_block,nblocks,blocks,last_block)
+  subroutine guess_TriMat(no,mm_col,first_part,n_part,parts,last_eq)
 
     integer, intent(in) :: no, mm_col(2,no) ! number of orbitals, max,min
-    integer, intent(in) :: first_block
-    integer, intent(inout) :: nblocks
-    integer, intent(inout) :: blocks(no)
-    integer, intent(in) :: last_block
+    integer, intent(in) :: first_part
+    integer, intent(inout) :: n_part
+    integer, intent(inout) :: parts(no)
+    integer, intent(in) :: last_eq
 
     ! Local variables
     integer :: N
 
-    if ( first_block > no ) &
+    if ( first_part > no ) &
         call die('Not allowed to do 1 tri-diagonal part')
 
-    nblocks = 1
-    blocks(1) = first_block
-    N = blocks(1)
+    n_part = 1
+    parts(1) = first_part
+    N = parts(1)
     
     do while ( N < no )
+
+      ! Step the currently searched part
+      n_part = n_part + 1
       
-      if ( nblocks > no ) then
-        print *,'Error',nblocks,no
+      if ( n_part > no ) then
+        print *,'Error',n_part,no
         call die('Size error when guessing the tri-mat size')
       end if
-
-      nblocks = nblocks + 1
-      call set_next_block_size(no, mm_col, N-blocks(nblocks-1)+1, N, blocks(nblocks))
       
-      N = N + blocks(nblocks)
+      call guess_next_part_size(no, mm_col, N, n_part, parts)
+      
+      N = N + parts(n_part)
       ! if a last-part was "forced" we do this here...
-      if ( N + last_block > no ) then
+      if ( N + last_eq > no ) then
         ! We need to add the former part with the "too many"
         ! orbitals
-        blocks(nblocks) = blocks(nblocks) + no - N
+        parts(n_part) = parts(n_part) + no - N
         N = no
       end if
 
     end do
 
-    if ( last_block > 0 ) then
+    if ( last_eq > 0 ) then
       
-      ! Correct so that we actually do contain the last_block
+      ! Correct so that we actually do contain the last_eq
       ! in the last one
-      N = blocks(nblocks) - last_block
-      blocks(nblocks) = last_block
-      blocks(nblocks-1) = blocks(nblocks-1) + N
+      N = parts(n_part) - last_eq
+      parts(n_part) = last_eq
+      parts(n_part-1) = parts(n_part-1) + N
       
       ! Signal that this is a faulty TRIMAT
-      if ( N < 0 ) blocks(1) = 0
+      if ( N < 0 ) parts(1) = 0
       
     end if
 
-  end subroutine guess_btd_blocks
+  end subroutine guess_TriMat
 
-  subroutine guess_TriMat_last(no,mm_col,nblocks,blocks,last_block)
+  subroutine guess_TriMat_last(no,mm_col,parts,n_part,last_eq)
 
     integer, intent(in) :: no, mm_col(2,no) ! number of orbitals, max,min
-    integer, intent(inout) :: nblocks
-    integer, intent(inout) :: blocks(:)
-    integer, intent(in) :: last_block
+    integer, intent(out) :: parts
+    integer, intent(out) :: n_part(:)
+    integer, intent(in) :: last_eq
 
     ! Local variables
     integer :: N
 
-    nblocks = 1
-    blocks(1) = last_block
-    N = blocks(1)
+    parts = 1
+    n_part(1) = last_eq
+    N = n_part(1)
     do while ( N < no )
-       nblocks = nblocks + 1
-       if ( nblocks > size(blocks) ) then
-          print *,'Error',nblocks,size(blocks)
+       parts = parts + 1
+       if ( parts > size(n_part) ) then
+          print *,'Error',parts,size(n_part)
           call die('Size error when guessing the tri-mat size')
        end if
-       call guess_prev_block_size(no, mm_col, nblocks, nblocks, blocks)
-       N = N + blocks(nblocks)
+       call guess_prev_part_size(no, mm_col, parts, parts, n_part)
+       N = N + n_part(parts)
     end do
 
     ! Reverse
-    blocks(1:nblocks) = blocks(nblocks:1:-1)
+    n_part(1:parts) = n_part(parts:1:-1)
 
   end subroutine guess_TriMat_last
 
-  function faster_blocks(n1,blocks1,n2,blocks2) result(faster)
-    integer, intent(in) :: n1, blocks1(n1)
-    integer, intent(in) :: n2, blocks2(n2)
+  function faster_parts(np,n_part,ng,g_part) result(faster)
+    integer, intent(in) :: np, n_part(np)
+    integer, intent(in) :: ng, g_part(ng)
     logical :: faster
 
     integer :: i, n
-    real(dp) :: p1, p2, diff
+    real(dp) :: p_N, g_N, diff
+    real(dp), parameter :: off_diag = 1.2_dp
 
     ! We estimate the fastest algorithm
     ! by the number of operations the matrices make
-    ! inv = O^3, mm = O^3
 
-    p1 = (R(blocks1(1)) + R(blocks1(2))) * R(blocks1(1)) * R(blocks1(1))
-    p2 = (R(blocks2(1)) + R(blocks2(2))) * R(blocks2(1)) * R(blocks2(1))
+    ! 2 * 5 / 3 + 4 ~~ 1 + 1.2
+    p_N = R(n_part(1)) ** 2 + off_diag * R(n_part(2))
+    p_N = p_N * R(n_part(1))
+    
+    g_N = R(g_part(1)) ** 2 + off_diag * R(g_part(2))
+    g_N = g_N * R(g_part(1))
+    
+    diff = p_N - g_N
+    
+    n = min(np, ng)
+!$OMP parallel do default(shared), private(i,p_N,g_N), reduction(+:diff), if(n>1000)
+    do i = 2, n
 
-    diff = p1 - p2
+      p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
+      p_N = p_N * R(n_part(i))
 
-    n = min(n1, n2)
-    do i = 2, n - 1
-
-      p1 = (R(blocks1(i)) + R(blocks1(i-1)) + R(blocks1(i+1))) * R(blocks1(i)) * R(blocks1(i))
-      p2 = (R(blocks2(i)) + R(blocks2(i-1)) + R(blocks2(i+1))) * R(blocks2(i)) * R(blocks2(i))
-
-      diff = diff + p1 - p2
-
+      g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
+      g_N = g_N * R(g_part(i))
+      
+      diff = diff + p_N - g_N
+      
     end do
+!$OMP end parallel do
 
-    ! The last entry
-    p1 = (R(blocks1(n1)) + R(blocks1(n1-1))) * R(blocks1(n1)) * R(blocks1(n1))
-    p2 = (R(blocks2(n2)) + R(blocks2(n2-1))) * R(blocks2(n2)) * R(blocks2(n2))
-
-    diff = diff + p1 - p2
-
-    if ( n1 > n2 ) then
+    if ( np > ng ) then
       faster = .true.
 
-      do i = n2, n1 - 1
+      do i = ng + 1, np
+        
+        p_N = R(n_part(i)) ** 2 + off_diag * R(n_part(i-1))
+        p_N = p_N * R(n_part(i))
 
-        p1 = (R(blocks1(i)) + R(blocks1(i-1)) + R(blocks1(i+1))) * R(blocks1(i)) * R(blocks1(i))
-
-        diff = diff + p1
+        diff = diff + p_N
 
         if ( diff > 0._dp ) return
 
       end do
-
+      
     else
       faster = .false.
-
-      do i = n1, n2 - 1
-
-        p2 = (R(blocks2(i)) + R(blocks2(i-1)) + R(blocks2(i+1))) * R(blocks2(i)) * R(blocks2(i))
-
-        diff = diff - p2
+      
+      do i = np + 1, ng
+        
+        g_N = R(g_part(i)) ** 2 + off_diag * R(g_part(i-1))
+        g_N = - g_N * R(g_part(i))
+        
+        diff = diff + g_N
 
         if ( diff < 0._dp ) return
 
       end do
-
+      
     end if
 
     faster = diff > 0._dp
@@ -596,22 +596,28 @@ contains
       o = real(i, dp)
     end function R
       
-  end function faster_blocks
+  end function faster_parts
 
 
   ! We will guess the size of this (part) tri-diagonal part by
   ! searching for the size of the matrix that matches that of the previous 
   ! part.
-  ! We save it in blocks(part)
-  subroutine set_next_block_size(no,mm_col,sRow,eRow,block_size)
+  ! We save it in n_part(part)
+  subroutine guess_next_part_size(no,mm_col,no_cur,n_part,parts)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
-    ! eRow is sum(blocks(:-1))
-    integer, intent(in) :: sRow, eRow
-    integer, intent(inout) :: block_size
+    ! no_cur is sum(parts(:-1))
+    integer, intent(in) :: no_cur, n_part
+    integer, intent(inout) :: parts(n_part)
     ! Local variables
-    integer :: i, mcol
+    integer :: i, sRow, eRow, mcol
     
+    ! We are now checking a future part
+    ! Hence we must ensure that the size is what
+    ! is up to the last parts size, and thats it...
+    eRow = no_cur
+    sRow = eRow - parts(n_part-1) + 1
+
     ! We will check in between the above selected rows and find the 
     ! difference in size...
     mcol = 0
@@ -624,95 +630,101 @@ contains
 
     ! In case there is no connection, we should
     ! force the next-part to be 1!
-    block_size = max(1, mcol - eRow)
+    parts(n_part) = max(1, mcol - eRow)
 
-  end subroutine set_next_block_size
+  end subroutine guess_next_part_size
 
   ! We will guess the size of this (part) tri-diagonal part by
   ! searching for the size of the matrix that matches that of the previous 
   ! part.
-  ! We save it in nblocks(part)
-  subroutine guess_prev_block_size(no,mm_col,block,nblocks,blocks)
+  ! We save it in n_part(part)
+  subroutine guess_prev_part_size(no,mm_col,part,parts,n_part)
     integer, intent(in) :: no, mm_col(2,no)
     ! the part we are going to create
-    integer, intent(in) :: block, nblocks
-    integer, intent(inout) :: blocks(nblocks)
+    integer, intent(in) :: part, parts
+    integer, intent(inout) :: n_part(parts)
     ! Local variables
     integer :: i, sRow, eRow, mcol
     
-    ! We are now checking a future block
+    ! We are now checking a future part
     ! Hence we must ensure that the size is what
-    ! is up to the last blocks size, and thats it...
+    ! is up to the last parts size, and thats it...
     eRow = no
-    if ( block > 2 ) then
-       do i = 1 , block - 2
-          eRow = eRow - blocks(i)
+    if ( part > 2 ) then
+       do i = 1 , part - 2
+          eRow = eRow - n_part(i)
        end do
     end if
-    sRow = eRow - blocks(block-1) + 1
+    sRow = eRow - n_part(part-1) + 1
 
     ! We will check in between the above selected rows and find the 
     ! difference in size...
-    blocks(block) = 0
+    n_part(part) = 0
     do i = sRow, eRow
-       ! this is the # of elements from the RHS of the 'block-1'
-       ! block of the tridiagonal matrix and out to the last element of
+       ! this is the # of elements from the RHS of the 'part-1'
+       ! part of the tridiagonal matrix and out to the last element of
        ! this row...
        mcol = sRow - mm_col(1,i)
-       if ( blocks(block) < mcol ) then
-          blocks(block) = mcol
+       if ( n_part(part) < mcol ) then
+          n_part(part) = mcol
        end if
     end do
 
     ! In case there is actually no connection, we should
-    ! force the next-block to be 1!
-    if ( blocks(block) == 0 ) then
-       blocks(block) = 1
+    ! force the next-part to be 1!
+    if ( n_part(part) == 0 ) then
+       n_part(part) = 1
     end if
 
-  end subroutine guess_prev_block_size
+  end subroutine guess_prev_part_size
 
-  subroutine smoothen_blocks(method,no,mm_col,nblocks,blocks, last_block, iwork)
+  subroutine full_even_out_parts(N_Elec,Elecs,IsVolt, &
+      method,no,mm_col,n_part,parts, last_eq)
 
-    integer, intent(in) :: method ! the method used for creating the blocks
+    integer, intent(in) :: N_Elec
+    type(Elec), intent(in) :: Elecs(N_Elec)
+    logical, intent(in) :: IsVolt
+    integer, intent(in) :: method ! the method used for creating the parts
     integer, intent(in) :: no, mm_col(2,no)
-    ! the block we are going to create
-    integer, intent(in) :: nblocks
-    integer, intent(inout) :: blocks(nblocks)
-    integer, intent(in) :: last_block
-    integer, intent(inout) :: iwork(nblocks,2)
+    ! the part we are going to create
+    integer, intent(in) :: n_part
+    integer, intent(inout) :: parts(n_part)
+    integer, intent(in) :: last_eq
     ! Local variables
+    integer, allocatable :: mem_parts(:), cum_parts(:)
     integer :: n, d
     logical :: changed
 
-    if ( nblocks == 1 ) return
+    if ( n_part == 1 ) return
 
-    ! Setup the cumultative blocks
-    iwork(1,1) = blocks(1)
-    iwork(1,2) = blocks(1)
-    do n = 2, nblocks
-      iwork(n,1) = blocks(n)
-      iwork(n,2) = blocks(n) + iwork(n-1,2)
+    allocate(mem_parts(n_part), cum_parts(n_part))
+
+    ! Setup the cumultative parts
+    cum_parts(1) = parts(1)
+    mem_parts(1) = parts(1)
+    do n = 2, n_part
+      cum_parts(n) = parts(n) + cum_parts(n-1)
+      mem_parts(n) = parts(n)
     end do
 
     select case ( method )
-    case ( 0 ) ! performance
+    case ( 0 ) ! speed
 
       do
         changed = .false.
-        do n = 2 , nblocks - 1
-          call smoothen_block(no, mm_col, nblocks, blocks, iwork(1,2), n, last_block)
-          call diff_perf(n, nblocks, blocks, iwork(1,1), d)
-          call select(d)
+        do n = 2 , n_part - 1
+          call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+          call diff_perf(n, n_part, parts, mem_parts, d)
+          call select()
         end do
         n = 1
-        call smoothen_block(no, mm_col, nblocks, blocks, iwork(1,2), n, last_block)
-        call diff_perf(n, nblocks, blocks, iwork(1,1), d)
-        call select(d)
-        n = nblocks
-        call smoothen_block(no, mm_col, nblocks, blocks, iwork(1,2), n, last_block)
-        call diff_perf(n, nblocks, blocks, iwork(1,1), d)
-        call select(d)
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_perf(n, n_part, parts, mem_parts, d)
+        call select()
+        n = n_part
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_perf(n, n_part, parts, mem_parts, d)
+        call select()
         
         if ( .not. changed ) exit
       end do
@@ -721,19 +733,19 @@ contains
       
       do
         changed = .false.
-        do n = 2 , nblocks - 1
-          call smoothen_block(no, mm_col, nblocks, blocks, iwork(1,2), n, last_block)
-          call diff_mem(n, nblocks, blocks, iwork(1,1), d)
-          call select(d)
+        do n = 2 , n_part - 1
+          call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+          call diff_mem(n, n_part, parts, mem_parts, d)
+          call select()
         end do
         n = 1
-        call smoothen_block(no, mm_col, nblocks, blocks, iwork(1,2), n, last_block)
-        call diff_mem(n, nblocks, blocks, iwork(1,1), d)
-        call select(d)
-        n = nblocks
-        call smoothen_block(no, mm_col, nblocks, blocks, iwork(1,2), n, last_block)
-        call diff_mem(n, nblocks, blocks, iwork(1,1), d)
-        call select(d)
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_mem(n, n_part, parts, mem_parts, d)
+        call select()
+        n = n_part
+        call even_out_parts(no, mm_col, n_part, parts, cum_parts, n, last_eq)
+        call diff_mem(n, n_part, parts, mem_parts, d)
+        call select()
         
         if ( .not. changed ) exit
       end do
@@ -744,146 +756,145 @@ contains
 
     end select
 
+    deallocate(mem_parts, cum_parts)
+
   contains
 
-    subroutine select(d)
-      integer, intent(in) :: d
+    subroutine select()
       if ( d == 0 ) then
         ! Simply store. It could be that we swapped a few things
-        call store_block(nblocks, blocks, iwork(1,1), n)
-        call store_cum_block(nblocks, blocks, iwork(1,2), n)
+        call store_part(n_part, parts, mem_parts, n)
+        call store_cum_part(n_part, parts, cum_parts, n)
       else if ( d > 0 ) then
-        ! We have that the just tested BTD matrix is not as performant
-        ! as the current
-        call store_block(nblocks, iwork(1,1), blocks, n)
-        ! the cumultative blocks are not changed since we restore them
+        ! Copy back
+        call store_part(n_part, mem_parts, parts, n)
+        ! the cumultative parts are not changed since we restore them
       else
-        ! the penalty is negative which means we have found a new candidate
-        call store_block(nblocks, blocks, iwork(1,1), n)
-        call store_cum_block(nblocks, blocks, iwork(1,2), n)
+        call store_part(n_part, parts, mem_parts, n)
+        call store_cum_part(n_part, parts, cum_parts, n)
         changed = .true.
       end if
     end subroutine select
 
-    subroutine store_block(nblocks, blocks, store_blocks, n)
-      integer, intent(in) :: n, nblocks
-      integer, intent(in) :: blocks(nblocks)
-      integer, intent(inout) :: store_blocks(nblocks)
+    subroutine store_part(n_part, parts, store_parts, n)
+      integer, intent(in) :: n, n_part
+      integer, intent(in) :: parts(n_part)
+      integer, intent(inout) :: store_parts(n_part)
       
-      store_blocks(n) = blocks(n)
+      store_parts(n) = parts(n)
       if ( n == 1 ) then
-        store_blocks(n+1) = blocks(n+1)
-      else if ( n == nblocks ) then
-        store_blocks(n-1) = blocks(n-1)
+        store_parts(n+1) = parts(n+1)
+      else if ( n == n_part ) then
+        store_parts(n-1) = parts(n-1)
       else
-        store_blocks(n-1) = blocks(n-1)
-        store_blocks(n+1) = blocks(n+1)
+        store_parts(n-1) = parts(n-1)
+        store_parts(n+1) = parts(n+1)
       end if
       
-    end subroutine store_block
+    end subroutine store_part
 
-    subroutine store_cum_block(nblocks, blocks, cum_blocks, n)
-      integer, intent(in) :: n, nblocks
-      integer, intent(in) :: blocks(nblocks)
-      integer, intent(inout) :: cum_blocks(nblocks)
+    subroutine store_cum_part(n_part, parts, cum_parts, n)
+      integer, intent(in) :: n, n_part
+      integer, intent(in) :: parts(n_part)
+      integer, intent(inout) :: cum_parts(n_part)
 
       if ( n == 1 ) then
-        cum_blocks(n) = blocks(n)
-        cum_blocks(n+1) = cum_blocks(n) + blocks(n+1)
-      else if ( n == nblocks ) then
-        if ( nblocks == 2 ) then
-          cum_blocks(n-1) = blocks(n-1)
+        cum_parts(n) = parts(n)
+        cum_parts(n+1) = cum_parts(n) + parts(n+1)
+      else if ( n == n_part ) then
+        if ( n_part == 2 ) then
+          cum_parts(n-1) = parts(n-1)
         else
-          cum_blocks(n-1) = cum_blocks(n-2) + blocks(n-1)
+          cum_parts(n-1) = cum_parts(n-2) + parts(n-1)
         end if
-        cum_blocks(n) = cum_blocks(n-1) + blocks(n)
+        cum_parts(n) = cum_parts(n-1) + parts(n)
       else if ( n == 2 ) then
-        cum_blocks(n-1) = blocks(n-1)
-        cum_blocks(n) = cum_blocks(n-1) + blocks(n)
-        cum_blocks(n+1) = cum_blocks(n) + blocks(n+1)
+        cum_parts(n-1) = parts(n-1)
+        cum_parts(n) = cum_parts(n-1) + parts(n)
+        cum_parts(n+1) = cum_parts(n) + parts(n+1)
       else
-        cum_blocks(n-1) = cum_blocks(n-2) + blocks(n-1)
-        cum_blocks(n) = cum_blocks(n-1) + blocks(n)
-        cum_blocks(n+1) = cum_blocks(n) + blocks(n+1)
+        cum_parts(n-1) = cum_parts(n-2) + parts(n-1)
+        cum_parts(n) = cum_parts(n-1) + parts(n)
+        cum_parts(n+1) = cum_parts(n) + parts(n+1)
       end if
 
-    end subroutine store_cum_block
+    end subroutine store_cum_part
     
-    function changed_block(nblocks, blocks, store_blocks, n) result(changed)
-      integer, intent(in) :: n, nblocks
-      integer, intent(in) :: blocks(nblocks)
-      integer, intent(inout) :: store_blocks(nblocks)
+    function changed_part(n_part, parts, store_parts, n) result(changed)
+      integer, intent(in) :: n, n_part
+      integer, intent(in) :: parts(n_part)
+      integer, intent(inout) :: store_parts(n_part)
       logical :: changed
       
-      changed = store_blocks(n) /= blocks(n)
+      changed = store_parts(n) /= parts(n)
       if ( n == 1 ) then
-        changed = changed .or. store_blocks(n+1) /= blocks(n+1)
-      else if ( n == nblocks ) then
-        changed = changed .or. store_blocks(n-1) /= blocks(n-1)
+        changed = changed .or. store_parts(n+1) /= parts(n+1)
+      else if ( n == n_part ) then
+        changed = changed .or. store_parts(n-1) /= parts(n-1)
       else
-        changed = changed .or. store_blocks(n-1) /= blocks(n-1)
-        changed = changed .or. store_blocks(n+1) /= blocks(n+1)
+        changed = changed .or. store_parts(n-1) /= parts(n-1)
+        changed = changed .or. store_parts(n+1) /= parts(n+1)
       end if
       
-    end function changed_block
+    end function changed_part
 
-  end subroutine smoothen_blocks
+  end subroutine full_even_out_parts
 
-  subroutine smoothen_block(no,mm_col,nblocks,blocks, cum_blocks, n, last_block)
+  subroutine even_out_parts(no,mm_col,n_part,parts, cum_parts, n, last_eq)
     integer, intent(in) :: no, mm_col(2,no)
-    ! the block we are going to create
-    integer, intent(in) :: nblocks, cum_blocks(nblocks)
-    integer, intent(inout) :: blocks(nblocks)
-    integer, intent(in) :: n, last_block
+    ! the part we are going to create
+    integer, intent(in) :: n_part, cum_parts(n_part)
+    integer, intent(inout) :: parts(n_part)
+    integer, intent(in) :: n, last_eq
     
     ! Local variables
-    integer :: copy_block
+    integer :: copy_part
     integer :: sRow, eRow
 
-    if ( last_block > 0 ) then
+    if ( last_eq > 0 ) then
       
       ! We need the last one to be of a certain size.
-      if ( n >= nblocks - 1 ) return
+      if ( n >= n_part - 1 ) return
       
     end if
 
-    select case ( nblocks )
+    select case ( n_part )
     case ( 1 )
       call die('You cannot use tri-diagonalization &
-          &without having at least 2 blocks')
+          &without having at least 2 parts')
     case ( 2 )
       ! For only two blocks there is no gain/loss regardless of matrix
       ! So set them equal
-      blocks(1) = no / 2
-      blocks(2) = blocks(1) + mod(no, 2)
+      parts(1) = no / 2
+      parts(2) = parts(1) + mod(no, 2)
       return
     end select
 
     ! Initialize
-    copy_block = 0
+    copy_part = 0
 
     ! We do not allow to diminish the edges
     ! This is because we need additional checks of their
-    ! regions, hence, we let the central blocks partition out
+    ! regions, hence, we let the central parts partition out
     ! the regions
     if ( n == 1 ) then
       
       ! We can always align the two blocks (sign is pointless here)
       sRow = 0
-      do while ( blocks(1) /= copy_block )
-        copy_block = blocks(1)
-        call even_if_larger(sRow,blocks(1),blocks(2),sign=-1)
+      do while ( parts(1) /= copy_part )
+        copy_part = parts(1)
+        call even_if_larger(sRow,parts(1),parts(2),sign=-1)
       end do
 
       return
 
-    else if ( n == nblocks ) then
+    else if ( n == n_part ) then
 
       ! We can always align the two blocks (sign is pointless here)
       sRow = 0
-      do while ( blocks(nblocks) /= copy_block )
-        copy_block = blocks(nblocks)
-        call even_if_larger(sRow,blocks(nblocks),blocks(nblocks-1),sign=1)
+      do while ( parts(n_part) /= copy_part )
+        copy_part = parts(n_part)
+        call even_if_larger(sRow,parts(n_part),parts(n_part-1),sign=1)
       end do
 
       return
@@ -891,34 +902,34 @@ contains
     end if
 
     ! Find min/max columns checked
-    sRow = cum_blocks(n-1) + 1
-    eRow = cum_blocks(n)
+    sRow = cum_parts(n-1) + 1
+    eRow = cum_parts(n)
 
     ! We will continue to shift columns around
     ! until we do not shift columns any more...
-    copy_block = 0
-    do while ( blocks(n) /= copy_block )
+    copy_part = 0
+    do while ( parts(n) /= copy_part )
         
-       ! Copy the current blockition so that we can check in the
+       ! Copy the current partition so that we can check in the
        ! next iteration...
-       copy_block = blocks(n)
+       copy_part = parts(n)
 
        ! TODO - consider adding a flag for memory reduced utilization of TRI
-       ! this will require the two electrodes blocks to be larger
-       ! than the other blocks...
+       ! this will require the two electrodes parts to be larger
+       ! than the other parts...
 
        ! 1. if you wish to shrink it left, then:
        !    the first row must not have any elements
-       !    extending into the right block
+       !    extending into the right part
        if ( mm_col(2,sRow) <= eRow ) then
-          call even_if_larger(sRow,blocks(n),blocks(n-1),sign= 1)
+          call even_if_larger(sRow,parts(n),parts(n-1),sign= 1)
        end if
 
        ! 2. if you wish to shrink it right, then:
        !    the last row must not have any elements
-       !    extending into the left block
+       !    extending into the left part
        if ( sRow <= mm_col(1,eRow) ) then
-          call even_if_larger(eRow,blocks(n),blocks(n+1),sign=-1)
+          call even_if_larger(eRow,parts(n),parts(n+1),sign=-1)
        end if
 
     end do
@@ -937,7 +948,7 @@ contains
       end if
     end subroutine even_if_larger
 
-  end subroutine smoothen_block
+  end subroutine even_out_parts
 
 ! Min and max column requires that the sparsity pattern
 ! supplied has already stripped off the buffer orbitals.
@@ -948,7 +959,7 @@ contains
     ! The sparsity pattern
     type(Sparsity), intent(inout) :: sp
     type(tRgn), intent(in) :: r
-    integer, intent(inout) :: mm_col(2,r%n)
+    integer, intent(out) :: mm_col(2,r%n)
     ! The results
     type(tRgn) :: pvt
     integer :: ir, row, ptr, nr, j
@@ -961,11 +972,16 @@ contains
     ! region! SUBSTANTIALLY!
     call rgn_init(pvt, nr, val=0)
 
+!$OMP parallel default(shared), private(ir,row,ptr,j)
+
     ! Create the back-pivoting array
+!$OMP do
     do ir = 1 , r%n
       pvt%r(r%r(ir)) = ir
     end do
+!$OMP end do
     
+!$OMP do
     do ir = 1 , r%n
 
        ! Get original sparse matrix row
@@ -985,156 +1001,171 @@ contains
        end do
 
     end do
+!$OMP end do nowait
+    
+!$OMP end parallel
 
     call rgn_delete(pvt)
 
   end subroutine set_minmax_col
 
   !< Calculate the difference in memory requirement for two BTD
-  !!  mem(block1) - mem(block2) = d
-  !! If d > 0 block1 uses more memory than block2
-  subroutine diff_mem(p, n, block1, block2, mem)
-    integer, intent(in) :: p
+  !< part1 - part2 == mem
+  recursive subroutine diff_mem(part, n, part1, part2, mem, final)
+    integer, intent(in) :: part
     integer, intent(in) :: n
-    integer, intent(in) :: block1(n), block2(n)
-    integer, intent(inout) :: mem
+    integer, intent(in) :: part1(n), part2(n)
+    integer, intent(out) :: mem
+    logical, intent(in), optional :: final
+    integer :: next
+    logical :: lfinal
 
-    if ( p == 1 ) then
+    mem = 0
+    if ( part < 1 ) return
+    if ( part > n ) return
+    lfinal = .false.
+    if ( present(final) ) lfinal = final
 
-      mem = memB(block1(1), block1(2)) - memB(block2(1), block2(2))
-      if ( n > 2 ) then
-        mem = mem +  memB(block1(2), block1(3)) - memB(block2(2), block2(3))
+    if ( part == 1 ) then
+      
+      mem = part1(1) * ( part1(1) + part1(2) * 2 ) - &
+          part2(1) * ( part2(1) + part2(2) * 2 )
+
+      if ( .not. lfinal ) then
+        call diff_mem(part+1, n, part1, part2, next, .true.)
+        mem = mem + next
       end if
+      
+    else if ( part == n ) then
+      
+      mem = part1(n) * ( part1(n) + part1(n-1) * 2 ) - &
+          part2(n) * ( part2(n) + part2(n-1) * 2 )
 
-    else if ( p == n ) then
-
-      mem = memB(block1(n), block1(n-1)) - memB(block2(n), block2(n-1))
-      if ( n > 2 ) then
-        mem = mem +  memB(block1(n-1), block1(n-2)) - memB(block2(n-1), block2(n-2))
+      if ( .not. lfinal ) then
+        call diff_mem(part-1, n, part1, part2, next, .true.)
+        mem = mem + next
       end if
-
+      
     else
+      
+      mem = part1(part) * ( part1(part) + part1(part-1) * 2 + &
+          part1(part+1) * 2 ) + part1(part-1) ** 2 + part1(part+1) ** 2 &
+          - ( &
+          part2(part) * ( part2(part) + part2(part-1) * 2 + &
+          part2(part+1) * 2 ) + part2(part-1) ** 2 + part2(part+1) ** 2)
 
-      mem = memC(block1(p-1), block1(p), block1(p+1)) - memC(block2(p-1), block2(p), block2(p+1))
-      if ( p > 2 ) then
-        mem = mem + memB(block1(p-1), block1(p-2)) - memB(block2(p-1), block2(p-2))
+      if ( .not. lfinal ) then
+        call diff_mem(part-1, n, part1, part2, next, .true.)
+        mem = mem + next
+        call diff_mem(part+1, n, part1, part2, next, .true.)
+        mem = mem + next
       end if
-      if ( p + 1 < n ) then
-        mem = mem + memB(block1(p+1), block1(p+2)) - memB(block2(p+1), block2(p+2))
-      end if
-
+      
     end if
-
-  contains
-
-    !< Memory for boundary blocks
-    pure function memB(p1, p2) result(p)
-      integer, intent(in) :: p1, p2
-      integer :: p
-      p = p1 * (p1 + p2 * 2)
-    end function memB
-
-    !< Memory for center blocks
-    pure function memC(p0, p1, p2) result(p)
-      integer, intent(in) :: p0, p1, p2
-      integer :: p
-      p = p1 * (p1 + p0 * 2 + p2 * 2)
-    end function memC
 
   end subroutine diff_mem
 
-  !< Calculate the difference in approximate flops for two BTD
-  !!   perf(block1) - perf(block2) = d
-  !! If d > 0 block1 is slower than block2
-  subroutine diff_perf(p, n, block1, block2, perf)
+  !< Calculate the difference in memory requirement for two BTD
+  !< part1 - part2 == mem
+  recursive subroutine diff_perf(part, n, part1, part2, perf, final)
     use precision, only: dp
-    integer, intent(in) :: p
+    integer, intent(in) :: part
     integer, intent(in) :: n
-    integer, intent(in) :: block1(n), block2(n)
-    integer, intent(inout) :: perf
-    real(dp) :: one_third = 0.33333333333333333333333_dp
-    real(dp) :: pf
+    integer, intent(in) :: part1(n), part2(n)
+    integer, intent(out) :: perf
+    logical, intent(in), optional :: final
+    real(dp) :: one_third = 0.3333333333333333333333_dp
+    real(dp) :: p
+    integer :: next
+    logical :: lfinal
 
-    if ( p == 1 ) then
+    perf = 0
+    if ( part < 1 ) return
+    if ( part > n ) return
+    lfinal = .false.
+    if ( present(final) ) lfinal = final
 
-      pf = p_inv(block1(1)) - p_inv(block2(1)) + &
-          p_inv(block1(2)) - p_inv(block2(2)) + &
-          p_mm(block1(1), block1(2)) - p_mm(block2(1), block2(2))
+    if ( part == 1 ) then
 
-      if ( 2 < n ) then
-        pf = pf + p_mm(block1(2), block1(3)) - p_mm(block2(2), block2(3))
+      p = p_inv(part1(1)) - p_inv(part2(1)) + & ! inv
+          (p_mm(part1(1), part1(2)) - p_mm(part2(1), part2(2))) ! mm
+      
+      if ( .not. lfinal ) then
+        ! This takes inv of part + 1 and mm 
+        call diff_perf(part+1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
       end if
+      
+    else if ( part == n ) then
 
-    else if ( p == n ) then
+      p = p_inv(part1(n)) - p_inv(part2(n)) + & ! inv
+          (p_mm(part1(n), part1(n-1)) - p_mm(part2(n), part2(n-1))) ! mm
 
-      pf = p_inv(block1(n)) - p_inv(block2(n)) + &
-          p_inv(block1(n-1)) - p_inv(block2(n-1)) + &
-          p_mm(block1(n), block1(n-1)) - p_mm(block2(n), block2(n-1))
-
-      if ( 2 < n ) then
-        pf = pf + p_mm(block1(n-1), block1(n-2)) - p_mm(block2(n-1), block2(n-2))
+      if ( .not. lfinal ) then
+        ! This takes inv of part - 1 and mm 
+        call diff_perf(part-1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
       end if
       
     else
 
-      pf = p_inv(block1(p-1)) - p_inv(block2(p-1)) + &
-          p_mm(block1(p), block1(p-1)) - p_mm(block2(p), block2(p-1)) + &
-          p_inv(block1(p)) - p_inv(block2(p)) + & ! diagonal
-          p_inv(block1(p+1)) - p_inv(block2(p+1)) + &
-          p_mm(block1(p), block1(p+1)) - p_mm(block2(p), block2(p+1))
-
-      if ( 2 < p ) then
-        pf = pf + p_mm(block1(p-1), block1(p-2)) - p_mm(block2(p-1), block2(p-2))
-      end if
-
-      if ( p + 1 < n ) then
-        pf = pf + p_mm(block1(p+1), block1(p+2)) - p_mm(block2(p+1), block2(p+2))
+      p = p_inv(part1(part)) - p_inv(part2(part)) + & ! inv
+          (p_mm(part1(part), part1(part-1)) - p_mm(part2(part), part2(part-1))) + & ! mm
+          (p_mm(part1(part), part1(part+1)) - p_mm(part2(part), part2(part+1))) ! mm
+      
+      if ( .not. lfinal ) then
+        call diff_perf(part-1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
+        call diff_perf(part+1, n, part1, part2, next, .true.)
+        p = p + real(next, dp) ** 3
       end if
       
     end if
-
+    
     ! This should remove possible overflows
     ! We could essentially also just return +1/0/-1
-    ! But perhaps we can use the value to something useful?
-    perf = nint(sign(abs(pf) ** one_third, pf))
+    ! But perhaps we can use the actual value to something useful?
+    if ( p < 0 ) then
+      perf = - int( (-p) ** one_third )
+    else
+      perf = int(p ** one_third)
+    end if
       
   contains
 
-    !< Order of inversion algorithm
-    pure function p_inv(n) result(p)
+    pure function p_inv(s) result(p)
       use precision, only: dp
-      integer, intent(in) :: n
+      integer, intent(in) :: s
       real(dp) :: p
-      p = real(n, dp) * real(n, dp) * real(n, dp)
+      p = real(s, dp) ** 3
     end function p_inv
 
-    !< Order of matrix multiplication, here the matrices are [m,m] * [m,n] * 2 (upper and lower)
     pure function p_mm(m, n) result(p)
       use precision, only: dp
       integer, intent(in) :: m, n
       real(dp) :: p
-      p = real(m, dp) * real(m, dp) * real(n * 2, dp)
+      p = real(m, dp) ** 2 * real(n, dp)
     end function p_mm
 
   end subroutine diff_perf
   
-  function valid_tri(no,mm_col,nblocks,blocks,last_block) result(val)
+  function valid_tri(no,mm_col,n_part,parts,last_eq) result(val)
     integer, intent(in) :: no, mm_col(2,no)
-    integer, intent(in) :: nblocks, blocks(nblocks), last_block
+    integer, intent(in) :: n_part, parts(n_part), last_eq
     integer :: val
     ! Local variables
     integer :: i, N, Nm1, Np1, col_min, col_max
     logical :: first
 
-    if ( last_block > 0 ) then
+    if ( last_eq > 0 ) then
       
       ! We do not allow something to not end in the requested number of orbitals.
-      if ( blocks(nblocks) /= last_block ) then
+      if ( parts(n_part) /= last_eq ) then
         val = NONVALID_SIZE
         return
       end if
       
-      if ( blocks(1) == 0 ) then
+      if ( parts(1) == 0 ) then
         val = NONVALID_SIZE
         return
       end if
@@ -1148,10 +1179,10 @@ contains
     ! tri-diagonal matrix...
     first = .true.
     Nm1 = 1
-    Np1 = blocks(1) + blocks(2)
+    Np1 = parts(1) + parts(2)
 
     ! Find min/max for first block
-    call find_min_max(no, mm_col, 1, blocks(1), col_min, col_max)
+    call find_min_max(no, mm_col, 1, parts(1), col_min, col_max)
     if ( col_min < Nm1 ) then
       ! If this ever occur it suggests that the 
       ! sparsity pattern is not fully symmetric !
@@ -1165,14 +1196,14 @@ contains
     end if
 
     ! Initialize loop counters
-    N = blocks(1) + 1
-    do i = 2 , nblocks - 1
+    N = parts(1) + 1
+    do i = 2 , n_part - 1
 
       ! Find min/max for this block
       call find_min_max(no, mm_col, N, Np1, col_min, col_max)
 
-      ! Update the size of the block after this
-      Np1 = Np1 + blocks(i+1)
+      ! Update the size of the part after this
+      Np1 = Np1 + parts(i+1)
 
       if ( col_min < Nm1 ) then
         ! If this ever occur it suggests that the 
@@ -1187,10 +1218,10 @@ contains
       end if
 
       ! Update loop
-      N = N + blocks(i)
+      N = N + parts(i)
       
-      ! Update the previous block
-      Nm1 = Nm1 + blocks(i-1)
+      ! Update the previous part
+      Nm1 = Nm1 + parts(i-1)
 
     end do
 
@@ -1199,20 +1230,20 @@ contains
     if ( col_min < Nm1 ) then
       ! If this ever occur it suggests that the 
       ! sparsity pattern is not fully symmetric !
-      i = nblocks
+      i = n_part
       call print_error(first)
-      val = - nblocks
+      val = - n_part
       
     else if ( Np1 < col_max ) then
-      i = nblocks
+      i = n_part
       call print_error(first)
-      val = - nblocks
+      val = - n_part
       
     end if
     if ( val /= valid ) return
-
+    
     ! Update total number of orbitals
-    N = N + blocks(nblocks) - 1
+    N = N + parts(n_part) - 1
 
     ! Size of tri-matrix is already calculated
     ! Easy check, if the number of rows
@@ -1226,7 +1257,7 @@ contains
 
     pure subroutine find_min_max(no, mm_col, N1, N2, col_min, col_max)
       integer, intent(in) :: no, mm_col(2,no), N1, N2
-      integer, intent(inout) :: col_min, col_max
+      integer, intent(out) :: col_min, col_max
       integer :: ir
       col_min = mm_col(1,N1)
       col_max = mm_col(2,N1)
@@ -1241,7 +1272,6 @@ contains
       logical, intent(inout) :: first
       if ( IONode ) then
         if ( first ) then
-          first = .false.
           write(*,'(a)') 'BTD: Found non-symmetric matrix!'
           write(*,'(a)') '     If you are not using delta methods you are probably doing something wrong!'
           write(*,'(a)') ' block: block row is located in'
@@ -1251,8 +1281,9 @@ contains
           write(*,'(a)') ' max_B: maximum element in the block'
           write(*,'(a)') ' max_C: maximum element row connects to'
           write(*,'(6a8)') 'block', 'N', 'min_C', 'min_B', 'max_B', 'max_C'
+          first = .false.
         end if
-        write(*,'(6i8)') i, blocks(i), col_min, Nm1, Np1, col_max
+        write(*,'(6i8)') i, parts(i), col_min, Nm1, Np1, col_max
      end if
     end subroutine print_error
 

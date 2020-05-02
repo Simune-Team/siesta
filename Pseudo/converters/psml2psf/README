@@ -1,0 +1,19 @@
+The psml2psf program will convert a PSML file with semi-local potential
+information to the classic 'psf' Froyen format used traditionally by Siesta.
+
+Use cases for this program include:
+
+-- The conversion of curated pseudo-dojo psml files to psf to use the
+   semi-local potentials generated with the 'optimized' recipe by
+   Hamann et al. (Multiple) projector information is discarded, but
+   the resulting psf pseudopotential files should nevertheless be
+   appropriate for use.
+
+-- In general, the trimming of psml files to use with versions of
+   Siesta not capable of dealing directly with them. Obviously, this
+   removes all the metadata benefits of the PSML format.
+
+This program should be made stand-alone (maybe by packaging it with the
+ncps and psml libraries) instead of being part of the psml-enabled version
+of Siesta, which detracts from its general usefulness.
+

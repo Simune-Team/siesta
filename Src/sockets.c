@@ -39,16 +39,10 @@ Functions:
 #include <unistd.h>
 #include <string.h>
 #include <sys/types.h>
-#ifdef __WIN32__
-#include <winsock2.h>
-#include <ws2tcpip.h>
-#define _WINNT_WIN32 0x0601
-#else
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <sys/un.h>
 #include <netdb.h>
-#endif
 
 void open_socket(int *psockfd, int* inet, int* port, const char* host)
 /* Opens a socket.
@@ -96,10 +90,7 @@ Args:
    }
    else
    {  
-#ifdef __WIN32__
-
-#else
-      	   struct sockaddr_un serv_addr;
+      struct sockaddr_un serv_addr;
 
       // fills up details of the socket addres
       memset(&serv_addr, 0, sizeof(serv_addr));
@@ -114,12 +105,10 @@ Args:
       // connects
       if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
       { perror("Error opening UNIX socket: path unavailable, or already existing"); exit(-1); }
-#endif
    }
 
    *psockfd=sockfd;
 }
-     
 
 void create_socket(int *psockfd, int* inet, int* port, const char* host)
 /* Creates a server socket.
@@ -139,12 +128,6 @@ Args:
 
 {
    int sockfd, srvsockfd, ai_err;
-
-#ifdef __WIN32__
-   WORD versionWanted = MAKEWORD(1, 1);
-   WSADATA wsaData;
-   WSAStartup(versionWanted, &wsaData);
-#endif
 
    if (*inet>0)
    {  // creates an internet socket
@@ -183,11 +166,6 @@ Args:
    }
    else
    {  
-
-#ifdef __WIN32__
-
-#else
-
       struct sockaddr_un serv_addr;
 
   
@@ -200,21 +178,21 @@ Args:
       strcpy(serv_addr.sun_path, "/tmp/ipi_");
       strcpy(serv_addr.sun_path+9, host);
       // binds the socket to the descriptor
-	  bind(srvsockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
-	  if (srvsockfd < 0) 
+          bind(srvsockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr));
+          if (srvsockfd < 0) 
       { perror("Error creating UNIX socket: path unavailable, or already existing"); exit(-1); }
       
       // listens on the server socket
-	  listen(srvsockfd,5);
-	  
+          listen(srvsockfd,5);
+          
       // accepts an incoming connection
       struct sockaddr_un their_addr; socklen_t their_size=sizeof(their_addr);
       sockfd = accept(srvsockfd, (struct sockaddr *) &their_addr, &their_size);
       
       if (sockfd < 0) 
       { perror("Error establishing UNIX socket connection"); exit(-1); }      
-#endif
    }
+
    *psockfd=sockfd;
 }
 
@@ -232,12 +210,7 @@ Args:
    int sockfd=*psockfd;
    int len=*plen;
 
-#ifdef __WIN32__
-   n = send(sockfd,data,len,0);
-#else
    n = write(sockfd,data,len);
-#endif
-
    if (n < 0) { perror("Error writing to socket: server has quit or connection broke"); exit(-1); }
 }
 
@@ -271,9 +244,7 @@ Args:
 */
 
 {
-#ifdef __WIN32__
-   if (closesocket(*psockfd)!=0) { perror("Error closing socket"); exit(-1); WSACleanup();}
-#else
    if (close(*psockfd)!=0) { perror("Error closing socket"); exit(-1); }
-#endif
 }
+
+

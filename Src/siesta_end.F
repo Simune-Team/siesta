@@ -13,7 +13,7 @@
 
       subroutine siesta_end( )
       use fdf,             only : fdf_shutdown
-      use alloc,           only : alloc_report
+      use memory_log,      only : memory_report
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
       use siesta_master,   only : siesta_subroutine  ! Is siesta a subroutine?
@@ -38,6 +38,8 @@
       ! NP, new mixing
       use m_mixing_scf,    only : mixers_scf_reset
       USE siesta_options,  only : isolve, SOLVE_CHESS
+      use m_syms
+
 
       use kpoint_scf_m, only: reset_kpoint_scf
       use kpoint_dos_m, only: reset_kpoint_dos
@@ -108,12 +110,18 @@
           call CheSS_finalize()
       end if
 #endif
-      
+
+#ifdef SIESTA__HAS__SPGLIB
+      ! clean up
+      call syms_delete(syms_global)
+#endif
+
+ 
 !     Output memory use up to the end of the program
 !!      call printmemory( 6, 1 )
 
 !     Print allocation report
-      call alloc_report( printNow=.true. , shutdown=.true.)
+      call memory_report( printNow=.true. , shutdown=.true.)
 
 #ifdef DEBUG_XC
 ! Close debug outup file

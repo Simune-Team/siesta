@@ -26,8 +26,9 @@ vpath %.F90 ../../Grid
 # For now we will remove this but let users know that
 # they can revert changes by uncommenting out the following
 # two lines:
-#INCFLAGS += $(NETCDF_INCFLAGS)
-#LIBS = $(NETCDF_LIBS)
+# (psml branch: enabled by default)
+INCFLAGS += $(NETCDF_INCFLAGS)
+LIBS = $(NETCDF_LIBS)
 
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)

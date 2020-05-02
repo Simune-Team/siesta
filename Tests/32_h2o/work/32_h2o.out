@@ -1,0 +1,619 @@
+Siesta Version  : master-post-4.1-245-g432ae317
+Architecture    : x86_64-mkl_mpi
+Compiler version: GNU Fortran (Ubuntu 6.5.0-2ubuntu1~16.04) 6.5.0 20181026
+Compiler flags  : mpif90 -I. -DMPI   -g -O2
+PP flags        : -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DHAVE_MPI -DHAVE_SCALAPACK
+Libraries       :  -lscalapack-openmpi -lpthread -lm -ldl -lblacs-openmpi -lblacsF77init-openmppi -llapack -lblas
+Directory       : /home/kovalp/programs/siesta/gitlab/simune-siesta/Tests/32_h2o/work
+PARALLEL version
+
+* Running on 2 nodes in parallel
+>> Start of run:  14-MAR-2020   1:37:21
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from ../32_h2o.fdf
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: Heavy liquid water, 32 molecules
+reinit: -----------------------------------------------------------------------
+reinit: System Label: 32_h2o
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+Species number:   1 Atomic number:    8 Label: O_lyp
+Species number:   2 Atomic number:    1 Label: H_lyp
+
+Ground state valence configuration:   2s02  2p04
+Reading pseudopotential information in formatted form from O_lyp.psf
+
+Valence configuration for pseudopotential generation:
+2s( 2.00) rc: 1.14
+2p( 4.00) rc: 1.14
+3d( 0.00) rc: 1.14
+4f( 0.00) rc: 1.14
+Ground state valence configuration:   1s01
+Reading pseudopotential information in formatted form from H_lyp.psf
+
+Valence configuration for pseudopotential generation:
+1s( 1.00) rc: 1.25
+2p( 0.00) rc: 1.25
+3d( 0.00) rc: 1.25
+4f( 0.00) rc: 1.25
+remass: Read atomic mass for species    2 as      2.00000
+For O_lyp, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+For H_lyp, standard SIESTA heuristics set lmxkb to 1
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+O_lyp                Z=   8    Mass=  16.000        Charge=-0.24233    
+Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          i=1  nzeta=1  polorb=0  (2s)
+            splnorm:   0.15000    
+               vcte:    23.361    
+               rinn:    3.3972    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    4.5077    
+            lambdas:    1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          i=1  nzeta=1  polorb=0  (2p)
+            splnorm:   0.15000    
+               vcte:    2.7833    
+               rinn:    5.1425    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    6.1500    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for O_lyp                 (Z =   8)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    6.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Becke Lee Yang Parr
+V l=0 = -2*Zval/r beyond r=  1.1278
+V l=1 = -2*Zval/r beyond r=  1.1278
+V l=2 = -2*Zval/r beyond r=  1.1278
+All V_l potentials equal beyond r=  1.1278
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.1278
+
+VLOCAL1: 99.0% of the norm of Vloc inside     34.126 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     77.774 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.37759
+atom: Maximum radius for r*vlocal+2*Zval:    1.18566
+
+KBgen: Kleinman-Bylander projectors: 
+GHOST: No ghost state for L =  0
+   l= 0   rc=  1.262145   el= -1.745958   Ekb=  9.224384   kbcos=  0.329611
+GHOST: No ghost state for L =  1
+   l= 1   rc=  1.262145   el= -0.661632   Ekb= -7.951208   kbcos= -0.394018
+GHOST: No ghost state for L =  2
+   l= 2   rc=  1.343567   el=  0.001587   Ekb= -1.921621   kbcos= -0.003500
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+atom: basis set generated (by rescaling the valence charge)
+atom: for an anion of charge  -0.2423
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 2s
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.574469
+                 energy =   -1.742869
+                kinetic =    1.486567
+    potential(screened) =   -3.229436
+       potential(ionic) =  -11.047338
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 2p
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.174996
+                 energy =   -0.654632
+                kinetic =    4.291881
+    potential(screened) =   -4.946513
+       potential(ionic) =  -12.289299
+atom: Total number of Sankey-type orbitals:  4
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 2s( 2.00)                                                            
+ 2p( 4.00)                                                            
+Vna: chval, zval:    6.00000   6.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.174996
+comcore: Pseudo-core radius Rcore=  1.377587
+
+atom: _________________________________________________________________________
+
+<basis_specs>
+===============================================================================
+H_lyp                Z=   1    Mass=  2.0000        Charge= 0.46527    
+Lmxo=0 Lmxkb= 1    BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=1
+          i=1  nzeta=1  polorb=0  (1s)
+            splnorm:   0.15000    
+               vcte:    99.931    
+               rinn:    2.5993    
+               qcoe:    0.0000    
+               qyuk:    0.0000    
+               qwid:   0.10000E-01
+                rcs:    4.2036    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for H_lyp                 (Z =   1)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+Total valence charge:    1.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Becke Lee Yang Parr
+V l=0 = -2*Zval/r beyond r=  1.2343
+V l=1 = -2*Zval/r beyond r=  1.2189
+All V_l potentials equal beyond r=  1.2343
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.2343
+
+VLOCAL1: 99.0% of the norm of Vloc inside     28.493 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     64.935 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.45251
+atom: Maximum radius for r*vlocal+2*Zval:    1.21892
+
+KBgen: Kleinman-Bylander projectors: 
+GHOST: No ghost state for L =  0
+   l= 0   rc=  1.364359   el= -0.482584   Ekb= -2.022767   kbcos= -0.348839
+GHOST: No ghost state for L =  1
+   l= 1   rc=  1.434438   el=  0.000637   Ekb= -0.492969   kbcos= -0.021451
+
+KBgen: Total number of  Kleinman-Bylander projectors:    4
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+atom: basis set generated (by rescaling the valence charge)
+atom: for a cation of charge   0.4653
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 1s
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.260636
+                 energy =   -0.876287
+                kinetic =    1.366135
+    potential(screened) =   -2.242422
+       potential(ionic) =   -2.296941
+atom: Total number of Sankey-type orbitals:  1
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 1s( 1.00)                                                            
+Vna: chval, zval:    1.00000   1.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   4.260636
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1    8 O_lyp                   # Species index, atomic number, species label
+    2    1 H_lyp                   # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+O_lyp                 2  -0.242            # Label, l-shells, ionic net charge
+ n=2   0   1                         # n, l, Nzeta 
+   4.574   
+   1.000   
+ n=2   1   1                         # n, l, Nzeta 
+   6.175   
+   1.000   
+H_lyp                 1   0.465            # Label, l-shells, ionic net charge
+ n=1   0   1                         # n, l, Nzeta 
+   4.261   
+   1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                          (in Angstroms)
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.35905   6.95419  12.22653  1        1
+siesta:     -1.19053   7.76678  12.96353  2        2
+siesta:     -0.17008   5.57469  11.03600  2        3
+siesta:      2.81569  13.28478  13.54934  1        4
+siesta:      3.89284  14.75877  13.07691  2        5
+siesta:      1.68186  13.77611  14.98553  2        6
+siesta:     12.94463   0.49133  12.56668  1        7
+siesta:     14.24854   0.18897  13.88949  2        8
+siesta:     11.56513   1.56847  13.28478  2        9
+siesta:     11.45174  18.21697   2.32436  1       10
+siesta:     11.58403  19.80434   1.30391  2       11
+siesta:     12.32102  18.46263   3.98732  2       12
+siesta:     11.30057  13.77611   5.10226  1       13
+siesta:     11.75410  15.08002   3.81725  2       14
+siesta:      9.82658  14.39972   6.12272  2       15
+siesta:      0.09449   7.74788   4.83770  1       16
+siesta:     -1.36060   8.39039   5.85815  2       17
+siesta:     -0.54802   6.78412   3.34482  2       18
+siesta:      1.03935  13.24699   8.10693  1       19
+siesta:      1.53068  13.17140   9.92107  2       20
+siesta:     -0.56692  12.28322   7.84237  2       21
+siesta:     10.39350   3.70386  16.72408  1       22
+siesta:     10.29901   3.60938  18.61381  2       23
+siesta:     10.43129   5.51800  16.17606  2       24
+siesta:      7.21876  13.22809   9.07069  1       25
+siesta:      8.06913  11.52733   9.01400  2       26
+siesta:      5.44241  13.02022   9.69430  2       27
+siesta:     17.42328   9.50533  16.98864  1       28
+siesta:     16.95085   9.33525  15.17451  2       29
+siesta:     18.33035   7.95575  17.57446  2       30
+siesta:     10.18563   1.20943   9.67540  1       31
+siesta:      8.65495   1.22832  10.77144  2       32
+siesta:     10.24232   2.77790   8.63605  2       33
+siesta:     10.60137   4.19519   3.04246  1       34
+siesta:     11.31946   2.60782   3.74166  2       35
+siesta:      8.93841   4.55424   3.87394  2       36
+siesta:     13.32257   1.20943   6.95419  1       37
+siesta:     13.05801   1.34171   8.82502  2       38
+siesta:     14.90995   0.24566   6.61404  2       39
+siesta:     10.69585  10.14783  16.34614  1       40
+siesta:     10.92262  11.39505  14.94774  2       41
+siesta:     11.56513  10.79034  17.91461  2       42
+siesta:      4.21409   9.92107   5.19675  1       43
+siesta:      4.45976   8.33370   6.21720  2       44
+siesta:      3.66607  11.31946   6.33059  2       45
+siesta:     13.83280  11.98087   1.47399  1       46
+siesta:     14.94774  11.48954   0.03779  2       47
+siesta:     13.30368  13.79501   1.26612  2       48
+siesta:      5.80146   1.19053  11.67851  1       49
+siesta:      5.59359   2.96687  12.30212  2       50
+siesta:      5.70698   0.00000  13.13360  2       51
+siesta:      0.69920  14.47531  18.25476  1       52
+siesta:      0.98266  14.87215  20.06890  2       53
+siesta:      0.13228  12.68007  18.08469  2       54
+siesta:      6.02823  15.30679  17.93351  1       55
+siesta:      7.78567  15.98709  18.02799  2       56
+siesta:      5.91485  13.70052  18.91617  2       57
+siesta:      6.40617   9.61871   0.37795  1       58
+siesta:      5.42352   8.05024   0.05669  2       59
+siesta:      7.86126   9.71320  -0.83148  2       60
+siesta:     15.40127  10.80924   6.14161  1       61
+siesta:     15.53355   9.12738   5.27234  2       62
+siesta:     13.62493  11.45174   5.99043  2       63
+siesta:      8.93841   9.44863   3.60938  1       64
+siesta:     10.09114  10.96042   3.68497  2       65
+siesta:      7.14317  10.03445   3.74166  2       66
+siesta:      5.97154  16.15716   5.83926  1       67
+siesta:      4.34637  15.57135   6.63294  2       68
+siesta:      5.89595  15.89260   3.96843  2       69
+siesta:      1.56847   5.14006   0.68030  1       70
+siesta:      1.47399   5.12116   2.57003  2       71
+siesta:      0.00000   4.36527  -0.03779  2       72
+siesta:     17.06423   1.62517   2.51334  1       73
+siesta:     18.02799   1.64406   0.88817  2       74
+siesta:     18.12248   0.83148   3.85504  2       75
+siesta:      4.96998   6.16051  13.60603  1       76
+siesta:      3.47710   7.12427  12.96353  2       77
+siesta:      4.79991   5.87705  15.45797  2       78
+siesta:     17.30990  17.19651   5.49911  1       79
+siesta:     18.50043  17.91461   4.21409  2       80
+siesta:     18.06579  15.62804   6.23610  2       81
+siesta:      1.36060   3.13695   6.00933  1       82
+siesta:      1.03935   4.70542   4.98888  2       83
+siesta:      3.06136   2.43775   5.59359  2       84
+siesta:      4.51645   6.14161   8.48487  1       85
+siesta:      5.74477   4.74321   8.27700  2       86
+siesta:      4.89439   7.08648  10.07224  2       87
+siesta:     11.22498  14.07847  12.32102  1       88
+siesta:     12.16984  15.68473  11.96197  2       89
+siesta:      9.56202  14.11626  11.41395  2       90
+siesta:     16.23275  18.06579  16.27055  1       91
+siesta:     17.25321  16.76188  17.17762  2       92
+siesta:     15.62804  19.36970  17.51777  2       93
+siesta:      8.08803   8.01244   9.82658  1       94
+siesta:      8.65495   6.65184   8.65495  2       95
+siesta:      7.35104   7.25655  11.39505  2       96
+
+siesta: System type = bulk      
+
+initatomlists: Number of atoms, orbitals, and projectors:     96   192   544
+
+coxmol: Writing XMOL coordinates into file 32_h2o.xyz                                                          
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+redata: Spin configuration                          = none
+redata: Number of spin components                   = 1
+redata: Time-Reversal Symmetry                      = T
+redata: Spin-spiral                                 = F
+redata: Long output                                 =   T
+redata: Number of Atomic Species                    =        2
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.                         = Atomic and Orbital charges
+redata: Matel table size (NRTAB)                    =     1024
+redata: Mesh Cutoff                                 =   150.0000 Ry
+redata: Net charge of the system                    =     0.0000 |e|
+redata: Min. number of SCF Iter                     =        0
+redata: Max. number of SCF Iter                     =     1000
+redata: SCF convergence failure will abort job
+redata: SCF mix quantity                            = Hamiltonian
+redata: Mix DM or H after convergence               =   F
+redata: Recompute H after scf cycle                 =   F
+redata: Mix DM in first SCF step                    =   T
+redata: Write Pulay info on disk                    =   F
+redata: New DM Occupancy tolerance                  = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks                  =     0.5000
+redata: Require Harris convergence for SCF          =   F
+redata: Harris energy tolerance for SCF             =     0.000100 eV
+redata: Require DM convergence for SCF              =   T
+redata: DM tolerance for SCF                        =     0.000100
+redata: Require EDM convergence for SCF             =   F
+redata: EDM tolerance for SCF                       =     0.001000 eV
+redata: Require H convergence for SCF               =   T
+redata: Hamiltonian tolerance for SCF               =     0.001000 eV
+redata: Require (free) Energy convergence for SCF   =   F
+redata: (free) Energy tolerance for SCF             =     0.000100 eV
+redata: Using Saved Data (generic)                  =   F
+redata: Use continuation files for DM               =   T
+redata: Neglect nonoverlap interactions             =   F
+redata: Method of Calculation                       = Diagonalization
+redata: Electronic Temperature                      =    58.0222 K
+redata: Fix the spin of the system                  =   F
+redata: Max. number of TDED Iter                    =        1
+redata: Number of TDED substeps                     =        3
+redata: Dynamics option                             = Single-point calculation
+mix.SCF: Pulay mixing                            = Pulay
+mix.SCF:    Variant                              = stable
+mix.SCF:    History steps                        = 3
+mix.SCF:    Linear mixing weight                 =     0.100000
+mix.SCF:    Mixing weight                        =     0.100000
+mix.SCF:    SVD condition                        = 0.1000E-07
+redata: ***********************************************************************
+
+%block SCF.Mixers
+  Pulay
+%endblock SCF.Mixers
+
+%block SCF.Mixer.Pulay
+  # Mixing method
+  method pulay
+  variant stable
+
+  # Mixing options
+  weight 0.1000
+  weight.linear 0.1000
+  history 3
+%endblock SCF.Mixer.Pulay
+
+DM_history_depth set to one: no extrapolation allowed by default for geometry relaxation
+Size of DM history Fstack: 1
+Total number of electrons:   256.000000
+Total ionic charge:   256.000000
+
+* ProcessorY, Blocksize:    1  24
+
+
+* Orbital distribution balance (max,min):    96    96
+
+
+siesta: k-point coordinates (Bohr**-1) and weights:
+siesta:          1  0.000000E+00  0.000000E+00  0.000000E+00   0.100000E+01
+
+siesta: k-grid: Number of k-points =         1
+siesta: k-point is Gamma-only
+
+diag: Algorithm                                     = D&C
+diag: Parallel over k                               =   F
+diag: Use parallel 2D distribution                  =   F
+diag: Parallel block-size                           = 24
+diag: Parallel distribution                         =     1 x     2
+diag: Used triangular part                          = Lower
+diag: Absolute tolerance                            =  0.100E-15
+diag: Orthogonalization factor                      =  0.100E-05
+diag: Memory factor                                 =  1.0000
+
+
+ts: **************************************************************
+ts: Save H and S matrices                           =    F
+ts: Save DM and EDM matrices                        =    F
+ts: Only save the overlap matrix S                  =    F
+ts: **************************************************************
+
+************************ Begin: TS CHECKS AND WARNINGS ************************
+************************ End: TS CHECKS AND WARNINGS **************************
+
+
+                     ====================================
+                        Single-point calculation
+                     ====================================
+
+outcoor: Atomic coordinates (Ang):                          
+    0.19000000    3.68000000    6.47000000   1       1  O_lyp
+   -0.63000000    4.11000000    6.86000000   2       2  H_lyp
+   -0.09000000    2.95000000    5.84000000   2       3  H_lyp
+    1.49000000    7.03000000    7.17000000   1       4  O_lyp
+    2.06000000    7.81000000    6.92000000   2       5  H_lyp
+    0.89000000    7.29000000    7.93000000   2       6  H_lyp
+    6.85000000    0.26000000    6.65000000   1       7  O_lyp
+    7.54000000    0.10000000    7.35000000   2       8  H_lyp
+    6.12000000    0.83000000    7.03000000   2       9  H_lyp
+    6.06000000    9.64000000    1.23000000   1      10  O_lyp
+    6.13000000   10.48000000    0.69000000   2      11  H_lyp
+    6.52000000    9.77000000    2.11000000   2      12  H_lyp
+    5.98000000    7.29000000    2.70000000   1      13  O_lyp
+    6.22000000    7.98000000    2.02000000   2      14  H_lyp
+    5.20000000    7.62000000    3.24000000   2      15  H_lyp
+    0.05000000    4.10000000    2.56000000   1      16  O_lyp
+   -0.72000000    4.44000000    3.10000000   2      17  H_lyp
+   -0.29000000    3.59000000    1.77000000   2      18  H_lyp
+    0.55000000    7.01000000    4.29000000   1      19  O_lyp
+    0.81000000    6.97000000    5.25000000   2      20  H_lyp
+   -0.30000000    6.50000000    4.15000000   2      21  H_lyp
+    5.50000000    1.96000000    8.85000000   1      22  O_lyp
+    5.45000000    1.91000000    9.85000000   2      23  H_lyp
+    5.52000000    2.92000000    8.56000000   2      24  H_lyp
+    3.82000000    7.00000000    4.80000000   1      25  O_lyp
+    4.27000000    6.10000000    4.77000000   2      26  H_lyp
+    2.88000000    6.89000000    5.13000000   2      27  H_lyp
+    9.22000000    5.03000000    8.99000000   1      28  O_lyp
+    8.97000000    4.94000000    8.03000000   2      29  H_lyp
+    9.70000000    4.21000000    9.30000000   2      30  H_lyp
+    5.39000000    0.64000000    5.12000000   1      31  O_lyp
+    4.58000000    0.65000000    5.70000000   2      32  H_lyp
+    5.42000000    1.47000000    4.57000000   2      33  H_lyp
+    5.61000000    2.22000000    1.61000000   1      34  O_lyp
+    5.99000000    1.38000000    1.98000000   2      35  H_lyp
+    4.73000000    2.41000000    2.05000000   2      36  H_lyp
+    7.05000000    0.64000000    3.68000000   1      37  O_lyp
+    6.91000000    0.71000000    4.67000000   2      38  H_lyp
+    7.89000000    0.13000000    3.50000000   2      39  H_lyp
+    5.66000000    5.37000000    8.65000000   1      40  O_lyp
+    5.78000000    6.03000000    7.91000000   2      41  H_lyp
+    6.12000000    5.71000000    9.48000000   2      42  H_lyp
+    2.23000000    5.25000000    2.75000000   1      43  O_lyp
+    2.36000000    4.41000000    3.29000000   2      44  H_lyp
+    1.94000000    5.99000000    3.35000000   2      45  H_lyp
+    7.32000000    6.34000000    0.78000000   1      46  O_lyp
+    7.91000000    6.08000000    0.02000000   2      47  H_lyp
+    7.04000000    7.30000000    0.67000000   2      48  H_lyp
+    3.07000000    0.63000000    6.18000000   1      49  O_lyp
+    2.96000000    1.57000000    6.51000000   2      50  H_lyp
+    3.02000000    0.00000000    6.95000000   2      51  H_lyp
+    0.37000000    7.66000000    9.66000000   1      52  O_lyp
+    0.52000000    7.87000000   10.62000000   2      53  H_lyp
+    0.07000000    6.71000000    9.57000000   2      54  H_lyp
+    3.19000000    8.10000000    9.49000000   1      55  O_lyp
+    4.12000000    8.46000000    9.54000000   2      56  H_lyp
+    3.13000000    7.25000000   10.01000000   2      57  H_lyp
+    3.39000000    5.09000000    0.20000000   1      58  O_lyp
+    2.87000000    4.26000000    0.03000000   2      59  H_lyp
+    4.16000000    5.14000000   -0.44000000   2      60  H_lyp
+    8.15000000    5.72000000    3.25000000   1      61  O_lyp
+    8.22000000    4.83000000    2.79000000   2      62  H_lyp
+    7.21000000    6.06000000    3.17000000   2      63  H_lyp
+    4.73000000    5.00000000    1.91000000   1      64  O_lyp
+    5.34000000    5.80000000    1.95000000   2      65  H_lyp
+    3.78000000    5.31000000    1.98000000   2      66  H_lyp
+    3.16000000    8.55000000    3.09000000   1      67  O_lyp
+    2.30000000    8.24000000    3.51000000   2      68  H_lyp
+    3.12000000    8.41000000    2.10000000   2      69  H_lyp
+    0.83000000    2.72000000    0.36000000   1      70  O_lyp
+    0.78000000    2.71000000    1.36000000   2      71  H_lyp
+    0.00000000    2.31000000   -0.02000000   2      72  H_lyp
+    9.03000000    0.86000000    1.33000000   1      73  O_lyp
+    9.54000000    0.87000000    0.47000000   2      74  H_lyp
+    9.59000000    0.44000000    2.04000000   2      75  H_lyp
+    2.63000000    3.26000000    7.20000000   1      76  O_lyp
+    1.84000000    3.77000000    6.86000000   2      77  H_lyp
+    2.54000000    3.11000000    8.18000000   2      78  H_lyp
+    9.16000000    9.10000000    2.91000000   1      79  O_lyp
+    9.79000000    9.48000000    2.23000000   2      80  H_lyp
+    9.56000000    8.27000000    3.30000000   2      81  H_lyp
+    0.72000000    1.66000000    3.18000000   1      82  O_lyp
+    0.55000000    2.49000000    2.64000000   2      83  H_lyp
+    1.62000000    1.29000000    2.96000000   2      84  H_lyp
+    2.39000000    3.25000000    4.49000000   1      85  O_lyp
+    3.04000000    2.51000000    4.38000000   2      86  H_lyp
+    2.59000000    3.75000000    5.33000000   2      87  H_lyp
+    5.94000000    7.45000000    6.52000000   1      88  O_lyp
+    6.44000000    8.30000000    6.33000000   2      89  H_lyp
+    5.06000000    7.47000000    6.04000000   2      90  H_lyp
+    8.59000000    9.56000000    8.61000000   1      91  O_lyp
+    9.13000000    8.87000000    9.09000000   2      92  H_lyp
+    8.27000000   10.25000000    9.27000000   2      93  H_lyp
+    4.28000000    4.24000000    5.20000000   1      94  O_lyp
+    4.58000000    3.52000000    4.58000000   2      95  H_lyp
+    3.89000000    3.84000000    6.03000000   2      96  H_lyp
+
+outcell: Unit cell vectors (Ang):
+        9.865000    0.000000    0.000000
+        0.000000    9.865000    0.000000
+        0.000000    0.000000    9.865000
+
+outcell: Cell vector modules (Ang)   :    9.865000    9.865000    9.865000
+outcell: Cell angles (23,13,12) (deg):     90.0000     90.0000     90.0000
+outcell: Cell volume (Ang**3)        :    960.0443
+Gamma-point calculation with multiply-connected orbital pairs
+Folding of H and S implicitly performed
+<dSpData1D:S at geom step 0
+  <sparsity:sparsity for geom step 0
+    nrows_g=192 nrows=96 sparsity=.3848 nnzs=14186, refcount: 7>
+  <dData1D:(new from dSpData1D) n=14186, refcount: 1>
+refcount: 1>
+new_DM -- step:     1
+Initializing Density Matrix...
+
+Attempting to read DM from file... Failed...
+DM filled with atomic data:
+<dSpData2D:DM initialized from atoms
+  <sparsity:sparsity for geom step 0
+    nrows_g=192 nrows=96 sparsity=.3848 nnzs=14186, refcount: 8>
+  <dData2D:DM n=14186 m=1, refcount: 1>
+refcount: 1>
+No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:      96      52
+New grid distribution:   1
+           1       1:   40    1:   40    1:   20
+           2       1:   40    1:   40   21:   40
+
+InitMesh: MESH =    80 x    80 x    80 =      512000
+InitMesh: (bp) =    40 x    40 x    40 =       64000
+InitMesh: Mesh cutoff (required, used) =   150.000   181.755 Ry
+ExtMesh (bp) on 0 =    96 x    96 x    76 =      700416
+New grid distribution:   2
+           1       1:   40    1:   40    1:   17
+           2       1:   40    1:   40   18:   40
+New grid distribution:   3
+           1       1:   40    1:   40    1:   20
+           2       1:   40    1:   40   21:   40
+Setting up quadratic distribution...
+ExtMesh (bp) on 0 =    96 x    96 x    73 =      672768
+PhiOnMesh: Number of (b)points on node 0 =                27200
+PhiOnMesh: nlist on node 0 =               653354
+
+stepf: Fermi-Dirac step function

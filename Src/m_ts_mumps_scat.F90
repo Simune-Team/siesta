@@ -18,11 +18,6 @@ module m_ts_mumps_scat
   private
 
   public :: GF_Gamma_GF
-#ifdef USE_GEMM3M
-# define GEMM zgemm3m
-#else
-# define GEMM zgemm
-#endif
 
 contains
 
@@ -63,7 +58,7 @@ contains
 
     ! re-use the work-array in mum%S
     if ( .not. associated(mum%S) ) &
-        call die('Error in MUMPS, S not allocated')
+         call die('Error in MUMPS, S not allocated')
 
     ! Calculate maximum blocking size
     SB = size(mum%S) / (no_u_TS + no)
@@ -71,7 +66,7 @@ contains
     ! MUMPS working array could be larger than the entire matrix :(
     SB = min(SB,no_u_TS)
     if ( SB == 0 ) call die('We cannot calculate the Gf.G.Gf^\dagger &
-        &product for your system.')
+         &product for your system.')
 
     ! Setup the different segments
     rows => mum%S(1:no_u_TS*SB) ! all the rows
@@ -82,70 +77,80 @@ contains
     CB = 1
     do while ( CB <= no_u_TS )
 
-      ! Copy over rows of Gf
-      indG = 1
-      do jo = 1 , no
-        rows(indG:indG-1+SB) = Gf(CB:CB-1+SB,jo)
-        indG = indG + SB
-      end do
-      ! now ztmp(1:no*SB) contains the Gf rows at CB:CB-1+SB
+       ! Copy over rows of Gf
+       indG = 1
+       do jo = 1 , no
+          rows(indG:indG-1+SB) = Gf(CB:CB-1+SB,jo)
+          indG = indG + SB
+       end do
+       ! now ztmp(1:no*SB) contains the Gf rows at CB:CB-1+SB
 
-      ! This routine will save the transposed of: Gf.Gamma.Gf^\dagger
-      ! as that fits with the siesta sparsity pattern
+       ! This routine will save the transposed of: Gf.Gamma.Gf^\dagger
+       ! as that fits with the siesta sparsity pattern
+       
+       ! Do Gf.Gamma for these rows
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','T',SB,no,no,z1, &
+            rows(1)    , SB, &
+            El%Gamma   , no, &
+            z0, ztmp(1), SB)
 
-      ! Do Gf.Gamma for these rows
-      call GEMM ('N','T',SB,no,no,z1, &
-          rows(1), SB, &
-          El%Gamma, no, &
-          z0, ztmp(1), SB)
+       ! Calculate the Gf.Gamma.Gf^\dagger product for the entire rows
+#ifdef USE_GEMM3M
+       call zgemm3m( &
+#else
+       call zgemm( &
+#endif
+            'N','C',SB,no_u_TS,no,z1, &
+            ztmp(1),      SB, &
+            Gf(1,1), no_u_TS, &
+            z0, rows(1),  SB)
+    
+       ! We now have the full Gf.G.Gf^\dagger rows
 
-      ! Calculate the Gf.Gamma.Gf^\dagger product for the entire rows
-      call GEMM ('N','C',SB,no_u_TS,no,z1, &
-          ztmp(1), SB, &
-          Gf(1,1), no_u_TS, &
-          z0, rows(1),  SB)
+       do io = 1 , SB ! loop over block rows
+          cols: do jo = 1 , no_u_TS ! this will be the maximum size (columns)
 
-      ! We now have the full Gf.G.Gf^\dagger rows
+             ind = ind + 1 ! update index
 
-      do io = 1 , SB ! loop over block rows
-        cols: do jo = 1 , no_u_TS ! this will be the maximum size (columns)
+             if ( ind > mum%NZ ) call die('Unforseen system, contact devs')
 
-          ind = ind + 1 ! update index
-
-          if ( ind > mum%NZ ) call die('Unforseen system, contact devs')
-
-          ! Check that the row is correct (remember this is transposed)
-          if ( mum%JCN(ind) /= CB - 1 + io ) then
-            ind = ind - 1
-            exit cols
-          end if
-
-          ! save the row
-          mum%A(ind) = rows(io + (mum%IRN(ind)-1) * SB)
+             ! Check that the row is correct (remember this is transposed)
+             if ( mum%JCN(ind) /= CB - 1 + io ) then
+                ind = ind - 1
+                exit cols
+             end if
+             
+             ! save the row
+             mum%A(ind) = rows(io + (mum%IRN(ind)-1) * SB)
+             
+             if ( ind == mum%NZ ) exit
+             
+          end do cols
 
           if ( ind == mum%NZ ) exit
 
-        end do cols
+       end do
+          
+       ! Update what we have calculated
+       CB = CB + SB ! this is the current reached row
 
-        if ( ind == mum%NZ ) exit
-
-      end do
-
-      ! Update what we have calculated
-      CB = CB + SB ! this is the current reached row
-
-      ! Calculate the next block size
-      ! Only change the blocking size if
-      ! we need fewer than SB rows
-      if ( CB + SB - 1 > no_u_TS ) then
-        SB = no_u_TS - CB + 1
-      end if
+       ! Calculate the next block size
+       ! Only change the blocking size if
+       ! we need fewer than SB rows
+       if ( CB + SB - 1 > no_u_TS ) then
+          SB = no_u_TS - CB + 1
+       end if
 
     end do
     
     ! Check that we actually calculated all entries
     if ( ind < mum%NZ ) then
-      call die('We did not complete calculation')
+       call die('We did not complete calculation')
     end if
 
     call timer("GFGGF",2)
@@ -155,9 +160,7 @@ contains
 #endif
 
   end subroutine GF_Gamma_GF
-
-#undef GEMM
-
+  
 #endif
 
 end module m_ts_mumps_scat

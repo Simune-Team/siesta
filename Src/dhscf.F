@@ -1,5 +1,5 @@
 ! 
-! Copyright (C) 1996-2016       The SIESTA group
+! Copyright (C) 1996-2016	The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
@@ -50,6 +50,8 @@
       character(len=*), parameter :: debug_fmt =
      &     '('' -- dhscf : Node '',i3,tr1,a,4(tr1,e20.7))'
 
+      external :: die, bye
+      
       public :: dhscf_init, dhscf
 
       CONTAINS
@@ -65,10 +67,10 @@
       use parallel,       only : Node, Nodes
       use atmfuncs,       only : rcut, rcore
       use fdf
-      use sys,            only : die
       use mesh,           only : xdsp, nsm, nsp, meshLim
       use parsing
 
+      use gridXC, only : getXC=>gridxc_getXC   ! Returns the XC functional used
       use alloc,          only : re_alloc, de_alloc
       use siesta_options, only : harrisfun
       use meshsubs,       only : PartialCoreOnMesh
@@ -115,7 +117,6 @@
 
       use m_ts_global_vars,only: TSmode
       use m_ts_options,   only : IsVolt, N_Elec, Elecs
-      use m_ts_electype,  only : Elec_ortho2semi_inf
       use m_ts_voltage,   only : ts_init_voltage
 
       implicit none
@@ -144,7 +145,7 @@
       
       ! Transport direction (unit-cell aligned)
       integer                 :: iE
-      logical :: is_ortho
+      real(dp)                :: ortho, field(3), field2(3)
 !--------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
       call write_debug( '    PRE dhscf_init' )
@@ -401,7 +402,7 @@ C     Create Rhoatm using UNIFORM distr, in sequential form
         endif
 
 C     Allocate Temporal array
-      call re_alloc( Vscf, 1, ntpl, 1, 1, 'Vscf', 'dhscf_init' )
+      call re_alloc( Vscf, 1, ntpl, 1, nspin, 'Vscf', 'dhscf_init' )
 
 C     Vscf is filled here but not used later
 C     Uharrs is computed (and saved)
@@ -465,33 +466,37 @@ C ----------------------------------------------------------------------
          end if
 
          ! This is either dipole or user, or both
-         is_ortho = .true.
-         if ( N_Elec == 1 ) then
-           ! When using a single electrode
-           ! one may always have an electric field.
-           ! For fields along the semi-infinite direction
-           ! it corresponds to a capacitor setup
-           ! For other fields it is simply a gate-like field.
-           ! However, when the electrode uses real space self-energies
-           ! then we do not allow *any* fields along the semi-inf
-           ! directions since that would mean an infinite field.
-           select case ( Elecs(1)%t_dir )
-           case ( 4 , 5 , 6, 7 )
-             is_ortho = Elec_ortho2semi_inf(Elecs(1),
-     &           user_specified_field)
+         field(:) = user_specified_field(:)
+         ortho = 0._dp
+         do iE = 1 , N_Elec
+           select case ( Elecs(iE)%t_dir )
+           case ( 4 )           ! B-C
+             field2 = Elecs(iE)%cell(:,2)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,3)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 5 )           ! A-C
+             field2 = Elecs(iE)%cell(:,1)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,3)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 6 )           ! A-B
+             field2 = Elecs(iE)%cell(:,1)
+             ortho = abs(ddot(3,field2,1,field,1))
+             field2 = Elecs(iE)%cell(:,2)
+             ortho = max(ortho, abs(ddot(3,field2,1,field,1)))
+           case ( 7 )           ! A-B-C
+             call die('dhscf: cannot use dipole correction when
+     &having all directions semi-infinite.')
+           case default
+             field2 = Elecs(iE)%cell(:,Elecs(iE)%t_dir)
+             ortho = ddot(3,field2,1,field,1)
            end select
-         else
-           ! For more than 1 electrode we do not allow any electric
-           ! fields along the semi-infinite directions.
-           do iE = 1 , N_Elec
-             is_ortho = is_ortho .and.
-     &           Elec_ortho2semi_inf(Elecs(iE), user_specified_field)
-           end do
-         end if
-         if ( .not. is_ortho ) then
-           call die('User defined E-field must be
+           if ( abs(ortho) > 1.e-9_dp ) then
+             call die('User defined E-field must be
      &perpendicular to semi-infinite directions.')
-         end if
+           end if
+         end do
         end if ! acting_efield
          
         ! We know that we currently allow people to do more than
@@ -616,7 +621,6 @@ C     Modules
       use atmfuncs,      only  : rcut, rcore
       use units,         only  : Debye, eV, Ang
       use fdf
-      use sys,           only  : die, bye
       use mesh,          only  : nsm, nsp, meshLim
       use parsing
       use m_iorho,       only  : write_rho
@@ -636,11 +640,8 @@ C     Modules
       use m_partial_charges, only: compute_partial_charges
       use m_partial_charges, only: want_partial_charges
 
-      use siestaXC, only : cellXC ! Finds xc energy and potential
-      use siestaXC, only : myMeshBox    ! Returns my processor mesh box
-      use siestaXC, only : jms_setMeshDistr => setMeshDistr
-                                        ! Sets a distribution of mesh
-                                        ! points over parallel processors
+      use gridXC, only : cellXC=>gridxc_cellXC       ! Finds xc energy and potential
+
       use m_vmat,  only  : vmat
       use m_rhoofd, only: rhoofd
 #ifdef MPI
@@ -674,6 +675,10 @@ C     Modules
       use m_ts_options, only: IsVolt, Elecs, N_elec
       use m_ts_voltage, only: ts_voltage
       use m_ts_hartree, only: ts_hartree_fix
+
+#ifdef SIESTA__ELSI
+      use m_elsi_interface, only: elsi_save_potential
+#endif
 
       implicit none
 
@@ -1321,9 +1326,9 @@ C ----------------------------------------------------------------------
          if ( dipole_correction ) then
             field = get_field_from_dipole(dipol,cell)
             if (Node == 0) then
-               write(6,'(a,3f12.4,a)')
+	       write(6,'(a,3f12.4,a)')
      $              'Dipole moment in unit cell   =', dipol/Debye, ' D'
-               write(6,'(a,3f12.6,a)')
+	       write(6,'(a,3f12.6,a)')
      $              'Electric field for dipole correction =',
      $              field/eV*Ang, ' eV/Ang/e'
             end if
@@ -1574,6 +1579,12 @@ C ----------------------------------------------------------------------
      &       Vscf, "TotalPotential")
 #endif
       endif
+
+#ifdef SIESTA__ELSI
+      ! This routine, and the associated data, live
+      ! in the ELSI interface module
+      call elsi_save_potential(ntpl,nspin,Vscf,comm=MPI_Comm_World)
+#endif
 
 C ----------------------------------------------------------------------
 C Print vacuum level
@@ -1922,7 +1933,7 @@ C ----------------------------------------------------------------------
       !> BSC's version of cellxc, and whether we have a vdw
       !> functional
       subroutine xc_setup(need_grads,is_vdw)
-      use siestaxc, only: getxc
+      use gridxc, only: getxc=>gridxc_getxc
 
       logical, intent(out) :: need_grads
       logical, intent(out) :: is_vdw

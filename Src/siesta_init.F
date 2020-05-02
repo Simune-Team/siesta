@@ -23,6 +23,8 @@
       use units,              only: Kelvin
       use siesta_options
       use timer_options,      only: use_tree_timer, use_parallel_timer
+      use timer_options,      only: time_mpi_calls
+      use timer_options,      only: use_walltime
       use sparse_matrices
       use class_Fstack_Pair_Geometry_dSpData2D, only: new, max_size
       use siesta_geom
@@ -30,12 +32,15 @@
      &                              qtots,
      &                              iza, rmaxo, zvaltot, superc,
      &                              initatomlists, no_l, rmaxldau
+      use m_syms
       use fdf
-      use sys,                only: die, bye
+
+      use gridxc,             only: gridxc_init
       use molecularmechanics, only: inittwobody
       use metaforce,          only: initmeta
       use m_mpi_utils,        only: broadcast
-      use alloc,              only: re_alloc, alloc_report
+      use alloc,              only: re_alloc
+      use memory_log,         only: memory_report
       use parallelsubs,       only: getnodeorbs
       use m_iostruct,         only: write_struct, read_struct
       use zmatrix,            only: lUseZmatrix
@@ -116,6 +121,7 @@
 #endif
       real(dp):: veclen       ! Length of a unit-cell vector
       integer :: i, is, ispin, n_dm_items
+      integer :: j
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
       logical :: not_using_auxcell
@@ -124,6 +130,7 @@
       integer :: World_Group
       integer :: npSIESTA
       external :: read_options
+      external :: die, bye
       external :: reset_messages_file
 
 !---------------------------------------------------------------------- BEGIN
@@ -264,8 +271,11 @@ C     Initialise MPI and set processor number
       call reinit( sname )
 
 #ifdef MPI
+      
+#ifdef SIESTA__PEXSI
       ! Optionally, restrict the number of processors that SIESTA uses, out
-      ! of the total pool
+      ! of the total pool (but only for PEXSI, not yet for other solvers)
+      
       npSIESTA  = fdf_get("MPI.Nprocs.SIESTA",Nodes)
       call MPI_Comm_Group(MPI_Comm_World, World_Group, MPIerror)
       call MPI_Group_incl(World_Group, npSIESTA,
@@ -275,8 +285,16 @@ C     Initialise MPI and set processor number
      $                     SIESTA_Comm, MPIerror)
 
       SIESTA_worker = (Node < npSIESTA)
-
-      ! Swap communicator
+#else
+      SIESTA_Comm = MPI_Comm_World
+      SIESTA_worker = .true.
+#endif
+      ! Swap communicators
+      ! This is needed in case that the whole program is run with
+      ! a subset of the global processes. In that case, the DFT instance
+      ! communicator (a better name than 'true world' communicator)
+      ! is at this point MPI_COMM_WORLD
+      MPI_COMM_DFT = MPI_COMM_WORLD
       ! This is needed since MPI_COMM_WORLD is used implicitly by
       ! Siesta for all operations. 
       MPI_COMM_WORLD = SIESTA_Comm
@@ -284,19 +302,13 @@ C     Initialise MPI and set processor number
          call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
          call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
       endif
-#else
+#else /* not MPI */
       SIESTA_worker = .true.
       Node = 0
       Nodes = 1
       PEXSINodes = 1
 #endif
       IOnode = SIESTA_worker .and. (Node .eq. 0)
-
-      if ( IONode ) then
-        ! Add citations
-        call init_citation(trim(slabel))
-        call add_citation("10.1088/0953-8984/14/11/302")
-      end if
 
       ! Be sure to initialize the spin-configuration data
       ! for all processors.
@@ -352,9 +364,8 @@ C     Initialise MPI and set processor number
       call siesta_cml_init( )
 
 ! Set timer report file and threshold .................................
-      threshold = fdf_get('timer_report_threshold', 0._dp)
       call timer_report( file=trim(slabel)//'.times', 
-     .                   threshold=threshold )
+     .        threshold=fdf_get('timer_report_threshold', 0._dp))
       ! Note that the parallel timer might be inefficient for reports
       ! when large numbers of processors are used
       if ( PEXSINodes /= Nodes ) then
@@ -363,11 +374,13 @@ C     Initialise MPI and set processor number
       else
          use_parallel_timer = fdf_get('UseParallelTimer', .true.)
          use_tree_timer = fdf_get('UseTreeTimer', .false.)
+
       end if
       ! Enable tree-timer for this case
       if (fdf_get("timing-split-scf-steps",.false.)) then
          use_tree_timer = fdf_get('UseTreeTimer', .true.)
       endif
+      use_walltime = fdf_get('use-walltime', use_tree_timer)
 
 !     Start time counter
 !     Note new placement of this first use, so that
@@ -378,16 +391,25 @@ C     Initialise MPI and set processor number
       call timer( 'Setup', 1 )
 
 ! Set allocation report level .........................................
-! variables level and threshold imported from module siesta_options
-      level = fdf_get('alloc_report_level', 0)
-      threshold = fdf_get('alloc_report_threshold', 0._dp)
-      call alloc_report( level=level, file=trim(slabel)//'.alloc',
-     .                   threshold=threshold,
-     &                   printNow=.false. )
+      call memory_report( level=fdf_get('alloc_report_level',0),
+     $           file=trim(slabel)//'.alloc',
+     .           threshold=fdf_get('alloc_report_threshold', 0._dp),
+     &           printNow=.false. )
       
+      if ( IONode ) then
+         ! Add citations
+         call init_citation(trim(slabel))
+         call add_citation("10.1088/0953-8984/14/11/302")
+      end if
+
 
 !     Initialise exchange-correlation functional information
       call read_xc_info()
+#ifdef MPI
+      call gridxc_init(comm=MPI_Comm_World)
+#else
+      call gridxc_init()
+#endif
 
 !     Initialise force field component
       call inittwobody( )
@@ -583,7 +605,14 @@ C     Initialise MPI and set processor number
 !     auxiliary supercell for the calculation of matrix elements.
       call setup_kpoint_scf( ucell )
       not_using_auxcell = gamma_scf
-
+#ifdef SIESTA__ELSI
+      if (isolve == SOLVE_ELSI) then
+         if (mod(Nodes,kpoint_scf%N*spin%spinor) /=0) then
+            call die("The number of MPI processes " //
+     $           "must be a multiple of nk*nspin")
+         endif
+      endif
+#endif
 !     Call initialisation of PDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation
       call init_projected_DOS( ucell )
@@ -598,12 +627,15 @@ C     Initialise MPI and set processor number
         not_using_auxcell = not_using_auxcell .and. gamma_ldos
       endif
 
-      ! Read in diagonalization routines
-      ! Note that only the sampled BZ is responsible for
-      ! ParallelOverK option, the remaning options are
-      ! taking care of this option
+      ! Read in diagonalization options
+      ! Note that only the sampled BZ determines the value of
+      ! ParallelOverK. Oother routines performing diagonalization
+      ! (i.e., pdos, bands...) might reset this option.
       call read_diag(Gamma_scf, spin%H)
-      call print_diag()
+
+      ! Do not print option values now unless we are using diagonalization
+      ! as the ground-state solver
+      if (isolve == SOLVE_DIAGON) call print_diag()
 
       nullify(eo,qo)
       call re_alloc(eo, 1, no_u, 1, spin%spinor, 1, kpoint_scf%N, 'eo', 
@@ -696,6 +728,23 @@ C     Initialise MPI and set processor number
       ! Build initial velocities according to Maxwell-Bolzmann distribution....
       if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
      &    call vmb( na_u, tempinit, amass, xa, isa, va )
+
+#ifdef SIESTA__HAS__SPGLIB
+      ! call init routine with main syms_global object from m_syms
+      call syms_init( syms_global, ucell, na_u, isa, xa )
+      if (IONode) call syms_print(syms_global)
+      if (impose_symmetries) then
+        call syms_cell( syms_global, na_u, xa, ucell )
+        call syms_pos( syms_global, na_u, xa, ucell )
+
+!  final check that the symops are restored - not costly but should be removed for production later
+        call syms_delete(syms_global)
+        call syms_init( syms_global, ucell, na_u, isa, xa )
+        if (IONode) call syms_print(syms_global)
+!  end debug stuff
+
+      end if
+#endif
 
       istp = 0
       

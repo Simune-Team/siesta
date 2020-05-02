@@ -119,8 +119,6 @@ contains
     ! Gf calculation
     use m_ts_full_scat
 
-    use ts_dq_m, only: ts_dq
-
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
 #endif
@@ -166,8 +164,7 @@ contains
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
     integer :: NE
-    integer :: index_dq !< Index for the current charge calculation @ E == mu
-    real(dp) :: kw, kpt(3), bkpt(3), dq_mu
+    real(dp)    :: kw, kpt(3), bkpt(3)
     complex(dp) :: W, ZW
 ! ************************************************************
 
@@ -295,9 +292,6 @@ contains
        end if
     end if
 
-    ! Initialize the charge correction scheme (will return if not used)
-    call ts_dq%initialize_dq()
-
     ! Total number of energy points
     NE = N_Eq_E() + N_nEq_E()
 
@@ -326,11 +320,8 @@ contains
        kpt(:) = ts_kpoint_scf%k(:,ikpt)
        ! create the k-point in reciprocal space
        call kpoint_convert(ucell,kpt,bkpt,1)
-
-       ! Include spin factor and 1/\pi
-       ! Since we are calculating G - G^\dagger in the equilibrium contour
-       ! we need *half* the weight
-       kw = ts_kpoint_scf%w(ikpt) / (Pi * nspin)
+       kw = 0.5_dp / Pi * ts_kpoint_scf%w(ikpt)
+       if ( nspin == 1 ) kw = kw * 2._dp
 
 #ifdef TRANSIESTA_TIMING
        call timer('TS_HS',1)
@@ -399,29 +390,15 @@ contains
           ! * save GF      *
           ! ****************
           do imu = 1 , N_mu
-            if ( cE%fake ) cycle ! in case we implement an MPI communication solution...
-            call ID2idx(cE,mus(imu)%ID,idx)
-            if ( idx < 1 ) cycle
-
-            call c2weight_eq(cE,idx, kw, W ,ZW)
-
-            ! Figure out if this point is a charge-correction energy
-            index_dq = ts_dq%get_index(imu, iE)
-
-            if ( index_dq > 0 ) then
-              ! Accummulate charge at the electrodes chemical potentials
-              ! Note that this dq_mu does NOT have the prefactor 1/Pi
-              call add_DM( spuDM, W, spuEDM, ZW, &
-                  no_u_TS, no_col, GF, &
-                  N_Elec, Elecs, &
-                  DMidx=mus(imu)%ID, spS=spS, q=dq_mu)
-              ts_dq%mus(imu)%dq(index_dq) = ts_dq%mus(imu)%dq(index_dq) + dq_mu * kw
-            else
-              call add_DM( spuDM, W, spuEDM, ZW, &
+             if ( cE%fake ) cycle ! in case we implement an MPI communication solution...
+             call ID2idx(cE,mus(imu)%ID,idx)
+             if ( idx < 1 ) cycle
+             
+             call c2weight_eq(cE,idx, kw, W ,ZW)
+             call add_DM( spuDM, W, spuEDM, ZW, &
                   no_u_TS, no_col, GF, &
                   N_Elec, Elecs, &
                   DMidx=mus(imu)%ID)
-            end if
           end do
 
           ! step energy-point
@@ -549,7 +526,7 @@ contains
                      no_u_TS, no_u_TS, zwork, &
                      N_Elec, Elecs, &
                      DMidx=iID, EDMidx=imu, &
-                     is_eq = .false.)
+                     eq = .false.)
              end do
           end do
 
@@ -663,13 +640,9 @@ contains
       no1,no2,GF, &
       N_Elec,Elecs, &
       DMidx, EDMidx, &
-      spS, q, &
-      is_eq)
-
-    use intrinsic_missing, only: SFIND
+      eq)
 
     use class_Sparsity
-    use class_zSpData1D
     use class_zSpData2D
     use m_ts_electype
 
@@ -687,28 +660,18 @@ contains
     ! the index of the partition
     integer, intent(in) :: DMidx
     integer, intent(in), optional :: EDMidx
-    !< Overlap matrix setup for a k-point is needed for calculating q
-    type(zSpData1D), intent(in), optional :: spS
-    !< Charge calculated at this energy-point
-    !!
-    !! This does not contain the additional factor 1/Pi
-    real(dp), intent(inout), optional :: q
-    logical, intent(in), optional :: is_eq
+    logical, intent(in), optional :: eq
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
     integer,  pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: s_ncol(:), s_ptr(:), s_col(:)
-    complex(dp), pointer :: D(:,:), E(:,:), Sk(:)
+    complex(dp), pointer :: D(:,:), E(:,:)
     integer :: io, ind, nr
-    integer :: s_ptr_begin, s_ptr_end, sin
     integer :: iu, ju, i1, i2
-    logical :: lis_eq, hasEDM, calc_q
+    logical :: leq, hasEDM
 
-    lis_eq = .true.
-    if ( present(is_eq) ) lis_eq = is_eq
-
-    calc_q = present(q) .and. present(spS)
+    leq = .true.
+    if ( present(eq) ) leq = eq
 
     ! Remember that this sparsity pattern HAS to be in Global UC
     s => spar(DM)
@@ -722,25 +685,14 @@ contains
     i2 = i1
     if ( present(EDMidx) ) i2 = EDMidx
 
-    if ( lis_eq ) then
+    if ( hasEDM ) then
+      if ( leq ) then
 
-      if ( calc_q ) then
-        q = 0._dp
-        s => spar(spS)
-        Sk => val(spS)
-        call attach(s, n_col=s_ncol, list_ptr=s_ptr, list_col=s_col)
-      end if
-
-      if ( calc_q .and. hasEDM ) then
-
-!$OMP parallel do default(shared), private(io,iu,ind,ju,s_ptr_begin,s_ptr_end,sin)
+!$OMP parallel do default(shared), private(io,iu,ind,ju)
         do io = 1 , nr
           ! Quickly go past the buffer atoms...
           if ( l_ncol(io) /= 0 ) then
-
-            s_ptr_begin = s_ptr(io) + 1
-            s_ptr_end = s_ptr(io) + s_ncol(io)
-
+            
             ! The update region equivalent GF part
             iu = io - orb_offset(io)
             
@@ -748,13 +700,7 @@ contains
               
               ju = l_col(ind) - orb_offset(l_col(ind)) - &
                   offset(N_Elec,Elecs,l_col(ind))
-
-              ! Search for overlap index
-              ! spS is transposed, so we have to conjugate the
-              ! S value, then we may take the imaginary part.
-              sin = s_ptr_begin - 1 + SFIND(s_col(s_ptr_begin:s_ptr_end), l_col(ind))
-
-              if ( sin >= s_ptr_begin ) q = q - aimag(GF(iu,ju) * Sk(sin))
+              
               D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
               E(ind,i2) = E(ind,i2) - Gf(iu,ju) * EDMfact
               
@@ -763,62 +709,8 @@ contains
           end if
         end do
 !$OMP end parallel do
-
-      else if ( hasEDM ) then
-
-!$OMP parallel do default(shared), private(io,iu,ind,ju)
-        do io = 1 , nr
-          if ( l_ncol(io) /= 0 ) then
-            iu = io - orb_offset(io)
-            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-              ju = l_col(ind) - orb_offset(l_col(ind)) - &
-                  offset(N_Elec,Elecs,l_col(ind))
-              D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
-              E(ind,i2) = E(ind,i2) - Gf(iu,ju) * EDMfact
-            end do
-          end if
-        end do
-!$OMP end parallel do
-
-      else if ( calc_q ) then
-
-!$OMP parallel do default(shared), private(io,iu,ind,ju,s_ptr_begin,s_ptr_end,sin)
-        do io = 1 , nr
-          if ( l_ncol(io) /= 0 ) then
-            s_ptr_begin = s_ptr(io) + 1
-            s_ptr_end = s_ptr(io) + s_ncol(io)
-            iu = io - orb_offset(io)
-            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-              ju = l_col(ind) - orb_offset(l_col(ind)) - &
-                  offset(N_Elec,Elecs,l_col(ind))
-              sin = s_ptr_begin - 1 + SFIND(s_col(s_ptr_begin:s_ptr_end), l_col(ind))
-              if ( sin >= s_ptr_begin ) q = q - aimag(GF(iu,ju) * Sk(sin))
-              D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
-            end do
-          end if
-        end do
-!$OMP end parallel do
-
-      else
         
-!$OMP parallel do default(shared), private(io,iu,ind,ju)
-        do io = 1 , nr
-          if ( l_ncol(io) /= 0 ) then
-            iu = io - orb_offset(io)
-            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-              ju = l_col(ind) - orb_offset(l_col(ind)) - &
-                  offset(N_Elec,Elecs,l_col(ind))
-              D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
-            end do
-          end if
-        end do
-!$OMP end parallel do
-
-      end if
-
-    else ! lis_eq
-
-      if ( hasEDM ) then
+      else
 
 !$OMP parallel do default(shared), private(io,iu,ind,ju)
         do io = 1 , nr
@@ -833,8 +725,31 @@ contains
         end do
 !$OMP end parallel do
 
-      else
+      end if
+    else
+      
+      if ( leq ) then
+!$OMP parallel do default(shared), private(io,iu,ind,ju)
+        do io = 1 , nr
+          ! Quickly go past the buffer atoms...
+          if ( l_ncol(io) /= 0 ) then
+            
+            ! The update region equivalent GF part
+            iu = io - orb_offset(io)
+            
+            do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
+              
+              ju = l_col(ind) - orb_offset(l_col(ind)) - &
+                  offset(N_Elec,Elecs,l_col(ind))
+              
+              D(ind,i1) = D(ind,i1) - Gf(iu,ju) * DMfact
+              
+            end do
+          end if
+        end do
+!$OMP end parallel do
 
+      else
 !$OMP parallel do default(shared), private(io,iu,ind,ju)
         do io = 1 , nr
           if ( l_ncol(io) /= 0 ) then
@@ -850,8 +765,6 @@ contains
       end if
     end if
 
-    if ( calc_q ) q = q * 2._dp
-    
   contains
     
      function offset(N_Elec,Elecs,io)
@@ -907,11 +820,13 @@ contains
 
     call attach(sp,n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows_g=nr)
+     
+!$OMP parallel default(shared), private(io,ioff,iu,ind)
 
     ! Initialize
+!$OMP workshare
     GFinv(:,:) = cmplx(0._dp,0._dp,dp)
-
-!$OMP parallel default(shared), private(io,ioff,iu,ind)
+!$OMP end workshare
 
     ! We will only loop in the central region
     ! We have constructed the sparse array to only contain

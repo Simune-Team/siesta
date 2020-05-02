@@ -15,22 +15,31 @@ module m_diag_option
   
   implicit none
   
-  public
-
   save
 
+  !-----------------------------------------------------------------------------
+  ! These two variables can be reset from outside the module, hence they are 'public'
+  ! and not 'protected'. In addition, these variables are coupled.
+  ! This issue needs to be revisited.
+  
   !> Whether diagonalization calls are made via LAPACK (true) or ScaLAPACK (false)
-  logical :: Serial = .true.
+  logical, public :: Serial = .true.
 
+  !> Whether k-point diagonalization is treated in parallel (with each processor
+  !> holding complete matrices)
+  logical, public :: ParallelOverK = .false.
+
+  !-----------------------------------------------------------------------------
+  
   !> Whether ScaLAPACK uses a 2D distribution
-  logical :: Use2D = .true.
+  logical, protected :: Use2D = .true.
   !> Number of processors on the columns for the 2D distribution
-  integer :: ProcessorY = 1
+  integer, protected :: ProcessorY = 1
   !> The block-size
-  integer :: diag_BlockSize = 24
+  integer, protected :: diag_BlockSize = 24
   
   !> Whether we should use the upper or lower part of the Hermitian/symmetric matrices
-  character :: UpperLower = 'L'
+  character, protected :: UpperLower = 'L'
 
   ! Different choices of algorithms.
 
@@ -62,25 +71,27 @@ module m_diag_option
   !> Use the 2-stage ELPA driver
   integer, parameter :: ELPA_2stage = 10
 
-  integer :: algorithm = DivideConquer
+  integer, protected :: algorithm = DivideConquer
 
   !> Tolerance for MRRR (LAPACK) and expert drivers
-  real(dp) :: abstol = 1.e-8_dp
+  real(dp), protected :: abstol = 1.e-8_dp
   !> Tolerance for expert ScaLAPACK driver
-  real(dp) :: orfac = 1.e-3_dp
+  real(dp), protected :: orfac = 1.e-3_dp
 
   !> Memory factor for the real work arrays
-  real(dp) :: mem_factor = 1._dp
+  real(dp), protected :: mem_factor = 1._dp
 
-  logical :: ParallelOverK = .false.
-
+  !> Flag to account for printing of options
+  !  logical, protected :: diag_options_printed = .false.
+  
 contains
 
   subroutine read_diag(Gamma, nspin)
 
     use parallel, only: IONode, Nodes, BlockSize
     use fdf, only: fdf_get, leqi
-
+    use m_cite, only: add_citation
+    
     logical, intent(in) :: Gamma
     integer, intent(in) :: nspin
 
@@ -96,6 +107,7 @@ contains
 #ifdef MPI
     if ( Nodes > 1 .and. .not. Gamma ) then
        ParallelOverK = fdf_get( 'Diag.ParallelOverK', .false.)
+       if ( nspin > 2 ) ParallelOverK = .false.
     end if
 
     if ( Nodes == 1 ) then
@@ -219,7 +231,7 @@ contains
 #ifdef SIESTA__ELPA
     else if ( leqi(algo, 'elpa-1') .or. leqi(algo, 'elpa-1stage') ) then
        algorithm = ELPA_1stage
-       
+       call add_citation("10.1088/0953-8984/26/21/213201")
        ! The current ELPA implementation requires non-serial
        Serial = .false.
        ParallelOverK = .false.
@@ -227,7 +239,7 @@ contains
     else if ( leqi(algo, 'elpa') .or. &
          leqi(algo, 'elpa-2stage') .or. leqi(algo, 'elpa-2') ) then
        algorithm = ELPA_2stage
-
+       call add_citation("10.1088/0953-8984/26/21/213201")
        ! The current ELPA implementation requires non-serial
        Serial = .false.
        ParallelOverK = .false.
@@ -317,6 +329,7 @@ contains
     use parallel, only: IONode, Nodes
 
     if ( .not. IONode ) return
+    !if ( diag_options_printed ) return
 
     write(*,*) ! new-line
     
@@ -368,6 +381,9 @@ contains
 
     write(*,'(a,t53,''= '',f7.4)') 'diag: Memory factor', mem_factor
 
+    ! Signal completed operation
+    !diag_options_printed = .true.
+    
   end subroutine print_diag
   
 end module m_diag_option

@@ -23,12 +23,12 @@
       integer, parameter, public  :: maxnorbs = 100
 !       Maximum number of nlm orbitals
 !
-      integer, parameter, public  :: maxn_pjnl = 20
+      integer, parameter, public  :: maxn_pjnl = 40
 !       Maximum number of projectors (not counting different "m" copies)
       integer, parameter, public  :: maxn_orbnl = 200
 !       Maximum number of nl orbitals (not counting different "m" copies)
 !       Now very large to accommodate filteret basis sets
-      integer, parameter, public  :: maxnprojs = 100
+      integer, parameter, public  :: maxnprojs = 200
 !       Maximum number of nlm projectors
 !
 

@@ -79,8 +79,6 @@ contains
 
     use m_ts_mumps_scat
 
-    use ts_dq_m, only: ts_dq
-
 #ifdef TRANSIESTA_DEBUG
     use m_ts_debug
 #endif
@@ -125,8 +123,7 @@ contains
 
 ! ******************* Computational variables ****************
     type(ts_c_idx) :: cE
-    integer :: index_dq !< Index for the current charge calculation @ E == mu
-    real(dp) :: kw, dq_mu
+    real(dp)    :: kw
     complex(dp) :: W, ZW
 ! ************************************************************
 
@@ -242,9 +239,6 @@ contains
        end if
     end if
 
-    ! Initialize the charge correction scheme (will return if not used)
-    call ts_dq%initialize_dq()
-
     ! start the itterators
     call itt_init  (Sp,end=nspin)
     ! point to the index iterators
@@ -259,7 +253,8 @@ contains
             tsup_sp_uc, Calc_Forces)
 
        ! Include spin factor and 1/\pi
-       kw = 2._dp / (Pi * nspin)
+       kw = 1._dp / Pi
+       if ( nspin == 1 ) kw = kw * 2._dp
 
 #ifdef TRANSIESTA_TIMING
        call timer('TS_HS',1)
@@ -346,28 +341,14 @@ contains
              ! * save GF      *
              ! ****************
              do imu = 1 , N_mu
-               call ID2idx(cE,mus(imu)%ID,idx)
-               if ( idx < 1 ) cycle
-
-               call c2weight_eq(cE,idx, kw, W ,ZW)
-
-               ! Figure out if this point is a charge-correction energy
-               index_dq = ts_dq%get_index(imu, iE)
-               if ( index_dq > 0 ) then
-                 ! Accummulate charge at the electrodes chemical potentials
-                 ! Note that this dq_mu does NOT have the prefactor 1/Pi
-                 call add_DM( spuDM, W, spuEDM, ZW, &
-                     mum, &
-                     N_Elec, Elecs, &
-                     DMidx=mus(imu)%ID, &
-                     spS=spS, q=dq_mu)
-                 ts_dq%mus(imu)%dq(index_dq) = ts_dq%mus(imu)%dq(index_dq) + dq_mu * kw
-               else
-                 call add_DM( spuDM, W, spuEDM, ZW, &
+                call ID2idx(cE,mus(imu)%ID,idx)
+                if ( idx < 1 ) cycle
+                
+                call c2weight_eq(cE,idx, kw, W ,ZW)
+                call add_DM( spuDM, W, spuEDM, ZW, &
                      mum, &
                      N_Elec, Elecs, &
                      DMidx=mus(imu)%ID)
-               end if
              end do
           end if
              
@@ -499,7 +480,7 @@ contains
                    call add_DM( spuDM, W, spuEDM, ZW, &
                         mum, &
                         N_Elec, Elecs, &
-                        DMidx=iID, EDMidx=imu, is_eq = .false. )
+                        DMidx=iID, EDMidx=imu, eq = .false. )
                 end do
              end do
           end if
@@ -617,16 +598,13 @@ contains
        mum, &
        N_Elec,Elecs, &
        DMidx, EDMidx, &
-       spS, q, &
-       is_eq)
-
-    use intrinsic_missing, only: SFIND
+       eq)
 
     use class_Sparsity
-    use class_dSpData1D
     use class_dSpData2D
     use m_ts_electype
     use m_ts_method, only : ts2s_orb
+    use intrinsic_missing, only : SFIND
 
     include 'zmumps_struc.h'
 
@@ -642,29 +620,19 @@ contains
     ! the index of the partition
     integer, intent(in) :: DMidx
     integer, intent(in), optional :: EDMidx
-    !< Overlap matrix setup for a k-point is needed for calculating q
-    type(dSpData1D), intent(in), optional :: spS
-    !< Charge calculated at this energy-point
-    !!
-    !! This does not contain the additional factor 1/Pi
-    real(dp), intent(inout), optional :: q
-    logical, intent(in), optional :: is_eq
+    logical, intent(in), optional :: eq
 
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
     integer,  pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: s_ncol(:), s_ptr(:), s_col(:)
-    real(dp), pointer :: D(:,:), E(:,:), Sg(:)
+    real(dp), pointer :: D(:,:), E(:,:)
     complex(dp), pointer :: GF(:)
     integer :: io, jo, ind, ir, nr, Hn, ind_H
-    integer :: s_ptr_begin, s_ptr_end, sin
     integer :: i1, i2
-    logical :: hasEDM, lis_eq, calc_q
+    logical :: hasEDM, leq
 
-    lis_eq = .true.
-    if ( present(is_eq) ) lis_eq = is_eq
-
-    calc_q = present(q) .and. present(spS)
+    leq = .true.
+    if ( present(eq) ) leq = eq
     
     ! Remember that this sparsity pattern HAS to be in Global UC
     s => spar(DM)
@@ -678,119 +646,63 @@ contains
     i2 = i1
     if ( present(EDMidx) ) i2 = EDMidx
 
-    if ( lis_eq ) then
+    if ( leq ) then
 
-      GF => mum%RHS_SPARSE(:)
+    GF => mum%RHS_SPARSE(:)
 
-      if ( calc_q ) then
-        q = 0._dp
-        s => spar(spS)
-        Sg => val(spS)
-        call attach(s, n_col=s_ncol, list_ptr=s_ptr, list_col=s_col)
-      end if
-
-      if ( calc_q .and. hasEDM ) then
-
-!$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H,s_ptr_begin,s_ptr_end,sin)
-        do ir = 1 , mum%NRHS
-          
+    if ( hasEDM ) then
+       
+!$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H)
+       do ir = 1 , mum%NRHS
+             
           ! this is column index
           jo = ts2s_orb(ir)
 
           ! The update region equivalent GF part
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
+                
+             io = ts2s_orb(mum%IRHS_SPARSE(ind))
 
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
-
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
-            ! Requires that l_col is sorted
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
-            if ( ind_H > l_ptr(io) ) then
-
-              s_ptr_begin = s_ptr(io) + 1
-              s_ptr_end = s_ptr(io) + s_ncol(io)
-
-              ! Search for overlap index
-              ! spS is transposed, so we have to conjugate the
-              ! S value, then we may take the imaginary part.
-              sin = s_ptr_begin - 1 + SFIND(s_col(s_ptr_begin:s_ptr_end), jo)
-              if ( sin >= s_ptr_begin ) q = q - aimag(GF(ind) * Sg(sin))
-
-              D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
-              E(ind_H,i2) = E(ind_H,i2) - aimag( GF(ind) * EDMfact )
-            end if
-
+             Hn    = l_ncol(io)
+             ind_H = l_ptr(io)
+             ! Requires that l_col is sorted
+             ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+             if ( ind_H > l_ptr(io) ) then
+                D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
+                E(ind_H,i2) = E(ind_H,i2) - aimag( GF(ind) * EDMfact )
+             end if
+             
           end do
-        end do
+       end do
 !$OMP end parallel do
-
-      else if ( hasEDM ) then
+       
+    else
 
 !$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H)
-        do ir = 1 , mum%NRHS
+       do ir = 1 , mum%NRHS
           jo = ts2s_orb(ir)
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
-            if ( ind_H > l_ptr(io) ) then
-              D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
-              E(ind_H,i2) = E(ind_H,i2) - aimag( GF(ind) * EDMfact )
-            end if
+             io = ts2s_orb(mum%IRHS_SPARSE(ind))
+             Hn    = l_ncol(io)
+             ind_H = l_ptr(io)
+             ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+             if ( ind_H > l_ptr(io) ) then
+                D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
+             end if
           end do
-        end do
+       end do
 !$OMP end parallel do
 
-      else if ( calc_q ) then
+    end if
 
-!$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H,s_ptr_begin,s_ptr_end,sin)
-        do ir = 1 , mum%NRHS
-          jo = ts2s_orb(ir)
-          do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
-            if ( ind_H > l_ptr(io) ) then
-              s_ptr_begin = s_ptr(io) + 1
-              s_ptr_end = s_ptr(io) + s_ncol(io)
-              sin = s_ptr_begin - 1 + SFIND(s_col(s_ptr_begin:s_ptr_end), jo)
-              if ( sin >= s_ptr_begin ) q = q - aimag(GF(ind) * Sg(sin))
-              D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
-            end if
-          end do
-        end do
-!$OMP end parallel do
+    else
 
-      else
+    GF => mum%A(:)
 
-!$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H)
-        do ir = 1 , mum%NRHS
-          jo = ts2s_orb(ir)
-          do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
-            if ( ind_H > l_ptr(io) ) then
-              D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
-            end if
-          end do
-        end do
-!$OMP end parallel do
-
-      end if
-
-    else ! lis_eq
-
-      GF => mum%A(:)
-
-      if ( hasEDM ) then
+    if ( hasEDM ) then
 
 !$OMP parallel do default(shared), private(ind,io,jo,Hn,ind_H)
-        do ind = 1 , mum%NZ ! looping A
+       do ind = 1 , mum%NZ ! looping A
           
           ! collect the two indices
           io = ts2s_orb(mum%JCN(ind)) ! this is row index for Gf.G.Gf^\dagger
@@ -805,36 +717,32 @@ contains
           if ( ind_H > l_ptr(io) ) then ! this occurs as mum%A contains
                                         ! the electrode as well
           
-            D(ind_H,i1) = D(ind_H,i1) + real( GF(ind) * DMfact  ,dp)
-            E(ind_H,i2) = E(ind_H,i2) + real( GF(ind) * EDMfact ,dp)
+             D(ind_H,i1) = D(ind_H,i1) + real( GF(ind) * DMfact  ,dp)
+             E(ind_H,i2) = E(ind_H,i2) + real( GF(ind) * EDMfact ,dp)
 
           end if
              
-        end do
+       end do
 !$OMP end parallel do
        
-      else
+    else
 
 !$OMP parallel do default(shared), private(ind,io,jo,Hn,ind_H)
-        do ind = 1 , mum%NZ
+       do ind = 1 , mum%NZ
           io = ts2s_orb(mum%JCN(ind))
           jo = ts2s_orb(mum%IRN(ind))
           Hn    = l_ncol(io)
           ind_H = l_ptr(io)
           ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
           if ( ind_H > l_ptr(io) ) then
-            D(ind_H,i1) = D(ind_H,i1) + real( GF(ind) * DMfact ,dp)
+             D(ind_H,i1) = D(ind_H,i1) + real( GF(ind) * DMfact ,dp)
           end if
-        end do
+       end do
 !$OMP end parallel do
-
-      end if
 
     end if
 
-    ! For ts_dq we should not multiply by 2 since we don't do G + G^\dagger for Gamma-only
-    ! this is because G is ensured symmetric for Gamma-point and thus it is not needed.
-    ! So here the weights are not scaled
+    end if
 
   end subroutine add_DM
 

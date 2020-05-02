@@ -347,6 +347,7 @@ contains
 
     integer :: iu, iostat, ne
     logical :: exist
+    complex(dp) :: E , W
     real(dp) :: rE, iE, rW, iW, conv
     character(len=512) :: file, line
     character(len=16) :: unit

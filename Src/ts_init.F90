@@ -33,7 +33,7 @@ contains
     use m_os, only : file_exist
     use fdf, only: fdf_get
 
-    use m_ts_gf,        only : do_Green
+    use m_ts_gf,        only : do_Green, do_Green_Fermi
     use m_ts_electrode, only : init_Electrode_HS
     
     use kpoint_scf_m, only : kpoint_scf
@@ -43,6 +43,7 @@ contains
     use m_ts_electype
     use m_ts_options ! Just everything (easier)
     use m_ts_method
+    use m_ts_charge
 
     use m_ts_global_vars, only : TSmode, TSinit, onlyS
     use siesta_options, only : isolve, SOLVE_TRANSI, Nmove
@@ -160,6 +161,18 @@ contains
 
     if ( .not. TS_Analyze ) then
 
+       if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI &
+            .and. IONode ) then
+          ! Delete the TS_FERMI file (enables
+          ! reading it in and improve on the convergence)
+          if ( file_exist('TS_FERMI') ) then
+             i = 23455
+             open(unit=i,file='TS_FERMI')
+             close(i,status='delete')
+          end if
+
+       end if
+       
        ! GF generation:
        do i = 1 , N_Elec
 
@@ -171,10 +184,25 @@ contains
             call do_Green(Elecs(i), &
                 ucell,1,(/(/0._dp, 0._dp, 0._dp/)/),(/1._dp/), &
                 Elecs_xa_Eps, .false. )
+            
+            if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+              call do_Green_Fermi(Elecs(i), &
+                  ucell,1,(/(/0._dp, 0._dp, 0._dp/)/),(/1._dp/), &
+                  Elecs_xa_Eps, .false. )
+            end if
+            
           else
             call do_Green(Elecs(i), &
                 ucell,ts_kpoint_scf%N,ts_kpoint_scf%k,ts_kpoint_scf%w, &
                 Elecs_xa_Eps, .false. )
+
+            if ( TS_RHOCORR_METHOD == TS_RHOCORR_FERMI ) then
+
+              call do_Green_Fermi(Elecs(i), &
+                  ucell,ts_kpoint_scf%N,ts_kpoint_scf%k,ts_kpoint_scf%w, &
+                  Elecs_xa_Eps, .false. )
+
+            end if
           end if
           
           ! clean-up

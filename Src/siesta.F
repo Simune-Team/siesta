@@ -21,7 +21,7 @@
       use parallel, only: SIESTA_worker ! whether part of Siesta's communicator
       use parallel, only: ionode
 #ifdef MPI      
-      use mpi_siesta, only: true_mpi_comm_world
+      use mpi_siesta, only: mpi_comm_dft ! Includes Solver nodes
 #endif      
       use m_mpi_utils, only: broadcast
 
@@ -35,12 +35,12 @@
       integer :: istep
       logical :: relaxd
 
-! Notes for PEXSI operation
+! Notes for PEXSI and ELSI operation (extra procs for Solver)
 !
-! A subset of nodes carries out non-PEXSI Siesta operations 
+! A subset of nodes carries out non-Solver Siesta operations 
 ! (i.e., setting up H, moving atoms, diagonalizing...). 
 ! These are tagged as "SIESTA_worker" (admittedly, a bad name)
-! All nodes are involved in the PEXSI electronic-structure solver,
+! All nodes are involved in the (PEXSI or ELSI) electronic-structure solver,
 ! and in the new LocalDOS computation based on selected inversion.
 !
 ! 'siesta_init', 'siesta_forces', and 'siesta_analysis' need to
@@ -66,11 +66,11 @@
 C     Begin of coordinate relaxation iteration
       relaxd = .false.
 
-#ifdef SIESTA__PEXSI      
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
       ! Broadcast relevant things for program logic
       ! These were set in siesta_options, called only by "SIESTA_workers".
-      call broadcast(inicoor,comm=true_MPI_Comm_World)
-      call broadcast(fincoor,comm=true_MPI_Comm_World)
+      call broadcast(inicoor,comm=mpi_comm_dft)
+      call broadcast(fincoor,comm=mpi_comm_dft)
 #endif
       istep  = inicoor
       DO WHILE ((istep.le.fincoor) .AND. (.not. relaxd))
@@ -82,8 +82,8 @@ C     Begin of coordinate relaxation iteration
          end if
 
         if (SIESTA_worker) call siesta_move( istep, relaxd )
-#ifdef SIESTA__PEXSI        
-        call broadcast(relaxd,comm=true_MPI_Comm_World)
+#if defined (SIESTA__PEXSI) || defined (SIESTA__ELSI)
+        call broadcast(relaxd,comm=mpi_comm_dft)
 #endif
         if (.not. relaxd) then
           istep = istep + 1

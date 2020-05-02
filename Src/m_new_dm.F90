@@ -393,7 +393,7 @@ contains
     use m_ts_options,   only : TS_scf_mode, ts_hist_keep
     use m_ts_options,   only : val_swap, ts_scf_mixs
     use m_ts_options,   only : ts_Dtol, ts_Htol
-    use m_ts_options,   only : IsVolt, TS_start_bias
+    use m_ts_options,   only : IsVolt
     use siesta_options, only : dDtol, dHtol
 
     use m_mixing, only: mixers_history_init
@@ -493,12 +493,12 @@ contains
 
     if ( TSmode .and. IsVolt .and. abs(init_method) /= 2 ) then
       if ( IONode ) then
-        write(*,'(a,/)') 'ts: We highly recommend you to perform 0-bias calculations before *any* bias calculations'
+        write(*,'(a)') 'ts: Before doing a bias calculation one have to do the 0-bias calculation'
+        write(*,'(a)') 'ts: The implementation does not allow starting, &
+            &from scratch, a bias calculation!'
       end if
-      if ( .not. TS_start_bias ) then
-        call die('ts: You have to calculate the 0 V and re-use the TSDE from &
-            &that calculation.')
-      end if
+      call die('ts: You have to calculate the 0 V and re-use the TSDE from &
+          &that calculation.')
     end if
 
     if ( TSrun ) then
@@ -1567,7 +1567,9 @@ contains
     ! Scratch array to accumulate the elements
     call newdData2D(a_out,nnzs_out, nspin,name="(temp array for extrapolation)")
     a => val(a_out)
+!$OMP parallel workshare default(shared)
     a(:,:) = 0.0_dp
+!$OMP end parallel workshare
 
     do i = 1, n
        pair => get_pointer(DM_history,i)
@@ -1577,7 +1579,9 @@ contains
        !           endif
        call restruct_dSpData2D(dm,sparse_pattern,DMtmp)
        ai => val(DMtmp)
-       a(:,:) = a(:,:) + c(i) * ai(:,:)
+!$OMP parallel workshare default(shared)
+       a = a + c(i) * ai
+!$OMP end parallel workshare
     enddo
 
     call newdSpData2D(sparse_pattern,a_out,orb_dist, &

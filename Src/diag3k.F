@@ -333,7 +333,7 @@ C *********************************************************************
                 ! Fill in the missing eigenvalue information
                 ! This is useful if we are requesting WFS in a "bands" setting
                 call c_f_pointer(c_loc(caux),aux,[2*nuotot])
-                call dcopy(2*nuotot, aux(1), 1, eo(1,ik), 1)
+                call kludge_copy(2*nuotot,eo(1,ik),aux)
              endif
              call c_f_pointer(c_loc(psi),psi_real,[2*size(psi)])
              call writew(nuotot,nuo,ik,kpoint(1,ik),1,     ! last '1' is 'spin-block number'
@@ -459,6 +459,17 @@ C *********************************************************************
         enddo
       enddo
       
+      CONTAINS
+            ! Work around shape of aux array
+      subroutine kludge_copy(n,a,b)
+      integer, intent(in) :: n
+      real(dp), intent(out) :: a(n)
+      real(dp), intent(in)  :: b(n)
+!$OMP parallel workshare default(shared)
+      a(1:n) = b(1:n)
+!$OMP end parallel workshare
+      end subroutine kludge_copy
+
       end subroutine diag3k
 !***********************************************************************      
 

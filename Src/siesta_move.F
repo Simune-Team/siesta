@@ -56,6 +56,8 @@
 
       use m_check_walltime
       use m_mpi_utils,     only: barrier
+
+      use m_syms
       
 #ifdef NCDF_4
       use m_exp_coord, only : exp_coord_next
@@ -97,9 +99,11 @@
       ! Save the last geometry for which the density matrix 
       ! (electronic structure) has been calculated
 
+!$OMP parallel workshare default(shared)
       xa_last(1:3,1:na_s) = xa(1:3,1:na_s)
       ucell_last(1:3,1:3) = ucell(1:3,1:3)
       scell_last(1:3,1:3) = scell(1:3,1:3)
+!$OMP end parallel workshare
 
 ! Move atoms ..........................................................
 !
@@ -184,6 +188,11 @@
              endif
            endif
           endif ! RelaxCellOnly
+!  final check that the symops are restored - not costly but should be removed for production later
+         call syms_delete(syms_global)
+         call syms_init( syms_global, ucell, na_u, isa, xa )
+         if (IONode) call syms_print(syms_global)
+!end debug stuff
 
           if (relaxd) then
 

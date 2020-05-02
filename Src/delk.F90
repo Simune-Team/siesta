@@ -117,7 +117,9 @@ contains
     call timer('delk',1)
 
 !   Initialize the matrix elements of exp(i*\vec{k} \vec{r})
+!$OMP parallel workshare default(shared)
     delkmat(:) = 0.0_dp
+!$OMP end parallel workshare
     kpoint(:)  = dble(iexpikr) * wavevector(:)
 
 !! For debugging

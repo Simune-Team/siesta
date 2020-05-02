@@ -99,7 +99,7 @@ integer :: j, lun
 !
 ! Our global communicator is a duplicate of the passed communicator
 !
-call MPI_Comm_Dup(true_MPI_Comm_World, World_Comm, ierr)
+call MPI_Comm_Dup(mpi_comm_dft, World_Comm, ierr)
 call mpi_comm_rank( World_Comm, mpirank, ierr )
 
 call timer("pexsi_dos", 1)  

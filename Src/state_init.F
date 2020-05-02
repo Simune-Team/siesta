@@ -49,7 +49,7 @@
      &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
      &                             lastkb, lasto, superc, indxuo,
      &                             no_u, no_s, no_l, iza, qtots
-      use alloc,             only: re_alloc, de_alloc, alloc_report
+      use alloc,             only: re_alloc, de_alloc
       use m_hsparse,         only: hsparse
       use m_overlap,         only: overlap
       use m_supercell,       only: exact_sc_ag
@@ -78,11 +78,11 @@
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
       use ldau_specs,        only: switch_ldau, ldau_init
       use fdf,               only: fdf_get
-      use sys,               only: message, die, bye
+      use sys,               only: message, die
       use m_sparse, only : xij_offset
 
       use ts_kpoint_scf_m, only: setup_ts_kpoint_scf, ts_kpoint_scf
-      use ts_dq_m, only : TS_DQ_METHOD, TS_DQ_METHOD_FERMI
+      use m_ts_charge, only : TS_RHOCORR_METHOD, TS_RHOCORR_FERMI
       use m_ts_options, only : BTD_method
       use m_ts_options, only : TS_Analyze
       use m_ts_options, only : N_Elec, Elecs, IsVolt
@@ -127,6 +127,7 @@
 
       use m_handle_sparse, only: correct_supercell_SpD
       use m_restruct_SpData2D, only: restruct_dSpData2D
+      use matel_mod, only : init_matel
 
       implicit none
 
@@ -140,7 +141,8 @@
       logical            :: diag_folding, diag_folding1
       logical            :: foundxv  ! dummy for call to ioxv
 
-      external           ::  madelung, timer
+      external           :: madelung, timer
+      external           :: bye
       real(dp), external :: volcel
 
       integer                       :: ts_kscell_file(3,3) = 0
@@ -665,7 +667,9 @@
      &      show_warning = .false.)
       end do
 
-      
+      ! Prepare MATEL
+      call init_matel( )
+
 !     Find overlap matrix 
       call overlap( na_u, na_s, no_s, scell, xa, indxua, rmaxo, maxnh,
      &    lasto, iphorb, isa, numh, listhptr, listh, S )
@@ -731,7 +735,9 @@
       ! a continuation run gives bad forces.
       if ( .not. TSrun ) then
          call normalize_DM( first= .true. )
+!$OMP parallel workshare default(shared)
          Escf(:,:) = 0.0_dp
+!$OMP end parallel workshare
       end if
 
 #ifdef TEST_IO
@@ -767,6 +773,20 @@
          
       endif 
 
+      ! In case the user is requesting a Fermi-correction
+      ! we need to delete the TS_FERMI file after each iteration
+      if ( TSmode .and. TS_RHOCORR_METHOD == TS_RHOCORR_FERMI
+     &     .and. IONode ) then
+          ! Delete the TS_FERMI file (enables
+          ! reading it in and improve on the convergence)
+          if ( file_exist('TS_FERMI') ) then
+             i = 23455 ! this should just not be used any were...
+             ! Delete the file...
+             open(unit=i,file='TS_FERMI')
+             close(i,status='delete')
+          end if
+       end if
+      
 #ifdef CDF
       if (writedm_cdf) then
          call setup_dm_netcdf_file( maxnh, no_l, spin%H,
@@ -794,6 +814,10 @@
       endif
 #endif
       call timer( 'state_init', 2 )
+
+!     Call BLACS setup here if needed (all solvers except PEXSI)
+!     Setup S in 2d Scalapack distribution if needed (ELSI ELPA solver)
+!     Initialize ELSI
 
       END subroutine state_init
 
