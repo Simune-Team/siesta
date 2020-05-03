@@ -24,7 +24,7 @@ contains
 ! Calculates the Hirshfeld and Voronoi charges 
 ! Coded by P. Ordejon, August 2004
 ! Integrated into dhscf workflow by A. Garcia, October 2012
-! Added spin-resolved output, Nick Papior, May 2020
+! Added spin-resolved output+NC+SOC, Nick Papior, May 2020
 !
 ! ----------------------------------------------------------------------
 ! Input :
@@ -128,6 +128,9 @@ contains
 
     end if
 
+    ! Add new-line
+    if ( Node == 0 ) write(6, *) ''
+
 #ifdef MPI
     call memory('D','D',size(qtmp),'hirsh')
     deallocate(qtmp)
@@ -143,12 +146,13 @@ contains
       use alloc, only: re_alloc, de_alloc
 
       integer, intent(in) :: nspin, na_u
-      real(dp), intent(in), target :: q(nspin,na_u)
+      real(dp), intent(inout), target :: q(nspin,na_u)
       integer, intent(in) :: method ! 1 == Hirshfeld, 2 == Voronoi
 
       character(len=20) :: atm_label
       character(len=64) :: fmt
       integer :: ia, is
+      real(dp) :: S, Stot, Svec(3)
       real(dp), pointer :: qout(:,:) => null()
 
       if ( Node /= 0 ) return
@@ -169,46 +173,57 @@ contains
               title='Voronoi net atomic charges')
         end if
       end if
+
+
       select case ( nspin )
       case ( 1 )
-        write(6,'(a6,2x,a11,2x,a)') 'Atom #', 'dQ', 'Species'
+        write(6,'(a6,2x,a11,2x,a)') 'Atom #', 'dQatom', 'Species'
         fmt = "(i6,2x,f11.7,2x,a)"
 
         if ( cml_p ) then
-          call cmlStartPropertyList(mainXML, &
-              title="unpolarized", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=q(1,:), &
-              dictRef='siesta:dq', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
+          call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
+              dictRef='siesta:net_charge', value=q(1,:), &
+              units="siestaUnits:-e")
         end if
 
         qout => q(:,:)
 
       case ( 2 )
-        write(6,'(a6,1x,2(tr1,a11),2x,a)') 'Atom #', 'dQ UP', 'dQ DOWN', 'Species'
+        write(6,'(a6,1x,2(tr1,a11),2x,a)') 'Atom #', 'dQatom', 'Sz', 'Species'
         fmt = "(i6,1x,2(tr1,f11.7),2x,a)"
 
+        Stot = 0._dp
+        do ia = 1, na_u
+          ! this needs to be reversed (compared to mulliken)
+          ! since the charges are with respect to atomic charge
+          S = q(2,ia) - q(1,ia)
+          q(1,ia) = q(1,ia) + q(2,ia)
+          q(2,ia) = S
+          Stot = Stot + S
+        end do
+
         if ( cml_p ) then
-          call cmlStartPropertyList(mainXML, &
-              title="up", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=q(1,:), &
-              dictRef='siesta:dq', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
-          call cmlStartPropertyList(mainXML, &
-              title="down", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=q(2,:), &
-              dictRef='siesta:dq', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
+          call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
+              dictRef='siesta:net_charge', value=q(1,:), &
+              units="siestaUnits:-e")
+          call cmlAddProperty(xf=mainXML, title="Atomic spin z", &
+              dictRef='siesta:spin_z', value=q(2,:), &
+              units="siestaUnits:e")
+          call cmlAddProperty(xf=mainXML, title="Total atomic spin z", &
+              dictRef='siesta:spin_z_tot', value=Stot, &
+              units="siestaUnits:e")
         end if
 
         qout => q(:,:)
 
       case ( 4 )
-        write(6,'(a6,1x,5(tr1,a11),2x,a)') 'Atom #', 'dQ', 'S', 'Sx', 'Sy', 'Sz', 'Species'
+        write(6,'(a6,1x,5(tr1,a11),2x,a)') 'Atom #', 'dQatom', 'S', 'Sx', 'Sy', 'Sz', 'Species'
         fmt = "(i6,1x,5(tr1,f11.7),2x,a)"
 
         ! Convert to spin-out
         call re_alloc(qout, 1, 5, 1, na_u, "qout", "partial_charges")
+
+        Svec = 0._dp
         do ia = 1, na_u
           call spnvec(nspin, q(:,ia), qout(1,ia), qout(2,ia), qout(3:5,ia))
           ! The spin printing is not with respect to atomic spin (since
@@ -216,34 +231,32 @@ contains
           ! I.e. the print out would be -S (which may be non-obvious to
           ! users)
           qout(3:5,ia) = - qout(3:5,ia)
+          Svec(:) = Svec(:) + qout(3:5,ia)
         end do
+        Stot = sum(Svec(:) * Svec(:)) ** 0.5_dp
 
         if ( cml_p ) then
-          call cmlStartPropertyList(mainXML, &
-              title="sum", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=qout(1,:), &
-              dictRef='siesta:dq', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
-          call cmlStartPropertyList(mainXML, &
-              title="S", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=qout(2,:), &
-              dictRef='siesta:q', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
-          call cmlStartPropertyList(mainXML, &
-              title="Sx", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=qout(3,:), &
-              dictRef='siesta:q', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
-          call cmlStartPropertyList(mainXML, &
-              title="Sy", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=qout(4,:), &
-              dictRef='siesta:q', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
-          call cmlStartPropertyList(mainXML, &
-              title="Sz", dictRef='siesta:spin')
-          call cmlAddProperty(xf=mainXML, value=qout(5,:), &
-              dictRef='siesta:q', units="siestaUnits:e")
-          call cmlEndPropertyList(xf=mainXML)
+          call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
+              dictRef='siesta:net_charge', value=qout(1,:), &
+              units="siestaUnits:-e")
+          call cmlAddProperty(xf=mainXML, title="Atomic spin", &
+              dictRef='siesta:spin', value=qout(2,:), &
+              units="siestaUnits:e")
+          call cmlAddProperty(xf=mainXML, title="Atomic spin x", &
+              dictRef='siesta:spin_x', value=qout(3,:), &
+              units="siestaUnits:e")
+          call cmlAddProperty(xf=mainXML, title="Atomic spin y", &
+              dictRef='siesta:spin_y', value=qout(4,:), &
+              units="siestaUnits:e")
+          call cmlAddProperty(xf=mainXML, title="Atomic spin z", &
+              dictRef='siesta:spin_z', value=qout(5,:), &
+              units="siestaUnits:e")
+          call cmlAddProperty(xf=mainXML, title="Total atomic spin", &
+              dictRef='siesta:spin_tot', value=Stot, &
+              units="siestaUnits:e")
+          call cmlAddProperty(xf=mainXML, title="Total atomic spin_xyz", &
+              dictRef='siesta:spin_xyz_tot', value=Svec, &
+              units="siestaUnits:e")
         end if
 
       case default
@@ -262,9 +275,16 @@ contains
         call cmlEndPropertyList(xf=mainXML)
       end if
 
-      if ( nspin == 4 ) then
+      ! finaly print out total spin
+      select case ( nspin )
+      case ( 2 )
+        write(6,'(a)') repeat('-',6+1+2*12)
+        write(6,'(a6,14x,f11.7)') 'Total', Stot
+      case ( 4 )
         call de_alloc(qout, "qout", "partial_charges")
-      end if
+        write(6,'(a)') repeat('-',6+1+5*12)
+        write(6,'(a6,13x,4(tr1,f11.7))') 'Total', Stot, Svec
+      end select
 
     end subroutine write_partial_charges
 
