@@ -97,16 +97,6 @@ contains
       q(:,:) = qtmp(:,:)
 #endif
 
-      ! Correct Hirshfeld charges
-      ! We have to do it out here since zvalfis is *global*
-      ! Note that Hirshfeld charges are already corrected
-      ! with respect to sign
-      nsd = min(nspin, 2)
-      do ia = 1 , na_u
-        is = isa(ia)
-        q(1:nsd,ia) = zvalfis(is) / nsd + q(1:nsd,ia)
-      end do
-
       call write_partial_charges(nspin, na_u, q, method=1)
 
     end if
@@ -123,6 +113,21 @@ contains
           MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
       q(:,:) = qtmp(:,:)
 #endif
+
+      ! Write partial charges expect the total number of electrons
+      ! as input
+      select case ( nspin )
+      case ( 1 )
+        do ia = 1, na_u
+          is = isa(ia)
+          q(1,ia) = q(1,ia) + zvalfis(is)
+        end do
+      case ( 2, 4 )
+        do ia = 1, na_u
+          is = isa(ia)
+          q(1:2,ia) = q(1:2,ia) + zvalfis(is) / 2
+        end do
+      end select
 
       call write_partial_charges(nspin, na_u, q, method=2)
 
@@ -143,125 +148,132 @@ contains
     subroutine write_partial_charges(nspin, na_u, q, method)
       use atmfuncs, only: labelfis
       use siesta_cml
-      use alloc, only: re_alloc, de_alloc
 
       integer, intent(in) :: nspin, na_u
-      real(dp), intent(inout), target :: q(nspin,na_u)
+      ! On entry number of electrons for each spin-component.
+      ! Note that this array sums up to the total number of electrons
+      real(dp), intent(in) :: q(nspin,na_u)
       integer, intent(in) :: method ! 1 == Hirshfeld, 2 == Voronoi
 
       character(len=20) :: atm_label
       character(len=64) :: fmt
       integer :: ia, is
       real(dp) :: S, Stot, Svec(3)
-      real(dp), pointer :: qout(:,:) => null()
+      real(dp), allocatable :: qout(:,:)
 
       if ( Node /= 0 ) return
 
       ! Now write
       if ( method == 1 ) then
-        write(6,"(/,a)") 'Hirshfeld Net Atomic Populations:'
+        write(6,"(/,a)") 'Hirshfeld Atomic Populations:'
         if ( cml_p ) then
-          call cmlStartPropertyList(xf=mainXML, &
-              dictRef='siesta:hirshfeld', &
-              title='Hirshfeld net atomic charges')
+          call cmlStartPropertyList(xf=mainXML, dictRef='siesta:hirshfeld', &
+              title='Hirshfeld populations')
         end if
       else if ( method == 2 ) then
-        write(6,"(/,a)") 'Voronoi Net Atomic Populations:'
+        write(6,"(/,a)") 'Voronoi Atomic Populations:'
         if ( cml_p ) then
-          call cmlStartPropertyList(xf=mainXML, &
-              dictRef='siesta:voronoi', &
-              title='Voronoi net atomic charges')
+          call cmlStartPropertyList(xf=mainXML, dictRef='siesta:voronoi', &
+              title='Voronoi populations')
         end if
       end if
 
+      ! Note that the first column is the net charge on the atom.
+      ! Hence we do:
+      !    zvalfis - q
+      ! which amounts to a positive number for electron deficiency.
+      ! The 2nd column is the total number of electrons on the atom.
+      ! With both columns present it is clear how they relate to the
+      ! number of electrons.
 
       select case ( nspin )
       case ( 1 )
-        write(6,'(a6,2x,a11,2x,a)') 'Atom #', 'dQatom', 'Species'
-        fmt = "(i6,2x,f11.7,2x,a)"
+        write(6,'(a6,1x,2(tr1,a9),2x,a)') 'Atom #', 'dQatom', 'Atom pop', 'Species'
+        fmt = "(i6,1x,2(tr1,f9.5),2x,a)"
 
-        if ( cml_p ) then
-          call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
-              dictRef='siesta:net_charge', value=q(1,:), &
-              units="siestaUnits:-e")
-        end if
-
-        qout => q(:,:)
+        allocate(qout(2,na_u))
+        do ia = 1, na_u
+          is = isa(ia)
+          qout(1,ia) = zvalfis(is) - q(1,ia)
+          qout(2,ia) = q(1,ia)
+        end do
 
       case ( 2 )
-        write(6,'(a6,1x,2(tr1,a11),2x,a)') 'Atom #', 'dQatom', 'Sz', 'Species'
-        fmt = "(i6,1x,2(tr1,f11.7),2x,a)"
+        write(6,'(a6,1x,3(tr1,a9),2x,a)') 'Atom #', 'dQatom', 'Atom pop', 'Sz', 'Species'
+        fmt = "(i6,1x,3(tr1,f9.5),2x,a)"
+
+        allocate(qout(3,na_u))
 
         Stot = 0._dp
         do ia = 1, na_u
+          is = isa(ia)
           ! this needs to be reversed (compared to mulliken)
           ! since the charges are with respect to atomic charge
-          S = q(2,ia) - q(1,ia)
-          q(1,ia) = q(1,ia) + q(2,ia)
-          q(2,ia) = S
-          Stot = Stot + S
+          qout(1,ia) = zvalfis(is) - (q(1,ia) + q(2,ia))
+          qout(2,ia) = q(1,ia) + q(2,ia)
+          qout(3,ia) = q(1,ia) - q(2,ia)
+          Stot = Stot + qout(3,ia)
         end do
 
         if ( cml_p ) then
-          call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
-              dictRef='siesta:net_charge', value=q(1,:), &
-              units="siestaUnits:-e")
           call cmlAddProperty(xf=mainXML, title="Atomic spin z", &
-              dictRef='siesta:spin_z', value=q(2,:), &
-              units="siestaUnits:e")
+              dictRef='siesta:spin_z', value=qout(3,:), &
+              units="siestaUnits:spin")
           call cmlAddProperty(xf=mainXML, title="Total atomic spin z", &
               dictRef='siesta:spin_z_tot', value=Stot, &
-              units="siestaUnits:e")
+              units="siestaUnits:spin")
         end if
 
-        qout => q(:,:)
-
       case ( 4 )
-        write(6,'(a6,1x,5(tr1,a11),2x,a)') 'Atom #', 'dQatom', 'S', 'Sx', 'Sy', 'Sz', 'Species'
-        fmt = "(i6,1x,5(tr1,f11.7),2x,a)"
+        write(6,'(a6,1x,6(tr1,a9),2x,a)') 'Atom #', 'dQatom', 'Atom pop', &
+            'S', 'Sx', 'Sy', 'Sz', 'Species'
+        fmt = "(i6,1x,6(tr1,f9.5),2x,a)"
 
         ! Convert to spin-out
-        call re_alloc(qout, 1, 5, 1, na_u, "qout", "partial_charges")
+        allocate(qout(6,na_u))
 
-        Svec = 0._dp
+        Svec(:) = 0._dp
         do ia = 1, na_u
-          call spnvec(nspin, q(:,ia), qout(1,ia), qout(2,ia), qout(3:5,ia))
-          ! The spin printing is not with respect to atomic spin (since
-          ! that would be 0.
-          ! I.e. the print out would be -S (which may be non-obvious to
-          ! users)
-          qout(3:5,ia) = - qout(3:5,ia)
-          Svec(:) = Svec(:) + qout(3:5,ia)
+          call spnvec(nspin, q(:,ia), qout(2,ia), qout(3,ia), qout(4:6,ia))
+          is = isa(ia)
+          qout(1,ia) = zvalfis(is) - qout(2,ia)
+          Svec(:) = Svec(:) + qout(4:6,ia)
         end do
         Stot = sum(Svec(:) * Svec(:)) ** 0.5_dp
 
         if ( cml_p ) then
-          call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
-              dictRef='siesta:net_charge', value=qout(1,:), &
-              units="siestaUnits:-e")
           call cmlAddProperty(xf=mainXML, title="Atomic spin", &
-              dictRef='siesta:spin', value=qout(2,:), &
-              units="siestaUnits:e")
+              dictRef='siesta:spin', value=qout(3,:), &
+              units="siestaUnits:spin")
           call cmlAddProperty(xf=mainXML, title="Atomic spin x", &
-              dictRef='siesta:spin_x', value=qout(3,:), &
-              units="siestaUnits:e")
+              dictRef='siesta:spin_x', value=qout(4,:), &
+              units="siestaUnits:spin")
           call cmlAddProperty(xf=mainXML, title="Atomic spin y", &
-              dictRef='siesta:spin_y', value=qout(4,:), &
-              units="siestaUnits:e")
+              dictRef='siesta:spin_y', value=qout(5,:), &
+              units="siestaUnits:spin")
           call cmlAddProperty(xf=mainXML, title="Atomic spin z", &
-              dictRef='siesta:spin_z', value=qout(5,:), &
-              units="siestaUnits:e")
+              dictRef='siesta:spin_z', value=qout(6,:), &
+              units="siestaUnits:spin")
           call cmlAddProperty(xf=mainXML, title="Total atomic spin", &
               dictRef='siesta:spin_tot', value=Stot, &
-              units="siestaUnits:e")
+              units="siestaUnits:spin")
           call cmlAddProperty(xf=mainXML, title="Total atomic spin_xyz", &
               dictRef='siesta:spin_xyz_tot', value=Svec, &
-              units="siestaUnits:e")
+              units="siestaUnits:spin")
         end if
 
       case default
         call die("partial_charges: could not figure out the spin configuration")
       end select
+
+      if ( cml_p ) then
+        call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
+            dictRef='siesta:atom_net_charge', value=qout(1,:), &
+            units="siestaUnits:-e")
+        call cmlAddProperty(xf=mainXML, title="Atomic charge", &
+            dictRef='siesta:atom_charge', value=qout(2,:), &
+            units="siestaUnits:e")
+      end if
 
       ! Write out to std-out
       do ia = 1,na_u
@@ -269,6 +281,8 @@ contains
         atm_label = labelfis(is)
         write(6,fmt) ia, qout(:,ia), trim(atm_label)
       end do
+
+      deallocate(qout)
 
       if ( cml_p ) then
         ! Close property
@@ -278,12 +292,11 @@ contains
       ! finaly print out total spin
       select case ( nspin )
       case ( 2 )
-        write(6,'(a)') repeat('-',6+1+2*12)
-        write(6,'(a6,14x,f11.7)') 'Total', Stot
+        write(6,'(a)') repeat('-',6+1+3*10)
+        write(6,'(a6,22x,f9.5)') 'Total', Stot
       case ( 4 )
-        call de_alloc(qout, "qout", "partial_charges")
-        write(6,'(a)') repeat('-',6+1+5*12)
-        write(6,'(a6,13x,4(tr1,f11.7))') 'Total', Stot, Svec
+        write(6,'(a)') repeat('-',6+1+6*10)
+        write(6,'(a6,21x,4(tr1,f9.5))') 'Total', Stot, Svec
       end select
 
     end subroutine write_partial_charges
@@ -300,21 +313,21 @@ contains
 ! 
 ! Written by P.Ordejon. August'04.
 ! *********************** InpUT **************************************
-! integer no_s                : Number of basis orbitals
-! integer na_s                : Number of atoms
-! integer na_u               : Number of atoms in unit cell
+! integer no_s              : Number of basis orbitals
+! integer na_s              : Number of atoms
+! integer na_u              : Number of atoms in unit cell
 ! integer nspin             : Number of spins
-! integer indxuo(no_s)        : Index of equivalent orbital in unit cell
-! integer indxua(na_s)        : Index of equivalent atom in unit cell
+! integer indxuo(no_s)      : Index of equivalent orbital in unit cell
+! integer indxua(na_s)      : Index of equivalent atom in unit cell
 ! integer np                : Number of mesh points
-! real*8 Datm(no_s)           : Occupations of basis orbitals in free atom
-! integer iaorb(*)          : Pointer to atom to which orbital belongs
-! integer iphorb(*)         : Orbital index within each atom
-! integer isa(*)            : Species index of all atoms
+! real*8 Datm(no_s)         : Occupations of basis orbitals in free atom
+! integer iaorb(no_s)       : Pointer to atom to which orbital belongs
+! integer iphorb(no_s)      : Orbital index within each atom
+! integer isa(na_s)         : Species index of all atoms
 ! real rhoatm(nsp,np)       : Harris (sum of atoms) density at mesh points
 ! real rhoscf(nsp,np,nspin) : Selfconsistent charge density at mesh points
 ! *********************** OUTPUT **************************************
-! real*8 q(nspin,na_u)            : Hirshfeld charge on each atom
+! real*8 q(nspin,na_u)      : Hirshfeld electron charge on each atom
 ! *********************************************************************
 !
 !  Modules
@@ -325,7 +338,7 @@ contains
     use meshphi
 
     integer :: no_s, np, nspin, na_s, na_u
-    integer :: indxuo(no_s), indxua(na_s), iaorb(*), iphorb(*), isa(*)
+    integer :: indxuo(no_s), indxua(na_s), iaorb(no_s), iphorb(no_s), isa(na_s)
     real(grid_p) :: rhoatm(nsp,np),rhoscf(nsp,np,nspin)
     real(dp) :: Datm(no_s), phip, dvol, q(nspin,na_u)
 
@@ -373,7 +386,7 @@ contains
             call phiatm(is,iphi,dxsp,phip,gradCi)
 
             ! This translates to the fraction of atomic charge
-            ! associated with atom `iu`.
+            ! associated with orbital `iu` on atom `iua`
             ! i.e. rhoatm(isp,ip) = sum_atoms Datm(atom) * phip**2
             Qi = Datm(iu) * phip * phip / rhoatm(isp,ip)
             do ispin = 1, nspin
@@ -388,11 +401,10 @@ contains
     end do
 
     ! Correct charges so they account for voxel volume
-    ! and also sign
     ! This sums up to be:
-    !  q(ia) = - \int_rr rho(rr) * rho_atom(rr, ia) / sum_atoms rho_atomic(rr, atom)
+    !  q(ia) = \int_rr rho(rr) * rho_atom(rr, ia) / sum_atoms rho_atomic(rr, atom)
     do ia = 1 , na_u
-      q(:,ia) = - q(:,ia) * dvol
+      q(:,ia) = q(:,ia) * dvol
     end do
 
   end subroutine hirshfeld
@@ -401,7 +413,7 @@ contains
   subroutine voronoi( no_s, na_s, na_u, nspin, indxua, np, &
       rhoatm, rhoscf, iaorb, dvol, q)
 ! ********************************************************************
-! Finds the Voronoi atomic charges
+! Finds the Voronoi deformation density
 ! Bickelhaupt et al, Organometallics 15, 2923 (1996)
 ! See Fonseca et al, J. Comp. Chem. 25, 189 (2003)
 ! 
@@ -413,15 +425,15 @@ contains
 ! integer nspin             : Number of spins
 ! integer indxua(na_s)      : Index of equivalent atom in unit cell
 ! integer np                : Number of mesh points
-! integer iaorb(*)          : Pointer to atom to which orbital belongs
+! integer iaorb(no_s)       : Pointer to atom to which orbital belongs
 ! real rhoatm(nsp,np)       : Harris (sum of atoms) density at mesh points
 ! real rhoscf(nsp,np,nspin) : Selfconsistent charge density at mesh points
 ! *********************** OUTPUT **************************************
-! real*8 q(nspin,na_u)      : Voronoi charge on each atom
+! real*8 q(nspin,na_u)      : Voronoi deformation density in units of electrons on each atom
 ! *********************************************************************
 
     use precision, only: dp, grid_p
-    use atmfuncs, only: rcut, phiatm
+    use atmfuncs, only: rcut, phiatm, zvalfis
     use mesh,     only: nsp, dxa, xdop, xdsp
     use meshphi
 
@@ -449,7 +461,7 @@ contains
     q(:,:) = 0._dp
 
     ! Number of diagonal spin-components
-    nsd = min(nspin, 2)
+    nsd = min(2, nspin)
 
 !  Loop on mesh points
     do ip = 1,np
@@ -509,19 +521,17 @@ contains
 
         if (iatom(1) .ne. 0) then
           do ispin = 1, nsd
-            Qi = (rhoatm(isp,ip)/nsd - rhoscf(isp,ip,ispin))/neq
+            Qi = (rhoscf(isp,ip,ispin) - rhoatm(isp,ip)/nsd)/neq
             do ieq = 1,neq
               q(ispin,iatom(ieq)) = q(ispin,iatom(ieq)) + Qi
             end do
           end do
-          if ( nspin > 2 ) then
-            do ispin = 3, nspin
-              Qi = - rhoscf(isp,ip,ispin) / neq
-              do ieq = 1,neq
-                q(ispin,iatom(ieq)) = q(ispin,iatom(ieq)) + Qi
-              end do
+          do ispin = 3, nspin
+            Qi = rhoscf(isp,ip,ispin) / neq
+            do ieq = 1,neq
+              q(ispin,iatom(ieq)) = q(ispin,iatom(ieq)) + Qi
             end do
-          end if
+          end do
         else
 !  Check that charge is actually zero (both should be 0)
           qtot = 0.0_dp
@@ -536,6 +546,7 @@ contains
     end do
 
     ! Correct charges so they account for voxel volume
+    ! This will sum up to 0
     do ia = 1 , na_u
       q(:,ia) = q(:,ia) * dvol
     end do
