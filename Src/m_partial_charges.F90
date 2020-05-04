@@ -114,8 +114,16 @@ contains
       q(:,:) = qtmp(:,:)
 #endif
 
-      ! Write partial charges expect the total number of electrons
-      ! as input
+      ! Note that the 'voronoi' routine is not really computing the
+      ! partition of the scf density, but that of the 'deformation
+      ! density' ("rho_scf - rho_atm", where rho_atm is the
+      ! superposition of atomic charge densities)
+
+      ! The routine to write the partial charges expects the total
+      ! number of electrons as input, so we add the number of valence
+      ! electrons in the 'charge' components of the generalized
+      ! density array.
+      
       select case ( nspin )
       case ( 1 )
         do ia = 1, na_u
@@ -269,8 +277,8 @@ contains
       if ( cml_p ) then
         call cmlAddProperty(xf=mainXML, title="Atomic net charge", &
             dictRef='siesta:atom_net_charge', value=qout(1,:), &
-            units="siestaUnits:-e")
-        call cmlAddProperty(xf=mainXML, title="Atomic charge", &
+            units="siestaUnits:|e|")
+        call cmlAddProperty(xf=mainXML, title="Atomic population", &
             dictRef='siesta:atom_charge', value=qout(2,:), &
             units="siestaUnits:e")
       end if
