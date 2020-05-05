@@ -2,6 +2,14 @@
 
 ## Master version updates
 
+### Backward-compatibility issues:
+
+* The labels in the Mulliken analysis CML blocks have been changed to use "population" instead of "charge".
+
+### Changes
+
+* Extended Hirshfeld and Voronoi partition analysis to spin. Update of output, including new CML blocks.
+
 *(Initial list of updates taken on April 8, 2020 from the output of `git see --first-parent rel-4.1..`,
 filtering the direct merges from 4.1 series, but kept mostly in raw form,
 with commit hash and date, for further editing, if needed.  Even

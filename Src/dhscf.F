@@ -984,6 +984,7 @@ C       Set the UNIFORM distribution again and copy DRho to it
 !     since we have just computed rhoatm and Rho.
 
       if (want_partial_charges) then
+        call timer( 'partial-charges' , 1 )
         ! The endpht array is in the quadratic distribution, so
         ! we need to use it for this...
         if (nodes.gt.1) then
@@ -1015,6 +1016,7 @@ C       Set the UNIFORM distribution again and copy DRho to it
            call setMeshDistr( UNIFORM, nsm, nsp,
      &                        nml, nmpl, ntml, ntpl )
         endif
+        call timer( 'partial-charges' , 2 )
       endif
 
 C ----------------------------------------------------------------------
