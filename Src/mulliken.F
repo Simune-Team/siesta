@@ -371,11 +371,11 @@ C Global sum of values stored in qo
      .                  title=trim(atomtitle))
                    call cmlAddProperty(xf=mainXML,
      $                  dictref='siesta:mull_atm_charge',
-     .                  title="Atomic Charge", value=qa, 
+     .                  title="Atomic population", value=qa, 
      .                  units="siestaUnits:e")
                    call cmlAddProperty(xf=mainXML,
      $                  dictref='siesta:mull_orb_charge',
-     .                  title="Orbital Charges", value=qo,
+     .                  title="Orbital populations", value=qo,
      .                  units="siestaUnits:e")
                    call cmlEndPropertyList(xf=mainXML) !atomtitle
                  endif 
