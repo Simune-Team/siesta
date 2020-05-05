@@ -204,6 +204,7 @@ WriteEigenvalues                yes
 ==================================================
 
 TS.Voltage 0.25 eV
+TS.Voltage.FromSiesta true
 %block TS.ChemPots
   Left
   Right

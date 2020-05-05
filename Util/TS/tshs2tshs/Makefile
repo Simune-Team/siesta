@@ -16,6 +16,7 @@ OBJDIR=Obj
 
 MAIN_OBJDIR:=$(shell cd -P -- ../../../\$(OBJDIR) && pwd -P)
 ARCH_MAKE=$(MAIN_OBJDIR)/arch.make
+
 include $(ARCH_MAKE)
 
 # Set the default non-mpi routines

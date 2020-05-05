@@ -107,6 +107,9 @@ write(6,'(a)') 'METIS ordering support'
 #ifdef SIESTA__FLOOK
 write(6,'(a)') 'Lua support'
 #endif
+#ifdef SIESTA__ELSI
+write(6,'(a)') 'ELSI interface'
+#endif
 #ifdef TRANSIESTA
 write(6,'(a)') '******************************************************'
 write(6,'(a)') 'transiesta executable is deprecated, please use siesta'

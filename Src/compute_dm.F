@@ -82,21 +82,13 @@
 #endif     
 
       if (SIESTA_worker) then
-         ! Save present density matrix
-!$OMP parallel default(shared)
-         if ( converge_EDM ) then
-!$OMP workshare
+        ! Save present density matrix
+        call dcopy(size(Dscf), Dscf(1,1), 1, Dold(1,1), 1)
+        if ( converge_EDM ) then
+          call dcopy(size(Escf), Escf(1,1), 1, Eold(1,1), 1)
             ! Not all solvers handle Escf during the SCF cycle
             ! For those, converge_EDM should be disabled
-            Eold(:,:) = Escf(:,:)  
-            Dold(:,:) = Dscf(:,:)
-!$OMP end workshare
-         else
-!$OMP workshare
-            Dold(:,:) = Dscf(:,:)
-!$OMP end workshare
-         end if
-!$OMP end parallel
+        end if
       end if
 
       ! Compute shift in Tr(H*DM) for fermi-level bracketting
@@ -290,7 +282,7 @@ c$$$     &           S, 'S.matrix')
          call transiesta(iscf,spin%H, block_dist, sparse_pattern,
      &        no_u == no_s, ucell, nsc, isc_off, no_u, na_u,
      &        lasto, xa, maxnh,
-     &        H, S, Dscf, Escf, Ef, Qtot, .false.)
+     &        H, S, Dscf, Escf, Ef, Qtot)
 
          Ecorrec = 0._dp
          Entropy = 0.0_dp

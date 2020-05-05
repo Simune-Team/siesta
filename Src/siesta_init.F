@@ -310,6 +310,12 @@ C     Initialise MPI and set processor number
 #endif
       IOnode = SIESTA_worker .and. (Node .eq. 0)
 
+      if ( IONode ) then
+        ! Add citations
+        call init_citation(trim(slabel))
+        call add_citation("10.1088/0953-8984/14/11/302")
+      end if
+
       ! Be sure to initialize the spin-configuration data
       ! for all processors.
       call init_spin( )
@@ -339,19 +345,11 @@ C     Initialise MPI and set processor number
          call wallclock('Start of run')
       end if
 
-!
-!     Nullify arrays
-      nullify(Dscf,Dold,Escf)
-      nullify(listh)
-      nullify(H,S)
-      nullify(xijo)
-
 !     Initialize some variables
       call init_Energies()
       
-!
+
 !     Set object debugging level
-!
       call set_object_debug_level(0)
       i = fdf_get('DebugObjects.Node',0)
       if (Node==i) then
@@ -396,12 +394,6 @@ C     Initialise MPI and set processor number
      .           threshold=fdf_get('alloc_report_threshold', 0._dp),
      &           printNow=.false. )
       
-      if ( IONode ) then
-         ! Add citations
-         call init_citation(trim(slabel))
-         call add_citation("10.1088/0953-8984/14/11/302")
-      end if
-
 
 !     Initialise exchange-correlation functional information
       call read_xc_info()
@@ -544,13 +536,6 @@ C     Initialise MPI and set processor number
 
 !     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
-
-!     Initialise arrays
-      nullify( listhptr, numh )
-      call re_alloc( listhptr, 1, max(1,no_l), 'listhptr', 'sparseMat' )
-      call re_alloc( numh,     1, max(1,no_l), 'numh',     'sparseMat' )
-      listhptr    = 0
-      numh        = 0
 
       ! Get number of eigenstates that need to be calculated
       ! This generally needs to be set to halve the number of

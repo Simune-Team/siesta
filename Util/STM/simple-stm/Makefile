@@ -19,16 +19,21 @@ include ../../../$(OBJDIR)/arch.make
 vpath %.F90 ../../Grid
 
 #
-# This is needed on some systems to avoid loading the parallel libraries, which
-# sometimes force running on queuing systems
-# However, it breaks compatibility since we can't be sure
-# that users define NETCDF_LIBS.
-# For now we will remove this but let users know that
-# they can revert changes by uncommenting out the following
-# two lines:
-# (psml branch: enabled by default)
-INCFLAGS += $(NETCDF_INCFLAGS)
-LIBS = $(NETCDF_LIBS)
+# The m_gridfunc module (a dependency) has netCDF support, which is currently
+# not used by plstm.
+# Compiling with netCDF in some systems forces loading the parallel libraries, which
+# sometimes prevents interactive use of the program.
+# For now we deactivate netCDF in m_gridfunc in this Makefile.
+# When netCDF support is added to plstm, the proper symbol below can be defined, if needed.
+#
+USE_NETCDF_IN_PLSTM=
+ifdef USE_NETCDF_IN_PLSTM
+   INCFLAGS += $(NETCDF_INCFLAGS)
+   LIBS = $(NETCDF_LIBS)
+else
+   # Remove netCDF functionality from m_gridfunc
+   FPPFLAGS += $(DEFS_PREFIX)-UCDF
+endif
 
 FC_DEFAULT:=$(FC)
 FC_SERIAL?=$(FC_DEFAULT)
@@ -45,5 +50,5 @@ plsts: plsts.o m_gridfunc.o
 
 
 clean: 
-	rm -f *.o plstm plsts
+	rm -f *.o *.mod plstm plsts
 

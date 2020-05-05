@@ -121,6 +121,7 @@ Diag.ParallelOverK      no # Messes with the diagonalization...
 
 # TS OPTIONS
 TS.Voltage 1.000000 eV
+TS.Voltage.FromSiesta true
 %block TS.ChemPots
   Left
   Right

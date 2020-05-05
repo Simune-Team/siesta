@@ -155,9 +155,11 @@ contains
 #endif
 
 #ifdef SIESTA__ELPA
+    integer :: info
     ! Check whether ELPA is initialized, uninitialize it if it is.
     if ( elpa_initialized() == ELPA_OK ) then
-       call elpa_uninit()
+       call elpa_uninit(info)
+       call elpa_check(info, 'uninit')
     end if
 #endif
 
@@ -514,7 +516,8 @@ contains
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
 
           ! ELPA setup
-          ELPAt => elpa_allocate()
+          ELPAt => elpa_allocate(info)
+          call elpa_check(info, 'allocate')
           call ELPAt%set('mpi_comm_parent', MPI_Comm_World, info)
           call elpa_check(info, 'mpi_comm_parent')
           
@@ -549,6 +552,16 @@ contains
           ! Now ELPA should be ready to be setup
           info = ELPAt%setup()
           call elpa_check(info, 'setup')
+
+          if (elpa_use_gpu) then
+             call ELPAt%set('gpu', 1, info)
+             call elpa_check(info, 'gpu set')
+             if ( algorithm == ELPA_2stage ) then
+                call ELPAt%set("complex_kernel",ELPA_2STAGE_COMPLEX_GPU,info) 
+                call elpa_check(info, 'complex kernel gpu')
+             endif
+          endif
+
 
           ! There is no need to check the info parameter
           ! because ELPA will fail if one sets a value that
@@ -1020,6 +1033,9 @@ contains
 ! Clean up                                                                     *
 !*******************************************************************************
       
+#ifdef SIESTA__ELPA
+      integer :: info
+#endif
       ! Deallocate workspace arrays
       if ( Serial ) then
 #ifdef SIESTA__MRRR
@@ -1045,7 +1061,8 @@ contains
 
 # ifdef SIESTA__ELPA
          if ( associated(ELPAt) ) then
-            call elpa_deallocate(ELPAt)
+            call elpa_deallocate(ELPAt,info)
+            call elpa_check(info, 'deallocate')
             nullify(ELPAt)
          end if
 # endif
@@ -1489,7 +1506,8 @@ contains
        if ( algo == ELPA_1stage .or. algo == ELPA_2stage ) then
           
           ! ELPA setup
-          ELPAt => elpa_allocate()
+          ELPAt => elpa_allocate(info)
+          call elpa_check(info, 'allocate')
           call ELPAt%set('mpi_comm_parent', MPI_Comm_World, info)
           call elpa_check(info, 'mpi_comm_parent')
           
@@ -1524,6 +1542,15 @@ contains
           ! Now ELPA should be ready to be setup
           info = ELPAt%setup()
           call elpa_check(info, 'setup')
+
+          if (elpa_use_gpu) then
+             call ELPAt%set('gpu', 1, info)
+             call elpa_check(info, 'gpu set')
+             if ( algorithm == ELPA_2stage ) then
+                call ELPAt%set("real_kernel",ELPA_2STAGE_REAL_GPU,info) 
+                call elpa_check(info, 'real kernel gpu')
+             endif
+          endif
 
           ! There is no need to check the info parameter
           ! because ELPA will fail if one sets a value that
@@ -1988,6 +2015,9 @@ contains
 ! Clean up                                                                     *
 !*******************************************************************************
       
+#ifdef SIESTA__ELPA
+      integer :: info
+#endif
       ! Deallocate workspace arrays
       if ( Serial ) then
 #ifdef SIESTA__MRRR
@@ -2013,7 +2043,8 @@ contains
 
 # ifdef SIESTA__ELPA
          if ( associated(ELPAt) ) then
-            call elpa_deallocate(ELPAt)
+            call elpa_deallocate(ELPAt,info)
+            call elpa_check(info, 'deallocate')
             nullify(ELPAt)
          end if
 # endif

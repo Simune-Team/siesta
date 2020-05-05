@@ -531,11 +531,13 @@ contains
        mix%n_hist = max(2, mix%n_hist)
        if ( mix%v == 1 .or. mix%v == 3 ) then
           
-          ! The GR method requires an even number
-          ! of restart steps
-          ! And then we ensure the history to be aligned
-          ! with a restart (restart has precedence)
-          mix%restart = mix%restart + mod(mix%restart, 2)
+         ! The GR method requires an even number
+         ! of restart steps
+         ! And then we ensure the history to be aligned
+         ! with a restart (restart has precedence)
+         if ( mix%restart /= 0 ) then
+           mix%restart = mix%restart + mod(mix%restart, 2)
+         end if
 
        end if
        
@@ -1977,6 +1979,7 @@ contains
               trim(debug_msg),&
               ' G = ',G,', sum(alpha) = ',sum(coeff), &
               ', alpha = ',coeff
+         call print_polynomial_roots(nh-1, coeff)
       end if
 
 
@@ -2051,6 +2054,7 @@ contains
               trim(debug_msg), ' G = ', G, &
               ', sum(coeff) = ',sum(coeff), &
               ', coeff = ',coeff
+         call print_polynomial_roots(nh-1, coeff)
       end if
 
 
@@ -2086,6 +2090,52 @@ contains
 
     end subroutine mixing_broyden
 
+    subroutine print_polynomial_roots(n, coeff)
+      use parallel, only: IONode
+
+      integer, intent(in) :: n
+      real(dp), intent(in) :: coeff(n+1)
+
+      ! Even for a history of 100 this should fit the stack...
+      real(dp) :: A(n,n)
+      real(dp) :: er(n), ei(n)
+      real(dp), allocatable :: work(:)
+      integer :: i, lwork
+
+      if ( n <= 0 ) return
+
+      ! First we create the companion matrix
+      A(:,:) = 0._dp
+      do i = 1, n - 1
+        A(i+1, i) = 1._dp
+      end do
+
+      ! Now fill up the last column
+      do i = 1, n
+        A(i,n) = A(i,n) - coeff(i) / coeff(n+1)
+      end do
+
+      ! Work-size query
+      lwork = -1
+      call dgeev('N', 'N', n, A, n, er, ei, &
+          A, n, A, n, & ! VL, LDVL, VR, LDVR (not referenced)
+          er, lwork, i)
+
+      ! Get work-size
+      lwork = max(3*n, nint(er(1)))
+      allocate(work(lwork))
+      call dgeev('N', 'N', n, A, n, er, ei, &
+          A, n, A, n, & ! VL, LDVL, VR, LDVR (not referenced)
+          work, lwork, i)
+      deallocate(work)
+
+      if ( i == 0 ) then
+        write(*,'(2a,100(tr2,e10.4,'','',e10.4))') &
+            trim(debug_msg), ' f(x)[coeff] == 0 : ', cmplx(er,ei,dp)
+      end if
+
+    end subroutine print_polynomial_roots
+
   end subroutine mixing_calc_next
 
 
@@ -2119,7 +2169,6 @@ contains
       if ( mod(current_itt(mix),mix%restart) == 0 ) then
         mix%action = IOR(mix%action, ACTION_RESTART)
       end if
-
     end if
 
     

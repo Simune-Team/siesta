@@ -80,4 +80,6 @@ dep:
 
 # DO NOT DELETE THIS LINE - used by make depend
 units.o: precision.o
+units.o: precision.o
+ts2ts.o: f2kcli.o precision.o units.o
 ts2ts.o: f2kcli.o precision.o units.o

@@ -23,10 +23,15 @@ module m_ts_tri_scat
   public :: has_full_part
   public :: insert_Self_Energies
 
-  complex(dp), parameter :: z0 = cmplx( 0._dp, 0._dp,dp)
-  complex(dp), parameter :: z1 = cmplx( 1._dp, 0._dp,dp)
-  complex(dp), parameter :: zm1= cmplx(-1._dp, 0._dp,dp)
-  complex(dp), parameter :: zi = cmplx( 0._dp, 1._dp,dp)
+  complex(dp), parameter :: z0 = cmplx(0._dp, 0._dp,dp)
+  complex(dp), parameter :: z1 = cmplx(1._dp, 0._dp,dp)
+  complex(dp), parameter :: zm1 = cmplx(-1._dp, 0._dp,dp)
+  complex(dp), parameter :: zi = cmplx(0._dp, 1._dp,dp)
+#ifdef USE_GEMM3M
+# define GEMM zgemm3m
+#else
+# define GEMM zgemm
+#endif
 
 contains
 
@@ -89,16 +94,16 @@ contains
     ! Which parts are needed
     ! In this case we need to calculate till the end
     do n = 1 , np
-       if ( calc_parts(n) ) then
-          lsPart = max(1,n-1)
-          exit
-       end if
+      if ( calc_parts(n) ) then
+        lsPart = max(1,n-1)
+        exit
+      end if
     end do
     do n = np , 1 , -1
-       if ( calc_parts(n) ) then
-          lePart = min(n+1,np)
-          exit
-       end if
+      if ( calc_parts(n) ) then
+        lePart = min(n+1,np)
+        exit
+      end if
     end do
 
     ! Capture the full elements
@@ -106,64 +111,54 @@ contains
 
     do n = lsPart , lePart
 
-       if ( .not. calc_parts(n) ) cycle
+      if ( .not. calc_parts(n) ) cycle
 
-       ! Calculate the \Gamma Gf^\dagger n,1
-       sN = nrows_g(Gf_tri,n)
-       if ( nwork < sN * no ) then
-          print *,nwork,sN*no
-          call die('Work size not big enough')
-       end if
+      ! Calculate the \Gamma Gf^\dagger n,1
+      sN = nrows_g(Gf_tri,n)
+      if ( nwork < sN * no ) then
+        print *,nwork,sN*no
+        call die('Work size not big enough')
+      end if
 
-       ! correct to the quantities that is available
-       BsPart = max(n-1,lsPart)
-       BePart = min(n+1,lePart)
+      ! correct to the quantities that is available
+      BsPart = max(n-1,lsPart)
+      BePart = min(n+1,lePart)
 
-       call TriMat_Bias_idxs(Gf_tri,no,n,sIdx,eIdx)
-       ! obtain the Gf in the respective column
-       Gf => fGf(sIdx:eIdx)
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'T','C',no,sN,no, z1, El%Gamma, no, &
-            Gf, sN, z0, work, no)
+      call TriMat_Bias_idxs(Gf_tri,no,n,sIdx,eIdx)
+      ! obtain the Gf in the respective column
+      Gf => fGf(sIdx:eIdx)
+      call GEMM ('T','C',no,sN,no, z1, El%Gamma, no, &
+          Gf, sN, z0, work, no)
        
-       ! Now we are ready to perform the multiplication
-       ! for the requested region
-
+      ! Now we are ready to perform the multiplication
+      ! for the requested region
+      
 #ifdef TRANSIESTA_DEBUG
-       write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'GfGGf at:',BsPart,n,' --',BePart,n
+      write(*,'(a,2(tr1,i0),a,2(tr1,i0))')'GfGGf at:',BsPart,n,' --',BePart,n
 #endif
        
-       ! this will populate in ascending column major order
-       do cp = BsPart , BePart
+      ! this will populate in ascending column major order
+      do cp = BsPart , BePart
 
-          ! skip unneeded elements
-          if ( .not. calc_parts(cp) ) cycle
+        ! skip unneeded elements
+        if ( .not. calc_parts(cp) ) cycle
 
-          sNc = nrows_g(Gf_tri,cp)
+        sNc = nrows_g(Gf_tri,cp)
 
-          ! Retrieve Gf block
-          call TriMat_Bias_idxs(Gf_tri,no,cp,sIdx,eIdx)
-          Gf => fGf(sIdx:eIdx)
+        ! Retrieve Gf block
+        call TriMat_Bias_idxs(Gf_tri,no,cp,sIdx,eIdx)
+        Gf => fGf(sIdx:eIdx)
 
-          ! retrieve the GGG block
-          GGG => val(Gf_tri,cp,n)
+        ! retrieve the GGG block
+        GGG => val(Gf_tri,cp,n)
 
-          ! We need only do the product in the closest
-          ! regions (we don't have information anywhere else)
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','N', sNc, sN, no, z1, &
-               Gf, sNc, work, no, z0, GGG, sNc)
-          
-       end do
-       
+        ! We need only do the product in the closest
+        ! regions (we don't have information anywhere else)
+        call GEMM ('N','N', sNc, sN, no, z1, &
+            Gf, sNc, work, no, z0, GGG, sNc)
+
+      end do
+
     end do
        
 #ifndef TBTRANS
@@ -280,9 +275,9 @@ contains
     sPart = which_part(A_tri, sPart)
     ePart = which_part(A_tri, ePart)
     if ( ePart - sPart > 1 ) then
-       print *,sPart, ePart
-       call die('Gamma filling more than 2 blocks, how is that &
-            &possible.')
+      print *,sPart, ePart
+      call die('Gamma filling more than 2 blocks, how is that &
+          &possible.')
     end if
 
     ! tri-diagonal parts information
@@ -315,11 +310,11 @@ contains
 
     ! first calculate required work-array
     if ( sPart == ePart ) then
-       ! only one block is needed
-       sNc = sN
+      ! only one block is needed
+      sNc = sN
     else
-       ! both blocks are needed
-       sNc = sN + sNc
+      ! both blocks are needed
+      sNc = sN + sNc
     end if
     ! get Gf.Gamma column size (maximum size)
     idx = no * sNc
@@ -332,55 +327,55 @@ contains
     sIdxF = sIdx ! not-used array in A matrix [start]
     eIdxF = size(fA) - eIdx + 1 ! not-used array in A matrix [end]
     if ( idx <= sIdxF ) then
-       ! the work-array can be at the start of
-       ! the A_tri array
-       zwork => fA(1:idx)
-       ! Associated the temporary work array
-       if ( sIdxF - idx > eIdxF ) then
-          ! the temporary array is largest in the
-          ! beginning
-          ztmp => fA(idx+1:sIdx)
-       else
-          ! anything
-          ztmp => fA(eIdx:)
-       end if
+      ! the work-array can be at the start of
+      ! the A_tri array
+      zwork => fA(1:idx)
+      ! Associated the temporary work array
+      if ( sIdxF - idx > eIdxF ) then
+        ! the temporary array is largest in the
+        ! beginning
+        ztmp => fA(idx+1:sIdx)
+      else
+        ! anything
+        ztmp => fA(eIdx:)
+      end if
     else if ( idx <= eIdxF ) then
-       zwork => fA(eIdx:eIdx+idx-1)
-       ! Associated the temporary work array
-       if ( sIdxF > eIdxF - idx ) then
-          ! the temporary array is largest in the
-          ! beginning
-          ztmp => fA(1:sIdx)
-       else
-          ztmp => fA(eIdx+idx:)
-       end if
+      zwork => fA(eIdx:eIdx+idx-1)
+      ! Associated the temporary work array
+      if ( sIdxF > eIdxF - idx ) then
+        ! the temporary array is largest in the
+        ! beginning
+        ztmp => fA(1:sIdx)
+      else
+        ztmp => fA(eIdx+idx:)
+      end if
     else
-       work_allocated = .true.
-       allocate(zwork(idx))
-       ! Associated the temporary work array
-       if ( sIdxF > eIdxF ) then
-          ! the temporary array is largest in the
-          ! beginning
-          ztmp => fA(1:sIdx)
-       else
-          ztmp => fA(eIdx:)
-       end if
+      work_allocated = .true.
+      allocate(zwork(idx))
+      ! Associated the temporary work array
+      if ( sIdxF > eIdxF ) then
+        ! the temporary array is largest in the
+        ! beginning
+        ztmp => fA(1:sIdx)
+      else
+        ztmp => fA(eIdx:)
+      end if
     end if
 
     ! calculate number of rows we can simultaneously
     ! cobe with.
     ! Calculate a size according to 4 MB
     ! This corresponds roughly to a 500 X 500 matrix
-    i = 4 * 1024._dp**2 / 16._dp / no
-    i = max(2,i)
+    i = int(4 * 1024._dp**2 / 16._dp / no)
+    i = max(2, i)
     nrtmp = size(ztmp) / no
     if ( nrtmp < i ) then
-       nrtmp = i
-       nullify(ztmp)
-       allocate(ztmp(no*nrtmp))
-       tmp_allocated = .true.
+      nrtmp = i
+      nullify(ztmp)
+      allocate(ztmp(no*nrtmp))
+      tmp_allocated = .true.
     else
-       tmp_allocated = .false.
+      tmp_allocated = .false.
     end if
 
 
@@ -390,122 +385,112 @@ contains
     n = sPart
     do while ( i_Elec <= no )
 
-       ! get orbital index for the current column/row
-       idx_Elec = pvt%r(El%o_inD%r(i_Elec))
+      ! get orbital index for the current column/row
+      idx_Elec = pvt%r(El%o_inD%r(i_Elec))
+
+      ! We start by copying over the Gfnn in blocks
+
+      ! ... create a region of consecutive
+      ! memory.
+      if ( idx_Elec <= crows(sPart) ) then
+        n = sPart
+      else
+        ! If we skip to a new block we must add sN
+        ! to account for the new diagonal position
+        idx = idx + nrows_g(A_tri, sPart) ! add the offset for the first
+        n = ePart
+      end if
+      sN = nrows_g(A_tri, n)
+      eIdx = crows(n)
+      sIdx = eIdx - sN + 1
+
+      ! we only require up to 'no' columns
+      nb = 1
+      do while ( i_Elec + nb <= no )
+        i = pvt%r(El%o_inD%r(i_Elec+nb))
+        ! In case it is not consecutive
+        if ( i - idx_Elec /= nb ) exit
+        ! In case the block changes, then
+        ! we cut the block size here.
+        if ( i < sIdx .or. eIdx < i ) exit
+        nb = nb + 1
+      end do
        
-       ! We start by copying over the Gfnn in blocks
+      ! Copy over this portion of the Gfnn array
 
-       ! ... create a region of consecutive
-       ! memory.
-       if ( idx_Elec <= crows(sPart) ) then
-         n = sPart
-       else
-         ! If we skip to a new block we must add sN
-         ! to account for the new diagonal position
-         idx = idx + nrows_g(A_tri, sPart) ! add the offset for the first
-         n = ePart
-       end if
-       sN = nrows_g(A_tri, n)
-       eIdx = crows(n)
-       sIdx = eIdx - sN + 1
+      ! We now need to figure out the placement of the 
+      ! Gf part that we have already calculated.
+      Gf => val(Gf_tri,n,n)
+      ! first column in the current diagonal block
+      i = crows(n) - sN + 1
+      sIdxF = (idx_Elec-i) * sN + 1
+      eIdxF = (idx_Elec+nb-i) * sN
 
-       ! we only require up to 'no' columns
-       nb = 1
-       do while ( i_Elec + nb <= no )
-          i = pvt%r(El%o_inD%r(i_Elec+nb))
-          ! In case it is not consecutive
-          if ( i - idx_Elec /= nb ) exit
-          ! In case the block changes, then
-          ! we cut the block size here.
-          if ( i < sIdx .or. eIdx < i ) exit
-          nb = nb + 1
-       end do
+      ! Copy over diagonal block to its correct placement
+      sIdx = idx
+      eIdx = sN - 1
+      do i = 1 , nb
+        zwork(sIdx:sIdx+eIdx) = Gf(sIdxF:sIdxF+eIdx)
+        sIdx = sIdx + sNc
+        sIdxF = sIdxF + sN
+      end do
+
+      ! now we have the diagonal part of the Green function
+      ! in the correct place
+      
+      ! Calculate the off-diagonal Green function in the regions
+      ! -> above
+      i = sN
+      sIdx = idx ! next Gf
+      eIdx = idx ! current Gf
+      do in = n - 1 , sPart , - 1
+
+        ! Number of orbitals in the other segment
+        sNo = nrows_g(Gf_tri, in)
+        sIdx = eIdx - sNo
+
+        ! grab the Yn matrix to perform the 
+        ! Gf off-diagonal calculation.
+        Gf => Yn_div_Bn_m1(Gf_tri,in+1)
+
+        call GEMM ('N','N',sNo,nb,i, zm1, Gf, sNo, &
+            zwork(eIdx), sNc, z0, zwork(sIdx), sNc)
+
+        ! correct next multiplication step
+        eIdx = sIdx
+        i = sNo
+
+      end do
+
+      ! Calculate the off-diagonal Green function in the regions
+      ! -> below
+      i = sN
+      sIdx = idx ! current Gf
+      eIdx = idx ! next Gf
+      do in = n + 1 , ePart
+
+        ! Number of orbitals in the other segment
+        sNo = nrows_g(Gf_tri, in)
+        eIdx = sIdx + i
+
+        ! grab the Xn matrix to perform the 
+        ! Gf off-diagonal calculation.
+        Gf => Xn_div_Cn_p1(Gf_tri,in-1)
+
+        call GEMM ('N','N',sNo,nb,i, zm1, Gf, sNo, &
+            zwork(sIdx), sNc, z0, zwork(eIdx), sNc)
+
+        sIdx = eIdx
+        i = sNo
+          
+      end do
        
-       ! Copy over this portion of the Gfnn array
+      ! Update current segment of the electrode copied entries.
+      i_Elec = i_Elec + nb
+      idx = idx + nb * sNc
 
-       ! We now need to figure out the placement of the 
-       ! Gf part that we have already calculated.
-       Gf => val(Gf_tri,n,n)
-       ! first column in the current diagonal block
-       i = crows(n) - sN + 1
-       sIdxF = (idx_Elec-i) * sN + 1
-       eIdxF = (idx_Elec+nb-i) * sN
-
-       ! Copy over diagonal block to its correct placement
-       sIdx = idx
-       eIdx = sN - 1
-       do i = 1 , nb
-          zwork(sIdx:sIdx+eIdx) = Gf(sIdxF:sIdxF+eIdx)
-          sIdx = sIdx + sNc
-          sIdxF = sIdxF + sN
-       end do
-
-       ! now we have the diagonal part of the Green function
-       ! in the correct place
-
-       ! Calculate the off-diagonal Green function in the regions
-       ! -> above
-       i = sN
-       sIdx = idx ! next Gf
-       eIdx = idx ! current Gf
-       do in = n - 1 , sPart , - 1
-
-          ! Number of orbitals in the other segment
-          sNo = nrows_g(Gf_tri, in)
-          sIdx = eIdx - sNo
-
-          ! grab the Yn matrix to perform the 
-          ! Gf off-diagonal calculation.
-          Gf => Yn_div_Bn_m1(Gf_tri,in+1)
-
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','N',sNo,nb,i, zm1, Gf, sNo, &
-               zwork(eIdx), sNc, z0, zwork(sIdx), sNc)
-
-          ! correct next multiplication step
-          eIdx = sIdx
-          i = sNo
-          
-       end do
-          
-       ! Calculate the off-diagonal Green function in the regions
-       ! -> below
-       i = sN
-       sIdx = idx ! current Gf
-       eIdx = idx ! next Gf
-       do in = n + 1 , ePart
-
-          ! Number of orbitals in the other segment
-          sNo = nrows_g(Gf_tri, in)
-          eIdx = sIdx + i
-
-          ! grab the Xn matrix to perform the 
-          ! Gf off-diagonal calculation.
-          Gf => Xn_div_Cn_p1(Gf_tri,in-1)
-
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','N',sNo,nb,i, zm1, Gf, sNo, &
-               zwork(sIdx), sNc, z0, zwork(eIdx), sNc)
-
-          sIdx = eIdx
-          i = sNo
-          
-       end do
-       
-       ! Update current segment of the electrode copied entries.
-       i_Elec = i_Elec + nb
-       idx = idx + nb * sNc
-
-       ! Revert offset in case the Gamma is split multiple times in the blocks
-       if ( n /= sPart ) idx = idx - nrows_g(A_tri, sPart)
+      ! Revert offset in case the Gamma is split multiple times in the blocks
+      if ( n /= sPart ) idx = idx - nrows_g(A_tri, sPart)
 
     end do
 
@@ -528,94 +513,84 @@ contains
     i_Elec = 1 ! loop row
     do while ( i_Elec <= sNc )
 
-       ! Get current number of orbitals in this block
-       sN = nrows_g(A_tri, n)
+      ! Get current number of orbitals in this block
+      sN = nrows_g(A_tri, n)
 
-       ! the maximum size is nrtmp
-       ! the minimum size is remaining elements in current block
-       nb = min(nrtmp,sN - (i_Elec - off) + 1)
+      ! the maximum size is nrtmp
+      ! the minimum size is remaining elements in current block
+      nb = min(nrtmp,sN - (i_Elec - off) + 1)
 
-       ! do Gf.Gamma
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','T',nb,no,no, z1, zwork(i_Elec), sNc, &
-            El%Gamma, no, z0, ztmp(1), nb)
+      ! do Gf.Gamma
+      call GEMM ('N','T',nb,no,no, z1, zwork(i_Elec), sNc, &
+          El%Gamma, no, z0, ztmp(1), nb)
 
 #ifdef TBTRANS
-       if ( present(TrGfG) ) then
-          ! The idx_Elec counter tracks the row
-          ! in the BTD matrix.
-          ! But we need to figure out the diagonal
-          ! element.
-          ! Here we skip to the correct column, of
-          ! the first index in the currently calculated
-          ! Gf.G MM
-          in = i_diag * nb + 1
-          do i = 0 , nb - 1
-             ! This should be fast because inDpvt is sorted
-             if ( in_rgn(El%inDpvt,idx_Elec+i) ) then
-                ! we have hit a diagonal element
-                i_diag = i_diag + 1
-                ! add the contribution
-                TrGfG = TrGfG - aimag(ztmp(in))
-                ! step to next column
-                in = in + nb
-             end if
-             ! always step to the next row
-             in = in + 1
-          end do
-       end if
+      if ( present(TrGfG) ) then
+        ! The idx_Elec counter tracks the row
+        ! in the BTD matrix.
+        ! But we need to figure out the diagonal
+        ! element.
+        ! Here we skip to the correct column, of
+        ! the first index in the currently calculated
+        ! Gf.G MM
+        in = i_diag * nb + 1
+        do i = 0 , nb - 1
+          ! This should be fast because inDpvt is sorted
+          if ( in_rgn(El%inDpvt,idx_Elec+i) ) then
+            ! we have hit a diagonal element
+            i_diag = i_diag + 1
+            ! add the contribution
+            TrGfG = TrGfG - aimag(ztmp(in))
+            ! step to next column
+            in = in + nb
+          end if
+          ! always step to the next row
+          in = in + 1
+        end do
+      end if
 #endif
 
-       eIdxF = 1
-       do in = sPart , ePart
+      eIdxF = 1
+      do in = sPart , ePart
 
-          ! get number of columns of this part
-          sNo = nrows_g(A_tri, in)
-          fA => val(A_tri,n,in)
+        ! get number of columns of this part
+        sNo = nrows_g(A_tri, in)
+        fA => val(A_tri,n,in)
           
-          ! do Gf.Gamma.Gf^dagger (with correct offset of fA)
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','C',nb,sNo,no, z1, ztmp(1), nb, &
-               zwork(eIdxF), sNc, z0, fA(i_Elec-off), sN)
+        ! do Gf.Gamma.Gf^dagger (with correct offset of fA)
+        call GEMM ('N','C',nb,sNo,no, z1, ztmp(1), nb, &
+            zwork(eIdxF), sNc, z0, fA(i_Elec-off), sN)
 
-          eIdxF = eIdxF + sNo
+        eIdxF = eIdxF + sNo
 
-       end do
+      end do
 
-       i_Elec = i_Elec + nb
-       idx_Elec = idx_Elec + nb
+      i_Elec = i_Elec + nb
+      idx_Elec = idx_Elec + nb
 
-       ! We are stepping to the next block
-       if ( idx_Elec > crows(n) ) then
-         off = off + sN
-         n = n + 1
-       end if
+      ! We are stepping to the next block
+      if ( idx_Elec > crows(n) ) then
+        off = off + sN
+        n = n + 1
+      end if
 
     end do
 
 #ifdef TBTRANS
     if ( present(TrGfG) ) then
-       ! Now we have:
-       !   T = Tr[G \Gamma]
-       ! Multiply by two to get the Tr[G^\dagger Gamma]
-       ! contribution as well.
-       ! See e.g. the discussion for GF_Gamma in
-       ! m_tbt_tri_scat.F90
-       TrGfG = TrGfG * 2._dp
+      ! Now we have:
+      !   T = Tr[G \Gamma]
+      ! Multiply by two to get the Tr[G^\dagger Gamma]
+      ! contribution as well.
+      ! See e.g. the discussion for GF_Gamma in
+      ! m_tbt_tri_scat.F90
+      TrGfG = TrGfG * 2._dp
     end if
 #endif
 
     ! Deallocate ztmp if allocated
     if ( tmp_allocated ) then
-       deallocate(ztmp)
+      deallocate(ztmp)
     end if
 
 
@@ -624,157 +599,127 @@ contains
     ! lives.
     ! Now we simply need to propagate the result
     ! up and down the block matrix
-
+    
 
     ! calculate above matrix
     lPart = max(1,sPart - 1)
     do n = 1 , sPart - 1
-       if ( calc_parts(n) ) then
-          lPart = max(1,n-1)
-          exit
-       end if
+      if ( calc_parts(n) ) then
+        lPart = max(1,n-1)
+        exit
+      end if
     end do
 
     ! Do calculation of spectral function
     ! in the above parts
     do n = sPart , lPart, -1
        
-       ! we are now operating on block row n
-       sN = nrows_g(A_tri,n)
+      ! we are now operating on block row n
+      sN = nrows_g(A_tri,n)
 
-       if ( n < sPart ) then
+      if ( n < sPart ) then
 
-          ! this is the preceeding block
-          sNo = nrows_g(A_tri,n+1)
+        ! this is the preceeding block
+        sNo = nrows_g(A_tri,n+1)
 
-          ! calculate n,n+1
-          A => val(A_tri,n,n+1)
-          ! get diagonal A
-          Gf => val(A_tri,n+1,n+1)
-          ! Get Y
-          ztmp => Yn_div_Bn_m1(Gf_tri,n+1)
+        ! calculate n,n+1
+        A => val(A_tri,n,n+1)
+        ! get diagonal A
+        Gf => val(A_tri,n+1,n+1)
+        ! Get Y
+        ztmp => Yn_div_Bn_m1(Gf_tri,n+1)
+
+        call GEMM ('N','N',sN,sNo,sNo, zm1, ztmp, sN, &
+            Gf, sNo, z0, A, sN)
+
+        ! skip calculating the diagonal block
+        if ( n == lPart .and. .not. calc_parts(n) ) exit
           
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','N',sN,sNo,sNo, zm1, ztmp, sN, &
-               Gf, sNo, z0, A, sN)
+        ! calculate n,n
+        Gf => A(:)
+        A => val(A_tri,n,n)
 
-          ! skip calculating the diagonal block
-          if ( n == lPart .and. .not. calc_parts(n) ) exit
-          
-          ! calculate n,n
-          Gf => A(:)
-          A => val(A_tri,n,n)
-          
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','C',sN,sN,sNo, zm1, Gf, sN, &
-               ztmp, sN, z0, A, sN)
+        call GEMM ('N','C',sN,sN,sNo, zm1, Gf, sN, &
+            ztmp, sN, z0, A, sN)
 
-       end if
-       
-       if ( n <= 1 ) exit
-       
-       sNo = nrows_g(A_tri,n-1)
-       ! calculate n,n-1
-       A => val(A_tri,n,n-1)
-       ! get diagonal A
-       Gf => val(A_tri,n,n)
-       ! Get Y
-       ztmp => Yn_div_Bn_m1(Gf_tri,n)
-       
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','C',sN,sNo,sN, zm1, Gf, sN, &
-            ztmp, sNo, z0, A, sN)
-       
+      end if
+
+      if ( n <= 1 ) exit
+
+      sNo = nrows_g(A_tri,n-1)
+      ! calculate n,n-1
+      A => val(A_tri,n,n-1)
+      ! get diagonal A
+      Gf => val(A_tri,n,n)
+      ! Get Y
+      ztmp => Yn_div_Bn_m1(Gf_tri,n)
+
+      call GEMM ('N','C',sN,sNo,sN, zm1, Gf, sN, &
+          ztmp, sNo, z0, A, sN)
+
     end do
 
 
     ! calculate below matrx
     lPart = min(np,ePart + 1)
     do n = np , ePart + 1, -1
-       if ( calc_parts(n) ) then
-          lPart = min(np,n+1)
-          exit
-       end if
+      if ( calc_parts(n) ) then
+        lPart = min(np,n+1)
+        exit
+      end if
     end do
 
     ! Do calculation of spectral function
     ! in the above parts
     do n = ePart , lPart
 
-       ! we are now operating on block row n
-       sN  = nrows_g(A_tri,n)
+      ! we are now operating on block row n
+      sN  = nrows_g(A_tri,n)
 
-       if ( ePart < n ) then
+      if ( ePart < n ) then
 
-          ! this is the preceeding block
-          sNo = nrows_g(A_tri,n-1)
+        ! this is the preceeding block
+        sNo = nrows_g(A_tri,n-1)
 
-          ! calculate n,n-1
-          A => val(A_tri,n,n-1)
-          ! get diagonal A
-          Gf => val(A_tri,n-1,n-1)
-          ! Get X
-          ztmp => Xn_div_Cn_p1(Gf_tri,n-1)
-          
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','N',sN,sNo,sNo, zm1, ztmp, sN, &
-               Gf, sNo, z0, A, sN)
+        ! calculate n,n-1
+        A => val(A_tri,n,n-1)
+        ! get diagonal A
+        Gf => val(A_tri,n-1,n-1)
+        ! Get X
+        ztmp => Xn_div_Cn_p1(Gf_tri,n-1)
 
-          ! skip calculating the diagonal block
-          if ( n == lPart .and. .not. calc_parts(n) ) exit
+        call GEMM ('N','N',sN,sNo,sNo, zm1, ztmp, sN, &
+            Gf, sNo, z0, A, sN)
 
-          ! and calculate n,n
-          Gf => A(:)
-          A => val(A_tri,n,n)
-          
-#ifdef USE_GEMM3M
-          call zgemm3m( &
-#else
-          call zgemm( &
-#endif
-               'N','C',sN,sN,sNo, zm1, Gf, sN, &
-               ztmp, sN, z0, A, sN)
+        ! skip calculating the diagonal block
+        if ( n == lPart .and. .not. calc_parts(n) ) exit
 
-       end if
-       
-       if ( n >= np ) exit
-       
-       sNo = nrows_g(A_tri,n+1)
-       ! calculate n,n+1
-       A => val(A_tri,n,n+1)
-       ! get diagonal A
-       Gf => val(A_tri,n,n)
-       ! Get X
-       ztmp => Xn_div_Cn_p1(Gf_tri,n)
-       
-#ifdef USE_GEMM3M
-       call zgemm3m( &
-#else
-       call zgemm( &
-#endif
-            'N','C',sN,sNo,sN, zm1, Gf, sN, &
-            ztmp, sNo, z0, A, sN)
+        ! and calculate n,n
+        Gf => A(:)
+        A => val(A_tri,n,n)
+
+        call GEMM ('N','C',sN,sN,sNo, zm1, Gf, sN, &
+            ztmp, sN, z0, A, sN)
+
+      end if
+      
+      if ( n >= np ) exit
+
+      sNo = nrows_g(A_tri,n+1)
+      ! calculate n,n+1
+      A => val(A_tri,n,n+1)
+      ! get diagonal A
+      Gf => val(A_tri,n,n)
+      ! Get X
+      ztmp => Xn_div_Cn_p1(Gf_tri,n)
+
+      call GEMM ('N','C',sN,sNo,sN, zm1, Gf, sN, &
+          ztmp, sNo, z0, A, sN)
 
     end do
 
     if ( work_allocated ) then
-       deallocate(zwork)
+      deallocate(zwork)
     end if
 
 #ifndef TBTRANS
@@ -799,11 +744,10 @@ contains
 
     io = 1
     do i = 1 , part - 1
-       io = io + tri_parts(i)
+      io = io + tri_parts(i)
     end do
     
-    has = io1 <= io .and. &
-         io + tri_parts(i) - 1 <= io2
+    has = io1 <= io .and. io + tri_parts(i) - 1 <= io2
 
   end function has_full_part
 
@@ -824,27 +768,29 @@ contains
     off = El%idx_o - 1
 
     if ( El%Bulk ) then
-!$OMP parallel do default(shared), private(j,i,ii,idx)
-       do j = off + 1 , off + no
-          ii = (j-off-1) * no
-          do i = 1 , no
-             idx = index(GFinv_tri,pvt%r(i+off),pvt%r(j))
-             Gfinv(idx) = El%Sigma(ii+i)
-          end do
-       end do
-!$OMP end parallel do
+!$OMP do private(j,i,ii,idx)
+      do j = off + 1 , off + no
+        ii = (j-off-1) * no
+        do i = 1 , no
+          idx = index(GFinv_tri,pvt%r(i+off),pvt%r(j))
+          Gfinv(idx) = El%Sigma(ii+i)
+        end do
+      end do
+!$OMP end do
     else
-!$OMP parallel do default(shared), private(j,i,ii,idx)
-       do j = off + 1 , off + no
-          ii = (j-off-1) * no
-          do i = 1 , no
-             idx = index(GFinv_tri,pvt%r(i+off),pvt%r(j))
-             Gfinv(idx) = Gfinv(idx) - El%Sigma(ii+i)
-          end do
-       end do
-!$OMP end parallel do
+!$OMP do private(j,i,ii,idx)
+      do j = off + 1 , off + no
+        ii = (j-off-1) * no
+        do i = 1 , no
+          idx = index(GFinv_tri,pvt%r(i+off),pvt%r(j))
+          Gfinv(idx) = Gfinv(idx) - El%Sigma(ii+i)
+        end do
+      end do
+!$OMP end do
     end if
     
   end subroutine insert_Self_Energies
+
+#undef GEMM
 
 end module m_ts_tri_scat
