@@ -8523,7 +8523,7 @@ involving spin.
 \subsubsection{Voronoi and Hirshfeld atomic population analysis}
 
 
-\begin{fdflogicalF}{WriteHirshfeldPop}
+\begin{fdflogicalF}{Write!HirshfeldPop}
   \index{Hirshfeld population analysis}%
   \index{output!Hirshfeld analysis} 
 
@@ -8531,15 +8531,32 @@ involving spin.
   atomic populations on each atom in the system. For a definition of
   the Hirshfeld charges, see Hirshfeld, Theo Chem Acta \textbf{44},
   129 (1977) and Fonseca et al, J. Comp. Chem. \textbf{25}, 189
-  (2003).  Hirshfeld charges are more reliable than Mulliken charges,
-  specially for large basis sets.  The number printed is the total net
+  (2003). Hirshfeld charges are more reliable than Mulliken charges,
+  specially for large basis sets. Value (\code{dQatom}) is the total net
   charge of the atom: the variation from the neutral charge, in units
   of $|e|$: positive (negative) values indicate deficiency (excess) of
   electrons in the atom.
 
+  The output (here shown for a non-collinear calculation) looks like
+  this:
+\begin{output}[fontsize=\footnotesize]
+Hirshfeld Atomic Populations:
+Atom #     dQatom  Atom pop         S        Sx        Sy        Sz  Species
+     1    0.01003   7.98997   3.04744   0.18550   0.00000   3.04179  fe_nc
+     2   -0.02008   8.02008   1.41240   1.41240   0.00000  -0.00000  fe_nc
+     3    0.01003   7.98997   3.04744   0.18550   0.00000  -3.04179  fe_nc
+-------------------------------------------------------------------
+ Total                        1.78340   1.78340   0.00000   0.00000
+\end{output}
+
+Where the column \code{dQatom} is the net atomic charge as noted
+above. Column \code{Atom pop} is the number of electrons on the atom
+(comparable to Mulliken charges). Columns \code{S}, \code{Sx},
+\code{Sy} and \code{Sz} are the accumulated spin components for the atom.
+
 \end{fdflogicalF}
 
-\begin{fdflogicalF}{WriteVoronoiPop}
+\begin{fdflogicalF}{Write!VoronoiPop}
   \index{Voronoi population analysis}%
   \index{output!Voronoi analysis} 
 
@@ -8548,10 +8565,13 @@ involving spin.
   the Voronoi charges, see Bickelhaupt et al, Organometallics
   \textbf{15}, 2923 (1996) and Fonseca et al,
   J. Comp. Chem. \textbf{25}, 189 (2003).  Voronoi charges are more
-  reliable than Mulliken charges, specially for large basis sets.  The
-  number printed is the total net charge of the atom: the variation
-  from the neutral charge, in units of $|e|$: positive (negative)
-  values indicate deficiency (excess) of electrons in the atom.
+  reliable than Mulliken charges, specially for large basis
+  sets. Value (\code{dQatom}) is the total net charge of the atom: the
+  variation from the neutral charge, in units of $|e|$: positive
+  (negative) values indicate deficiency (excess) of electrons in the
+  atom.
+
+  See \fdf{Write!HirshfeldPop} for detailed output explanation.
 
 \end{fdflogicalF}
 
