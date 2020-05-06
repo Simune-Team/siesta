@@ -1,12 +1,12 @@
-# icn294444@login1:~/programs/simune-siesta/Obj/4.1-la-palma> module list 
-# Currently Loaded Modulefiles:
+
+#Currently Loaded Modulefiles:
 # 1) GCCcore/7.3.0                   8) libxml2/2.9.8-GCCcore-7.3.0                 15) foss/2018b                       22) libxc/3.0.1-foss-2018b        
 # 2) zlib/1.2.11-GCCcore-7.3.0       9) libpciaccess/0.14-GCCcore-7.3.0             16) Szip/2.1.1-GCCcore-7.3.0         23) libgridxc/0.8.5.1-foss-2018b  
 # 3) binutils/2.30-GCCcore-7.3.0    10) hwloc/1.11.10-GCCcore-7.3.0                 17) HDF5/1.10.2-foss-2018b           24) xmlf90/1.5.4-foss-2018b       
 # 4) GCC/7.3.0-2.30                 11) OpenMPI/3.1.1-GCC-7.3.0-2.30                18) OpenSSL/1.1.0h-GCCcore-7.3.0     25) libpsml/1.1.7-foss-2018b      
-# 5) OpenBLAS/0.3.1-GCC-7.3.0-2.30  12) gompi/2018b                                 19) cURL/7.60.0-GCCcore-7.3.0        
-# 6) numactl/2.0.11-GCCcore-7.3.0   13) FFTW/3.3.8-gompi-2018b                      20) netCDF/4.6.1-foss-2018b          
-# 7) XZ/5.2.4-GCCcore-7.3.0         14) ScaLAPACK/2.0.2-gompi-2018b-OpenBLAS-0.3.1  21) netCDF-Fortran/4.4.4-foss-2018b 
+# 5) OpenBLAS/0.3.1-GCC-7.3.0-2.30  12) gompi/2018b                                 19) cURL/7.60.0-GCCcore-7.3.0        26) M4/1.4.18-GCCcore-7.3.0       
+# 6) numactl/2.0.11-GCCcore-7.3.0   13) FFTW/3.3.8-gompi-2018b                      20) netCDF/4.6.1-foss-2018b          27) libtool/2.4.6-GCCcore-7.3.0   
+# 7) XZ/5.2.4-GCCcore-7.3.0         14) ScaLAPACK/2.0.2-gompi-2018b-OpenBLAS-0.3.1  21) netCDF-Fortran/4.4.4-foss-2018b
 
 #
 SIESTA_ARCH=gfortran-full-options

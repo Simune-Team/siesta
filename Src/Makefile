@@ -1387,7 +1387,7 @@ siesta_init.o: siesta_dicts.o siesta_geom.o siesta_options.o sparse_matrices.o
 siesta_init.o: struct_init.o timer.o timestamp.o ts_init.o units.o writewave.o
 siesta_init.o: zmatrix.o
 siesta_master.o: iopipes.o iosockets.o precision.o sys.o
-siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
+siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o m_syms.o
 siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o flook_siesta.o ioxv.o
 siesta_move.o: m_check_walltime.o m_energies.o m_exp_coord.o m_forces.o
 siesta_move.o: m_kinetic.o m_mpi_utils.o m_steps.o m_stress.o m_target_stress.o
