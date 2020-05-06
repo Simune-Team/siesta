@@ -1394,7 +1394,6 @@ siesta_move.o: m_kinetic.o m_mpi_utils.o m_steps.o m_stress.o m_target_stress.o
 siesta_move.o: parallel.o siesta_cml.o siesta_dicts.o siesta_geom.o
 siesta_move.o: siesta_master.o siesta_options.o sys.o units.o write_subs.o
 siesta_move.o: zm_broyden_optim.o zm_fire_optim.o zmatrix.o
-siesta_move.o: m_syms.o
 siesta_tddft.o: alloc.o atomlist.o compute_energies.o final_H_f_stress.o
 siesta_tddft.o: kpoint_scf.o m_energies.o m_eo.o m_evolve.o m_initwf.o
 siesta_tddft.o: m_iotddft.o m_mpi_utils.o m_spin.o m_steps.o overfsm.o
