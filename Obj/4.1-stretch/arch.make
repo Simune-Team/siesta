@@ -50,7 +50,7 @@ GRIDXC_ROOT=$(EBROOTLIBGRIDXC)
 #FLOOK_ROOT=
 #--------------------------------------------------------
 NETCDF_ROOT=$(EBROOTNETCDFMINFORTRAN)
-SCALAPACK_LIBS= -lscalapack -lblacs-openmpi -lblacsF77init-openmpi  -lpthread -lm -ldl
+SCALAPACK_LIBS= -lscalapack-openmpi -lblacs-openmpi -lblacsF77init-openmpi  -lpthread -lm -ldl
 LAPACK_LIBS= -lopenblas
 #FFTW_ROOT=
 # Needed for PEXSI (ELSI) support
