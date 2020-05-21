@@ -36,7 +36,7 @@ FPPFLAGS_free_F90 = $(FPPFLAGS)
 
 BLAS_LIBS = -lblas
 LAPACK_LIBS = -llapack
-SCALAPACK_LIBS = -lscalapack -L/usr/local/Cellar/scalapack/2.1.0/lib/
+SCALAPACK_LIBS = -lscalapack -L/usr/local/Cellar/scalapack/2.1.0_1/lib/
 
 COMP_LIBS =
 
