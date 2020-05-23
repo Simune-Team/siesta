@@ -5,6 +5,7 @@
 
 MPI=mpirun -np 2
 SIESTA=../../../siesta
+SHELL := /bin/bash
 
 # Example for BSC runs
 #
