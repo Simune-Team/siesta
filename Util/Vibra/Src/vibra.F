@@ -4,8 +4,9 @@
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
-!
 
+!#define SANKEY_DIAG     ! Do this in the makefile
+!#define VIBRA_DEBUG
       program vibra
 
 c *********************************************************************
@@ -22,29 +23,30 @@ c
 c **********************************************************************
 
       use fdf
+      use units, only: Pi
+      use precision, only: dp
 
       implicit none
 
-      integer, parameter :: dp = selected_real_kind(10,100)
-
-      include 'vibra.h'
-
 c Internal variables ...
 
-      logical overflow, eigen, intensity
-
-      character(len=150)::
+      character(len=150) ::
      .  filein, fileout, fname, 
-     .  slabel, sname, slabel_defect, sname_defect
+     .  slabel, sname
 
       integer 
-     .  i, i1, i2, iatom, imass(maxa), imasssc(maxasc), iunit, 
+     .  i, i1, i2, iatom, iunit,
      .  ik, iunit2, iunit3, ind, ix, j,
      .  ij, ii, iq, jj, jx, icall, 
      .  lx, ly, lz, lxmax, lymax, lzmax, 
      .  llx, lly, llz,
-     .  lx_defect, ly_defect, lz_defect,
-     .  na_defect, natoms, ncells, nnat
+     .  natoms, ncells, nnat, ndof
+
+      ! imass(maxa), imasssc(maxasc)
+      integer, allocatable :: imass(:), imasssc(:)
+#ifndef SANKEY_DIAG
+      character(len=1) :: heev_mode
+#endif
 
       integer maxlin, maxk, maxnq
       parameter (maxlin =  1000)
@@ -56,40 +58,50 @@ c Internal variables ...
 
       character label(maxlin)*8
 
-      real(dp) kpoint(3,maxk), ek(maxd,maxk)
+      real(dp) :: kpoint(3,maxk)
 
-      real(dp) 
-     .  dx, alat, alp, blp, clp, alplp, betlp, gamlp, pi, xxx
+      real(dp) :: dx, alat, alp, blp, clp, alplp, betlp, gamlp, xxx
 
-      real(dp)
-     .  zpe, planck
+      real(dp) :: zpe, planck
+      logical :: eigen, intensity
 
-      real(dp) phi0(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
-     .        phi(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
-      real(dp) pp(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
-     .       pn(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
-      real(dp) IRinten(3*maxa), BornQ(3,3,maxa)
+      ! ek(maxd,maxk)
+      real(dp), allocatable :: ek(:,:)
+      ! phi0(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
+      real(dp), allocatable :: phi0(:,:,:,:, :,:,:)
+      ! phi(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
+      real(dp), allocatable :: phi(:,:,:,:, :,:,:)
+      ! IRinten(3*maxa), BornQ(3,3,maxa)
+      real(dp), allocatable :: IRinten(:), BornQ(:,:,:)
 
-      real(dp)
-     .  b(3,maxa), cell(3,3), r(3), scell(3,3), xa(3,maxasc),xmass(maxa)
+      ! b(3,maxa), xa(3,maxasc), xmass(maxa)
+      real(dp), allocatable :: b(:,:), xa(:,:), xmass(:)
+      real(dp) :: cell(3,3), r(3), scell(3,3)
 
-      real(dp)
-     .  correct, dmin, q(3), qr(maxnq), r2, rl(3), rmass
+      real(dp) :: correct, dmin, q(3), qr(maxnq), r2, rl(3), rmass
 
 c Correction terms to satisfy translational modes
-      real(dp) zero(3,3,maxa), zeroo(3,3)
+      real(dp), allocatable :: zero(:,:,:)
+      real(dp) :: zeroo(3,3)
 
 c Work space for diagonalization.
-      complex(dp) dc(maxd,maxd),phase,IRtrm,vecmw(3)
-      real(dp) work(maxd),work2(2,maxd)
-      real(dp) dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
+      complex(dp) :: phase, IRtrm, vecmw(3)
+      ! dc(maxd,maxd)
+      complex(dp), allocatable :: dc(:,:)
+#ifdef SANKEY_DIAG
+      ! work(maxd),work2(2,maxd)
+      real(dp), allocatable :: work(:),work2(:,:)
+      ! dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd)
+      real(dp), allocatable :: dd(:,:), zr(:,:), zi(:,:)
+#else
+      ! work(3*maxd),work2(4,maxd)
+      real(dp), allocatable :: work(:),work2(:,:)
+#endif
+      real(dp), allocatable :: omega(:)
 
 c Conversion factor from sqrt(K/M) in eV and Ang to cm**-1 is 519.6
-      real(dp) xmagic
-      parameter (xmagic=519.6d0)
+      real(dp), parameter :: xmagic = 519.6_dp
 
-      data pi / 3.1415926d0 /
-      data overflow /.false./
       data nk / 0 /
 
       type(block_fdf)            :: bfdf
@@ -102,7 +114,6 @@ c Planck contains planck's constant in eV.cm
       planck = 6.62618d-5*2.997925d0/1.602189d0
 c ...
      
-
 C ****************** READ DATA FROM FDF FILE *********************
 
 c Set up fdf ...
@@ -112,22 +123,19 @@ c Set up fdf ...
 c ...
 
 c Defile Name of the system ...
-      sname_defect = ' '
-      sname = fdf_string('SystemName',sname_defect)
+      sname = fdf_get('SystemName'," ")
       write(6,'(a,a)')
      . 'redata: System Name                      = ',sname
 c ...
 
 c Defile System Label (short name to label files) ...
-      slabel_defect  = 'vibra'
-      slabel = fdf_string('SystemLabel',slabel_defect)
+      slabel = fdf_get('SystemLabel', "vibra")
       write(6,'(a,a)')
      . 'redata: System Label                     = ',slabel
 c ...
 
 c Read Number of Atoms in Unit cell ...
-      na_defect = 0
-      natoms = fdf_integer('NumberOfAtoms',na_defect)
+      natoms = fdf_get('NumberOfAtoms', 0)
       if (natoms .le. 0) then
         write(6,'(a)') 
      . 'ERROR: Number of atoms must be larger than zero.'
@@ -137,12 +145,13 @@ c Read Number of Atoms in Unit cell ...
       endif
       write(6,'(a,i5)') 
      . 'Number of Atoms                  = ',natoms
-c     check if dimension of number of atomos is large enough
-      call chkdim('fcbuild', 'maxa', maxa, natoms, 1)
 c ...
 
+      ! Number of degrees of freedom
+      ndof = natoms * 3
+
 c Lattice constant of unit cell...
-      alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
+      alat = fdf_get('LatticeConstant',0.d0,'Bohr')
       if (alat .eq. 0.d0) then
         write(6,'(a)') 
      . 'ERROR: No valid lattice constant specified.'
@@ -227,20 +236,10 @@ c Multiply cell vectors by lattice constant ...
       enddo
 c ...
 
-c Read atomic coordinates and species of unit cell...
-      call recoor(overflow,cell,alat,b,imass,xmass,natoms)
-c ...
-
-c Define number of unit cells in the supercell ...
-      lx_defect = 0
-      ly_defect = 0
-      lz_defect = 0
-      lxmax = fdf_integer('SuperCell_1',lx_defect)
-      lymax = fdf_integer('SuperCell_2',ly_defect)
-      lzmax = fdf_integer('SuperCell_3',lz_defect)
-      call chkdim('fcbuild', 'maxx', maxx, lxmax, 1)
-      call chkdim('fcbuild', 'maxy', maxy, lymax, 1)
-      call chkdim('fcbuild', 'maxz', maxz, lzmax, 1)
+c     Define number of unit cells in the supercell ...
+      lxmax = fdf_get('SuperCell_1', 0)
+      lymax = fdf_get('SuperCell_2', 0)
+      lzmax = fdf_get('SuperCell_3', 0)
       ncells = (2*lxmax+1)*(2*lymax+1)*(2*lzmax+1)
       write(6,'(a,i5)') 'lxmax    = ',lxmax
       write(6,'(a,i5)') 'lymax    = ',lymax
@@ -248,29 +247,50 @@ c Define number of unit cells in the supercell ...
       write(6,'(a,i5)') 'Number of unit cells in Supercell  = ',ncells
 c ...
 
+!     Now we are ready for allocation of matrices
+      allocate(phi0(3,natoms,3,natoms,
+     &    -lxmax:lxmax,-lymax:lymax,-lzmax:lzmax))
+      allocate(phi(3,natoms,3,natoms,
+     &    -lxmax:lxmax,-lymax:lymax,-lzmax:lzmax))
+      allocate(IRinten(ndof),BornQ(3,3,natoms))
+      allocate(zero(3,3,natoms))
+      allocate(b(3,natoms), xmass(natoms))
+      allocate(xa(3,ncells*natoms))
+      allocate(imass(natoms),imasssc(ncells*natoms))
+
+c Read atomic coordinates and species of unit cell...
+      call recoor(cell,alat,b,imass,xmass,natoms)
+c ...
+
 c Determine q points to compute the phonon dispersion relations ...
       call klines(maxk, nk, nlines, lastk, label, kpoint)
 c ...
 
+c Determine whether IR intensities are to be computed
+      intensity = fdf_get('Intensities', .false.)
+
+c If intensities are requested then eigenvectors must be computed
+      if ( intensity ) then
+        eigen = .true.
+      else
+        eigen = fdf_get('Eigenvectors', .false.)
+      end if
+
 c Determine whether eigenvectors are computed, or only eigenvalues ...
-      eigen = fdf_boolean('Eigenvectors',.false.)
       if (eigen) then
          icall = 3
+#ifndef SANKEY_DIAG
+         heev_mode = 'V'
+#endif
          write(6,'(a,i5)') 'Eigenvectors =   True'
          write(6,'(a,i5)') 'Computing Eigenvalues and Eigenvectors'
       else
          icall = 1
+#ifndef SANKEY_DIAG
+         heev_mode = 'N'
+#endif
          write(6,'(a,i5)') 'Eigenvectors =   False'
          write(6,'(a,i5)') 'Computing Eigenvalues only'
-      endif
-
-c Determine whether IR intensities are to be computed
-      intensity = fdf_boolean('Intensities',.false.)
-
-c If intensities are requested then eigenvectors must be computed
-      if (intensity) then
-        eigen = .true.
-        icall = 3
       endif
 
 C *************** END READ DATA FROM FDF FILE ********************
@@ -318,17 +338,20 @@ c ...
 
 c Read Force Constants Matrix ...
       call io_assign(iunit2)
-      fname = fdf_string('Vibra.FC',trim(slabel)//'.FC')
+      fname = fdf_get('Vibra.FC', trim(slabel)//'.FC')
       open(iunit2,file=fname,status='old')
       read(iunit2,*)
-c Negative displacements
+! Loop displaced atoms
       do j=1,natoms
+!  displacement directions x, y, z
         do ij=1,3
+c Negative displacements
           do lx=-lxmax,lxmax
           do ly=-lymax,lymax
           do lz=-lzmax,lzmax
             do i=1,natoms
-              read(iunit2,*) (pp(ii,i,lx,ly,lz),ii=1,3)
+              !read(iunit2,*) (pn(ii,i,lx,ly,lz),ii=1,3)
+              read(iunit2,*) (phi0(ii,i,ij,j,lx,ly,lz),ii=1,3)
             enddo
           enddo
           enddo
@@ -338,20 +361,15 @@ c Positive displacements
           do ly=-lymax,lymax
           do lz=-lzmax,lzmax
             do i=1,natoms
-              read(iunit2,*) (pn(ii,i,lx,ly,lz),ii=1,3)
-            enddo
-          enddo
-          enddo
-          enddo
-c Average  displacements
-          do lx=-lxmax,lxmax
-          do ly=-lymax,lymax
-          do lz=-lzmax,lzmax
-            do i=1,natoms
-              do ii=1,3
-                phi0(ii,i,ij,j,lx,ly,lz)= 0.5*
-     .                (pp(ii,i,lx,ly,lz)+pn(ii,i,lx,ly,lz))
-              enddo
+              !read(iunit2,*) (pp(ii,i,lx,ly,lz),ii=1,3)
+              read(iunit2,*) q(:)
+              do ii = 1, 3
+!               Average displacements
+!               Dimensions are:
+! [xyz, atoms, displacement direction, displacement atoms, (supercell)]
+                phi0(ii,i,ij,j,lx,ly,lz) =
+     &              (phi0(ii,i,ij,j,lx,ly,lz) + q(ii))*0.5
+              end do
             enddo
           enddo
           enddo
@@ -397,7 +415,10 @@ c                phi(ii,i,ij,j,lx,ly,lz) = phi0(ii,i,ij,j,lx,ly,lz)
         enddo
       enddo
 
-c      goto 100
+!     Deallocate phi0 array
+      deallocate(phi0)
+
+c     goto 100
 c =================================================================
 c Now form zero(ix,jx,j), defined as zijbeta in the notes.
 
@@ -421,7 +442,7 @@ c Now form zero(ix,jx,j), defined as zijbeta in the notes.
          
 
 c =================================================================
-c Now form zeroo(ix,jx), the sum ofer beta of z(i,j,beta)
+c     Now form zeroo(ix,jx), the sum ofer beta of z(i,j,beta)
 
       do ii=1,3
         do ij=1,3
@@ -432,6 +453,52 @@ c Now form zeroo(ix,jx), the sum ofer beta of z(i,j,beta)
           zeroo(ii,ij) = zeroo(ii,ij) / natoms
         enddo
       enddo
+
+#ifdef VIBRA_DEBUG
+      print '(a)', "DEBUG"
+      print '(a)', "zero sum of atoms due to displacements"
+      do j = 1, natoms
+        print '(a,i0)', "displaced atom ", j
+        print '(a)', "   displ dir x"
+        print '(tr1,3(tr1,es16.7))', zero(:,1,j)
+        print '(a)', "   displ dir y"
+        print '(tr1,3(tr1,es16.7))', zero(:,2,j)
+        print '(a)', "   displ dir z"
+        print '(tr1,3(tr1,es16.7))', zero(:,3,j)
+      end do
+      print '(a)', "zeroo sum zero"
+      print '(a)', "   displ dir x"
+      print '(tr1,3(tr1,es16.7))', zeroo(:,1)
+      print '(a)', "   displ dir y"
+      print '(tr1,3(tr1,es16.7))', zeroo(:,2)
+      print '(a)', "   displ dir z"
+      print '(tr1,3(tr1,es16.7))', zeroo(:,3)
+
+      print '(a)', "before symmetrization"
+      do i=1,natoms
+        print '(a,i0)', "displaced atom ", i
+        do ii = 1 , 3
+          select case ( ii )
+          case ( 1 )
+            print '(a)', "   displ dir x"
+          case ( 2 )
+            print '(a)', "   displ dir y"
+          case ( 3 )
+            print '(a)', "   displ dir z"
+          end select
+          do lx=-lxmax,lxmax
+            do ly=-lymax,lymax
+              do lz=-lzmax,lzmax
+                do j=1,natoms
+                  print '(tr1,3(tr1,es16.7))', phi(:,j,ii,i,lx,ly,lz)
+                enddo
+              enddo
+            enddo
+          enddo
+        enddo
+      enddo
+
+#endif
 
 c =================================================================
 c Now form phibar(2)
@@ -455,12 +522,58 @@ c Now form phibar(2)
         enddo
       enddo
 
+!     Deallocate zero
+      deallocate(zero)
+
+#ifdef VIBRA_DEBUG
+      print '(a)', "DEBUG"
+      print '(a)', "after symmetrization"
+      do i=1,natoms
+        print '(a,i0)', "displaced atom ", i
+        do ii = 1 , 3
+          select case ( ii )
+          case ( 1 )
+            print '(a)', "   displ dir x"
+          case ( 2 )
+            print '(a)', "   displ dir y"
+          case ( 3 )
+            print '(a)', "   displ dir z"
+          end select
+          do lx=-lxmax,lxmax
+            do ly=-lymax,lymax
+              do lz=-lzmax,lzmax
+                do j=1,natoms
+                  print '(tr1,3(tr1,es16.7))', phi(:,j,ii,i,lx,ly,lz)
+                enddo
+              enddo
+            enddo
+          enddo
+        enddo
+      enddo
+
+      print '(a)', "atomic masses"
+      do j = 1, natoms
+        print '(tr1,i3,tr1,es16.7)', j,xmass(j)
+      enddo
+
+#endif
+
 100   continue
 
 c =================================================================
 c Now finally compute the dynamical matrix. We store in real-hermitian 
 c form because hermdp.f wants input this way.
 
+      allocate(dc(ndof,ndof), omega(ndof))
+#ifdef SANKEY_DIAG
+      allocate(dd(ndof,ndof), zr(ndof,ndof), zi(ndof,ndof))
+      allocate(work(ndof), work2(2,ndof))
+#else
+      ! work2 should optimally be (NB + 1) * ndof, but minimally
+      ! 2*ndof (in complex form)
+      allocate(work(3*ndof), work2(2,16*ndof))
+#endif
+      allocate(ek(ndof,maxk))
 c Loop over k points 
 
       do ik=1,nk
@@ -469,8 +582,8 @@ c Loop over k points
         q(2) = kpoint(2,ik)
         q(3) = kpoint(3,ik)
 
-        do ix=1,3*natoms
-        do jx=1,3*natoms
+        do jx=1,ndof
+        do ix=1,ndof
             dc(ix,jx)= cmplx(0.0_dp,0.0_dp, dp)
         enddo
         enddo
@@ -484,6 +597,8 @@ c Loop over k points
               r(jj) = b(jj,i)-b(jj,j)+
      .                 lx*cell(jj,1) + ly*cell(jj,2) + lz*cell(jj,3)
             enddo
+! I *guess* this is the Wigner-Sietz reduction due
+! to supercell interactions. But I do not have the notes.
             dmin=1.e8
             do llx=-1,1
             do lly=-1,1
@@ -513,14 +628,20 @@ c Loop over k points
             enddo
             enddo
             enddo
-c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
+#ifdef VIBRA_DEBUG
+            print "(a,3(tr1,i4))", "i, j, neq", i, j, neq
+#endif
+c           qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
             do in = 1,neq
-              phase = cmplx(cos(qr(in)), sin(qr(in)), dp)
-              do ii=1,3
+              phase = cmplx(cos(qr(in)), sin(qr(in)), dp)/neq
+#ifdef VIBRA_DEBUG
+              print "(tr2,2(tr1,es16.7))", phase
+#endif
               do ij=1,3
+              jx = (j-1)*3+ij
+              do ii=1,3
                 ix = (i-1)*3+ii
-                jx = (j-1)*3+ij
-                dc(ix,jx)=dc(ix,jx)+phi(ii,i,ij,j,lx,ly,lz)*phase/neq
+                dc(ix,jx)=dc(ix,jx)+phi(ii,i,ij,j,lx,ly,lz)*phase
               enddo
               enddo
             enddo
@@ -530,24 +651,41 @@ c            qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
         enddo
         enddo
 
-        do ix=1,3*natoms
-        do jx=1,3*natoms
-          i = (ix-mod(ix-1,3))/3+1
-          j = (jx-mod(jx-1,3))/3+1
-          dc(ix,jx) = dc(ix,jx) / sqrt(xmass(i)*xmass(j))
-        enddo
-        enddo
+        do j = 1, natoms
+          do ij = 1, 3
+            jx = (j-1)*3+ij
+            do i = 1, natoms
+              do ii = 1, 3
+                ix = (i-1)*3+ii
+                dc(ix,jx) = dc(ix,jx) / sqrt(xmass(i)*xmass(j))
+              end do
+            end do
+          end do
+        end do
 
-        do ix=1,3*natoms
-          do jx=ix,3*natoms
+#ifdef VIBRA_DEBUG
+        print '(a)', "DEBUG"
+        print '(a,tr1,3(tr1,f10.3))', "dc @ ", q(:)
+        do ix=1,ndof
+          print '(tr1,2000(tr1,es16.8))', real(dc(1:ndof,ix), dp)
+        enddo
+        print '(a)', ""
+#endif
+
+#ifdef SANKEY_DIAG
+        do jx=ix,ndof
+          do ix=1,ndof
             dd(ix,jx)=aimag(dc(jx,ix))
             dd(jx,ix)=real(dc(jx,ix), dp)
           enddo
         enddo
+#endif
 
-Cc =================================================================
-
-        call  hermdp(dd,zr,zi,omega,maxd,3*natoms,work,work2,icall)
+#ifdef SANKEY_DIAG
+        call hermdp(dd,zr,zi,omega,ndof,ndof,work,work2,icall)
+#else
+        call zheev(heev_mode,'L',ndof,dc,ndof,omega,work2,2*ndof,work,i)
+#endif
 
 c the eigenvalues omega are actually omega**2.
 c zr(i,j)=i'th component of j'th eigenvector. zr is the real part, and
@@ -558,7 +696,7 @@ c Compute the IR intensities if requested
       if (intensity) then
 
 c Loop over modes
-        do i = 1,3*natoms
+        do i = 1,ndof
           IRinten(i) = 0._dp
           do ij = 1,3
             IRtrm = cmplx(0._dp,0._dp, dp)
@@ -569,8 +707,12 @@ c Loop over modes
 c Mass weight eigenvectors
               rmass = 1._dp/sqrt(xmass(j))
               do ii = 1,3
+#ifdef SANKEY_DIAG
                 vecmw(ii) = cmplx(zr(ind+ii,i),zi(ind+ii,i), dp)
                 vecmw(ii) = vecmw(ii)*rmass
+#else
+                vecmw(ii) = dc(ind+ii,i)*rmass
+#endif
               enddo
 
 c Multiply eigenvectors by Born effective charges
@@ -587,7 +729,7 @@ c Multiply eigenvectors by Born effective charges
 
 c =================================================================
 c write out eigenvalues.
-        do 5 i=1,3*natoms
+        do i=1,ndof
 c convert to cm**-1. the conversion factor is xmagic (511**2)
           omega(i)=xmagic*xmagic*omega(i)
           if(omega(i).gt.0.0d0)then
@@ -606,9 +748,9 @@ c Add zero point energy contribution for positive modes
           endif
 
           ek(i,ik) = omega(i)
-5       continue
+        end do
 
-Cc =================================================================
+Cc =============================================================
 c write the eigenvalues and eigenvectors to output data file.
         if (icall .eq. 3) then
           call io_assign(iunit3)
@@ -621,17 +763,25 @@ c write the eigenvalues and eigenvectors to output data file.
           endif
           write(iunit3,'(/,a,3f12.6)') 'k            = ',
      .                                  q(1),q(2),q(3)
-          do 20 i=1,3*natoms
+          do i=1,ndof
             write(iunit3,'(a,i5)')     'Eigenvector  = ',i
             write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
             if (intensity) then
               write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
             endif
             write(iunit3,'(a)')        'Eigenmode (real part)'
-            write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
+#ifdef SANKEY_DIAG
+            write(iunit3,'(3e12.4)') (zr(j,i),j=1,ndof)
+#else
+            write(iunit3,'(3e12.4)') (real(dc(j,i),dp),j=1,ndof)
+#endif
             write(iunit3,'(a)')        'Eigenmode (imaginary part)'
-            write(iunit3,'(3e12.4)') (zi(j,i),j=1,3*natoms)
-20        continue
+#ifdef SANKEY_DIAG
+            write(iunit3,'(3e12.4)') (zi(j,i),j=1,ndof)
+#else
+            write(iunit3,'(3e12.4)') (aimag(dc(j,i)),j=1,ndof)
+#endif
+          end do
           call io_close(iunit3)
         endif
 Cc =================================================================
@@ -646,7 +796,7 @@ c Finish computation of zero point energy (averaged across k points) and output
 
 c Write eigenvalues ...
       if (nk .gt. 0) then
-        call outbands(0, 1, maxd, 3*natoms, maxk, nk, nlines, lastk,
+        call outbands(0, 1, ndof, ndof, maxk, nk, nlines, lastk,
      .                label, kpoint, ek, 0.0d0)
       endif
 C ...

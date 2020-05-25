@@ -8,6 +8,8 @@
 
 ### Changes
 
+* Cleanup of vibra/fcbuild code: use dynamic arrays, and LAPACK solver by default
+
 * Extended Hirshfeld and Voronoi partition analysis to spin. Update of output, including new CML blocks.
 
 *(Initial list of updates taken on April 8, 2020 from the output of `git see --first-parent rel-4.1..`,
