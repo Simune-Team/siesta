@@ -5,7 +5,7 @@
 !  or http://www.gnu.org/copyleft/gpl.txt.
 ! See Docs/Contributors.txt for a list of contributors.
 
-!#define SANKEY_DIAG
+!#define SANKEY_DIAG     ! Do this in the makefile
 !#define VIBRA_DEBUG
       program vibra
 

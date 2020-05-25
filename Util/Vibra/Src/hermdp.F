@@ -1,3 +1,7 @@
+#ifndef SANKEY_DIAG
+      subroutine dummy()
+      end
+#else
 !
 C ******************************************************************
 C *  HERMDP.FOR  SOLVES EIGENVALUE PROBLEM                          *
@@ -530,3 +534,4 @@ C
   200 RETURN
 C     ********** LAST CARD OF DPHTBK **********
       END
+#endif
