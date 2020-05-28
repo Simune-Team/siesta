@@ -9,7 +9,7 @@
      .                   numh, listhptr, listh, numd, listdptr, 
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
-     .                   eo, qo, Dnew, Enew, ef, Entropy, q,
+     .                   eo, qo, Dnew, Enew, ef, Entropy, qw,
      .                   Haux, Saux, psi, Dk, Ek, aux, nuotot,
      .                   occtol, iscf )
 C *********************************************************************
@@ -20,6 +20,7 @@ C This version is for non-colinear spin with k-sampling and spiral
 C arrangement of spins.
 C Written by V. M. Garcia-Suarez. June 2002
 C Modified to reduce eigenvector computation by J.D. Gale Nov. 2004
+C Lots of bugs fixed by Nick Papior, May 2020
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -52,7 +53,7 @@ C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the number of orbitals in unit cell
-C real*8 q(3)                 : Wave vector for spiral configuration  
+C real*8 qw(3)                : Wave vector for spiral configuration
 C integer nk                  : Number of k points
 C real*8  kpoint(3,nk)        : k point vectors
 C real*8  wk(nk)              : k point weights (must sum one)
@@ -61,8 +62,8 @@ C                               over all processors
 C real*8  occtol              : Occupancy threshold for DM build
 C integer iscf                : SCF cycle number
 C *************************** OUTPUT **********************************
-C real*8 eo(maxo*4,nk)        : Eigenvalues
-C real*8 qo(maxo*4,nk)        : Occupations of eigenstates
+C real*8 eo(maxo*2,nk)        : Eigenvalues
+C real*8 qo(maxo*2,nk)        : Occupations of eigenstates
 C real*8 Dnew(maxnd,4)        : Output Density Matrix
 C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
@@ -71,7 +72,7 @@ C *************************** AUXILIARY *******************************
 C real*8 Haux(2,2,nuotot,2,nuo) : Aux. space for the hamiltonian matrix
 C real*8 Saux(2,2,nuotot,2,nuo) : Aux. space for the overlap matrix
 C real*8 psi(2,2,nuotot,2*nuo)  : Aux. space for the eigenvectors
-C real*8 aux(4,2*nuotot)        : Extra auxiliary space
+C real*8 aux(4,nuotot)          : Extra auxiliary space
 C real*8 Dk(2,2,nuotot,2,nuo)   : Aux. space that may be the same as Haux
 C real*8 Ek(2,2,nuotot,2,nuo)   : Aux. space that may be the same as Saux
 C *************************** UNITS ***********************************
@@ -85,8 +86,6 @@ C *********************************************************************
 C
 C  Modules
 C
-      use siesta_geom,  only : xa
-      use atomlist,     only : iaorb
       use precision
       use sys
       use parallel,     only : Node, Nodes, BlockSize
@@ -112,12 +111,12 @@ C
 
       real(dp)
      .  Dnew(maxnd,4), 
-     .  e1, e2, ef, Enew(maxnd,4), Entropy, eo(maxo*4,nk),
-     .  H(maxnh,4), kpoint(3,nk), qo(maxo*4,nk), qtot,
-     .  S(maxnh), temp, wk(nk), xij(3,maxnh), q(3), occtol
+     .  e1, e2, ef, Enew(maxnd,4), Entropy, eo(maxo*2,nk),
+     .  H(maxnh,4), kpoint(3,nk), qo(maxo*2,nk), qtot,
+     .  S(maxnh), temp, wk(nk), xij(3,maxnh), qw(3), occtol
      
       real(dp)
-     .  aux(5,2*nuotot), Dk(2,2,nuotot,2,nuo), Ek(2,2,nuotot,2,nuo), 
+     .  aux(4,nuotot), Dk(2,2,nuotot,2,nuo), Ek(2,2,nuotot,2,nuo),
      .  Haux(2,2,nuotot,2,nuo), psi(2,2,nuotot,nuo*2), 
      .  Saux(2,2,nuotot,2,nuo)
 
@@ -130,7 +129,8 @@ C
 C  Internal variables .............................................
       integer
      .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
-     .  iuo, j, jo, juo, nd, iua, neigneeded
+     .    iuo, j, jo, juo, neigneeded
+      integer :: nuotot2, nuo2, BlockSize2, maxo2
       real(dp)
      .  ee, pipj1, pipj2, qe, t,
      .  kxij, ckx, skx, qxij, cqx, sqx,
@@ -144,6 +144,12 @@ C     ....................
       call write_debug( '    PRE diagsprl' )
 #endif
 
+      ! Easier
+      nuotot2 = nuotot * 2
+      nuo2 = nuo * 2
+      maxo2 = maxo * 2
+      BlockSize2 = BlockSize * 2
+
 C Find eigenvalues at every k point ...............................
       do ik = 1,nk
 
@@ -152,15 +158,14 @@ C       Index i is for real/imag parts
 C       Indices is and js are for spin components
 C       Indices iuo and juo are for orbital components:
 C       Haux(i,js,juo,is,iuo) = <js,juo|H|is,iuo>
-        Saux = 0.0d0
-        Haux = 0.0d0
+        Saux = 0.0_dp
+        Haux = 0.0_dp
 
 C       Transfer S,H matrices from sparse format in supercell to
 C       full format in unit cell
 C       Convention: ispin=1 => H11, ispin=2 => H22, 
 C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
         do iuo = 1,nuo
-          iua = iaorb(iuo)
           do j = 1,numh(iuo)
             ind = listhptr(iuo) + j
             jo = listh(ind)
@@ -168,11 +173,11 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            qxij = q(1) * xij(1,ind) +
-     .             q(2) * xij(2,ind) +
-     .             q(3) * xij(3,ind)
-            cqx = cos(qxij/2.d0)
-            sqx = sin(qxij/2.d0)
+            qxij = (qw(1) * xij(1,ind) +
+     .             qw(2) * xij(2,ind) +
+     .             qw(3) * xij(3,ind)) * 0.5_dp
+            cqx = cos(qxij)
+            sqx = sin(qxij)
             ckx = cos(kxij)
             skx = sin(kxij)
 
@@ -207,20 +212,25 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
      .           + HR * skx + HI * ckx
 
           enddo
-        enddo
 
-C Hermiticity
-        do iuo = 1,nuo
-          do juo = 1,nuo
-            Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
-            Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
-          enddo
+          ! TODO Hermiticity (Nick: 2020)
+          ! We cannot impose Hermiticity since the matrices
+          ! are distributed (well we could but...)
+          ! Currently we assume Hermiticity is implicit
+          ! This is what the *old* code did:
+          ! Problem is that it only imposes on a small part of the
+          ! matrix (for high core-counts it becomes smaller and smaller)
+          !do juo = 1, nuo
+          !  Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
+          !  Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
+          !enddo
+
         enddo
 
 C Find eigenvalues
 C Possible memory optimization: equivalence Haux and psi
-        call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .             0,iscf,ierror,2*BlockSize)
+        call cdiag(Haux,Saux,nuotot2,nuotot2,nuo2,eo(1,ik),psi,
+     .             0,iscf,ierror,BlockSize2)
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
@@ -235,14 +245,14 @@ C Check if we are done ................................................
       end if
 
 C Find new Fermi energy and occupation weights ........................
-      call fermid( 2, 4, nk, wk, maxo, nuotot, eo, 
-     .             temp, qtot, qo, ef, Entropy )
+      call fermid(2, 1, nk, wk, maxo2, nuotot2, eo,
+     .            temp, qtot, qo, ef, Entropy )
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
         t = max( temp, 1.d-6 )
         do ik = 1,nk
-          do io = 1,nuotot*2
+          do io = 1, nuotot2
             qo(io,ik) = wk(ik) * 
      .           ( stepf( (eo(io,ik)-e2)/t ) -
      .             stepf( (eo(io,ik)-e1)/t ) ) 
@@ -251,15 +261,14 @@ C Find weights for local density of states ............................
       endif
 
 C New density and energy-density matrices of unit-cell orbitals .......
-      nd = listdptr(nuo) + numd(nuo)
-      Dnew(1:nd,1:4) = 0.0d0
-      Enew(1:nd,1:4) = 0.0d0
+      Dnew(:,:) = 0._dp
+      Enew(:,:) = 0._dp
 
       do ik = 1,nk
 
 C Find maximum eigenvector that is required for this k point
         neigneeded = 0
-        ie = nuotot
+        ie = nuotot2
         do while (ie.gt.0.and.neigneeded.eq.0)
           qe = qo(ie,ik)
           if (abs(qe).gt.occtol) neigneeded = ie
@@ -270,7 +279,6 @@ C Find eigenvectors
         Saux = 0.0d0
         Haux = 0.0d0
         do iuo = 1,nuo
-          iua = iaorb(iuo)
           do j = 1,numh(iuo)
             ind = listhptr(iuo) + j
             jo = listh(ind)
@@ -278,11 +286,11 @@ C Find eigenvectors
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            qxij = q(1) * xij(1,ind) +
-     .             q(2) * xij(2,ind) +
-     .             q(3) * xij(3,ind)
-            cqx = cos(qxij/2.d0)
-            sqx = sin(qxij/2.d0)
+            qxij = (qw(1) * xij(1,ind) +
+     .             qw(2) * xij(2,ind) +
+     .             qw(3) * xij(3,ind)) * 0.5_dp
+            cqx = cos(qxij)
+            sqx = sin(qxij)
             ckx = cos(kxij)
             skx = sin(kxij)
 
@@ -317,18 +325,13 @@ C Find eigenvectors
      .           + HR * skx + HI * ckx
 
           enddo
+
+          ! TODO Hermiticity (see above)
+
         enddo
 
-C Hermiticity
-        do iuo = 1,nuo
-          do juo = 1,nuo
-            Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
-            Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
-          enddo
-        enddo
-
-        call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .             neigneeded,iscf,ierror,2*BlockSize)
+        call cdiag(Haux,Saux,nuotot2,nuotot2,nuo2,eo(1,ik),psi,
+     .             neigneeded,iscf,ierror,BlockSize2)
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -338,7 +341,6 @@ C Repeat diagonalisation with increased memory to handle clustering
           Saux = 0.0d0
           Haux = 0.0d0
           do iuo = 1,nuo
-            iua = iaorb(iuo)
             do j = 1,numh(iuo)
               ind = listhptr(iuo) + j
               jo = listh(ind)
@@ -346,11 +348,11 @@ C Repeat diagonalisation with increased memory to handle clustering
               kxij = kpoint(1,ik) * xij(1,ind) +
      .               kpoint(2,ik) * xij(2,ind) +
      .               kpoint(3,ik) * xij(3,ind)
-              qxij = q(1) * xij(1,ind) +
-     .               q(2) * xij(2,ind) +
-     .               q(3) * xij(3,ind)
-              cqx = cos(qxij/2.d0)
-              sqx = sin(qxij/2.d0)
+              qxij = (qw(1) * xij(1,ind) +
+     .               qw(2) * xij(2,ind) +
+     .               qw(3) * xij(3,ind)) * 0.5_dp
+              cqx = cos(qxij)
+              sqx = sin(qxij)
               ckx = cos(kxij)
               skx = sin(kxij)
 
@@ -385,27 +387,23 @@ C Repeat diagonalisation with increased memory to handle clustering
      .             + HR * skx + HI * ckx
   
             enddo
+
+            ! TODO Hermiticity (see above)
+
           enddo
 
-          do iuo = 1,nuo
-            do juo = 1,nuo
-              Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
-              Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
-            enddo
-          enddo
-
-          call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
-     .               neigneeded,iscf,ierror,2*BlockSize)
+          call cdiag(Haux,Saux,nuotot2,nuotot2,nuo2,eo(1,ik),psi,
+     .               neigneeded,iscf,ierror,BlockSize2)
         endif
 
 C Store the products of eigenvectors in matrices Dk and Ek
 C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-        Dk = 0.0d0
-        Ek = 0.0d0
+        Dk = 0._dp
+        Ek = 0._dp
 
         BNode = 0
         iie = 0
-        do ie = 1,nuotot
+        do ie = 1, nuotot2
           if (Node.eq.BNode) then
             iie = iie + 1
           endif
@@ -467,8 +465,8 @@ C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
               enddo
             enddo
           endif
-          BTest = ie/BlockSize
-          if (BTest*BlockSize.eq.ie) then
+          BTest = ie/(2*BlockSize)
+          if (BTest*2*BlockSize.eq.ie) then
             BNode = BNode + 1
             if (BNode .gt. Nodes-1) BNode = 0
           endif
@@ -483,11 +481,11 @@ C Add contribution to density matrices of unit-cell orbitals
             kxij = kpoint(1,ik) * xij(1,ind) +
      .             kpoint(2,ik) * xij(2,ind) +
      .             kpoint(3,ik) * xij(3,ind)
-            qxij = q(1) * xij(1,ind) +
-     .             q(2) * xij(2,ind) +
-     .             q(3) * xij(3,ind)
-            cqx = cos(0.5d0*qxij)
-            sqx = sin(0.5d0*qxij)
+            qxij = (qw(1) * xij(1,ind) +
+     .             qw(2) * xij(2,ind) +
+     .             qw(3) * xij(3,ind)) * 0.5_dp
+            cqx = cos(qxij)
+            sqx = sin(qxij)
             ckx = cos(kxij)
             skx = sin(kxij)
 

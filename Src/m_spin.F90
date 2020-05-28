@@ -369,9 +369,14 @@ contains
     write(*,'(a,t53,''= '',a)') 'redata: Spin configuration',trim(opt)
     write(*,'(a,t53,''= '',i0)')'redata: Number of spin components',spin%H
     write(*,'(a,t53,''= '',l1)')'redata: Time-Reversal Symmetry',TRSym
-    write(*,'(a,t53,''= '',l1)')'redata: Spin-spiral',Spiral
-    if ( Spiral .and. .not. spin%NCol ) then
-       write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
+    write(*,'(a,t53,''= '',l1)')'redata: Spin spiral', Spiral
+    if ( Spiral ) then
+      write(*,'(a,t53,''='',3(tr1,e12.6))') &
+          'redata: Spin spiral pitch wave vector', qSpiral
+      if ( .not. spin%NCol ) then
+        write(*,'(a)') 'redata: WARNING: spin spiral requires non-collinear spin'
+        call die("Spin spiral requires non-collinear spin")
+      end if
     end if
 
     if ( spin%SO ) then
@@ -387,10 +392,10 @@ contains
   
 
   subroutine init_spiral( ucell )
-    use fdf, only : fdf_get, leqi
+    use fdf, only: fdf_get, leqi
     use fdf, only: block_fdf, parsed_line
     use fdf, only: fdf_block, fdf_bline, fdf_bclose
-    use fdf, only: fdf_bnames, fdf_bvalues
+    use fdf, only: fdf_bnames, fdf_bvalues, fdf_bnvalues
     use units, only: Pi
 
     ! Unit cell lattice vectors
@@ -406,31 +411,36 @@ contains
     ! read in lattice constant
     alat = fdf_get('LatticeConstant',0.0_dp,'Bohr')
 
-    call reclat( ucell, rcell, 1 )
-
     Spiral = fdf_block('Spin.Spiral', bfdf)
 
     if ( .not. Spiral ) return
 
     if (.not. fdf_bline(bfdf,pline)) &
-         call die('init_spiral: ERROR in Spin.Spiral block')
+        call die('init_spiral: ERROR in Spin.Spiral block')
 
     ! Read lattice
     lattice = fdf_bnames(pline,1)
+    if ( fdf_bnvalues(pline) < 3 ) then
+      if (.not. fdf_bline(bfdf,pline)) &
+          call die('init_spiral: ERROR in Spin.Spiral, could &
+          &not find pitch wave vector')
+    end if
+
     ! Read pitch wave-vector
     qSpiral(1) = fdf_bvalues(pline,1)
     qSpiral(2) = fdf_bvalues(pline,2)
     qSpiral(3) = fdf_bvalues(pline,3)
 
     if ( leqi(lattice,'Cubic') ) then
-       qSpiral(1) = Pi * qSpiral(1) / alat
-       qSpiral(2) = Pi * qSpiral(2) / alat
-       qSpiral(3) = Pi * qSpiral(3) / alat
+      qSpiral(1) = Pi * qSpiral(1) / alat
+      qSpiral(2) = Pi * qSpiral(2) / alat
+      qSpiral(3) = Pi * qSpiral(3) / alat
     else if ( leqi(lattice,'ReciprocalLatticeVectors') ) then
-       qSpiral = matmul(rcell,qSpiral)
+      call reclat(ucell, rcell, 1)
+      qSpiral(:) = matmul(rcell, qSpiral)
     else
-       call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
-            ' ''Cubic'' or ''ReciprocalLatticeVectors''')
+      call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
+          ' ''Cubic'' or ''ReciprocalLatticeVectors''')
     end if
 
     call fdf_bclose(bfdf)
