@@ -22,8 +22,8 @@
 
       CONTAINS
 
-      subroutine fermid( nspin, maxspn, NK, WK, maxe, NE, E, 
-     .                   temp, qtot, WKE, EF, entropy )
+      subroutine fermid(nspinor, nspin, NK, WK, maxe, NE, E,
+     .                  temp, qtot, WKE, EF, entropy )
 
 C *********************************************************************
 C Finds the Fermi energy and the occupation weights of states.
@@ -31,41 +31,39 @@ C Written by J.M.Soler. August'96.
 C Simple single excitation introduced by E. Artacho August 2002.
 C Alternative occupation functions introduced by P. Ordejon, May'03.
 C ********** INPUT ****************************************************
-C INTEGER nspin    : Number of different spin polarizations (1 or 2)
-C INTEGER maxspn   : Maximum number of different spin polarizations (1 or 2)
-C                    for E and WKE matrices dimensions
+C INTEGER nspinor  : Number of spinors (1 or 2)
+C INTEGER nspin    : Number of separate spin polarizations (1 or 2)
+C                    for E and WKE matrices dimensions.
+C                    For NC and SOC this should be 1.
 C INTEGER NK       : Number of K-points
 C REAL*8  WK(NK)   : Sampling weights of k-points (must sum 1)
 C INTEGER maxe     : First dimension of E and WKE
+C                    For NC/SOC this should be twice the number of
+C                    orbitals
 C INTEGER NE       : Number of bands
-C REAL*8  E(maxe,maxspn,NK) : State eigenvalues
+C REAL*8  E(maxe,nspin,NK) : State eigenvalues
 C REAL*8  temp     : Temperature (in the same units of E)
 C REAL*8  qtot     : Total valence charge (number of electrons)
 C ********** OUTPUT ***************************************************
-C REAL*8  WKE(maxe,maxspn,NK) : Occupations multiplied by k-point weights
+C REAL*8  WKE(maxe,nspin,NK) : Occupations multiplied by k-point weights
 C                               (sum qtot)
 C REAL*8  EF                 : Fermi energy
 C REAL*8  entropy            : Entropy contribution to the electronic
 C                              Free Energy
 C *********************************************************************
 
-C
-C  Modules
-C
-
 C Passed variables
+      integer, intent(in) :: nspinor, nspin
       integer        :: maxe
-      integer        :: maxspn
       integer        :: ne
-      integer, intent(in)        :: nk
-      integer        :: nspin
+      integer, intent(in) :: nk
 
-      real(dp)       :: e(maxe,maxspn,nk)
+      real(dp), intent(in) :: E(maxe,nspin,nk)
       real(dp)       :: entropy
       real(dp)       :: qtot
       real(dp)       :: temp
-      real(dp)       :: wke(maxe,maxspn,nk)
-      real(dp), intent(in)   :: wk(nk)
+      real(dp)       :: wke(maxe,nspin,nk)
+      real(dp), intent(in) :: wk(nk)
       real(dp)       :: ef
 
 C Local variables
@@ -74,11 +72,12 @@ C Local variables
       integer        :: ik
       integer        :: ispin
       integer        :: iter
-      integer,  save :: nitmax = 150
-      logical,  save :: blread = .false.
-      logical,  save :: excitd = .false.
+      integer, save :: nitmax = 150
+      logical, save :: blread = .false.
+      logical, save :: excitd = .false.
       real(dp), save :: tol = 1.0d-10
-      real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
+      real(dp)       :: sumq, emin, emax
+      real(dp)       :: t, tinv, drange, wkebuf, W, eik
 
 #ifdef DEBUG
       call write_debug( '    PRE fermid' )
@@ -92,7 +91,7 @@ C Reading whether to do an excited state
      .        'fermid: Calculating for lowest-exciton excited state'
         endif
         blread = .true.
-      endif   
+      end if
 
 C Zero occupancies, including those not explicitly
 C calculated here if ne < maxe
@@ -102,16 +101,30 @@ C Determine Fermi level
       sumq = 0.0d0
       emin = e(1,1,1)
       emax = e(1,1,1)
-      do ik = 1,nk
-        do ispin = 1,nspin
+      if ( nspinor == 1 .and. nspin == 1 ) then
+        ! We are double counting since we do not
+        ! have a polarization nor any spinor components
+        ! This will be reflected further down as well
+        do ik = 1,nk
+          sumq = sumq + wk(ik) * ne * 2._dp
           do ie = 1,ne
-            wke(ie,ispin,ik) = wk(ik)*2.0d0/dble(nspin)
-            sumq = sumq + wke(ie,ispin,ik)
-            emin = min(emin,e(ie,ispin,ik))
-            emax = max(emax,e(ie,ispin,ik))
-          enddo
-        enddo
-      enddo
+            wke(ie,1,ik) = wk(ik) * 2._dp
+            emin = min(emin,e(ie,1,ik))
+            emax = max(emax,e(ie,1,ik))
+          end do
+        end do
+      else
+        do ik = 1,nk
+          sumq = sumq + wk(ik) * nspin * ne
+          do ispin = 1, nspin
+            do ie = 1, ne
+              wke(ie,ispin,ik) = wk(ik)
+              emin = min(emin,e(ie,ispin,ik))
+              emax = max(emax,e(ie,ispin,ik))
+            end do
+          end do
+        end do
+      end if
 
       ef = emax
 
@@ -137,21 +150,33 @@ C Determine Fermi level
         call die()
       endif
       T = max(temp,1.d-6)
+      Tinv = 1._dp / T
       drange = T*sqrt(-log(tol*0.01d0))
       emin = emin - drange
       emax = emax + drange
       do iter = 1,nitmax
         ef = 0.5d0*(emin + emax)
+
         sumq = 0.0d0
-        do ik = 1,nk
-          do ispin = 1,nspin
+        if ( nspinor == 1 .and. nspin == 1 ) then
+          do ik = 1,nk
             do ie = 1,ne
-              wke(ie,ispin,ik) = wk(ik)*
-     .            stepf((e(ie,ispin,ik)-ef)/T)*2.0d0/nspin
-              sumq = sumq + wke(ie,ispin,ik)
-            enddo
-          enddo
-        enddo
+              wke(ie,1,ik) = wk(ik)* 2._dp *
+     .            stepf((e(ie,1,ik)-ef)*Tinv)
+              sumq = sumq + wke(ie,1,ik)
+            end do
+          end do
+        else
+          do ik = 1,nk
+            do ispin = 1, nspin
+              do ie = 1,ne
+                wke(ie,ispin,ik) = wk(ik) *
+     .              stepf((e(ie,ispin,ik)-ef)*Tinv)
+                sumq = sumq + wke(ie,ispin,ik)
+              end do
+            end do
+          end do
+        end if
 
 C If the Fermi level was found..................... 
         if (abs(sumq-qtot).lt.tol) then
@@ -169,26 +194,36 @@ C k=1 and spin=1
 C and swap populations (meaningful only for T close to 0):
 C if nspin =1 populations of homo and lumo are just swapped for is=1
 C if nspin =2 populations of homo and lumo become equal.
-            wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) )/(3-nspin)
+            if ( nspinor == 1 .and. nspin == 1 ) then
+              wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) ) * 2._dp
+            else
+              wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) )
+            end if
             wke(ief,1,1) = wke(ief,1,1) + wkebuf
             wke(ief-1,1,1) = wke(ief-1,1,1) - wkebuf
           endif
 
 C Obtain the electronic entropy
-          entropy = 0.0d0
-          do ik = 1,nk
-            do ie = 1,ne
+          entropy = 0.0_dp
+          if ( nspinor == 1 .and. nspin == 1 ) then
+            do ik = 1,nk
+              do ie = 1,ne
+                W = 0.5_dp * wke(ie,1,ik) / wk(ik)
+                eik = (e(ie,1,ik)-ef) * Tinv
+                entropy = entropy + 2.0d0 * wk(ik) * enpy(eik,W)
+              end do
+            end do
+          else
+            do ik = 1,nk
               do ispin = 1,nspin
-
-                W = (nspin / 2.0d0) * wke(ie,ispin,ik) / wk(ik)
-                eik = (e(ie,ispin,ik)-ef) / T
-
-                entropy = entropy + ( 2.0d0 * wk(ik) / nspin ) *
-     .                    enpy(eik,w)
-
-              enddo
-            enddo
-          enddo
+                do ie = 1,ne
+                  W = wke(ie,ispin,ik) / wk(ik)
+                  eik = (e(ie,ispin,ik)-ef) * Tinv
+                  entropy = entropy + wk(ik) * enpy(eik,W)
+                end do
+              end do
+            end do
+          end if
 
 #ifdef DEBUG
           call write_debug( '    POS fermid' )
@@ -206,7 +241,6 @@ C Obtain the electronic entropy
         write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
       endif
       call die('Fermid: Iteration has not converged.')
-
 
       end subroutine fermid
 

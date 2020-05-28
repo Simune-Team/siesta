@@ -298,7 +298,7 @@ C Find new Fermi energy and occupation weights ........................
          call fermispin( nspin, nspin, nk, wk, maxo,
      &        neigwanted, eo, temp, qs, qo, efs, Entropy )
       else
-         call fermid( nspin, maxspn, nk, wk, maxo,
+         call fermid(nspin, maxspn, nk, wk, maxo,
      &        neigwanted, eo, temp, qtot, qo, ef, Entropy )
       endif
 

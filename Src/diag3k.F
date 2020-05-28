@@ -229,7 +229,7 @@ C *********************************************************************
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
-      call fermid(1,1,nk,wk,maxo*2,neigwanted*2,eo,
+      call fermid(2,1,nk,wk,maxo*2,neigwanted*2,eo,
      &    temp,qtot,qo,ef,Entropy)
       
 !     Find weights for local density of states

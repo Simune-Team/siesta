@@ -215,7 +215,7 @@ C of referencing has been changed in several places to reflect this.
 !     Find new Fermi energy and occupation weights 
 !     0.5 is used as weight since nspin is passed as "1" to
 !     the routine. This needs to be cleaned up.
-      call fermid(1, 1, 1, (/0.5_dp/), 2*maxo, 2*neigwanted, 
+      call fermid(2, 1, 1, (/1._dp/), 2*maxo, 2*neigwanted,
      .                     eo, temp, qtot, qo, ef, Entropy)
 
 !      write(6,'(a,f12.6)') ' Ef = ', ef

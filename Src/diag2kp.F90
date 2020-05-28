@@ -246,7 +246,7 @@ subroutine diag2kp( spin, no_l, no_u, no_s, nnz, &
   if ( .not. getD ) goto 999
 
   ! Find new Fermi energy and occupation weights ........................
-  call fermid(1, 1, nk, wk, no_u2, &
+  call fermid(2, 1, nk, wk, no_u2, &
       neigwanted2, eo, Temp, qtot, qo, ef, Entropy )
 
   ! Allocate globalized DM and EDM

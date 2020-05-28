@@ -220,10 +220,10 @@ C Check if we are done ................................................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( spinor_dim, spinor_dim, nk, wk, maxo, 
+        call fermispin( spinor_dim, spinor_dim, nk, wk, maxo,
      &                  neigwanted, eo, temp, qs, qo, efs, Entropy )
       else
-        call fermid( spinor_dim, spinor_dim, nk, wk, maxo, neigwanted, 
+        call fermid(spinor_dim, spinor_dim, nk, wk, maxo, neigwanted,
      &               eo, temp, qtot, qo, ef, Entropy )
       endif
 
