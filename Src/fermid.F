@@ -195,7 +195,7 @@ C and swap populations (meaningful only for T close to 0):
 C if nspin =1 populations of homo and lumo are just swapped for is=1
 C if nspin =2 populations of homo and lumo become equal.
             if ( nspinor == 1 .and. nspin == 1 ) then
-              wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) ) * 2._dp
+              wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) ) * 0.5_dp
             else
               wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) )
             end if
