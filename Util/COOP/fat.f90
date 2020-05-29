@@ -1,5 +1,5 @@
 ! ---
-! Copyright (C) 1996-2016	The SIESTA group
+! Copyright (C) 1996-2016       The SIESTA group
 !  This file is distributed under the terms of the
 !  GNU General Public License: see COPYING in the top directory
 !  or http://www.gnu.org/copyleft/gpl.txt .
@@ -354,12 +354,18 @@ program fatband
      nbands = max_band - min_band + 1
      allocate(eig(nbands,nspin_blocks), fat(nbands,nspin_blocks))
 
+     ! The first dimension is the number of real numbers per orbital
+     ! 1 for real wfs, 2 for complex, and four for the two spinor components
+
      if (non_coll) then
+        allocate(wf_single(4,1:no_u))
         allocate(wf(4,1:no_u))
      else
         if (gamma_wfsx) then
+           allocate(wf_single(1,1:no_u))
            allocate(wf(1,1:no_u))
         else
+           allocate(wf_single(2,1:no_u))
            allocate(wf(2,1:no_u))
         endif
      endif
@@ -471,7 +477,10 @@ program fatband
 
                  ib = ib + 1
                  eig(ib,is) = eigval    ! This will be done for every curve... harmless
-                 read(wfs_u) (wf(:,io), io=1,nao)
+
+                 read(wfs_u) (wf_single(:,io), io=1,no_u)
+                 ! Use a double precision form in what follows
+                 wf(:,:) = real(wf_single(:,:), kind=dp)
 
 
                  do i1 = 1, no1
