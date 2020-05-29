@@ -22,7 +22,7 @@
 
       CONTAINS
 
-      subroutine fermid(nspinor, nspin, NK, WK, maxe, NE, E,
+      subroutine fermid(nspinor, maxspn, NK, WK, maxe, NE, E,
      .                  temp, qtot, WKE, EF, entropy )
 
 C *********************************************************************
@@ -32,7 +32,7 @@ C Simple single excitation introduced by E. Artacho August 2002.
 C Alternative occupation functions introduced by P. Ordejon, May'03.
 C ********** INPUT ****************************************************
 C INTEGER nspinor  : Number of spinors (1 or 2)
-C INTEGER nspin    : Number of separate spin polarizations (1 or 2)
+C INTEGER maxspn   : Number of separate spin polarizations (1 or 2)
 C                    for E and WKE matrices dimensions.
 C                    For NC and SOC this should be 1.
 C INTEGER NK       : Number of K-points
@@ -41,11 +41,11 @@ C INTEGER maxe     : First dimension of E and WKE
 C                    For NC/SOC this should be twice the number of
 C                    orbitals
 C INTEGER NE       : Number of bands
-C REAL*8  E(maxe,nspin,NK) : State eigenvalues
+C REAL*8  E(maxe,maxspn,NK) : State eigenvalues
 C REAL*8  temp     : Temperature (in the same units of E)
 C REAL*8  qtot     : Total valence charge (number of electrons)
 C ********** OUTPUT ***************************************************
-C REAL*8  WKE(maxe,nspin,NK) : Occupations multiplied by k-point weights
+C REAL*8  WKE(maxe,maxspn,NK) : Occupations multiplied by k-point weights
 C                               (sum qtot)
 C REAL*8  EF                 : Fermi energy
 C REAL*8  entropy            : Entropy contribution to the electronic
@@ -53,16 +53,16 @@ C                              Free Energy
 C *********************************************************************
 
 C Passed variables
-      integer, intent(in) :: nspinor, nspin
+      integer, intent(in) :: nspinor, maxspn
       integer        :: maxe
       integer        :: ne
       integer, intent(in) :: nk
 
-      real(dp), intent(in) :: E(maxe,nspin,nk)
+      real(dp), intent(in) :: E(maxe,maxspn,nk)
       real(dp)       :: entropy
       real(dp)       :: qtot
       real(dp)       :: temp
-      real(dp)       :: wke(maxe,nspin,nk)
+      real(dp)       :: wke(maxe,maxspn,nk)
       real(dp), intent(in) :: wk(nk)
       real(dp)       :: ef
 
@@ -95,13 +95,13 @@ C Reading whether to do an excited state
 
 C Zero occupancies, including those not explicitly
 C calculated here if ne < maxe
-      wke(1:maxe,1:nspin,1:nk) = 0.0d0
+      wke(1:maxe,1:maxspn,1:nk) = 0.0d0
 
 C Determine Fermi level
       sumq = 0.0d0
       emin = e(1,1,1)
       emax = e(1,1,1)
-      if ( nspinor == 1 .and. nspin == 1 ) then
+      if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
         ! We are double counting since we do not
         ! have a polarization nor any spinor components
         ! This will be reflected further down as well
@@ -115,8 +115,8 @@ C Determine Fermi level
         end do
       else
         do ik = 1,nk
-          sumq = sumq + wk(ik) * nspin * ne
-          do ispin = 1, nspin
+          sumq = sumq + wk(ik) * maxspn * ne
+          do ispin = 1, maxspn
             do ie = 1, ne
               wke(ie,ispin,ik) = wk(ik)
               emin = min(emin,e(ie,ispin,ik))
@@ -158,7 +158,7 @@ C Determine Fermi level
         ef = 0.5d0*(emin + emax)
 
         sumq = 0.0d0
-        if ( nspinor == 1 .and. nspin == 1 ) then
+        if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
           do ik = 1,nk
             do ie = 1,ne
               wke(ie,1,ik) = wk(ik)* 2._dp *
@@ -168,7 +168,7 @@ C Determine Fermi level
           end do
         else
           do ik = 1,nk
-            do ispin = 1, nspin
+            do ispin = 1, maxspn
               do ie = 1,ne
                 wke(ie,ispin,ik) = wk(ik) *
      .              stepf((e(ie,ispin,ik)-ef)*Tinv)
@@ -192,12 +192,12 @@ C k=1 and spin=1
             enddo
   314       continue
 C and swap populations (meaningful only for T close to 0):
-C if nspin =1 populations of homo and lumo are just swapped for is=1
-C if nspin =2 populations of homo and lumo become equal.
-            if ( nspinor == 1 .and. nspin == 1 ) then
+C if maxspn =1 populations of homo and lumo are just swapped for is=1
+C if maxspn =2 populations of homo and lumo become equal.
+            if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
               wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) ) * 0.5_dp
             else
-              wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) )
+              wkebuf = wke(ief-1,1,1) - wke(ief,1,1)
             end if
             wke(ief,1,1) = wke(ief,1,1) + wkebuf
             wke(ief-1,1,1) = wke(ief-1,1,1) - wkebuf
@@ -205,18 +205,18 @@ C if nspin =2 populations of homo and lumo become equal.
 
 C Obtain the electronic entropy
           entropy = 0.0_dp
-          if ( nspinor == 1 .and. nspin == 1 ) then
-            do ik = 1,nk
-              do ie = 1,ne
+          if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
+            do ik = 1 , nk
+              do ie = 1 , ne
                 W = 0.5_dp * wke(ie,1,ik) / wk(ik)
                 eik = (e(ie,1,ik)-ef) * Tinv
                 entropy = entropy + 2.0d0 * wk(ik) * enpy(eik,W)
               end do
             end do
           else
-            do ik = 1,nk
-              do ispin = 1,nspin
-                do ie = 1,ne
+            do ik = 1 , nk
+              do ispin = 1 , maxspn
+                do ie = 1 , ne
                   W = wke(ie,ispin,ik) / wk(ik)
                   eik = (e(ie,ispin,ik)-ef) * Tinv
                   entropy = entropy + wk(ik) * enpy(eik,W)
