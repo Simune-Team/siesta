@@ -32,15 +32,26 @@ C Simple single excitation introduced by E. Artacho August 2002.
 C Alternative occupation functions introduced by P. Ordejon, May'03.
 C ********** INPUT ****************************************************
 C INTEGER nspinor  : Number of spinors (1 or 2)
-C INTEGER maxspn   : Number of separate spin polarizations (1 or 2)
-C                    for E and WKE matrices dimensions.
-C                    For NC and SOC this should be 1.
+!                    nspinor = 1 for spin-less calculations
+!                    nspinor = 2 for collinear or non-collinear spin
+C INTEGER maxspn   : Number of separate spin blocks (1 or 2)
+!                    in the  E and WKE matrices (that is, the length of
+!                    the second dimension of E and WKE).
+!                    For NC and SOC this should be 1, since the states
+!                    are not classified by spin.
+!                    For collinear spin, maxspn=2
+!                    For the spinless case, maxspn=1
+!
+!     Note that in the NC/SOC case, the actual arguments E and WKE are of
+!     the form  E(2*neigwanted,nk)  or E(2*no_u,nk)
+!     and in this routine they are unpacked to the E(*,1,nk) form      
+!
 C INTEGER NK       : Number of K-points
 C REAL*8  WK(NK)   : Sampling weights of k-points (must sum 1)
 C INTEGER maxe     : First dimension of E and WKE
-C                    For NC/SOC this should be twice the number of
-C                    orbitals
-C INTEGER NE       : Number of bands
+C                    For NC/SOC this should be large enough to hold twice the number of
+C                    wanted eigenstates (2*neigwanted). 
+C INTEGER NE       : Number of bands (per spin in the collinear case)
 C REAL*8  E(maxe,maxspn,NK) : State eigenvalues
 C REAL*8  temp     : Temperature (in the same units of E)
 C REAL*8  qtot     : Total valence charge (number of electrons)
@@ -102,8 +113,7 @@ C Determine Fermi level
       emin = e(1,1,1)
       emax = e(1,1,1)
       if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
-        ! We are double counting since we do not
-        ! have a polarization nor any spinor components
+        ! Each spinless state can have two electrons, so we double the occupancies
         ! This will be reflected further down as well
         do ik = 1,nk
           sumq = sumq + wk(ik) * ne * 2._dp
@@ -184,17 +194,17 @@ C If the Fermi level was found.....................
 C If excited state is to be calculated, find the level above Ef for
 C k=1 and spin=1
           if (excitd) then
-            do ie = 1, ne
+            loop: do ie = 1, ne
               if ( e(ie,1,1) .gt. ef ) then
-                ief = ie
-                go to 314
+                ief = ie    ! LUMO index
+                exit loop
               endif
             enddo
-  314       continue
+
 C and swap populations (meaningful only for T close to 0):
-C if maxspn =1 populations of homo and lumo are just swapped for is=1
-C if maxspn =2 populations of homo and lumo become equal.
-            if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
+C if nspinor=1 populations of homo and lumo are just swapped for is=1
+C if nspinor=2 populations of homo and lumo become equal.
+            if ( nspinor == 1 ) then 
               wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) ) * 0.5_dp
             else
               wkebuf = wke(ief-1,1,1) - wke(ief,1,1)
