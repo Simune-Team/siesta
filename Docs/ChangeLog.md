@@ -16,6 +16,8 @@
 * Siesta is now developed on the GitLab platform: www.gitlab.com/siesta-project/siesta
   A number of Siesta-related packages are developed here: www.gitlab.com/siesta-project
 
+* Fix computation of NC/SOC occupations when neigwanted < no_u
+
 * Added Obj/ARCH-EXPERIMENTAL for suggested more modular building scheme
 
 * Added interface code to use GPUs with the ELPA library.
