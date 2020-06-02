@@ -73,7 +73,10 @@
       use m_ts_init, only : ts_init
 
       use m_diag_option, only: read_diag, print_diag
-      
+      use m_diag_option, only: algorithm, MRRR, MRRR_2stage
+      use m_diag_option, only: EXPERT, EXPERT_2stage
+      use m_diag_option, only: ELPA_1stage, ELPA_2stage
+
 #ifdef SIESTA__FLOOK
       use siesta_dicts, only : dict_populate
       use flook_siesta, only : slua_init, slua_call, LUA_INITIALIZE
@@ -466,11 +469,58 @@ C     Initialise MPI and set processor number
      &              ' for collinear spin polarized calculations.' )
         qtots(1) = (qtot + total_spin) / 2.0_dp
         qtots(2) = (qtot - total_spin) / 2.0_dp
+        if (IOnode) then
+          write(6,"(a,f12.6)") 'Total number of UP electrons: ',
+     &        qtots(1)
+          write(6,"(a,f12.6)") 'Total number of DOWN electrons: ',
+     &        qtots(2)
+        end if
       else
-        do ispin = 1,spin%spinor
-           qtots(ispin) = qtot/spin%spinor
-        end do
+        ! Dummy variable, only used for calculating expected
+        ! number of states per spin channel # neigmin
+        qtots(:) = qtot / 2.0_dp
       end if
+
+      ! Get number of eigenstates that need to be calculated
+      ! This generally needs to be set to halve the number of
+      ! charges plus some few states (such that the temperature
+      ! tail can be found).
+      neigwanted = fdf_get('NumberOfEigenStates',no_u)
+
+      ! Calculate the number of eigenstates
+      ! dependent on the # of spin-components.
+      neigmin = 0
+      do is = 1 , spin%spinor
+        neigmin = max(neigmin, ceiling(qtots(is)))
+      end do
+      
+      ! Always at least have one additional state per 200 K.
+      ! This choice is rather arbitrary but checked with a system
+      ! of 1200 K
+      neigmin = neigmin + ceiling((temp / Kelvin) / 200._dp)
+
+      ! Correct the number of calculated eigenstates
+      if ( neigwanted < 0 ) then
+         
+         ! If this number is negative it corresponds to the
+         ! number of orbitals ABOVE the charge neutrality point
+         ! to be included.
+         ! For very high temperatures this may be difficult to 
+         ! choose, however, for moderate temperatures this
+         ! need not be somewhat more than say 10.
+
+         ! Add the user requested states.
+         neigwanted = neigmin + abs(neigwanted)
+
+      end if
+
+      ! Check number of eigenstates - cannot be larger than number of
+      ! basis functions or smaller than number of occupied states + 1
+      ! so that the Fermi level can be estimated
+      neigwanted = max(neigwanted, neigmin)
+      ! Truncate value to number of orbitals
+      neigwanted = min(neigwanted,no_u)
+
 
 !     Find maximum interaction range
       if ( negl ) then
@@ -490,53 +540,6 @@ C     Initialise MPI and set processor number
 
 !     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
-
-      ! Get number of eigenstates that need to be calculated
-      ! This generally needs to be set to halve the number of
-      ! charges plus some few states (such that the temperature
-      ! tail can be found).
-      neigwanted = fdf_get('NumberOfEigenStates',no_u)
-
-      ! Calculate the number of eigenstates
-      ! dependent on the # of spin-components.
-      neigmin = 0
-      do is = 1 , spin%spinor
-        neigmin = max(neigmin, ceiling(qtots(is)))
-      end do
-      
-      if ( spin%spinor == 1 ) then
-        ! Only take halve the number of states because the filling
-        ! is doubled. Otherwise the number of states is
-        ! correct. For NC and SOC the diag[23]* routines
-        ! intrinsically doubles neigwanted.
-        neigmin = neigmin / 2
-      end if
-      ! Always at least have one additional state per 100 K.
-      ! This choice is rather arbitrary.
-      neigmin = neigmin + ceiling((temp / Kelvin) / 100._dp)
-
-      ! Correct the number of calculated eigenstates
-      if ( neigwanted < 0 ) then
-         
-         ! If this number is negative it corresponds to the
-         ! number of orbitals ABOVE the charge neutrality point
-         ! to be included.
-         ! For very high temperatures this may be difficult to 
-         ! choose, however, for moderate temperatures this
-         ! need not be somewhat more than say 10.
-
-         ! Add the user requested states.
-         neigwanted = neigmin - neigwanted
-
-      end if
-
-      ! Check number of eigenstates - cannot be larger than number of
-      ! basis functions or smaller than number of occupied states + 1
-      ! so that the Fermi level can be estimated
-      neigwanted = max(neigwanted, neigmin)
-
-      ! Truncate value
-      neigwanted = min(neigwanted,no_u)
       
 !     Find k-grid for Brillouin zone integration 
 !     NOTE: We need to know whether gamma is .true. or
@@ -551,6 +554,17 @@ C     Initialise MPI and set processor number
       ! taking care of this option
       call read_diag(Gamma_scf, spin%H)
       call print_diag()
+
+      if ( algorithm == MRRR .or. algorithm == MRRR_2stage .or.
+     &    algorithm == Expert .or. algorithm == Expert_2stage .or.
+     &    algorithm == ELPA_1stage .or. algorithm == ELPA_2stage ) then
+        if ( IONode .and. neigwanted /= no_u )
+     &      write(6,"(a,t53,'= ',i0,' / ',i0)")
+     &      'diag: Number of calculated states [no_calc / no_u]',
+     &      neigwanted, no_u
+      else
+        neigwanted = no_u
+      end if
 
 !     Call initialisation of PDOS here since we need to check if 
 !     the auxiliary supercell is needed for a non-gamma calculation
