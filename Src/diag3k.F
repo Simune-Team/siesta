@@ -258,10 +258,9 @@ C *********************************************************************
              neigneeded = neigwanted
          else
              neigneeded = 0
-             ie = 2*nuotot      ! for mixed spins
+             ie = 2*neigwanted ! for mixed spins
              do while (ie.gt.0.and.neigneeded.eq.0)
-                qe = qo(ie,ik)
-                if (abs(qe).gt.occtol) neigneeded = ie
+                if (abs(qo(ie,ik)).gt.occtol) neigneeded = ie
                 ie = ie - 1
              enddo
          endif
@@ -379,7 +378,7 @@ C *********************************************************************
           endif
       
           caux(:,:) = dcmplx(0.0_dp,0.0_dp)
-          if (qe.gt.occtol) then
+          if (abs(qe).gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
                 caux(1,j)= psi(1,j,iie) ! c_{i,up}
