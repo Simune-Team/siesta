@@ -199,7 +199,7 @@ C k=1 and spin=1
                 ief = ie    ! LUMO index
                 exit loop
               endif
-            enddo
+            enddo loop
 
 C and swap populations (meaningful only for T close to 0):
 C if nspinor=1 populations of homo and lumo are just swapped for is=1
