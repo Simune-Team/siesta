@@ -73,9 +73,7 @@
       use m_ts_init, only : ts_init
 
       use m_diag_option, only: read_diag, print_diag
-      use m_diag_option, only: algorithm, MRRR, MRRR_2stage
-      use m_diag_option, only: EXPERT, EXPERT_2stage
-      use m_diag_option, only: ELPA_1stage, ELPA_2stage
+      use m_diag_option, only: diag_recognizes_neigwanted
 
 #ifdef SIESTA__FLOOK
       use siesta_dicts, only : dict_populate
@@ -481,10 +479,12 @@ C     Initialise MPI and set processor number
         qtots(:) = qtot / 2.0_dp
       end if
 
-      ! Get number of eigenstates that need to be calculated
-      ! This generally needs to be set to halve the number of
-      ! charges plus some few states (such that the temperature
-      ! tail can be found).
+      ! Get number of eigenstates that need to be calculated This
+      ! generally needs to be set to half the number of charges plus a
+      ! few extra states (such that the temperature tail can be found).
+      ! When states are spinors (for collinear or non-collinear spin,
+      ! i.e., for spin%spinor=2), to be occupied by a single electron
+      ! each, this number refers to half the number of spinors.
       neigwanted = fdf_get('NumberOfEigenStates',no_u)
 
       ! Calculate the number of eigenstates
@@ -494,20 +494,21 @@ C     Initialise MPI and set processor number
         neigmin = max(neigmin, ceiling(qtots(is)))
       end do
       
-      ! Always at least have one additional state per 200 K.
-      ! This choice is rather arbitrary but checked with a system
-      ! of 1200 K
+      ! Always at least have one additional state per 200 K.  This
+      ! choice is rather arbitrary. If the system is large it is likely
+      ! to have many states "close" to the Fermi level, and then the
+      ! number of extra states should be higher. See below
+        
       neigmin = neigmin + ceiling((temp / Kelvin) / 200._dp)
 
       ! Correct the number of calculated eigenstates
       if ( neigwanted < 0 ) then
          
-         ! If this number is negative it corresponds to the
-         ! number of orbitals ABOVE the charge neutrality point
-         ! to be included.
-         ! For very high temperatures this may be difficult to 
-         ! choose, however, for moderate temperatures this
-         ! need not be somewhat more than say 10.
+         ! If this number is negative it corresponds to the number of
+         ! states ABOVE the charge neutrality point to be included.  For
+         ! normal temperatures and small/medium systems, a number such
+         ! as 10 might be enough, but For very high temperatures and/or
+         ! large systems, this number might need to be increased significantly.
 
          ! Add the user requested states.
          neigwanted = neigmin + abs(neigwanted)
@@ -518,7 +519,7 @@ C     Initialise MPI and set processor number
       ! basis functions or smaller than number of occupied states + 1
       ! so that the Fermi level can be estimated
       neigwanted = max(neigwanted, neigmin)
-      ! Truncate value to number of orbitals
+      ! Truncate value to number of basis orbitals
       neigwanted = min(neigwanted,no_u)
 
 
@@ -555,9 +556,7 @@ C     Initialise MPI and set processor number
       call read_diag(Gamma_scf, spin%H)
       call print_diag()
 
-      if ( algorithm == MRRR .or. algorithm == MRRR_2stage .or.
-     &    algorithm == Expert .or. algorithm == Expert_2stage .or.
-     &    algorithm == ELPA_1stage .or. algorithm == ELPA_2stage ) then
+      if ( diag_recognizes_neigwanted() ) then
         if ( IONode .and. neigwanted /= no_u )
      &      write(6,"(a,t53,'= ',i0,' / ',i0)")
      &      'diag: Number of calculated states [no_calc / no_u]',
