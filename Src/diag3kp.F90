@@ -235,7 +235,7 @@ subroutine diag3kp( spin, no_l, no_u, no_s, nnz, &
   end do
 
   ! Globalise eigenvalues
-  do ik = 1,nk
+  do ik = 1, nk
     BNode = mod(ik-1, Nodes)
     call MPI_Bcast(eo(1,ik), neigwanted2, MPI_Double_Precision, &
         BNode,MPI_Comm_World,MPIerror)
@@ -245,8 +245,8 @@ subroutine diag3kp( spin, no_l, no_u, no_s, nnz, &
   if ( .not. getD ) goto 999
 
   ! Find new Fermi energy and occupation weights ........................
-  call fermid( spin%spinor, spin%spinor, nk, wk, no_u, &
-      neigwanted, eo, Temp, qtot, qo, ef, Entropy )
+  call fermid(2, 1, nk, wk, no_u2, &
+      neigwanted2, eo, Temp, qtot, qo, ef, Entropy )
 
   ! Allocate globalized DM and EDM
   call re_alloc( g_DM, 1, g_nnz, 1, spin%DM, name='g_DM', routine= 'diag3kp' )

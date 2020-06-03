@@ -230,7 +230,8 @@ C *********************************************************************
 !-----------------------------------------------------------------------
       
 !     Find new Fermi energy and occupation weights
-      call fermid(2,2,nk,wk,maxo,neigwanted,eo,temp,qtot,qo,ef,Entropy)
+      call fermid(2,1,nk,wk,maxo*2,neigwanted*2,eo,
+     &    temp,qtot,qo,ef,Entropy)
       
 !     Find weights for local density of states
       if (e1 .lt. e2) then
@@ -238,7 +239,7 @@ C *********************************************************************
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
         do ik = 1,nk
-          do io = 1,nuotot*2
+          do io = 1,neigwanted*2
             qo(io,ik) = wk(ik) * ( stepf( (eo(io,ik)-e2)/t ) -
      .                             stepf( (eo(io,ik)-e1)/t ) )
           enddo
@@ -258,11 +259,10 @@ C *********************************************************************
              neigneeded = neigwanted
           else
              neigneeded = 0
-             ie = 2*nuotot    ! for mixed spins
+             ie = 2*neigwanted ! for mixed spins
              do while (ie.gt.0.and.neigneeded.eq.0)
-                qe = qo(ie,ik)
-                if (abs(qe).gt.occtol) neigneeded = ie
-                ie = ie - 1
+               if (abs(qo(ie,ik)).gt.occtol) neigneeded = ie
+               ie = ie - 1
              enddo
           endif
           
@@ -391,7 +391,7 @@ C *********************************************************************
           endif
       
           caux(:,:) = dcmplx(0.0_dp,0.0_dp)
-          if (qe.gt.occtol) then
+          if (abs(qe).gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
                 caux(1,j)= psi(1,j,iie) ! c_{i,up}
