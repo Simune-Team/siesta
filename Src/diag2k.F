@@ -256,7 +256,7 @@ C *********************************************************************
          !  Find maximum eigenvector index that is required for this k point 
          if (getPSI) then
              ! We do not have info about occupation
-             neigneeded = neigwanted
+             neigneeded = neigwanted*2
           else
              neigneeded = 0
              ie = 2*neigwanted ! for mixed spins
