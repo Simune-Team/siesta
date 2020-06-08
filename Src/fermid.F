@@ -22,8 +22,8 @@
 
       CONTAINS
 
-      subroutine fermid( nspin, maxspn, NK, WK, maxe, NE, E, 
-     .                   temp, qtot, WKE, EF, entropy )
+      subroutine fermid(nspinor, maxspn, NK, WK, maxe, NE, E,
+     .                  temp, qtot, WKE, EF, entropy )
 
 C *********************************************************************
 C Finds the Fermi energy and the occupation weights of states.
@@ -31,13 +31,27 @@ C Written by J.M.Soler. August'96.
 C Simple single excitation introduced by E. Artacho August 2002.
 C Alternative occupation functions introduced by P. Ordejon, May'03.
 C ********** INPUT ****************************************************
-C INTEGER nspin    : Number of different spin polarizations (1 or 2)
-C INTEGER maxspn   : Maximum number of different spin polarizations (1 or 2)
-C                    for E and WKE matrices dimensions
+C INTEGER nspinor  : Number of spinors (1 or 2)
+!                    nspinor = 1 for spin-less calculations
+!                    nspinor = 2 for collinear or non-collinear spin
+C INTEGER maxspn   : Number of separate spin blocks (1 or 2)
+!                    in the  E and WKE matrices (that is, the length of
+!                    the second dimension of E and WKE).
+!                    For NC and SOC this should be 1, since the states
+!                    are not classified by spin.
+!                    For collinear spin, maxspn=2
+!                    For the spinless case, maxspn=1
+!
+!     Note that in the NC/SOC case, the actual arguments E and WKE are of
+!     the form  E(2*neigwanted,nk)  or E(2*no_u,nk)
+!     and in this routine they are unpacked to the E(*,1,nk) form      
+!
 C INTEGER NK       : Number of K-points
 C REAL*8  WK(NK)   : Sampling weights of k-points (must sum 1)
 C INTEGER maxe     : First dimension of E and WKE
-C INTEGER NE       : Number of bands
+C                    For NC/SOC this should be large enough to hold twice the number of
+C                    wanted eigenstates (2*neigwanted). 
+C INTEGER NE       : Number of bands (per spin in the collinear case)
 C REAL*8  E(maxe,maxspn,NK) : State eigenvalues
 C REAL*8  temp     : Temperature (in the same units of E)
 C REAL*8  qtot     : Total valence charge (number of electrons)
@@ -49,23 +63,18 @@ C REAL*8  entropy            : Entropy contribution to the electronic
 C                              Free Energy
 C *********************************************************************
 
-C
-C  Modules
-C
-
 C Passed variables
+      integer, intent(in) :: nspinor, maxspn
       integer        :: maxe
-      integer        :: maxspn
       integer        :: ne
-      integer, intent(in)        :: nk
-      integer        :: nspin
+      integer, intent(in) :: nk
 
-      real(dp)       :: e(maxe,maxspn,nk)
+      real(dp), intent(in) :: E(maxe,maxspn,nk)
       real(dp)       :: entropy
       real(dp)       :: qtot
       real(dp)       :: temp
       real(dp)       :: wke(maxe,maxspn,nk)
-      real(dp), intent(in)   :: wk(nk)
+      real(dp), intent(in) :: wk(nk)
       real(dp)       :: ef
 
 C Local variables
@@ -74,11 +83,12 @@ C Local variables
       integer        :: ik
       integer        :: ispin
       integer        :: iter
-      integer,  save :: nitmax = 150
-      logical,  save :: blread = .false.
-      logical,  save :: excitd = .false.
+      integer, save :: nitmax = 150
+      logical, save :: blread = .false.
+      logical, save :: excitd = .false.
       real(dp), save :: tol = 1.0d-10
-      real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
+      real(dp)       :: sumq, emin, emax
+      real(dp)       :: t, tinv, drange, wkebuf, W, eik
 
 #ifdef DEBUG
       call write_debug( '    PRE fermid' )
@@ -92,26 +102,39 @@ C Reading whether to do an excited state
      .        'fermid: Calculating for lowest-exciton excited state'
         endif
         blread = .true.
-      endif   
+      end if
 
 C Zero occupancies, including those not explicitly
 C calculated here if ne < maxe
-      wke(1:maxe,1:nspin,1:nk) = 0.0d0
+      wke(1:maxe,1:maxspn,1:nk) = 0.0d0
 
 C Determine Fermi level
       sumq = 0.0d0
       emin = e(1,1,1)
       emax = e(1,1,1)
-      do ik = 1,nk
-        do ispin = 1,nspin
+      if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
+        ! Each spinless state can have two electrons, so we double the occupancies
+        ! This will be reflected further down as well
+        do ik = 1,nk
+          sumq = sumq + wk(ik) * ne * 2._dp
           do ie = 1,ne
-            wke(ie,ispin,ik) = wk(ik)*2.0d0/dble(nspin)
-            sumq = sumq + wke(ie,ispin,ik)
-            emin = min(emin,e(ie,ispin,ik))
-            emax = max(emax,e(ie,ispin,ik))
-          enddo
-        enddo
-      enddo
+            wke(ie,1,ik) = wk(ik) * 2._dp
+            emin = min(emin,e(ie,1,ik))
+            emax = max(emax,e(ie,1,ik))
+          end do
+        end do
+      else
+        do ik = 1,nk
+          sumq = sumq + wk(ik) * maxspn * ne
+          do ispin = 1, maxspn
+            do ie = 1, ne
+              wke(ie,ispin,ik) = wk(ik)
+              emin = min(emin,e(ie,ispin,ik))
+              emax = max(emax,e(ie,ispin,ik))
+            end do
+          end do
+        end do
+      end if
 
       ef = emax
 
@@ -137,21 +160,33 @@ C Determine Fermi level
         call die()
       endif
       T = max(temp,1.d-6)
+      Tinv = 1._dp / T
       drange = T*sqrt(-log(tol*0.01d0))
       emin = emin - drange
       emax = emax + drange
       do iter = 1,nitmax
         ef = 0.5d0*(emin + emax)
+
         sumq = 0.0d0
-        do ik = 1,nk
-          do ispin = 1,nspin
+        if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
+          do ik = 1,nk
             do ie = 1,ne
-              wke(ie,ispin,ik) = wk(ik)*
-     .            stepf((e(ie,ispin,ik)-ef)/T)*2.0d0/nspin
-              sumq = sumq + wke(ie,ispin,ik)
-            enddo
-          enddo
-        enddo
+              wke(ie,1,ik) = wk(ik)* 2._dp *
+     .            stepf((e(ie,1,ik)-ef)*Tinv)
+              sumq = sumq + wke(ie,1,ik)
+            end do
+          end do
+        else
+          do ik = 1,nk
+            do ispin = 1, maxspn
+              do ie = 1,ne
+                wke(ie,ispin,ik) = wk(ik) *
+     .              stepf((e(ie,ispin,ik)-ef)*Tinv)
+                sumq = sumq + wke(ie,ispin,ik)
+              end do
+            end do
+          end do
+        end if
 
 C If the Fermi level was found..................... 
         if (abs(sumq-qtot).lt.tol) then
@@ -159,36 +194,46 @@ C If the Fermi level was found.....................
 C If excited state is to be calculated, find the level above Ef for
 C k=1 and spin=1
           if (excitd) then
-            do ie = 1, ne
+            loop: do ie = 1, ne
               if ( e(ie,1,1) .gt. ef ) then
-                ief = ie
-                go to 314
+                ief = ie    ! LUMO index
+                exit loop
               endif
-            enddo
-  314       continue
+            enddo loop
+
 C and swap populations (meaningful only for T close to 0):
-C if nspin =1 populations of homo and lumo are just swapped for is=1
-C if nspin =2 populations of homo and lumo become equal.
-            wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) )/(3-nspin)
+C if nspinor=1 populations of homo and lumo are just swapped for is=1
+C if nspinor=2 populations of homo and lumo become equal.
+            if ( nspinor == 1 ) then 
+              wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) ) * 0.5_dp
+            else
+              wkebuf = wke(ief-1,1,1) - wke(ief,1,1)
+            end if
             wke(ief,1,1) = wke(ief,1,1) + wkebuf
             wke(ief-1,1,1) = wke(ief-1,1,1) - wkebuf
           endif
 
 C Obtain the electronic entropy
-          entropy = 0.0d0
-          do ik = 1,nk
-            do ie = 1,ne
-              do ispin = 1,nspin
-
-                W = (nspin / 2.0d0) * wke(ie,ispin,ik) / wk(ik)
-                eik = (e(ie,ispin,ik)-ef) / T
-
-                entropy = entropy + ( 2.0d0 * wk(ik) / nspin ) *
-     .                    enpy(eik,w)
-
-              enddo
-            enddo
-          enddo
+          entropy = 0.0_dp
+          if ( nspinor == 1 ) then ! also maxspn == 1, but this is implicit
+            do ik = 1 , nk
+              do ie = 1 , ne
+                W = 0.5_dp * wke(ie,1,ik) / wk(ik)
+                eik = (e(ie,1,ik)-ef) * Tinv
+                entropy = entropy + 2.0d0 * wk(ik) * enpy(eik,W)
+              end do
+            end do
+          else
+            do ik = 1 , nk
+              do ispin = 1 , maxspn
+                do ie = 1 , ne
+                  W = wke(ie,ispin,ik) / wk(ik)
+                  eik = (e(ie,ispin,ik)-ef) * Tinv
+                  entropy = entropy + wk(ik) * enpy(eik,W)
+                end do
+              end do
+            end do
+          end if
 
 #ifdef DEBUG
           call write_debug( '    POS fermid' )
@@ -206,7 +251,6 @@ C Obtain the electronic entropy
         write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
       endif
       call die('Fermid: Iteration has not converged.')
-
 
       end subroutine fermid
 

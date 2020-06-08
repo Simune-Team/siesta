@@ -15,8 +15,11 @@ module m_diag_option
   
   implicit none
   
-  public
+!  public :: read_diag, print_diag
+!  public :: diag_recognizes_neigwanted
 
+  public
+  
   save
 
   !> Whether diagonalization calls are made via LAPACK (true) or ScaLAPACK (false)
@@ -318,6 +321,20 @@ contains
     mem_factor = max(mem_factor, 1.0_dp)
 
   end subroutine read_diag
+
+  !> A convenience function to keep track of which solvers in 'diag' are
+  !> capable of working with a reduced number of eigenvectors/eigenvalues
+  
+  function diag_recognizes_neigwanted() result (neig_capable)
+    logical :: neig_capable
+    
+    neig_capable =  ( algorithm == MRRR .or. &
+                     algorithm == MRRR_2stage .or. &
+                     algorithm == Expert .or.  &
+                     algorithm == Expert_2stage .or. &
+                     algorithm == ELPA_1stage .or. &
+                     algorithm == ELPA_2stage )
+  end function diag_recognizes_neigwanted
 
   subroutine print_diag()
     use parallel, only: IONode, Nodes
