@@ -88,7 +88,7 @@ contains
 
     use m_ts_options, only : N_Elec, N_mu, mus
     use m_ts_method
-    use m_ts_global_vars,      only: TSmode, TSinit, TSrun
+    use m_ts_global_vars,      only: TSmode, TSinit, TSrun, onlyS
     use siesta_geom,           only: nsc, na_u, xa, ucell, isc_off
     use sparse_matrices,       only: sparse_pattern, block_dist
     use sparse_matrices,       only: Escf, S, maxnh
@@ -162,6 +162,9 @@ contains
           call timer( 'all', 3 )
        end if
        call bye("S only")
+    end if
+    if ( onlyS ) then
+      return
     end if
 
     if ( TS_DQ_METHOD == TS_DQ_METHOD_FERMI ) then
