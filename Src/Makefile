@@ -104,7 +104,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	vmb.o vmat.o vmatsp.o volcel.o \
         cgvc.o cgvc_zmatrix.o m_convergence.o \
         iocg.o ioeig.o iofa.o iokp.o iomd.o kpoint_pdos.o typecell.o \
-        ofc.o poison.o readsp.o radfft.o \
+        ofc.o poison.o radfft.o \
 	write_md_record.o kpoint_grid.o find_kgrid.o proximity_check.o\
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
 	scfconvergence_test.o post_scf_work.o state_analysis.o write_subs.o \
@@ -341,7 +341,7 @@ dhscf.o iolwf.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
-readsp.o eggbox.o iopipes.o : $(FDF)
+eggbox.o iopipes.o : $(FDF)
 atom.o basis_io.o basis_specs.o: $(FDF)
 ldau_specs.o: $(FDF)
 
@@ -1197,7 +1197,6 @@ read_options.o: files.o m_charge_add.o m_cite.o m_hartree_add.o m_mixing_scf.o
 read_options.o: m_spin.o m_target_stress.o parallel.o precision.o siesta_cml.o
 read_options.o: siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
-readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
 register_rfs.o: atm_types.o atmfuncs.o matel_registry.o parallel.o precision.o
 register_rfs.o: radial.o

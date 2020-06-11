@@ -392,56 +392,43 @@ contains
   
 
   subroutine init_spiral( ucell )
-    use fdf, only: fdf_get, leqi
+    use fdf, only: fdf_get
     use fdf, only: block_fdf, parsed_line
     use fdf, only: fdf_block, fdf_bline, fdf_bclose
-    use fdf, only: fdf_bnames, fdf_bvalues, fdf_bnvalues
-    use units, only: Pi
+    use fdf, only: fdf_bvalues
+    use m_get_kpoints_scale, only: get_kpoints_scale
 
     ! Unit cell lattice vectors
     real(dp), intent(in) :: ucell(3,3)
 
-    type(block_fdf)            :: bfdf
+    type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline
 
     ! Reciprocal cell vectors
-    real(dp) :: rcell(3,3), alat
-    character(len=30) :: lattice
-
-    ! read in lattice constant
-    alat = fdf_get('LatticeConstant',0.0_dp,'Bohr')
+    real(dp) :: rcell(3,3)
+    integer :: ierr
 
     Spiral = fdf_block('Spin.Spiral', bfdf)
 
     if ( .not. Spiral ) return
 
-    if (.not. fdf_bline(bfdf,pline)) &
-        call die('init_spiral: ERROR in Spin.Spiral block')
+    ! Retrieve scale
+    call get_kpoints_scale('Spin.Spiral.Scale', rcell, ierr)
 
-    ! Read lattice
-    lattice = fdf_bnames(pline,1)
-    if ( fdf_bnvalues(pline) < 3 ) then
-      if (.not. fdf_bline(bfdf,pline)) &
-          call die('init_spiral: ERROR in Spin.Spiral, could &
-          &not find pitch wave vector')
+    if ( ierr /= 0 ) then
+      call die('init_spiral: ERROR in Spin.Spiral.Scale, could &
+          &not find scale for spiral wave vector.')
     end if
+
+    if (.not. fdf_bline(bfdf,pline)) &
+        call die('init_spiral: ERROR in Spin.Spiral block, could &
+        &not find spiral wave vector.')
 
     ! Read pitch wave-vector
     qSpiral(1) = fdf_bvalues(pline,1)
     qSpiral(2) = fdf_bvalues(pline,2)
     qSpiral(3) = fdf_bvalues(pline,3)
-
-    if ( leqi(lattice,'Cubic') ) then
-      qSpiral(1) = Pi * qSpiral(1) / alat
-      qSpiral(2) = Pi * qSpiral(2) / alat
-      qSpiral(3) = Pi * qSpiral(3) / alat
-    else if ( leqi(lattice,'ReciprocalLatticeVectors') ) then
-      call reclat(ucell, rcell, 1)
-      qSpiral(:) = matmul(rcell, qSpiral)
-    else
-      call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
-          ' ''Cubic'' or ''ReciprocalLatticeVectors''')
-    end if
+    qSpiral(:) = matmul(rcell, qSpiral)
 
     call fdf_bclose(bfdf)
 

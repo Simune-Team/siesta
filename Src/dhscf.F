@@ -778,8 +778,7 @@ C     Local variables
      &  cross,
      &  poison, 
      &  reord, rhooda, rhoofdsp, 
-     &  timer, vmatsp, 
-     &  readsp
+     &  timer, vmatsp
 
 !     Dummy arrays for bsc_cellxc call
       real(grid_p) :: aux3(3,1)
