@@ -211,6 +211,14 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
             Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo)
      .           + HR * skx + HI * ckx
 
+            ! Both sqx and H(ind,4) changes sign
+            HR = H(ind,3) * cqx + H(ind,4) * sqx
+            HI = -H(ind,3) * sqx + H(ind,4) * cqx
+            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo)
+     .          + HR * ckx - HI * skx
+            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo)
+     .          + HR * skx + HI * ckx
+
           enddo
 
           ! TODO Hermiticity (Nick: 2020)
@@ -226,6 +234,19 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
           !enddo
 
         enddo
+
+!       We could check here for Hermiticity, however this only works
+!       for single core calculations (have been checked)
+!          do iuo = 1, nuotot
+!          do juo = 1, nuotot
+!            Hr = haux(1,2,juo,1,iuo) - haux(1,1,iuo,2,juo)
+!            Hi = haux(2,2,juo,1,iuo) + haux(2,1,iuo,2,juo)
+!            if ( abs(Hr) > 1e-10_dp .or. abs(hi) > 1e-10_dp ) then
+!              print *, iuo,juo,Hr, Hi,
+!     &            abs(haux(:,1,juo,2,iuo)),abs(haux(:,2,iuo,1,juo))
+!            end if
+!          end do
+!          end do
 
 C Find eigenvalues
 C Possible memory optimization: equivalence Haux and psi
@@ -324,6 +345,12 @@ C Find eigenvectors
             Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo)
      .           + HR * skx + HI * ckx
 
+            HR = H(ind,3) * cqx + H(ind,4) * sqx
+            HI = -H(ind,3) * sqx + H(ind,4) * cqx
+            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo)
+     .          + HR * ckx - HI * skx
+            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo)
+     .          + HR * skx + HI * ckx
           enddo
 
           ! TODO Hermiticity (see above)
@@ -385,7 +412,13 @@ C Repeat diagonalisation with increased memory to handle clustering
      .             + HR * ckx - HI * skx
               Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo)
      .             + HR * skx + HI * ckx
-  
+
+              HR = H(ind,3) * cqx + H(ind,4) * sqx
+              HI = -H(ind,3) * sqx + H(ind,4) * cqx
+              Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo)
+     .            + HR * ckx - HI * skx
+              Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo)
+     .            + HR * skx + HI * ckx
             enddo
 
             ! TODO Hermiticity (see above)

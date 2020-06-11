@@ -641,8 +641,10 @@ C     Modules
       use siestaXC, only : jms_setMeshDistr => setMeshDistr
                                         ! Sets a distribution of mesh
                                         ! points over parallel processors
-      use m_vmat,  only  : vmat
+      use m_vmat, only: vmat
+      use m_vmatsp, only: vmatsp
       use m_rhoofd, only: rhoofd
+      use m_rhoofdsp, only: rhoofdsp
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -777,8 +779,8 @@ C     Local variables
       external
      &  cross,
      &  poison, 
-     &  reord, rhooda, rhoofdsp, 
-     &  timer, vmatsp
+     &  reord, rhooda,
+     &  timer
 
 !     Dummy arrays for bsc_cellxc call
       real(grid_p) :: aux3(3,1)
@@ -922,7 +924,7 @@ C             rhoatm and Drho are in sequential mode
         call re_alloc( DRho_par, 1, ntpl, 1, nspin,
      &                 'DRho_par','dhscf' )       
         if (Spiral) then
-          call rhoofdsp( norb, nmpl, maxnd, numd, listdptr, listd,
+          call rhoofdsp( norb, nml, nmpl, maxnd, numd, listdptr, listd,
      &                   nspin, Dscf, DRho_par, nuo, nuotot, iaorb,
      &                   iphorb, isa, qspiral )
         else
@@ -1650,7 +1652,7 @@ C ----------------------------------------------------------------------
          enddo
 
          if (Spiral) then
-            call vmatsp( norb, nmpl, dvol, nspin, Vscf_par, maxnd,
+            call vmatsp( norb, nml, nmpl, dvol, nspin, Vscf_par, maxnd,
      &           numd, listdptr, listd, Hmat, nuo,
      &           nuotot, iaorb, iphorb, isa, qspiral )
          else
