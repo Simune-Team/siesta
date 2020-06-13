@@ -37,7 +37,7 @@
 
       real(grid_p),   pointer :: rhopcc(:), rhoatm(:), Vna(:)
       real(dp)                :: Uharrs     ! Harris energy
-      logical                 :: IsDiag, spiral
+      logical                 :: IsDiag
       integer                 :: nml(3), ntml(3), npcc, nmpl, ntpl
       integer                 :: nbcell
       real(dp)                :: bcell(3,3), cell(3,3),
@@ -169,9 +169,6 @@ C       Set mesh sub-division variables & perform one off allocation
         nsp = nsm*nsm*nsm
         call re_alloc( xdsp, 1, 3, 1, nsp, 'xdsp', 'dhscf_init' )
 
-C       Check spin-spiral wavevector (if defined)
-        if (spiral .and. nspin.lt.4)
-     &    call die('dhscf: ERROR: spiral defined but nspin < 4')
       endif   ! First time
 
 

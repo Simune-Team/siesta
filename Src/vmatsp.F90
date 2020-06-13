@@ -80,7 +80,7 @@ contains
 
     logical :: ParallelLocal
     real(dp) :: Vij(4), dxsp(3), &
-        r2cut(nsmax), r2sp, xr(3), Rdi(3), qRdi, cqRdi, sqRdi
+        r2cut(nsmax), r2sp, xr(3), Rdi, qRdi, cqRdi, sqRdi
 
     integer, pointer :: ilc(:) => null()
     integer, pointer :: ilocal(:) => null()
@@ -126,7 +126,7 @@ contains
     call re_alloc( ilc, 1, maxloc2, 'ilc', 'vmatsp' )
     call re_alloc( iorb, 0, maxloc, 'iorb', 'vmatsp' )
 
-    call re_alloc( Vlocal, 1, triang, 1, nsd, 'Vlocal', 'vmatsp' )
+    call re_alloc( Vlocal, 1, nsd, 1, triang, 'Vlocal', 'vmatsp' )
     call re_alloc( VlocalSp, 1, nsd, 0, maxloc, 0, maxloc, 'VlocalSp', 'vmatsp' )
     call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'vmatsp' )
     call re_alloc( VClocal, 1, nspin, 1, nsp, 'VClocal', 'vmatsp' )
@@ -182,7 +182,7 @@ contains
                 jl = ilocal(j)
                 ijl = idx_ijl(il,jl)
                 do ispin = 1, nsd
-                  DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ijl,ispin)
+                  DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ispin,ijl)
                   DscfL(ind,ispin+2) = DscfL(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
                 end do
               end do
@@ -193,7 +193,7 @@ contains
                 jl = ilocal(j)
                 ijl = idx_ijl(il, jl)
                 do ispin = 1,nsd
-                  DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ijl,ispin)
+                  DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ispin,ijl)
                   DscfL(ind,ispin+2) = DscfL(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
                 end do
               end do
@@ -211,7 +211,7 @@ contains
                 jl = ilocal(j)
                 ijl = idx_ijl(il, jl)
                 do ispin = 1, nsd
-                  Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ijl,ispin)
+                  Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ispin,ijl)
                   Vs(ind,ispin+2) = Vs(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
                 end do
               end do
@@ -222,7 +222,7 @@ contains
                 jl = ilocal(j)
                 ijl = idx_ijl(il, jl)
                 do ispin = 1,nsd
-                  Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ijl,ispin)
+                  Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ispin,ijl)
                   Vs(ind,ispin+2) = Vs(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
                 end do
               end do
@@ -235,8 +235,8 @@ contains
           iorb(i) = 0
         end do
         ijl = (last+1)*(last+2)/2
-        Vlocal(1:ijl,1:nsd) = 0.0_dp
-        VlocalSp(1:nsd,1:last,1:last) = 0.0_dp
+        Vlocal(1:nsd,1:ijl) = 0.0_dp
+        VlocalSp(1:nsd,0:last,0:last) = 0.0_dp
         last = 0
       endif
 
@@ -311,14 +311,17 @@ contains
         is = isa(ia)
         iop = listp2(imp)
 
-        ! Calculate spiral phase
-        Rdi(1:3) =  xr(1:3) - xdop(1:3,iop) + dxa(1:3,ia)
-        qRdi = q(1) * Rdi(1) + q(2) * Rdi(2) + q(3) * Rdi(3)
-        cqRdi = cos(qRdi)
-        sqRdi = sin(qRdi)
-
         ! Pre-multiply V and Clocal(,ic)
         do isp = 1,nsp
+          ! Calculate spiral phase
+          qRdi = 0._dp
+          do ix = 1, 3
+            Rdi = xr(ix) + xdsp(ix,isp) - xdop(ix,iop) + dxa(ix,ia)
+            qRdi = qRdi + q(ix) * Rdi
+          end do
+          cqRdi = cos(qRdi)
+          sqRdi = sin(qRdi)
+
           VClocal(1,isp) = V(isp,ip,1) * Clocal(isp,ic)
           VClocal(2,isp) = V(isp,ip,2) * Clocal(isp,ic)
           VClocal(3,isp) = (V(isp,ip,3)*cqRdi + V(isp,ip,4)*sqRdi) * Clocal(isp,ic)
@@ -340,15 +343,15 @@ contains
           ! Here we need the spiral contribution for jc > ic
           ! So an explicit check is required
           if ( jc == ic ) then
-            Vlocal(ijl,1) = Vlocal(ijl,1) + Vij(1)
-            Vlocal(ijl,2) = Vlocal(ijl,2) + Vij(2)
+            Vlocal(1,ijl) = Vlocal(1,ijl) + Vij(1)
+            Vlocal(2,ijl) = Vlocal(2,ijl) + Vij(2)
           else if ( jc < ic ) then
             if ( il == jl ) then
-              Vlocal(ijl,1) = Vlocal(ijl,1) + 2.0_dp*Vij(1)
-              Vlocal(ijl,2) = Vlocal(ijl,2) + 2.0_dp*Vij(2)
+              Vlocal(1,ijl) = Vlocal(1,ijl) + 2.0_dp*Vij(1)
+              Vlocal(2,ijl) = Vlocal(2,ijl) + 2.0_dp*Vij(2)
             else
-              Vlocal(ijl,1) = Vlocal(ijl,1) + Vij(1)
-              Vlocal(ijl,2) = Vlocal(ijl,2) + Vij(2)
+              Vlocal(1,ijl) = Vlocal(1,ijl) + Vij(1)
+              Vlocal(2,ijl) = Vlocal(2,ijl) + Vij(2)
             end if
           end if
 
@@ -374,7 +377,7 @@ contains
             jl = ilocal(j)
             ijl = idx_ijl(il, jl)
             do ispin = 1, nsd
-              DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ijl,ispin)
+              DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ispin,ijl)
               DscfL(ind,ispin+2) = DscfL(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
             end do
           end do
@@ -385,7 +388,7 @@ contains
             jl = ilocal(j)
             ijl = idx_ijl(il, jl)
             do ispin = 1, nsd
-              DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ijl,ispin)
+              DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * Vlocal(ispin,ijl)
               DscfL(ind,ispin+2) = DscfL(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
             end do
           end do
@@ -404,7 +407,7 @@ contains
             jl = ilocal(j)
             ijl = idx_ijl(il, jl)
             do ispin = 1 , nsd
-              Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ijl,ispin)
+              Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ispin,ijl)
               Vs(ind,ispin+2) = Vs(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
             end do
           end do
@@ -415,7 +418,7 @@ contains
             jl = ilocal(j)
             ijl = idx_ijl(il, jl)
             do ispin = 1,nsd
-              Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ijl,ispin)
+              Vs(ind,ispin) = Vs(ind,ispin) + dVol * Vlocal(ispin,ijl)
               Vs(ind,ispin+2) = Vs(ind,ispin+2) + dVol * VlocalSp(ispin,jl,il)
             end do
           end do

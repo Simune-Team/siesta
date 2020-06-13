@@ -74,7 +74,6 @@ contains
     ! Internal variables and arrays
     integer, parameter :: minloc = 1000 ! Min buffer size for local copy of Dscf
     integer, parameter :: maxoa  = 100  ! Max # of orbitals per atom
-    integer, parameter :: nsd = 2  ! spin-box size
 
     integer :: triang, &
         i, ia, ic, ii, ijl, il, imp, ind, ispin, io, ix, &
@@ -89,14 +88,12 @@ contains
 
     real(dp), pointer :: Clocal(:,:) => null()
     real(dp), pointer :: Dlocal(:,:) => null()
-    real(dp), pointer :: DlocalSp(:,:,:) => null()
 
     logical :: ParallelLocal
 
-    real(dp) :: &
-        Cij(nsp), Dij(4), &
+    real(dp) :: Cij, Dij(4), &
         dxsp(3), r2cut(nsmax), r2sp, &
-        xr(3), Rdi(3), qRdi, cqRdi, sqRdi
+        xr(3), Rdi, qRdi, cqRdi(nsp), sqRdi(nsp)
 
     !  Start time counter
     call timer('rhoofdsp',1)
@@ -133,8 +130,7 @@ contains
     call re_alloc( ilc, 1, maxloc2, 'ilc', 'rhoofdsp' )
     call re_alloc( iorb, 0, maxloc, 'iorb', 'rhoofdsp' )
 
-    call re_alloc( Dlocal, 1, nsd, 1, triang, 'Dlocal', 'rhoofdsp' )
-    call re_alloc( DlocalSp, 1, nspin, 0, maxloc, 0, maxloc, 'DlocalSp', 'rhoofdsp' )
+    call re_alloc( Dlocal, 1, nspin, 1, triang, 'Dlocal', 'rhoofdsp' )
     call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'rhoofdsp' )
     if ( DirectPhi ) then
       call re_alloc(phia, 1, maxoa, 1, nsp, "phia", "rhoofdsp")
@@ -151,7 +147,6 @@ contains
     !  Initializations
     rhoscf(:,:,:) = 0.0_grid_p
     Dlocal(:,:) = 0.0_dp
-    DlocalSp(:,:,:) = 0.0_dp
     ilocal(:) = 0
     iorb(:) = 0
     last = 0
@@ -212,10 +207,8 @@ contains
                 j = listdl(ind)
                 jl = ilocal(j)
                 ijl = idx_ijl(il,jl)
-                do ispin = 1,nsd
+                do ispin = 1,nspin
                   Dlocal(ispin,ijl) = DscfL(ind,ispin)
-                  DlocalSp(ispin,il,jl) = DscfL(ind,ispin+2)
-                  DlocalSp(ispin,jl,il) = DscfL(ind,ispin+2)
                 enddo
               enddo
             else
@@ -224,10 +217,8 @@ contains
                 j = listsc( i, iu, listdl(ind) )
                 jl = ilocal(j)
                 ijl = idx_ijl(il,jl)
-                do ispin = 1,nsd
+                do ispin = 1,nspin
                   Dlocal(ispin,ijl) = DscfL(ind,ispin)
-                  DlocalSp(ispin,il,jl) = DscfL(ind,ispin+2)
-                  DlocalSp(ispin,jl,il) = DscfL(ind,ispin+2)
                 enddo
               enddo
             endif
@@ -238,10 +229,8 @@ contains
                 j = listd(ind)
                 jl = ilocal(j)
                 ijl = idx_ijl(il,jl)
-                do ispin = 1,nsd
+                do ispin = 1,nspin
                   Dlocal(ispin,ijl) = Dscf(ind,ispin)
-                  DlocalSp(ispin,il,jl) = Dscf(ind,ispin+2)
-                  DlocalSp(ispin,jl,il) = Dscf(ind,ispin+2)
                 enddo
               enddo
             else
@@ -250,10 +239,8 @@ contains
                 j = listsc( i, iu, listd(ind) )
                 jl = ilocal(j)
                 ijl = idx_ijl(il,jl)
-                do ispin = 1,nsd
+                do ispin = 1,nspin
                   Dlocal(ispin,ijl) = Dscf(ind,ispin)
-                  DlocalSp(ispin,il,jl) = Dscf(ind,ispin+2)
-                  DlocalSp(ispin,jl,il) = Dscf(ind,ispin+2)
                 enddo
               enddo
             endif
@@ -308,42 +295,70 @@ contains
         iop = listp2(imp)
 
         ! Calculate spiral phase
-        Rdi(1:3) = xr(1:3) - xdop(1:3,iop) + dxa(1:3,ia)
-        qRdi = q(1) * Rdi(1) + q(2) * Rdi(2) + q(3) * Rdi(3)
-        cqRdi = cos(qRdi)
-        sqRdi = sin(qRdi)
+        do isp = 1, nsp
+          qRdi = 0._dp
+          do ix = 1, 3
+            Rdi = xr(ix) + xdsp(ix,isp) - xdop(ix,iop) + dxa(ix,ia)
+            qRdi = qRdi + q(ix) * Rdi
+          end do
+          cqRdi(isp) = cos(qRdi)
+          sqRdi(isp) = sin(qRdi)
+        end do
 
-        ! Loop on second orbital of mesh point (NOT only for jc.le.ic)
-        do jc = 1, nc
+        ! Loop on second orbital of mesh point, here only jc < ic
+        do jc = 1, ic - 1
           jl = ilc(jc)
-
-          do isp = 1, nsp
-            Cij(isp) = Clocal(isp,ic) * Clocal(isp,jc)
-          enddo
 
           ijl = idx_ijl(il,jl)
 
-          if ( jc == ic ) then
-            Dij(1) = Dlocal(1,ijl)
-            Dij(2) = Dlocal(2,ijl)
-          else
-            Dij(1) = 2*Dlocal(1,ijl)
-            Dij(2) = 2*Dlocal(2,ijl)
-          end if
-          Dij(3) = DlocalSp(1,il,jl)
-          Dij(4) = DlocalSp(2,il,jl)
+          Dij(1) = 2*Dlocal(1,ijl)
+          Dij(2) = 2*Dlocal(2,ijl)
+          Dij(3) = Dlocal(3,ijl)
+          Dij(4) = Dlocal(4,ijl)
 
           ! Loop over sub-points
           do isp = 1, nsp
-            if (jc.le.ic) then
-              rhoscf(isp,ip,1) = rhoscf(isp,ip,1) + Dij(1)*Cij(isp)
-              rhoscf(isp,ip,2) = rhoscf(isp,ip,2) + Dij(2)*Cij(isp)
-            endif
-            rhoscf(isp,ip,3) = rhoscf(isp,ip,3) + (Dij(3)*cqRdi - Dij(4)*sqRdi)*Cij(isp)
-            rhoscf(isp,ip,4) = rhoscf(isp,ip,4) + (Dij(4)*cqRdi + Dij(3)*sqRdi)*Cij(isp)
+            Cij = Clocal(isp,ic) * Clocal(isp,jc)
+            rhoscf(isp,ip,1) = rhoscf(isp,ip,1) + Dij(1)*Cij
+            rhoscf(isp,ip,2) = rhoscf(isp,ip,2) + Dij(2)*Cij
+            rhoscf(isp,ip,3) = rhoscf(isp,ip,3) + &
+                (Dij(3)*cqRdi(isp) - Dij(4)*sqRdi(isp))*Cij
+            rhoscf(isp,ip,4) = rhoscf(isp,ip,4) + &
+                (Dij(4)*cqRdi(isp) + Dij(3)*sqRdi(isp))*Cij
           end do
 
         enddo
+
+        ! onsite orbital
+        ijl = idx_ijl(il,il)
+        Dij(1) = Dlocal(1,ijl)
+        Dij(2) = Dlocal(2,ijl)
+        Dij(3) = Dlocal(3,ijl)
+        Dij(4) = Dlocal(4,ijl)
+        do isp = 1, nsp
+          Cij = Clocal(isp,ic) * Clocal(isp,ic)
+          rhoscf(isp,ip,1) = rhoscf(isp,ip,1) + Dij(1)*Cij
+          rhoscf(isp,ip,2) = rhoscf(isp,ip,2) + Dij(2)*Cij
+          rhoscf(isp,ip,3) = rhoscf(isp,ip,3) + &
+              (Dij(3)*cqRdi(isp) - Dij(4)*sqRdi(isp))*Cij
+          rhoscf(isp,ip,4) = rhoscf(isp,ip,4) + &
+              (Dij(4)*cqRdi(isp) + Dij(3)*sqRdi(isp))*Cij
+        end do
+
+        ! Loop on second orbital of mesh point (here only jc > ic)
+        do jc = ic + 1, nc
+          jl = ilc(jc)
+          ijl = idx_ijl(il,jl)
+          Dij(3) = Dlocal(3,ijl)
+          Dij(4) = Dlocal(4,ijl)
+          do isp = 1, nsp
+            Cij = Clocal(isp,ic) * Clocal(isp,jc)
+            rhoscf(isp,ip,3) = rhoscf(isp,ip,3) + &
+                (Dij(3)*cqRdi(isp) - Dij(4)*sqRdi(isp))*Cij
+            rhoscf(isp,ip,4) = rhoscf(isp,ip,4) + &
+                (Dij(4)*cqRdi(isp) + Dij(3)*sqRdi(isp))*Cij
+          end do
+        end do
 
       enddo
 
@@ -362,7 +377,6 @@ contains
     call de_alloc( iorb,'iorb', 'rhoofdsp' )
     call de_alloc( Clocal, 'Clocal', 'rhoofdsp' )
     call de_alloc( Dlocal, 'Dlocal', 'rhoofdsp' )
-    call de_alloc( DlocalSp, 'DlocalSp', 'rhoofdsp' )
     if ( DirectPhi ) then
       call de_alloc( phia, 'phia', 'vmatsp' )
     end if

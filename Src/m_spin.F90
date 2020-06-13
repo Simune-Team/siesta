@@ -309,7 +309,7 @@ contains
     end if
 
     ! Get true time reversal symmetry
-    TRSym  = fdf_get('TimeReversalSymmetry',TrSym)
+    TRSym = fdf_get('TimeReversalSymmetry',TRSym)
 
     if ( present(default_nspin) ) then
       default_nspin = spin%H
@@ -411,6 +411,8 @@ contains
     Spiral = fdf_block('Spin.Spiral', bfdf)
 
     if ( .not. Spiral ) return
+    ! We cannot use TRS for spirals, regardless of user!
+    TRSym = .false.
 
     ! Retrieve scale
     call get_kpoints_scale('Spin.Spiral.Scale', rcell, ierr)

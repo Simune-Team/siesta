@@ -3,9 +3,10 @@ SystemLabel         fe_noncol_spiral
 NumberOfAtoms       3
 NumberOfSpecies     1
 
+Spin NC
+Spin.Spiral.Scale ReciprocalLatticeVectors
 %block Spin.Spiral
- ReciprocalLatticeVectors
- # Pitch wave vector
+   # Pitch wave vector
    0.0 0.1 0.1
 %endblock
 
@@ -49,7 +50,7 @@ PAO.SplitNorm    0.15
       1.00   1.00
 %endblock PAO.BasisAndPSlmax
 
-MeshCutoff        150. Ry
+MeshCutoff        200. Ry
 
 ElectronicTemperature   0.1 eV
 DM.MixingWeight         0.01
@@ -57,10 +58,8 @@ DM.NumberPulay          4
 
 WriteMullikenPop  1
 
-Spin NC
-
 %block DM.InitSpin
- 1  +3.00     0.   0.   # atom,spin,theta,phi (deg)
+ 1  +1.50    90.   0.   # atom,spin,theta,phi (deg)
  2  +1.50    90.   0.
- 3  +3.00   180.   0.
+ 3  +1.50   90.   0.
 %endblock DM.InitSpin
