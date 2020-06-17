@@ -302,6 +302,7 @@ contains
     case ( 8 )
       ! real-space self-energy
       cit%comment = "Real-space self-energies for TranSiesta"
+      cit%doi = "10.1103/PhysRevB.100.195417"
       cit%author = "Papior, N. and Calogero, G. and Leitherer, S and Brandbyge, M"
       cit%journal = "Physical Review B"
       cit%year = 2019
