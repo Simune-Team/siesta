@@ -657,7 +657,8 @@ C     Modules
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
       use m_doping_uniform,       only: doping_active, doping_uniform
-      
+      use dipole_m, only: get_dipole_center, calc_dipole
+
       use m_charge_add,   only: charge_add
       use m_hartree_add,  only: hartree_add
 
@@ -700,7 +701,7 @@ C ----------------------------------------------------------------------
 C        cellxc(...)    : Finds total exch-corr energy and potential
 C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
-C        dipole(...)    : Finds electric dipole moment
+C        calc_dipole    : Finds electric dipole moment
 C        doping(...)    : Adds a background charge for doped systems
 C        write_rho(...)     : Saves electron density on a file
 C        poison(...)    : Solves Poisson equation
@@ -769,7 +770,6 @@ C     Local variables
 
       external
      &  cross,
-     &  dipole, 
      &  poison, 
      &  reord, rhooda, rhoofdsp, 
      &  timer, vmatsp, 
@@ -1213,18 +1213,14 @@ C Calculate the dipole moment
 C ----------------------------------------------------------------------
       dipol(1:3) = 0.0_dp
       if (shape .ne. 'bulk') then
+        ! Find dipole in system
 
-C Find center of system
-        x0(1:3) = 0.0_dp
-        do ia = 1,nua
-          x0(1:3) = x0(1:3) + xa(1:3,ia) / nua
-        enddo
+        ! Get dipole center
+        call get_dipole_center(cell, nua, xa, x0)
 
-C Find dipole
         ! This routine is distribution-blind
         ! and will reduce over all processors.
-        call dipole( cell, ntm, ntml(1), ntml(2), ntml(3), nsm,
-     &               DRho, x0, dipol )
+        call calc_dipole(cell, dvol, ntm, ntml, nsm, DRho, x0, dipol)
 
         ! Orthogonalize dipole to bulk directions
         if (shape .eq. 'chain') then
@@ -1328,12 +1324,17 @@ C ----------------------------------------------------------------------
          end if
          ! Add the external electric field
          field = field + user_specified_field
+
          ! This routine expects a sequential array,
          ! but it is distribution-blind
+         ! Note that we do not need to specify a center
+         ! Since we *just* need the saw-tooth to be located
+         ! in the vacuum region (beyond orbitals)
          call add_potential_from_field( field, cell, nua, isa, xa,
-     &                                  ntm, nsm, Vaux )
+     &                                  ntm, ntml, nsm, Vaux )
          ! Add energy of external electric field
          DUext = DUext - ddot(3,user_specified_field,1,dipol,1)
+
       endif
 
 ! ---------------------------------------------------------------------

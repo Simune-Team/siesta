@@ -204,7 +204,7 @@
          ! semi-infinite lead-direction for 1-probe calculations.
          ! For 1-electrode calculations it may make sense to apply
          ! this correction.
-         dipole_correction = fdf_get("SlabDipoleCorrection",
+         dipole_correction = fdf_get("Slab.DipoleCorrection",
      &        acting_efield)
          if (acting_efield .and. (.not. dipole_correction)) then
             if (ionode) write(6,'(/,(a))')
@@ -249,7 +249,7 @@
 !----------------------------------------------------------------
 
       subroutine add_potential_from_field(efield, cell, na, isa, xa,
-     $     meshG, nsm, V)
+     $     ntm, ntml, nsm, V)
 
 c     Adds the potential created by an external electric field.
 c     Written by J.M.Soler. Feb. 1998.
@@ -261,7 +261,8 @@ c     real*8  cell(3,3) : Unit cell vectors
 c     integer na        : Number of atoms
 c     integer isa(na)   : Atomic species indexes
 c     real*8  xa(3,na)  : Atomic positions (cartesian coordinates)
-c     integer meshG(3)  : Number of mesh divisions in each cell direction
+c     integer ntm(3)    : Number of mesh divisions in each cell direction
+c     integer ntml(3)   : Number of local mesh divisions in each cell direction
 c     integer nsm       : Number of sub-mesh points along each axis
 c     real*8  field(3)  : Electric field
 c     ********* Input and output *******************************************
@@ -290,13 +291,13 @@ c     vacuum region.
 
       implicit          none
 
-      integer, intent(in)          ::  na, isa(na), meshG(3), nsm
+      integer, intent(in)          ::  na, isa(na), ntm(3), ntml(3), nsm
       real(dp), intent(in)         ::  cell(3,3), efield(3), xa(3,na)
       real(grid_p), intent(inout)  ::  v(*)
 
       integer           i0(3), i1, i2, i3, ia, imesh,
      $     is, ix,
-     .     j1, j2, j3, meshl(3),
+     .     j1, j2, j3,
      .     Xoffset, Yoffset, Zoffset, i30, i20, i10
 
       real(dp)          dplane(3),
@@ -335,28 +336,24 @@ C     Find the geometric center of the system
 C     Find the mesh index of the origin of the shifted cell
       do ix = 1,3
          xmean = (xmin(ix) + xmax(ix)) / 2
-         i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
+         i0(ix) = nint( (xmean-0.5_dp) * ntm(ix) )
       end do
 
 C     Ensure that all indices become positive in the below loop
       do ix = 1 , 3
-         i0(ix) = i0(ix) - 10 * meshG(ix)
+         i0(ix) = i0(ix) - 10 * ntm(ix)
       end do      
 
 C     Find the electric field in mesh coordinates, so that
 C     v = efield*x = f*index
       do ix = 1,3
-         f(ix) = ddot(3,efield,1,cell(1,ix),1) / max( meshG(ix), 1 )
+         f(ix) = ddot(3,efield,1,cell(1,ix),1) / max( ntm(ix), 1 )
       enddo
 
 C     Find the potential at the origin of the shifted cell, so that
 C     the potential is zero at the center of the cell
 
-      v0 = - 0.5_dp*(f(1)*meshG(1) + f(2)*meshG(2) + f(3)*meshG(3))
-
-      meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
-      meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
-      meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
+      v0 = - 0.5_dp*(f(1)*ntm(1) + f(2)*ntm(2) + f(3)*ntm(3))
 
 C     Calculate starting point for grid
 
@@ -369,17 +366,17 @@ C     Add the electric field potential to the input potential
 
       imesh = 0
       i30 = Zoffset - 1
-      do i3 = 1,meshl(3)
+      do i3 = 1,ntml(3)
          i30 = i30 + 1
-         j3 = mod( i30-i0(3), meshG(3) )
+         j3 = mod( i30-i0(3), ntm(3) )
          i20 = Yoffset - 1
-         do i2 = 1,meshl(2)
+         do i2 = 1,ntml(2)
             i20 = i20 + 1
-            j2 = mod( i20-i0(2), meshG(2) )
+            j2 = mod( i20-i0(2), ntm(2) )
             i10 = Xoffset - 1
-            do i1 = 1,meshl(1)
+            do i1 = 1,ntml(1)
                i10 = i10 + 1
-               j1 = mod( i10-i0(1), meshG(1) )
+               j1 = mod( i10-i0(1), ntm(1) )
                imesh = imesh + 1
                v(imesh) = v(imesh) +
      &              v0 + f(1)*j1 + f(2)*j2 + f(3)*j3
