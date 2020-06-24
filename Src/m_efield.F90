@@ -50,15 +50,15 @@ contains
     use fdf, only: fdf_convfac, fdf_block, fdf_bline, block_fdf
     use fdf, only: parsed_line, fdf_bvalues, fdf_bnames, fdf_bmatch
 
-    real(dp),   intent(out)     :: input_field(3)
+    real(dp), intent(out) :: input_field(3)
 
-    type(block_fdf)            :: bfdf
+    type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
 
-    character(len=132)         :: eunits
+    character(len=132) :: eunits
 
-    real(dp)                    :: cfactor
-    integer                     :: ix
+    real(dp) :: cfactor
+    integer :: ix
 
     input_field(1:3) = 0.0_dp
 
@@ -87,7 +87,6 @@ contains
     logical,  intent(out) :: orthog ! originally orthogonal?
     integer,  intent(out) :: nbcell ! shape of cell
 
-
     ! tolerance for bulk components of the electric field
     real(dp), parameter :: tol = 1.0d-12
 
@@ -99,7 +98,9 @@ contains
 
     call shaper( ucell, na_u, isa, xa, shape, nbcell, bcell )
     orthog = .true.
-    if (nbcell .eq. 1) then
+
+    select case ( nbcell )
+    case ( 1 )
       eb1 = ddot(3,input_field,1,bcell,1) / ddot(3,bcell,1,bcell,1)
       if (abs(eb1) .gt. tol) then
         orthog = .false.
@@ -107,7 +108,8 @@ contains
           orthog_field(ix) = input_field(ix) - eb1 * bcell(ix,1)
         enddo
       endif
-    elseif (nbcell .eq. 2) then
+
+    case ( 2 )
       eb1 = ddot(3,input_field,1,bcell(1,1),1)/ &
           ddot(3,bcell(1,1),1,bcell(1,1),1)
       eb2 = ddot(3,input_field,1,bcell(1,2),1)/ &
@@ -120,12 +122,15 @@ contains
           orthog_field(ix) = eb3 * b1xb2(ix)
         end do
       end if
-    else if (nbcell .eq. 3) then
+
+    case ( 3 )
       orthog = .false.
       do ix = 1,3
         orthog_field(ix) = 0.0_dp
       end do
-    end if
+
+    end select
+
   end subroutine orthogonalize_efield
 
   !< Initialize electric-field options
