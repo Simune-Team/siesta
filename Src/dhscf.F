@@ -431,7 +431,7 @@ C     At the end of initializations:
 C ----------------------------------------------------------------------
       if (frstme) then
         call initialize_efield()
-        call init_dipole_correction(nbcell, acting_efield)
+        call init_dipole_correction(nbcell, bcell, acting_efield)
       end if
 
       ! Check if we need to add the potential 
@@ -655,10 +655,13 @@ C     Modules
 
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
-      use dipole_m, only: get_dipole_center, dipole_charge
-      use dipole_m,       only: get_field_from_dipole
+      use dipole_m, only: get_dipole_center
+      use dipole_m, only: get_field_from_dipole
+      use dipole_m, only: dipole_charge, dipole_potential
+      use dipole_m, only: dip_vacuum
       use dipole_m, only: DIPOLECORR
-      use dipole_m, only: DIPOLECORR_NONE, DIPOLECORR_CHARGE
+      use dipole_m, only: DIPOLECORR_NONE
+      use dipole_m, only: DIPOLECORR_CHARGE, DIPOLECORR_VACUUM
 
       use m_doping_uniform, only: doping_active, doping_uniform
 
@@ -1218,22 +1221,34 @@ C ----------------------------------------------------------------------
       if ( nbcell /= 3 ) then
         ! Find dipole in system
 
-        ! Get dipole center
-        call get_dipole_center(cell, nua, xa, x0)
+        select case ( DIPOLECORR )
+        case ( DIPOLECORR_VACUUM )
+          ! we should not calculate the dipole here
+          ! User requests the vacuum dipole calculation
+        case default
+          ! Regardless of whether the user requests a
+          ! dipole correction or not, then we will calculate the dipole
+          ! using the charge method
 
-        ! This routine is distribution-blind
-        ! and will reduce over all processors.
-        call dipole_charge(cell, dvol, ntm, ntml, nsm, DRho, x0, dipol)
+          ! Get dipole center
+          call get_dipole_center(cell, nua, xa, x0)
 
-        ! Orthogonalize dipole to bulk directions
-        if ( nbcell == 1 ) then ! chain
-          const = ddot(3,dipol,1,bcell,1) / ddot(3,bcell,1,bcell,1)
-          dipol(1:3) = dipol(1:3) - const * bcell(1:3,1)
-        else if ( nbcell == 2 ) then ! slab
-          call cross( bcell(1,1), bcell(1,2), b1Xb2 )
-          const = ddot(3,dipol,1,b1Xb2,1) / ddot(3,b1Xb2,1,b1Xb2,1)
-          dipol(1:3) = const * b1Xb2(1:3)
-       end if
+          ! This routine is distribution-blind
+          ! and will reduce over all processors.
+          call dipole_charge(cell, dvol, ntm, ntml, nsm, DRho,
+     &        x0, dipol)
+
+          ! Orthogonalize dipole to bulk directions
+          if ( nbcell == 1 ) then ! chain
+            const = ddot(3,dipol,1,bcell,1) / ddot(3,bcell,1,bcell,1)
+            dipol(1:3) = dipol(1:3) - const * bcell(1:3,1)
+          else if ( nbcell == 2 ) then ! slab
+            call cross( bcell(1,1), bcell(1,2), b1Xb2 )
+            const = ddot(3,dipol,1,b1Xb2,1) / ddot(3,b1Xb2,1,b1Xb2,1)
+            dipol(1:3) = const * b1Xb2(1:3)
+          end if
+
+        end select
 
       endif
 
@@ -1303,6 +1318,28 @@ C ----------------------------------------------------------------------
       Enaatm = Enaatm * dVol
       Enascf = Enaatm + Enascf * dVol
 
+      if ( DIPOLECORR == DIPOLECORR_VACUUM ) then
+        ! In case the user requested a vacuum dipole, calculate it here
+        ! REMARK
+        ! This method will only ever work for 3D-FFT poisson solved
+        ! potential
+        ! Note we do this on the potential which will be written
+        ! to ElectrostaticPotential
+        call dipole_potential(cell, nua, isa, xa, ntm, ntml, nsm,
+     &      dip_vacuum, Vaux, dipol)
+
+        ! Orthogonalize dipole to bulk directions
+        if ( nbcell == 1 ) then ! chain
+          const = ddot(3,dipol,1,bcell,1) / ddot(3,bcell,1,bcell,1)
+          dipol(1:3) = dipol(1:3) - const * bcell(1:3,1)
+        else if ( nbcell == 2 ) then ! slab
+          call cross( bcell(1,1), bcell(1,2), b1Xb2 )
+          const = ddot(3,dipol,1,b1Xb2,1) / ddot(3,b1Xb2,1,b1Xb2,1)
+          dipol(1:3) = const * b1Xb2(1:3)
+        end if
+
+      end if
+
 C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
@@ -1310,11 +1347,13 @@ C ----------------------------------------------------------------------
         select case ( DIPOLECORR )
         case ( DIPOLECORR_NONE )
           ! No dipole correction
-          field = 0._dp
+          field(:) = 0._dp
           DUext = 0._dp
+
         case default
           ! some kind of dipole correction
-          field = get_field_from_dipole(dipol,cell)
+          field(:) = get_field_from_dipole(dipol, cell)
+
           if ( Node == 0 ) then
             write(6,'(a,3(tr1,f12.4),a)')
      $          'Dipole moment in unit cell =', dipol/Debye, ' D'
@@ -1322,14 +1361,16 @@ C ----------------------------------------------------------------------
      $          'Electric field for dipole correction =',
      $          field/eV*Ang, ' eV/Ang/e'
           end if
+
           ! The dipole correction energy has an extra factor
           ! of one half because the field involved is internal.
           ! See the paper by Bengtsson DOI:10.1103/PhysRevB.59.12301
           ! Hence we compute this part separately
           DUext = -0.5_dp * ddot(3,field,1,dipol,1)
         end select
+
         ! Add the external electric field
-        field = field + user_specified_field
+        field(:) = field(:) + user_specified_field(:)
 
         ! This routine expects a sequential array,
         ! but it is distribution-blind
@@ -1338,10 +1379,11 @@ C ----------------------------------------------------------------------
         ! in the vacuum region (beyond orbitals)
         call add_potential_from_field( field, cell, nua, isa, xa,
      &      ntm, ntml, nsm, Vaux )
+
         ! Add energy of external electric field
         DUext = DUext - ddot(3,user_specified_field,1,dipol,1)
 
-      endif
+      end if
 
 ! ---------------------------------------------------------------------
 !     Transiesta:
