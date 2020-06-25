@@ -35,20 +35,17 @@ module m_efield
   implicit none
 
   logical, public  :: acting_efield = .false.
-  logical, public  :: dipole_correction = .false.
   real(dp), public :: user_specified_field(3) = (/ 0.0_dp, 0.0_dp, 0.0_dp /)
 
   private
   public :: initialize_efield
-  public :: get_field_from_dipole
   public :: add_potential_from_field
 
 contains
 
   subroutine get_user_specified_field(input_field)
 
-    use fdf, only: fdf_convfac, fdf_block, fdf_bline, block_fdf
-    use fdf, only: parsed_line, fdf_bvalues, fdf_bnames, fdf_bmatch
+    use fdf
 
     real(dp), intent(out) :: input_field(3)
 
@@ -143,35 +140,30 @@ contains
 
     use parallel,     only: ionode
     use siesta_cml,   only: cml_p, cmlAddProperty, mainXML
-    use fdf,          only: fdf_get, fdf_bnames, fdf_block
-    use fdf,          only: block_fdf, parsed_line, fdf_bline
-    use fdf,          only: fdf_bmatch, fdf_convfac, fdf_bvalues
+    use fdf
     use units,        only: Ang, eV
-    use m_cite, only: add_citation
-    use m_ts_global_vars,only: TSmode
+    use intrinsic_missing, only: vnorm
 
     real(dp) :: input_field(3), orthog_field(3)
     logical  :: orthog
     integer :: nbcell
 
-    real(dp), external :: ddot
-
     call get_user_specified_field(input_field)
-    acting_efield = (ddot(3,input_field,1,input_field,1) /= 0.0_dp)
+    acting_efield = vnorm(input_field) /= 0.0_dp
 
     ! always orthogonalize retrieve the shape of the cell
     call orthogonalize_efield(input_field,orthog_field,orthog,nbcell)
       
-    if (acting_efield) then
-      if (orthog) then
-        if (ionode) then
+    if ( acting_efield ) then
+      if ( orthog ) then
+        if ( ionode ) then
           write(6,'(/,a,3f12.6,a)') &
               'efield: External electric field =', &
               input_field/eV*Ang, ' eV/Ang/e'
         end if
         user_specified_field(1:3) = input_field(1:3)
       else
-        if (ionode) then
+        if ( ionode ) then
           write(6,'(a,(/,a,3f12.6))') &
               'efield: WARNING: Non zero bulk electric field.', &
               'efield: Input field (eV/Ang/e) =', input_field/eV*Ang, &
@@ -179,67 +171,17 @@ contains
         end if
         user_specified_field(1:3) = orthog_field(1:3)
       end if
-      if (cml_p) call cmlAddProperty(xf=mainXML, &
+      if (cml_p) &
+          call cmlAddProperty(xf=mainXML, &
           value=user_specified_field, &
           dictref='siesta:elfield', &
           units='siestaUnits:Ry_Bohr_e')
     end if
 
-    acting_efield = ddot(3,user_specified_field,1,user_specified_field,1) /= 0.0_dp
-
-    ! Only allow slab dipole corrections for slabs
-    ! We also allow dipole corrections for transiesta calculations
-    ! with a well-defined transport direction.
-    if ( nbcell == 3 ) then
-      ! Any fully periodic system should not allow dipole corrections
-      dipole_correction = .false.
-    else if ( nbcell == 2 .or. TSmode ) then
-      ! Note that we default to enable the correction if there is
-      ! an external field, or a transiesta calculation along the
-      ! semi-infinite lead-direction for 1-probe calculations.
-      ! For 1-electrode calculations it may make sense to apply
-      ! this correction.
-      dipole_correction = fdf_get("Slab.DipoleCorrection", acting_efield)
-      if (acting_efield .and. (.not. dipole_correction)) then
-        if (ionode) write(6,'(/,(a))') &
-            'efield: WARNING!', &
-            'efield: SlabDipoleCorrection is .false. with an external' &
-            //' efield.', &
-            'efield: For correct physics SlabDipoleCorrection should' &
-            //' be .true.', &
-            'efield: This is only for backwards compatibility!'
-      end if
-    else
-      dipole_correction = .false.
-    end if
-
-    if ( dipole_correction ) then
-      if ( IONode ) then
-        call add_citation("10.1103/PhysRevB.59.12301")
-      end if
-      if (ionode) write(6,'(/,(a))') &
-          'efield: SlabDipoleCorrection enabled.', &
-          'efield: A dipole layer will be introduced in the vacuum', &
-          'efield: region to compensate the system dipole'
-      acting_efield = .true.
-    end if
+    ! finally determine whether we do have a field
+    acting_efield = vnorm(user_specified_field) /= 0.0_dp
 
   end subroutine initialize_efield
-
-
-  function get_field_from_dipole(dipole, cell) result(efield)
-
-    use units,       only: pi
-
-    real(dp), intent(in)  :: dipole(3)
-    real(dp), intent(in)  :: cell(3,3)
-    real(dp)              :: efield(3)
-
-    real(dp), external  :: volcel
-
-    efield(1:3) = -4.0_dp * pi * dipole(1:3) * 2.0_dp / volcel(cell)
-
-  end function get_field_from_dipole
 
   subroutine add_potential_from_field(efield, cell, na, isa, xa, ntm, ntml, nsm, V)
 

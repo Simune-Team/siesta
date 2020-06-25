@@ -15,15 +15,102 @@
 !!    center of the system in case the user does not know where
 !!    it is.
 !! 2. Calculate the dipole based on a given center.
+!!
+!! This module is highly connected with the E-field module
 module dipole_m
 
   implicit none
 
   private
+
+  integer, parameter, public :: DIPOLECORR_NONE = 0
+  integer, parameter, public :: DIPOLECORR_CHARGE = 1
+  integer, public :: DIPOLECORR = DIPOLECORR_NONE
+
+  public :: init_dipole_correction
   public :: get_dipole_center
-  public :: calc_dipole
+  public :: dipole_charge
+  public :: get_field_from_dipole
+  public :: get_dipole_from_field
 
 contains
+
+  !< Read options for the dipole correction
+  subroutine init_dipole_correction(nbcell, acting_efield)
+    use parallel,     only: ionode
+    use siesta_cml,   only: cml_p, cmlAddParameter, mainXML
+    use fdf
+    use units,        only: Ang, eV
+    use m_cite, only: add_citation
+    use m_char, only: lcase
+    use intrinsic_missing, only: vnorm
+
+    !< number of bulk cell-directions
+    integer, intent(in) :: nbcell
+    !< Whether there is an intrinsic electric field
+    !!
+    !! In case the user request a dipole correction,
+    !! this will *always* be true on exit.
+    logical, intent(inout) :: acting_efield
+
+    character(len=32) :: dipole_str
+    logical :: old_slabdipole
+
+    ! Only allow slab dipole corrections for slabs and chains and molecules
+    old_slabdipole = fdf_get("Slab.DipoleCorrection", acting_efield)
+    if ( old_slabdipole ) then
+      dipole_str = lcase(fdf_get("Dipole", "slab"))
+    else
+      dipole_str = lcase(fdf_get("Dipole", "none"))
+    end if
+
+    select case ( trim(dipole_str) )
+    case ( "true", "t", ".true.", "yes", "slab", "chain", "molecule" )
+      ! All these options reflect a dipole correction
+      ! based on the original implementation
+      ! One *may* use the Dipole.Center block to specify the
+      ! center of the dipole
+      DIPOLECORR = DIPOLECORR_CHARGE
+    case ( "none", "no", "n", "false", "f", ".false." )
+      DIPOLECORR = DIPOLECORR_NONE
+    case default
+      print *, trim(dipole_str)
+      call die("init_dipole: Could not determine the dipole option &
+          &[slab, chain, molecule, none]")
+    end select
+
+    ! Further, remove dipole corrections if this is a bulk calculation
+    select case ( nbcell )
+    case ( 3 )
+      DIPOLECORR = DIPOLECORR_NONE
+    end select
+
+    select case ( DIPOLECORR )
+    case ( DIPOLECORR_NONE )
+      if ( acting_efield .and. IONode ) then
+        write(6,'(/,(a))') &
+            'efield: WARNING!', &
+            'efield: There is no dipole correction [Dipole none] although &
+            &an external efield is present.', &
+            'efield: For correct physics Dipole should be .true.', &
+            'efield: This is only for backwards compatibility!'
+        write(6,*) ! newline
+      end if
+    case ( DIPOLECORR_CHARGE )
+      if (cml_p) &
+          call cmlAddParameter( xf=mainXML, name='Dipole.Correction', &
+          value="charge", &
+          dictRef="siesta:dipole_correction")
+      if ( IONode ) then
+        call add_citation("10.1103/PhysRevB.59.12301")
+        write(6,'(/,(a))') &
+            'dipole: A dipole layer will be introduced in the vacuum', &
+            'dipole: region to compensate the system dipole'
+      end if
+      acting_efield = .true.
+    end select
+
+  end subroutine init_dipole_correction
 
   !< Return the dipole center
   !!
@@ -33,6 +120,11 @@ contains
   !! However, in some skewed molecules where one knows the dipole is
   !! not located at the center of the system one should specify the
   !! center of the dipole through this block: Dipole.Center
+  !!
+  !! NOTE: This routine does not take into account shifts
+  !! in the atomic structure when doing Grid.CellSampling
+  !! I.e. if users want a specific coordinate for the dipole placement
+  !! one should not *trust* the average dipole.
   subroutine get_dipole_center(ucell, na_u, xa, x0)
     use precision, only: dp
     use sys, only: die
@@ -81,6 +173,7 @@ contains
 
     else
 
+      ! Default to the average molecule position
       do ia = 1, na_u
         x0(1:3) = x0(1:3) + xa(1:3,ia)
       end do
@@ -93,8 +186,36 @@ contains
 
   end subroutine get_dipole_center
 
+
+  !< Calculate the field resulting from a dipole
+  function get_field_from_dipole(dipole, cell) result(efield)
+    use precision, only: dp
+    use units, only: pi
+    real(dp), intent(in)  :: dipole(3)
+    real(dp), intent(in)  :: cell(3,3)
+    real(dp) :: efield(3)
+
+    real(dp), external :: volcel
+
+    ! 4 * 2 * pi * dipole / volcel(cell)
+    efield(1:3) = -8.0_dp * pi * dipole(1:3) / volcel(cell)
+
+  end function get_field_from_dipole
+
+  !< Calculate the dipole that creates a given field
+  function get_dipole_from_field(efield, cell) result(dipole)
+    use precision, only: dp
+    use units, only: pi
+    real(dp), intent(in)  :: efield(3)
+    real(dp), intent(in)  :: cell(3,3)
+    real(dp) :: dipole(3)
+    real(dp), external :: volcel
+    dipole(:) = - efield(:) * volcel(cell) / (8._dp * Pi)
+
+  end function get_dipole_from_field
+
   !< Calculate dipole for a given center of the dipole
-  subroutine calc_dipole( cell, dvol, ntm, ntml, nsm, drho, X0, dipole)
+  subroutine dipole_charge( cell, dvol, ntm, ntml, nsm, drho, X0, dipole)
 ! ********************************************************************
 ! Finds the electric dipole
 ! Written by J.M.Soler. July 1997.
@@ -119,9 +240,7 @@ contains
 ! X0     in atomic units (Bohr)
 ! dipole in atomic units (electrons*Bohr)
 ! ********************************************************************
-!
-!  Modules
-!
+
     use precision,  only : dp, grid_p
     use sys,        only : die
     use mesh,       only : meshLim
@@ -222,6 +341,6 @@ contains
     dipole(1:3) = d(1:3)
 #endif
 
-  end subroutine calc_dipole
+  end subroutine dipole_charge
 
 end module dipole_m
