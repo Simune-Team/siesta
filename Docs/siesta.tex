@@ -9825,6 +9825,15 @@ dynamics.
   total stresses are printed in addition to the uncorrected items.
   The corrected Voigt form is also printed.
 
+  \note versions prior to 4.1 (also 4.1-beta releases) printed the
+  Voigt stress-tensor in this format: \shell{[x, y, z, xy, yz,
+      xz]}. In 4.1 and 4.2 \siesta\ will show \emph{both} the old
+  representation and the, formally, correct Voigt representation which
+  is \shell{[x, y, z, yz, xz, xy]}. In later versions we will delete
+  the old format and \emph{only} retain the correct
+  representation. The one to be deleted is marked with
+  \shell{\{DEL\}}.
+
 \end{fdflogicalF}
 
 
