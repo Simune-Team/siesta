@@ -59,7 +59,7 @@ cd ..
 #
 # Scattering region calculation
 #
-for SCAT in bulk_au_111 au_111_capacitor 
+for SCAT in bulk_au_111 au_111_capacitor au_111_capacitor_single
 do
   echo "==> Scattering Region Calculation for $SCAT"
   mkdir Scat_$SCAT
