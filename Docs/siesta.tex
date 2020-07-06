@@ -2929,8 +2929,9 @@ modified xyz format) which must be described within a
     atomic positions are given directly in \AA ngstr\"om, in Cartesian
     coordinates
 
-    \option[ScaledCartesian]%
+    \option[LatticeConstant|ScaledCartesian]%
     \fdfindex*{AtomicCoordinatesFormat:ScaledCartesian}%
+    \fdfindex*{AtomicCoordinatesFormat:LatticeConstant}%
 
     atomic positions are given in Cartesian coordinates, in units of
     the lattice constant
@@ -2955,7 +2956,7 @@ modified xyz format) which must be described within a
   
 \end{fdfentry}
 
-\begin{fdfentry}{AtomicCoordinatesOrigin}[block]
+\begin{fdfentry}{AtomicCoordinatesOrigin}[block/string]
 
   Vector specifying a rigid shift to apply to the atomic coordinates,
   given in the same format and units as these. Notice that the atomic
@@ -2966,6 +2967,48 @@ modified xyz format) which must be described within a
   This defaults to the origo:
   \begin{fdfexample}
     0.0   0.0   0.0
+  \end{fdfexample}
+
+  Alternatively this may be given as a string option:
+
+  \begin{fdfoptions}
+    \option[COP]%
+    \fdfindex*{AtomicCoordinatesOrigin:COP}
+
+    Align the center of coordinates in the middle of the unit-cell.
+
+    \option[COM]%
+    \fdfindex*{AtomicCoordinatesOrigin:COM}
+
+    Align the center of mass in the middle of the unit-cell. This will
+    not take into account ghost-atoms since their masses are
+    \emph{infinite}.
+
+    \option[MIN]%
+    \fdfindex*{AtomicCoordinatesOrigin:MIN}
+
+    Align the minimum value along each Cartesian coordinate to be
+    at $0$.
+
+  \end{fdfoptions}
+
+  \note ghost-atoms are not considered as \emph{atoms} while
+  determining these coordinates.
+
+  All string options may be given an optional value for instance
+  \fdf*{COP-XZ} which limits the \fdf*{COP} option to only affect $x$
+  and $z$ Cartesian coordinates.
+
+  The accepted suffixes are: \fdf*{-X}, \fdf*{-Y}, \fdf*{-Z},
+  \fdf*{-XY}/\fdf*{-YX}, \fdf*{-YZ}/\fdf*{-YZ}, \fdf*{-XZ}/\fdf*{-ZX}
+  and anything else will be regarded as all directions.
+
+  \begin{fdfexample}
+    AtomicCoordinatesOrigin COP-X ! COP only for x-direction
+    AtomicCoordinatesOrigin COM-ZY ! COM only for y- and z-directions
+    AtomicCoordinatesOrigin MIN-Z ! MIN only for z-direction
+    AtomicCoordinatesOrigin MIN-XYZ ! MIN for all directions
+    AtomicCoordinatesOrigin MIN ! MIN for all directions
   \end{fdfexample}
   
 \end{fdfentry}

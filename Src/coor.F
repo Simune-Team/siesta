@@ -15,6 +15,7 @@ C redata subroutine written by P. Ordejon in December 1996.
 C Modified by J.M.Soler. August 1998.
 
 !! Modified by Alberto Garcia, May 16, 2000
+!! Modified by Nick Papior, July, 2020, added origin input
 
 C integer na  : Number of atoms in unit cell
 !               Note: the user might specify a supercell in the
@@ -30,6 +31,7 @@ C integer na  : Number of atoms in unit cell
       use parallel,  only : Node
       use units, only: Ang
       use zmatrix
+      use atmfuncs, only: floating, massfis
       use siesta_geom, only : xa, isa, cisa
       implicit none
 
@@ -38,7 +40,7 @@ C integer na  : Number of atoms in unit cell
 
 C Internal variables and arrays
 
-      character             :: acf*22, acf_default*22
+      character             :: acf*22
       logical               :: isdiag
       integer               :: ia, ic, iscale, iua, ix, i, j,
      .                         coor_mscell(3,3), ncells, 
@@ -49,6 +51,17 @@ C Internal variables and arrays
       external          digcel, redcel, volcel
 
       logical               :: lOrigin
+      ! Determine how to shift the origin by key-based values
+      ! 0 == no shift (default)
+      ! 1 == COP, center of positions in the middle of the cell
+      ! 2 == COM, center of mass (not taking into account floating orbitals
+      !           in the middle of the cell
+      ! 3 == MIN, the minimum component along each cartesian will be
+      !           0 (rarely useful)
+      integer :: origin_method  ! [0, 1, 2, 3]
+      integer :: origin_xyz  ! {1[X], 2[Y], 3[Z], 4[YZ], 5[XZ], 6[XY], 7[XYZ]}
+
+      real(dp) :: totmass
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -58,8 +71,8 @@ C Read unit cell and supercell
       call redcel( alat, unit_cell, super_cell, coor_mscell )
 
 C Format of atomic coordinates
-      acf_default = 'NotScaledCartesianBohr'
-      acf = fdf_string('AtomicCoordinatesFormat',acf_default)
+      acf = fdf_string('AtomicCoordinatesFormat',
+     &    'NotScaledCartesianBohr')
       if (leqi(acf,'NotScaledCartesianBohr') .or.
      .    leqi(acf,'Bohr') ) then
         iscale = 0
@@ -82,7 +95,8 @@ C Format of atomic coordinates
      .     'coor:                                    ',
      .     '      (in Angstroms)'
         endif
-      else if (leqi(acf,'ScaledCartesian')) then
+      else if (leqi(acf,'ScaledCartesian') .or.
+        leqi(acf,'LatticeConstant') ) then
         if (alat.eq.0.0_dp) then
           if (Node.eq.0) then
             write(6,"(/,2a)") 'coor: ERROR: Explicit lattice ',
@@ -123,7 +137,7 @@ C Format of atomic coordinates
      .                              ' coordinate scaling options:'
           write(6,'(a)') 'coor:     - NotScaledCartesianBohr (or Bohr)'
           write(6,'(a)') 'coor:     - NotScaledCartesianAng (or Ang) '
-          write(6,'(a)') 'coor:     - ScaledCartesian                '
+       write(6,'(a)') 'coor:     - ScaledCartesian (or LatticeConstant)'
           write(6,'(2a)') 'coor:     - ScaledByLatticeVectors ',
      .                                                 '(or Fractional)'
           write(6,"('coor: ',72('*'))")
@@ -159,15 +173,74 @@ C Read atomic coordinates and species
 
 C Find origin with which to translate all coordinates
       lOrigin = fdf_block('AtomicCoordinatesOrigin',bfdf)
+      origin = 0._dp
+      origin_method = 0 ! no method
+      origin_xyz = 7 ! all
       if (lOrigin) then 
-         if (.not. fdf_bline(bfdf,pline))
-     .        call die('coor: ERROR in AtomicCoordinatesOrigin block')
-         origin(1) = fdf_bvalues(pline,1)
-         origin(2) = fdf_bvalues(pline,2)
-         origin(3) = fdf_bvalues(pline,3)
-         call fdf_bclose(bfdf)
+        if (.not. fdf_bline(bfdf,pline))
+     .      call die('coor: ERROR in AtomicCoordinatesOrigin block')
+        if ( fdf_bnvalues(pline) == 3 ) then
+          origin(1) = fdf_bvalues(pline,1)
+          origin(2) = fdf_bvalues(pline,2)
+          origin(3) = fdf_bvalues(pline,3)
+        else if ( fdf_bnnames(pline) == 1 ) then
+          ! make origin the center of coordinates
+          acf = fdf_bnames(pline, 1)
+          if ( leqi('COP', acf(1:3)) ) then
+            origin_method = 1
+          else if ( leqi('COM', acf(1:3)) ) then
+            origin_method = 2
+          else if ( leqi('MIN', acf(1:3)) ) then
+            origin_method = 3
+          end if
+          ! Check whether there is a direction specification
+          if ( leqi('X', acf(5:7)) ) then
+            origin_xyz = 1
+          else if ( leqi('Y', acf(5:7)) ) then
+            origin_xyz = 2
+          else if ( leqi('Z', acf(5:7)) ) then
+            origin_xyz = 3
+          else if (leqi('YZ', acf(5:7)).or.leqi('ZY', acf(5:7))) then
+            origin_xyz = 4
+          else if (leqi('XZ', acf(5:7)).or.leqi('ZX', acf(5:7))) then
+            origin_xyz = 5
+          else if (leqi('XY', acf(5:7)).or.leqi('YX', acf(5:7))) then
+            origin_xyz = 6
+          else
+            origin_xyz = 7
+          end if
+          ! Disable origin (now determined by origin_method)
+          lOrigin = .false.
+        end if
+        call fdf_bclose(bfdf)
       else
-         origin = 0._dp
+        ! Check if the user supplied AtomicCoordinatesOrigin as keyword
+        if ( fdf_defined('AtomicCoordinatesOrigin') ) then
+          acf = fdf_get('AtomicCoordinatesOrigin', 'none')
+          if ( leqi('COP', acf(1:3)) ) then
+            origin_method = 1
+          else if ( leqi('COM', acf(1:3)) ) then
+            origin_method = 2
+          else if ( leqi('MIN', acf(1:3)) ) then
+            origin_method = 3
+          end if
+          ! Check whether there is a direction specification
+          if ( leqi('X', acf(5:7)) ) then
+            origin_xyz = 1
+          else if ( leqi('Y', acf(5:7)) ) then
+            origin_xyz = 2
+          else if ( leqi('Z', acf(5:7)) ) then
+            origin_xyz = 3
+          else if (leqi('YZ', acf(5:7)).or.leqi('ZY', acf(5:7))) then
+            origin_xyz = 4
+          else if (leqi('XZ', acf(5:7)).or.leqi('ZX', acf(5:7))) then
+            origin_xyz = 5
+          else if (leqi('XY', acf(5:7)).or.leqi('YX', acf(5:7))) then
+            origin_xyz = 6
+          else
+            origin_xyz = 7
+          end if
+        end if
       endif
 
 C Set array dimensions
@@ -233,6 +306,81 @@ C   Coord. option = 3 => Multiply by lattice vectors
           enddo
         endif
    
+
+        ! Figure out if the user requested to shift geometry easily
+        origin(:) = 0._dp
+        select case ( origin_method )
+        case ( 1 )              ! COP
+          acf = 'COP'
+          i = 0
+          do ia = 1, nua
+            if ( .not. floating(isa(ia)) ) then
+              origin(:) = origin(:) + xa(:,ia)
+              i = i + 1
+            end if
+          end do
+          origin(:) = origin(:) / i
+          origin(:) = sum(unit_cell, dim=2) * 0.5_dp - origin(:)
+        case ( 2 )
+          acf = 'COM'
+          totmass = 0._dp
+          do ia = 1, nua
+            if ( .not. floating(isa(ia)) ) then
+              origin(:) = origin(:) + xa(:,ia) * massfis(i)
+              totmass = totmass + massfis(i)
+            end if
+          end do
+          origin(:) = origin(:) / totmass
+          origin(:) = sum(unit_cell, dim=2) * 0.5_dp - origin(:)
+        case ( 3 )
+          acf = 'MIN'
+          origin(:) = huge(1._dp)
+          do ia = 1, nua
+            if ( .not. floating(isa(ia)) ) then
+              origin(1) = min(origin(1), xa(1,ia))
+              origin(2) = min(origin(2), xa(2,ia))
+              origin(3) = min(origin(3), xa(3,ia))
+            end if
+          end do
+          origin(:) = - origin(:)
+        end select
+        if ( origin_method /= 0 ) then
+          if ( origin_method /= 3 .and.
+     &        volcel(unit_cell) .lt. 1.d-8 ) then
+            call die("AtomicCoordinatesOrigin [str] requires cell!")
+          end if
+
+          select case ( origin_xyz )
+          case ( 1 ) ! X
+            acf = trim(acf)//' (X only)'
+            origin(2:3) = 0._dp
+          case ( 2 ) ! Y
+            acf = trim(acf)//' (Y only)'
+            origin(1) = 0._dp
+            origin(3) = 0._dp
+          case ( 3 ) ! Z
+            acf = trim(acf)//' (Z only)'
+            origin(1:2) = 0._dp
+          case ( 4 ) ! YZ
+            acf = trim(acf)//' (Y and Z)'
+            origin(1) = 0._dp
+          case ( 5 ) ! XZ
+            acf = trim(acf)//' (X and Z)'
+            origin(2) = 0._dp
+          case ( 6 ) ! XY
+            acf = trim(acf)//' (X and Y)'
+            origin(3) = 0._dp
+          end select
+          ! Make origin the center of the cell
+          do ia = 1, nua
+            xa(:,ia) = xa(:,ia) + origin(:)
+          end do
+
+          if ( Node == 0 ) then
+            write(6,'(2a)') 'coor:   Atomic-coodinates centered at ',
+     &          trim(acf)
+          end if
+        end if
 
 C Expand the coordinates to whole supercell
 
