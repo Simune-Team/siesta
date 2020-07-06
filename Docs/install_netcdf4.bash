@@ -104,7 +104,7 @@ if [ ! -d $ID/hdf5/${h_v}/$hdf5_lib ]; then
     ../configure --prefix=$ID/hdf5/${h_v} \
 	--enable-shared --enable-static \
 	--enable-fortran --with-zlib=$ID/zlib/${z_v} \
-	LDFLAGS="-L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath=$ID/zlib/${z_v}/$zlib_lib"
+	LDFLAGS="-L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath,$ID/zlib/${z_v}/$zlib_lib"
     retval $? "hdf5 configure"
     make
     retval $? "hdf5 make"
@@ -133,8 +133,8 @@ if [ ! -d $ID/netcdf/${nc_v}/$cdf_lib ]; then
 	--enable-shared --enable-static \
 	--enable-netcdf-4 --disable-dap \
 	CPPFLAGS="-I$ID/hdf5/${h_v}/include -I$ID/zlib/${z_v}/include" \
-	LDFLAGS="-L$ID/hdf5/${h_v}/$hdf5_lib -Wl,-rpath=$ID/hdf5/${h_v}/$hdf5_lib \
--L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath=$ID/zlib/${z_v}/$zlib_lib"
+	LDFLAGS="-L$ID/hdf5/${h_v}/$hdf5_lib -Wl,-rpath,$ID/hdf5/${h_v}/$hdf5_lib \
+-L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath,$ID/zlib/${z_v}/$zlib_lib"
     retval $? "netcdf configure"
     make
     retval $? "netcdf make"
@@ -157,9 +157,9 @@ if [ ! -e $ID/netcdf/${nc_v}/$cdf_lib/libnetcdff.a ]; then
     mkdir build ; cd build
     ../configure CPPFLAGS="-DgFortran -I$ID/zlib/${z_v}/include \
 	-I$ID/hdf5/${h_v}/include -I$ID/netcdf/${nc_v}/include" \
-	LIBS="-L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath=$ID/zlib/${z_v}/$zlib_lib \
-	-L$ID/hdf5/${h_v}/$hdf5_lib -Wl,-rpath=$ID/hdf5/${h_v}/$hdf5_lib \
-	-L$ID/netcdf/${nc_v}/$cdf_lib -Wl,-rpath=$ID/netcdf/${nc_v}/$cdf_lib \
+	LIBS="-L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath,$ID/zlib/${z_v}/$zlib_lib \
+	-L$ID/hdf5/${h_v}/$hdf5_lib -Wl,-rpath,$ID/hdf5/${h_v}/$hdf5_lib \
+	-L$ID/netcdf/${nc_v}/$cdf_lib -Wl,-rpath,$ID/netcdf/${nc_v}/$cdf_lib \
 	-lnetcdf -lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5 -lz" \
 	--prefix=$ID/netcdf/${nc_v} --enable-static --enable-shared
     retval $? "netcdf-fortran configure"
@@ -193,9 +193,9 @@ echo ""
 echo "Please add the following to the BOTTOM of your arch.make file"
 echo ""
 echo "INCFLAGS += -I$ID/netcdf/${nc_v}/include"
-echo "LDFLAGS += -L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath=$ID/zlib/${z_v}/$zlib_lib"
-echo "LDFLAGS += -L$ID/hdf5/${h_v}/$hdf5_lib -Wl,-rpath=$ID/hdf5/${h_v}/$hdf5_lib"
-echo "LDFLAGS += -L$ID/netcdf/${nc_v}/$cdf_lib -Wl,-rpath=$ID/netcdf/${nc_v}/$cdf_lib"
+echo "LDFLAGS += -L$ID/zlib/${z_v}/$zlib_lib -Wl,-rpath,$ID/zlib/${z_v}/$zlib_lib"
+echo "LDFLAGS += -L$ID/hdf5/${h_v}/$hdf5_lib -Wl,-rpath,$ID/hdf5/${h_v}/$hdf5_lib"
+echo "LDFLAGS += -L$ID/netcdf/${nc_v}/$cdf_lib -Wl,-rpath,$ID/netcdf/${nc_v}/$cdf_lib"
 echo "LIBS += -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz"
 echo "COMP_LIBS += libncdf.a libfdict.a"
 echo "FPPFLAGS += -DCDF -DNCDF -DNCDF_4"
