@@ -25,10 +25,10 @@ module dipole_m
 
   private
 
-  integer, parameter, public :: DIPOLECORR_NONE = 0
-  integer, parameter, public :: DIPOLECORR_CHARGE = 1
-  integer, parameter, public :: DIPOLECORR_VACUUM = 2
-  integer, public, save :: DIPOLECORR = DIPOLECORR_NONE
+  integer, parameter, public :: SLABDIPOLECORR_NONE = 0
+  integer, parameter, public :: SLABDIPOLECORR_CHARGE = 1
+  integer, parameter, public :: SLABDIPOLECORR_VACUUM = 2
+  integer, public, save :: SLABDIPOLECORR = SLABDIPOLECORR_NONE
 
   public :: init_dipole_correction
   public :: get_dipole_center
@@ -75,52 +75,52 @@ contains
     logical :: old_slabdipole
 
     ! Only allow slab dipole corrections for slabs and chains and molecules
-    old_slabdipole = fdf_get("Slab.DipoleCorrection", acting_efield)
-    if ( old_slabdipole ) then
-      dipole_str = lcase(fdf_get("Dipole", "slab"))
+    if ( acting_efield ) then
+      dipole_str = lcase(fdf_get("Slab.DipoleCorrection", "slab"))
     else
-      dipole_str = lcase(fdf_get("Dipole", "none"))
+      dipole_str = lcase(fdf_get("Slab.DipoleCorrection", "none"))
     end if
 
     select case ( trim(dipole_str) )
-    case ( "true", "t", ".true.", "yes", "slab", "chain", "molecule", "charge" )
+    case ( "true", "t", ".true.", "yes", "slab", "charge" )
       ! All these options reflect a dipole correction
       ! based on the original implementation
-      ! One *may* use the Dipole.Center block to specify the
+      ! One *may* use the Slab.DipoleCorrection.Center block to specify the
       ! center of the dipole
-      DIPOLECORR = DIPOLECORR_CHARGE
+      SLABDIPOLECORR = SLABDIPOLECORR_CHARGE
     case ( "none", "no", "n", "false", "f", ".false." )
-      DIPOLECORR = DIPOLECORR_NONE
+      SLABDIPOLECORR = SLABDIPOLECORR_NONE
     case ( "vacuum" )
-      DIPOLECORR = DIPOLECORR_VACUUM
+      SLABDIPOLECORR = SLABDIPOLECORR_VACUUM
     case default
       print *, trim(dipole_str)
       call die("init_dipole: Could not determine the dipole option &
-          &[slab, chain, molecule, charge, vacuum, none]")
+          &[slab, charge, vacuum, none]")
     end select
 
-    ! Further, remove dipole corrections if this is a bulk calculation
-    if ( nbcell == 3 ) then
-      DIPOLECORR = DIPOLECORR_NONE
+    ! Further, remove dipole corrections if this is not
+    ! a slab calculation
+    if ( nbcell /= 2 ) then
+      SLABDIPOLECORR = SLABDIPOLECORR_NONE
     end if
 
-    select case ( DIPOLECORR )
-    case ( DIPOLECORR_NONE )
+    select case ( SLABDIPOLECORR )
+    case ( SLABDIPOLECORR_NONE )
       if ( acting_efield .and. IONode ) then
         write(6,'(/,(a))') &
             'efield: WARNING!', &
-            'efield: There is no dipole correction [Dipole none] although &
-            &an external efield is present.', &
-            'efield: For correct physics Dipole should be .true.', &
+            'efield: There is no slab-dipole correction [Slab.DipoleCorrection none] &
+            &although an external efield is present.', &
+            'efield: For correct physics Slab.DipoleCorrection should be .true.', &
             'efield: This is only for backwards compatibility!'
         write(6,*) ! newline
       end if
 
-    case ( DIPOLECORR_CHARGE )
+    case ( SLABDIPOLECORR_CHARGE )
       if (cml_p) &
-          call cmlAddParameter( xf=mainXML, name='Dipole.Correction', &
+          call cmlAddParameter( xf=mainXML, name='Slab.DipoleCorrection', &
           value="charge", &
-          dictRef="siesta:dipole_correction")
+          dictRef="siesta:slab.dipole_correction")
       if ( IONode ) then
         call add_citation("10.1103/PhysRevB.59.12301")
         write(6,'(/,(a))') &
@@ -129,11 +129,11 @@ contains
       end if
       acting_efield = .true.
 
-    case ( DIPOLECORR_VACUUM )
+    case ( SLABDIPOLECORR_VACUUM )
       if (cml_p) &
-          call cmlAddParameter( xf=mainXML, name='Dipole.Correction', &
+          call cmlAddParameter( xf=mainXML, name='Slab.DipoleCorrection', &
           value="vacuum", &
-          dictRef="siesta:dipole_correction")
+          dictRef="siesta:slab.dipole_correction")
 
       ! Retrieve vacuum information
       call get_vacuum(nbcell, bcell, dip_vacuum)
@@ -173,7 +173,7 @@ contains
   !!
   !! However, in some skewed molecules where one knows the dipole is
   !! not located at the center of the system one should specify the
-  !! center of the dipole through this block: Dipole.Center
+  !! center of the dipole through this block: Slab.DipoleCorrection.Center
   !!
   !! NOTE: This routine does not take into account shifts
   !! in the atomic structure when doing Grid.CellSampling
@@ -196,7 +196,7 @@ contains
 
     x0(:) = 0.0_dp
 
-    if ( fdf_block("Dipole.Center", bfdf) ) then
+    if ( fdf_block("Slab.DipoleCorrection.Center", bfdf) ) then
 
       ! TODO consider allowing atomic indices
       ! as input. Then the center could be calculated
@@ -205,11 +205,11 @@ contains
       ! Say a single atom above a hexagon?
 
       if ( .not. fdf_bline(bfdf,pline) ) then
-        call die("Dipole.Center could not find center")
+        call die("Slab.DipoleCorrection.Center could not find center")
       end if
 
       if ( .not. fdf_bmatch(pline,"vvvn") ) then
-        call die("Dipole.Center both a coordinate and unit *must* be present")
+        call die("Slab.DipoleCorrection.Center both a coordinate and unit *must* be present")
       end if
 
       length_unit = fdf_bnames(pline, 1)
@@ -255,6 +255,7 @@ contains
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
     character(len=64) :: unit, name
+    logical :: found_block
     real(dp) :: cfactor
     integer :: ix
     ! The vacuum information has 3 quantities
@@ -264,56 +265,60 @@ contains
     logical :: found(2)
     external :: cross
 
-    if ( .not. fdf_block("Dipole.Vacuum", bfdf) ) then
-      call die("dipole: Dipole.Vacuum not present but requested, &
-          &please fix input.")
-    end if
+    found_block = fdf_block("Slab.DipoleCorrection.Vacuum", bfdf)
 
     dip_vacuum%use_xyz = .false.
     found(:) = .false.
 
-    do while ( fdf_bline(bfdf, pline) )
+    if ( found_block ) then
 
-      ! First string is the value
-      name = lcase(fdf_bnames(pline, 1))
+      do while ( fdf_bline(bfdf, pline) )
 
-      select case ( trim(name) )
-      case ( "direction" )
+        ! First string is the value
+        name = lcase(fdf_bnames(pline, 1))
 
-        found(1) = .true.
+        select case ( trim(name) )
+        case ( "direction" )
 
-        do ix = 1 , 3
-          dip_vacuum%dir(ix) = fdf_bvalues(pline,ix)
-        end do
+          found(1) = .true.
 
-      case ( "point" )
+          do ix = 1 , 3
+            dip_vacuum%dir(ix) = fdf_bvalues(pline,ix)
+          end do
 
-        dip_vacuum%use_xyz = .true.
+        case ( "point" )
 
-        unit = fdf_bnames(pline, 2)
-        cfactor = fdf_convfac(unit, "Bohr")
-        do ix = 1 , 3
-          dip_vacuum%xyz(ix) = fdf_bvalues(pline,ix) * cfactor
-        end do
+          dip_vacuum%use_xyz = .true.
 
-      case ( "tolerance", "tol" )
+          unit = fdf_bnames(pline, 2)
+          cfactor = fdf_convfac(unit, "Bohr")
+          do ix = 1 , 3
+            dip_vacuum%xyz(ix) = fdf_bvalues(pline,ix) * cfactor
+          end do
 
-        found(2) = .true.
-        unit = fdf_bnames(pline, 2)
-        cfactor = fdf_convfac(unit, "Ry/Bohr/e")
-        dip_vacuum%dE_tol = fdf_bvalues(pline, 1) * cfactor
+        case ( "tolerance", "tol" )
 
-      end select
+          found(2) = .true.
+          unit = fdf_bnames(pline, 2)
+          cfactor = fdf_convfac(unit, "Ry/Bohr/e")
+          dip_vacuum%dE_tol = fdf_bvalues(pline, 1) * cfactor
 
-    end do
+        end select
 
-    call fdf_bclose(bfdf)
+      end do
+
+      call fdf_bclose(bfdf)
+
+    end if
 
     if ( .not. found(1) ) then
       if ( nbcell == 2 ) then
         ! we can actually figure out the direction our selves
         call cross(bcell(1,1), bcell(1,2), dip_vacuum%dir)
         found(1) = .true.
+      else
+        call die("dipole: Slab.DipoleCorrection.Vacuum not present but necessary, &
+            &please fix input.")
       end if
     end if
 
@@ -328,28 +333,28 @@ contains
 
     ! Check if all are found
     if ( .not. found(1) ) then
-      call die("dipole: Dipole.Vacuum did not contain direction")
+      call die("dipole: Slab.DipoleCorrection.Vacuum did not contain direction")
     end if
 
     if ( cml_p ) then
       call cmlStartPropertyList(xf=mainXML, &
-          dictRef='siesta:dipole_vacuum', &
+          dictRef='siesta:slab.dipole_vacuum', &
           title='Potential field calculation in vacuum')
       if ( dip_vacuum%use_xyz ) then
         call cmlAddProperty(xf=mainXML, &
-            dictref='siesta:dipole_vacuum_point', &
+            dictref='siesta:slab.dipole_vacuum_point', &
             title='Vacuum point', value="auto")
       else
         call cmlAddProperty(xf=mainXML, &
-            dictref='siesta:dipole_vacuum_point', &
+            dictref='siesta:slab.dipole_vacuum_point', &
             units="siestaUnits:Bohr", &
             title='Vacuum point', value=dip_vacuum%xyz)
       end if
       call cmlAddProperty(xf=mainXML, &
-          dictref='siesta:dipole_vacuum_direction', &
+          dictref='siesta:slab.dipole_vacuum_direction', &
           title='Dipole direction', value=dip_vacuum%dir)
       call cmlAddProperty(xf=mainXML, &
-          dictref='siesta:dipole_vacuum_tolerance', &
+          dictref='siesta:slab.dipole_vacuum_tolerance', &
           units='siestaUnits:Ry_Bohr_e', &
           title='Field tolerance for vacuum', value=dip_vacuum%dE_tol)
       call cmlEndPropertyList(xf=mainXML)

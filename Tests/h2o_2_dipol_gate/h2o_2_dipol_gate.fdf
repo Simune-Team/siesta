@@ -19,8 +19,8 @@ SystemLabel         h2o_2_dipol_gate
 # If you change this to "Dipole charge"
 # you will find the wrong field between the water
 # molecules and the gate
-Dipole vacuum
-%block Dipole.Vacuum
+Slab.DipoleCorrection vacuum
+%block Slab.DipoleCorrection.Vacuum
   # The actual point isn't extremely important
   # It just needs to be at least 3 Ang from the plane
   # and the closest orbital

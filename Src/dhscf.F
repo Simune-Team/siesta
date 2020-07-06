@@ -659,9 +659,9 @@ C     Modules
       use dipole_m, only: get_field_from_dipole
       use dipole_m, only: dipole_charge, dipole_potential
       use dipole_m, only: dip_vacuum
-      use dipole_m, only: DIPOLECORR
-      use dipole_m, only: DIPOLECORR_NONE
-      use dipole_m, only: DIPOLECORR_CHARGE, DIPOLECORR_VACUUM
+      use dipole_m, only: SLABDIPOLECORR
+      use dipole_m, only: SLABDIPOLECORR_NONE
+      use dipole_m, only: SLABDIPOLECORR_CHARGE, SLABDIPOLECORR_VACUUM
 
       use m_doping_uniform, only: doping_active, doping_uniform
 
@@ -1221,8 +1221,8 @@ C ----------------------------------------------------------------------
       if ( nbcell /= 3 ) then
         ! Find dipole in system
 
-        select case ( DIPOLECORR )
-        case ( DIPOLECORR_VACUUM )
+        select case ( SLABDIPOLECORR )
+        case ( SLABDIPOLECORR_VACUUM )
           ! we should not calculate the dipole here
           ! User requests the vacuum dipole calculation
         case default
@@ -1318,7 +1318,7 @@ C ----------------------------------------------------------------------
       Enaatm = Enaatm * dVol
       Enascf = Enaatm + Enascf * dVol
 
-      if ( DIPOLECORR == DIPOLECORR_VACUUM ) then
+      if ( SLABDIPOLECORR == SLABDIPOLECORR_VACUUM ) then
         ! In case the user requested a vacuum dipole, calculate it here
         ! REMARK
         ! This method will only ever work for 3D-FFT poisson solved
@@ -1344,8 +1344,8 @@ C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
       if ( acting_efield ) then
-        select case ( DIPOLECORR )
-        case ( DIPOLECORR_NONE )
+        select case ( SLABDIPOLECORR )
+        case ( SLABDIPOLECORR_NONE )
           ! No dipole correction
           field(:) = 0._dp
           DUext = 0._dp

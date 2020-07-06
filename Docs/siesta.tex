@@ -8451,14 +8451,13 @@ or interpolation of bands), can be downloaded from
 
   Starting with version 4.0, applying an electric field perpendicular
   to a slab will by default enable the slab dipole correction, see
-  \fdf{Dipole}. To reproduce older calculations, set
+  \fdf{Slab.DipoleCorrection}. To reproduce older calculations, set
   this correction option explicitly to \fdffalse\ in the input file.
 
 \end{fdfentry}
 
-\begin{fdfentry}{Dipole}[string]<\fdftrue|\fdffalse|charge|vacuum|slab|none>
+\begin{fdfentry}{Slab.DipoleCorrection}[string]<?|\fdftrue|\fdffalse|charge|vacuum|slab|none>
   \fdfdepend{ExternalElectricField}%
-  \fdfreplace{SlabDipoleCorrection}%
   
   If not \fdffalse, \siesta\ calculates the electric field required to
   compensate the dipole of the system at every iteration of the
@@ -8473,18 +8472,18 @@ or interpolation of bands), can be downloaded from
   \begin{fdfoptions}
 
     \option[charge|slab|\fdftrue]%
-    \fdfindex*{Dipole:charge}%
+    \fdfindex*{Slab.DipoleCorrection:charge}%
 
     The dipole of the system is calculated via
     \begin{equation}
       \mathbf D = - e \int(\mathbf r - \mathbf r_0) \delta\boldsymbol\rho(\mathbf r)
     \end{equation}
-    where $\mathbf r_0$ is the dipole center, see \fdf{Dipole!Center},
+    where $\mathbf r_0$ is the dipole center, see \fdf{Slab.DipoleCorrection!Center},
     and $\delta\boldsymbol\rho$ is valence pseudocharge density minus
     the atomic valence pseudocharge densities.
 
     \option[vacuum]%
-    \fdfindex*{Dipole:vacuum}%
+    \fdfindex*{Slab.DipoleCorrection:vacuum}%
 
     The electric field of the system is calculated via
     \begin{equation}
@@ -8492,15 +8491,15 @@ or interpolation of bands), can be downloaded from
         r)\right|_{\mathbf r_{\mathrm{vacuum}}}
     \end{equation}
     where $\mathbf r_{\mathrm{vacuum}}$ is a point located in the
-    vacuum region, see \fdf{Dipole!Vacuum}. Once the field is
+    vacuum region, see \fdf{Slab.DipoleCorrection!Vacuum}. Once the field is
     determined it is converted to an intrinsic system dipole.
 
     This feature is mainly intended for \fdf{Geometry!Charge}
-    calculations where \fdf{Dipole:charge} may fail if the dipole
+    calculations where \fdf{Slab.DipoleCorrection:charge} may fail if the dipole
     center is determined incorrectly.
 
     For regular systems both this and \fdf*{charge} should yield
-    approximately the same dipole moments.
+    approximately (down to numeric precision) the same dipole moments.
 
   \end{fdfoptions}
 
@@ -8521,22 +8520,22 @@ or interpolation of bands), can be downloaded from
   the same result. If in doubt try both and see which one gives the
   best result.
 
-  See \shell{Tests/sic-slab}, \shell{Tests/h2o_2_dipol_gate}.
+  See \shell{Tests/sic-slab}, \shell{Tests/h2o\_2\_dipol\_gate}.
 
   This will default to \fdftrue\ if an external field is applied to a
   slab calculation, otherwise it will default to \fdffalse.
 
 \end{fdfentry}
 
-\begin{fdfentry}{Dipole!Center}[block]
-  \fdfdepend{Dipole:charge}
+\begin{fdfentry}{Slab.DipoleCorrection!Center}[block]
+  \fdfdepend{Slab.DipoleCorrection:charge}
 
   Specify the center of the dipole in the calculation of the dipole
   from the charge distribution.
 
   Its format is
   \begin{fdfexample}
-     %block Dipole.Center
+     %block Slab.DipoleCorrection.Center
         0.000  10.000  0.500  Ang
      %endblock
   \end{fdfexample}
@@ -8544,12 +8543,12 @@ or interpolation of bands), can be downloaded from
   If this block is not specified the center of the dipole will be the
   average position of the atoms.
 
-  \note this will only be read if \fdf{Dipole:charge} is used.
+  \note this will only be read if \fdf{Slab.DipoleCorrection:charge} is used.
 
 \end{fdfentry}
 
-\begin{fdfentry}{Dipole!Vacuum}[block]
-  \fdfdepend{Dipole:vacuum}
+\begin{fdfentry}{Slab.DipoleCorrection!Vacuum}[block]
+  \fdfdepend{Slab.DipoleCorrection:vacuum}
 
   Options for the vacuum field determination.
 
@@ -8584,7 +8583,7 @@ or interpolation of bands), can be downloaded from
 
   Its format is
   \begin{fdfexample}
-     %block Dipole.Vacuum
+     %block Slab.DipoleCorrection.Vacuum
         # this is optional
         # default position is the center of system + 0.5 lattice vector
         # along 'direction'
@@ -8597,7 +8596,7 @@ or interpolation of bands), can be downloaded from
      %endblock
   \end{fdfexample}
 
-  \note this will only be read if \fdf{Dipole:vacuum} is used.
+  \note this will only be read if \fdf{Slab.DipoleCorrection:vacuum} is used.
 
 \end{fdfentry}
 
