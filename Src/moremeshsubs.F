@@ -85,6 +85,18 @@ C
       ! to another  nsm == 1 %box, %nMesh distribution
       ! Effectively this simply propagates to the boxintersection
       ! and other related routines which uses the full grid.
+      ! There are some restrictions on the kind of redistributions
+      ! this code can handle.
+      ! Currently this should be enforced:
+      !   in_distr%nsm == out_distr%nsm:
+      !     *any* redistribution may be used
+      !   in_distr%nsm /= out_distr%nsm:
+      !     one may *only* redistribute SEQUENTIAL data
+      !     AND thus one *should* also use KEEP in such calls.
+      !     If data in clustered form needs to change nsm
+      !     it needs to do 2 redistributions:
+      !       1. TO_SEQUENTIAL
+      !       2. KEEP
       integer :: nsm
       integer,  pointer :: indexp(:)
       integer,  pointer :: idop(:)
