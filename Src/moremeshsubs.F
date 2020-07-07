@@ -65,6 +65,11 @@ C
 
       PRIVATE
 
+      interface initMeshDistr
+        module procedure initMeshDistr_wload
+        module procedure initMeshDistr_explicit
+      end interface initMeshDistr
+
       interface distMeshData
         module procedure distMeshData_rea, distMeshData_int
       end interface distMeshData
@@ -124,7 +129,8 @@ C ----------------------------------------------------------------------
 
       CONTAINS
 
-      subroutine initMeshDistr( iDistr, oDistr, nm, nsm, wload )
+
+      subroutine initMeshDistr_wload( iDistr, oDistr, nm, nsm, wload)
 C ==================================================================
 C Computes a new data distribution and the communications needed to
 C move data from/to the current distribution to the existing ones.
@@ -268,17 +274,115 @@ C       distribution and the previous ones.
 #endif
       endif
       if (Node == 0) then
-        write(6,"(a,'[',i0,']: nsm = ',i0)")
+        write(6,"(a,'[',i0,']: sub = ',i0)")
      &      "New grid distribution ", oDistr, distr%nsm
+#ifdef SIESTA__DEV_INFO
          do PP= 1, Nodes
             write(6,"(i12,3x,3(i5,a1,i5))") PP,
      $       (distr%box(1,jj,PP), ":", distr%box(2,jj,PP), jj=1,3)
-         enddo 
+         enddo
+#endif
       endif 
 
       call timer( 'INITMESH', 2 )
 !--------------------------------------------------------------------------- END
-      end subroutine initMeshDistr
+      end subroutine initMeshDistr_wload
+
+
+      subroutine initMeshDistr_explicit( oDistr, start_nml,end_nml, nsm)
+C ==================================================================
+C Creates a new data distribution and the communications needed to
+C move data from/to the current distribution to the existing ones.
+C The limits of the new distributions are stored in meshDistr(oDistr).
+C ==================================================================
+C SUBROUTINE initMeshDistr_explicit( oDistr, start_nml, end_nml )
+C
+C INPUT:
+C integer oDistr  : The new data distribution index.
+C integer start_nml(3) : starting of local Mesh divisions
+C integer end_nml(3) : end of local Mesh divisions
+C integer nsm     : Number of mesh-sub-divisions for this
+C                   particular distribution
+
+C OUTPUT:
+C The output values are stored in the current module:
+C        meshDistr(oDistr)
+C        meshCommu(((oDistr-2)*(oDistr-1))/2+1:(oDistr-1)*oDistr/2)
+C
+C BEHAVIOR:
+C Create a new explicit mesh distribution defined by start_nm/end_nm (local mesh
+C divisions).
+C
+C initMeshDistr_wload *have* to be called prior to this routine.
+C ==================================================================
+#ifdef MPI
+      use mpi_siesta
+#endif
+      implicit none
+C     Passed arguments
+      integer,            intent(in) :: oDistr
+      integer,            intent(in) :: start_nml(3), end_nml(3)
+      integer,            intent(in) :: nsm
+C     Local variables
+      character(len=*), parameter :: myName =
+     &    moduName//'initMeshDistr_explicit '
+      character(len=*), parameter :: errMsg = myName//'ERROR: '
+      integer                     :: PP, d_nml(3), ii, jj
+#ifdef MPI
+      integer :: ierr, se_nml(2,3)
+#endif
+
+      type(meshDisType),  pointer :: distr
+!------------------------------------------------------------------------- BEGIN
+      call timer( 'INITMESH_EX', 1 )
+
+C     Check the number of mesh distribution
+      if (oDistr.gt.maxDistr)
+     &  call die( errMsg // 'oDistr.gt.maxDistr' )
+      distr => meshDistr(oDistr)
+C     Allocate memory for the current distribution
+      nullify( distr%box )
+      call re_alloc( distr%box, 1, 2, 1, 3, 1, Nodes,
+     &    'distr%box', moduName )
+
+      ! Store distribution mesh-sub-divisions
+      distr%nsm = nsm
+
+#ifdef MPI
+
+!     Collect all values and gather them directly
+!     in their respective places
+      se_nml(1,:) = start_nml(:)
+      se_nml(2,:) = end_nml(:)
+
+      call MPI_AllGather(se_nml(1,1), 6, MPI_Integer,
+     &    distr%box(1,1,1), 6, MPI_Integer, MPI_Comm_World, ierr)
+
+C     Precompute the communications needed to move data between the new
+C     data distribution and the previous ones.
+      jj = ((oDistr-2)*(oDistr-1))/2 + 1
+      do ii=1, oDistr-1
+        call compMeshComm( meshDistr(ii), distr, meshCommu(jj) )
+        jj = jj + 1
+      end do
+#else
+      distr%box(1,:,1) = start_nml(:)
+      distr%box(2,:,1) = end_nml(:)
+#endif
+
+      if ( Node == 0 ) then
+        write(6,"(a,'[',i0,']: sub = ',i0)")
+     &      "New grid distribution ", oDistr, distr%nsm
+#ifdef SIESTA__DEV_INFO
+        do PP= 1, Nodes
+          write(6,"(i12,3x,3(i5,a1,i5))") PP,
+     $        (distr%box(1,jj,PP), ":", distr%box(2,jj,PP), jj=1,3)
+        end do
+#endif
+      end if
+
+      call timer( 'INITMESH_EX', 2 )
+      end subroutine initMeshDistr_explicit
 
 C ==================================================================
 C Allocate memory buffers for asynchronous communications.
@@ -1060,7 +1164,7 @@ C     Local variables
      &                               Dbox(:,:)
       type(meshDisType),  pointer :: idis, odis
       logical                     :: inters
-      real(grid_p),       pointer :: TBUF(:)
+      real(grid_p),       pointer :: TBUF(:) => null()
       integer                     :: nsize, nm(3)
 #ifdef MPI
       integer                     :: MPIerror, Status(MPI_Status_Size)
@@ -1133,8 +1237,7 @@ C       among the several processes
           endif
         enddo
 
-        if (MaxSize.gt.0) then
-          nullify( TBUF )
+        if ( MaxSize > 0 ) then
           call re_alloc( TBUF, 1, MaxSize, 'TBUF', 'moreMeshSubs' )
         endif
 
@@ -1445,7 +1548,7 @@ C             We should receive data from process src(icom)-1
           call die()
         endif
 
-        if (MaxSize.gt.0) then
+        if ( MaxSize > 0 ) then
           call de_alloc( TBUF, 'TBUF', 'moreMeshSubs' )
         endif
 
@@ -1465,6 +1568,9 @@ C             We should receive data from process src(icom)-1
 #endif
 
       subroutine distMeshData_int( iDistr, fsrc, oDistr, fdst, itr )
+      ! This method is special given that it will never use mesh-subdivisions
+      ! I.e. this is meant for distribution of numphi indices that correspond
+      ! to orbitals located on each big mesh point
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -2702,6 +2808,9 @@ C     Local variables
 !------------------------------------------------------------------------- BEGIN
       call timer( 'SPLOAD', 1 )
 
+      if ( iDistr%nsm /= oDistr%nsm )
+     &    call die(errMsg // "nsm must be the same for work-load split")
+
 C     At the begining of the algorithm all the mesh is assigned to the
 C     first node:  oDistr%box(*,*,1) = nm
       oDistr%box(1,1,1) = 1
@@ -3299,7 +3408,7 @@ C     destiny distribution. Every intersection represents a communication.
       do P1= 1, Nodes
         do P2= 1, Nodes
           call boxIntersection( distr1%box(:,:,P1),
-     &                          distr2%box(:,:,P2), Lbox, inters )
+     &        distr2%box(:,:,P2), Lbox, inters, distr1%nsm, distr2%nsm)
           if (inters) ncom = ncom + 1
         enddo
       enddo
@@ -3315,7 +3424,7 @@ C     Make a list of communications
       do P1= 1, Nodes
         do P2= 1, Nodes
           call boxIntersection( distr1%box(:,:,P1),
-     &                          distr2%box(:,:,P2), Lbox, inters )
+     &        distr2%box(:,:,P2), Lbox, inters, distr1%nsm, distr2%nsm)
           if (inters) then
             ncom      = ncom + 1
             src(ncom) = P1
