@@ -11,13 +11,13 @@ module siesta_dicts
 #ifdef SIESTA__FLOOK
 
   ! A dictionary for all the options
-  type(dictionary_t) :: options
+  type(dictionary_t), save :: options
 
   ! A dictionary for all transiesta options
-  type(dictionary_t) :: ts_options
+  type(dictionary_t), save :: ts_options
 
   ! A dictionary for all variables
-  type(dictionary_t) :: variables
+  type(dictionary_t), save :: variables
 
   private :: dict_variable_add_v_0d
   private :: dict_variable_add_a_1d

@@ -483,9 +483,9 @@ C Initialize neighbour subroutine --------------------------------------
       ! Phase to cancel the phase of the wave function: -i.k.r
       
       PMIKR = -(K(1)*XPO(1) + K(2)*XPO(2) + K(3)*XPO(3))
-      SIMIKR=DSIN(PMIKR)
-      COMIKR=DCOS(PMIKR)
-      EXMIKR=DCMPLX(COMIKR,SIMIKR)
+      SIMIKR=SIN(PMIKR)
+      COMIKR=COS(PMIKR)
+      EXMIKR=CMPLX(COMIKR,SIMIKR,kind=dp)
 
 C Localize non-zero orbitals at each point in real space ---------------
      
@@ -515,9 +515,9 @@ C     Loop over Non-zero orbitals ------------------------------------------
      .        K(2)*(XPO(2)+XIJ(2,IAT1))+
      .        K(3)*(XPO(3)+XIJ(3,IAT1))
 
-         SI=DSIN(PHASE)
-         CO=DCOS(PHASE)
-         EXPPHI=DCMPLX(CO,SI)
+         SI=SIN(PHASE)
+         CO=COS(PHASE)
+         EXPPHI=CMPLX(CO,SI,kind=dp)
 
          DO IO = LASTO(IAVEC1-1) + 1, LASTO(IAVEC1)
             IPHI1 = IPHORB(IO)

@@ -8,6 +8,8 @@
 
 ### Changes
 
+* Minor changes for f2003 conformance
+
 * Some fixes for library operation (avoid stopping when 'onlyS' is set; re-opening of unit 6)
 
 * Cleanup of vibra/fcbuild code: use dynamic arrays, and LAPACK solver by default
