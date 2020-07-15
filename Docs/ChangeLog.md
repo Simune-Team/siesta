@@ -6,6 +6,10 @@
 
 See Docs/CHANGES for more details
 
+* Update and add .md extension to main README
+
+* Update Docs/REPORTING_BUGS
+
 * Add ChangeLog.md since 4.0
 
 * Fixed cell transpose for socket communication, fixes lp:1835196
