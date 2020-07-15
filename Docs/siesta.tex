@@ -4059,6 +4059,7 @@ could still be difficult.
 \end{fdflogicalT}
 
 \subsection{The self-consistent-field loop}
+\label{sec:scf}
 
 \textbf{IMPORTANT NOTE: Convergence of the Kohn-Sham energy and forces}
 
@@ -4116,10 +4117,10 @@ The current version introduces several changes:
   next. Other statistics could be implemented.
 
   \item While the (mixed) DM is saved at every SCF step, as was
-  standard practice, the final DM(out) overwrites the .DM file at the
-  end of the SCF cycle. Thus it is still possible to use a ``mixed''
-  DM for restarting an interrupted loop, but a ``good'' DM will be
-  used for any other post-processing.
+  standard practice, the final DM(out) overwrites the \sysfile{DM}
+  file at the end of the SCF cycle. Thus it is still possible to use a
+  ``mixed'' DM for restarting an interrupted loop, but a ``good'' DM
+  will be used for any other post-processing.
 
 
 \end{itemize}
@@ -4172,6 +4173,7 @@ The current version introduces several changes:
 
 
 \subsubsection{Mixing options}
+\label{sec:scf:mix}
 \index{SCF!mixing}
 
 Whether a calculation reaches self-consistency in a moderate number of
@@ -11357,6 +11359,8 @@ instructions above).
 \section{TRANSIESTA}
 \label{sec:transiesta}
 
+\newcommand\Nelec{N_{\mathfrak{E}}}
+
 
 \siesta\ includes the possibility of performing calculations of
 electronic transport properties using the \tsiesta\ method. This
@@ -11428,22 +11432,25 @@ $N\ge1$ setups\cite{Papior2017}.
   Transport calculations involve \emph{electrode} (EL) calculations,
   and subsequently the Scattering Region (SR) calculation. The
   \emph{electrode} calculations are usual \siesta\ calculations, but
-  where files \sysfile{TSHS}/\sysfile{TSDE} are generated. These files
-  contain the information necessary for calculation of the
-  self-energies. If any electrodes have identical structures (see
-  below) the same files can be used to describe those. In general,
-  however, electrodes can be different and therefore two different
-  \sysfile{TSHS} files must be generated. The location of these
-  electrode files must be specified in the \fdflib\ input file of the
-  SR calculation.
+  where files \sysfile{TSHS}, and optionally \sysfile{TSDE}, are
+  generated. These files contain the information necessary for
+  calculation of the self-energies. If any electrodes have identical
+  structures (see below) the same files can and should be used to
+  describe those. In general, however, electrodes can be different and
+  therefore two different \sysfile{TSHS} files must be generated. The
+  location of these electrode files must be specified in the \fdflib\
+  input file of the SR calculation, see \fdf{TS!Elec.<>!HS}.
 
   \item %
   For the SR, \tsiesta\ starts with the usual \siesta\ procedure,
   converging a Density Matrix (DM) with the usual Kohn-Sham scheme for
   periodic systems. It uses this solution as an initial input for the
-  Greens function self consistent cycle. As it is known, \siesta\
-  stores the DM in a file with extension \sysfile{DM}. In the case of
-  \tsiesta, this is done in a file named \sysfile{TSDE}. In a rerun of
+  Greens function self consistent cycle. Effectively you will start a
+  \tsiesta\ calculation from a fully periodic calculation. This is why
+  the $0\, V$ calculation should be the only calculation where you start
+  from \siesta.
+
+  \tsiesta\ stores the SCF DM in a file named \sysfile{TSDE}. In a rerun of
   the same system (meaning the same \fdf{SystemLabel}), if the
   code finds a \sysfile{TSDE} file in the directory, it will take this
   DM as the initial input and this is then considered a continuation
@@ -11453,7 +11460,7 @@ $N\ge1$ setups\cite{Papior2017}.
   %
   The first one stores the \siesta\ density matrix (periodic boundary
   conditions in all directions and no voltage), and the latter the
-  \tsiesta\ solution. 
+  \tsiesta\ solution.
 
   \item %
   When performing several bias calculations, it is heavily advised to
@@ -11483,10 +11490,11 @@ $N\ge1$ setups\cite{Papior2017}.
 
   \item %
   When the non-equilibrium calculation uses different electrodes one
-  may use so-called \emph{buffer} atoms behind the electrodes to act
+  should use so-called \emph{buffer} atoms behind the electrodes to act
   as additional screening regions when calculating the initial guess
   (using \siesta) for \tsiesta. Essentially they may be used to
-  achieve a better ``bulk-like'' environment at the electrodes.
+  achieve a better ``bulk-like'' environment at the electrodes in the
+  SR calculation.
 
   
   \item%
@@ -11496,10 +11504,16 @@ $N\ge1$ setups\cite{Papior2017}.
   contours must be \emph{well} below the lowest eigenvalue.
 
   \item%
-  \tsiesta\ assumes periodic boundary conditions in directions
-  orthogonal to the electrodes semi-infinite directions. If $N\neq2$
-  \tsiesta\ does not assume anything and one is required to specify
-  the periodicity (via $k$-points) separately.
+  Periodic boundary conditions are assumed in 2 cases.
+
+  \begin{enumerate}
+    \item For $\Nelec\neq 2$ all lattice vectors are periodic, users
+    \emph{must} manually define \fdf{TS!kgrid!MonkhorstPack}
+
+    \item For $\Nelec=2$ \tsiesta\ will auto-detect if both electrodes
+    are semi-infinite along the same lattice vector. If so, only 1 $k$
+    point will be used along that lattice vector.
+  \end{enumerate}
 
   \item%
   The default algorithm for matrix inversion is the BTD method, before
@@ -11524,30 +11538,40 @@ $N\ge1$ setups\cite{Papior2017}.
   \begin{output}[fontsize=\footnotesize]
 ts-q:         D        E1        C1        E2        C2        dQ
 ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
-\end{output}
-Always ensure the last column (\code{dQ}) is a very small fraction of
-the total number of electrons. Ideally this should be $0$.
-%
-For $0$ bias calculations this should be very small, typically less
-than $0.1\,\%$ of the total charge in the system. If this is not the
-case, it probably means that there is not enough screening towards the
-electrodes which can be solved by adding more electrode layers between
-the electrode and the scattering region. This layer thickness is
-\emph{very} important to obtain a correct open boundary calculation.
+  \end{output}
+  Always ensure the last column (\code{dQ}) is a very small fraction of
+  the total number of electrons. Ideally this should be $0$.
+  % 
+  For $0$ bias calculations this should be very small, typically less
+  than $0.1\,\%$ of the total charge in the system. If this is not the
+  case, it probably means that there is not enough screening towards the
+  electrodes which can be solved by adding more electrode layers between
+  the electrode and the scattering region. This layer thickness is
+  \emph{very} important to obtain a correct open boundary calculation.
 
   \item%
   Do \emph{not} perform \tsiesta\ calculations using semi-conducting
-  electrodes.
+  electrodes. The basic premise of \tsiesta\ calculations is that the
+  electrodes \emph{behave like bulk} in the electrode regions of the
+  SR. This means that the distance between the electrode and the
+  perturbed must equal the screening length of the electrode.
+
+  This is problematic for semi-conducting systems since they
+  intrinsically have a very long screening length.
+
+  In addition, the Fermi-level of semi-conductors are not well-defined
+  since it may be placed anywhere in the band gap.
 
 \end{itemize}
+
 
 \subsection{Electrodes}
 
 To calculate the electronic structure of a system under external bias,
 \tsiesta\ attaches the system to semi-infinite electrodes which extend
 to their respective semi-infinite directions. Examples of electrodes
-would include surfaces, nanowires, nanotubes or even atomic
-chains. The electrode must be large enough (in the semi-infinite
+would include surfaces, nanowires, nanotubes or fully infinite
+regions. The electrode must be large enough (in the semi-infinite
 direction) so that orbitals within the unit cell only interact with a
 single nearest neighbor cell in the semi-infinite direction (the size
 of the unit cell can thus be derived from the range of support for the
@@ -11697,13 +11721,112 @@ By default \tsiesta\ will die if there are connections beyond the
 principal cell. One may control whether this is allowed or not by
 using \fdf{TS!Elecs!Neglect.Principal}.
 
+
+
+
+\subsection{Convergence of electrodes and scattering regions}
+
+For successful \tsiesta\ calculations it is imperative that the
+electrodes and scattering regions are well-converged.
+%
+The basic principle is equivalent to the \siesta\ convergence, see
+Sec.~\ref{sec:scf}.
+
+The steps should be something along the line of (only done at
+$0\, V$).
+\begin{enumerate}
+
+  \item%
+  Converge electrodes and find optimal \fdf{Mesh!Cutoff},
+  \fdf{kgrid!MonkhorstPack} etc.
+
+  Electrode $k$ points should be very high along the semi-infinite
+  direction. The default is $100$, but at least $>50$ should easily be
+  reachable.
+
+
+  \item%
+  Use the parameters from the electrodes and also converge the
+  same parameters for the scattering region SCF.
+
+  This is an iterative process since the scattering region forces the
+  electrodes to use equivalent $k$ points (see
+  \fdf{TS!Elec.<>!check-kgrid}).
+
+  Note that $k$ points should be limited in the \tsiesta\ run, see
+  \fdf{TS!kgrid!MonkhorstPack}.
+
+  One should always use the same parameters in both the electrode and
+  scattering region calculations, except the number of $k$ points for
+  the electrode calculations along their respective semi-infinite
+  directions.
+
+
+  \item%
+  Once \tsiesta\ is completed one should also converge the
+  number of $k$ points for \tbtrans. Note that $k$ point sampling in
+  \tbtrans\ should generally be much denser but \emph{always} fulfill
+  $N_k^{\tsiesta}\geq N_k^\tbtrans$
+  
+\end{enumerate}
+
+The converged parameters obtained at $0\,\mathrm V$ should be used for
+all subsequent bias calculations. Remember to copy the \sysfile{TSDE}
+from the closest, previously, calculated bias for restart and much
+faster convergence.
+
+
+\tsiesta\ is also more difficult to converge during the SCF
+steps. This may be due to several interrelated problems:
+%
+\begin{itemize}
+  
+  \item%
+  A too short screening distance between the scattering atoms
+  and the electrode layers.
+
+  
+  \item%
+  In case buffer atoms (\fdf{TS!Atoms.Buffer}) are used with
+  vacuum on the backside it may be that there are too few buffer atoms
+  to accurately screen off the vacuum region for a sufficiently good
+  initial guess. This effect is only true for $0\,\mathrm V$
+  calculations.
+
+  
+  \item%
+  The mixing parameters may need to be smaller than for \siesta,
+  see Sec.~\ref{sec:scf:mix} and it is never guaranteed that it will
+  converge. It is \emph{always} a trial and error method, there are
+  \emph{no} omnipotent mixing parameters.
+
+  
+  \item%
+  Very high bias' may be extremely difficult to
+  converge. Generally one can force bias convergence by doing smaller
+  steps of bias. E.g. if problems arise at $0.5\,\mathrm V$ with an
+  initial DM from a $0.25\,\mathrm V$ calculation, one could try and
+  $0.3\,\mathrm V$ first.
+
+  
+  \item%
+  If a particular bias point is hard to converge, even by doing
+  the previous step, it may be related to an eigenstate close to the
+  chemical potentials of either electrode (e.g. a molecular eigenstate
+  in the junction). In such cases one could try an even higher bias
+  and see if this converges more smoothly.
+
+\end{itemize}
+
+
+
 \subsection{\texorpdfstring{\tsiesta\ }{TranSIESTA} Options}
 
 The fdf options shown here are only to be used at the input file for
 the scattering region. When using \tsiesta\ for electrode
 calculations, only the usual \siesta\ options are relevant.
 %
-Note that since \tsiesta\ is a generic $N$ electrode NEGF code the
+Note that since \tsiesta\ is a generic $\Nelec$ electrode NEGF code the
 input options are heavily changed compared to versions prior to 4.1.
 
 \subsubsection{Quick and dirty}
@@ -11728,7 +11851,7 @@ release.
 
 If one does not know the old flags and wish to get a basic example of
 an input file, a script \program{Util/TS/tselecs.sh} exists that can
-create the basic input for $N$ electrodes. One may call it like:
+create the basic input for $\Nelec$ electrodes. One may call it like:
 \begin{shellexample}
   tselecs.sh -2 > TWO_ELECTRODE.fdf
   tselecs.sh -3 > THREE_ELECTRODE.fdf
@@ -11745,7 +11868,7 @@ an analyzation of the system at hand, you may run your system as
   siesta -fdf TS.Analyze RUN.fdf > analyze.out
 \end{shellexample}
 which will analyze the sparsity pattern and print out several
-different pivoting schemes. Please see \fdf{TS!Analyze} for additional
+different pivoting schemes. Please see \fdf{TS!Analyze} for more
 information.
 
 
@@ -11771,6 +11894,8 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
     \fdfindex*{TS!SolutionMethod:MUMPS}%
     Use sparse matrix inversion algorithm (MUMPS). This requires
     \tsiesta\ to be compiled with MUMPS.
+    \index{MUMPS}%
+    \index{External library!MUMPS}%
 
     \option[full]%
     \fdfindex*{TS!SolutionMethod:full}%
@@ -11783,14 +11908,27 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 
 \begin{fdfentry}{TS!Voltage}[energy]<$0\,\mathrm{eV}$>
 
-  Define the reference applied bias. For $N=2$ electrode calculations
+  Define the reference applied bias. For $\Nelec=2$ electrode calculations
   this refers to the actual potential drop between the electrodes,
-  while for $N\neq2$ this is a reference bias. In the latter case it
+  while for $\Nelec\neq2$ this is a reference bias. In the latter case it
   \emph{must} be equivalent to the maximum difference between the
   chemical potential of any two electrodes.
 
   \note Specifying \shell{-V}\fdfindex{Command line options:-V} on the
   command-line overwrites the value in the fdf file.
+  
+\end{fdfentry}
+
+\begin{fdfentry}{TS!kgrid!MonkhorstPack}[block]<\fdfvalue{kgrid!MonkhorstPack}>
+
+  $k$ points used for the \tsiesta\ calculation.
+
+  For $\Nelec\neq2$ this should always be defined. Always take care to
+  use only 1 $k$ point along non-periodic lattice vectors. An
+  electrode semi-infinite region is considered non-periodic since it
+  is integrated out through the self-energies.
+
+  This defaults to \fdf{kgrid!MonkhorstPack}.
   
 \end{fdfentry}
 
@@ -11819,7 +11957,7 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
   the \tsiesta\ calculation but they are necessary to ensure the
   electrode bulk properties.
 
-  The above discussion is even more important when doing $N$-electrode
+  The above discussion is even more important when doing $\Nelec$-electrode
   calculations.
   
   \note all lines are additive for the buffer atoms and the input
@@ -12324,7 +12462,7 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
 
     This pivoting scheme depends on the initial starting
     electrodes, append \fdf*{+<elec-name>} to start the Cuthill-McKee
-    algorithm from the specified electrode.
+    algorithm from the specified electrode(s).
 
     \option[GPS] %
     Use the Gibbs-Poole-Stockmeyer algorithm for reducing the
@@ -12342,7 +12480,7 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
 
     This pivoting scheme \emph{may} depend on the initial starting
     electrode(s), append \fdf*{+<elec-name>} to initialize the PCG
-    algorithm from the specified electrode.
+    algorithm from the specified electrode(s).
 
   \end{fdfoptions}
 
@@ -12403,10 +12541,10 @@ using \fdf{TS!SolutionMethod:BTD}, similarly for options with
 
   How to compute the spectral function ($G\Gamma G^\dagger$).
 
-  For $N<4$ this defaults to \fdf*{propagation} which should be the
+  For $\Nelec<4$ this defaults to \fdf*{propagation} which should be the
   fastest.
 
-  For $N\ge4$ this defaults to \fdf*{column}.
+  For $\Nelec\ge4$ this defaults to \fdf*{column}.
 
   Check which has the best performance for your system if you endeavor
   on huge amounts of calculations for the same system.
@@ -12492,7 +12630,7 @@ the \sysfile{TSDE} files.
     \fdfindex*{TS!Poisson:<file>}%
 
     Specify an external file used as the boundary conditions for the
-    applied bias. This is encouraged to use for $N>2$ electrode
+    applied bias. This is encouraged to use for $\Nelec>2$ electrode
     calculations but may also be used when an \emph{a priori}
     potential profile is know.
 
@@ -12527,7 +12665,7 @@ variables:
     \option[elec-box]%
     \fdfindex*{TS!Poisson:elec-box}%
 
-    The default potential profile for $N>2$, or when the electrodes
+    The default potential profile for $\Nelec>2$, or when the electrodes
     does are not aligned (in terms of their transport direction).
     
     \note usage of this Poisson solution is \emph{highly}
@@ -12543,7 +12681,7 @@ variables:
   electrode calculations with a single transport direction) this
   should not be set.
   %
-  For $N$ electrode systems one \emph{have} to specify a plane to fix.
+  For $\Nelec$ electrode systems one \emph{have} to specify a plane to fix.
   One can specify one ore several planes to fix. Users are encouraged
   to fix the plane where the entire plane has the highest/lowest
   potential.
@@ -12570,7 +12708,7 @@ variables:
 
 \subsubsection{Electrode description options}
 
-As \tsiesta\ supports $N$ electrodes one needs to specify all
+As \tsiesta\ supports $\Nelec$ electrodes one needs to specify all
 electrodes in a generic input format.
 
 \begin{fdfentry}{TS!Elecs}[block]
@@ -12611,7 +12749,7 @@ electrodes in a generic input format.
 
     It may be one of \fdf*{[-+][abc]}, \fdf*{[-+]A[123]}, \fdf*{ab},
     \fdf*{ac}, \fdf*{bc} or \fdf*{abc}. The latter four all refer to a
-    real-space self-energy as described in \cite{1905.11113}.
+    real-space self-energy as described in \cite{Papior2019}.
 
     \note this direction is \emph{not} with respect to the scattering
     region unit cell. It is with respect to the electrode unit
@@ -12816,7 +12954,7 @@ electrodes in a generic input format.
 
     \option[check-kgrid]%
     \fdfindex*{TS!Elec.<>!check-kgrid}%
-    For $N$ electrode calculations the $\mathbf k$ mesh will sometimes
+    For $\Nelec$ electrode calculations the $\mathbf k$ mesh will sometimes
     not be equivalent for the electrodes and the device region
     calculations. However, \tsiesta\ requires that the device and
     electrode $\mathbf k$ samplings are commensurate. This flag
@@ -12941,7 +13079,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
 \subsubsection{Chemical potentials}
 \label{sec:ts:chem-pot}
 
-For $N$ electrodes there will also be $N_\mu$ chemical
+For $\Nelec$ electrodes there will also be $N_\mu$ chemical
 potentials. They are defined via blocks similar to \fdf{TS!Elecs}.
 
 \begin{fdfentry}{TS!ChemPots}[block]
@@ -13068,10 +13206,10 @@ equilibrium contour named according to their name.
 
 \subsubsection{Complex contour integration options}
 
-Specifying the contour for $N$ electrode systems is a bit extensive
-due to the possibility of more than 2 chemical potentials. Please use
-the \program{Util/TS/tselecs.sh} as a means to create default input
-blocks.
+Specifying the contour for $\Nelec$ electrode systems is a bit
+extensive due to the possibility of more than 2 chemical
+potentials. Please use the \program{Util/TS/tselecs.sh} as a means to
+create default input blocks.
 
 The contours are split in two segments. One, being the equilibrium
 contour of each of the different chemical potentials. The second for

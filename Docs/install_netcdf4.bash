@@ -206,7 +206,7 @@ if [ ! -e $hdf_dir/$hdf_lib/libhdf5.a ]; then
     ../configure --prefix=$hdf_dir \
 	--enable-shared --enable-static \
 	--enable-fortran --with-zlib=$zlib_dir \
-	LDFLAGS="-L$zlib_dir/$zlib_lib -Wl,-rpath=$zlib_dir/$zlib_lib"
+	LDFLAGS="-L$zlib_dir/$zlib_lib -Wl,-rpath,$zlib_dir/$zlib_lib"
     retval $? "hdf5 configure"
     make -j 2
     retval $? "hdf5 make"
@@ -241,8 +241,8 @@ if [ ! -e $cdfc_dir/$cdfc_lib/libnetcdf.a ]; then
 	--enable-shared --enable-static \
 	--enable-netcdf-4 --disable-dap \
 	CPPFLAGS="-I$hdf_dir/include -I$zlib_dir/include" \
-	LDFLAGS="-L$hdf_dir/$hdf_lib -Wl,-rpath=$hdf_dir/$hdf_lib \
--L$zlib_dir/$zlib_lib -Wl,-rpath=$zlib_dir/$zlib_lib"
+	LDFLAGS="-L$hdf_dir/$hdf_lib -Wl,-rpath,$hdf_dir/$hdf_lib \
+-L$zlib_dir/$zlib_lib -Wl,-rpath,$zlib_dir/$zlib_lib"
     retval $? "netcdf configure"
     make -j 2
     retval $? "netcdf make"
@@ -272,9 +272,9 @@ if [ ! -e $cdff_dir/$cdff_lib/libnetcdff.a ]; then
     mkdir build ; cd build
     ../configure CPPFLAGS="-DgFortran -I$zlib_dir/include \
 	-I$hdf_dir/include -I$cdfc_dir/include" \
-	LIBS="-L$zlib_dir/$zlib_lib -Wl,-rpath=$zlib_dir/$zlib_lib \
-	-L$hdf_dir/$hdf_lib -Wl,-rpath=$hdf_dir/$hdf_lib \
-	-L$cdfc_dir/$cdfc_lib -Wl,-rpath=$cdfc_dir/$cdfc_lib \
+	LIBS="-L$zlib_dir/$zlib_lib -Wl,-rpath,$zlib_dir/$zlib_lib \
+	-L$hdf_dir/$hdf_lib -Wl,-rpath,$hdf_dir/$hdf_lib \
+	-L$cdfc_dir/$cdfc_lib -Wl,-rpath,$cdfc_dir/$cdfc_lib \
 	-lnetcdf -lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5 -lz" \
 	--prefix=$cdff_dir --enable-static --enable-shared
     retval $? "netcdf-fortran configure"
@@ -310,13 +310,13 @@ echo ""
 # We only need the netcdf.mod file
 echo "INCFLAGS += -I$cdfc_dir/include"
 if [ $_single_dir -eq 0 ]; then
-    echo "LDFLAGS += -L$zlib_dir/$zlib_lib -Wl,-rpath=$zlib_dir/$zlib_lib"
-    echo "LDFLAGS += -L$hdf_dir/$hdf_lib -Wl,-rpath=$hdf_dir/$hdf_lib"
-    echo "LDFLAGS += -L$cdfc_dir/$cdfc_lib -Wl,-rpath=$cdfc_dir/$cdfc_lib"
-    echo "LDFLAGS += -L$cdff_dir/$cdff_lib -Wl,-rpath=$cdff_dir/$cdff_lib"
+    echo "LDFLAGS += -L$zlib_dir/$zlib_lib -Wl,-rpath,$zlib_dir/$zlib_lib"
+    echo "LDFLAGS += -L$hdf_dir/$hdf_lib -Wl,-rpath,$hdf_dir/$hdf_lib"
+    echo "LDFLAGS += -L$cdfc_dir/$cdfc_lib -Wl,-rpath,$cdfc_dir/$cdfc_lib"
+    echo "LDFLAGS += -L$cdff_dir/$cdff_lib -Wl,-rpath,$cdff_dir/$cdff_lib"
 else
     # All have the same directory
-    echo "LDFLAGS += -L$ID/$zlib_lib -Wl,-rpath=$ID/$zlib_lib"
+    echo "LDFLAGS += -L$ID/$zlib_lib -Wl,-rpath,$ID/$zlib_lib"
 fi
 echo "LIBS += -lnetcdff -lnetcdf -lhdf5_hl -lhdf5 -lz"
 echo "COMP_LIBS += libncdf.a libfdict.a"

@@ -12,14 +12,16 @@
 
 # VERY BASIC installation script of required libraries
 # for installing these packages:
-#   flook-0.7.0
+#   flook-0.8.1
 # If you want to change your compiler version you should define the
 # global variables that are used for the configure scripts to grab the
 # compiler, they should be CC and FC. Also if you want to compile with
 # different flags you should export those variables; CFLAGS, FFLAGS.
+# Optionally you could use VENDOR=gnu|intel
+# to use defaults for the specific compiler.
 
 # If you have downloaded other versions edit these version strings
-f_v=0.7.0
+f_v=0.8.1
 
 # Install path, change accordingly
 # You can change this variable to control the installation path
@@ -67,11 +69,27 @@ unset file_exists
 if [ ! -d $ID/flook/${f_v}/$flook_lib ]; then
     tar xfz flook-${f_v}.tar.gz
     cd flook-${f_v}
-    make liball
+    mkdir -p obj ; cd obj
+    {
+	echo TOP_DIR=..
+	[ "x$FC" != "x" ] && \
+	    echo FC = $FC
+	[ "x$FCFLAGS" != "x" ] && \
+	    echo FFLAGS = $FCFLAGS
+	[ "x$CC" != "x" ] && \
+	    echo CC = $CC
+	[ "x$CFLAGS" != "x" ] && \
+	    echo CFLAGS = $CFLAGS
+    } > setup.make
+    if [ "x$VENDOR" == "x" ]; then
+	make liball
+    else
+	make VENDOR=$VENDOR liball
+    fi
     retval $? "flook make liball"
     make install PREFIX=$ID/flook/${f_v}
     retval $? "flook make install"
-    cd ../
+    cd ../../
     rm -rf flook-${f_v}
     echo "Completed installing flook"
     [ -d $ID/flook/${f_v}/lib64 ] && flook_lib=lib64 || flook_lib=lib
@@ -95,7 +113,7 @@ echo ""
 echo "Please add the following to the BOTTOM of your arch.make file"
 echo ""
 echo "INCFLAGS += -I$ID/flook/${f_v}/include"
-echo "LDFLAGS += -L$ID/flook/${f_v}/$flook_lib -Wl,-rpath=$ID/flook/${f_v}/$flook_lib"
+echo "LDFLAGS += -L$ID/flook/${f_v}/$flook_lib -Wl,-rpath,$ID/flook/${f_v}/$flook_lib"
 echo "LIBS += -lflookall -ldl"
 echo "COMP_LIBS += libfdict.a"
 echo "FPPFLAGS += -DSIESTA__FLOOK"
