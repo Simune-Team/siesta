@@ -50,7 +50,7 @@ C Internal variables and arrays
      .                         volcel, xac(3), super_cell(3,3)
       external          digcel, redcel, volcel
 
-      logical               :: lOrigin
+      logical               :: explicit_origin_given
       ! Determine how to shift the origin by key-based values
       ! 0 == no shift (default)
       ! 1 == COP, center of positions in the middle of the cell
@@ -172,19 +172,21 @@ C Read atomic coordinates and species
       na  = na * ncells
 
 C Find origin with which to translate all coordinates
-      lOrigin = fdf_block('AtomicCoordinatesOrigin',bfdf)
+      explicit_origin_given = .false.
       origin = 0._dp
       origin_method = 0 ! no method
       origin_xyz = 7 ! all
-      if (lOrigin) then 
+
+      if (fdf_block('AtomicCoordinatesOrigin',bfdf)) then 
         if (.not. fdf_bline(bfdf,pline))
      .      call die('coor: ERROR in AtomicCoordinatesOrigin block')
         if ( fdf_bnvalues(pline) == 3 ) then
           origin(1) = fdf_bvalues(pline,1)
           origin(2) = fdf_bvalues(pline,2)
           origin(3) = fdf_bvalues(pline,3)
+          explicit_origin_given = .true.
         else if ( fdf_bnnames(pline) == 1 ) then
-          ! make origin the center of coordinates
+          ! make origin a center of coordinates (various options)
           acf = fdf_bnames(pline, 1)
           if ( leqi('COP', acf(1:3)) ) then
             origin_method = 1
@@ -209,8 +211,6 @@ C Find origin with which to translate all coordinates
           else
             origin_xyz = 7
           end if
-          ! Disable origin (now determined by origin_method)
-          lOrigin = .false.
         end if
         call fdf_bclose(bfdf)
       else
@@ -251,7 +251,8 @@ C Set array dimensions
 !      call re_alloc( cisa, 1, na, 'cisa', 'coor' )
 
 C Attempt to read a Z matrix
-      call read_Zmatrix( nua, isa, alat, unit_cell, lOrigin, origin )
+      call read_Zmatrix( nua, isa, alat, unit_cell,
+     $                   explicit_origin_given, origin )
 
       if (lUseZmatrix) then
         
@@ -273,7 +274,12 @@ C If Z matrix hasn't been found, read regular atomic coordinates
             xa(2,ia) = fdf_bvalues(pline,2)
             xa(3,ia) = fdf_bvalues(pline,3)
             isa(ia)  = fdf_bintegers(pline,1)
-            if (lOrigin) then
+
+            ! This is needed here because an explicit origin shift
+            ! is assumed to be using the same scaling convention as
+            ! the coordinates, and the scaling is applied later
+          
+            if (explicit_origin_given) then
               xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
             endif
 
@@ -307,7 +313,9 @@ C   Coord. option = 3 => Multiply by lattice vectors
         endif
    
 
-        ! Figure out if the user requested to shift geometry easily
+        ! Figure out whether the user requested to shift the origin
+        ! using one of the "pre-packaged" centering methods
+
         origin(:) = 0._dp
         select case ( origin_method )
         case ( 1 )              ! COP
@@ -344,6 +352,7 @@ C   Coord. option = 3 => Multiply by lattice vectors
           end do
           origin(:) = - origin(:)
         end select
+
         if ( origin_method /= 0 ) then
           if ( origin_method /= 3 .and.
      &        volcel(unit_cell) .lt. 1.d-8 ) then
@@ -371,7 +380,8 @@ C   Coord. option = 3 => Multiply by lattice vectors
             acf = trim(acf)//' (X and Y)'
             origin(3) = 0._dp
           end select
-          ! Make origin the center of the cell
+
+          ! Shift coordinates to put the "system center" at the center of the cell
           do ia = 1, nua
             xa(:,ia) = xa(:,ia) + origin(:)
           end do
