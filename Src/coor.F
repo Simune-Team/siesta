@@ -96,7 +96,7 @@ C Format of atomic coordinates
      .     '      (in Angstroms)'
         endif
       else if (leqi(acf,'ScaledCartesian') .or.
-        leqi(acf,'LatticeConstant') ) then
+     .   leqi(acf,'LatticeConstant') ) then
         if (alat.eq.0.0_dp) then
           if (Node.eq.0) then
             write(6,"(/,2a)") 'coor: ERROR: Explicit lattice ',
