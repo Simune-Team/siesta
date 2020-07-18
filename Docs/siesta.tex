@@ -2929,8 +2929,9 @@ modified xyz format) which must be described within a
     atomic positions are given directly in \AA ngstr\"om, in Cartesian
     coordinates
 
-    \option[ScaledCartesian]%
+    \option[LatticeConstant|ScaledCartesian]%
     \fdfindex*{AtomicCoordinatesFormat:ScaledCartesian}%
+    \fdfindex*{AtomicCoordinatesFormat:LatticeConstant}%
 
     atomic positions are given in Cartesian coordinates, in units of
     the lattice constant
@@ -2955,18 +2956,69 @@ modified xyz format) which must be described within a
   
 \end{fdfentry}
 
-\begin{fdfentry}{AtomicCoordinatesOrigin}[block]
+\begin{fdfentry}{AtomicCoordinatesOrigin}[block/string]
 
-  Vector specifying a rigid shift to apply to the atomic coordinates,
-  given in the same format and units as these. Notice that the atomic
+  The user can request a rigid shift of the coordinates, for example
+  to place a molecule near the center of the cell. This shift can be
+  specified in two ways:
+
+  \begin{itemize}
+    \item By an explicit vector,
+  given in the same format and units as the coordinates. Notice that the atomic
   positions (shifted or not) need not be within the cell formed by
   \fdf{LatticeVectors}, since periodic boundary conditions are
   always assumed.
 
-  This defaults to the origo:
+  This defaults to the origin:
   \begin{fdfexample}
     0.0   0.0   0.0
   \end{fdfexample}
+
+    \item By a string that indicates an automatic shift that places
+      the ``center'' of the system at the center of the unit cell, or
+      that places the system near the borders of the
+      cell. In this case, the contents of the block, or the values
+      associated directly to the label (see below) can be:
+
+  \begin{fdfoptions}
+    \option[COP]%
+    \fdfindex*{AtomicCoordinatesOrigin:COP}
+
+    Place the center of coordinates in the middle of the unit-cell.
+
+    \option[COM]%
+    \fdfindex*{AtomicCoordinatesOrigin:COM}
+
+    Place the center of mass in the middle of the unit-cell.
+
+    \option[MIN]%
+    \fdfindex*{AtomicCoordinatesOrigin:MIN}
+
+    Shift the coordinates so that the minimum value along each
+    cartesian axis is $0$.
+
+  \end{fdfoptions}
+
+   \note  Ghost atoms are not taken into account for the above ``centering''
+    calculations (but their coordinates are indeed shifted).
+
+  All string options may be given an optional value. For instance,
+  \fdf*{COP-XZ} which limits the \fdf*{COP} option to only affect $x$
+  and $z$ Cartesian coordinates.
+
+  The accepted suffixes are: \fdf*{-X}, \fdf*{-Y}, \fdf*{-Z},
+  \fdf*{-XY}/\fdf*{-YX}, \fdf*{-YZ}/\fdf*{-YZ}, \fdf*{-XZ}/\fdf*{-ZX}
+  and anything else will be regarded as all directions.
+
+  \begin{fdfexample}
+    AtomicCoordinatesOrigin COP-X ! COP only for x-direction
+    AtomicCoordinatesOrigin COM-ZY ! COM only for y- and z-directions
+    AtomicCoordinatesOrigin MIN-Z ! MIN only for z-direction
+    AtomicCoordinatesOrigin MIN-XYZ ! MIN for all directions
+    AtomicCoordinatesOrigin MIN ! MIN for all directions
+  \end{fdfexample}
+
+  \end{itemize}
   
 \end{fdfentry}
 
