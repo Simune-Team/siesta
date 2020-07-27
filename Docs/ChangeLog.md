@@ -8,6 +8,8 @@
 
 ### Changes
 
+* Minor changes for f2003 conformance
+
 * Provide more options for the shift of the origin of coordinates.
 
 * Some fixes for library operation (avoid stopping when 'onlyS' is set; re-opening of unit 6)

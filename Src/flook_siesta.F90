@@ -54,40 +54,40 @@ contains
     character(len=30) :: fortran_msg
 
     character(*), parameter :: fortran_static_lua = '&
-siesta = { &
-    Node = 0, &
-    Nodes = 1, &
-    INITIALIZE = 1, &
-    INIT_MD = 2, &
-    SCF_LOOP = 3, &
-    FORCES = 4, &
-    MOVE = 5, &
-    ANALYSIS = 6, &
-    state = 0, &
-    IOprint = function(self, ...) &
-       if self.IONode then &
-          print(...) &
-       end &
-    end, &
-    print = function(self, ...) &
-       print(...) &
-    end, &
-} &
-IOprint = function(...) &
-   siesta:IOprint(...) &
-end &
-siesta_comm = function(...) end'
+&siesta = { &
+&    Node = 0, &
+&    Nodes = 1, &
+&    INITIALIZE = 1, &
+&    INIT_MD = 2, &
+&    SCF_LOOP = 3, &
+&    FORCES = 4, &
+&    MOVE = 5, &
+&    ANALYSIS = 6, &
+&    state = 0, &
+&    IOprint = function(self, ...) &
+&       if self.IONode then &
+&          print(...) &
+&       end &
+&    end, &
+&    print = function(self, ...) &
+&       print(...) &
+&    end, &
+&} &
+&IOprint = function(...) &
+&   siesta:IOprint(...) &
+&end &
+&siesta_comm = function(...) end'
 
     character(*), parameter :: unit_static_lua = '&
-siesta.Units = { &
-    Ang    = 1. / 0.529177, &
-    eV     = 1. / 13.60580, &
-    kBar   = 1. / 1.47108e5, &
-    Debye  = 0.393430, &
-    amu    = 2.133107, &
-} &
-siesta.Units.GPa = siesta.Units.kBar * 10 &
-siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
+&siesta.Units = { &
+&    Ang    = 1. / 0.529177, &
+&    eV     = 1. / 13.60580, &
+&    kBar   = 1. / 1.47108e5, &
+&    Debye  = 0.393430, &
+&    amu    = 2.133107, &
+&} &
+&siesta.Units.GPa = siesta.Units.kBar * 10 &
+&siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
 
     ! For error-handling with lua
     integer :: err

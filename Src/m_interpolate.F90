@@ -11,7 +11,7 @@ module m_interpolate
   private
 
   interface crt_pivot
-    module procedure :: crt_pivot_r8, crt_pivot_i4
+    module procedure crt_pivot_r8, crt_pivot_i4
   end interface crt_pivot
   public :: crt_pivot
   public :: interp_linear
