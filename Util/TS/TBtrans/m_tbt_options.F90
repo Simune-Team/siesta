@@ -257,7 +257,7 @@ contains
     if ( N_mu == 0 ) call die('read_tbt_elecs: error in programming')
 
     ! To determine the same coordinate nature of the electrodes
-    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',1.e-4_dp,'Bohr')
+    Elecs_xa_EPS = fdf_get('TS.Elecs.Coord.Eps',0.001_dp*Ang, 'Bohr')
     Elecs_xa_EPS = fdf_get('TBT.Elecs.Coord.Eps',Elecs_xa_EPS,'Bohr')
 
     ! detect how many electrodes we have
