@@ -13,6 +13,8 @@ module m_tbt_options
 
   use precision, only : dp
 
+  use units, only: Ang
+
   use m_ts_tdir, only: ts_tidx
 
   use m_ts_electype
