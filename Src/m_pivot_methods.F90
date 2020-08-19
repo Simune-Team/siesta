@@ -1654,16 +1654,25 @@ contains
       call die('metis_NodeND: Error on initializing default options.')
     end if
 
-    ! set options
-    opts(3)  =  1 ! CTYPE == Sorted heavy-edge matching
-    !    opts(5)  =  1 ! RTYPE == Greedy-based cut and volume refinement
+    ! set options (C-values, start from 0 [enum])
+    !opts(1)  =  0 ! PTYPE == [recursive-bisection, k-way partitioning]
+    !opts(2)  =  0 ! OBJTYPE == [edge-cut, comm. volume] minimization
+    opts(3)  =  1 ! CTYPE == [random, Sorted heavy-edge] matching
+    !opts(4)  =  1 ! IPTYPE == [grow, random, edge, node] initial partitioning
+    !opts(5)  =  1 ! RTYPE == [FM, greedy volume, two-sided, one-sided] refinement
+    !opts(6)  = ! DBGLVL
     opts(7)  = 20 ! NITER(10) == Number of iterations
-    opts(8)  =  1 ! NCUT == Number of cuts
+    opts(8)  =  1 ! NCUTS == Number of cuts
+    !opts(9)  =  ! SEED
     opts(10) =  1 ! NO2HOP == does not use 2 hop
     opts(11) =  1 ! MINCONN == Explicitly minimize the maximum connectivity
     opts(12) =  0 ! CONTIG == Forces contiguous 
     opts(13) =  1 ! COMPRESS == compress similar adjacency nodes
+    !opts(14) =  ! CCORDER
+    !opts(15) =  ! PFACTOR
     opts(16) =  1 ! NSEPS(1) == tries in the separator
+    !opts(17) =  ! UFACTOR
+    !opts(18) =  ! NUMBERING
 
     ! Setup the adjacency graph
     call metis_adjacency_graph(n,nnzs,n_col,l_ptr,l_col,sub, &
@@ -1753,14 +1762,24 @@ contains
     end if
 
     ! set options
+    !opts(1)  =  0 ! PTYPE == [recursive-bisection, k-way partitioning]
     opts(2)  =  0 ! OBJTYPE == edge-cut minimization
     opts(3)  =  1 ! CTYPE == Sorted heavy-edge matching
+    !opts(4)  =  1 ! IPTYPE == [grow, random, edge, node] initial partitioning
     !    opts(5)  =  1 ! RTYPE == Greedy-based cut and volume refinement
+    !opts(6)  = ! DBGLVL
     opts(7)  = 20 ! NITER(10) == Number of iterations
     opts(8)  =  1 ! NCUTS == Number of cuts
+    !opts(9)  =  ! SEED
     opts(10) =  1 ! NO2HOP == does not use 2 hop
     opts(11) =  1 ! MINCONN == Explicitly minimize the maximum connectivity
     opts(12) =  0 ! CONTIG == Forces contiguous 
+    !opts(13) =  1 ! COMPRESS == compress similar adjacency nodes
+    !opts(14) =  ! CCORDER
+    !opts(15) =  ! PFACTOR
+    !opts(16) =  1 ! NSEPS(1) == tries in the separator
+    !opts(17) =  ! UFACTOR
+    !opts(18) =  ! NUMBERING
 
     ! Allocate adjacency graphs
     call metis_adjacency_graph(n,nnzs,n_col,l_ptr,l_col,sub, &
@@ -1877,14 +1896,25 @@ contains
     end if
 
     ! set options
+    ! set options (C-values, start from 0 [enum])
+    !opts(1)  =  0 ! PTYPE == [recursive-bisection, k-way partitioning]
     opts(2)  =  0 ! OBJTYPE == edge-cut minimization
     opts(3)  =  1 ! CTYPE == Sorted heavy-edge matching
+    !opts(4)  =  1 ! IPTYPE == [grow, random, edge, node] initial partitioning
     !    opts(5)  =  1 ! RTYPE == Greedy-based cut and volume refinement
+    !opts(6)  = ! DBGLVL
     opts(7)  = 20 ! NITER(10) == Number of iterations
     opts(8)  =  1 ! NCUTS == Number of cuts
+    !opts(9)  =  ! SEED
     opts(10) =  1 ! NO2HOP == does not use 2 hop
     opts(11) =  1 ! MINCONN == Explicitly minimize the maximum connectivity
     opts(12) =  0 ! CONTIG == Forces contiguous 
+    !opts(13) =  1 ! COMPRESS == compress similar adjacency nodes
+    !opts(14) =  ! CCORDER
+    !opts(15) =  ! PFACTOR
+    !opts(16) =  1 ! NSEPS(1) == tries in the separator
+    !opts(17) =  ! UFACTOR
+    !opts(18) =  ! NUMBERING
 
     ! Allocate adjacency graphs
     call metis_adjacency_graph(n,nnzs,n_col,l_ptr,l_col,sub, &
