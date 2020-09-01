@@ -114,7 +114,6 @@ contains
     use fdf, only : fdf_get, leqi, fdf_deprecated
     use alloc, only: re_alloc
 
-    use m_cite, only: add_citation
     use files, only: slabel
     use parallel, only: IONode
 
@@ -239,13 +238,6 @@ contains
        call die('Spin: unknown flag, please assert the correct input.')
     end if
 
-    if ( spin%SO_offsite ) then
-       call add_citation("10.1088/0953-8984/24/8/086005")
-    end if
-    if ( spin%SO_onsite ) then
-       call add_citation("10.1088/0953-8984/18/34/012")
-    end if
-    
     ! These are useful for fine control beyond the old "nspin". Some routines expect
     ! an argument 'nspin' which might really mean 'spin%spinor' (like diagon),
     ! 'spin%Grid' (like dhscf), etc.
