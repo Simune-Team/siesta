@@ -12244,20 +12244,46 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
 
     The best way to check this is to follow these steps:
     \begin{enumerate}
-      \item Perform a \siesta-only calculation (the resulting DM
-      should be used as the starting point for both following calculations)
-      \item Perform a \tsiesta\ calculation with the option
+      \item%
+      Perform a \siesta-only calculation (the resulting DM
+      should be used as the starting point for both following
+      calculations)
+
+      \item%
+      Perform a \tsiesta\ calculation with the option
       \fdf{TS!Elecs!DM.Init:diagon} (please note that the electrode
-      option has precedence, so remove the entry from the
+      option has precedence, so remove any entry from the
       \fdf{TS!Elec.<>} block)
-      
-      \item Perform a \tsiesta\ calculation with the option
-      \fdf{TS!Elecs!DM.init:bulk}
-       (please note that the electrode
-      option has precedence, so remove the entry from the
+
+      \item%
+      Perform a \tsiesta\ calculation with the option
+      \fdf{TS!Elec.<>!DM-init:bulk} (please note that the electrode
+      option has precedence, so remove any entry from the
       \fdf{TS!Elec.<>} block)
 
     \end{enumerate}
+
+    Now compare the final output and the initial charge distribution,
+    e.g.:
+    \begin{output}
+>>> TS.Elecs.DM.Init diagon
+transiesta: Charge distribution, target =    396.00000
+Total charge                  [Q]  :   396.00000
+
+>>> TS.Elecs.DM.Init bulk
+transiesta: Charge distribution, target =    396.00000
+Total charge                  [Q]  :   395.9995
+\end{output}
+
+    The above shows that there is very little charge difference
+    between the bulk electrode DM and the scattering region. This
+    ensures that the charge distribution are similar and that your
+    electrode is sufficiently screened.
+
+    Additionally one may compare the final output such as total
+    energies, calculated DOS and ADOS (see \tbtrans). If the two
+    calculations show different properties, one should carefully
+    examine the system setup.
 
     \item An incorrect reference energy level. In \tsiesta\ the Fermi
     level is calculated from the \siesta\ SCF. However, the \siesta\
@@ -12642,7 +12668,7 @@ intricate and important detail.
 It is important that these options are exactly the same if one reuses
 the \sysfile{TSDE} files.
 
-\begin{fdfentry}{TS!Poisson}[string]<ramp-cell|elec-box|\nonvalue{file}>
+\begin{fdfentry}{TS!Poisson}[string]<ramp|elec-box|\nonvalue{file}>
 
   Define how the correction of the Poisson equation is
   superimposed. The default is to apply the linear correction across
@@ -12660,20 +12686,9 @@ the \sysfile{TSDE} files.
   \note the file option is only applicable if compiled with CDF4
   compliance.
 
-  \begin{developer}
-    
-    NP has tested calculations with \fdf*{ramp-cell}
-    vs. \fdf*{ramp-central} and found incorrect bias for pristine
-    systems when using \fdf*{ramp-cell}. This can easily be found by
-    creating a linear chain and calculate the potential drop using
-    either options. Only when using \fdf*{ramp-central} will the correct
-    potential drop occur.
-    
-  \end{developer}
-
   \begin{fdfoptions}
-    \option[ramp-cell]%
-    \fdfindex*{TS!Poisson:ramp-cell}%
+    \option[ramp]%
+    \fdfindex*{TS!Poisson:ramp}%
 
     Apply the ramp for the full cell. This is the default for 2
     electrodes.
@@ -12709,11 +12724,11 @@ variables:
     the Poisson solution. This is used internally by \tsiesta\ to
     scale the potential to arbitrary $V$. This enables the Poisson
     solution to only be solved \emph{once} independent on subsequent
-    calculations For some chemical potential configurations the
-    Poisson solution cannot be linearly extrapolated, in which case a
-    separate file is required for each applied bias.
+    calculations. For chemical potential configurations where the
+    Poisson solution is not linearly dependent one have to create
+    separate files for each applied bias.
 
-    
+
     \option[elec-box]%
     \fdfindex*{TS!Poisson:elec-box}%
 
@@ -12733,10 +12748,10 @@ variables:
   electrode calculations with a single transport direction) this
   should not be set.
   %
-  For $\Nelec$ electrode systems one \emph{have} to specify a plane to fix.
-  One can specify one ore several planes to fix. Users are encouraged
-  to fix the plane where the entire plane has the highest/lowest
-  potential.
+  For $\Nelec\neq2$ electrode systems one \emph{have} to specify a
+  plane to fix. One can specify one or several planes to fix. Users
+  are encouraged to fix the plane where the entire plane has the
+  highest/lowest potential.
 
 \end{fdfentry}
 
@@ -12755,6 +12770,9 @@ variables:
   This value may be useful in certain cases where the Hartree
   potentials are very different between the electrode and device
   region calculations.
+
+  This should not be changed between different bias calculations. It
+  directly relates to the reference energy level ($E_F$).
 
 \end{fdfentry}
 
@@ -12834,11 +12852,15 @@ electrodes in a generic input format.
 
     \option[Bulk]%
     \fdfindex*{TS!Elec.<>!Bulk}%
-    Control whether the Hamiltonian of the electrode
-    region in the scattering region is enforced \emph{bulk} or whether
-    the Hamiltonian is taken from the scattering region elements.
-    
-    Generally one should use the default (\fdftrue) option.
+    \fdfindex*{TS!Elec.<>!Bulk:true}%
+    \fdfindex*{TS!Elec.<>!Bulk:false}%
+    Control whether the Hamiltonian of the electrode region in the
+    scattering region is enforced \emph{bulk} or whether the
+    Hamiltonian is taken from the scattering region elements.
+
+    This defaults to \fdftrue. If there are buffer atoms \emph{behind}
+    the electrode it may be advantageous to set this to false to
+    extend the electrode region.
 
     \option[DM-update]%
     \fdfindex*{TS!Elec.<>!DM-update}%
@@ -12849,33 +12871,35 @@ electrodes in a generic input format.
     which controls which part of the electrode density matrix elements
     that are updated. If \fdf*{all}, both the density matrix elements
     in the electrode and the coupling elements between the electrode
-    and scattering region are updated. If \fdf*{cross-terms} (default)
-    only the coupling elements between the electrode and the
-    scattering region are updated.
+    and scattering region are updated. If \fdf*{cross-terms}; only the
+    coupling elements between the electrode and the scattering region
+    are updated.
 
-    If \fdf{TS!Elec.<>!Bulk}[ false] this is forced to \fdf*{all} and
-    cannot be altered.
+    If \fdf{TS!Elec.<>!Bulk:false} this is forced to \fdf*{all} and
+    cannot be changed.
 
-    Generally one should use the default (\fdf*{cross-terms}) option.
+    If \fdf{TS!Elec.<>!Bulk:true} this defaults to \fdf*{cross-terms},
+    but may be changed.
 
     \option[DM-init]%
     \fdfindex*{TS!Elec.<>!DM-init}%
     \fdfindex*{TS!Elec.<>!DM-init:diagon}%
     \fdfindex*{TS!Elec.<>!DM-init:bulk}%
-    \fdfdepend{TS!Elecs!DM.Init}%
-    String of values \fdf*{bulk}, \fdf*{diagon} or \fdf*{force-bulk}
-    which controls whether the DM is initially overwritten by the DM
-    from the bulk electrode calculation.
-    This requires the DM file to be present.
+    \fdfdepend{TS!Elecs!DM.Init,TS!Elec.<>!Bulk,TS!Voltage}%
+    String of values \fdf*{bulk}, \fdf*{diagon} (default) or
+    \fdf*{force-bulk} which controls whether the DM is initially
+    overwritten by the DM from the bulk electrode calculation. This
+    requires the DM file for the electrode to be present. Only
+    \fdf*{force-bulk} will have effect if $V\neq0$. Otherwise this
+    option only affects $V=0$ calculations.
 
-    This is defaulted to \fdf*{bulk} for $0$ bias calculations.
-    For bias calculations this is defaulted to \fdf*{diagon}.
-
-    Using the truly bulk DM will force a bulk-like charge density in
-    the electrode region by copying the fully periodic electrode DM
-    into the scattering region DM. If one uses
-    \fdf{TS!Elec.<>!Bulk:false} it may be advantageous to set this to
-    \fdf*{diagon}, always.
+    The density matrix elements in the electrodes of the scattering
+    region may be forcefully set to the bulk values by reading in the
+    DM of the corresponding electrode. If one uses
+    \fdf{TS!Elec.<>!Bulk:false} it may be dis-advantageous to set this
+    to \fdf*{bulk}.
+    If the system is well setup, setting this to \fdf*{bulk} may be
+    advantageous.
 
     This option may be used to check how good the electrodes are
     screened (see \fdf{TS!dQ:fermi}).
@@ -13062,7 +13086,7 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   
   Globally control whether the surface Green function files should
   be re-used (\fdftrue) or re-created (\fdffalse).
-  %
+
   See \fdf{TS!Elec.<>!Gf-Reuse}.
   
 \end{fdflogicalT}
@@ -13072,41 +13096,26 @@ for the electrodes (with \fdf{TS!Elec.<>} taking precedence).
   Whether the electrodes will calculate the self energy at each SCF
   step. Using this will not require the surface Green function files
   but at the cost of heavily degraded performance.
-  You are not encouraged to set this to \fdffalse.
-  %
+
   See \fdf{TS!Elec.<>!Out-of-core}.
   
 \end{fdflogicalT}
 
 \begin{fdfentry}{TS!Elecs!DM.Update}[string]<cross-terms|all|none>
 
-  This globally controls which parts of the electrode density matrix
+  Globally controls which parts of the electrode density matrix
   gets updated. 
-  %
+
   See \fdf{TS!Elec.<>!DM-update}.
   
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Elecs!DM.Init}[string]<bulk|diagon|force-bulk>
+\begin{fdfentry}{TS!Elecs!DM.Init}[string]<diagon|bulk|force-bulk>
   \fdfindex*{TS!Elecs!DM.Init:bulk}%
   \fdfindex*{TS!Elecs!DM.Init:diagon}%
 
-  The density matrix elements in the electrodes may be forcefully set
-  to the bulk values by reading in the DM of the corresponding
-  electrode. This is by default \fdf*{bulk} for non-bias calculation,
-  and otherwise defaults to \fdf*{diagon}.
-
-  This step is only required once since the DM will be constant in the
-  electrode regions and thus it will be propagated through the
-  \sysfile{TSDE} files without having to re-do this step.
-  If this is done (by default) in the 0 bias calculation it will also
-  be effective in the bias calculation.
-
-  \note this will automatically be set to \fdf*{diagon} for
-  non-equilibrium calculations (unless \fdf*{force-bulk} is set). If
-  bulk density matrix elements are wanted in the electrodes it is
-  vital to have this option set to \fdf*{bulk} when performing the
-  equilibrium calculation.
+  Specify how the density matrix elements in the electrode regions of
+  the scattering region will be initialized when starting \tsiesta.
 
   See \fdf{TS!Elec.<>!DM-init}.
 
@@ -13563,7 +13572,7 @@ this manual. Their documentation is the appropriate sub-directory of
 
 In addition to the shipped utilities \siesta\ is also officially
 supported by \sisl\cite{sisl} which is a Python library enabling many
-of most commonly encountered things.
+of the most commonly encountered things.
 
 \section{SCRIPTING}
 

@@ -86,9 +86,8 @@ module m_ts_electype
      ! Flag to signal how the DM should be initialized
      !   == 0 'diagon', use DM from Siesta
      !   == 1 'bulk' from the bulk DM electrode files
-     ! This should default to 1 IFF the DM/TSDE files are
-     ! present.
-     integer :: DM_init = 1
+     ! This defaults to 0
+     integer :: DM_init = 0
      ! chemical potential of the electrode
      type(ts_mu), pointer :: mu => null()
      ! infinity direction
@@ -109,7 +108,7 @@ module m_ts_electype
      integer :: pvt(3)
      ! whether the electrode should be bulk
      logical :: Bulk = .true.
-     integer :: DM_update = 0 ! This determines the update scheme for the crossterms
+     integer :: DM_update = 1 ! This determines the update scheme for the crossterms
                               ! == 0 means no update
                               ! == 1 means update cross-terms
                               ! == 2 means update everything (no matter Bulk)
@@ -293,7 +292,7 @@ contains
     ! prepare to read in the data...
     type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline => null()
-    logical :: info(6)
+    logical :: info(5)
     integer :: i, j, Bloch(3)
     integer :: cidx_a 
     real(dp) :: rcell(3,3), fmin, fmax, rc
@@ -572,7 +571,6 @@ contains
           else
              call die('DM-init: unrecognized option: '//trim(tmp))
           end if
-          info(6) = .true.
 
        else if ( leqi(ln,'V-fraction') ) then
 
@@ -698,7 +696,7 @@ contains
 
     ! If the user will not use bulk, set DM_update to 'all'
     if ( .not. this%Bulk ) then
-       this%DM_update = 2 ! set 'all'
+      this%DM_update = 2 ! set 'all'
     end if
     
     if ( .not. file_exist(this%HSfile, Bcast = .true.) ) then
@@ -900,13 +898,11 @@ contains
       ! of the DM
       if ( file_exist(this%DEfile, Bcast = .true.) ) then
         ! The file has been found! Great!
-      else if ( info(6) ) then ! the user has explicitly requested this!
+      else ! the user has explicitly requested this!
         call die('Requested initialization of the DM, however the DM/TSDE file &
             &does not exist!')
-      else
-        ! disable reading the DM file, it does not exist
-        this%DM_init = 0
       end if
+
       ! We do not allow the DM file to be written if the chemical potential
       ! is not 0.
       if ( is_volt ) &
@@ -916,12 +912,14 @@ contains
       ! User has forcefully requested an initialization
       if ( file_exist(this%DEfile, Bcast = .true.) ) then
         ! The file has been found! Great!
-      else if ( info(6) ) then ! the user has explicitly requested this!
+      else ! the user has explicitly requested this!
         call die('Forcefully requested initialization of the DM, however the DM/TSDE &
             &file does not exist!')
       end if
-      ! Signal we should read
+
+      ! Signal return to 1 since value 2 is just to be caught here
       this%DM_init = 1
+
     end if
 
   end function fdf_Elec
