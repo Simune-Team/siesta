@@ -5605,6 +5605,8 @@
       IF( V1( 1 ).GE.V2( 1 ) ) THEN
          IF( V1( 1 ).NE.ZERO ) THEN
             V1( 2 ) = V1( 2 ) + ( V2( 1 ) / V1( 1 ) )**2 * V2( 2 )
+         ELSE
+            V1( 2 ) = V1( 2 ) + V2( 2 )
          END IF
       ELSE
          V1( 2 ) = V2( 2 ) + ( V1( 1 ) / V2( 1 ) )**2 * V1( 2 )
@@ -7817,12 +7819,12 @@
       DOUBLE PRECISION   ZERO, ONE, TWO
       PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0, TWO = 2.0D+0 )
       INTEGER            I, JLAST
-      DOUBLE PRECISION   ALTSGN, ESTOLD, TEMP
+      DOUBLE PRECISION   ALTSGN, ESTOLD, TEMP, XS
       INTEGER            IDAMAX
       DOUBLE PRECISION   DASUM
       EXTERNAL           IDAMAX, DASUM
       EXTERNAL           DCOPY
-      INTRINSIC          ABS, DBLE, NINT, SIGN
+      INTRINSIC          ABS, DBLE, NINT
       IF( KASE.EQ.0 ) THEN
          DO 10 I = 1, N
             X( I ) = ONE / DBLE( N )
@@ -7840,7 +7842,11 @@
       END IF
       EST = DASUM( N, X, 1 )
       DO 30 I = 1, N
-         X( I ) = SIGN( ONE, X( I ) )
+         IF( X(I).GE.ZERO ) THEN
+            X(I) = ONE
+         ELSE
+            X(I) = -ONE
+         END IF
          ISGN( I ) = NINT( X( I ) )
    30 CONTINUE
       KASE = 2
@@ -7862,7 +7868,12 @@
       ESTOLD = EST
       EST = DASUM( N, V, 1 )
       DO 80 I = 1, N
-         IF( NINT( SIGN( ONE, X( I ) ) ).NE.ISGN( I ) )
+         IF( X(I).GE.ZERO ) THEN
+            XS = ONE
+         ELSE
+            XS = -ONE
+         END IF
+         IF( NINT( XS ).NE.ISGN( I ) )
      $      GO TO 90
    80 CONTINUE
       GO TO 120
@@ -7870,7 +7881,11 @@
       IF( EST.LE.ESTOLD )
      $   GO TO 120
       DO 100 I = 1, N
-         X( I ) = SIGN( ONE, X( I ) )
+         IF( X(I).GE.ZERO ) THEN
+            X(I) = ONE
+         ELSE
+            X(I) = -ONE
+         END IF
          ISGN( I ) = NINT( X( I ) )
   100 CONTINUE
       KASE = 2
@@ -13453,7 +13468,7 @@
       INTEGER            LV
       PARAMETER          ( LV = 128 )
       DOUBLE PRECISION   TWOPI
-      PARAMETER          ( TWOPI = 6.2831853071795864769252867663D+0 )
+      PARAMETER  ( TWOPI = 6.28318530717958647692528676655900576839D+0 )
       INTEGER            I, IL, IL2, IV
       DOUBLE PRECISION   U( LV )
       INTRINSIC          COS, LOG, MIN, SQRT
@@ -26355,6 +26370,8 @@
       IF( V1( 1 ).GE.V2( 1 ) ) THEN
          IF( V1( 1 ).NE.ZERO ) THEN
             V1( 2 ) = V1( 2 ) + ( V2( 1 ) / V1( 1 ) )**2 * V2( 2 )
+         ELSE
+            V1( 2 ) = V1( 2 ) + V2( 2 )
          END IF
       ELSE
          V1( 2 ) = V2( 2 ) + ( V1( 1 ) / V2( 1 ) )**2 * V1( 2 )
@@ -27325,12 +27342,12 @@
       REAL               ZERO, ONE, TWO
       PARAMETER          ( ZERO = 0.0E+0, ONE = 1.0E+0, TWO = 2.0E+0 )
       INTEGER            I, JLAST
-      REAL               ALTSGN, ESTOLD, TEMP
+      REAL               ALTSGN, ESTOLD, TEMP, XS
       INTEGER            ISAMAX
       REAL               SASUM
       EXTERNAL           ISAMAX, SASUM
       EXTERNAL           SCOPY
-      INTRINSIC          ABS, NINT, REAL, SIGN
+      INTRINSIC          ABS, NINT, REAL
       IF( KASE.EQ.0 ) THEN
          DO 10 I = 1, N
             X( I ) = ONE / REAL( N )
@@ -27348,7 +27365,11 @@
       END IF
       EST = SASUM( N, X, 1 )
       DO 30 I = 1, N
-         X( I ) = SIGN( ONE, X( I ) )
+         IF( X(I).GE.ZERO ) THEN
+            X(I) = ONE
+         ELSE
+            X(I) = -ONE
+         END IF
          ISGN( I ) = NINT( X( I ) )
    30 CONTINUE
       KASE = 2
@@ -27370,7 +27391,12 @@
       ESTOLD = EST
       EST = SASUM( N, V, 1 )
       DO 80 I = 1, N
-         IF( NINT( SIGN( ONE, X( I ) ) ).NE.ISGN( I ) )
+         IF( X(I).GE.ZERO ) THEN
+            XS = ONE
+         ELSE
+            XS = -ONE
+         END IF
+         IF( NINT( XS ).NE.ISGN( I ) )
      $      GO TO 90
    80 CONTINUE
       GO TO 120
@@ -27378,7 +27404,11 @@
       IF( EST.LE.ESTOLD )
      $   GO TO 120
       DO 100 I = 1, N
-         X( I ) = SIGN( ONE, X( I ) )
+         IF( X(I).GE.ZERO ) THEN
+            X(I) = ONE
+         ELSE
+            X(I) = -ONE
+         END IF
          ISGN( I ) = NINT( X( I ) )
   100 CONTINUE
       KASE = 2
