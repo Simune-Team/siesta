@@ -5688,6 +5688,258 @@
       END IF
       RETURN
       END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgebak.f
+      SUBROUTINE DGEBAK( JOB, SIDE, N, ILO, IHI, SCALE, M, V, LDV,
+     $                   INFO )
+      CHARACTER          JOB, SIDE
+      INTEGER            IHI, ILO, INFO, LDV, M, N
+      DOUBLE PRECISION   SCALE( * ), V( LDV, * )
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+      LOGICAL            LEFTV, RIGHTV
+      INTEGER            I, II, K
+      DOUBLE PRECISION   S
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+      EXTERNAL           DSCAL, DSWAP, XERBLA
+      INTRINSIC          MAX, MIN
+      RIGHTV = LSAME( SIDE, 'R' )
+      LEFTV = LSAME( SIDE, 'L' )
+      INFO = 0
+      IF( .NOT.LSAME( JOB, 'N' ) .AND. .NOT.LSAME( JOB, 'P' ) .AND.
+     $    .NOT.LSAME( JOB, 'S' ) .AND. .NOT.LSAME( JOB, 'B' ) ) THEN
+         INFO = -1
+      ELSE IF( .NOT.RIGHTV .AND. .NOT.LEFTV ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -4
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -5
+      ELSE IF( M.LT.0 ) THEN
+         INFO = -7
+      ELSE IF( LDV.LT.MAX( 1, N ) ) THEN
+         INFO = -9
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEBAK', -INFO )
+         RETURN
+      END IF
+      IF( N.EQ.0 )
+     $   RETURN
+      IF( M.EQ.0 )
+     $   RETURN
+      IF( LSAME( JOB, 'N' ) )
+     $   RETURN
+      IF( ILO.EQ.IHI )
+     $   GO TO 30
+      IF( LSAME( JOB, 'S' ) .OR. LSAME( JOB, 'B' ) ) THEN
+         IF( RIGHTV ) THEN
+            DO 10 I = ILO, IHI
+               S = SCALE( I )
+               CALL DSCAL( M, S, V( I, 1 ), LDV )
+   10       CONTINUE
+         END IF
+         IF( LEFTV ) THEN
+            DO 20 I = ILO, IHI
+               S = ONE / SCALE( I )
+               CALL DSCAL( M, S, V( I, 1 ), LDV )
+   20       CONTINUE
+         END IF
+      END IF
+   30 CONTINUE
+      IF( LSAME( JOB, 'P' ) .OR. LSAME( JOB, 'B' ) ) THEN
+         IF( RIGHTV ) THEN
+            DO 40 II = 1, N
+               I = II
+               IF( I.GE.ILO .AND. I.LE.IHI )
+     $            GO TO 40
+               IF( I.LT.ILO )
+     $            I = ILO - II
+               K = SCALE( I )
+               IF( K.EQ.I )
+     $            GO TO 40
+               CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
+   40       CONTINUE
+         END IF
+         IF( LEFTV ) THEN
+            DO 50 II = 1, N
+               I = II
+               IF( I.GE.ILO .AND. I.LE.IHI )
+     $            GO TO 50
+               IF( I.LT.ILO )
+     $            I = ILO - II
+               K = SCALE( I )
+               IF( K.EQ.I )
+     $            GO TO 50
+               CALL DSWAP( M, V( I, 1 ), LDV, V( K, 1 ), LDV )
+   50       CONTINUE
+         END IF
+      END IF
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgebal.f
+      SUBROUTINE DGEBAL( JOB, N, A, LDA, ILO, IHI, SCALE, INFO )
+      CHARACTER          JOB
+      INTEGER            IHI, ILO, INFO, LDA, N
+      DOUBLE PRECISION   A( LDA, * ), SCALE( * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+      DOUBLE PRECISION   SCLFAC
+      PARAMETER          ( SCLFAC = 2.0D+0 )
+      DOUBLE PRECISION   FACTOR
+      PARAMETER          ( FACTOR = 0.95D+0 )
+      LOGICAL            NOCONV
+      INTEGER            I, ICA, IEXC, IRA, J, K, L, M
+      DOUBLE PRECISION   C, CA, F, G, R, RA, S, SFMAX1, SFMAX2, SFMIN1,
+     $                   SFMIN2
+      LOGICAL            DISNAN, LSAME
+      INTEGER            IDAMAX
+      DOUBLE PRECISION   DLAMCH, DNRM2
+      EXTERNAL           DISNAN, LSAME, IDAMAX, DLAMCH, DNRM2
+      EXTERNAL           DSCAL, DSWAP, XERBLA
+      INTRINSIC          ABS, MAX, MIN
+      INFO = 0
+      IF( .NOT.LSAME( JOB, 'N' ) .AND. .NOT.LSAME( JOB, 'P' ) .AND.
+     $    .NOT.LSAME( JOB, 'S' ) .AND. .NOT.LSAME( JOB, 'B' ) ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -2
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -4
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEBAL', -INFO )
+         RETURN
+      END IF
+      K = 1
+      L = N
+      IF( N.EQ.0 )
+     $   GO TO 210
+      IF( LSAME( JOB, 'N' ) ) THEN
+         DO 10 I = 1, N
+            SCALE( I ) = ONE
+   10    CONTINUE
+         GO TO 210
+      END IF
+      IF( LSAME( JOB, 'S' ) )
+     $   GO TO 120
+      GO TO 50
+   20 CONTINUE
+      SCALE( M ) = J
+      IF( J.EQ.M )
+     $   GO TO 30
+      CALL DSWAP( L, A( 1, J ), 1, A( 1, M ), 1 )
+      CALL DSWAP( N-K+1, A( J, K ), LDA, A( M, K ), LDA )
+   30 CONTINUE
+      GO TO ( 40, 80 )IEXC
+   40 CONTINUE
+      IF( L.EQ.1 )
+     $   GO TO 210
+      L = L - 1
+   50 CONTINUE
+      DO 70 J = L, 1, -1
+         DO 60 I = 1, L
+            IF( I.EQ.J )
+     $         GO TO 60
+            IF( A( J, I ).NE.ZERO )
+     $         GO TO 70
+   60    CONTINUE
+         M = L
+         IEXC = 1
+         GO TO 20
+   70 CONTINUE
+      GO TO 90
+   80 CONTINUE
+      K = K + 1
+   90 CONTINUE
+      DO 110 J = K, L
+         DO 100 I = K, L
+            IF( I.EQ.J )
+     $         GO TO 100
+            IF( A( I, J ).NE.ZERO )
+     $         GO TO 110
+  100    CONTINUE
+         M = K
+         IEXC = 2
+         GO TO 20
+  110 CONTINUE
+  120 CONTINUE
+      DO 130 I = K, L
+         SCALE( I ) = ONE
+  130 CONTINUE
+      IF( LSAME( JOB, 'P' ) )
+     $   GO TO 210
+      SFMIN1 = DLAMCH( 'S' ) / DLAMCH( 'P' )
+      SFMAX1 = ONE / SFMIN1
+      SFMIN2 = SFMIN1*SCLFAC
+      SFMAX2 = ONE / SFMIN2
+  140 CONTINUE
+      NOCONV = .FALSE.
+      DO 200 I = K, L
+         C = DNRM2( L-K+1, A( K, I ), 1 )
+         R = DNRM2( L-K+1, A( I, K ), LDA )
+         ICA = IDAMAX( L, A( 1, I ), 1 )
+         CA = ABS( A( ICA, I ) )
+         IRA = IDAMAX( N-K+1, A( I, K ), LDA )
+         RA = ABS( A( I, IRA+K-1 ) )
+         IF( C.EQ.ZERO .OR. R.EQ.ZERO )
+     $      GO TO 200
+         G = R / SCLFAC
+         F = ONE
+         S = C + R
+  160    CONTINUE
+         IF( C.GE.G .OR. MAX( F, C, CA ).GE.SFMAX2 .OR.
+     $       MIN( R, G, RA ).LE.SFMIN2 )GO TO 170
+            IF( DISNAN( C+F+CA+R+G+RA ) ) THEN
+            INFO = -3
+            CALL XERBLA( 'DGEBAL', -INFO )
+            RETURN
+         END IF
+         F = F*SCLFAC
+         C = C*SCLFAC
+         CA = CA*SCLFAC
+         R = R / SCLFAC
+         G = G / SCLFAC
+         RA = RA / SCLFAC
+         GO TO 160
+  170    CONTINUE
+         G = C / SCLFAC
+  180    CONTINUE
+         IF( G.LT.R .OR. MAX( R, RA ).GE.SFMAX2 .OR.
+     $       MIN( F, C, G, CA ).LE.SFMIN2 )GO TO 190
+         F = F / SCLFAC
+         C = C / SCLFAC
+         G = G / SCLFAC
+         CA = CA / SCLFAC
+         R = R*SCLFAC
+         RA = RA*SCLFAC
+         GO TO 180
+  190    CONTINUE
+         IF( ( C+R ).GE.FACTOR*S )
+     $      GO TO 200
+         IF( F.LT.ONE .AND. SCALE( I ).LT.ONE ) THEN
+            IF( F*SCALE( I ).LE.SFMIN1 )
+     $         GO TO 200
+         END IF
+         IF( F.GT.ONE .AND. SCALE( I ).GT.ONE ) THEN
+            IF( SCALE( I ).GE.SFMAX1 / F )
+     $         GO TO 200
+         END IF
+         G = ONE / F
+         SCALE( I ) = SCALE( I )*F
+         NOCONV = .TRUE.
+         CALL DSCAL( N-K+1, G, A( I, K ), LDA )
+         CALL DSCAL( L, F, A( 1, I ), 1 )
+  200 CONTINUE
+      IF( NOCONV )
+     $   GO TO 140
+  210 CONTINUE
+      ILO = K
+      IHI = L
+      RETURN
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgebd2.f
       SUBROUTINE DGEBD2( M, N, A, LDA, D, E, TAUQ, TAUP, WORK, INFO )
       INTEGER            INFO, LDA, M, N
@@ -5843,6 +6095,361 @@
       CALL DGEBD2( M-I+1, N-I+1, A( I, I ), LDA, D( I ), E( I ),
      $             TAUQ( I ), TAUP( I ), WORK, IINFO )
       WORK( 1 ) = WS
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgeev.f
+      SUBROUTINE DGEEV( JOBVL, JOBVR, N, A, LDA, WR, WI, VL, LDVL, VR,
+     $                  LDVR, WORK, LWORK, INFO )
+      implicit none
+      CHARACTER          JOBVL, JOBVR
+      INTEGER            INFO, LDA, LDVL, LDVR, LWORK, N
+      DOUBLE PRECISION   A( LDA, * ), VL( LDVL, * ), VR( LDVR, * ),
+     $                   WI( * ), WORK( * ), WR( * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
+      LOGICAL            LQUERY, SCALEA, WANTVL, WANTVR
+      CHARACTER          SIDE
+      INTEGER            HSWORK, I, IBAL, IERR, IHI, ILO, ITAU, IWRK, K,
+     $                   LWORK_TREVC, MAXWRK, MINWRK, NOUT
+      DOUBLE PRECISION   ANRM, BIGNUM, CS, CSCALE, EPS, R, SCL, SMLNUM,
+     $                   SN
+      LOGICAL            SELECT( 1 )
+      DOUBLE PRECISION   DUM( 1 )
+      EXTERNAL           DGEBAK, DGEBAL, DGEHRD, DHSEQR, DLABAD, DLACPY,
+     $                   DLARTG, DLASCL, DORGHR, DROT, DSCAL, DTREVC3,
+     $                   XERBLA
+      LOGICAL            LSAME
+      INTEGER            IDAMAX, ILAENV
+      DOUBLE PRECISION   DLAMCH, DLANGE, DLAPY2, DNRM2
+      EXTERNAL           LSAME, IDAMAX, ILAENV, DLAMCH, DLANGE, DLAPY2,
+     $                   DNRM2
+      INTRINSIC          MAX, SQRT
+      INFO = 0
+      LQUERY = ( LWORK.EQ.-1 )
+      WANTVL = LSAME( JOBVL, 'V' )
+      WANTVR = LSAME( JOBVR, 'V' )
+      IF( ( .NOT.WANTVL ) .AND. ( .NOT.LSAME( JOBVL, 'N' ) ) ) THEN
+         INFO = -1
+      ELSE IF( ( .NOT.WANTVR ) .AND. ( .NOT.LSAME( JOBVR, 'N' ) ) ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      ELSE IF( LDVL.LT.1 .OR. ( WANTVL .AND. LDVL.LT.N ) ) THEN
+         INFO = -9
+      ELSE IF( LDVR.LT.1 .OR. ( WANTVR .AND. LDVR.LT.N ) ) THEN
+         INFO = -11
+      END IF
+      IF( INFO.EQ.0 ) THEN
+         IF( N.EQ.0 ) THEN
+            MINWRK = 1
+            MAXWRK = 1
+         ELSE
+            MAXWRK = 2*N + N*ILAENV( 1, 'DGEHRD', ' ', N, 1, N, 0 )
+            IF( WANTVL ) THEN
+               MINWRK = 4*N
+               MAXWRK = MAX( MAXWRK, 2*N + ( N - 1 )*ILAENV( 1,
+     $                       'DORGHR', ' ', N, 1, N, -1 ) )
+               CALL DHSEQR( 'S', 'V', N, 1, N, A, LDA, WR, WI, VL, LDVL,
+     $                      WORK, -1, INFO )
+               HSWORK = INT( WORK(1) )
+               MAXWRK = MAX( MAXWRK, N + 1, N + HSWORK )
+               CALL DTREVC3( 'L', 'B', SELECT, N, A, LDA,
+     $                       VL, LDVL, VR, LDVR, N, NOUT,
+     $                       WORK, -1, IERR )
+               LWORK_TREVC = INT( WORK(1) )
+               MAXWRK = MAX( MAXWRK, N + LWORK_TREVC )
+               MAXWRK = MAX( MAXWRK, 4*N )
+            ELSE IF( WANTVR ) THEN
+               MINWRK = 4*N
+               MAXWRK = MAX( MAXWRK, 2*N + ( N - 1 )*ILAENV( 1,
+     $                       'DORGHR', ' ', N, 1, N, -1 ) )
+               CALL DHSEQR( 'S', 'V', N, 1, N, A, LDA, WR, WI, VR, LDVR,
+     $                      WORK, -1, INFO )
+               HSWORK = INT( WORK(1) )
+               MAXWRK = MAX( MAXWRK, N + 1, N + HSWORK )
+               CALL DTREVC3( 'R', 'B', SELECT, N, A, LDA,
+     $                       VL, LDVL, VR, LDVR, N, NOUT,
+     $                       WORK, -1, IERR )
+               LWORK_TREVC = INT( WORK(1) )
+               MAXWRK = MAX( MAXWRK, N + LWORK_TREVC )
+               MAXWRK = MAX( MAXWRK, 4*N )
+            ELSE
+               MINWRK = 3*N
+               CALL DHSEQR( 'E', 'N', N, 1, N, A, LDA, WR, WI, VR, LDVR,
+     $                      WORK, -1, INFO )
+               HSWORK = INT( WORK(1) )
+               MAXWRK = MAX( MAXWRK, N + 1, N + HSWORK )
+            END IF
+            MAXWRK = MAX( MAXWRK, MINWRK )
+         END IF
+         WORK( 1 ) = MAXWRK
+         IF( LWORK.LT.MINWRK .AND. .NOT.LQUERY ) THEN
+            INFO = -13
+         END IF
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEEV ', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+      IF( N.EQ.0 )
+     $   RETURN
+      EPS = DLAMCH( 'P' )
+      SMLNUM = DLAMCH( 'S' )
+      BIGNUM = ONE / SMLNUM
+      CALL DLABAD( SMLNUM, BIGNUM )
+      SMLNUM = SQRT( SMLNUM ) / EPS
+      BIGNUM = ONE / SMLNUM
+      ANRM = DLANGE( 'M', N, N, A, LDA, DUM )
+      SCALEA = .FALSE.
+      IF( ANRM.GT.ZERO .AND. ANRM.LT.SMLNUM ) THEN
+         SCALEA = .TRUE.
+         CSCALE = SMLNUM
+      ELSE IF( ANRM.GT.BIGNUM ) THEN
+         SCALEA = .TRUE.
+         CSCALE = BIGNUM
+      END IF
+      IF( SCALEA )
+     $   CALL DLASCL( 'G', 0, 0, ANRM, CSCALE, N, N, A, LDA, IERR )
+      IBAL = 1
+      CALL DGEBAL( 'B', N, A, LDA, ILO, IHI, WORK( IBAL ), IERR )
+      ITAU = IBAL + N
+      IWRK = ITAU + N
+      CALL DGEHRD( N, ILO, IHI, A, LDA, WORK( ITAU ), WORK( IWRK ),
+     $             LWORK-IWRK+1, IERR )
+      IF( WANTVL ) THEN
+         SIDE = 'L'
+         CALL DLACPY( 'L', N, N, A, LDA, VL, LDVL )
+         CALL DORGHR( N, ILO, IHI, VL, LDVL, WORK( ITAU ), WORK( IWRK ),
+     $                LWORK-IWRK+1, IERR )
+         IWRK = ITAU
+         CALL DHSEQR( 'S', 'V', N, ILO, IHI, A, LDA, WR, WI, VL, LDVL,
+     $                WORK( IWRK ), LWORK-IWRK+1, INFO )
+         IF( WANTVR ) THEN
+            SIDE = 'B'
+            CALL DLACPY( 'F', N, N, VL, LDVL, VR, LDVR )
+         END IF
+      ELSE IF( WANTVR ) THEN
+         SIDE = 'R'
+         CALL DLACPY( 'L', N, N, A, LDA, VR, LDVR )
+         CALL DORGHR( N, ILO, IHI, VR, LDVR, WORK( ITAU ), WORK( IWRK ),
+     $                LWORK-IWRK+1, IERR )
+         IWRK = ITAU
+         CALL DHSEQR( 'S', 'V', N, ILO, IHI, A, LDA, WR, WI, VR, LDVR,
+     $                WORK( IWRK ), LWORK-IWRK+1, INFO )
+      ELSE
+         IWRK = ITAU
+         CALL DHSEQR( 'E', 'N', N, ILO, IHI, A, LDA, WR, WI, VR, LDVR,
+     $                WORK( IWRK ), LWORK-IWRK+1, INFO )
+      END IF
+      IF( INFO.NE.0 )
+     $   GO TO 50
+      IF( WANTVL .OR. WANTVR ) THEN
+         CALL DTREVC3( SIDE, 'B', SELECT, N, A, LDA, VL, LDVL, VR, LDVR,
+     $                 N, NOUT, WORK( IWRK ), LWORK-IWRK+1, IERR )
+      END IF
+      IF( WANTVL ) THEN
+         CALL DGEBAK( 'B', 'L', N, ILO, IHI, WORK( IBAL ), N, VL, LDVL,
+     $                IERR )
+         DO 20 I = 1, N
+            IF( WI( I ).EQ.ZERO ) THEN
+               SCL = ONE / DNRM2( N, VL( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VL( 1, I ), 1 )
+            ELSE IF( WI( I ).GT.ZERO ) THEN
+               SCL = ONE / DLAPY2( DNRM2( N, VL( 1, I ), 1 ),
+     $               DNRM2( N, VL( 1, I+1 ), 1 ) )
+               CALL DSCAL( N, SCL, VL( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VL( 1, I+1 ), 1 )
+               DO 10 K = 1, N
+                  WORK( IWRK+K-1 ) = VL( K, I )**2 + VL( K, I+1 )**2
+   10          CONTINUE
+               K = IDAMAX( N, WORK( IWRK ), 1 )
+               CALL DLARTG( VL( K, I ), VL( K, I+1 ), CS, SN, R )
+               CALL DROT( N, VL( 1, I ), 1, VL( 1, I+1 ), 1, CS, SN )
+               VL( K, I+1 ) = ZERO
+            END IF
+   20    CONTINUE
+      END IF
+      IF( WANTVR ) THEN
+         CALL DGEBAK( 'B', 'R', N, ILO, IHI, WORK( IBAL ), N, VR, LDVR,
+     $                IERR )
+         DO 40 I = 1, N
+            IF( WI( I ).EQ.ZERO ) THEN
+               SCL = ONE / DNRM2( N, VR( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VR( 1, I ), 1 )
+            ELSE IF( WI( I ).GT.ZERO ) THEN
+               SCL = ONE / DLAPY2( DNRM2( N, VR( 1, I ), 1 ),
+     $               DNRM2( N, VR( 1, I+1 ), 1 ) )
+               CALL DSCAL( N, SCL, VR( 1, I ), 1 )
+               CALL DSCAL( N, SCL, VR( 1, I+1 ), 1 )
+               DO 30 K = 1, N
+                  WORK( IWRK+K-1 ) = VR( K, I )**2 + VR( K, I+1 )**2
+   30          CONTINUE
+               K = IDAMAX( N, WORK( IWRK ), 1 )
+               CALL DLARTG( VR( K, I ), VR( K, I+1 ), CS, SN, R )
+               CALL DROT( N, VR( 1, I ), 1, VR( 1, I+1 ), 1, CS, SN )
+               VR( K, I+1 ) = ZERO
+            END IF
+   40    CONTINUE
+      END IF
+   50 CONTINUE
+      IF( SCALEA ) THEN
+         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, N-INFO, 1, WR( INFO+1 ),
+     $                MAX( N-INFO, 1 ), IERR )
+         CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, N-INFO, 1, WI( INFO+1 ),
+     $                MAX( N-INFO, 1 ), IERR )
+         IF( INFO.GT.0 ) THEN
+            CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WR, N,
+     $                   IERR )
+            CALL DLASCL( 'G', 0, 0, CSCALE, ANRM, ILO-1, 1, WI, N,
+     $                   IERR )
+         END IF
+      END IF
+      WORK( 1 ) = MAXWRK
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgehd2.f
+      SUBROUTINE DGEHD2( N, ILO, IHI, A, LDA, TAU, WORK, INFO )
+      INTEGER            IHI, ILO, INFO, LDA, N
+      DOUBLE PRECISION   A( LDA, * ), TAU( * ), WORK( * )
+      DOUBLE PRECISION   ONE
+      PARAMETER          ( ONE = 1.0D+0 )
+      INTEGER            I
+      DOUBLE PRECISION   AII
+      EXTERNAL           DLARF, DLARFG, XERBLA
+      INTRINSIC          MAX, MIN
+      INFO = 0
+      IF( N.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -2
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEHD2', -INFO )
+         RETURN
+      END IF
+      DO 10 I = ILO, IHI - 1
+         CALL DLARFG( IHI-I, A( I+1, I ), A( MIN( I+2, N ), I ), 1,
+     $                TAU( I ) )
+         AII = A( I+1, I )
+         A( I+1, I ) = ONE
+         CALL DLARF( 'Right', IHI, IHI-I, A( I+1, I ), 1, TAU( I ),
+     $               A( 1, I+1 ), LDA, WORK )
+         CALL DLARF( 'Left', IHI-I, N-I, A( I+1, I ), 1, TAU( I ),
+     $               A( I+1, I+1 ), LDA, WORK )
+         A( I+1, I ) = AII
+   10 CONTINUE
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgehrd.f
+      SUBROUTINE DGEHRD( N, ILO, IHI, A, LDA, TAU, WORK, LWORK, INFO )
+      INTEGER            IHI, ILO, INFO, LDA, LWORK, N
+      DOUBLE PRECISION  A( LDA, * ), TAU( * ), WORK( * )
+      INTEGER            NBMAX, LDT, TSIZE
+      PARAMETER          ( NBMAX = 64, LDT = NBMAX+1,
+     $                     TSIZE = LDT*NBMAX )
+      DOUBLE PRECISION  ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0,
+     $                     ONE = 1.0D+0 )
+      LOGICAL            LQUERY
+      INTEGER            I, IB, IINFO, IWT, J, LDWORK, LWKOPT, NB,
+     $                   NBMIN, NH, NX
+      DOUBLE PRECISION  EI
+      EXTERNAL           DAXPY, DGEHD2, DGEMM, DLAHR2, DLARFB, DTRMM,
+     $                   XERBLA
+      INTRINSIC          MAX, MIN
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+      INFO = 0
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( N.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -2
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, N ) .AND. .NOT.LQUERY ) THEN
+         INFO = -8
+      END IF
+      IF( INFO.EQ.0 ) THEN
+         NB = MIN( NBMAX, ILAENV( 1, 'DGEHRD', ' ', N, ILO, IHI, -1 ) )
+         LWKOPT = N*NB + TSIZE
+         WORK( 1 ) = LWKOPT
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DGEHRD', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+      DO 10 I = 1, ILO - 1
+         TAU( I ) = ZERO
+   10 CONTINUE
+      DO 20 I = MAX( 1, IHI ), N - 1
+         TAU( I ) = ZERO
+   20 CONTINUE
+      NH = IHI - ILO + 1
+      IF( NH.LE.1 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+      NB = MIN( NBMAX, ILAENV( 1, 'DGEHRD', ' ', N, ILO, IHI, -1 ) )
+      NBMIN = 2
+      IF( NB.GT.1 .AND. NB.LT.NH ) THEN
+         NX = MAX( NB, ILAENV( 3, 'DGEHRD', ' ', N, ILO, IHI, -1 ) )
+         IF( NX.LT.NH ) THEN
+            IF( LWORK.LT.N*NB+TSIZE ) THEN
+               NBMIN = MAX( 2, ILAENV( 2, 'DGEHRD', ' ', N, ILO, IHI,
+     $                 -1 ) )
+               IF( LWORK.GE.(N*NBMIN + TSIZE) ) THEN
+                  NB = (LWORK-TSIZE) / N
+               ELSE
+                  NB = 1
+               END IF
+            END IF
+         END IF
+      END IF
+      LDWORK = N
+      IF( NB.LT.NBMIN .OR. NB.GE.NH ) THEN
+         I = ILO
+      ELSE
+         IWT = 1 + N*NB
+         DO 40 I = ILO, IHI - 1 - NX, NB
+            IB = MIN( NB, IHI-I )
+            CALL DLAHR2( IHI, I, IB, A( 1, I ), LDA, TAU( I ),
+     $                   WORK( IWT ), LDT, WORK, LDWORK )
+            EI = A( I+IB, I+IB-1 )
+            A( I+IB, I+IB-1 ) = ONE
+            CALL DGEMM( 'No transpose', 'Transpose',
+     $                  IHI, IHI-I-IB+1,
+     $                  IB, -ONE, WORK, LDWORK, A( I+IB, I ), LDA, ONE,
+     $                  A( 1, I+IB ), LDA )
+            A( I+IB, I+IB-1 ) = EI
+            CALL DTRMM( 'Right', 'Lower', 'Transpose',
+     $                  'Unit', I, IB-1,
+     $                  ONE, A( I+1, I ), LDA, WORK, LDWORK )
+            DO 30 J = 0, IB-2
+               CALL DAXPY( I, -ONE, WORK( LDWORK*J+1 ), 1,
+     $                     A( 1, I+J+1 ), 1 )
+   30       CONTINUE
+            CALL DLARFB( 'Left', 'Transpose', 'Forward',
+     $                   'Columnwise',
+     $                   IHI-I, N-I-IB+1, IB, A( I+1, I ), LDA,
+     $                   WORK( IWT ), LDT, A( I+1, I+IB ), LDA,
+     $                   WORK, LDWORK )
+   40    CONTINUE
+      END IF
+      CALL DGEHD2( N, I, IHI, A, LDA, TAU, WORK, IINFO )
+      WORK( 1 ) = LWKOPT
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dgelq2.f
@@ -6885,6 +7492,107 @@
          CALL DLASWP( NRHS, B, LDB, 1, N, IPIV, -1 )
       END IF
       RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dhseqr.f
+      SUBROUTINE DHSEQR( JOB, COMPZ, N, ILO, IHI, H, LDH, WR, WI, Z,
+     $                   LDZ, WORK, LWORK, INFO )
+      INTEGER            IHI, ILO, INFO, LDH, LDZ, LWORK, N
+      CHARACTER          COMPZ, JOB
+      DOUBLE PRECISION   H( LDH, * ), WI( * ), WORK( * ), WR( * ),
+     $                   Z( LDZ, * )
+      INTEGER            NTINY
+      PARAMETER          ( NTINY = 11 )
+      INTEGER            NL
+      PARAMETER          ( NL = 49 )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0d0, ONE = 1.0d0 )
+      DOUBLE PRECISION   HL( NL, NL ), WORKL( NL )
+      INTEGER            I, KBOT, NMIN
+      LOGICAL            INITZ, LQUERY, WANTT, WANTZ
+      INTEGER            ILAENV
+      LOGICAL            LSAME
+      EXTERNAL           ILAENV, LSAME
+      EXTERNAL           DLACPY, DLAHQR, DLAQR0, DLASET, XERBLA
+      INTRINSIC          DBLE, MAX, MIN
+      WANTT = LSAME( JOB, 'S' )
+      INITZ = LSAME( COMPZ, 'I' )
+      WANTZ = INITZ .OR. LSAME( COMPZ, 'V' )
+      WORK( 1 ) = DBLE( MAX( 1, N ) )
+      LQUERY = LWORK.EQ.-1
+      INFO = 0
+      IF( .NOT.LSAME( JOB, 'E' ) .AND. .NOT.WANTT ) THEN
+         INFO = -1
+      ELSE IF( .NOT.LSAME( COMPZ, 'N' ) .AND. .NOT.WANTZ ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -4
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -5
+      ELSE IF( LDH.LT.MAX( 1, N ) ) THEN
+         INFO = -7
+      ELSE IF( LDZ.LT.1 .OR. ( WANTZ .AND. LDZ.LT.MAX( 1, N ) ) ) THEN
+         INFO = -11
+      ELSE IF( LWORK.LT.MAX( 1, N ) .AND. .NOT.LQUERY ) THEN
+         INFO = -13
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DHSEQR', -INFO )
+         RETURN
+      ELSE IF( N.EQ.0 ) THEN
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         CALL DLAQR0( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI, ILO,
+     $                IHI, Z, LDZ, WORK, LWORK, INFO )
+         WORK( 1 ) = MAX( DBLE( MAX( 1, N ) ), WORK( 1 ) )
+         RETURN
+      ELSE
+         DO 10 I = 1, ILO - 1
+            WR( I ) = H( I, I )
+            WI( I ) = ZERO
+   10    CONTINUE
+         DO 20 I = IHI + 1, N
+            WR( I ) = H( I, I )
+            WI( I ) = ZERO
+   20    CONTINUE
+         IF( INITZ )
+     $      CALL DLASET( 'A', N, N, ZERO, ONE, Z, LDZ )
+         IF( ILO.EQ.IHI ) THEN
+            WR( ILO ) = H( ILO, ILO )
+            WI( ILO ) = ZERO
+            RETURN
+         END IF
+         NMIN = ILAENV( 12, 'DHSEQR', JOB( : 1 ) // COMPZ( : 1 ), N,
+     $          ILO, IHI, LWORK )
+         NMIN = MAX( NTINY, NMIN )
+         IF( N.GT.NMIN ) THEN
+            CALL DLAQR0( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI, ILO,
+     $                   IHI, Z, LDZ, WORK, LWORK, INFO )
+         ELSE
+            CALL DLAHQR( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI, ILO,
+     $                   IHI, Z, LDZ, INFO )
+            IF( INFO.GT.0 ) THEN
+               KBOT = INFO
+               IF( N.GE.NL ) THEN
+                  CALL DLAQR0( WANTT, WANTZ, N, ILO, KBOT, H, LDH, WR,
+     $                         WI, ILO, IHI, Z, LDZ, WORK, LWORK, INFO )
+               ELSE
+                  CALL DLACPY( 'A', N, N, H, LDH, HL, NL )
+                  HL( N+1, N ) = ZERO
+                  CALL DLASET( 'A', NL, NL-N, ZERO, ZERO, HL( 1, N+1 ),
+     $                         NL )
+                  CALL DLAQR0( WANTT, WANTZ, NL, ILO, KBOT, HL, NL, WR,
+     $                         WI, ILO, IHI, Z, LDZ, WORKL, NL, INFO )
+                  IF( WANTT .OR. INFO.NE.0 )
+     $               CALL DLACPY( 'A', N, N, HL, NL, H, LDH )
+               END IF
+            END IF
+         END IF
+         IF( ( WANTT .OR. INFO.NE.0 ) .AND. N.GT.2 )
+     $      CALL DLASET( 'L', N-2, N-2, ZERO, ZERO, H( 3, 1 ), LDH )
+         WORK( 1 ) = MAX( DBLE( MAX( 1, N ) ), WORK( 1 ) )
+      END IF
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/disnan.f
       LOGICAL FUNCTION DISNAN( DIN )
@@ -10131,6 +10839,160 @@
       END IF
       RETURN
       END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaexc.f
+      SUBROUTINE DLAEXC( WANTQ, N, T, LDT, Q, LDQ, J1, N1, N2, WORK,
+     $                   INFO )
+      LOGICAL            WANTQ
+      INTEGER            INFO, J1, LDQ, LDT, N, N1, N2
+      DOUBLE PRECISION   Q( LDQ, * ), T( LDT, * ), WORK( * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+      DOUBLE PRECISION   TEN
+      PARAMETER          ( TEN = 1.0D+1 )
+      INTEGER            LDD, LDX
+      PARAMETER          ( LDD = 4, LDX = 2 )
+      INTEGER            IERR, J2, J3, J4, K, ND
+      DOUBLE PRECISION   CS, DNORM, EPS, SCALE, SMLNUM, SN, T11, T22,
+     $                   T33, TAU, TAU1, TAU2, TEMP, THRESH, WI1, WI2,
+     $                   WR1, WR2, XNORM
+      DOUBLE PRECISION   D( LDD, 4 ), U( 3 ), U1( 3 ), U2( 3 ),
+     $                   X( LDX, 2 )
+      DOUBLE PRECISION   DLAMCH, DLANGE
+      EXTERNAL           DLAMCH, DLANGE
+      EXTERNAL           DLACPY, DLANV2, DLARFG, DLARFX, DLARTG, DLASY2,
+     $                   DROT
+      INTRINSIC          ABS, MAX
+      INFO = 0
+      IF( N.EQ.0 .OR. N1.EQ.0 .OR. N2.EQ.0 )
+     $   RETURN
+      IF( J1+N1.GT.N )
+     $   RETURN
+      J2 = J1 + 1
+      J3 = J1 + 2
+      J4 = J1 + 3
+      IF( N1.EQ.1 .AND. N2.EQ.1 ) THEN
+         T11 = T( J1, J1 )
+         T22 = T( J2, J2 )
+         CALL DLARTG( T( J1, J2 ), T22-T11, CS, SN, TEMP )
+         IF( J3.LE.N )
+     $      CALL DROT( N-J1-1, T( J1, J3 ), LDT, T( J2, J3 ), LDT, CS,
+     $                 SN )
+         CALL DROT( J1-1, T( 1, J1 ), 1, T( 1, J2 ), 1, CS, SN )
+         T( J1, J1 ) = T22
+         T( J2, J2 ) = T11
+         IF( WANTQ ) THEN
+            CALL DROT( N, Q( 1, J1 ), 1, Q( 1, J2 ), 1, CS, SN )
+         END IF
+      ELSE
+         ND = N1 + N2
+         CALL DLACPY( 'Full', ND, ND, T( J1, J1 ), LDT, D, LDD )
+         DNORM = DLANGE( 'Max', ND, ND, D, LDD, WORK )
+         EPS = DLAMCH( 'P' )
+         SMLNUM = DLAMCH( 'S' ) / EPS
+         THRESH = MAX( TEN*EPS*DNORM, SMLNUM )
+         CALL DLASY2( .FALSE., .FALSE., -1, N1, N2, D, LDD,
+     $                D( N1+1, N1+1 ), LDD, D( 1, N1+1 ), LDD, SCALE, X,
+     $                LDX, XNORM, IERR )
+         K = N1 + N1 + N2 - 3
+         GO TO ( 10, 20, 30 )K
+   10    CONTINUE
+         U( 1 ) = SCALE
+         U( 2 ) = X( 1, 1 )
+         U( 3 ) = X( 1, 2 )
+         CALL DLARFG( 3, U( 3 ), U, 1, TAU )
+         U( 3 ) = ONE
+         T11 = T( J1, J1 )
+         CALL DLARFX( 'L', 3, 3, U, TAU, D, LDD, WORK )
+         CALL DLARFX( 'R', 3, 3, U, TAU, D, LDD, WORK )
+         IF( MAX( ABS( D( 3, 1 ) ), ABS( D( 3, 2 ) ), ABS( D( 3,
+     $       3 )-T11 ) ).GT.THRESH )GO TO 50
+         CALL DLARFX( 'L', 3, N-J1+1, U, TAU, T( J1, J1 ), LDT, WORK )
+         CALL DLARFX( 'R', J2, 3, U, TAU, T( 1, J1 ), LDT, WORK )
+         T( J3, J1 ) = ZERO
+         T( J3, J2 ) = ZERO
+         T( J3, J3 ) = T11
+         IF( WANTQ ) THEN
+            CALL DLARFX( 'R', N, 3, U, TAU, Q( 1, J1 ), LDQ, WORK )
+         END IF
+         GO TO 40
+   20    CONTINUE
+         U( 1 ) = -X( 1, 1 )
+         U( 2 ) = -X( 2, 1 )
+         U( 3 ) = SCALE
+         CALL DLARFG( 3, U( 1 ), U( 2 ), 1, TAU )
+         U( 1 ) = ONE
+         T33 = T( J3, J3 )
+         CALL DLARFX( 'L', 3, 3, U, TAU, D, LDD, WORK )
+         CALL DLARFX( 'R', 3, 3, U, TAU, D, LDD, WORK )
+         IF( MAX( ABS( D( 2, 1 ) ), ABS( D( 3, 1 ) ), ABS( D( 1,
+     $       1 )-T33 ) ).GT.THRESH )GO TO 50
+         CALL DLARFX( 'R', J3, 3, U, TAU, T( 1, J1 ), LDT, WORK )
+         CALL DLARFX( 'L', 3, N-J1, U, TAU, T( J1, J2 ), LDT, WORK )
+         T( J1, J1 ) = T33
+         T( J2, J1 ) = ZERO
+         T( J3, J1 ) = ZERO
+         IF( WANTQ ) THEN
+            CALL DLARFX( 'R', N, 3, U, TAU, Q( 1, J1 ), LDQ, WORK )
+         END IF
+         GO TO 40
+   30    CONTINUE
+         U1( 1 ) = -X( 1, 1 )
+         U1( 2 ) = -X( 2, 1 )
+         U1( 3 ) = SCALE
+         CALL DLARFG( 3, U1( 1 ), U1( 2 ), 1, TAU1 )
+         U1( 1 ) = ONE
+         TEMP = -TAU1*( X( 1, 2 )+U1( 2 )*X( 2, 2 ) )
+         U2( 1 ) = -TEMP*U1( 2 ) - X( 2, 2 )
+         U2( 2 ) = -TEMP*U1( 3 )
+         U2( 3 ) = SCALE
+         CALL DLARFG( 3, U2( 1 ), U2( 2 ), 1, TAU2 )
+         U2( 1 ) = ONE
+         CALL DLARFX( 'L', 3, 4, U1, TAU1, D, LDD, WORK )
+         CALL DLARFX( 'R', 4, 3, U1, TAU1, D, LDD, WORK )
+         CALL DLARFX( 'L', 3, 4, U2, TAU2, D( 2, 1 ), LDD, WORK )
+         CALL DLARFX( 'R', 4, 3, U2, TAU2, D( 1, 2 ), LDD, WORK )
+         IF( MAX( ABS( D( 3, 1 ) ), ABS( D( 3, 2 ) ), ABS( D( 4, 1 ) ),
+     $       ABS( D( 4, 2 ) ) ).GT.THRESH )GO TO 50
+         CALL DLARFX( 'L', 3, N-J1+1, U1, TAU1, T( J1, J1 ), LDT, WORK )
+         CALL DLARFX( 'R', J4, 3, U1, TAU1, T( 1, J1 ), LDT, WORK )
+         CALL DLARFX( 'L', 3, N-J1+1, U2, TAU2, T( J2, J1 ), LDT, WORK )
+         CALL DLARFX( 'R', J4, 3, U2, TAU2, T( 1, J2 ), LDT, WORK )
+         T( J3, J1 ) = ZERO
+         T( J3, J2 ) = ZERO
+         T( J4, J1 ) = ZERO
+         T( J4, J2 ) = ZERO
+         IF( WANTQ ) THEN
+            CALL DLARFX( 'R', N, 3, U1, TAU1, Q( 1, J1 ), LDQ, WORK )
+            CALL DLARFX( 'R', N, 3, U2, TAU2, Q( 1, J2 ), LDQ, WORK )
+         END IF
+   40    CONTINUE
+         IF( N2.EQ.2 ) THEN
+            CALL DLANV2( T( J1, J1 ), T( J1, J2 ), T( J2, J1 ),
+     $                   T( J2, J2 ), WR1, WI1, WR2, WI2, CS, SN )
+            CALL DROT( N-J1-1, T( J1, J1+2 ), LDT, T( J2, J1+2 ), LDT,
+     $                 CS, SN )
+            CALL DROT( J1-1, T( 1, J1 ), 1, T( 1, J2 ), 1, CS, SN )
+            IF( WANTQ )
+     $         CALL DROT( N, Q( 1, J1 ), 1, Q( 1, J2 ), 1, CS, SN )
+         END IF
+         IF( N1.EQ.2 ) THEN
+            J3 = J1 + N2
+            J4 = J3 + 1
+            CALL DLANV2( T( J3, J3 ), T( J3, J4 ), T( J4, J3 ),
+     $                   T( J4, J4 ), WR1, WI1, WR2, WI2, CS, SN )
+            IF( J3+2.LE.N )
+     $         CALL DROT( N-J3-1, T( J3, J3+2 ), LDT, T( J4, J3+2 ),
+     $                    LDT, CS, SN )
+            CALL DROT( J3-1, T( 1, J3 ), 1, T( 1, J4 ), 1, CS, SN )
+            IF( WANTQ )
+     $         CALL DROT( N, Q( 1, J3 ), 1, Q( 1, J4 ), 1, CS, SN )
+         END IF
+      END IF
+      RETURN
+   50 CONTINUE
+      INFO = 1
+      RETURN
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlagtf.f
       SUBROUTINE DLAGTF( N, A, LAMBDA, B, C, TOL, D, IN, INFO )
       INTEGER            INFO, N
@@ -10396,10 +11258,591 @@
    90    CONTINUE
       END IF
       END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlahqr.f
+      SUBROUTINE DLAHQR( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI,
+     $                   ILOZ, IHIZ, Z, LDZ, INFO )
+      INTEGER            IHI, IHIZ, ILO, ILOZ, INFO, LDH, LDZ, N
+      LOGICAL            WANTT, WANTZ
+      DOUBLE PRECISION   H( LDH, * ), WI( * ), WR( * ), Z( LDZ, * )
+      DOUBLE PRECISION   ZERO, ONE, TWO
+      PARAMETER          ( ZERO = 0.0d0, ONE = 1.0d0, TWO = 2.0d0 )
+      DOUBLE PRECISION   DAT1, DAT2
+      PARAMETER          ( DAT1 = 3.0d0 / 4.0d0, DAT2 = -0.4375d0 )
+      DOUBLE PRECISION   AA, AB, BA, BB, CS, DET, H11, H12, H21, H21S,
+     $                   H22, RT1I, RT1R, RT2I, RT2R, RTDISC, S, SAFMAX,
+     $                   SAFMIN, SMLNUM, SN, SUM, T1, T2, T3, TR, TST,
+     $                   ULP, V2, V3
+      INTEGER            I, I1, I2, ITS, ITMAX, J, K, L, M, NH, NR, NZ
+      DOUBLE PRECISION   V( 3 )
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           DLAMCH
+      EXTERNAL           DCOPY, DLABAD, DLANV2, DLARFG, DROT
+      INTRINSIC          ABS, DBLE, MAX, MIN, SQRT
+      INFO = 0
+      IF( N.EQ.0 )
+     $   RETURN
+      IF( ILO.EQ.IHI ) THEN
+         WR( ILO ) = H( ILO, ILO )
+         WI( ILO ) = ZERO
+         RETURN
+      END IF
+      DO 10 J = ILO, IHI - 3
+         H( J+2, J ) = ZERO
+         H( J+3, J ) = ZERO
+   10 CONTINUE
+      IF( ILO.LE.IHI-2 )
+     $   H( IHI, IHI-2 ) = ZERO
+      NH = IHI - ILO + 1
+      NZ = IHIZ - ILOZ + 1
+      SAFMIN = DLAMCH( 'SAFE MINIMUM' )
+      SAFMAX = ONE / SAFMIN
+      CALL DLABAD( SAFMIN, SAFMAX )
+      ULP = DLAMCH( 'PRECISION' )
+      SMLNUM = SAFMIN*( DBLE( NH ) / ULP )
+      IF( WANTT ) THEN
+         I1 = 1
+         I2 = N
+      END IF
+      ITMAX = 30 * MAX( 10, NH )
+      I = IHI
+   20 CONTINUE
+      L = ILO
+      IF( I.LT.ILO )
+     $   GO TO 160
+      DO 140 ITS = 0, ITMAX
+         DO 30 K = I, L + 1, -1
+            IF( ABS( H( K, K-1 ) ).LE.SMLNUM )
+     $         GO TO 40
+            TST = ABS( H( K-1, K-1 ) ) + ABS( H( K, K ) )
+            IF( TST.EQ.ZERO ) THEN
+               IF( K-2.GE.ILO )
+     $            TST = TST + ABS( H( K-1, K-2 ) )
+               IF( K+1.LE.IHI )
+     $            TST = TST + ABS( H( K+1, K ) )
+            END IF
+            IF( ABS( H( K, K-1 ) ).LE.ULP*TST ) THEN
+               AB = MAX( ABS( H( K, K-1 ) ), ABS( H( K-1, K ) ) )
+               BA = MIN( ABS( H( K, K-1 ) ), ABS( H( K-1, K ) ) )
+               AA = MAX( ABS( H( K, K ) ),
+     $              ABS( H( K-1, K-1 )-H( K, K ) ) )
+               BB = MIN( ABS( H( K, K ) ),
+     $              ABS( H( K-1, K-1 )-H( K, K ) ) )
+               S = AA + AB
+               IF( BA*( AB / S ).LE.MAX( SMLNUM,
+     $             ULP*( BB*( AA / S ) ) ) )GO TO 40
+            END IF
+   30    CONTINUE
+   40    CONTINUE
+         L = K
+         IF( L.GT.ILO ) THEN
+            H( L, L-1 ) = ZERO
+         END IF
+         IF( L.GE.I-1 )
+     $      GO TO 150
+         IF( .NOT.WANTT ) THEN
+            I1 = L
+            I2 = I
+         END IF
+         IF( ITS.EQ.10 ) THEN
+            S = ABS( H( L+1, L ) ) + ABS( H( L+2, L+1 ) )
+            H11 = DAT1*S + H( L, L )
+            H12 = DAT2*S
+            H21 = S
+            H22 = H11
+         ELSE IF( ITS.EQ.20 ) THEN
+            S = ABS( H( I, I-1 ) ) + ABS( H( I-1, I-2 ) )
+            H11 = DAT1*S + H( I, I )
+            H12 = DAT2*S
+            H21 = S
+            H22 = H11
+         ELSE
+            H11 = H( I-1, I-1 )
+            H21 = H( I, I-1 )
+            H12 = H( I-1, I )
+            H22 = H( I, I )
+         END IF
+         S = ABS( H11 ) + ABS( H12 ) + ABS( H21 ) + ABS( H22 )
+         IF( S.EQ.ZERO ) THEN
+            RT1R = ZERO
+            RT1I = ZERO
+            RT2R = ZERO
+            RT2I = ZERO
+         ELSE
+            H11 = H11 / S
+            H21 = H21 / S
+            H12 = H12 / S
+            H22 = H22 / S
+            TR = ( H11+H22 ) / TWO
+            DET = ( H11-TR )*( H22-TR ) - H12*H21
+            RTDISC = SQRT( ABS( DET ) )
+            IF( DET.GE.ZERO ) THEN
+               RT1R = TR*S
+               RT2R = RT1R
+               RT1I = RTDISC*S
+               RT2I = -RT1I
+            ELSE
+               RT1R = TR + RTDISC
+               RT2R = TR - RTDISC
+               IF( ABS( RT1R-H22 ).LE.ABS( RT2R-H22 ) ) THEN
+                  RT1R = RT1R*S
+                  RT2R = RT1R
+               ELSE
+                  RT2R = RT2R*S
+                  RT1R = RT2R
+               END IF
+               RT1I = ZERO
+               RT2I = ZERO
+            END IF
+         END IF
+         DO 50 M = I - 2, L, -1
+            H21S = H( M+1, M )
+            S = ABS( H( M, M )-RT2R ) + ABS( RT2I ) + ABS( H21S )
+            H21S = H( M+1, M ) / S
+            V( 1 ) = H21S*H( M, M+1 ) + ( H( M, M )-RT1R )*
+     $               ( ( H( M, M )-RT2R ) / S ) - RT1I*( RT2I / S )
+            V( 2 ) = H21S*( H( M, M )+H( M+1, M+1 )-RT1R-RT2R )
+            V( 3 ) = H21S*H( M+2, M+1 )
+            S = ABS( V( 1 ) ) + ABS( V( 2 ) ) + ABS( V( 3 ) )
+            V( 1 ) = V( 1 ) / S
+            V( 2 ) = V( 2 ) / S
+            V( 3 ) = V( 3 ) / S
+            IF( M.EQ.L )
+     $         GO TO 60
+            IF( ABS( H( M, M-1 ) )*( ABS( V( 2 ) )+ABS( V( 3 ) ) ).LE.
+     $          ULP*ABS( V( 1 ) )*( ABS( H( M-1, M-1 ) )+ABS( H( M,
+     $          M ) )+ABS( H( M+1, M+1 ) ) ) )GO TO 60
+   50    CONTINUE
+   60    CONTINUE
+         DO 130 K = M, I - 1
+            NR = MIN( 3, I-K+1 )
+            IF( K.GT.M )
+     $         CALL DCOPY( NR, H( K, K-1 ), 1, V, 1 )
+            CALL DLARFG( NR, V( 1 ), V( 2 ), 1, T1 )
+            IF( K.GT.M ) THEN
+               H( K, K-1 ) = V( 1 )
+               H( K+1, K-1 ) = ZERO
+               IF( K.LT.I-1 )
+     $            H( K+2, K-1 ) = ZERO
+            ELSE IF( M.GT.L ) THEN
+               H( K, K-1 ) = H( K, K-1 )*( ONE-T1 )
+            END IF
+            V2 = V( 2 )
+            T2 = T1*V2
+            IF( NR.EQ.3 ) THEN
+               V3 = V( 3 )
+               T3 = T1*V3
+               DO 70 J = K, I2
+                  SUM = H( K, J ) + V2*H( K+1, J ) + V3*H( K+2, J )
+                  H( K, J ) = H( K, J ) - SUM*T1
+                  H( K+1, J ) = H( K+1, J ) - SUM*T2
+                  H( K+2, J ) = H( K+2, J ) - SUM*T3
+   70          CONTINUE
+               DO 80 J = I1, MIN( K+3, I )
+                  SUM = H( J, K ) + V2*H( J, K+1 ) + V3*H( J, K+2 )
+                  H( J, K ) = H( J, K ) - SUM*T1
+                  H( J, K+1 ) = H( J, K+1 ) - SUM*T2
+                  H( J, K+2 ) = H( J, K+2 ) - SUM*T3
+   80          CONTINUE
+               IF( WANTZ ) THEN
+                  DO 90 J = ILOZ, IHIZ
+                     SUM = Z( J, K ) + V2*Z( J, K+1 ) + V3*Z( J, K+2 )
+                     Z( J, K ) = Z( J, K ) - SUM*T1
+                     Z( J, K+1 ) = Z( J, K+1 ) - SUM*T2
+                     Z( J, K+2 ) = Z( J, K+2 ) - SUM*T3
+   90             CONTINUE
+               END IF
+            ELSE IF( NR.EQ.2 ) THEN
+               DO 100 J = K, I2
+                  SUM = H( K, J ) + V2*H( K+1, J )
+                  H( K, J ) = H( K, J ) - SUM*T1
+                  H( K+1, J ) = H( K+1, J ) - SUM*T2
+  100          CONTINUE
+               DO 110 J = I1, I
+                  SUM = H( J, K ) + V2*H( J, K+1 )
+                  H( J, K ) = H( J, K ) - SUM*T1
+                  H( J, K+1 ) = H( J, K+1 ) - SUM*T2
+  110          CONTINUE
+               IF( WANTZ ) THEN
+                  DO 120 J = ILOZ, IHIZ
+                     SUM = Z( J, K ) + V2*Z( J, K+1 )
+                     Z( J, K ) = Z( J, K ) - SUM*T1
+                     Z( J, K+1 ) = Z( J, K+1 ) - SUM*T2
+  120             CONTINUE
+               END IF
+            END IF
+  130    CONTINUE
+  140 CONTINUE
+      INFO = I
+      RETURN
+  150 CONTINUE
+      IF( L.EQ.I ) THEN
+         WR( I ) = H( I, I )
+         WI( I ) = ZERO
+      ELSE IF( L.EQ.I-1 ) THEN
+         CALL DLANV2( H( I-1, I-1 ), H( I-1, I ), H( I, I-1 ),
+     $                H( I, I ), WR( I-1 ), WI( I-1 ), WR( I ), WI( I ),
+     $                CS, SN )
+         IF( WANTT ) THEN
+            IF( I2.GT.I )
+     $         CALL DROT( I2-I, H( I-1, I+1 ), LDH, H( I, I+1 ), LDH,
+     $                    CS, SN )
+            CALL DROT( I-I1-1, H( I1, I-1 ), 1, H( I1, I ), 1, CS, SN )
+         END IF
+         IF( WANTZ ) THEN
+            CALL DROT( NZ, Z( ILOZ, I-1 ), 1, Z( ILOZ, I ), 1, CS, SN )
+         END IF
+      END IF
+      I = L - 1
+      GO TO 20
+  160 CONTINUE
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlahr2.f
+      SUBROUTINE DLAHR2( N, K, NB, A, LDA, TAU, T, LDT, Y, LDY )
+      INTEGER            K, LDA, LDT, LDY, N, NB
+      DOUBLE PRECISION  A( LDA, * ), T( LDT, NB ), TAU( NB ),
+     $                   Y( LDY, NB )
+      DOUBLE PRECISION  ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0,
+     $                     ONE = 1.0D+0 )
+      INTEGER            I
+      DOUBLE PRECISION  EI
+      EXTERNAL           DAXPY, DCOPY, DGEMM, DGEMV, DLACPY,
+     $                   DLARFG, DSCAL, DTRMM, DTRMV
+      INTRINSIC          MIN
+      IF( N.LE.1 )
+     $   RETURN
+      DO 10 I = 1, NB
+         IF( I.GT.1 ) THEN
+            CALL DGEMV( 'NO TRANSPOSE', N-K, I-1, -ONE, Y(K+1,1), LDY,
+     $                  A( K+I-1, 1 ), LDA, ONE, A( K+1, I ), 1 )
+            CALL DCOPY( I-1, A( K+1, I ), 1, T( 1, NB ), 1 )
+            CALL DTRMV( 'Lower', 'Transpose', 'UNIT',
+     $                  I-1, A( K+1, 1 ),
+     $                  LDA, T( 1, NB ), 1 )
+            CALL DGEMV( 'Transpose', N-K-I+1, I-1,
+     $                  ONE, A( K+I, 1 ),
+     $                  LDA, A( K+I, I ), 1, ONE, T( 1, NB ), 1 )
+            CALL DTRMV( 'Upper', 'Transpose', 'NON-UNIT',
+     $                  I-1, T, LDT,
+     $                  T( 1, NB ), 1 )
+            CALL DGEMV( 'NO TRANSPOSE', N-K-I+1, I-1, -ONE,
+     $                  A( K+I, 1 ),
+     $                  LDA, T( 1, NB ), 1, ONE, A( K+I, I ), 1 )
+            CALL DTRMV( 'Lower', 'NO TRANSPOSE',
+     $                  'UNIT', I-1,
+     $                  A( K+1, 1 ), LDA, T( 1, NB ), 1 )
+            CALL DAXPY( I-1, -ONE, T( 1, NB ), 1, A( K+1, I ), 1 )
+            A( K+I-1, I-1 ) = EI
+         END IF
+         CALL DLARFG( N-K-I+1, A( K+I, I ), A( MIN( K+I+1, N ), I ), 1,
+     $                TAU( I ) )
+         EI = A( K+I, I )
+         A( K+I, I ) = ONE
+         CALL DGEMV( 'NO TRANSPOSE', N-K, N-K-I+1,
+     $               ONE, A( K+1, I+1 ),
+     $               LDA, A( K+I, I ), 1, ZERO, Y( K+1, I ), 1 )
+         CALL DGEMV( 'Transpose', N-K-I+1, I-1,
+     $               ONE, A( K+I, 1 ), LDA,
+     $               A( K+I, I ), 1, ZERO, T( 1, I ), 1 )
+         CALL DGEMV( 'NO TRANSPOSE', N-K, I-1, -ONE,
+     $               Y( K+1, 1 ), LDY,
+     $               T( 1, I ), 1, ONE, Y( K+1, I ), 1 )
+         CALL DSCAL( N-K, TAU( I ), Y( K+1, I ), 1 )
+         CALL DSCAL( I-1, -TAU( I ), T( 1, I ), 1 )
+         CALL DTRMV( 'Upper', 'No Transpose', 'NON-UNIT',
+     $               I-1, T, LDT,
+     $               T( 1, I ), 1 )
+         T( I, I ) = TAU( I )
+   10 CONTINUE
+      A( K+NB, NB ) = EI
+      CALL DLACPY( 'ALL', K, NB, A( 1, 2 ), LDA, Y, LDY )
+      CALL DTRMM( 'RIGHT', 'Lower', 'NO TRANSPOSE',
+     $            'UNIT', K, NB,
+     $            ONE, A( K+1, 1 ), LDA, Y, LDY )
+      IF( N.GT.K+NB )
+     $   CALL DGEMM( 'NO TRANSPOSE', 'NO TRANSPOSE', K,
+     $               NB, N-K-NB, ONE,
+     $               A( 1, 2+NB ), LDA, A( K+1+NB, 1 ), LDA, ONE, Y,
+     $               LDY )
+      CALL DTRMM( 'RIGHT', 'Upper', 'NO TRANSPOSE',
+     $            'NON-UNIT', K, NB,
+     $            ONE, T, LDT, Y, LDY )
+      RETURN
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaisnan.f
       LOGICAL FUNCTION DLAISNAN( DIN1, DIN2 )
       DOUBLE PRECISION, INTENT(IN) :: DIN1, DIN2
       DLAISNAN = (DIN1.NE.DIN2)
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaln2.f
+      SUBROUTINE DLALN2( LTRANS, NA, NW, SMIN, CA, A, LDA, D1, D2, B,
+     $                   LDB, WR, WI, X, LDX, SCALE, XNORM, INFO )
+      LOGICAL            LTRANS
+      INTEGER            INFO, LDA, LDB, LDX, NA, NW
+      DOUBLE PRECISION   CA, D1, D2, SCALE, SMIN, WI, WR, XNORM
+      DOUBLE PRECISION   A( LDA, * ), B( LDB, * ), X( LDX, * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D0, ONE = 1.0D0 )
+      DOUBLE PRECISION   TWO
+      PARAMETER          ( TWO = 2.0D0 )
+      INTEGER            ICMAX, J
+      DOUBLE PRECISION   BBND, BI1, BI2, BIGNUM, BNORM, BR1, BR2, CI21,
+     $                   CI22, CMAX, CNORM, CR21, CR22, CSI, CSR, LI21,
+     $                   LR21, SMINI, SMLNUM, TEMP, U22ABS, UI11, UI11R,
+     $                   UI12, UI12S, UI22, UR11, UR11R, UR12, UR12S,
+     $                   UR22, XI1, XI2, XR1, XR2
+      LOGICAL            RSWAP( 4 ), ZSWAP( 4 )
+      INTEGER            IPIVOT( 4, 4 )
+      DOUBLE PRECISION   CI( 2, 2 ), CIV( 4 ), CR( 2, 2 ), CRV( 4 )
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           DLAMCH
+      EXTERNAL           DLADIV
+      INTRINSIC          ABS, MAX
+      EQUIVALENCE        ( CI( 1, 1 ), CIV( 1 ) ),
+     $                   ( CR( 1, 1 ), CRV( 1 ) )
+      DATA               ZSWAP / .FALSE., .FALSE., .TRUE., .TRUE. /
+      DATA               RSWAP / .FALSE., .TRUE., .FALSE., .TRUE. /
+      DATA               IPIVOT / 1, 2, 3, 4, 2, 1, 4, 3, 3, 4, 1, 2, 4,
+     $                   3, 2, 1 /
+      SMLNUM = TWO*DLAMCH( 'Safe minimum' )
+      BIGNUM = ONE / SMLNUM
+      SMINI = MAX( SMIN, SMLNUM )
+      INFO = 0
+      SCALE = ONE
+      IF( NA.EQ.1 ) THEN
+         IF( NW.EQ.1 ) THEN
+            CSR = CA*A( 1, 1 ) - WR*D1
+            CNORM = ABS( CSR )
+            IF( CNORM.LT.SMINI ) THEN
+               CSR = SMINI
+               CNORM = SMINI
+               INFO = 1
+            END IF
+            BNORM = ABS( B( 1, 1 ) )
+            IF( CNORM.LT.ONE .AND. BNORM.GT.ONE ) THEN
+               IF( BNORM.GT.BIGNUM*CNORM )
+     $            SCALE = ONE / BNORM
+            END IF
+            X( 1, 1 ) = ( B( 1, 1 )*SCALE ) / CSR
+            XNORM = ABS( X( 1, 1 ) )
+         ELSE
+            CSR = CA*A( 1, 1 ) - WR*D1
+            CSI = -WI*D1
+            CNORM = ABS( CSR ) + ABS( CSI )
+            IF( CNORM.LT.SMINI ) THEN
+               CSR = SMINI
+               CSI = ZERO
+               CNORM = SMINI
+               INFO = 1
+            END IF
+            BNORM = ABS( B( 1, 1 ) ) + ABS( B( 1, 2 ) )
+            IF( CNORM.LT.ONE .AND. BNORM.GT.ONE ) THEN
+               IF( BNORM.GT.BIGNUM*CNORM )
+     $            SCALE = ONE / BNORM
+            END IF
+            CALL DLADIV( SCALE*B( 1, 1 ), SCALE*B( 1, 2 ), CSR, CSI,
+     $                   X( 1, 1 ), X( 1, 2 ) )
+            XNORM = ABS( X( 1, 1 ) ) + ABS( X( 1, 2 ) )
+         END IF
+      ELSE
+         CR( 1, 1 ) = CA*A( 1, 1 ) - WR*D1
+         CR( 2, 2 ) = CA*A( 2, 2 ) - WR*D2
+         IF( LTRANS ) THEN
+            CR( 1, 2 ) = CA*A( 2, 1 )
+            CR( 2, 1 ) = CA*A( 1, 2 )
+         ELSE
+            CR( 2, 1 ) = CA*A( 2, 1 )
+            CR( 1, 2 ) = CA*A( 1, 2 )
+         END IF
+         IF( NW.EQ.1 ) THEN
+            CMAX = ZERO
+            ICMAX = 0
+            DO 10 J = 1, 4
+               IF( ABS( CRV( J ) ).GT.CMAX ) THEN
+                  CMAX = ABS( CRV( J ) )
+                  ICMAX = J
+               END IF
+   10       CONTINUE
+            IF( CMAX.LT.SMINI ) THEN
+               BNORM = MAX( ABS( B( 1, 1 ) ), ABS( B( 2, 1 ) ) )
+               IF( SMINI.LT.ONE .AND. BNORM.GT.ONE ) THEN
+                  IF( BNORM.GT.BIGNUM*SMINI )
+     $               SCALE = ONE / BNORM
+               END IF
+               TEMP = SCALE / SMINI
+               X( 1, 1 ) = TEMP*B( 1, 1 )
+               X( 2, 1 ) = TEMP*B( 2, 1 )
+               XNORM = TEMP*BNORM
+               INFO = 1
+               RETURN
+            END IF
+            UR11 = CRV( ICMAX )
+            CR21 = CRV( IPIVOT( 2, ICMAX ) )
+            UR12 = CRV( IPIVOT( 3, ICMAX ) )
+            CR22 = CRV( IPIVOT( 4, ICMAX ) )
+            UR11R = ONE / UR11
+            LR21 = UR11R*CR21
+            UR22 = CR22 - UR12*LR21
+            IF( ABS( UR22 ).LT.SMINI ) THEN
+               UR22 = SMINI
+               INFO = 1
+            END IF
+            IF( RSWAP( ICMAX ) ) THEN
+               BR1 = B( 2, 1 )
+               BR2 = B( 1, 1 )
+            ELSE
+               BR1 = B( 1, 1 )
+               BR2 = B( 2, 1 )
+            END IF
+            BR2 = BR2 - LR21*BR1
+            BBND = MAX( ABS( BR1*( UR22*UR11R ) ), ABS( BR2 ) )
+            IF( BBND.GT.ONE .AND. ABS( UR22 ).LT.ONE ) THEN
+               IF( BBND.GE.BIGNUM*ABS( UR22 ) )
+     $            SCALE = ONE / BBND
+            END IF
+            XR2 = ( BR2*SCALE ) / UR22
+            XR1 = ( SCALE*BR1 )*UR11R - XR2*( UR11R*UR12 )
+            IF( ZSWAP( ICMAX ) ) THEN
+               X( 1, 1 ) = XR2
+               X( 2, 1 ) = XR1
+            ELSE
+               X( 1, 1 ) = XR1
+               X( 2, 1 ) = XR2
+            END IF
+            XNORM = MAX( ABS( XR1 ), ABS( XR2 ) )
+            IF( XNORM.GT.ONE .AND. CMAX.GT.ONE ) THEN
+               IF( XNORM.GT.BIGNUM / CMAX ) THEN
+                  TEMP = CMAX / BIGNUM
+                  X( 1, 1 ) = TEMP*X( 1, 1 )
+                  X( 2, 1 ) = TEMP*X( 2, 1 )
+                  XNORM = TEMP*XNORM
+                  SCALE = TEMP*SCALE
+               END IF
+            END IF
+         ELSE
+            CI( 1, 1 ) = -WI*D1
+            CI( 2, 1 ) = ZERO
+            CI( 1, 2 ) = ZERO
+            CI( 2, 2 ) = -WI*D2
+            CMAX = ZERO
+            ICMAX = 0
+            DO 20 J = 1, 4
+               IF( ABS( CRV( J ) )+ABS( CIV( J ) ).GT.CMAX ) THEN
+                  CMAX = ABS( CRV( J ) ) + ABS( CIV( J ) )
+                  ICMAX = J
+               END IF
+   20       CONTINUE
+            IF( CMAX.LT.SMINI ) THEN
+               BNORM = MAX( ABS( B( 1, 1 ) )+ABS( B( 1, 2 ) ),
+     $                 ABS( B( 2, 1 ) )+ABS( B( 2, 2 ) ) )
+               IF( SMINI.LT.ONE .AND. BNORM.GT.ONE ) THEN
+                  IF( BNORM.GT.BIGNUM*SMINI )
+     $               SCALE = ONE / BNORM
+               END IF
+               TEMP = SCALE / SMINI
+               X( 1, 1 ) = TEMP*B( 1, 1 )
+               X( 2, 1 ) = TEMP*B( 2, 1 )
+               X( 1, 2 ) = TEMP*B( 1, 2 )
+               X( 2, 2 ) = TEMP*B( 2, 2 )
+               XNORM = TEMP*BNORM
+               INFO = 1
+               RETURN
+            END IF
+            UR11 = CRV( ICMAX )
+            UI11 = CIV( ICMAX )
+            CR21 = CRV( IPIVOT( 2, ICMAX ) )
+            CI21 = CIV( IPIVOT( 2, ICMAX ) )
+            UR12 = CRV( IPIVOT( 3, ICMAX ) )
+            UI12 = CIV( IPIVOT( 3, ICMAX ) )
+            CR22 = CRV( IPIVOT( 4, ICMAX ) )
+            CI22 = CIV( IPIVOT( 4, ICMAX ) )
+            IF( ICMAX.EQ.1 .OR. ICMAX.EQ.4 ) THEN
+               IF( ABS( UR11 ).GT.ABS( UI11 ) ) THEN
+                  TEMP = UI11 / UR11
+                  UR11R = ONE / ( UR11*( ONE+TEMP**2 ) )
+                  UI11R = -TEMP*UR11R
+               ELSE
+                  TEMP = UR11 / UI11
+                  UI11R = -ONE / ( UI11*( ONE+TEMP**2 ) )
+                  UR11R = -TEMP*UI11R
+               END IF
+               LR21 = CR21*UR11R
+               LI21 = CR21*UI11R
+               UR12S = UR12*UR11R
+               UI12S = UR12*UI11R
+               UR22 = CR22 - UR12*LR21
+               UI22 = CI22 - UR12*LI21
+            ELSE
+               UR11R = ONE / UR11
+               UI11R = ZERO
+               LR21 = CR21*UR11R
+               LI21 = CI21*UR11R
+               UR12S = UR12*UR11R
+               UI12S = UI12*UR11R
+               UR22 = CR22 - UR12*LR21 + UI12*LI21
+               UI22 = -UR12*LI21 - UI12*LR21
+            END IF
+            U22ABS = ABS( UR22 ) + ABS( UI22 )
+            IF( U22ABS.LT.SMINI ) THEN
+               UR22 = SMINI
+               UI22 = ZERO
+               INFO = 1
+            END IF
+            IF( RSWAP( ICMAX ) ) THEN
+               BR2 = B( 1, 1 )
+               BR1 = B( 2, 1 )
+               BI2 = B( 1, 2 )
+               BI1 = B( 2, 2 )
+            ELSE
+               BR1 = B( 1, 1 )
+               BR2 = B( 2, 1 )
+               BI1 = B( 1, 2 )
+               BI2 = B( 2, 2 )
+            END IF
+            BR2 = BR2 - LR21*BR1 + LI21*BI1
+            BI2 = BI2 - LI21*BR1 - LR21*BI1
+            BBND = MAX( ( ABS( BR1 )+ABS( BI1 ) )*
+     $             ( U22ABS*( ABS( UR11R )+ABS( UI11R ) ) ),
+     $             ABS( BR2 )+ABS( BI2 ) )
+            IF( BBND.GT.ONE .AND. U22ABS.LT.ONE ) THEN
+               IF( BBND.GE.BIGNUM*U22ABS ) THEN
+                  SCALE = ONE / BBND
+                  BR1 = SCALE*BR1
+                  BI1 = SCALE*BI1
+                  BR2 = SCALE*BR2
+                  BI2 = SCALE*BI2
+               END IF
+            END IF
+            CALL DLADIV( BR2, BI2, UR22, UI22, XR2, XI2 )
+            XR1 = UR11R*BR1 - UI11R*BI1 - UR12S*XR2 + UI12S*XI2
+            XI1 = UI11R*BR1 + UR11R*BI1 - UI12S*XR2 - UR12S*XI2
+            IF( ZSWAP( ICMAX ) ) THEN
+               X( 1, 1 ) = XR2
+               X( 2, 1 ) = XR1
+               X( 1, 2 ) = XI2
+               X( 2, 2 ) = XI1
+            ELSE
+               X( 1, 1 ) = XR1
+               X( 2, 1 ) = XR2
+               X( 1, 2 ) = XI1
+               X( 2, 2 ) = XI2
+            END IF
+            XNORM = MAX( ABS( XR1 )+ABS( XI1 ), ABS( XR2 )+ABS( XI2 ) )
+            IF( XNORM.GT.ONE .AND. CMAX.GT.ONE ) THEN
+               IF( XNORM.GT.BIGNUM / CMAX ) THEN
+                  TEMP = CMAX / BIGNUM
+                  X( 1, 1 ) = TEMP*X( 1, 1 )
+                  X( 2, 1 ) = TEMP*X( 2, 1 )
+                  X( 1, 2 ) = TEMP*X( 1, 2 )
+                  X( 2, 2 ) = TEMP*X( 2, 2 )
+                  XNORM = TEMP*XNORM
+                  SCALE = TEMP*SCALE
+               END IF
+            END IF
+         END IF
+      END IF
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlamrg.f
@@ -12289,6 +13732,104 @@
       DLANTR = VALUE
       RETURN
       END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlanv2.f
+      SUBROUTINE DLANV2( A, B, C, D, RT1R, RT1I, RT2R, RT2I, CS, SN )
+      DOUBLE PRECISION   A, B, C, CS, D, RT1I, RT1R, RT2I, RT2R, SN
+      DOUBLE PRECISION   ZERO, HALF, ONE
+      PARAMETER          ( ZERO = 0.0D+0, HALF = 0.5D+0, ONE = 1.0D+0 )
+      DOUBLE PRECISION   MULTPL
+      PARAMETER          ( MULTPL = 4.0D+0 )
+      DOUBLE PRECISION   AA, BB, BCMAX, BCMIS, CC, CS1, DD, EPS, P, SAB,
+     $                   SAC, SCALE, SIGMA, SN1, TAU, TEMP, Z
+      DOUBLE PRECISION   DLAMCH, DLAPY2
+      EXTERNAL           DLAMCH, DLAPY2
+      INTRINSIC          ABS, MAX, MIN, SIGN, SQRT
+      EPS = DLAMCH( 'P' )
+      IF( C.EQ.ZERO ) THEN
+         CS = ONE
+         SN = ZERO
+      ELSE IF( B.EQ.ZERO ) THEN
+         CS = ZERO
+         SN = ONE
+         TEMP = D
+         D = A
+         A = TEMP
+         B = -C
+         C = ZERO
+      ELSE IF( ( A-D ).EQ.ZERO .AND. SIGN( ONE, B ).NE.SIGN( ONE, C ) )
+     $          THEN
+         CS = ONE
+         SN = ZERO
+      ELSE
+         TEMP = A - D
+         P = HALF*TEMP
+         BCMAX = MAX( ABS( B ), ABS( C ) )
+         BCMIS = MIN( ABS( B ), ABS( C ) )*SIGN( ONE, B )*SIGN( ONE, C )
+         SCALE = MAX( ABS( P ), BCMAX )
+         Z = ( P / SCALE )*P + ( BCMAX / SCALE )*BCMIS
+         IF( Z.GE.MULTPL*EPS ) THEN
+            Z = P + SIGN( SQRT( SCALE )*SQRT( Z ), P )
+            A = D + Z
+            D = D - ( BCMAX / Z )*BCMIS
+            TAU = DLAPY2( C, Z )
+            CS = Z / TAU
+            SN = C / TAU
+            B = B - C
+            C = ZERO
+         ELSE
+            SIGMA = B + C
+            TAU = DLAPY2( SIGMA, TEMP )
+            CS = SQRT( HALF*( ONE+ABS( SIGMA ) / TAU ) )
+            SN = -( P / ( TAU*CS ) )*SIGN( ONE, SIGMA )
+            AA = A*CS + B*SN
+            BB = -A*SN + B*CS
+            CC = C*CS + D*SN
+            DD = -C*SN + D*CS
+            A = AA*CS + CC*SN
+            B = BB*CS + DD*SN
+            C = -AA*SN + CC*CS
+            D = -BB*SN + DD*CS
+            TEMP = HALF*( A+D )
+            A = TEMP
+            D = TEMP
+            IF( C.NE.ZERO ) THEN
+               IF( B.NE.ZERO ) THEN
+                  IF( SIGN( ONE, B ).EQ.SIGN( ONE, C ) ) THEN
+                     SAB = SQRT( ABS( B ) )
+                     SAC = SQRT( ABS( C ) )
+                     P = SIGN( SAB*SAC, C )
+                     TAU = ONE / SQRT( ABS( B+C ) )
+                     A = TEMP + P
+                     D = TEMP - P
+                     B = B - C
+                     C = ZERO
+                     CS1 = SAB*TAU
+                     SN1 = SAC*TAU
+                     TEMP = CS*CS1 - SN*SN1
+                     SN = CS*SN1 + SN*CS1
+                     CS = TEMP
+                  END IF
+               ELSE
+                  B = -C
+                  C = ZERO
+                  TEMP = CS
+                  CS = -SN
+                  SN = TEMP
+               END IF
+            END IF
+         END IF
+      END IF
+      RT1R = A
+      RT2R = D
+      IF( C.EQ.ZERO ) THEN
+         RT1I = ZERO
+         RT2I = ZERO
+      ELSE
+         RT1I = SQRT( ABS( B ) )*SQRT( ABS( C ) )
+         RT2I = -RT1I
+      END IF
+      RETURN
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlapy2.f
       DOUBLE PRECISION FUNCTION DLAPY2( X, Y )
       DOUBLE PRECISION   X, Y
@@ -12336,6 +13877,1445 @@
      $            ( ZABS / W )**2 )
       END IF
       RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaqr0.f
+      SUBROUTINE DLAQR0( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI,
+     $                   ILOZ, IHIZ, Z, LDZ, WORK, LWORK, INFO )
+      INTEGER            IHI, IHIZ, ILO, ILOZ, INFO, LDH, LDZ, LWORK, N
+      LOGICAL            WANTT, WANTZ
+      DOUBLE PRECISION   H( LDH, * ), WI( * ), WORK( * ), WR( * ),
+     $                   Z( LDZ, * )
+      INTEGER            NTINY
+      PARAMETER          ( NTINY = 11 )
+      INTEGER            KEXNW
+      PARAMETER          ( KEXNW = 5 )
+      INTEGER            KEXSH
+      PARAMETER          ( KEXSH = 6 )
+      DOUBLE PRECISION   WILK1, WILK2
+      PARAMETER          ( WILK1 = 0.75d0, WILK2 = -0.4375d0 )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0d0, ONE = 1.0d0 )
+      DOUBLE PRECISION   AA, BB, CC, CS, DD, SN, SS, SWAP
+      INTEGER            I, INF, IT, ITMAX, K, KACC22, KBOT, KDU, KS,
+     $                   KT, KTOP, KU, KV, KWH, KWTOP, KWV, LD, LS,
+     $                   LWKOPT, NDEC, NDFL, NH, NHO, NIBBLE, NMIN, NS,
+     $                   NSMAX, NSR, NVE, NW, NWMAX, NWR, NWUPBD
+      LOGICAL            SORTED
+      CHARACTER          JBCMPZ*2
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+      DOUBLE PRECISION   ZDUM( 1, 1 )
+      EXTERNAL           DLACPY, DLAHQR, DLANV2, DLAQR3, DLAQR4, DLAQR5
+      INTRINSIC          ABS, DBLE, INT, MAX, MIN, MOD
+      INFO = 0
+      IF( N.EQ.0 ) THEN
+         WORK( 1 ) = ONE
+         RETURN
+      END IF
+      IF( N.LE.NTINY ) THEN
+         LWKOPT = 1
+         IF( LWORK.NE.-1 )
+     $      CALL DLAHQR( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI,
+     $                   ILOZ, IHIZ, Z, LDZ, INFO )
+      ELSE
+         INFO = 0
+         IF( WANTT ) THEN
+            JBCMPZ( 1: 1 ) = 'S'
+         ELSE
+            JBCMPZ( 1: 1 ) = 'E'
+         END IF
+         IF( WANTZ ) THEN
+            JBCMPZ( 2: 2 ) = 'V'
+         ELSE
+            JBCMPZ( 2: 2 ) = 'N'
+         END IF
+         NWR = ILAENV( 13, 'DLAQR0', JBCMPZ, N, ILO, IHI, LWORK )
+         NWR = MAX( 2, NWR )
+         NWR = MIN( IHI-ILO+1, ( N-1 ) / 3, NWR )
+         NSR = ILAENV( 15, 'DLAQR0', JBCMPZ, N, ILO, IHI, LWORK )
+         NSR = MIN( NSR, ( N+6 ) / 9, IHI-ILO )
+         NSR = MAX( 2, NSR-MOD( NSR, 2 ) )
+         CALL DLAQR3( WANTT, WANTZ, N, ILO, IHI, NWR+1, H, LDH, ILOZ,
+     $                IHIZ, Z, LDZ, LS, LD, WR, WI, H, LDH, N, H, LDH,
+     $                N, H, LDH, WORK, -1 )
+         LWKOPT = MAX( 3*NSR / 2, INT( WORK( 1 ) ) )
+         IF( LWORK.EQ.-1 ) THEN
+            WORK( 1 ) = DBLE( LWKOPT )
+            RETURN
+         END IF
+         NMIN = ILAENV( 12, 'DLAQR0', JBCMPZ, N, ILO, IHI, LWORK )
+         NMIN = MAX( NTINY, NMIN )
+         NIBBLE = ILAENV( 14, 'DLAQR0', JBCMPZ, N, ILO, IHI, LWORK )
+         NIBBLE = MAX( 0, NIBBLE )
+         KACC22 = ILAENV( 16, 'DLAQR0', JBCMPZ, N, ILO, IHI, LWORK )
+         KACC22 = MAX( 0, KACC22 )
+         KACC22 = MIN( 2, KACC22 )
+         NWMAX = MIN( ( N-1 ) / 3, LWORK / 2 )
+         NW = NWMAX
+         NSMAX = MIN( ( N+6 ) / 9, 2*LWORK / 3 )
+         NSMAX = NSMAX - MOD( NSMAX, 2 )
+         NDFL = 1
+         ITMAX = MAX( 30, 2*KEXSH )*MAX( 10, ( IHI-ILO+1 ) )
+         KBOT = IHI
+         DO 80 IT = 1, ITMAX
+            IF( KBOT.LT.ILO )
+     $         GO TO 90
+            DO 10 K = KBOT, ILO + 1, -1
+               IF( H( K, K-1 ).EQ.ZERO )
+     $            GO TO 20
+   10       CONTINUE
+            K = ILO
+   20       CONTINUE
+            KTOP = K
+            NH = KBOT - KTOP + 1
+            NWUPBD = MIN( NH, NWMAX )
+            IF( NDFL.LT.KEXNW ) THEN
+               NW = MIN( NWUPBD, NWR )
+            ELSE
+               NW = MIN( NWUPBD, 2*NW )
+            END IF
+            IF( NW.LT.NWMAX ) THEN
+               IF( NW.GE.NH-1 ) THEN
+                  NW = NH
+               ELSE
+                  KWTOP = KBOT - NW + 1
+                  IF( ABS( H( KWTOP, KWTOP-1 ) ).GT.
+     $                ABS( H( KWTOP-1, KWTOP-2 ) ) )NW = NW + 1
+               END IF
+            END IF
+            IF( NDFL.LT.KEXNW ) THEN
+               NDEC = -1
+            ELSE IF( NDEC.GE.0 .OR. NW.GE.NWUPBD ) THEN
+               NDEC = NDEC + 1
+               IF( NW-NDEC.LT.2 )
+     $            NDEC = 0
+               NW = NW - NDEC
+            END IF
+            KV = N - NW + 1
+            KT = NW + 1
+            NHO = ( N-NW-1 ) - KT + 1
+            KWV = NW + 2
+            NVE = ( N-NW ) - KWV + 1
+            CALL DLAQR3( WANTT, WANTZ, N, KTOP, KBOT, NW, H, LDH, ILOZ,
+     $                   IHIZ, Z, LDZ, LS, LD, WR, WI, H( KV, 1 ), LDH,
+     $                   NHO, H( KV, KT ), LDH, NVE, H( KWV, 1 ), LDH,
+     $                   WORK, LWORK )
+            KBOT = KBOT - LD
+            KS = KBOT - LS + 1
+            IF( ( LD.EQ.0 ) .OR. ( ( 100*LD.LE.NW*NIBBLE ) .AND. ( KBOT-
+     $          KTOP+1.GT.MIN( NMIN, NWMAX ) ) ) ) THEN
+               NS = MIN( NSMAX, NSR, MAX( 2, KBOT-KTOP ) )
+               NS = NS - MOD( NS, 2 )
+               IF( MOD( NDFL, KEXSH ).EQ.0 ) THEN
+                  KS = KBOT - NS + 1
+                  DO 30 I = KBOT, MAX( KS+1, KTOP+2 ), -2
+                     SS = ABS( H( I, I-1 ) ) + ABS( H( I-1, I-2 ) )
+                     AA = WILK1*SS + H( I, I )
+                     BB = SS
+                     CC = WILK2*SS
+                     DD = AA
+                     CALL DLANV2( AA, BB, CC, DD, WR( I-1 ), WI( I-1 ),
+     $                            WR( I ), WI( I ), CS, SN )
+   30             CONTINUE
+                  IF( KS.EQ.KTOP ) THEN
+                     WR( KS+1 ) = H( KS+1, KS+1 )
+                     WI( KS+1 ) = ZERO
+                     WR( KS ) = WR( KS+1 )
+                     WI( KS ) = WI( KS+1 )
+                  END IF
+               ELSE
+                  IF( KBOT-KS+1.LE.NS / 2 ) THEN
+                     KS = KBOT - NS + 1
+                     KT = N - NS + 1
+                     CALL DLACPY( 'A', NS, NS, H( KS, KS ), LDH,
+     $                            H( KT, 1 ), LDH )
+                     IF( NS.GT.NMIN ) THEN
+                        CALL DLAQR4( .false., .false., NS, 1, NS,
+     $                               H( KT, 1 ), LDH, WR( KS ),
+     $                               WI( KS ), 1, 1, ZDUM, 1, WORK,
+     $                               LWORK, INF )
+                     ELSE
+                        CALL DLAHQR( .false., .false., NS, 1, NS,
+     $                               H( KT, 1 ), LDH, WR( KS ),
+     $                               WI( KS ), 1, 1, ZDUM, 1, INF )
+                     END IF
+                     KS = KS + INF
+                     IF( KS.GE.KBOT ) THEN
+                        AA = H( KBOT-1, KBOT-1 )
+                        CC = H( KBOT, KBOT-1 )
+                        BB = H( KBOT-1, KBOT )
+                        DD = H( KBOT, KBOT )
+                        CALL DLANV2( AA, BB, CC, DD, WR( KBOT-1 ),
+     $                               WI( KBOT-1 ), WR( KBOT ),
+     $                               WI( KBOT ), CS, SN )
+                        KS = KBOT - 1
+                     END IF
+                  END IF
+                  IF( KBOT-KS+1.GT.NS ) THEN
+                     SORTED = .false.
+                     DO 50 K = KBOT, KS + 1, -1
+                        IF( SORTED )
+     $                     GO TO 60
+                        SORTED = .true.
+                        DO 40 I = KS, K - 1
+                           IF( ABS( WR( I ) )+ABS( WI( I ) ).LT.
+     $                         ABS( WR( I+1 ) )+ABS( WI( I+1 ) ) ) THEN
+                              SORTED = .false.
+                              SWAP = WR( I )
+                              WR( I ) = WR( I+1 )
+                              WR( I+1 ) = SWAP
+                              SWAP = WI( I )
+                              WI( I ) = WI( I+1 )
+                              WI( I+1 ) = SWAP
+                           END IF
+   40                   CONTINUE
+   50                CONTINUE
+   60                CONTINUE
+                  END IF
+                  DO 70 I = KBOT, KS + 2, -2
+                     IF( WI( I ).NE.-WI( I-1 ) ) THEN
+                        SWAP = WR( I )
+                        WR( I ) = WR( I-1 )
+                        WR( I-1 ) = WR( I-2 )
+                        WR( I-2 ) = SWAP
+                        SWAP = WI( I )
+                        WI( I ) = WI( I-1 )
+                        WI( I-1 ) = WI( I-2 )
+                        WI( I-2 ) = SWAP
+                     END IF
+   70             CONTINUE
+               END IF
+               IF( KBOT-KS+1.EQ.2 ) THEN
+                  IF( WI( KBOT ).EQ.ZERO ) THEN
+                     IF( ABS( WR( KBOT )-H( KBOT, KBOT ) ).LT.
+     $                   ABS( WR( KBOT-1 )-H( KBOT, KBOT ) ) ) THEN
+                        WR( KBOT-1 ) = WR( KBOT )
+                     ELSE
+                        WR( KBOT ) = WR( KBOT-1 )
+                     END IF
+                  END IF
+               END IF
+               NS = MIN( NS, KBOT-KS+1 )
+               NS = NS - MOD( NS, 2 )
+               KS = KBOT - NS + 1
+               KDU = 3*NS - 3
+               KU = N - KDU + 1
+               KWH = KDU + 1
+               NHO = ( N-KDU+1-4 ) - ( KDU+1 ) + 1
+               KWV = KDU + 4
+               NVE = N - KDU - KWV + 1
+               CALL DLAQR5( WANTT, WANTZ, KACC22, N, KTOP, KBOT, NS,
+     $                      WR( KS ), WI( KS ), H, LDH, ILOZ, IHIZ, Z,
+     $                      LDZ, WORK, 3, H( KU, 1 ), LDH, NVE,
+     $                      H( KWV, 1 ), LDH, NHO, H( KU, KWH ), LDH )
+            END IF
+            IF( LD.GT.0 ) THEN
+               NDFL = 1
+            ELSE
+               NDFL = NDFL + 1
+            END IF
+   80    CONTINUE
+         INFO = KBOT
+   90    CONTINUE
+      END IF
+      WORK( 1 ) = DBLE( LWKOPT )
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaqr1.f
+      SUBROUTINE DLAQR1( N, H, LDH, SR1, SI1, SR2, SI2, V )
+      DOUBLE PRECISION   SI1, SI2, SR1, SR2
+      INTEGER            LDH, N
+      DOUBLE PRECISION   H( LDH, * ), V( * )
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0d0 )
+      DOUBLE PRECISION   H21S, H31S, S
+      INTRINSIC          ABS
+      IF( N.NE.2 .AND. N.NE.3 ) THEN
+         RETURN
+      END IF
+      IF( N.EQ.2 ) THEN
+         S = ABS( H( 1, 1 )-SR2 ) + ABS( SI2 ) + ABS( H( 2, 1 ) )
+         IF( S.EQ.ZERO ) THEN
+            V( 1 ) = ZERO
+            V( 2 ) = ZERO
+         ELSE
+            H21S = H( 2, 1 ) / S
+            V( 1 ) = H21S*H( 1, 2 ) + ( H( 1, 1 )-SR1 )*
+     $               ( ( H( 1, 1 )-SR2 ) / S ) - SI1*( SI2 / S )
+            V( 2 ) = H21S*( H( 1, 1 )+H( 2, 2 )-SR1-SR2 )
+         END IF
+      ELSE
+         S = ABS( H( 1, 1 )-SR2 ) + ABS( SI2 ) + ABS( H( 2, 1 ) ) +
+     $       ABS( H( 3, 1 ) )
+         IF( S.EQ.ZERO ) THEN
+            V( 1 ) = ZERO
+            V( 2 ) = ZERO
+            V( 3 ) = ZERO
+         ELSE
+            H21S = H( 2, 1 ) / S
+            H31S = H( 3, 1 ) / S
+            V( 1 ) = ( H( 1, 1 )-SR1 )*( ( H( 1, 1 )-SR2 ) / S ) -
+     $               SI1*( SI2 / S ) + H( 1, 2 )*H21S + H( 1, 3 )*H31S
+            V( 2 ) = H21S*( H( 1, 1 )+H( 2, 2 )-SR1-SR2 ) +
+     $               H( 2, 3 )*H31S
+            V( 3 ) = H31S*( H( 1, 1 )+H( 3, 3 )-SR1-SR2 ) +
+     $               H21S*H( 3, 2 )
+         END IF
+      END IF
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaqr2.f
+      SUBROUTINE DLAQR2( WANTT, WANTZ, N, KTOP, KBOT, NW, H, LDH, ILOZ,
+     $                   IHIZ, Z, LDZ, NS, ND, SR, SI, V, LDV, NH, T,
+     $                   LDT, NV, WV, LDWV, WORK, LWORK )
+      INTEGER            IHIZ, ILOZ, KBOT, KTOP, LDH, LDT, LDV, LDWV,
+     $                   LDZ, LWORK, N, ND, NH, NS, NV, NW
+      LOGICAL            WANTT, WANTZ
+      DOUBLE PRECISION   H( LDH, * ), SI( * ), SR( * ), T( LDT, * ),
+     $                   V( LDV, * ), WORK( * ), WV( LDWV, * ),
+     $                   Z( LDZ, * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0d0, ONE = 1.0d0 )
+      DOUBLE PRECISION   AA, BB, BETA, CC, CS, DD, EVI, EVK, FOO, S,
+     $                   SAFMAX, SAFMIN, SMLNUM, SN, TAU, ULP
+      INTEGER            I, IFST, ILST, INFO, INFQR, J, JW, K, KCOL,
+     $                   KEND, KLN, KROW, KWTOP, LTOP, LWK1, LWK2,
+     $                   LWKOPT
+      LOGICAL            BULGE, SORTED
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           DLAMCH
+      EXTERNAL           DCOPY, DGEHRD, DGEMM, DLABAD, DLACPY, DLAHQR,
+     $                   DLANV2, DLARF, DLARFG, DLASET, DORMHR, DTREXC
+      INTRINSIC          ABS, DBLE, INT, MAX, MIN, SQRT
+      JW = MIN( NW, KBOT-KTOP+1 )
+      IF( JW.LE.2 ) THEN
+         LWKOPT = 1
+      ELSE
+         CALL DGEHRD( JW, 1, JW-1, T, LDT, WORK, WORK, -1, INFO )
+         LWK1 = INT( WORK( 1 ) )
+         CALL DORMHR( 'R', 'N', JW, JW, 1, JW-1, T, LDT, WORK, V, LDV,
+     $                WORK, -1, INFO )
+         LWK2 = INT( WORK( 1 ) )
+         LWKOPT = JW + MAX( LWK1, LWK2 )
+      END IF
+      IF( LWORK.EQ.-1 ) THEN
+         WORK( 1 ) = DBLE( LWKOPT )
+         RETURN
+      END IF
+      NS = 0
+      ND = 0
+      WORK( 1 ) = ONE
+      IF( KTOP.GT.KBOT )
+     $   RETURN
+      IF( NW.LT.1 )
+     $   RETURN
+      SAFMIN = DLAMCH( 'SAFE MINIMUM' )
+      SAFMAX = ONE / SAFMIN
+      CALL DLABAD( SAFMIN, SAFMAX )
+      ULP = DLAMCH( 'PRECISION' )
+      SMLNUM = SAFMIN*( DBLE( N ) / ULP )
+      JW = MIN( NW, KBOT-KTOP+1 )
+      KWTOP = KBOT - JW + 1
+      IF( KWTOP.EQ.KTOP ) THEN
+         S = ZERO
+      ELSE
+         S = H( KWTOP, KWTOP-1 )
+      END IF
+      IF( KBOT.EQ.KWTOP ) THEN
+         SR( KWTOP ) = H( KWTOP, KWTOP )
+         SI( KWTOP ) = ZERO
+         NS = 1
+         ND = 0
+         IF( ABS( S ).LE.MAX( SMLNUM, ULP*ABS( H( KWTOP, KWTOP ) ) ) )
+     $        THEN
+            NS = 0
+            ND = 1
+            IF( KWTOP.GT.KTOP )
+     $         H( KWTOP, KWTOP-1 ) = ZERO
+         END IF
+         WORK( 1 ) = ONE
+         RETURN
+      END IF
+      CALL DLACPY( 'U', JW, JW, H( KWTOP, KWTOP ), LDH, T, LDT )
+      CALL DCOPY( JW-1, H( KWTOP+1, KWTOP ), LDH+1, T( 2, 1 ), LDT+1 )
+      CALL DLASET( 'A', JW, JW, ZERO, ONE, V, LDV )
+      CALL DLAHQR( .true., .true., JW, 1, JW, T, LDT, SR( KWTOP ),
+     $             SI( KWTOP ), 1, JW, V, LDV, INFQR )
+      DO 10 J = 1, JW - 3
+         T( J+2, J ) = ZERO
+         T( J+3, J ) = ZERO
+   10 CONTINUE
+      IF( JW.GT.2 )
+     $   T( JW, JW-2 ) = ZERO
+      NS = JW
+      ILST = INFQR + 1
+   20 CONTINUE
+      IF( ILST.LE.NS ) THEN
+         IF( NS.EQ.1 ) THEN
+            BULGE = .FALSE.
+         ELSE
+            BULGE = T( NS, NS-1 ).NE.ZERO
+         END IF
+         IF( .NOT.BULGE ) THEN
+            FOO = ABS( T( NS, NS ) )
+            IF( FOO.EQ.ZERO )
+     $         FOO = ABS( S )
+            IF( ABS( S*V( 1, NS ) ).LE.MAX( SMLNUM, ULP*FOO ) ) THEN
+               NS = NS - 1
+            ELSE
+               IFST = NS
+               CALL DTREXC( 'V', JW, T, LDT, V, LDV, IFST, ILST, WORK,
+     $                      INFO )
+               ILST = ILST + 1
+            END IF
+         ELSE
+            FOO = ABS( T( NS, NS ) ) + SQRT( ABS( T( NS, NS-1 ) ) )*
+     $            SQRT( ABS( T( NS-1, NS ) ) )
+            IF( FOO.EQ.ZERO )
+     $         FOO = ABS( S )
+            IF( MAX( ABS( S*V( 1, NS ) ), ABS( S*V( 1, NS-1 ) ) ).LE.
+     $          MAX( SMLNUM, ULP*FOO ) ) THEN
+               NS = NS - 2
+            ELSE
+               IFST = NS
+               CALL DTREXC( 'V', JW, T, LDT, V, LDV, IFST, ILST, WORK,
+     $                      INFO )
+               ILST = ILST + 2
+            END IF
+         END IF
+         GO TO 20
+      END IF
+      IF( NS.EQ.0 )
+     $   S = ZERO
+      IF( NS.LT.JW ) THEN
+         SORTED = .false.
+         I = NS + 1
+   30    CONTINUE
+         IF( SORTED )
+     $      GO TO 50
+         SORTED = .true.
+         KEND = I - 1
+         I = INFQR + 1
+         IF( I.EQ.NS ) THEN
+            K = I + 1
+         ELSE IF( T( I+1, I ).EQ.ZERO ) THEN
+            K = I + 1
+         ELSE
+            K = I + 2
+         END IF
+   40    CONTINUE
+         IF( K.LE.KEND ) THEN
+            IF( K.EQ.I+1 ) THEN
+               EVI = ABS( T( I, I ) )
+            ELSE
+               EVI = ABS( T( I, I ) ) + SQRT( ABS( T( I+1, I ) ) )*
+     $               SQRT( ABS( T( I, I+1 ) ) )
+            END IF
+            IF( K.EQ.KEND ) THEN
+               EVK = ABS( T( K, K ) )
+            ELSE IF( T( K+1, K ).EQ.ZERO ) THEN
+               EVK = ABS( T( K, K ) )
+            ELSE
+               EVK = ABS( T( K, K ) ) + SQRT( ABS( T( K+1, K ) ) )*
+     $               SQRT( ABS( T( K, K+1 ) ) )
+            END IF
+            IF( EVI.GE.EVK ) THEN
+               I = K
+            ELSE
+               SORTED = .false.
+               IFST = I
+               ILST = K
+               CALL DTREXC( 'V', JW, T, LDT, V, LDV, IFST, ILST, WORK,
+     $                      INFO )
+               IF( INFO.EQ.0 ) THEN
+                  I = ILST
+               ELSE
+                  I = K
+               END IF
+            END IF
+            IF( I.EQ.KEND ) THEN
+               K = I + 1
+            ELSE IF( T( I+1, I ).EQ.ZERO ) THEN
+               K = I + 1
+            ELSE
+               K = I + 2
+            END IF
+            GO TO 40
+         END IF
+         GO TO 30
+   50    CONTINUE
+      END IF
+      I = JW
+   60 CONTINUE
+      IF( I.GE.INFQR+1 ) THEN
+         IF( I.EQ.INFQR+1 ) THEN
+            SR( KWTOP+I-1 ) = T( I, I )
+            SI( KWTOP+I-1 ) = ZERO
+            I = I - 1
+         ELSE IF( T( I, I-1 ).EQ.ZERO ) THEN
+            SR( KWTOP+I-1 ) = T( I, I )
+            SI( KWTOP+I-1 ) = ZERO
+            I = I - 1
+         ELSE
+            AA = T( I-1, I-1 )
+            CC = T( I, I-1 )
+            BB = T( I-1, I )
+            DD = T( I, I )
+            CALL DLANV2( AA, BB, CC, DD, SR( KWTOP+I-2 ),
+     $                   SI( KWTOP+I-2 ), SR( KWTOP+I-1 ),
+     $                   SI( KWTOP+I-1 ), CS, SN )
+            I = I - 2
+         END IF
+         GO TO 60
+      END IF
+      IF( NS.LT.JW .OR. S.EQ.ZERO ) THEN
+         IF( NS.GT.1 .AND. S.NE.ZERO ) THEN
+            CALL DCOPY( NS, V, LDV, WORK, 1 )
+            BETA = WORK( 1 )
+            CALL DLARFG( NS, BETA, WORK( 2 ), 1, TAU )
+            WORK( 1 ) = ONE
+            CALL DLASET( 'L', JW-2, JW-2, ZERO, ZERO, T( 3, 1 ), LDT )
+            CALL DLARF( 'L', NS, JW, WORK, 1, TAU, T, LDT,
+     $                  WORK( JW+1 ) )
+            CALL DLARF( 'R', NS, NS, WORK, 1, TAU, T, LDT,
+     $                  WORK( JW+1 ) )
+            CALL DLARF( 'R', JW, NS, WORK, 1, TAU, V, LDV,
+     $                  WORK( JW+1 ) )
+            CALL DGEHRD( JW, 1, NS, T, LDT, WORK, WORK( JW+1 ),
+     $                   LWORK-JW, INFO )
+         END IF
+         IF( KWTOP.GT.1 )
+     $      H( KWTOP, KWTOP-1 ) = S*V( 1, 1 )
+         CALL DLACPY( 'U', JW, JW, T, LDT, H( KWTOP, KWTOP ), LDH )
+         CALL DCOPY( JW-1, T( 2, 1 ), LDT+1, H( KWTOP+1, KWTOP ),
+     $               LDH+1 )
+         IF( NS.GT.1 .AND. S.NE.ZERO )
+     $      CALL DORMHR( 'R', 'N', JW, NS, 1, NS, T, LDT, WORK, V, LDV,
+     $                   WORK( JW+1 ), LWORK-JW, INFO )
+         IF( WANTT ) THEN
+            LTOP = 1
+         ELSE
+            LTOP = KTOP
+         END IF
+         DO 70 KROW = LTOP, KWTOP - 1, NV
+            KLN = MIN( NV, KWTOP-KROW )
+            CALL DGEMM( 'N', 'N', KLN, JW, JW, ONE, H( KROW, KWTOP ),
+     $                  LDH, V, LDV, ZERO, WV, LDWV )
+            CALL DLACPY( 'A', KLN, JW, WV, LDWV, H( KROW, KWTOP ), LDH )
+   70    CONTINUE
+         IF( WANTT ) THEN
+            DO 80 KCOL = KBOT + 1, N, NH
+               KLN = MIN( NH, N-KCOL+1 )
+               CALL DGEMM( 'C', 'N', JW, KLN, JW, ONE, V, LDV,
+     $                     H( KWTOP, KCOL ), LDH, ZERO, T, LDT )
+               CALL DLACPY( 'A', JW, KLN, T, LDT, H( KWTOP, KCOL ),
+     $                      LDH )
+   80       CONTINUE
+         END IF
+         IF( WANTZ ) THEN
+            DO 90 KROW = ILOZ, IHIZ, NV
+               KLN = MIN( NV, IHIZ-KROW+1 )
+               CALL DGEMM( 'N', 'N', KLN, JW, JW, ONE, Z( KROW, KWTOP ),
+     $                     LDZ, V, LDV, ZERO, WV, LDWV )
+               CALL DLACPY( 'A', KLN, JW, WV, LDWV, Z( KROW, KWTOP ),
+     $                      LDZ )
+   90       CONTINUE
+         END IF
+      END IF
+      ND = JW - NS
+      NS = NS - INFQR
+      WORK( 1 ) = DBLE( LWKOPT )
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaqr3.f
+      SUBROUTINE DLAQR3( WANTT, WANTZ, N, KTOP, KBOT, NW, H, LDH, ILOZ,
+     $                   IHIZ, Z, LDZ, NS, ND, SR, SI, V, LDV, NH, T,
+     $                   LDT, NV, WV, LDWV, WORK, LWORK )
+      INTEGER            IHIZ, ILOZ, KBOT, KTOP, LDH, LDT, LDV, LDWV,
+     $                   LDZ, LWORK, N, ND, NH, NS, NV, NW
+      LOGICAL            WANTT, WANTZ
+      DOUBLE PRECISION   H( LDH, * ), SI( * ), SR( * ), T( LDT, * ),
+     $                   V( LDV, * ), WORK( * ), WV( LDWV, * ),
+     $                   Z( LDZ, * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0d0, ONE = 1.0d0 )
+      DOUBLE PRECISION   AA, BB, BETA, CC, CS, DD, EVI, EVK, FOO, S,
+     $                   SAFMAX, SAFMIN, SMLNUM, SN, TAU, ULP
+      INTEGER            I, IFST, ILST, INFO, INFQR, J, JW, K, KCOL,
+     $                   KEND, KLN, KROW, KWTOP, LTOP, LWK1, LWK2, LWK3,
+     $                   LWKOPT, NMIN
+      LOGICAL            BULGE, SORTED
+      DOUBLE PRECISION   DLAMCH
+      INTEGER            ILAENV
+      EXTERNAL           DLAMCH, ILAENV
+      EXTERNAL           DCOPY, DGEHRD, DGEMM, DLABAD, DLACPY, DLAHQR,
+     $                   DLANV2, DLAQR4, DLARF, DLARFG, DLASET, DORMHR,
+     $                   DTREXC
+      INTRINSIC          ABS, DBLE, INT, MAX, MIN, SQRT
+      JW = MIN( NW, KBOT-KTOP+1 )
+      IF( JW.LE.2 ) THEN
+         LWKOPT = 1
+      ELSE
+         CALL DGEHRD( JW, 1, JW-1, T, LDT, WORK, WORK, -1, INFO )
+         LWK1 = INT( WORK( 1 ) )
+         CALL DORMHR( 'R', 'N', JW, JW, 1, JW-1, T, LDT, WORK, V, LDV,
+     $                WORK, -1, INFO )
+         LWK2 = INT( WORK( 1 ) )
+         CALL DLAQR4( .true., .true., JW, 1, JW, T, LDT, SR, SI, 1, JW,
+     $                V, LDV, WORK, -1, INFQR )
+         LWK3 = INT( WORK( 1 ) )
+         LWKOPT = MAX( JW+MAX( LWK1, LWK2 ), LWK3 )
+      END IF
+      IF( LWORK.EQ.-1 ) THEN
+         WORK( 1 ) = DBLE( LWKOPT )
+         RETURN
+      END IF
+      NS = 0
+      ND = 0
+      WORK( 1 ) = ONE
+      IF( KTOP.GT.KBOT )
+     $   RETURN
+      IF( NW.LT.1 )
+     $   RETURN
+      SAFMIN = DLAMCH( 'SAFE MINIMUM' )
+      SAFMAX = ONE / SAFMIN
+      CALL DLABAD( SAFMIN, SAFMAX )
+      ULP = DLAMCH( 'PRECISION' )
+      SMLNUM = SAFMIN*( DBLE( N ) / ULP )
+      JW = MIN( NW, KBOT-KTOP+1 )
+      KWTOP = KBOT - JW + 1
+      IF( KWTOP.EQ.KTOP ) THEN
+         S = ZERO
+      ELSE
+         S = H( KWTOP, KWTOP-1 )
+      END IF
+      IF( KBOT.EQ.KWTOP ) THEN
+         SR( KWTOP ) = H( KWTOP, KWTOP )
+         SI( KWTOP ) = ZERO
+         NS = 1
+         ND = 0
+         IF( ABS( S ).LE.MAX( SMLNUM, ULP*ABS( H( KWTOP, KWTOP ) ) ) )
+     $        THEN
+            NS = 0
+            ND = 1
+            IF( KWTOP.GT.KTOP )
+     $         H( KWTOP, KWTOP-1 ) = ZERO
+         END IF
+         WORK( 1 ) = ONE
+         RETURN
+      END IF
+      CALL DLACPY( 'U', JW, JW, H( KWTOP, KWTOP ), LDH, T, LDT )
+      CALL DCOPY( JW-1, H( KWTOP+1, KWTOP ), LDH+1, T( 2, 1 ), LDT+1 )
+      CALL DLASET( 'A', JW, JW, ZERO, ONE, V, LDV )
+      NMIN = ILAENV( 12, 'DLAQR3', 'SV', JW, 1, JW, LWORK )
+      IF( JW.GT.NMIN ) THEN
+         CALL DLAQR4( .true., .true., JW, 1, JW, T, LDT, SR( KWTOP ),
+     $                SI( KWTOP ), 1, JW, V, LDV, WORK, LWORK, INFQR )
+      ELSE
+         CALL DLAHQR( .true., .true., JW, 1, JW, T, LDT, SR( KWTOP ),
+     $                SI( KWTOP ), 1, JW, V, LDV, INFQR )
+      END IF
+      DO 10 J = 1, JW - 3
+         T( J+2, J ) = ZERO
+         T( J+3, J ) = ZERO
+   10 CONTINUE
+      IF( JW.GT.2 )
+     $   T( JW, JW-2 ) = ZERO
+      NS = JW
+      ILST = INFQR + 1
+   20 CONTINUE
+      IF( ILST.LE.NS ) THEN
+         IF( NS.EQ.1 ) THEN
+            BULGE = .FALSE.
+         ELSE
+            BULGE = T( NS, NS-1 ).NE.ZERO
+         END IF
+         IF( .NOT. BULGE ) THEN
+            FOO = ABS( T( NS, NS ) )
+            IF( FOO.EQ.ZERO )
+     $         FOO = ABS( S )
+            IF( ABS( S*V( 1, NS ) ).LE.MAX( SMLNUM, ULP*FOO ) ) THEN
+               NS = NS - 1
+            ELSE
+               IFST = NS
+               CALL DTREXC( 'V', JW, T, LDT, V, LDV, IFST, ILST, WORK,
+     $                      INFO )
+               ILST = ILST + 1
+            END IF
+         ELSE
+            FOO = ABS( T( NS, NS ) ) + SQRT( ABS( T( NS, NS-1 ) ) )*
+     $            SQRT( ABS( T( NS-1, NS ) ) )
+            IF( FOO.EQ.ZERO )
+     $         FOO = ABS( S )
+            IF( MAX( ABS( S*V( 1, NS ) ), ABS( S*V( 1, NS-1 ) ) ).LE.
+     $          MAX( SMLNUM, ULP*FOO ) ) THEN
+               NS = NS - 2
+            ELSE
+               IFST = NS
+               CALL DTREXC( 'V', JW, T, LDT, V, LDV, IFST, ILST, WORK,
+     $                      INFO )
+               ILST = ILST + 2
+            END IF
+         END IF
+         GO TO 20
+      END IF
+      IF( NS.EQ.0 )
+     $   S = ZERO
+      IF( NS.LT.JW ) THEN
+         SORTED = .false.
+         I = NS + 1
+   30    CONTINUE
+         IF( SORTED )
+     $      GO TO 50
+         SORTED = .true.
+         KEND = I - 1
+         I = INFQR + 1
+         IF( I.EQ.NS ) THEN
+            K = I + 1
+         ELSE IF( T( I+1, I ).EQ.ZERO ) THEN
+            K = I + 1
+         ELSE
+            K = I + 2
+         END IF
+   40    CONTINUE
+         IF( K.LE.KEND ) THEN
+            IF( K.EQ.I+1 ) THEN
+               EVI = ABS( T( I, I ) )
+            ELSE
+               EVI = ABS( T( I, I ) ) + SQRT( ABS( T( I+1, I ) ) )*
+     $               SQRT( ABS( T( I, I+1 ) ) )
+            END IF
+            IF( K.EQ.KEND ) THEN
+               EVK = ABS( T( K, K ) )
+            ELSE IF( T( K+1, K ).EQ.ZERO ) THEN
+               EVK = ABS( T( K, K ) )
+            ELSE
+               EVK = ABS( T( K, K ) ) + SQRT( ABS( T( K+1, K ) ) )*
+     $               SQRT( ABS( T( K, K+1 ) ) )
+            END IF
+            IF( EVI.GE.EVK ) THEN
+               I = K
+            ELSE
+               SORTED = .false.
+               IFST = I
+               ILST = K
+               CALL DTREXC( 'V', JW, T, LDT, V, LDV, IFST, ILST, WORK,
+     $                      INFO )
+               IF( INFO.EQ.0 ) THEN
+                  I = ILST
+               ELSE
+                  I = K
+               END IF
+            END IF
+            IF( I.EQ.KEND ) THEN
+               K = I + 1
+            ELSE IF( T( I+1, I ).EQ.ZERO ) THEN
+               K = I + 1
+            ELSE
+               K = I + 2
+            END IF
+            GO TO 40
+         END IF
+         GO TO 30
+   50    CONTINUE
+      END IF
+      I = JW
+   60 CONTINUE
+      IF( I.GE.INFQR+1 ) THEN
+         IF( I.EQ.INFQR+1 ) THEN
+            SR( KWTOP+I-1 ) = T( I, I )
+            SI( KWTOP+I-1 ) = ZERO
+            I = I - 1
+         ELSE IF( T( I, I-1 ).EQ.ZERO ) THEN
+            SR( KWTOP+I-1 ) = T( I, I )
+            SI( KWTOP+I-1 ) = ZERO
+            I = I - 1
+         ELSE
+            AA = T( I-1, I-1 )
+            CC = T( I, I-1 )
+            BB = T( I-1, I )
+            DD = T( I, I )
+            CALL DLANV2( AA, BB, CC, DD, SR( KWTOP+I-2 ),
+     $                   SI( KWTOP+I-2 ), SR( KWTOP+I-1 ),
+     $                   SI( KWTOP+I-1 ), CS, SN )
+            I = I - 2
+         END IF
+         GO TO 60
+      END IF
+      IF( NS.LT.JW .OR. S.EQ.ZERO ) THEN
+         IF( NS.GT.1 .AND. S.NE.ZERO ) THEN
+            CALL DCOPY( NS, V, LDV, WORK, 1 )
+            BETA = WORK( 1 )
+            CALL DLARFG( NS, BETA, WORK( 2 ), 1, TAU )
+            WORK( 1 ) = ONE
+            CALL DLASET( 'L', JW-2, JW-2, ZERO, ZERO, T( 3, 1 ), LDT )
+            CALL DLARF( 'L', NS, JW, WORK, 1, TAU, T, LDT,
+     $                  WORK( JW+1 ) )
+            CALL DLARF( 'R', NS, NS, WORK, 1, TAU, T, LDT,
+     $                  WORK( JW+1 ) )
+            CALL DLARF( 'R', JW, NS, WORK, 1, TAU, V, LDV,
+     $                  WORK( JW+1 ) )
+            CALL DGEHRD( JW, 1, NS, T, LDT, WORK, WORK( JW+1 ),
+     $                   LWORK-JW, INFO )
+         END IF
+         IF( KWTOP.GT.1 )
+     $      H( KWTOP, KWTOP-1 ) = S*V( 1, 1 )
+         CALL DLACPY( 'U', JW, JW, T, LDT, H( KWTOP, KWTOP ), LDH )
+         CALL DCOPY( JW-1, T( 2, 1 ), LDT+1, H( KWTOP+1, KWTOP ),
+     $               LDH+1 )
+         IF( NS.GT.1 .AND. S.NE.ZERO )
+     $      CALL DORMHR( 'R', 'N', JW, NS, 1, NS, T, LDT, WORK, V, LDV,
+     $                   WORK( JW+1 ), LWORK-JW, INFO )
+         IF( WANTT ) THEN
+            LTOP = 1
+         ELSE
+            LTOP = KTOP
+         END IF
+         DO 70 KROW = LTOP, KWTOP - 1, NV
+            KLN = MIN( NV, KWTOP-KROW )
+            CALL DGEMM( 'N', 'N', KLN, JW, JW, ONE, H( KROW, KWTOP ),
+     $                  LDH, V, LDV, ZERO, WV, LDWV )
+            CALL DLACPY( 'A', KLN, JW, WV, LDWV, H( KROW, KWTOP ), LDH )
+   70    CONTINUE
+         IF( WANTT ) THEN
+            DO 80 KCOL = KBOT + 1, N, NH
+               KLN = MIN( NH, N-KCOL+1 )
+               CALL DGEMM( 'C', 'N', JW, KLN, JW, ONE, V, LDV,
+     $                     H( KWTOP, KCOL ), LDH, ZERO, T, LDT )
+               CALL DLACPY( 'A', JW, KLN, T, LDT, H( KWTOP, KCOL ),
+     $                      LDH )
+   80       CONTINUE
+         END IF
+         IF( WANTZ ) THEN
+            DO 90 KROW = ILOZ, IHIZ, NV
+               KLN = MIN( NV, IHIZ-KROW+1 )
+               CALL DGEMM( 'N', 'N', KLN, JW, JW, ONE, Z( KROW, KWTOP ),
+     $                     LDZ, V, LDV, ZERO, WV, LDWV )
+               CALL DLACPY( 'A', KLN, JW, WV, LDWV, Z( KROW, KWTOP ),
+     $                      LDZ )
+   90       CONTINUE
+         END IF
+      END IF
+      ND = JW - NS
+      NS = NS - INFQR
+      WORK( 1 ) = DBLE( LWKOPT )
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaqr4.f
+      SUBROUTINE DLAQR4( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI,
+     $                   ILOZ, IHIZ, Z, LDZ, WORK, LWORK, INFO )
+      INTEGER            IHI, IHIZ, ILO, ILOZ, INFO, LDH, LDZ, LWORK, N
+      LOGICAL            WANTT, WANTZ
+      DOUBLE PRECISION   H( LDH, * ), WI( * ), WORK( * ), WR( * ),
+     $                   Z( LDZ, * )
+      INTEGER            NTINY
+      PARAMETER          ( NTINY = 11 )
+      INTEGER            KEXNW
+      PARAMETER          ( KEXNW = 5 )
+      INTEGER            KEXSH
+      PARAMETER          ( KEXSH = 6 )
+      DOUBLE PRECISION   WILK1, WILK2
+      PARAMETER          ( WILK1 = 0.75d0, WILK2 = -0.4375d0 )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0d0, ONE = 1.0d0 )
+      DOUBLE PRECISION   AA, BB, CC, CS, DD, SN, SS, SWAP
+      INTEGER            I, INF, IT, ITMAX, K, KACC22, KBOT, KDU, KS,
+     $                   KT, KTOP, KU, KV, KWH, KWTOP, KWV, LD, LS,
+     $                   LWKOPT, NDEC, NDFL, NH, NHO, NIBBLE, NMIN, NS,
+     $                   NSMAX, NSR, NVE, NW, NWMAX, NWR, NWUPBD
+      LOGICAL            SORTED
+      CHARACTER          JBCMPZ*2
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+      DOUBLE PRECISION   ZDUM( 1, 1 )
+      EXTERNAL           DLACPY, DLAHQR, DLANV2, DLAQR2, DLAQR5
+      INTRINSIC          ABS, DBLE, INT, MAX, MIN, MOD
+      INFO = 0
+      IF( N.EQ.0 ) THEN
+         WORK( 1 ) = ONE
+         RETURN
+      END IF
+      IF( N.LE.NTINY ) THEN
+         LWKOPT = 1
+         IF( LWORK.NE.-1 )
+     $      CALL DLAHQR( WANTT, WANTZ, N, ILO, IHI, H, LDH, WR, WI,
+     $                   ILOZ, IHIZ, Z, LDZ, INFO )
+      ELSE
+         INFO = 0
+         IF( WANTT ) THEN
+            JBCMPZ( 1: 1 ) = 'S'
+         ELSE
+            JBCMPZ( 1: 1 ) = 'E'
+         END IF
+         IF( WANTZ ) THEN
+            JBCMPZ( 2: 2 ) = 'V'
+         ELSE
+            JBCMPZ( 2: 2 ) = 'N'
+         END IF
+         NWR = ILAENV( 13, 'DLAQR4', JBCMPZ, N, ILO, IHI, LWORK )
+         NWR = MAX( 2, NWR )
+         NWR = MIN( IHI-ILO+1, ( N-1 ) / 3, NWR )
+         NSR = ILAENV( 15, 'DLAQR4', JBCMPZ, N, ILO, IHI, LWORK )
+         NSR = MIN( NSR, ( N+6 ) / 9, IHI-ILO )
+         NSR = MAX( 2, NSR-MOD( NSR, 2 ) )
+         CALL DLAQR2( WANTT, WANTZ, N, ILO, IHI, NWR+1, H, LDH, ILOZ,
+     $                IHIZ, Z, LDZ, LS, LD, WR, WI, H, LDH, N, H, LDH,
+     $                N, H, LDH, WORK, -1 )
+         LWKOPT = MAX( 3*NSR / 2, INT( WORK( 1 ) ) )
+         IF( LWORK.EQ.-1 ) THEN
+            WORK( 1 ) = DBLE( LWKOPT )
+            RETURN
+         END IF
+         NMIN = ILAENV( 12, 'DLAQR4', JBCMPZ, N, ILO, IHI, LWORK )
+         NMIN = MAX( NTINY, NMIN )
+         NIBBLE = ILAENV( 14, 'DLAQR4', JBCMPZ, N, ILO, IHI, LWORK )
+         NIBBLE = MAX( 0, NIBBLE )
+         KACC22 = ILAENV( 16, 'DLAQR4', JBCMPZ, N, ILO, IHI, LWORK )
+         KACC22 = MAX( 0, KACC22 )
+         KACC22 = MIN( 2, KACC22 )
+         NWMAX = MIN( ( N-1 ) / 3, LWORK / 2 )
+         NW = NWMAX
+         NSMAX = MIN( ( N+6 ) / 9, 2*LWORK / 3 )
+         NSMAX = NSMAX - MOD( NSMAX, 2 )
+         NDFL = 1
+         ITMAX = MAX( 30, 2*KEXSH )*MAX( 10, ( IHI-ILO+1 ) )
+         KBOT = IHI
+         DO 80 IT = 1, ITMAX
+            IF( KBOT.LT.ILO )
+     $         GO TO 90
+            DO 10 K = KBOT, ILO + 1, -1
+               IF( H( K, K-1 ).EQ.ZERO )
+     $            GO TO 20
+   10       CONTINUE
+            K = ILO
+   20       CONTINUE
+            KTOP = K
+            NH = KBOT - KTOP + 1
+            NWUPBD = MIN( NH, NWMAX )
+            IF( NDFL.LT.KEXNW ) THEN
+               NW = MIN( NWUPBD, NWR )
+            ELSE
+               NW = MIN( NWUPBD, 2*NW )
+            END IF
+            IF( NW.LT.NWMAX ) THEN
+               IF( NW.GE.NH-1 ) THEN
+                  NW = NH
+               ELSE
+                  KWTOP = KBOT - NW + 1
+                  IF( ABS( H( KWTOP, KWTOP-1 ) ).GT.
+     $                ABS( H( KWTOP-1, KWTOP-2 ) ) )NW = NW + 1
+               END IF
+            END IF
+            IF( NDFL.LT.KEXNW ) THEN
+               NDEC = -1
+            ELSE IF( NDEC.GE.0 .OR. NW.GE.NWUPBD ) THEN
+               NDEC = NDEC + 1
+               IF( NW-NDEC.LT.2 )
+     $            NDEC = 0
+               NW = NW - NDEC
+            END IF
+            KV = N - NW + 1
+            KT = NW + 1
+            NHO = ( N-NW-1 ) - KT + 1
+            KWV = NW + 2
+            NVE = ( N-NW ) - KWV + 1
+            CALL DLAQR2( WANTT, WANTZ, N, KTOP, KBOT, NW, H, LDH, ILOZ,
+     $                   IHIZ, Z, LDZ, LS, LD, WR, WI, H( KV, 1 ), LDH,
+     $                   NHO, H( KV, KT ), LDH, NVE, H( KWV, 1 ), LDH,
+     $                   WORK, LWORK )
+            KBOT = KBOT - LD
+            KS = KBOT - LS + 1
+            IF( ( LD.EQ.0 ) .OR. ( ( 100*LD.LE.NW*NIBBLE ) .AND. ( KBOT-
+     $          KTOP+1.GT.MIN( NMIN, NWMAX ) ) ) ) THEN
+               NS = MIN( NSMAX, NSR, MAX( 2, KBOT-KTOP ) )
+               NS = NS - MOD( NS, 2 )
+               IF( MOD( NDFL, KEXSH ).EQ.0 ) THEN
+                  KS = KBOT - NS + 1
+                  DO 30 I = KBOT, MAX( KS+1, KTOP+2 ), -2
+                     SS = ABS( H( I, I-1 ) ) + ABS( H( I-1, I-2 ) )
+                     AA = WILK1*SS + H( I, I )
+                     BB = SS
+                     CC = WILK2*SS
+                     DD = AA
+                     CALL DLANV2( AA, BB, CC, DD, WR( I-1 ), WI( I-1 ),
+     $                            WR( I ), WI( I ), CS, SN )
+   30             CONTINUE
+                  IF( KS.EQ.KTOP ) THEN
+                     WR( KS+1 ) = H( KS+1, KS+1 )
+                     WI( KS+1 ) = ZERO
+                     WR( KS ) = WR( KS+1 )
+                     WI( KS ) = WI( KS+1 )
+                  END IF
+               ELSE
+                  IF( KBOT-KS+1.LE.NS / 2 ) THEN
+                     KS = KBOT - NS + 1
+                     KT = N - NS + 1
+                     CALL DLACPY( 'A', NS, NS, H( KS, KS ), LDH,
+     $                            H( KT, 1 ), LDH )
+                     CALL DLAHQR( .false., .false., NS, 1, NS,
+     $                            H( KT, 1 ), LDH, WR( KS ), WI( KS ),
+     $                            1, 1, ZDUM, 1, INF )
+                     KS = KS + INF
+                     IF( KS.GE.KBOT ) THEN
+                        AA = H( KBOT-1, KBOT-1 )
+                        CC = H( KBOT, KBOT-1 )
+                        BB = H( KBOT-1, KBOT )
+                        DD = H( KBOT, KBOT )
+                        CALL DLANV2( AA, BB, CC, DD, WR( KBOT-1 ),
+     $                               WI( KBOT-1 ), WR( KBOT ),
+     $                               WI( KBOT ), CS, SN )
+                        KS = KBOT - 1
+                     END IF
+                  END IF
+                  IF( KBOT-KS+1.GT.NS ) THEN
+                     SORTED = .false.
+                     DO 50 K = KBOT, KS + 1, -1
+                        IF( SORTED )
+     $                     GO TO 60
+                        SORTED = .true.
+                        DO 40 I = KS, K - 1
+                           IF( ABS( WR( I ) )+ABS( WI( I ) ).LT.
+     $                         ABS( WR( I+1 ) )+ABS( WI( I+1 ) ) ) THEN
+                              SORTED = .false.
+                              SWAP = WR( I )
+                              WR( I ) = WR( I+1 )
+                              WR( I+1 ) = SWAP
+                              SWAP = WI( I )
+                              WI( I ) = WI( I+1 )
+                              WI( I+1 ) = SWAP
+                           END IF
+   40                   CONTINUE
+   50                CONTINUE
+   60                CONTINUE
+                  END IF
+                  DO 70 I = KBOT, KS + 2, -2
+                     IF( WI( I ).NE.-WI( I-1 ) ) THEN
+                        SWAP = WR( I )
+                        WR( I ) = WR( I-1 )
+                        WR( I-1 ) = WR( I-2 )
+                        WR( I-2 ) = SWAP
+                        SWAP = WI( I )
+                        WI( I ) = WI( I-1 )
+                        WI( I-1 ) = WI( I-2 )
+                        WI( I-2 ) = SWAP
+                     END IF
+   70             CONTINUE
+               END IF
+               IF( KBOT-KS+1.EQ.2 ) THEN
+                  IF( WI( KBOT ).EQ.ZERO ) THEN
+                     IF( ABS( WR( KBOT )-H( KBOT, KBOT ) ).LT.
+     $                   ABS( WR( KBOT-1 )-H( KBOT, KBOT ) ) ) THEN
+                        WR( KBOT-1 ) = WR( KBOT )
+                     ELSE
+                        WR( KBOT ) = WR( KBOT-1 )
+                     END IF
+                  END IF
+               END IF
+               NS = MIN( NS, KBOT-KS+1 )
+               NS = NS - MOD( NS, 2 )
+               KS = KBOT - NS + 1
+               KDU = 3*NS - 3
+               KU = N - KDU + 1
+               KWH = KDU + 1
+               NHO = ( N-KDU+1-4 ) - ( KDU+1 ) + 1
+               KWV = KDU + 4
+               NVE = N - KDU - KWV + 1
+               CALL DLAQR5( WANTT, WANTZ, KACC22, N, KTOP, KBOT, NS,
+     $                      WR( KS ), WI( KS ), H, LDH, ILOZ, IHIZ, Z,
+     $                      LDZ, WORK, 3, H( KU, 1 ), LDH, NVE,
+     $                      H( KWV, 1 ), LDH, NHO, H( KU, KWH ), LDH )
+            END IF
+            IF( LD.GT.0 ) THEN
+               NDFL = 1
+            ELSE
+               NDFL = NDFL + 1
+            END IF
+   80    CONTINUE
+         INFO = KBOT
+   90    CONTINUE
+      END IF
+      WORK( 1 ) = DBLE( LWKOPT )
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlaqr5.f
+      SUBROUTINE DLAQR5( WANTT, WANTZ, KACC22, N, KTOP, KBOT, NSHFTS,
+     $                   SR, SI, H, LDH, ILOZ, IHIZ, Z, LDZ, V, LDV, U,
+     $                   LDU, NV, WV, LDWV, NH, WH, LDWH )
+      INTEGER            IHIZ, ILOZ, KACC22, KBOT, KTOP, LDH, LDU, LDV,
+     $                   LDWH, LDWV, LDZ, N, NH, NSHFTS, NV
+      LOGICAL            WANTT, WANTZ
+      DOUBLE PRECISION   H( LDH, * ), SI( * ), SR( * ), U( LDU, * ),
+     $                   V( LDV, * ), WH( LDWH, * ), WV( LDWV, * ),
+     $                   Z( LDZ, * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0d0, ONE = 1.0d0 )
+      DOUBLE PRECISION   ALPHA, BETA, H11, H12, H21, H22, REFSUM,
+     $                   SAFMAX, SAFMIN, SCL, SMLNUM, SWAP, TST1, TST2,
+     $                   ULP
+      INTEGER            I, I2, I4, INCOL, J, J2, J4, JBOT, JCOL, JLEN,
+     $                   JROW, JTOP, K, K1, KDU, KMS, KNZ, KRCOL, KZS,
+     $                   M, M22, MBOT, MEND, MSTART, MTOP, NBMPS, NDCOL,
+     $                   NS, NU
+      LOGICAL            ACCUM, BLK22, BMP22
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           DLAMCH
+      INTRINSIC          ABS, DBLE, MAX, MIN, MOD
+      DOUBLE PRECISION   VT( 3 )
+      EXTERNAL           DGEMM, DLABAD, DLACPY, DLAQR1, DLARFG, DLASET,
+     $                   DTRMM
+      IF( NSHFTS.LT.2 )
+     $   RETURN
+      IF( KTOP.GE.KBOT )
+     $   RETURN
+      DO 10 I = 1, NSHFTS - 2, 2
+         IF( SI( I ).NE.-SI( I+1 ) ) THEN
+            SWAP = SR( I )
+            SR( I ) = SR( I+1 )
+            SR( I+1 ) = SR( I+2 )
+            SR( I+2 ) = SWAP
+            SWAP = SI( I )
+            SI( I ) = SI( I+1 )
+            SI( I+1 ) = SI( I+2 )
+            SI( I+2 ) = SWAP
+         END IF
+   10 CONTINUE
+      NS = NSHFTS - MOD( NSHFTS, 2 )
+      SAFMIN = DLAMCH( 'SAFE MINIMUM' )
+      SAFMAX = ONE / SAFMIN
+      CALL DLABAD( SAFMIN, SAFMAX )
+      ULP = DLAMCH( 'PRECISION' )
+      SMLNUM = SAFMIN*( DBLE( N ) / ULP )
+      ACCUM = ( KACC22.EQ.1 ) .OR. ( KACC22.EQ.2 )
+      BLK22 = ( NS.GT.2 ) .AND. ( KACC22.EQ.2 )
+      IF( KTOP+2.LE.KBOT )
+     $   H( KTOP+2, KTOP ) = ZERO
+      NBMPS = NS / 2
+      KDU = 6*NBMPS - 3
+      DO 220 INCOL = 3*( 1-NBMPS ) + KTOP - 1, KBOT - 2, 3*NBMPS - 2
+         NDCOL = INCOL + KDU
+         IF( ACCUM )
+     $      CALL DLASET( 'ALL', KDU, KDU, ZERO, ONE, U, LDU )
+         DO 150 KRCOL = INCOL, MIN( INCOL+3*NBMPS-3, KBOT-2 )
+            MTOP = MAX( 1, ( ( KTOP-1 )-KRCOL+2 ) / 3+1 )
+            MBOT = MIN( NBMPS, ( KBOT-KRCOL ) / 3 )
+            M22 = MBOT + 1
+            BMP22 = ( MBOT.LT.NBMPS ) .AND. ( KRCOL+3*( M22-1 ) ).EQ.
+     $              ( KBOT-2 )
+            DO 20 M = MTOP, MBOT
+               K = KRCOL + 3*( M-1 )
+               IF( K.EQ.KTOP-1 ) THEN
+                  CALL DLAQR1( 3, H( KTOP, KTOP ), LDH, SR( 2*M-1 ),
+     $                         SI( 2*M-1 ), SR( 2*M ), SI( 2*M ),
+     $                         V( 1, M ) )
+                  ALPHA = V( 1, M )
+                  CALL DLARFG( 3, ALPHA, V( 2, M ), 1, V( 1, M ) )
+               ELSE
+                  BETA = H( K+1, K )
+                  V( 2, M ) = H( K+2, K )
+                  V( 3, M ) = H( K+3, K )
+                  CALL DLARFG( 3, BETA, V( 2, M ), 1, V( 1, M ) )
+                  IF( H( K+3, K ).NE.ZERO .OR. H( K+3, K+1 ).NE.
+     $                ZERO .OR. H( K+3, K+2 ).EQ.ZERO ) THEN
+                     H( K+1, K ) = BETA
+                     H( K+2, K ) = ZERO
+                     H( K+3, K ) = ZERO
+                  ELSE
+                     CALL DLAQR1( 3, H( K+1, K+1 ), LDH, SR( 2*M-1 ),
+     $                            SI( 2*M-1 ), SR( 2*M ), SI( 2*M ),
+     $                            VT )
+                     ALPHA = VT( 1 )
+                     CALL DLARFG( 3, ALPHA, VT( 2 ), 1, VT( 1 ) )
+                     REFSUM = VT( 1 )*( H( K+1, K )+VT( 2 )*
+     $                        H( K+2, K ) )
+                     IF( ABS( H( K+2, K )-REFSUM*VT( 2 ) )+
+     $                   ABS( REFSUM*VT( 3 ) ).GT.ULP*
+     $                   ( ABS( H( K, K ) )+ABS( H( K+1,
+     $                   K+1 ) )+ABS( H( K+2, K+2 ) ) ) ) THEN
+                        H( K+1, K ) = BETA
+                        H( K+2, K ) = ZERO
+                        H( K+3, K ) = ZERO
+                     ELSE
+                        H( K+1, K ) = H( K+1, K ) - REFSUM
+                        H( K+2, K ) = ZERO
+                        H( K+3, K ) = ZERO
+                        V( 1, M ) = VT( 1 )
+                        V( 2, M ) = VT( 2 )
+                        V( 3, M ) = VT( 3 )
+                     END IF
+                  END IF
+               END IF
+   20       CONTINUE
+            K = KRCOL + 3*( M22-1 )
+            IF( BMP22 ) THEN
+               IF( K.EQ.KTOP-1 ) THEN
+                  CALL DLAQR1( 2, H( K+1, K+1 ), LDH, SR( 2*M22-1 ),
+     $                         SI( 2*M22-1 ), SR( 2*M22 ), SI( 2*M22 ),
+     $                         V( 1, M22 ) )
+                  BETA = V( 1, M22 )
+                  CALL DLARFG( 2, BETA, V( 2, M22 ), 1, V( 1, M22 ) )
+               ELSE
+                  BETA = H( K+1, K )
+                  V( 2, M22 ) = H( K+2, K )
+                  CALL DLARFG( 2, BETA, V( 2, M22 ), 1, V( 1, M22 ) )
+                  H( K+1, K ) = BETA
+                  H( K+2, K ) = ZERO
+               END IF
+            END IF
+            IF( ACCUM ) THEN
+               JBOT = MIN( NDCOL, KBOT )
+            ELSE IF( WANTT ) THEN
+               JBOT = N
+            ELSE
+               JBOT = KBOT
+            END IF
+            DO 40 J = MAX( KTOP, KRCOL ), JBOT
+               MEND = MIN( MBOT, ( J-KRCOL+2 ) / 3 )
+               DO 30 M = MTOP, MEND
+                  K = KRCOL + 3*( M-1 )
+                  REFSUM = V( 1, M )*( H( K+1, J )+V( 2, M )*
+     $                     H( K+2, J )+V( 3, M )*H( K+3, J ) )
+                  H( K+1, J ) = H( K+1, J ) - REFSUM
+                  H( K+2, J ) = H( K+2, J ) - REFSUM*V( 2, M )
+                  H( K+3, J ) = H( K+3, J ) - REFSUM*V( 3, M )
+   30          CONTINUE
+   40       CONTINUE
+            IF( BMP22 ) THEN
+               K = KRCOL + 3*( M22-1 )
+               DO 50 J = MAX( K+1, KTOP ), JBOT
+                  REFSUM = V( 1, M22 )*( H( K+1, J )+V( 2, M22 )*
+     $                     H( K+2, J ) )
+                  H( K+1, J ) = H( K+1, J ) - REFSUM
+                  H( K+2, J ) = H( K+2, J ) - REFSUM*V( 2, M22 )
+   50          CONTINUE
+            END IF
+            IF( ACCUM ) THEN
+               JTOP = MAX( KTOP, INCOL )
+            ELSE IF( WANTT ) THEN
+               JTOP = 1
+            ELSE
+               JTOP = KTOP
+            END IF
+            DO 90 M = MTOP, MBOT
+               IF( V( 1, M ).NE.ZERO ) THEN
+                  K = KRCOL + 3*( M-1 )
+                  DO 60 J = JTOP, MIN( KBOT, K+3 )
+                     REFSUM = V( 1, M )*( H( J, K+1 )+V( 2, M )*
+     $                        H( J, K+2 )+V( 3, M )*H( J, K+3 ) )
+                     H( J, K+1 ) = H( J, K+1 ) - REFSUM
+                     H( J, K+2 ) = H( J, K+2 ) - REFSUM*V( 2, M )
+                     H( J, K+3 ) = H( J, K+3 ) - REFSUM*V( 3, M )
+   60             CONTINUE
+                  IF( ACCUM ) THEN
+                     KMS = K - INCOL
+                     DO 70 J = MAX( 1, KTOP-INCOL ), KDU
+                        REFSUM = V( 1, M )*( U( J, KMS+1 )+V( 2, M )*
+     $                           U( J, KMS+2 )+V( 3, M )*U( J, KMS+3 ) )
+                        U( J, KMS+1 ) = U( J, KMS+1 ) - REFSUM
+                        U( J, KMS+2 ) = U( J, KMS+2 ) - REFSUM*V( 2, M )
+                        U( J, KMS+3 ) = U( J, KMS+3 ) - REFSUM*V( 3, M )
+   70                CONTINUE
+                  ELSE IF( WANTZ ) THEN
+                     DO 80 J = ILOZ, IHIZ
+                        REFSUM = V( 1, M )*( Z( J, K+1 )+V( 2, M )*
+     $                           Z( J, K+2 )+V( 3, M )*Z( J, K+3 ) )
+                        Z( J, K+1 ) = Z( J, K+1 ) - REFSUM
+                        Z( J, K+2 ) = Z( J, K+2 ) - REFSUM*V( 2, M )
+                        Z( J, K+3 ) = Z( J, K+3 ) - REFSUM*V( 3, M )
+   80                CONTINUE
+                  END IF
+               END IF
+   90       CONTINUE
+            K = KRCOL + 3*( M22-1 )
+            IF( BMP22 ) THEN
+               IF ( V( 1, M22 ).NE.ZERO ) THEN
+                  DO 100 J = JTOP, MIN( KBOT, K+3 )
+                     REFSUM = V( 1, M22 )*( H( J, K+1 )+V( 2, M22 )*
+     $                        H( J, K+2 ) )
+                     H( J, K+1 ) = H( J, K+1 ) - REFSUM
+                     H( J, K+2 ) = H( J, K+2 ) - REFSUM*V( 2, M22 )
+  100             CONTINUE
+                  IF( ACCUM ) THEN
+                     KMS = K - INCOL
+                     DO 110 J = MAX( 1, KTOP-INCOL ), KDU
+                        REFSUM = V( 1, M22 )*( U( J, KMS+1 )+
+     $                           V( 2, M22 )*U( J, KMS+2 ) )
+                        U( J, KMS+1 ) = U( J, KMS+1 ) - REFSUM
+                        U( J, KMS+2 ) = U( J, KMS+2 ) -
+     $                                  REFSUM*V( 2, M22 )
+  110             CONTINUE
+                  ELSE IF( WANTZ ) THEN
+                     DO 120 J = ILOZ, IHIZ
+                        REFSUM = V( 1, M22 )*( Z( J, K+1 )+V( 2, M22 )*
+     $                           Z( J, K+2 ) )
+                        Z( J, K+1 ) = Z( J, K+1 ) - REFSUM
+                        Z( J, K+2 ) = Z( J, K+2 ) - REFSUM*V( 2, M22 )
+  120                CONTINUE
+                  END IF
+               END IF
+            END IF
+            MSTART = MTOP
+            IF( KRCOL+3*( MSTART-1 ).LT.KTOP )
+     $         MSTART = MSTART + 1
+            MEND = MBOT
+            IF( BMP22 )
+     $         MEND = MEND + 1
+            IF( KRCOL.EQ.KBOT-2 )
+     $         MEND = MEND + 1
+            DO 130 M = MSTART, MEND
+               K = MIN( KBOT-1, KRCOL+3*( M-1 ) )
+               IF( H( K+1, K ).NE.ZERO ) THEN
+                  TST1 = ABS( H( K, K ) ) + ABS( H( K+1, K+1 ) )
+                  IF( TST1.EQ.ZERO ) THEN
+                     IF( K.GE.KTOP+1 )
+     $                  TST1 = TST1 + ABS( H( K, K-1 ) )
+                     IF( K.GE.KTOP+2 )
+     $                  TST1 = TST1 + ABS( H( K, K-2 ) )
+                     IF( K.GE.KTOP+3 )
+     $                  TST1 = TST1 + ABS( H( K, K-3 ) )
+                     IF( K.LE.KBOT-2 )
+     $                  TST1 = TST1 + ABS( H( K+2, K+1 ) )
+                     IF( K.LE.KBOT-3 )
+     $                  TST1 = TST1 + ABS( H( K+3, K+1 ) )
+                     IF( K.LE.KBOT-4 )
+     $                  TST1 = TST1 + ABS( H( K+4, K+1 ) )
+                  END IF
+                  IF( ABS( H( K+1, K ) ).LE.MAX( SMLNUM, ULP*TST1 ) )
+     $                 THEN
+                     H12 = MAX( ABS( H( K+1, K ) ), ABS( H( K, K+1 ) ) )
+                     H21 = MIN( ABS( H( K+1, K ) ), ABS( H( K, K+1 ) ) )
+                     H11 = MAX( ABS( H( K+1, K+1 ) ),
+     $                     ABS( H( K, K )-H( K+1, K+1 ) ) )
+                     H22 = MIN( ABS( H( K+1, K+1 ) ),
+     $                     ABS( H( K, K )-H( K+1, K+1 ) ) )
+                     SCL = H11 + H12
+                     TST2 = H22*( H11 / SCL )
+                     IF( TST2.EQ.ZERO .OR. H21*( H12 / SCL ).LE.
+     $                   MAX( SMLNUM, ULP*TST2 ) )H( K+1, K ) = ZERO
+                  END IF
+               END IF
+  130       CONTINUE
+            MEND = MIN( NBMPS, ( KBOT-KRCOL-1 ) / 3 )
+            DO 140 M = MTOP, MEND
+               K = KRCOL + 3*( M-1 )
+               REFSUM = V( 1, M )*V( 3, M )*H( K+4, K+3 )
+               H( K+4, K+1 ) = -REFSUM
+               H( K+4, K+2 ) = -REFSUM*V( 2, M )
+               H( K+4, K+3 ) = H( K+4, K+3 ) - REFSUM*V( 3, M )
+  140       CONTINUE
+  150    CONTINUE
+         IF( ACCUM ) THEN
+            IF( WANTT ) THEN
+               JTOP = 1
+               JBOT = N
+            ELSE
+               JTOP = KTOP
+               JBOT = KBOT
+            END IF
+            IF( ( .NOT.BLK22 ) .OR. ( INCOL.LT.KTOP ) .OR.
+     $          ( NDCOL.GT.KBOT ) .OR. ( NS.LE.2 ) ) THEN
+               K1 = MAX( 1, KTOP-INCOL )
+               NU = ( KDU-MAX( 0, NDCOL-KBOT ) ) - K1 + 1
+               DO 160 JCOL = MIN( NDCOL, KBOT ) + 1, JBOT, NH
+                  JLEN = MIN( NH, JBOT-JCOL+1 )
+                  CALL DGEMM( 'C', 'N', NU, JLEN, NU, ONE, U( K1, K1 ),
+     $                        LDU, H( INCOL+K1, JCOL ), LDH, ZERO, WH,
+     $                        LDWH )
+                  CALL DLACPY( 'ALL', NU, JLEN, WH, LDWH,
+     $                         H( INCOL+K1, JCOL ), LDH )
+  160          CONTINUE
+               DO 170 JROW = JTOP, MAX( KTOP, INCOL ) - 1, NV
+                  JLEN = MIN( NV, MAX( KTOP, INCOL )-JROW )
+                  CALL DGEMM( 'N', 'N', JLEN, NU, NU, ONE,
+     $                        H( JROW, INCOL+K1 ), LDH, U( K1, K1 ),
+     $                        LDU, ZERO, WV, LDWV )
+                  CALL DLACPY( 'ALL', JLEN, NU, WV, LDWV,
+     $                         H( JROW, INCOL+K1 ), LDH )
+  170          CONTINUE
+               IF( WANTZ ) THEN
+                  DO 180 JROW = ILOZ, IHIZ, NV
+                     JLEN = MIN( NV, IHIZ-JROW+1 )
+                     CALL DGEMM( 'N', 'N', JLEN, NU, NU, ONE,
+     $                           Z( JROW, INCOL+K1 ), LDZ, U( K1, K1 ),
+     $                           LDU, ZERO, WV, LDWV )
+                     CALL DLACPY( 'ALL', JLEN, NU, WV, LDWV,
+     $                            Z( JROW, INCOL+K1 ), LDZ )
+  180             CONTINUE
+               END IF
+            ELSE
+               I2 = ( KDU+1 ) / 2
+               I4 = KDU
+               J2 = I4 - I2
+               J4 = KDU
+               KZS = ( J4-J2 ) - ( NS+1 )
+               KNZ = NS + 1
+               DO 190 JCOL = MIN( NDCOL, KBOT ) + 1, JBOT, NH
+                  JLEN = MIN( NH, JBOT-JCOL+1 )
+                  CALL DLACPY( 'ALL', KNZ, JLEN, H( INCOL+1+J2, JCOL ),
+     $                         LDH, WH( KZS+1, 1 ), LDWH )
+                  CALL DLASET( 'ALL', KZS, JLEN, ZERO, ZERO, WH, LDWH )
+                  CALL DTRMM( 'L', 'U', 'C', 'N', KNZ, JLEN, ONE,
+     $                        U( J2+1, 1+KZS ), LDU, WH( KZS+1, 1 ),
+     $                        LDWH )
+                  CALL DGEMM( 'C', 'N', I2, JLEN, J2, ONE, U, LDU,
+     $                        H( INCOL+1, JCOL ), LDH, ONE, WH, LDWH )
+                  CALL DLACPY( 'ALL', J2, JLEN, H( INCOL+1, JCOL ), LDH,
+     $                         WH( I2+1, 1 ), LDWH )
+                  CALL DTRMM( 'L', 'L', 'C', 'N', J2, JLEN, ONE,
+     $                        U( 1, I2+1 ), LDU, WH( I2+1, 1 ), LDWH )
+                  CALL DGEMM( 'C', 'N', I4-I2, JLEN, J4-J2, ONE,
+     $                        U( J2+1, I2+1 ), LDU,
+     $                        H( INCOL+1+J2, JCOL ), LDH, ONE,
+     $                        WH( I2+1, 1 ), LDWH )
+                  CALL DLACPY( 'ALL', KDU, JLEN, WH, LDWH,
+     $                         H( INCOL+1, JCOL ), LDH )
+  190          CONTINUE
+               DO 200 JROW = JTOP, MAX( INCOL, KTOP ) - 1, NV
+                  JLEN = MIN( NV, MAX( INCOL, KTOP )-JROW )
+                  CALL DLACPY( 'ALL', JLEN, KNZ, H( JROW, INCOL+1+J2 ),
+     $                         LDH, WV( 1, 1+KZS ), LDWV )
+                  CALL DLASET( 'ALL', JLEN, KZS, ZERO, ZERO, WV, LDWV )
+                  CALL DTRMM( 'R', 'U', 'N', 'N', JLEN, KNZ, ONE,
+     $                        U( J2+1, 1+KZS ), LDU, WV( 1, 1+KZS ),
+     $                        LDWV )
+                  CALL DGEMM( 'N', 'N', JLEN, I2, J2, ONE,
+     $                        H( JROW, INCOL+1 ), LDH, U, LDU, ONE, WV,
+     $                        LDWV )
+                  CALL DLACPY( 'ALL', JLEN, J2, H( JROW, INCOL+1 ), LDH,
+     $                         WV( 1, 1+I2 ), LDWV )
+                  CALL DTRMM( 'R', 'L', 'N', 'N', JLEN, I4-I2, ONE,
+     $                        U( 1, I2+1 ), LDU, WV( 1, 1+I2 ), LDWV )
+                  CALL DGEMM( 'N', 'N', JLEN, I4-I2, J4-J2, ONE,
+     $                        H( JROW, INCOL+1+J2 ), LDH,
+     $                        U( J2+1, I2+1 ), LDU, ONE, WV( 1, 1+I2 ),
+     $                        LDWV )
+                  CALL DLACPY( 'ALL', JLEN, KDU, WV, LDWV,
+     $                         H( JROW, INCOL+1 ), LDH )
+  200          CONTINUE
+               IF( WANTZ ) THEN
+                  DO 210 JROW = ILOZ, IHIZ, NV
+                     JLEN = MIN( NV, IHIZ-JROW+1 )
+                     CALL DLACPY( 'ALL', JLEN, KNZ,
+     $                            Z( JROW, INCOL+1+J2 ), LDZ,
+     $                            WV( 1, 1+KZS ), LDWV )
+                     CALL DLASET( 'ALL', JLEN, KZS, ZERO, ZERO, WV,
+     $                            LDWV )
+                     CALL DTRMM( 'R', 'U', 'N', 'N', JLEN, KNZ, ONE,
+     $                           U( J2+1, 1+KZS ), LDU, WV( 1, 1+KZS ),
+     $                           LDWV )
+                     CALL DGEMM( 'N', 'N', JLEN, I2, J2, ONE,
+     $                           Z( JROW, INCOL+1 ), LDZ, U, LDU, ONE,
+     $                           WV, LDWV )
+                     CALL DLACPY( 'ALL', JLEN, J2, Z( JROW, INCOL+1 ),
+     $                            LDZ, WV( 1, 1+I2 ), LDWV )
+                     CALL DTRMM( 'R', 'L', 'N', 'N', JLEN, I4-I2, ONE,
+     $                           U( 1, I2+1 ), LDU, WV( 1, 1+I2 ),
+     $                           LDWV )
+                     CALL DGEMM( 'N', 'N', JLEN, I4-I2, J4-J2, ONE,
+     $                           Z( JROW, INCOL+1+J2 ), LDZ,
+     $                           U( J2+1, I2+1 ), LDU, ONE,
+     $                           WV( 1, 1+I2 ), LDWV )
+                     CALL DLACPY( 'ALL', JLEN, KDU, WV, LDWV,
+     $                            Z( JROW, INCOL+1 ), LDZ )
+  210             CONTINUE
+               END IF
+            END IF
+         END IF
+  220 CONTINUE
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlar1v.f
       SUBROUTINE DLAR1V( N, B1, BN, LAMBDA, D, L, LD, LLD,
@@ -17643,6 +20623,244 @@
       END IF
       RETURN
       END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlasy2.f
+      SUBROUTINE DLASY2( LTRANL, LTRANR, ISGN, N1, N2, TL, LDTL, TR,
+     $                   LDTR, B, LDB, SCALE, X, LDX, XNORM, INFO )
+      LOGICAL            LTRANL, LTRANR
+      INTEGER            INFO, ISGN, LDB, LDTL, LDTR, LDX, N1, N2
+      DOUBLE PRECISION   SCALE, XNORM
+      DOUBLE PRECISION   B( LDB, * ), TL( LDTL, * ), TR( LDTR, * ),
+     $                   X( LDX, * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+      DOUBLE PRECISION   TWO, HALF, EIGHT
+      PARAMETER          ( TWO = 2.0D+0, HALF = 0.5D+0, EIGHT = 8.0D+0 )
+      LOGICAL            BSWAP, XSWAP
+      INTEGER            I, IP, IPIV, IPSV, J, JP, JPSV, K
+      DOUBLE PRECISION   BET, EPS, GAM, L21, SGN, SMIN, SMLNUM, TAU1,
+     $                   TEMP, U11, U12, U22, XMAX
+      LOGICAL            BSWPIV( 4 ), XSWPIV( 4 )
+      INTEGER            JPIV( 4 ), LOCL21( 4 ), LOCU12( 4 ),
+     $                   LOCU22( 4 )
+      DOUBLE PRECISION   BTMP( 4 ), T16( 4, 4 ), TMP( 4 ), X2( 2 )
+      INTEGER            IDAMAX
+      DOUBLE PRECISION   DLAMCH
+      EXTERNAL           IDAMAX, DLAMCH
+      EXTERNAL           DCOPY, DSWAP
+      INTRINSIC          ABS, MAX
+      DATA               LOCU12 / 3, 4, 1, 2 / , LOCL21 / 2, 1, 4, 3 / ,
+     $                   LOCU22 / 4, 3, 2, 1 /
+      DATA               XSWPIV / .FALSE., .FALSE., .TRUE., .TRUE. /
+      DATA               BSWPIV / .FALSE., .TRUE., .FALSE., .TRUE. /
+      INFO = 0
+      IF( N1.EQ.0 .OR. N2.EQ.0 )
+     $   RETURN
+      EPS = DLAMCH( 'P' )
+      SMLNUM = DLAMCH( 'S' ) / EPS
+      SGN = ISGN
+      K = N1 + N1 + N2 - 2
+      GO TO ( 10, 20, 30, 50 )K
+   10 CONTINUE
+      TAU1 = TL( 1, 1 ) + SGN*TR( 1, 1 )
+      BET = ABS( TAU1 )
+      IF( BET.LE.SMLNUM ) THEN
+         TAU1 = SMLNUM
+         BET = SMLNUM
+         INFO = 1
+      END IF
+      SCALE = ONE
+      GAM = ABS( B( 1, 1 ) )
+      IF( SMLNUM*GAM.GT.BET )
+     $   SCALE = ONE / GAM
+      X( 1, 1 ) = ( B( 1, 1 )*SCALE ) / TAU1
+      XNORM = ABS( X( 1, 1 ) )
+      RETURN
+   20 CONTINUE
+      SMIN = MAX( EPS*MAX( ABS( TL( 1, 1 ) ), ABS( TR( 1, 1 ) ),
+     $       ABS( TR( 1, 2 ) ), ABS( TR( 2, 1 ) ), ABS( TR( 2, 2 ) ) ),
+     $       SMLNUM )
+      TMP( 1 ) = TL( 1, 1 ) + SGN*TR( 1, 1 )
+      TMP( 4 ) = TL( 1, 1 ) + SGN*TR( 2, 2 )
+      IF( LTRANR ) THEN
+         TMP( 2 ) = SGN*TR( 2, 1 )
+         TMP( 3 ) = SGN*TR( 1, 2 )
+      ELSE
+         TMP( 2 ) = SGN*TR( 1, 2 )
+         TMP( 3 ) = SGN*TR( 2, 1 )
+      END IF
+      BTMP( 1 ) = B( 1, 1 )
+      BTMP( 2 ) = B( 1, 2 )
+      GO TO 40
+   30 CONTINUE
+      SMIN = MAX( EPS*MAX( ABS( TR( 1, 1 ) ), ABS( TL( 1, 1 ) ),
+     $       ABS( TL( 1, 2 ) ), ABS( TL( 2, 1 ) ), ABS( TL( 2, 2 ) ) ),
+     $       SMLNUM )
+      TMP( 1 ) = TL( 1, 1 ) + SGN*TR( 1, 1 )
+      TMP( 4 ) = TL( 2, 2 ) + SGN*TR( 1, 1 )
+      IF( LTRANL ) THEN
+         TMP( 2 ) = TL( 1, 2 )
+         TMP( 3 ) = TL( 2, 1 )
+      ELSE
+         TMP( 2 ) = TL( 2, 1 )
+         TMP( 3 ) = TL( 1, 2 )
+      END IF
+      BTMP( 1 ) = B( 1, 1 )
+      BTMP( 2 ) = B( 2, 1 )
+   40 CONTINUE
+      IPIV = IDAMAX( 4, TMP, 1 )
+      U11 = TMP( IPIV )
+      IF( ABS( U11 ).LE.SMIN ) THEN
+         INFO = 1
+         U11 = SMIN
+      END IF
+      U12 = TMP( LOCU12( IPIV ) )
+      L21 = TMP( LOCL21( IPIV ) ) / U11
+      U22 = TMP( LOCU22( IPIV ) ) - U12*L21
+      XSWAP = XSWPIV( IPIV )
+      BSWAP = BSWPIV( IPIV )
+      IF( ABS( U22 ).LE.SMIN ) THEN
+         INFO = 1
+         U22 = SMIN
+      END IF
+      IF( BSWAP ) THEN
+         TEMP = BTMP( 2 )
+         BTMP( 2 ) = BTMP( 1 ) - L21*TEMP
+         BTMP( 1 ) = TEMP
+      ELSE
+         BTMP( 2 ) = BTMP( 2 ) - L21*BTMP( 1 )
+      END IF
+      SCALE = ONE
+      IF( ( TWO*SMLNUM )*ABS( BTMP( 2 ) ).GT.ABS( U22 ) .OR.
+     $    ( TWO*SMLNUM )*ABS( BTMP( 1 ) ).GT.ABS( U11 ) ) THEN
+         SCALE = HALF / MAX( ABS( BTMP( 1 ) ), ABS( BTMP( 2 ) ) )
+         BTMP( 1 ) = BTMP( 1 )*SCALE
+         BTMP( 2 ) = BTMP( 2 )*SCALE
+      END IF
+      X2( 2 ) = BTMP( 2 ) / U22
+      X2( 1 ) = BTMP( 1 ) / U11 - ( U12 / U11 )*X2( 2 )
+      IF( XSWAP ) THEN
+         TEMP = X2( 2 )
+         X2( 2 ) = X2( 1 )
+         X2( 1 ) = TEMP
+      END IF
+      X( 1, 1 ) = X2( 1 )
+      IF( N1.EQ.1 ) THEN
+         X( 1, 2 ) = X2( 2 )
+         XNORM = ABS( X( 1, 1 ) ) + ABS( X( 1, 2 ) )
+      ELSE
+         X( 2, 1 ) = X2( 2 )
+         XNORM = MAX( ABS( X( 1, 1 ) ), ABS( X( 2, 1 ) ) )
+      END IF
+      RETURN
+   50 CONTINUE
+      SMIN = MAX( ABS( TR( 1, 1 ) ), ABS( TR( 1, 2 ) ),
+     $       ABS( TR( 2, 1 ) ), ABS( TR( 2, 2 ) ) )
+      SMIN = MAX( SMIN, ABS( TL( 1, 1 ) ), ABS( TL( 1, 2 ) ),
+     $       ABS( TL( 2, 1 ) ), ABS( TL( 2, 2 ) ) )
+      SMIN = MAX( EPS*SMIN, SMLNUM )
+      BTMP( 1 ) = ZERO
+      CALL DCOPY( 16, BTMP, 0, T16, 1 )
+      T16( 1, 1 ) = TL( 1, 1 ) + SGN*TR( 1, 1 )
+      T16( 2, 2 ) = TL( 2, 2 ) + SGN*TR( 1, 1 )
+      T16( 3, 3 ) = TL( 1, 1 ) + SGN*TR( 2, 2 )
+      T16( 4, 4 ) = TL( 2, 2 ) + SGN*TR( 2, 2 )
+      IF( LTRANL ) THEN
+         T16( 1, 2 ) = TL( 2, 1 )
+         T16( 2, 1 ) = TL( 1, 2 )
+         T16( 3, 4 ) = TL( 2, 1 )
+         T16( 4, 3 ) = TL( 1, 2 )
+      ELSE
+         T16( 1, 2 ) = TL( 1, 2 )
+         T16( 2, 1 ) = TL( 2, 1 )
+         T16( 3, 4 ) = TL( 1, 2 )
+         T16( 4, 3 ) = TL( 2, 1 )
+      END IF
+      IF( LTRANR ) THEN
+         T16( 1, 3 ) = SGN*TR( 1, 2 )
+         T16( 2, 4 ) = SGN*TR( 1, 2 )
+         T16( 3, 1 ) = SGN*TR( 2, 1 )
+         T16( 4, 2 ) = SGN*TR( 2, 1 )
+      ELSE
+         T16( 1, 3 ) = SGN*TR( 2, 1 )
+         T16( 2, 4 ) = SGN*TR( 2, 1 )
+         T16( 3, 1 ) = SGN*TR( 1, 2 )
+         T16( 4, 2 ) = SGN*TR( 1, 2 )
+      END IF
+      BTMP( 1 ) = B( 1, 1 )
+      BTMP( 2 ) = B( 2, 1 )
+      BTMP( 3 ) = B( 1, 2 )
+      BTMP( 4 ) = B( 2, 2 )
+      DO 100 I = 1, 3
+         XMAX = ZERO
+         DO 70 IP = I, 4
+            DO 60 JP = I, 4
+               IF( ABS( T16( IP, JP ) ).GE.XMAX ) THEN
+                  XMAX = ABS( T16( IP, JP ) )
+                  IPSV = IP
+                  JPSV = JP
+               END IF
+   60       CONTINUE
+   70    CONTINUE
+         IF( IPSV.NE.I ) THEN
+            CALL DSWAP( 4, T16( IPSV, 1 ), 4, T16( I, 1 ), 4 )
+            TEMP = BTMP( I )
+            BTMP( I ) = BTMP( IPSV )
+            BTMP( IPSV ) = TEMP
+         END IF
+         IF( JPSV.NE.I )
+     $      CALL DSWAP( 4, T16( 1, JPSV ), 1, T16( 1, I ), 1 )
+         JPIV( I ) = JPSV
+         IF( ABS( T16( I, I ) ).LT.SMIN ) THEN
+            INFO = 1
+            T16( I, I ) = SMIN
+         END IF
+         DO 90 J = I + 1, 4
+            T16( J, I ) = T16( J, I ) / T16( I, I )
+            BTMP( J ) = BTMP( J ) - T16( J, I )*BTMP( I )
+            DO 80 K = I + 1, 4
+               T16( J, K ) = T16( J, K ) - T16( J, I )*T16( I, K )
+   80       CONTINUE
+   90    CONTINUE
+  100 CONTINUE
+      IF( ABS( T16( 4, 4 ) ).LT.SMIN ) THEN
+         INFO = 1
+         T16( 4, 4 ) = SMIN
+      END IF
+      SCALE = ONE
+      IF( ( EIGHT*SMLNUM )*ABS( BTMP( 1 ) ).GT.ABS( T16( 1, 1 ) ) .OR.
+     $    ( EIGHT*SMLNUM )*ABS( BTMP( 2 ) ).GT.ABS( T16( 2, 2 ) ) .OR.
+     $    ( EIGHT*SMLNUM )*ABS( BTMP( 3 ) ).GT.ABS( T16( 3, 3 ) ) .OR.
+     $    ( EIGHT*SMLNUM )*ABS( BTMP( 4 ) ).GT.ABS( T16( 4, 4 ) ) ) THEN
+         SCALE = ( ONE / EIGHT ) / MAX( ABS( BTMP( 1 ) ),
+     $           ABS( BTMP( 2 ) ), ABS( BTMP( 3 ) ), ABS( BTMP( 4 ) ) )
+         BTMP( 1 ) = BTMP( 1 )*SCALE
+         BTMP( 2 ) = BTMP( 2 )*SCALE
+         BTMP( 3 ) = BTMP( 3 )*SCALE
+         BTMP( 4 ) = BTMP( 4 )*SCALE
+      END IF
+      DO 120 I = 1, 4
+         K = 5 - I
+         TEMP = ONE / T16( K, K )
+         TMP( K ) = BTMP( K )*TEMP
+         DO 110 J = K + 1, 4
+            TMP( K ) = TMP( K ) - ( TEMP*T16( K, J ) )*TMP( J )
+  110    CONTINUE
+  120 CONTINUE
+      DO 130 I = 1, 3
+         IF( JPIV( 4-I ).NE.4-I ) THEN
+            TEMP = TMP( 4-I )
+            TMP( 4-I ) = TMP( JPIV( 4-I ) )
+            TMP( JPIV( 4-I ) ) = TEMP
+         END IF
+  130 CONTINUE
+      X( 1, 1 ) = TMP( 1 )
+      X( 2, 1 ) = TMP( 2 )
+      X( 1, 2 ) = TMP( 3 )
+      X( 2, 2 ) = TMP( 4 )
+      XNORM = MAX( ABS( TMP( 1 ) )+ABS( TMP( 3 ) ),
+     $        ABS( TMP( 2 ) )+ABS( TMP( 4 ) ) )
+      RETURN
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dlasyf.f
       SUBROUTINE DLASYF( UPLO, N, NB, KB, A, LDA, IPIV, W, LDW, INFO )
       CHARACTER          UPLO
@@ -18363,6 +21581,77 @@
       WORK( 1 ) = LWKOPT
       RETURN
       END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dorghr.f
+      SUBROUTINE DORGHR( N, ILO, IHI, A, LDA, TAU, WORK, LWORK, INFO )
+      INTEGER            IHI, ILO, INFO, LDA, LWORK, N
+      DOUBLE PRECISION   A( LDA, * ), TAU( * ), WORK( * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+      LOGICAL            LQUERY
+      INTEGER            I, IINFO, J, LWKOPT, NB, NH
+      EXTERNAL           DORGQR, XERBLA
+      INTEGER            ILAENV
+      EXTERNAL           ILAENV
+      INTRINSIC          MAX, MIN
+      INFO = 0
+      NH = IHI - ILO
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( N.LT.0 ) THEN
+         INFO = -1
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, N ) ) THEN
+         INFO = -2
+      ELSE IF( IHI.LT.MIN( ILO, N ) .OR. IHI.GT.N ) THEN
+         INFO = -3
+      ELSE IF( LDA.LT.MAX( 1, N ) ) THEN
+         INFO = -5
+      ELSE IF( LWORK.LT.MAX( 1, NH ) .AND. .NOT.LQUERY ) THEN
+         INFO = -8
+      END IF
+      IF( INFO.EQ.0 ) THEN
+         NB = ILAENV( 1, 'DORGQR', ' ', NH, NH, NH, -1 )
+         LWKOPT = MAX( 1, NH )*NB
+         WORK( 1 ) = LWKOPT
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DORGHR', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+      IF( N.EQ.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+      DO 40 J = IHI, ILO + 1, -1
+         DO 10 I = 1, J - 1
+            A( I, J ) = ZERO
+   10    CONTINUE
+         DO 20 I = J + 1, IHI
+            A( I, J ) = A( I, J-1 )
+   20    CONTINUE
+         DO 30 I = IHI + 1, N
+            A( I, J ) = ZERO
+   30    CONTINUE
+   40 CONTINUE
+      DO 60 J = 1, ILO
+         DO 50 I = 1, N
+            A( I, J ) = ZERO
+   50    CONTINUE
+         A( J, J ) = ONE
+   60 CONTINUE
+      DO 80 J = IHI + 1, N
+         DO 70 I = 1, N
+            A( I, J ) = ZERO
+   70    CONTINUE
+         A( J, J ) = ONE
+   80 CONTINUE
+      IF( NH.GT.0 ) THEN
+         CALL DORGQR( NH, NH, NH, A( ILO+1, ILO+1 ), LDA, TAU( ILO ),
+     $                WORK, LWORK, IINFO )
+      END IF
+      WORK( 1 ) = LWKOPT
+      RETURN
+      END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dorgl2.f
       SUBROUTINE DORGL2( M, N, K, A, LDA, TAU, WORK, INFO )
       INTEGER            INFO, K, LDA, M, N
@@ -19033,6 +22322,85 @@
      $                   TAU, C( I1, I2 ), LDC, WORK, LWORK, IINFO )
          END IF
       END IF
+      WORK( 1 ) = LWKOPT
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dormhr.f
+      SUBROUTINE DORMHR( SIDE, TRANS, M, N, ILO, IHI, A, LDA, TAU, C,
+     $                   LDC, WORK, LWORK, INFO )
+      CHARACTER          SIDE, TRANS
+      INTEGER            IHI, ILO, INFO, LDA, LDC, LWORK, M, N
+      DOUBLE PRECISION   A( LDA, * ), C( LDC, * ), TAU( * ), WORK( * )
+      LOGICAL            LEFT, LQUERY
+      INTEGER            I1, I2, IINFO, LWKOPT, MI, NB, NH, NI, NQ, NW
+      LOGICAL            LSAME
+      INTEGER            ILAENV
+      EXTERNAL           LSAME, ILAENV
+      EXTERNAL           DORMQR, XERBLA
+      INTRINSIC          MAX, MIN
+      INFO = 0
+      NH = IHI - ILO
+      LEFT = LSAME( SIDE, 'L' )
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( LEFT ) THEN
+         NQ = M
+         NW = N
+      ELSE
+         NQ = N
+         NW = M
+      END IF
+      IF( .NOT.LEFT .AND. .NOT.LSAME( SIDE, 'R' ) ) THEN
+         INFO = -1
+      ELSE IF( .NOT.LSAME( TRANS, 'N' ) .AND. .NOT.LSAME( TRANS, 'T' ) )
+     $          THEN
+         INFO = -2
+      ELSE IF( M.LT.0 ) THEN
+         INFO = -3
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -4
+      ELSE IF( ILO.LT.1 .OR. ILO.GT.MAX( 1, NQ ) ) THEN
+         INFO = -5
+      ELSE IF( IHI.LT.MIN( ILO, NQ ) .OR. IHI.GT.NQ ) THEN
+         INFO = -6
+      ELSE IF( LDA.LT.MAX( 1, NQ ) ) THEN
+         INFO = -8
+      ELSE IF( LDC.LT.MAX( 1, M ) ) THEN
+         INFO = -11
+      ELSE IF( LWORK.LT.MAX( 1, NW ) .AND. .NOT.LQUERY ) THEN
+         INFO = -13
+      END IF
+      IF( INFO.EQ.0 ) THEN
+         IF( LEFT ) THEN
+            NB = ILAENV( 1, 'DORMQR', SIDE // TRANS, NH, N, NH, -1 )
+         ELSE
+            NB = ILAENV( 1, 'DORMQR', SIDE // TRANS, M, NH, NH, -1 )
+         END IF
+         LWKOPT = MAX( 1, NW )*NB
+         WORK( 1 ) = LWKOPT
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DORMHR', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+      IF( M.EQ.0 .OR. N.EQ.0 .OR. NH.EQ.0 ) THEN
+         WORK( 1 ) = 1
+         RETURN
+      END IF
+      IF( LEFT ) THEN
+         MI = NH
+         NI = N
+         I1 = ILO + 1
+         I2 = 1
+      ELSE
+         MI = M
+         NI = NH
+         I1 = 1
+         I2 = ILO + 1
+      END IF
+      CALL DORMQR( SIDE, TRANS, MI, NI, NH, A( ILO+1, ILO ), LDA,
+     $             TAU( ILO ), C( I1, I2 ), LDC, WORK, LWORK, IINFO )
       WORK( 1 ) = LWKOPT
       RETURN
       END
@@ -25023,6 +28391,877 @@
          GO TO 90
   100    CONTINUE
       END IF
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dtrevc3.f
+      SUBROUTINE DTREVC3( SIDE, HOWMNY, SELECT, N, T, LDT, VL, LDVL,
+     $                    VR, LDVR, MM, M, WORK, LWORK, INFO )
+      IMPLICIT NONE
+      CHARACTER          HOWMNY, SIDE
+      INTEGER            INFO, LDT, LDVL, LDVR, LWORK, M, MM, N
+      LOGICAL            SELECT( * )
+      DOUBLE PRECISION   T( LDT, * ), VL( LDVL, * ), VR( LDVR, * ),
+     $                   WORK( * )
+      DOUBLE PRECISION   ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+      INTEGER            NBMIN, NBMAX
+      PARAMETER          ( NBMIN = 8, NBMAX = 128 )
+      LOGICAL            ALLV, BOTHV, LEFTV, LQUERY, OVER, PAIR,
+     $                   RIGHTV, SOMEV
+      INTEGER            I, IERR, II, IP, IS, J, J1, J2, JNXT, K, KI,
+     $                   IV, MAXWRK, NB, KI2
+      DOUBLE PRECISION   BETA, BIGNUM, EMAX, OVFL, REC, REMAX, SCALE,
+     $                   SMIN, SMLNUM, ULP, UNFL, VCRIT, VMAX, WI, WR,
+     $                   XNORM
+      LOGICAL            LSAME
+      INTEGER            IDAMAX, ILAENV
+      DOUBLE PRECISION   DDOT, DLAMCH
+      EXTERNAL           LSAME, IDAMAX, ILAENV, DDOT, DLAMCH
+      EXTERNAL           DAXPY, DCOPY, DGEMV, DLALN2, DSCAL, XERBLA,
+     $                   DGEMM, DLASET, DLABAD, DLACPY
+      INTRINSIC          ABS, MAX, SQRT
+      DOUBLE PRECISION   X( 2, 2 )
+      INTEGER            ISCOMPLEX( NBMAX )
+      BOTHV  = LSAME( SIDE, 'B' )
+      RIGHTV = LSAME( SIDE, 'R' ) .OR. BOTHV
+      LEFTV  = LSAME( SIDE, 'L' ) .OR. BOTHV
+      ALLV  = LSAME( HOWMNY, 'A' )
+      OVER  = LSAME( HOWMNY, 'B' )
+      SOMEV = LSAME( HOWMNY, 'S' )
+      INFO = 0
+      NB = ILAENV( 1, 'DTREVC', SIDE // HOWMNY, N, -1, -1, -1 )
+      MAXWRK = N + 2*N*NB
+      WORK(1) = MAXWRK
+      LQUERY = ( LWORK.EQ.-1 )
+      IF( .NOT.RIGHTV .AND. .NOT.LEFTV ) THEN
+         INFO = -1
+      ELSE IF( .NOT.ALLV .AND. .NOT.OVER .AND. .NOT.SOMEV ) THEN
+         INFO = -2
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -4
+      ELSE IF( LDT.LT.MAX( 1, N ) ) THEN
+         INFO = -6
+      ELSE IF( LDVL.LT.1 .OR. ( LEFTV .AND. LDVL.LT.N ) ) THEN
+         INFO = -8
+      ELSE IF( LDVR.LT.1 .OR. ( RIGHTV .AND. LDVR.LT.N ) ) THEN
+         INFO = -10
+      ELSE IF( LWORK.LT.MAX( 1, 3*N ) .AND. .NOT.LQUERY ) THEN
+         INFO = -14
+      ELSE
+         IF( SOMEV ) THEN
+            M = 0
+            PAIR = .FALSE.
+            DO 10 J = 1, N
+               IF( PAIR ) THEN
+                  PAIR = .FALSE.
+                  SELECT( J ) = .FALSE.
+               ELSE
+                  IF( J.LT.N ) THEN
+                     IF( T( J+1, J ).EQ.ZERO ) THEN
+                        IF( SELECT( J ) )
+     $                     M = M + 1
+                     ELSE
+                        PAIR = .TRUE.
+                        IF( SELECT( J ) .OR. SELECT( J+1 ) ) THEN
+                           SELECT( J ) = .TRUE.
+                           M = M + 2
+                        END IF
+                     END IF
+                  ELSE
+                     IF( SELECT( N ) )
+     $                  M = M + 1
+                  END IF
+               END IF
+   10       CONTINUE
+         ELSE
+            M = N
+         END IF
+         IF( MM.LT.M ) THEN
+            INFO = -11
+         END IF
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DTREVC3', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+      IF( N.EQ.0 )
+     $   RETURN
+      IF( OVER .AND. LWORK .GE. N + 2*N*NBMIN ) THEN
+         NB = (LWORK - N) / (2*N)
+         NB = MIN( NB, NBMAX )
+         CALL DLASET( 'F', N, 1+2*NB, ZERO, ZERO, WORK, N )
+      ELSE
+         NB = 1
+      END IF
+      UNFL = DLAMCH( 'Safe minimum' )
+      OVFL = ONE / UNFL
+      CALL DLABAD( UNFL, OVFL )
+      ULP = DLAMCH( 'Precision' )
+      SMLNUM = UNFL*( N / ULP )
+      BIGNUM = ( ONE-ULP ) / SMLNUM
+      WORK( 1 ) = ZERO
+      DO 30 J = 2, N
+         WORK( J ) = ZERO
+         DO 20 I = 1, J - 1
+            WORK( J ) = WORK( J ) + ABS( T( I, J ) )
+   20    CONTINUE
+   30 CONTINUE
+      IF( RIGHTV ) THEN
+         IV = 2
+         IF( NB.GT.2 ) THEN
+            IV = NB
+         END IF
+         IP = 0
+         IS = M
+         DO 140 KI = N, 1, -1
+            IF( IP.EQ.-1 ) THEN
+               IP = 1
+               GO TO 140
+            ELSE IF( KI.EQ.1 ) THEN
+               IP = 0
+            ELSE IF( T( KI, KI-1 ).EQ.ZERO ) THEN
+               IP = 0
+            ELSE
+               IP = -1
+            END IF
+            IF( SOMEV ) THEN
+               IF( IP.EQ.0 ) THEN
+                  IF( .NOT.SELECT( KI ) )
+     $               GO TO 140
+               ELSE
+                  IF( .NOT.SELECT( KI-1 ) )
+     $               GO TO 140
+               END IF
+            END IF
+            WR = T( KI, KI )
+            WI = ZERO
+            IF( IP.NE.0 )
+     $         WI = SQRT( ABS( T( KI, KI-1 ) ) )*
+     $              SQRT( ABS( T( KI-1, KI ) ) )
+            SMIN = MAX( ULP*( ABS( WR )+ABS( WI ) ), SMLNUM )
+            IF( IP.EQ.0 ) THEN
+               WORK( KI + IV*N ) = ONE
+               DO 50 K = 1, KI - 1
+                  WORK( K + IV*N ) = -T( K, KI )
+   50          CONTINUE
+               JNXT = KI - 1
+               DO 60 J = KI - 1, 1, -1
+                  IF( J.GT.JNXT )
+     $               GO TO 60
+                  J1 = J
+                  J2 = J
+                  JNXT = J - 1
+                  IF( J.GT.1 ) THEN
+                     IF( T( J, J-1 ).NE.ZERO ) THEN
+                        J1   = J - 1
+                        JNXT = J - 2
+                     END IF
+                  END IF
+                  IF( J1.EQ.J2 ) THEN
+                     CALL DLALN2( .FALSE., 1, 1, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+IV*N ), N, WR,
+     $                            ZERO, X, 2, SCALE, XNORM, IERR )
+                     IF( XNORM.GT.ONE ) THEN
+                        IF( WORK( J ).GT.BIGNUM / XNORM ) THEN
+                           X( 1, 1 ) = X( 1, 1 ) / XNORM
+                           SCALE = SCALE / XNORM
+                        END IF
+                     END IF
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( KI, SCALE, WORK( 1+IV*N ), 1 )
+                     WORK( J+IV*N ) = X( 1, 1 )
+                     CALL DAXPY( J-1, -X( 1, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+IV*N ), 1 )
+                  ELSE
+                     CALL DLALN2( .FALSE., 2, 1, SMIN, ONE,
+     $                            T( J-1, J-1 ), LDT, ONE, ONE,
+     $                            WORK( J-1+IV*N ), N, WR, ZERO, X, 2,
+     $                            SCALE, XNORM, IERR )
+                     IF( XNORM.GT.ONE ) THEN
+                        BETA = MAX( WORK( J-1 ), WORK( J ) )
+                        IF( BETA.GT.BIGNUM / XNORM ) THEN
+                           X( 1, 1 ) = X( 1, 1 ) / XNORM
+                           X( 2, 1 ) = X( 2, 1 ) / XNORM
+                           SCALE = SCALE / XNORM
+                        END IF
+                     END IF
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( KI, SCALE, WORK( 1+IV*N ), 1 )
+                     WORK( J-1+IV*N ) = X( 1, 1 )
+                     WORK( J  +IV*N ) = X( 2, 1 )
+                     CALL DAXPY( J-2, -X( 1, 1 ), T( 1, J-1 ), 1,
+     $                           WORK( 1+IV*N ), 1 )
+                     CALL DAXPY( J-2, -X( 2, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+IV*N ), 1 )
+                  END IF
+   60          CONTINUE
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( KI, WORK( 1 + IV*N ), 1, VR( 1, IS ), 1 )
+                  II = IDAMAX( KI, VR( 1, IS ), 1 )
+                  REMAX = ONE / ABS( VR( II, IS ) )
+                  CALL DSCAL( KI, REMAX, VR( 1, IS ), 1 )
+                  DO 70 K = KI + 1, N
+                     VR( K, IS ) = ZERO
+   70             CONTINUE
+               ELSE IF( NB.EQ.1 ) THEN
+                  IF( KI.GT.1 )
+     $               CALL DGEMV( 'N', N, KI-1, ONE, VR, LDVR,
+     $                           WORK( 1 + IV*N ), 1, WORK( KI + IV*N ),
+     $                           VR( 1, KI ), 1 )
+                  II = IDAMAX( N, VR( 1, KI ), 1 )
+                  REMAX = ONE / ABS( VR( II, KI ) )
+                  CALL DSCAL( N, REMAX, VR( 1, KI ), 1 )
+               ELSE
+                  DO K = KI + 1, N
+                     WORK( K + IV*N ) = ZERO
+                  END DO
+                  ISCOMPLEX( IV ) = IP
+               END IF
+            ELSE
+               IF( ABS( T( KI-1, KI ) ).GE.ABS( T( KI, KI-1 ) ) ) THEN
+                  WORK( KI-1 + (IV-1)*N ) = ONE
+                  WORK( KI   + (IV  )*N ) = WI / T( KI-1, KI )
+               ELSE
+                  WORK( KI-1 + (IV-1)*N ) = -WI / T( KI, KI-1 )
+                  WORK( KI   + (IV  )*N ) = ONE
+               END IF
+               WORK( KI   + (IV-1)*N ) = ZERO
+               WORK( KI-1 + (IV  )*N ) = ZERO
+               DO 80 K = 1, KI - 2
+                  WORK( K+(IV-1)*N ) = -WORK( KI-1+(IV-1)*N )*T(K,KI-1)
+                  WORK( K+(IV  )*N ) = -WORK( KI  +(IV  )*N )*T(K,KI  )
+   80          CONTINUE
+               JNXT = KI - 2
+               DO 90 J = KI - 2, 1, -1
+                  IF( J.GT.JNXT )
+     $               GO TO 90
+                  J1 = J
+                  J2 = J
+                  JNXT = J - 1
+                  IF( J.GT.1 ) THEN
+                     IF( T( J, J-1 ).NE.ZERO ) THEN
+                        J1   = J - 1
+                        JNXT = J - 2
+                     END IF
+                  END IF
+                  IF( J1.EQ.J2 ) THEN
+                     CALL DLALN2( .FALSE., 1, 2, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+(IV-1)*N ), N,
+     $                            WR, WI, X, 2, SCALE, XNORM, IERR )
+                     IF( XNORM.GT.ONE ) THEN
+                        IF( WORK( J ).GT.BIGNUM / XNORM ) THEN
+                           X( 1, 1 ) = X( 1, 1 ) / XNORM
+                           X( 1, 2 ) = X( 1, 2 ) / XNORM
+                           SCALE = SCALE / XNORM
+                        END IF
+                     END IF
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( KI, SCALE, WORK( 1+(IV-1)*N ), 1 )
+                        CALL DSCAL( KI, SCALE, WORK( 1+(IV  )*N ), 1 )
+                     END IF
+                     WORK( J+(IV-1)*N ) = X( 1, 1 )
+                     WORK( J+(IV  )*N ) = X( 1, 2 )
+                     CALL DAXPY( J-1, -X( 1, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+(IV-1)*N ), 1 )
+                     CALL DAXPY( J-1, -X( 1, 2 ), T( 1, J ), 1,
+     $                           WORK( 1+(IV  )*N ), 1 )
+                  ELSE
+                     CALL DLALN2( .FALSE., 2, 2, SMIN, ONE,
+     $                            T( J-1, J-1 ), LDT, ONE, ONE,
+     $                            WORK( J-1+(IV-1)*N ), N, WR, WI, X, 2,
+     $                            SCALE, XNORM, IERR )
+                     IF( XNORM.GT.ONE ) THEN
+                        BETA = MAX( WORK( J-1 ), WORK( J ) )
+                        IF( BETA.GT.BIGNUM / XNORM ) THEN
+                           REC = ONE / XNORM
+                           X( 1, 1 ) = X( 1, 1 )*REC
+                           X( 1, 2 ) = X( 1, 2 )*REC
+                           X( 2, 1 ) = X( 2, 1 )*REC
+                           X( 2, 2 ) = X( 2, 2 )*REC
+                           SCALE = SCALE*REC
+                        END IF
+                     END IF
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( KI, SCALE, WORK( 1+(IV-1)*N ), 1 )
+                        CALL DSCAL( KI, SCALE, WORK( 1+(IV  )*N ), 1 )
+                     END IF
+                     WORK( J-1+(IV-1)*N ) = X( 1, 1 )
+                     WORK( J  +(IV-1)*N ) = X( 2, 1 )
+                     WORK( J-1+(IV  )*N ) = X( 1, 2 )
+                     WORK( J  +(IV  )*N ) = X( 2, 2 )
+                     CALL DAXPY( J-2, -X( 1, 1 ), T( 1, J-1 ), 1,
+     $                           WORK( 1+(IV-1)*N   ), 1 )
+                     CALL DAXPY( J-2, -X( 2, 1 ), T( 1, J ), 1,
+     $                           WORK( 1+(IV-1)*N   ), 1 )
+                     CALL DAXPY( J-2, -X( 1, 2 ), T( 1, J-1 ), 1,
+     $                           WORK( 1+(IV  )*N ), 1 )
+                     CALL DAXPY( J-2, -X( 2, 2 ), T( 1, J ), 1,
+     $                           WORK( 1+(IV  )*N ), 1 )
+                  END IF
+   90          CONTINUE
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( KI, WORK( 1+(IV-1)*N ), 1, VR(1,IS-1), 1 )
+                  CALL DCOPY( KI, WORK( 1+(IV  )*N ), 1, VR(1,IS  ), 1 )
+                  EMAX = ZERO
+                  DO 100 K = 1, KI
+                     EMAX = MAX( EMAX, ABS( VR( K, IS-1 ) )+
+     $                                 ABS( VR( K, IS   ) ) )
+  100             CONTINUE
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( KI, REMAX, VR( 1, IS-1 ), 1 )
+                  CALL DSCAL( KI, REMAX, VR( 1, IS   ), 1 )
+                  DO 110 K = KI + 1, N
+                     VR( K, IS-1 ) = ZERO
+                     VR( K, IS   ) = ZERO
+  110             CONTINUE
+               ELSE IF( NB.EQ.1 ) THEN
+                  IF( KI.GT.2 ) THEN
+                     CALL DGEMV( 'N', N, KI-2, ONE, VR, LDVR,
+     $                           WORK( 1    + (IV-1)*N ), 1,
+     $                           WORK( KI-1 + (IV-1)*N ), VR(1,KI-1), 1)
+                     CALL DGEMV( 'N', N, KI-2, ONE, VR, LDVR,
+     $                           WORK( 1  + (IV)*N ), 1,
+     $                           WORK( KI + (IV)*N ), VR( 1, KI ), 1 )
+                  ELSE
+                     CALL DSCAL( N, WORK(KI-1+(IV-1)*N), VR(1,KI-1), 1)
+                     CALL DSCAL( N, WORK(KI  +(IV  )*N), VR(1,KI  ), 1)
+                  END IF
+                  EMAX = ZERO
+                  DO 120 K = 1, N
+                     EMAX = MAX( EMAX, ABS( VR( K, KI-1 ) )+
+     $                                 ABS( VR( K, KI   ) ) )
+  120             CONTINUE
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( N, REMAX, VR( 1, KI-1 ), 1 )
+                  CALL DSCAL( N, REMAX, VR( 1, KI   ), 1 )
+               ELSE
+                  DO K = KI + 1, N
+                     WORK( K + (IV-1)*N ) = ZERO
+                     WORK( K + (IV  )*N ) = ZERO
+                  END DO
+                  ISCOMPLEX( IV-1 ) = -IP
+                  ISCOMPLEX( IV   ) =  IP
+                  IV = IV - 1
+               END IF
+            END IF
+            IF( NB.GT.1 ) THEN
+               IF( IP.EQ.0 ) THEN
+                  KI2 = KI
+               ELSE
+                  KI2 = KI - 1
+               END IF
+               IF( (IV.LE.2) .OR. (KI2.EQ.1) ) THEN
+                  CALL DGEMM( 'N', 'N', N, NB-IV+1, KI2+NB-IV, ONE,
+     $                        VR, LDVR,
+     $                        WORK( 1 + (IV)*N    ), N,
+     $                        ZERO,
+     $                        WORK( 1 + (NB+IV)*N ), N )
+                  DO K = IV, NB
+                     IF( ISCOMPLEX(K).EQ.0 ) THEN
+                        II = IDAMAX( N, WORK( 1 + (NB+K)*N ), 1 )
+                        REMAX = ONE / ABS( WORK( II + (NB+K)*N ) )
+                     ELSE IF( ISCOMPLEX(K).EQ.1 ) THEN
+                        EMAX = ZERO
+                        DO II = 1, N
+                           EMAX = MAX( EMAX,
+     $                                 ABS( WORK( II + (NB+K  )*N ) )+
+     $                                 ABS( WORK( II + (NB+K+1)*N ) ) )
+                        END DO
+                        REMAX = ONE / EMAX
+                     END IF
+                     CALL DSCAL( N, REMAX, WORK( 1 + (NB+K)*N ), 1 )
+                  END DO
+                  CALL DLACPY( 'F', N, NB-IV+1,
+     $                         WORK( 1 + (NB+IV)*N ), N,
+     $                         VR( 1, KI2 ), LDVR )
+                  IV = NB
+               ELSE
+                  IV = IV - 1
+               END IF
+            END IF ! blocked back-transform
+            IS = IS - 1
+            IF( IP.NE.0 )
+     $         IS = IS - 1
+  140    CONTINUE
+      END IF
+      IF( LEFTV ) THEN
+         IV = 1
+         IP = 0
+         IS = 1
+         DO 260 KI = 1, N
+            IF( IP.EQ.1 ) THEN
+               IP = -1
+               GO TO 260
+            ELSE IF( KI.EQ.N ) THEN
+               IP = 0
+            ELSE IF( T( KI+1, KI ).EQ.ZERO ) THEN
+               IP = 0
+            ELSE
+               IP = 1
+            END IF
+            IF( SOMEV ) THEN
+               IF( .NOT.SELECT( KI ) )
+     $            GO TO 260
+            END IF
+            WR = T( KI, KI )
+            WI = ZERO
+            IF( IP.NE.0 )
+     $         WI = SQRT( ABS( T( KI, KI+1 ) ) )*
+     $              SQRT( ABS( T( KI+1, KI ) ) )
+            SMIN = MAX( ULP*( ABS( WR )+ABS( WI ) ), SMLNUM )
+            IF( IP.EQ.0 ) THEN
+               WORK( KI + IV*N ) = ONE
+               DO 160 K = KI + 1, N
+                  WORK( K + IV*N ) = -T( KI, K )
+  160          CONTINUE
+               VMAX = ONE
+               VCRIT = BIGNUM
+               JNXT = KI + 1
+               DO 170 J = KI + 1, N
+                  IF( J.LT.JNXT )
+     $               GO TO 170
+                  J1 = J
+                  J2 = J
+                  JNXT = J + 1
+                  IF( J.LT.N ) THEN
+                     IF( T( J+1, J ).NE.ZERO ) THEN
+                        J2 = J + 1
+                        JNXT = J + 2
+                     END IF
+                  END IF
+                  IF( J1.EQ.J2 ) THEN
+                     IF( WORK( J ).GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+IV*N ), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+                     WORK( J+IV*N ) = WORK( J+IV*N ) -
+     $                                DDOT( J-KI-1, T( KI+1, J ), 1,
+     $                                      WORK( KI+1+IV*N ), 1 )
+                     CALL DLALN2( .FALSE., 1, 1, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+IV*N ), N, WR,
+     $                            ZERO, X, 2, SCALE, XNORM, IERR )
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( N-KI+1, SCALE, WORK( KI+IV*N ), 1 )
+                     WORK( J+IV*N ) = X( 1, 1 )
+                     VMAX = MAX( ABS( WORK( J+IV*N ) ), VMAX )
+                     VCRIT = BIGNUM / VMAX
+                  ELSE
+                     BETA = MAX( WORK( J ), WORK( J+1 ) )
+                     IF( BETA.GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK( KI+IV*N ), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+                     WORK( J+IV*N ) = WORK( J+IV*N ) -
+     $                                DDOT( J-KI-1, T( KI+1, J ), 1,
+     $                                      WORK( KI+1+IV*N ), 1 )
+                     WORK( J+1+IV*N ) = WORK( J+1+IV*N ) -
+     $                                  DDOT( J-KI-1, T( KI+1, J+1 ), 1,
+     $                                        WORK( KI+1+IV*N ), 1 )
+                     CALL DLALN2( .TRUE., 2, 1, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+IV*N ), N, WR,
+     $                            ZERO, X, 2, SCALE, XNORM, IERR )
+                     IF( SCALE.NE.ONE )
+     $                  CALL DSCAL( N-KI+1, SCALE, WORK( KI+IV*N ), 1 )
+                     WORK( J  +IV*N ) = X( 1, 1 )
+                     WORK( J+1+IV*N ) = X( 2, 1 )
+                     VMAX = MAX( ABS( WORK( J  +IV*N ) ),
+     $                           ABS( WORK( J+1+IV*N ) ), VMAX )
+                     VCRIT = BIGNUM / VMAX
+                  END IF
+  170          CONTINUE
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( N-KI+1, WORK( KI + IV*N ), 1,
+     $                                VL( KI, IS ), 1 )
+                  II = IDAMAX( N-KI+1, VL( KI, IS ), 1 ) + KI - 1
+                  REMAX = ONE / ABS( VL( II, IS ) )
+                  CALL DSCAL( N-KI+1, REMAX, VL( KI, IS ), 1 )
+                  DO 180 K = 1, KI - 1
+                     VL( K, IS ) = ZERO
+  180             CONTINUE
+               ELSE IF( NB.EQ.1 ) THEN
+                  IF( KI.LT.N )
+     $               CALL DGEMV( 'N', N, N-KI, ONE,
+     $                           VL( 1, KI+1 ), LDVL,
+     $                           WORK( KI+1 + IV*N ), 1,
+     $                           WORK( KI   + IV*N ), VL( 1, KI ), 1 )
+                  II = IDAMAX( N, VL( 1, KI ), 1 )
+                  REMAX = ONE / ABS( VL( II, KI ) )
+                  CALL DSCAL( N, REMAX, VL( 1, KI ), 1 )
+               ELSE
+                  DO K = 1, KI - 1
+                     WORK( K + IV*N ) = ZERO
+                  END DO
+                  ISCOMPLEX( IV ) = IP
+               END IF
+            ELSE
+               IF( ABS( T( KI, KI+1 ) ).GE.ABS( T( KI+1, KI ) ) ) THEN
+                  WORK( KI   + (IV  )*N ) = WI / T( KI, KI+1 )
+                  WORK( KI+1 + (IV+1)*N ) = ONE
+               ELSE
+                  WORK( KI   + (IV  )*N ) = ONE
+                  WORK( KI+1 + (IV+1)*N ) = -WI / T( KI+1, KI )
+               END IF
+               WORK( KI+1 + (IV  )*N ) = ZERO
+               WORK( KI   + (IV+1)*N ) = ZERO
+               DO 190 K = KI + 2, N
+                  WORK( K+(IV  )*N ) = -WORK( KI  +(IV  )*N )*T(KI,  K)
+                  WORK( K+(IV+1)*N ) = -WORK( KI+1+(IV+1)*N )*T(KI+1,K)
+  190          CONTINUE
+               VMAX = ONE
+               VCRIT = BIGNUM
+               JNXT = KI + 2
+               DO 200 J = KI + 2, N
+                  IF( J.LT.JNXT )
+     $               GO TO 200
+                  J1 = J
+                  J2 = J
+                  JNXT = J + 1
+                  IF( J.LT.N ) THEN
+                     IF( T( J+1, J ).NE.ZERO ) THEN
+                        J2 = J + 1
+                        JNXT = J + 2
+                     END IF
+                  END IF
+                  IF( J1.EQ.J2 ) THEN
+                     IF( WORK( J ).GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK(KI+(IV  )*N), 1 )
+                        CALL DSCAL( N-KI+1, REC, WORK(KI+(IV+1)*N), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+                     WORK( J+(IV  )*N ) = WORK( J+(IV)*N ) -
+     $                                  DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                                        WORK( KI+2+(IV)*N ), 1 )
+                     WORK( J+(IV+1)*N ) = WORK( J+(IV+1)*N ) -
+     $                                  DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                                        WORK( KI+2+(IV+1)*N ), 1 )
+                     CALL DLALN2( .FALSE., 1, 2, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+IV*N ), N, WR,
+     $                            -WI, X, 2, SCALE, XNORM, IERR )
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( N-KI+1, SCALE, WORK(KI+(IV  )*N), 1)
+                        CALL DSCAL( N-KI+1, SCALE, WORK(KI+(IV+1)*N), 1)
+                     END IF
+                     WORK( J+(IV  )*N ) = X( 1, 1 )
+                     WORK( J+(IV+1)*N ) = X( 1, 2 )
+                     VMAX = MAX( ABS( WORK( J+(IV  )*N ) ),
+     $                           ABS( WORK( J+(IV+1)*N ) ), VMAX )
+                     VCRIT = BIGNUM / VMAX
+                  ELSE
+                     BETA = MAX( WORK( J ), WORK( J+1 ) )
+                     IF( BETA.GT.VCRIT ) THEN
+                        REC = ONE / VMAX
+                        CALL DSCAL( N-KI+1, REC, WORK(KI+(IV  )*N), 1 )
+                        CALL DSCAL( N-KI+1, REC, WORK(KI+(IV+1)*N), 1 )
+                        VMAX = ONE
+                        VCRIT = BIGNUM
+                     END IF
+                     WORK( J  +(IV  )*N ) = WORK( J+(IV)*N ) -
+     $                                DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                                      WORK( KI+2+(IV)*N ), 1 )
+                     WORK( J  +(IV+1)*N ) = WORK( J+(IV+1)*N ) -
+     $                                DDOT( J-KI-2, T( KI+2, J ), 1,
+     $                                      WORK( KI+2+(IV+1)*N ), 1 )
+                     WORK( J+1+(IV  )*N ) = WORK( J+1+(IV)*N ) -
+     $                                DDOT( J-KI-2, T( KI+2, J+1 ), 1,
+     $                                      WORK( KI+2+(IV)*N ), 1 )
+                     WORK( J+1+(IV+1)*N ) = WORK( J+1+(IV+1)*N ) -
+     $                                DDOT( J-KI-2, T( KI+2, J+1 ), 1,
+     $                                      WORK( KI+2+(IV+1)*N ), 1 )
+                     CALL DLALN2( .TRUE., 2, 2, SMIN, ONE, T( J, J ),
+     $                            LDT, ONE, ONE, WORK( J+IV*N ), N, WR,
+     $                            -WI, X, 2, SCALE, XNORM, IERR )
+                     IF( SCALE.NE.ONE ) THEN
+                        CALL DSCAL( N-KI+1, SCALE, WORK(KI+(IV  )*N), 1)
+                        CALL DSCAL( N-KI+1, SCALE, WORK(KI+(IV+1)*N), 1)
+                     END IF
+                     WORK( J  +(IV  )*N ) = X( 1, 1 )
+                     WORK( J  +(IV+1)*N ) = X( 1, 2 )
+                     WORK( J+1+(IV  )*N ) = X( 2, 1 )
+                     WORK( J+1+(IV+1)*N ) = X( 2, 2 )
+                     VMAX = MAX( ABS( X( 1, 1 ) ), ABS( X( 1, 2 ) ),
+     $                           ABS( X( 2, 1 ) ), ABS( X( 2, 2 ) ),
+     $                           VMAX )
+                     VCRIT = BIGNUM / VMAX
+                  END IF
+  200          CONTINUE
+               IF( .NOT.OVER ) THEN
+                  CALL DCOPY( N-KI+1, WORK( KI + (IV  )*N ), 1,
+     $                        VL( KI, IS   ), 1 )
+                  CALL DCOPY( N-KI+1, WORK( KI + (IV+1)*N ), 1,
+     $                        VL( KI, IS+1 ), 1 )
+                  EMAX = ZERO
+                  DO 220 K = KI, N
+                     EMAX = MAX( EMAX, ABS( VL( K, IS   ) )+
+     $                                 ABS( VL( K, IS+1 ) ) )
+  220             CONTINUE
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( N-KI+1, REMAX, VL( KI, IS   ), 1 )
+                  CALL DSCAL( N-KI+1, REMAX, VL( KI, IS+1 ), 1 )
+                  DO 230 K = 1, KI - 1
+                     VL( K, IS   ) = ZERO
+                     VL( K, IS+1 ) = ZERO
+  230             CONTINUE
+               ELSE IF( NB.EQ.1 ) THEN
+                  IF( KI.LT.N-1 ) THEN
+                     CALL DGEMV( 'N', N, N-KI-1, ONE,
+     $                           VL( 1, KI+2 ), LDVL,
+     $                           WORK( KI+2 + (IV)*N ), 1,
+     $                           WORK( KI   + (IV)*N ),
+     $                           VL( 1, KI ), 1 )
+                     CALL DGEMV( 'N', N, N-KI-1, ONE,
+     $                           VL( 1, KI+2 ), LDVL,
+     $                           WORK( KI+2 + (IV+1)*N ), 1,
+     $                           WORK( KI+1 + (IV+1)*N ),
+     $                           VL( 1, KI+1 ), 1 )
+                  ELSE
+                     CALL DSCAL( N, WORK(KI+  (IV  )*N), VL(1, KI  ), 1)
+                     CALL DSCAL( N, WORK(KI+1+(IV+1)*N), VL(1, KI+1), 1)
+                  END IF
+                  EMAX = ZERO
+                  DO 240 K = 1, N
+                     EMAX = MAX( EMAX, ABS( VL( K, KI   ) )+
+     $                                 ABS( VL( K, KI+1 ) ) )
+  240             CONTINUE
+                  REMAX = ONE / EMAX
+                  CALL DSCAL( N, REMAX, VL( 1, KI   ), 1 )
+                  CALL DSCAL( N, REMAX, VL( 1, KI+1 ), 1 )
+               ELSE
+                  DO K = 1, KI - 1
+                     WORK( K + (IV  )*N ) = ZERO
+                     WORK( K + (IV+1)*N ) = ZERO
+                  END DO
+                  ISCOMPLEX( IV   ) =  IP
+                  ISCOMPLEX( IV+1 ) = -IP
+                  IV = IV + 1
+               END IF
+            END IF
+            IF( NB.GT.1 ) THEN
+               IF( IP.EQ.0 ) THEN
+                  KI2 = KI
+               ELSE
+                  KI2 = KI + 1
+               END IF
+               IF( (IV.GE.NB-1) .OR. (KI2.EQ.N) ) THEN
+                  CALL DGEMM( 'N', 'N', N, IV, N-KI2+IV, ONE,
+     $                        VL( 1, KI2-IV+1 ), LDVL,
+     $                        WORK( KI2-IV+1 + (1)*N ), N,
+     $                        ZERO,
+     $                        WORK( 1 + (NB+1)*N ), N )
+                  DO K = 1, IV
+                     IF( ISCOMPLEX(K).EQ.0) THEN
+                        II = IDAMAX( N, WORK( 1 + (NB+K)*N ), 1 )
+                        REMAX = ONE / ABS( WORK( II + (NB+K)*N ) )
+                     ELSE IF( ISCOMPLEX(K).EQ.1) THEN
+                        EMAX = ZERO
+                        DO II = 1, N
+                           EMAX = MAX( EMAX,
+     $                                 ABS( WORK( II + (NB+K  )*N ) )+
+     $                                 ABS( WORK( II + (NB+K+1)*N ) ) )
+                        END DO
+                        REMAX = ONE / EMAX
+                     END IF
+                     CALL DSCAL( N, REMAX, WORK( 1 + (NB+K)*N ), 1 )
+                  END DO
+                  CALL DLACPY( 'F', N, IV,
+     $                         WORK( 1 + (NB+1)*N ), N,
+     $                         VL( 1, KI2-IV+1 ), LDVL )
+                  IV = 1
+               ELSE
+                  IV = IV + 1
+               END IF
+            END IF ! blocked back-transform
+            IS = IS + 1
+            IF( IP.NE.0 )
+     $         IS = IS + 1
+  260    CONTINUE
+      END IF
+      RETURN
+      END
+! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dtrexc.f
+      SUBROUTINE DTREXC( COMPQ, N, T, LDT, Q, LDQ, IFST, ILST, WORK,
+     $                   INFO )
+      CHARACTER          COMPQ
+      INTEGER            IFST, ILST, INFO, LDQ, LDT, N
+      DOUBLE PRECISION   Q( LDQ, * ), T( LDT, * ), WORK( * )
+      DOUBLE PRECISION   ZERO
+      PARAMETER          ( ZERO = 0.0D+0 )
+      LOGICAL            WANTQ
+      INTEGER            HERE, NBF, NBL, NBNEXT
+      LOGICAL            LSAME
+      EXTERNAL           LSAME
+      EXTERNAL           DLAEXC, XERBLA
+      INTRINSIC          MAX
+      INFO = 0
+      WANTQ = LSAME( COMPQ, 'V' )
+      IF( .NOT.WANTQ .AND. .NOT.LSAME( COMPQ, 'N' ) ) THEN
+         INFO = -1
+      ELSE IF( N.LT.0 ) THEN
+         INFO = -2
+      ELSE IF( LDT.LT.MAX( 1, N ) ) THEN
+         INFO = -4
+      ELSE IF( LDQ.LT.1 .OR. ( WANTQ .AND. LDQ.LT.MAX( 1, N ) ) ) THEN
+         INFO = -6
+      ELSE IF(( IFST.LT.1 .OR. IFST.GT.N ).AND.( N.GT.0 )) THEN
+         INFO = -7
+      ELSE IF(( ILST.LT.1 .OR. ILST.GT.N ).AND.( N.GT.0 )) THEN
+         INFO = -8
+      END IF
+      IF( INFO.NE.0 ) THEN
+         CALL XERBLA( 'DTREXC', -INFO )
+         RETURN
+      END IF
+      IF( N.LE.1 )
+     $   RETURN
+      IF( IFST.GT.1 ) THEN
+         IF( T( IFST, IFST-1 ).NE.ZERO )
+     $      IFST = IFST - 1
+      END IF
+      NBF = 1
+      IF( IFST.LT.N ) THEN
+         IF( T( IFST+1, IFST ).NE.ZERO )
+     $      NBF = 2
+      END IF
+      IF( ILST.GT.1 ) THEN
+         IF( T( ILST, ILST-1 ).NE.ZERO )
+     $      ILST = ILST - 1
+      END IF
+      NBL = 1
+      IF( ILST.LT.N ) THEN
+         IF( T( ILST+1, ILST ).NE.ZERO )
+     $      NBL = 2
+      END IF
+      IF( IFST.EQ.ILST )
+     $   RETURN
+      IF( IFST.LT.ILST ) THEN
+         IF( NBF.EQ.2 .AND. NBL.EQ.1 )
+     $      ILST = ILST - 1
+         IF( NBF.EQ.1 .AND. NBL.EQ.2 )
+     $      ILST = ILST + 1
+         HERE = IFST
+   10    CONTINUE
+         IF( NBF.EQ.1 .OR. NBF.EQ.2 ) THEN
+            NBNEXT = 1
+            IF( HERE+NBF+1.LE.N ) THEN
+               IF( T( HERE+NBF+1, HERE+NBF ).NE.ZERO )
+     $            NBNEXT = 2
+            END IF
+            CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE, NBF, NBNEXT,
+     $                   WORK, INFO )
+            IF( INFO.NE.0 ) THEN
+               ILST = HERE
+               RETURN
+            END IF
+            HERE = HERE + NBNEXT
+            IF( NBF.EQ.2 ) THEN
+               IF( T( HERE+1, HERE ).EQ.ZERO )
+     $            NBF = 3
+            END IF
+         ELSE
+            NBNEXT = 1
+            IF( HERE+3.LE.N ) THEN
+               IF( T( HERE+3, HERE+2 ).NE.ZERO )
+     $            NBNEXT = 2
+            END IF
+            CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE+1, 1, NBNEXT,
+     $                   WORK, INFO )
+            IF( INFO.NE.0 ) THEN
+               ILST = HERE
+               RETURN
+            END IF
+            IF( NBNEXT.EQ.1 ) THEN
+               CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE, 1, NBNEXT,
+     $                      WORK, INFO )
+               HERE = HERE + 1
+            ELSE
+               IF( T( HERE+2, HERE+1 ).EQ.ZERO )
+     $            NBNEXT = 1
+               IF( NBNEXT.EQ.2 ) THEN
+                  CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE, 1,
+     $                         NBNEXT, WORK, INFO )
+                  IF( INFO.NE.0 ) THEN
+                     ILST = HERE
+                     RETURN
+                  END IF
+                  HERE = HERE + 2
+               ELSE
+                  CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE, 1, 1,
+     $                         WORK, INFO )
+                  CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE+1, 1, 1,
+     $                         WORK, INFO )
+                  HERE = HERE + 2
+               END IF
+            END IF
+         END IF
+         IF( HERE.LT.ILST )
+     $      GO TO 10
+      ELSE
+         HERE = IFST
+   20    CONTINUE
+         IF( NBF.EQ.1 .OR. NBF.EQ.2 ) THEN
+            NBNEXT = 1
+            IF( HERE.GE.3 ) THEN
+               IF( T( HERE-1, HERE-2 ).NE.ZERO )
+     $            NBNEXT = 2
+            END IF
+            CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE-NBNEXT, NBNEXT,
+     $                   NBF, WORK, INFO )
+            IF( INFO.NE.0 ) THEN
+               ILST = HERE
+               RETURN
+            END IF
+            HERE = HERE - NBNEXT
+            IF( NBF.EQ.2 ) THEN
+               IF( T( HERE+1, HERE ).EQ.ZERO )
+     $            NBF = 3
+            END IF
+         ELSE
+            NBNEXT = 1
+            IF( HERE.GE.3 ) THEN
+               IF( T( HERE-1, HERE-2 ).NE.ZERO )
+     $            NBNEXT = 2
+            END IF
+            CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE-NBNEXT, NBNEXT,
+     $                   1, WORK, INFO )
+            IF( INFO.NE.0 ) THEN
+               ILST = HERE
+               RETURN
+            END IF
+            IF( NBNEXT.EQ.1 ) THEN
+               CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE, NBNEXT, 1,
+     $                      WORK, INFO )
+               HERE = HERE - 1
+            ELSE
+               IF( T( HERE, HERE-1 ).EQ.ZERO )
+     $            NBNEXT = 1
+               IF( NBNEXT.EQ.2 ) THEN
+                  CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE-1, 2, 1,
+     $                         WORK, INFO )
+                  IF( INFO.NE.0 ) THEN
+                     ILST = HERE
+                     RETURN
+                  END IF
+                  HERE = HERE - 2
+               ELSE
+                  CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE, 1, 1,
+     $                         WORK, INFO )
+                  CALL DLAEXC( WANTQ, N, T, LDT, Q, LDQ, HERE-1, 1, 1,
+     $                         WORK, INFO )
+                  HERE = HERE - 2
+               END IF
+            END IF
+         END IF
+         IF( HERE.GT.ILST )
+     $      GO TO 20
+      END IF
+      ILST = HERE
       RETURN
       END
 ! SOURCE-FILE = /home/nicpa/LA/lapack/SRC/dtrti2.f
