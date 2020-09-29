@@ -502,7 +502,7 @@ contains
     else if ( El%repeat ) then
       call repeat(H, S, GS)
     else
-      call El%bloch%matrix_unfold_HS_G(El%bkpt_cur, no_u, H, S, GS, Zenergy, HSE, GSE)
+      call El%bloch%unfold_HS_G(El%bkpt_cur, no_u, H, S, GS, Zenergy, HSE, GSE)
     end if
 
   contains
@@ -605,7 +605,7 @@ contains
     else if ( El%repeat ) then
       call repeat()
     else
-      call El%Bloch%matrix_unfold(El%bkpt_cur, no_u, A, AE)
+      call El%Bloch%unfold_M(El%bkpt_cur, no_u, A, AE)
     end if
     
   contains

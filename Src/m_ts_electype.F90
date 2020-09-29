@@ -1436,29 +1436,9 @@ contains
     type(Elec), intent(in) :: this
     integer, intent(in) :: idx
     real(dp) :: q(3)
-    integer :: i,j,k,ii
-    i =     this%Bloch%B(1)
-    j = i * this%Bloch%B(2)
-    k = j * this%Bloch%B(3)
-    if ( idx <= i ) then
-       q(:) = this%bloch%get_k(idx,1,1)
-    else if ( idx <= j ) then
-       j = idx / i
-       if ( MOD(idx,i) /= 0 ) j = j + 1
-       i = idx - (j-1) * i
-       q(:) = this%bloch%get_k(i,j,1)
-    else if ( idx <= k ) then
-       ! this seems to work well!
-       k = idx / j
-       if ( MOD(idx,j) /= 0 ) k = k + 1
-       ii = idx - (k-1) * j
-       j = ii / i
-       if ( MOD(ii,i) /= 0 ) j = j + 1
-       i = ii - (j-1) * i
-       q(:) = this%bloch%get_k(i,j,k)
-    else
-       q(:) = 0._dp
-    end if
+    integer :: i(3)
+    call this%Bloch%unravel_index(idx, i)
+    q(:) = this%bloch%get_k(i(1), i(2), i(3))
   end function q_exp
 
   subroutine Elec_kpt(this,cell,k1,k2,opt)
