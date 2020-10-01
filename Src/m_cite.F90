@@ -418,7 +418,7 @@ contains
     do ID = 1, N_citations
       if ( used(ID) == 1 ) then ! has been used
         call get_citation(cit, ID=ID)
-        write(*,'(tr8,a,/,tr10,2a)') trim(cit%comment), 'DOI: www.doi.org/', cit%DOI
+        write(*,'(tr8,a,/,tr10,2a)') trim(cit%comment), 'DOI: www.doi.org/', trim(cit%DOI)
       end if
     end do
     write(*,*) ! new-line
