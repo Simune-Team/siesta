@@ -1,16 +1,16 @@
-TBtrans Version: siesta-4.1-1028
-Architecture  : x86_64-linux-n-62-18-18
-Compiler flags: mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags      : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR -DTBTRANS
-Libraries     : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+TBtrans Version: v4.1-b4-146
+Architecture  : x86_64-linux-gcc
+Compiler flags: mpifort -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling -fstack-arrays -fmax-stack-var-size=10000 -fipa-sra -fipa-cp -Warray-temporaries -fcheck=recursion,array-temps -fno-second-underscore -Wrealloc-lhs -Wrealloc-lhs-all
+PP flags      : -DSIESTA__FLOOK -DSIESTA__METIS -DSIESTA__FFTW -DTS_PVT_METIS -DSIESTA__MRRR -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DGRID_DP -DMPI_TIMING -DTRANSIESTA_TIMING -DTBTRANS_TIMING -DSIESTA__MUMPS -DNCDF_PARALLEL -DNCDF -DNCDF_4 -DSCALAPACK_DEBUG -D_DIAG_WORK -DSIESTA__DIAG_2STAGE -DSIESTA__ELPA -DTBTRANS
+Libraries     : libncdf.a libfdict.a  -lzmumps -lmumps_common -lpord -lparmetis -lmetis -lesmumps -lscotch -lscotcherr -L/opt/gnu/9.3.0/elpa/2020.05.001/lib -Wl,-rpath=/opt/gnu/9.3.0/elpa/2020.05.001/lib -lelpa -L/opt/gnu/9.3.0/scalapack/2.1.0/lib -Wl,-rpath=/opt/gnu/9.3.0/scalapack/2.1.0/lib -lscalapack  -L/opt/gnu/9.3.0/openblas/0.3.10/lib -Wl,-rpath=/opt/gnu/9.3.0/openblas/0.3.10/lib -lopenblas -L/home/nicpa/codes/flook/obj -lflookall -ldl -l:libnetcdff.so  -m64 -fPIC -O3 -ftree-vectorize -fexpensive-optimizations -funroll-loops -fprefetch-loop-arrays -fgraphite -fipa-icf -fipa-pure-const -march=native -fschedule-fusion -fselective-scheduling -fstack-arrays -fmax-stack-var-size=10000 -fipa-sra -fipa-cp -Warray-temporaries -fcheck=recursion,array-temps -fno-second-underscore -Wrealloc-lhs -Wrealloc-lhs-all -L/opt/gnu/9.3.0/fftw/3.3.8/lib -Wl,-rpath=/opt/gnu/9.3.0/fftw/3.3.8/lib -lfftw3
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
 
-* Running on 8 nodes in parallel
->> Start of run:   5-NOV-2018  11:24:04
+* Running on 2 nodes in parallel
+>> Start of run:  30-SEP-2020  22:13:00
 
                            ************************ 
                            *  WELCOME TO TBtrans  * 
@@ -78,9 +78,10 @@ tbt:   Chemical shift                               =    0.000000 eV
 tbt:   Electronic temperature                       =   99.999269 K
 tbt:   Gamma-only electrode                         =    F
 tbt:   Bulk H, S in electrode region                =    T
-tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
-tbt:   Electrode self-energy accuracy               =  0.1000E-13  eV
-tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867  Ang
+tbt:   Manual delta-Ef shift                        =    0.000000 eV
+tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03 eV
+tbt:   Electrode self-energy accuracy               =  0.1000E-12 eV
+tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867 Ang
 tbt: >> Right
 tbt:   Electrode cell pivoting: E1, E2, E3          = A1, A2, A3
 tbt:   In-core self-energy calculation
@@ -93,9 +94,10 @@ tbt:   Chemical shift                               =    0.000000 eV
 tbt:   Electronic temperature                       =   99.999269 K
 tbt:   Gamma-only electrode                         =    F
 tbt:   Bulk H, S in electrode region                =    T
-tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03  eV
-tbt:   Electrode self-energy accuracy               =  0.1000E-13  eV
-tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867  Ang
+tbt:   Manual delta-Ef shift                        =    0.000000 eV
+tbt:   Electrode self-energy imaginary Eta          =  0.1000E-03 eV
+tbt:   Electrode self-energy accuracy               =  0.1000E-12 eV
+tbt:   Electrode inter-layer distance (semi-inf)    =    2.3867 Ang
 ts:              >> TBtrans contour << 
 ts: Device Green function imaginary Eta             =  0.000     eV
 ts: Contour name                                    =    TBT.Contour.neq
@@ -137,7 +139,7 @@ Electrode information:
  Left principal cell is extending out with 96 elements:
     Atom 1 connects with atom 3
     Orbital 8 connects with orbital 26
-    Hamiltonian value: |H(8,7046)|@R=-2 =  0.899E-20 eV
+    Hamiltonian value: |H(8,7046)|@R=-2 =  0.102E-18 eV
     Overlap          :  S(8,7046)|@R=-2 =   0.00    
 
   <sparsity:./elec_au_111_abc.TSHS
@@ -149,7 +151,7 @@ Electrode information:
  Right principal cell is extending out with 96 elements:
     Atom 3 connects with atom 1
     Orbital 26 connects with orbital 8
-    Hamiltonian value: |H(26,6353)|@R=2 =  0.899E-20 eV
+    Hamiltonian value: |H(26,6353)|@R=2 =  0.102E-18 eV
     Overlap          :  S(26,6353)|@R=2 =   0.00    
 
 
@@ -169,15 +171,15 @@ tbt: # of device region orbitals: 27
 Region (3): [A]-device
   [ 4 -- 6 ]
 
-tbt: # of Left electrode orbitals: 27
-tbt: # of Left down-folding orbitals: 54
+tbt: # of Left downfolding orbitals: 54
+tbt: # of Left device orbitals: 27
 Region (3): [A]-Left folding region
   [ 1 -- 3 ]
 Region (3): [A]-Left folding in D
   [ 4 -- 6 ]
 
-tbt: # of Right electrode orbitals: 27
-tbt: # of Right down-folding orbitals: 54
+tbt: # of Right downfolding orbitals: 54
+tbt: # of Right device orbitals: 27
 Region (3): [A]-Right folding region
   [ 7 -- 9 ]
 Region (3): [A]-Right folding in D
@@ -200,31 +202,31 @@ tbt: Sparse H, S and auxiliary matrices memory:    1.659 MB
 tbt: Sum of electrode and sparse memory:    2.642 MB
 
 tbt: Initializing data file: bulk_au_111.TBT.nc
-tbt: Estimated file size of bulk_au_111.TBT.nc:  18.910 KB
+tbt: Estimated file size of bulk_au_111.TBT.nc:  19.207 KB
 
 tbt: LHS Green function padding / memory: 8019 /  136.688 KB
 tbt: RHS Green function padding / memory: 729 /   22.781 KB
-tbt: Initial ETA in                6.359 s
-tbt: Calculated   5.059 %, ETA in                4.147 s
-tbt: Calculated  10.235 %, ETA in                3.692 s
-tbt: Calculated  15.412 %, ETA in                3.265 s
-tbt: Calculated  20.471 %, ETA in                3.127 s
-tbt: Calculated  25.647 %, ETA in                3.003 s
-tbt: Calculated  30.824 %, ETA in                2.839 s
-tbt: Calculated  36.000 %, ETA in                2.636 s
-tbt: Calculated  41.059 %, ETA in                2.328 s
-tbt: Calculated  46.235 %, ETA in                2.125 s
-tbt: Calculated  51.412 %, ETA in                1.946 s
-tbt: Calculated  56.588 %, ETA in                1.757 s
-tbt: Calculated  61.647 %, ETA in                1.550 s
-tbt: Calculated  66.824 %, ETA in                1.286 s
-tbt: Calculated  72.000 %, ETA in                1.081 s
-tbt: Calculated  77.176 %, ETA in                0.890 s
-tbt: Calculated  82.235 %, ETA in                0.697 s
-tbt: Calculated  87.412 %, ETA in                0.493 s
-tbt: Calculated  92.588 %, ETA in                0.290 s
-tbt: Calculated  97.765 %, ETA in                0.088 s
-tbt: Completed in                3.928 s
+tbt: Initial ETA in               12.690 s
+tbt: Calculated   5.000 %, ETA in                7.355 s
+tbt: Calculated  10.000 %, ETA in                6.516 s
+tbt: Calculated  15.000 %, ETA in                5.691 s
+tbt: Calculated  20.000 %, ETA in                5.472 s
+tbt: Calculated  25.000 %, ETA in                5.307 s
+tbt: Calculated  30.000 %, ETA in                5.040 s
+tbt: Calculated  35.000 %, ETA in                4.745 s
+tbt: Calculated  40.000 %, ETA in                4.245 s
+tbt: Calculated  45.000 %, ETA in                3.826 s
+tbt: Calculated  50.000 %, ETA in                3.530 s
+tbt: Calculated  55.000 %, ETA in                3.208 s
+tbt: Calculated  60.000 %, ETA in                2.854 s
+tbt: Calculated  65.000 %, ETA in                2.428 s
+tbt: Calculated  70.000 %, ETA in                2.029 s
+tbt: Calculated  75.000 %, ETA in                1.710 s
+tbt: Calculated  80.000 %, ETA in                1.381 s
+tbt: Calculated  85.000 %, ETA in                1.038 s
+tbt: Calculated  90.000 %, ETA in                0.689 s
+tbt: Calculated  95.000 %, ETA in                0.345 s
+tbt: Completed in                6.909 s
 
 Currents (ensure entire Fermi function window):
 Left -> Right, V [V] / I [A]:  0.00000     V /  0.00000     A
@@ -232,23 +234,38 @@ Left -> Right, V [V] / P [W]:  0.00000     V /  0.00000     W
 
 
              Section          Calls    Walltime       %
- global_section                   1       4.367  100.00
-  tbtrans                         1       4.367  100.00
-   init-region+sp                 1       0.007    0.16
-   pivot-elec                     1       0.001    0.01
-    pivot                         1       0.000    0.01
-   pivot-device                   1       0.000    0.01
-    pivot                         1       0.000    0.01
-   tri-init                       1       0.004    0.10
-    tri-init-elec                 1       0.000    0.01
+ global_section                   1       7.115  100.00
+  tbtrans                         1       7.115  100.00
+   MPI_COMM_RANK                  1       0.000    0.00
+   MPI_COMM_SIZE                  1       0.000    0.00
+   MPI_BCAST                     83       0.002    0.03
+   MPI_BARRIER                    3       0.001    0.02
+   init-region+sp                 1       0.006    0.08
+   pivot-elec                     1       0.000    0.01
+    pivot                         1       0.000    0.00
+    MPI_BCAST                    24       0.000    0.00
+   pivot-device                   1       0.000    0.00
+    pivot                         1       0.000    0.00
+   tri-init                       1       0.002    0.03
+    tri-init-elec                 1       0.000    0.00
      TS-rgn2tri                   1       0.000    0.00
+     MPI_BCAST                    6       0.000    0.00
     TS-rgn2tri                    1       0.000    0.00
-   TBT                            1       4.118   94.29
-    read-GS                     442       3.458   79.18
-    SE-dwn                      442       0.102    2.33
-     ts_expand                  816       0.002    0.04
-    Gf-prep                     442       0.057    1.32
-     V_TM_Pinv                  408       0.028    0.63
-    analysis                    442       0.197    4.50
-    cdf2ascii                     1       0.020    0.47
->> End of run:   5-NOV-2018  11:24:08
+     MPI_BCAST                    4       0.000    0.00
+   TBT                            1       6.978   98.07
+    MPI_BCAST                    39       0.000    0.00
+    MPI_BARRIER                   3       0.000    0.00
+    setup-HS                     34       0.074    1.04
+    MPI_ALLGATHER              3400       0.004    0.06
+    read-GS                    1700       6.193   87.04
+    SE-dwn                     1700       0.267    3.75
+     ts_expand                 3400       0.003    0.05
+    Gf-prep                    1700       0.192    2.70
+     V_TM_Pinv                 1700       0.067    0.95
+    analysis                   1700       0.177    2.49
+     dGFGGF                    1700       0.035    0.50
+     A-Gamma                   1700       0.004    0.06
+     cdf-w-DOS-T               1700       0.136    1.91
+      MPI_RECV                 1700       0.003    0.05
+    cdf2ascii                     1       0.013    0.18
+>> End of run:  30-SEP-2020  22:13:07
