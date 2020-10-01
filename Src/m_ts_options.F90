@@ -436,7 +436,7 @@ contains
 
     ! Whether we should always set the DM to bulk
     ! values (by reading in from electrode DM)
-    if ( TS_scf_mode == 1 .or. .not. IsVolt ) then
+    if ( TS_scf_mode == 1 .and. .not. IsVolt ) then
       chars = 'bulk'
     else
       chars = 'diagon'
