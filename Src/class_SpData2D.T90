@@ -32,6 +32,8 @@
     type(VAR_TYPE)            :: a
     !> See [[OrbitalDistribution(type)]]
     type(OrbitalDistribution) :: dist
+    !> Sparsity dimension
+    integer :: sp_dim
   end type TYPE_NAME_
 
   type TYPE_NAME
@@ -54,6 +56,10 @@
 
   interface spar
     module procedure sparSpData
+  end interface
+
+  interface spar_dim
+    module procedure spar_dimSpData
   end interface
 
   interface dist
@@ -84,10 +90,6 @@
      module procedure list_colSpData
   end interface
 
-  interface spar_dim
-     module procedure spar_dimSpData
-  end interface
-
   interface size
      module procedure sizeSpData
   end interface
@@ -108,7 +110,7 @@
     call delete(smdata%dist)
   end subroutine delete_Data
 
-  subroutine newSpDataFromData(sp,a,dist,this,name)
+  subroutine newSpDataFromData(sp,a,dist,this,name,sparsity_dim)
      !........................................
      ! Constructor
      !........................................
@@ -117,12 +119,18 @@
     type(VAR_TYPE),   intent(in)   :: a
     type(OrbitalDistribution),  intent(in) :: dist
     character(len=*), intent(in), optional :: name
+    integer, intent(in), optional :: sparsity_dim
 
     call init(this)
     
     this%data%sp = sp
     this%data%a = a
     this%data%dist = dist
+    if ( present(sparsity_dim) ) then
+       this%data%sp_dim = sparsity_dim
+    else
+       this%data%sp_dim = 1
+    end if
     
     if (present(name)) then
        this%data%name = trim(name)
@@ -159,9 +167,11 @@
            call VAR_NEW_TYPE(this%data%a, &
                 dim,nnzs(sp),"(new from "//STR_TYPE_NAME//")")
        end if
+       this%data%sp_dim = sparsity_dim
     else ! Regular handling, sparsity_dim == 1
        call VAR_NEW_TYPE(this%data%a, &
             nnzs(sp),dim,"(new from "//STR_TYPE_NAME//")")
+       this%data%sp_dim = 1
     end if
     
     if (present(name)) then
@@ -203,7 +213,18 @@
     
     p => this%data%sp
   end function sparSpData
-  
+
+  function spar_dimSpData(this) result(dim)
+    type(TYPE_NAME), intent(in) :: this
+    integer :: dim
+
+    if ( .not. initialized(this) ) then
+      dim = 0
+    else
+      dim = this%data%sp_dim
+    end if
+  end function
+
   function distSpData(this) result(p)
     type(TYPE_NAME), intent(in)        :: this
     type(OrbitalDistribution), pointer :: p !=> null()
@@ -257,22 +278,6 @@
    p => list_col(this%data%sp)
  end function list_colSpData
  
-
- function spar_dimSpData(this) result(dim)
-   type(TYPE_NAME), intent(in) :: this
-   integer :: dim
- 
-   dim = 0
-   if ( .not. initialized(this) ) return
-
-   ! Check which dimension is the sparsity dimension
-   if ( nnzs(this) == size(this%data%a%data%val,dim=1) ) then
-      dim = 1
-   else 
-      dim = 2
-   end if
-
- end function spar_dimSpData 
 
  function sizeSpData(this, dim) result(n)
    type(TYPE_NAME), intent(in) :: this

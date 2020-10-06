@@ -877,13 +877,11 @@ contains
          n_col=ncol,list_col=l_col,nnzs=n_nzs)
 
     a => val(dSp2D)
-
-    if ( size(a,dim=2) == n_nzs ) then
-       sp_dim = 2
-       dim2 = size(a,dim=1)
+    sp_dim = spar_dim(dSp2D)
+    if ( sp_dim == 1 ) then
+      dim2 = size(a, dim=2)
     else
-       sp_dim = 1
-       dim2 = size(a,dim=2)
+      dim2 = size(a, dim=1)
     end if
 
     if ( parallel_io(ncdf) ) then

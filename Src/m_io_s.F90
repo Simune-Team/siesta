@@ -1222,12 +1222,11 @@ contains
     
     ! Retrieve data
     a => val(dSp2D)
-    if ( size(a,dim=2) == n_nzs ) then
-       sp_dim = 2
-       dim2 = size(a,dim=1)
+    sp_dim = spar_dim(dSp2D)
+    if ( sp_dim == 1 ) then
+      dim2 = size(a, dim=2)
     else
-       sp_dim = 1
-       dim2 = size(a,dim=2)
+      dim2 = size(a, dim=1)
     end if
 
     if ( ldit ) then
@@ -1263,7 +1262,7 @@ contains
 
        ! The ionode now has the maximum retrieved array
        if ( Node == 0 ) then
-          allocate(buf(max_n))
+         allocate(buf(max_n))
        end if
 
        do s = 1 , dim2
