@@ -13,14 +13,6 @@
 !!
 !! This module implements a type `bloch_unfold_t` implementing the required algorithms
 !! for unfolding a matrix.
-#ifdef __BLOCH_UNFOLD_M_TEST
-module units
-  implicit none
-  public
-  integer, parameter :: dp = selected_real_kind(p=15)
-  real(dp), parameter :: pi = 3.14159265358979323846264338327950288419716939937510_dp
-end module units
-#endif
 module bloch_unfold_m
 
   implicit none
@@ -3590,7 +3582,11 @@ contains
   end function bloch_unfold_get_k
 
   pure function unfold_k2pi(bk, Nk, ik) result(k)
+#ifdef __BLOCH_UNFOLD_M_TEST
+    real(dp), parameter :: pi = 3.14159265358979323846264338327950288419716939937510_dp
+#else
     use units, only: Pi
+#endif
     real(dp), intent(in) :: bk
     integer, intent(in) :: Nk, ik
     real(dp) :: k
