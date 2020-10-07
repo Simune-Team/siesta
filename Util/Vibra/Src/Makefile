@@ -109,10 +109,6 @@ dep:
 
 # DO NOT DELETE THIS LINE - used by make depend
 io.o: m_io.o
-io.o: m_io.o
-units.o: precision.o
 units.o: precision.o
 fcbuild.o: precision.o units.o
-fcbuild.o: precision.o units.o
-vibra.o: precision.o units.o
 vibra.o: precision.o units.o
