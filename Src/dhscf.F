@@ -587,7 +587,7 @@ C real*8  Dxc    : SCF double-counting correction to Exc
 C                    Dxc = integral of ( (epsxc - Vxc) * Rho )
 C                    All energies in Rydbergs
 C real*8  dipol(3): Electric dipole (in a.u.)
-C                   only when the system is a molecule
+C                   only when the system is a molecule/slab
 C ----------------------------------------------------------------------
 C Input/output :
 C ----------------------------------------------------------------------
@@ -655,7 +655,7 @@ C     Modules
 
       use m_efield,       only: add_potential_from_field
       use m_efield,       only: user_specified_field, acting_efield
-      use dipole_m, only: get_dipole_center
+      use dipole_m, only: get_dipole_origin
       use dipole_m, only: get_field_from_dipole
       use dipole_m, only: dipole_charge, dipole_potential
       use dipole_m, only: dip_vacuum
@@ -1228,10 +1228,10 @@ C ----------------------------------------------------------------------
         case default
           ! Regardless of whether the user requests a
           ! dipole correction or not, then we will calculate the dipole
-          ! using the charge method
+          ! using the charge method.
 
-          ! Get dipole center
-          call get_dipole_center(cell, nua, xa, x0)
+          ! Get dipole origin
+          call get_dipole_origin(cell, nua, xa, x0)
 
           ! This routine is distribution-blind
           ! and will reduce over all processors.

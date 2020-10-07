@@ -11,10 +11,10 @@
 !> Module intented for handling dipoles in the system
 !!
 !! This module does 2 things:
-!! 1. Returns the center of a dipole which defaults to the
+!! 1. Returns the origin of a dipole which defaults to the
 !!    center of the system in case the user does not know where
 !!    it is.
-!! 2. Calculate the dipole based on a given center.
+!! 2. Calculate the dipole based on a given origin.
 !!
 !! This module is highly connected with the E-field module
 module dipole_m
@@ -31,7 +31,7 @@ module dipole_m
   integer, public, save :: SLABDIPOLECORR = SLABDIPOLECORR_NONE
 
   public :: init_dipole_correction
-  public :: get_dipole_center
+  public :: get_dipole_origin
   public :: dipole_charge
   public :: dipole_potential
 
@@ -76,17 +76,17 @@ contains
 
     ! Only allow slab dipole corrections for slabs and chains and molecules
     if ( acting_efield ) then
-      dipole_str = lcase(fdf_get("Slab.DipoleCorrection", "slab"))
+      dipole_str = lcase(fdf_get("Slab.DipoleCorrection", "charge"))
     else
       dipole_str = lcase(fdf_get("Slab.DipoleCorrection", "none"))
     end if
 
     select case ( trim(dipole_str) )
-    case ( "true", "t", ".true.", "yes", "slab", "charge" )
+    case ( "true", "t", ".true.", "yes", "charge" )
       ! All these options reflect a dipole correction
       ! based on the original implementation
-      ! One *may* use the Slab.DipoleCorrection.Center block to specify the
-      ! center of the dipole
+      ! One *may* use the Slab.DipoleCorrection.Origin block to specify the
+      ! origin of the dipole
       SLABDIPOLECORR = SLABDIPOLECORR_CHARGE
     case ( "none", "no", "n", "false", "f", ".false." )
       SLABDIPOLECORR = SLABDIPOLECORR_NONE
@@ -95,11 +95,11 @@ contains
     case default
       print *, trim(dipole_str)
       call die("init_dipole: Could not determine the dipole option &
-          &[slab, charge, vacuum, none]")
+          &[charge, vacuum, none]")
     end select
 
-    ! Further, remove dipole corrections if this is not
-    ! a slab calculation
+    ! Further, remove dipole corrections if this is not a slab calculation
+    ! No dipole corrections for molecules, chains or bulk materials.
     if ( nbcell /= 2 ) then
       SLABDIPOLECORR = SLABDIPOLECORR_NONE
     end if
@@ -166,20 +166,20 @@ contains
 
   end subroutine init_dipole_correction
 
-  !< Return the dipole center
+  !< Return the dipole origin
   !!
-  !! If the user does not specify the dipole center
-  !! the dipole center will be the center of the system (not center-of-mass).
+  !! If the user does not specify the dipole origin
+  !! the dipole origin will be the center of the system (not center-of-mass).
   !!
   !! However, in some skewed molecules where one knows the dipole is
   !! not located at the center of the system one should specify the
-  !! center of the dipole through this block: Slab.DipoleCorrection.Center
+  !! origin of the dipole through this block: Slab.DipoleCorrection.Origin
   !!
   !! NOTE: This routine does not take into account shifts
   !! in the atomic structure when doing Grid.CellSampling
   !! I.e. if users want a specific coordinate for the dipole placement
   !! one should not *trust* the average dipole.
-  subroutine get_dipole_center(ucell, na_u, xa, x0)
+  subroutine get_dipole_origin(ucell, na_u, xa, x0)
     use sys, only: die
     use fdf
 
@@ -196,20 +196,20 @@ contains
 
     x0(:) = 0.0_dp
 
-    if ( fdf_block("Slab.DipoleCorrection.Center", bfdf) ) then
+    if ( fdf_block("Slab.DipoleCorrection.Origin", bfdf) ) then
 
       ! TODO consider allowing atomic indices
-      ! as input. Then the center could be calculated
+      ! as input. Then the origin could be calculated
       ! with respect to these coordinates. Here
       ! multiple values of the same atom *could* be allowed.
       ! Say a single atom above a hexagon?
 
       if ( .not. fdf_bline(bfdf,pline) ) then
-        call die("Slab.DipoleCorrection.Center could not find center")
+        call die("Slab.DipoleCorrection.Origin could not find origin")
       end if
 
       if ( .not. fdf_bmatch(pline,"vvvn") ) then
-        call die("Slab.DipoleCorrection.Center both a coordinate and unit *must* be present")
+        call die("Slab.DipoleCorrection.Origin both a coordinate and unit *must* be present")
       end if
 
       length_unit = fdf_bnames(pline, 1)
@@ -217,7 +217,7 @@ contains
 
       ! Retrieve value
       ! This will not work for MD simulations (unless
-      ! the dipole center is fixed!)
+      ! the dipole origin is fixed!)
       do ia = 1,3
         x0(ia) = fdf_bvalues(pline,ia) * cfactor
       end do
@@ -237,7 +237,7 @@ contains
 
     end if
 
-  end subroutine get_dipole_center
+  end subroutine get_dipole_origin
 
   !< Return direction and coordinate for vacuum region
   subroutine get_vacuum(nbcell, bcell, dip_vacuum)
@@ -388,7 +388,7 @@ contains
 
   end function get_dipole_from_field
 
-  !< Calculate dipole for a given center of the dipole
+  !< Calculate dipole for a given origin of the dipole
   subroutine dipole_charge( cell, dvol, ntm, ntml, nsm, drho, X0, dipole)
 ! ********************************************************************
 ! Finds the electric dipole
@@ -597,7 +597,7 @@ contains
           print *, "Direction 1: ", idir
           print *, "Direction 2: ", ix
           call die("dipole_from_potential: found multiple directions of &
-              &parallel lattice vectors to the dipole direction, this is not functional")
+              &parallel lattice vectors to the dipole direction, this is not implemented.")
         end if
       end if
     end do

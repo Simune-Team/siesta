@@ -8412,6 +8412,9 @@ or interpolation of bands), can be downloaded from
   \textit{Use:} For example, the F$^-$ ion would have \fdf{NetCharge}
   \fdf*{-1} , and the Na$^+$ ion would have \fdf{NetCharge} \fdf*{1}.
   Fractional charges can also be used.
+
+  \note Doing non-neutral charge calculations with
+  \fdf{Slab.DipoleCorrection} is discouraged.
   
 \end{fdfentry}
 
@@ -8456,7 +8459,7 @@ or interpolation of bands), can be downloaded from
 
 \end{fdfentry}
 
-\begin{fdfentry}{Slab.DipoleCorrection}[string]<?|\fdftrue|\fdffalse|charge|vacuum|slab|none>
+\begin{fdfentry}{Slab.DipoleCorrection}[string]<?|\fdftrue|\fdffalse|charge|vacuum|none>
   \fdfdepend{ExternalElectricField}%
   
   If not \fdffalse, \siesta\ calculates the electric field required to
@@ -8466,19 +8469,20 @@ or interpolation of bands), can be downloaded from
   The dipole correction only works for Fourier transformed Poisson
   solutions of the Hartree potential since that will introduce a
   compensating field in the vacuum region to counter any inherent
-  dipole in the system.
+  dipole in the system. Do not use this option together with
+  \fdf{NetCharge} (charged systems).
 
   There are two ways of calculating the dipole of the system:
   \begin{fdfoptions}
 
-    \option[charge|slab|\fdftrue]%
+    \option[charge|\fdftrue]%
     \fdfindex*{Slab.DipoleCorrection:charge}%
 
     The dipole of the system is calculated via
     \begin{equation}
       \mathbf D = - e \int(\mathbf r - \mathbf r_0) \delta\boldsymbol\rho(\mathbf r)
     \end{equation}
-    where $\mathbf r_0$ is the dipole center, see \fdf{Slab.DipoleCorrection!Center},
+    where $\mathbf r_0$ is the dipole origin, see \fdf{Slab.DipoleCorrection!Origin},
     and $\delta\boldsymbol\rho$ is valence pseudocharge density minus
     the atomic valence pseudocharge densities.
 
@@ -8527,23 +8531,30 @@ or interpolation of bands), can be downloaded from
 
 \end{fdfentry}
 
-\begin{fdfentry}{Slab.DipoleCorrection!Center}[block]
+\begin{fdfentry}{Slab.DipoleCorrection!Origin}[block]
   \fdfdepend{Slab.DipoleCorrection:charge}
 
-  Specify the center of the dipole in the calculation of the dipole
+  Specify the origin of the dipole in the calculation of the dipole
   from the charge distribution.
 
   Its format is
   \begin{fdfexample}
-     %block Slab.DipoleCorrection.Center
+     %block Slab.DipoleCorrection.Origin
         0.000  10.000  0.500  Ang
      %endblock
   \end{fdfexample}
 
-  If this block is not specified the center of the dipole will be the
+  If this block is not specified the origin of the dipole will be the
   average position of the atoms.
 
-  \note this will only be read if \fdf{Slab.DipoleCorrection:charge} is used.
+  \note this will only be read if \fdf{Slab.DipoleCorrection:charge}
+  is used.
+  %
+  \note this should only affect calculations with
+  \fdf{Geometry!Charge} due to the non-trivial dipole origin, see
+  e.g. \shell{Tests/h2o\_2\_dipol\_gate} and try and see if you can
+  manually place the dipole origin to achieve similar results as the
+  vacuum method.
 
 \end{fdfentry}
 
@@ -8760,7 +8771,8 @@ or interpolation of bands), can be downloaded from
 
   To see how the input should be formatted, see
   \fdf{Geometry!Hartree} and remove the unit-specification. Note that
-  the input value is number of electrons (similar to \fdf{NetCharge}).
+  the input value is number of electrons (similar to \fdf{NetCharge},
+  however this method ensures charge-neutrality).
 
   Details regarding this implementation may be found in
   \citet{Papior2016a}.

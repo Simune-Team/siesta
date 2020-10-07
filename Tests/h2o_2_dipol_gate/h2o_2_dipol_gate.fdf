@@ -26,6 +26,11 @@ Slab.DipoleCorrection vacuum
   # and the closest orbital
   point 0. 47. 0. Ang
 %endblock
+# This origin of the dipole should calculate
+# the dipole correctly.
+#%block Slab.DipoleCorrection.Origin
+#  0. 20. 0. Ang
+#%endblock
 
 MeshCutoff  200 Ry
 
