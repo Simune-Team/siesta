@@ -37,6 +37,7 @@ module bloch_unfold_m
     procedure, pass :: unfold_M_do => bloch_unfold_M_do
     procedure, pass :: unfold_M_manual => bloch_unfold_M_manual
     procedure, pass :: unfold_M_task => bloch_unfold_M_task
+    procedure, pass :: unfold_M_task_bad => bloch_unfold_M_task_bad
     procedure, pass :: unfold_M_workshare => bloch_unfold_M_workshare
 #else
 # ifdef _OPENMP
@@ -1168,6 +1169,495 @@ contains
 !$OMP end parallel
 
   end subroutine bloch_unfold_M_task_2
+
+  !< Unfold a specific index for the matrix unfold machinery from M -> uM
+  !!
+  !! This method is equivalent to `bloch_unfold_M_task` but uses
+  !! bad dependency lists.
+  subroutine bloch_unfold_M_task_bad(this, bk, N, M, uM)
+    class(bloch_unfold_t), intent(in) :: this
+    real(dp), intent(in) :: bk(3)
+    integer, intent(in) :: N
+    complex(dp), intent(in) :: M(N,N,this%prod_B)
+    complex(dp), intent(inout) :: uM(N,this%prod_B,N,this%prod_B)
+
+    if ( this%prod_B == 1 ) then
+
+      call zcopy(N*N, M(1,1,1), 1, uM(1,1,1,1), 1)
+      return
+
+    end if
+
+    ! Now do the actual expansion
+    if ( this%B(1) == 1 ) then
+      if ( this%B(2) == 1 ) then
+        call bloch_unfold_M_task_bad_1(N, M, bk(3), this%B(3), uM)
+      else if ( this%B(3) == 1 ) then
+        call bloch_unfold_M_task_bad_1(N, M, bk(2), this%B(2), uM)
+      else
+        call bloch_unfold_M_task_bad_2(N, M, &
+            bk(2), this%B(2), &
+            bk(3), this%B(3), uM)
+      end if
+    else if ( this%B(2) == 1 ) then
+      if ( this%B(3) == 1 ) then
+        call bloch_unfold_M_task_bad_1(N, M, bk(1), this%B(1), uM)
+      else
+        call bloch_unfold_M_task_bad_2(N, M, &
+            bk(1), this%B(1), &
+            bk(3), this%B(3), uM)
+      end if
+    else if ( this%B(3) == 1 ) then
+      call bloch_unfold_M_task_bad_2(N, M, &
+          bk(1), this%B(1), &
+          bk(2), this%B(2), uM)
+    else
+      call die('currently not implemented')
+    end if
+
+  end subroutine bloch_unfold_M_task_bad
+
+  !< Unfold a given matrix for only one un-fold point
+  subroutine bloch_unfold_M_task_bad_1(N, M, kA, NA, uM)
+    integer, intent(in) :: N, NA
+    complex(dp), intent(in) :: M(N,N,NA)
+    real(dp), intent(in) :: kA
+    complex(dp), intent(inout) :: uM(N,NA,N,NA)
+
+    integer :: TMA, iMA
+    integer :: i, j
+    real(dp) :: w, k_A
+    complex(dp) :: ph, cph, phA_step
+
+!$OMP parallel default(shared) private(w)
+
+    ! Full weight
+    w = 1._dp / real(NA, dp)
+
+!$OMP single private(TMA,iMA,k_A,phA_step,ph)
+
+!$OMP task shared(uM) private(i,j) &
+!$OMP&  depend(out:uM(:,1,:,1))
+    do j = 1, N
+      do i = 1, N
+        uM(i,1,j,1) = cmplx(0._dp, 0._dp, dp)
+      end do
+    end do
+!$OMP end task
+
+    do iMA = 2, NA
+!$OMP task shared(uM) private(i,j) firstprivate(iMA) &
+!$OMP&  depend(out:uM(:,iMA,:,1))
+      do j = 1, N
+        do i = 1, N
+          uM(i,iMA,j,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end task
+!$OMP task shared(uM) private(i,j) firstprivate(iMA) &
+!$OMP&  depend(out:uM(:,1,:,iMA))
+      do j = 1, N
+        do i = 1, N
+          uM(i,1,j,iMA) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end task
+    end do
+
+    ! TMA loop is over different matrices
+    do TMA = 1, NA
+
+      ! The first diagonal part is *always* phase-less
+      ! So there is no reason to multiply with *extra* stuff
+      ! (1, :, 1, :) = sum(M(1, 1, :))
+
+      k_A = unfold_k2pi(kA, NA, TMA)
+
+      ! exp(2\pi k) where k == K/N
+      phA_step = cmplx(cos(k_A), sin(k_A), dp)
+
+!$OMP task shared(uM,M) private(i,j) firstprivate(TMA,w) &
+!$OMP&  depend(inout:uM(:,1,:,1))
+      do j = 1, N
+        do i = 1, N
+          uM(i,1,j,1) = uM(i,1,j,1) + M(i,j,TMA) * w
+        end do
+      end do
+!$OMP end task
+
+      ! perform average in this phase-factor
+      ph = w * phA_step
+      do iMA = 2, NA
+
+!$OMP task shared(uM,M) private(i,j) firstprivate(iMA,TMA,ph) &
+!$OMP&  depend(inout:uM(:,iMA,:,1))
+        do j = 1, N
+          do i = 1, N
+            uM(i,iMA,j,1) = uM(i,iMA,j,1) + M(i,j,TMA) * ph
+          end do
+        end do
+!$OMP end task
+
+!$OMP task shared(uM,M) private(i,j,cph) firstprivate(iMA,TMA,ph) &
+!$OMP&  depend(inout:uM(:,1,:,iMA))
+        cph = conjg(ph)
+        do j = 1, N
+          do i = 1, N
+            uM(i,1,j,iMA) = uM(i,1,j,iMA) + M(i,j,TMA) * cph
+          end do
+        end do
+!$OMP end task
+
+        ph = ph * phA_step
+      end do
+
+    end do
+
+    ! At this point the following have been calculated:
+    !   uM(:,:,:,1)
+    !   uM(:,1,:,:)
+    ! Due to uM being a Toeplitz matrix, we simply copy around the data!
+    do iMA = 2, NA
+
+!$OMP task shared(uM) private(i,j) firstprivate(iMA) &
+!$OMP&  depend(in:uM(:,1,:,1))
+      do j = 1, N
+        do i = 1, N
+          uM(i,iMA,j,iMA) = uM(i,1,j,1)
+        end do
+      end do
+!$OMP end task
+
+      do TMA = 1, NA - iMA
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,TMA) &
+!$OMP&  depend(in:uM(:,iMA,:,1))
+        do j = 1, N
+          do i = 1, N
+            uM(i,TMA+iMA,j,TMA+1) = uM(i,iMA,j,1)
+          end do
+        end do
+!$OMP end task
+
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,TMA) &
+!$OMP&  depend(in:uM(:,1,:,iMA))
+        do j = 1, N
+          do i = 1, N
+            uM(i,TMA+1,j,TMA+iMA) = uM(i,1,j,iMA)
+          end do
+        end do
+!$OMP end task
+      end do
+
+    end do
+
+!$OMP end single nowait
+
+!$OMP end parallel
+
+  end subroutine bloch_unfold_M_task_bad_1
+
+  !< Unfold a given matrix for only one un-fold point
+  subroutine bloch_unfold_M_task_bad_2(N, M, kA, NA, kB, NB, uM)
+    integer, intent(in) :: N, NA, NB
+    complex(dp), intent(in) :: M(N,N,NA,NB)
+    real(dp), intent(in) :: kA, kB
+    complex(dp), intent(inout) :: uM(N,NA,NB,N,NA,NB)
+
+    integer :: TMA, iMA, TMB, iMB
+    integer :: i, j
+    real(dp) :: w, k_A, k_B
+    complex(dp) :: phA, phA_step
+    complex(dp) :: phB, phB_step
+    complex(dp) :: ph
+
+!$OMP parallel default(shared) private(w)
+
+    ! Full weight
+    w = 1._dp / real(NA*NB, dp)
+
+!$OMP single private(TMA,iMA,k_A,phA_step,phA,TMB,iMB,k_B,phB_step,phB,ph)
+
+!$OMP task shared(uM) private(i,j) &
+!$OMP&  depend(out:uM(:,1,1,:,1,1))
+    do j = 1, N
+      do i = 1, N
+        uM(i,1,1,j,1,1) = cmplx(0._dp, 0._dp, dp)
+      end do
+    end do
+!$OMP end task
+
+    do iMA = 2, NA
+!$OMP task shared(uM) private(i,j) firstprivate(iMA) &
+!$OMP&  depend(out:uM(:,iMA,1,:,1,1))
+      do j = 1, N
+        do i = 1, N
+          uM(i,iMA,1,j,1,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end task
+!$OMP task shared(uM) private(i,j) firstprivate(iMA) &
+!$OMP&  depend(out:uM(:,1,1,:,iMA,1))
+      do j = 1, N
+        do i = 1, N
+          uM(i,1,1,j,iMA,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end task
+    end do
+
+    do iMB = 2, NB
+!$OMP task shared(uM) private(i,j) firstprivate(iMB) &
+!$OMP&  depend(out:uM(:,1,iMB,:,1,1))
+      do j = 1, N
+        do i = 1, N
+          uM(i,1,iMB,j,1,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end task
+!$OMP task shared(uM) private(i,j) firstprivate(iMB) &
+!$OMP&  depend(out:uM(:,1,1,:,1,iMB))
+      do j = 1, N
+        do i = 1, N
+          uM(i,1,1,j,1,iMB) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end task
+
+      do iMA = 2, NA
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,iMB) &
+!$OMP&  depend(out:uM(:,iMA,iMB,:,1,1))
+        do j = 1, N
+          do i = 1, N
+            uM(i,iMA,iMB,j,1,1) = cmplx(0._dp, 0._dp, dp)
+          end do
+        end do
+!$OMP end task
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,iMB) &
+!$OMP&  depend(out:uM(:,iMA,1,:,1,iMB))
+        do j = 1, N
+          do i = 1, N
+            uM(i,iMA,1,j,1,iMB) = cmplx(0._dp, 0._dp, dp)
+          end do
+        end do
+!$OMP end task
+
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,iMB) &
+!$OMP&  depend(out:uM(:,1,iMB,:,iMA,1))
+        do j = 1, N
+          do i = 1, N
+            uM(i,1,iMB,j,iMA,1) = cmplx(0._dp, 0._dp, dp)
+          end do
+        end do
+!$OMP end task
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,iMB) &
+!$OMP&  depend(out:uM(:,1,1,:,iMA,iMB))
+        do j = 1, N
+          do i = 1, N
+            uM(i,1,1,j,iMA,iMB) = cmplx(0._dp, 0._dp, dp)
+          end do
+        end do
+!$OMP end task
+      end do
+    end do
+
+    ! TMB/A loop is over different matrices
+    do TMB = 1, NB
+
+      k_B = unfold_k2pi(kB, NB, TMB)
+      phB_step = cmplx(cos(k_B), sin(k_B), dp)
+
+      do TMA = 1, NA
+
+        ! The first diagonal part is *always* phase-less
+        ! So there is no reason to multiply with *extra* stuff
+        ! (1, :, TMB, 1, :, TMB) = sum(M(1, 1, :, TMB))
+
+        k_A = unfold_k2pi(kA, NA, TMA)
+        phA_step = cmplx(cos(k_A), sin(k_A), dp)
+
+!$OMP task shared(uM,M) private(i,j) firstprivate(TMA,TMB,w) &
+!$OMP&  depend(inout:uM(:,1,1,:,1,1))
+        do j = 1, N
+          do i = 1, N
+            uM(i,1,1,j,1,1) = uM(i,1,1,j,1,1) + M(i,j,TMA,TMB) * w
+          end do
+        end do
+!$OMP end task
+
+        ! The Toeplitz nature of a double Bloch expanded matrix
+        ! makes this a bit more challenging
+        ! Within each sub-block where NA is expanded we find
+        ! the same structure as in the single Bloch expanded matrix
+
+        ! for iMB == 1 and iMA in [1...NA] we need phB == w
+        phA = w * phA_step
+
+        ! This is the first iMB == 1 sub-block
+        do iMA = 2, NA
+
+!$OMP task shared(uM,M) private(i,j) firstprivate(iMA,TMA,TMB,phA) &
+!$OMP&  depend(inout:uM(:,iMA,1,:,1,1))
+          do j = 1, N
+            do i = 1, N
+              uM(i,iMA,1,j,1,1) = uM(i,iMA,1,j,1,1) + M(i,j,TMA,TMB) * phA
+            end do
+          end do
+!$OMP end task
+
+!$OMP task shared(uM,M) private(i,j,ph) firstprivate(iMA,TMA,TMB,phA) &
+!$OMP&  depend(inout:uM(:,1,1,:,iMA,1))
+          ph = conjg(phA)
+          do j = 1, N
+            do i = 1, N
+              uM(i,1,1,j,iMA,1) = uM(i,1,1,j,iMA,1) + M(i,j,TMA,TMB) * ph
+            end do
+          end do
+!$OMP end task
+
+          phA = phA * phA_step
+        end do
+
+        ! Now handle all iMB > 1
+        phB = w * phB_step
+        do iMB = 2, NB
+
+          ! Diagonal B (A has zero phase)
+!$OMP task shared(uM,M) private(i,j) firstprivate(TMA,iMB,TMB,phB) &
+!$OMP&  depend(inout:uM(:,1,iMB,:,1,1))
+          do j = 1, N
+            do i = 1, N
+              uM(i,1,iMB,j,1,1) = uM(i,1,iMB,j,1,1) + M(i,j,TMA,TMB) * phB
+            end do
+          end do
+!$OMP end task
+
+!$OMP task shared(uM,M) private(i,j,ph) firstprivate(TMA,iMB,TMB,phB) &
+!$OMP&  depend(inout:uM(:,1,1,:,1,iMB))
+          ph = conjg(phB)
+          do j = 1, N
+            do i = 1, N
+              uM(i,1,1,j,1,iMB) = uM(i,1,1,j,1,iMB) + M(i,j,TMA,TMB) * ph
+            end do
+          end do
+!$OMP end task
+
+          ! Now do all A off-diagonals (phB has weight)
+          phA = phA_step
+          do iMA = 2, NA
+
+!$OMP task shared(uM,M) private(i,j,ph) firstprivate(iMA,TMA,iMB,TMB,phA,phB) &
+!$OMP&  depend(inout:uM(:,iMA,iMB,:,1,1))
+            ph = phB * phA
+            do j = 1, N
+              do i = 1, N
+                uM(i,iMA,iMB,j,1,1) = uM(i,iMA,iMB,j,1,1) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+!$OMP end task
+
+!$OMP task shared(uM,M) private(i,j,ph) firstprivate(iMA,TMA,iMB,TMB,phA,phB) &
+!$OMP&  depend(inout:uM(:,1,iMB,:,iMA,1))
+            ph = phB * conjg(phA)
+            do j = 1, N
+              do i = 1, N
+                uM(i,1,iMB,j,iMA,1) = uM(i,1,iMB,j,iMA,1) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+!$OMP end task
+
+!$OMP task shared(uM,M) private(i,j,ph) firstprivate(iMA,TMA,iMB,TMB,phA,phB) &
+!$OMP&  depend(inout:uM(:,iMA,1,:,1,iMB))
+            ph = conjg(phB) * phA
+            do j = 1, N
+              do i = 1, N
+                uM(i,iMA,1,j,1,iMB) = uM(i,iMA,1,j,1,iMB) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+!$OMP end task
+
+!$OMP task shared(uM,M) private(i,j,ph) firstprivate(iMA,TMA,iMB,TMB,phA,phB) &
+!$OMP&  depend(inout:uM(:,1,1,:,iMA,iMB))
+            ph = conjg(phB * phA)
+            do j = 1, N
+              do i = 1, N
+                uM(i,1,1,j,iMA,iMB) = uM(i,1,1,j,iMA,iMB) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+!$OMP end task
+
+            phA = phA * phA_step
+          end do
+
+          phB = phB * phB_step
+        end do
+
+      end do
+    end do
+
+    ! Due to uM being a Toeplitz matrix, we simply copy around the data!
+    do iMA = 2, NA
+      do TMA = 2, NA
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,TMA) &
+!$OMP&  depend(in:uM(:,TMA-1,1,:,iMA-1,1)) &
+!$OMP&  depend(out:uM(:,TMA,1,:,iMA,1))
+        do j = 1, N
+          do i = 1, N
+            uM(i,TMA,1,j,iMA,1) = uM(i,TMA-1,1,j,iMA-1,1)
+          end do
+        end do
+!$OMP end task
+      end do
+    end do
+
+    do iMB = 2, NB
+      do iMA = 2, NA
+        do TMA = 2, NA
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,TMA,iMB) &
+!$OMP&  depend(in:uM(:,TMA-1,iMB,:,iMA-1,1)) &
+!$OMP&  depend(out:uM(:,TMA,iMB,:,iMA,1))
+          do j = 1, N
+            do i = 1, N
+              uM(i,TMA,iMB,j,iMA,1) = uM(i,TMA-1,iMB,j,iMA-1,1)
+            end do
+          end do
+!$OMP end task
+
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,TMA,iMB) &
+!$OMP&  depend(in:uM(:,TMA-1,1,:,iMA-1,iMB)) &
+!$OMP&  depend(out:uM(:,TMA,1,:,iMA,iMB))
+          do j = 1, N
+            do i = 1, N
+              uM(i,TMA,1,j,iMA,iMB) = uM(i,TMA-1,1,j,iMA-1,iMB)
+            end do
+          end do
+!$OMP end task
+        end do
+      end do
+    end do
+
+    do iMB = 2, NB
+      do iMA = 1, NA
+        do TMB = 2, NB
+          do TMA = 1, NA
+!$OMP task shared(uM) private(i,j) firstprivate(iMA,TMA,iMB,TMB) &
+!$OMP&  depend(in:uM(:,TMA,TMB-1,:,iMA,iMB-1)) &
+!$OMP&  depend(out:uM(:,TMA,TMB,:,iMA,iMB))
+            do j = 1, N
+              do i = 1, N
+                uM(i,TMA,TMB,j,iMA,iMB) = uM(i,TMA,TMB-1,j,iMA,iMB-1)
+              end do
+            end do
+!$OMP end task
+          end do
+        end do
+      end do
+    end do
+
+!$OMP end single nowait
+
+!$OMP end parallel
+
+  end subroutine bloch_unfold_M_task_bad_2
 #endif
 
 #ifdef __BLOCH_UNFOLD_M_TEST
@@ -3791,7 +4281,7 @@ program bloch_unfold
   logical :: in_check = .false.
 
   ! Different methods and their timing
-  integer, parameter :: N_methods = 4
+  integer, parameter :: N_methods = 5
   logical :: run_methods(N_METHODS)
   real(dp) :: t(0:N_METHODS)
 
@@ -3853,6 +4343,7 @@ program bloch_unfold
   run_methods(2) = .true. ! manual
   run_methods(3) = .true. ! task
   run_methods(4) = .true. ! workshare
+  run_methods(5) = .true. ! task-bad
 
   if ( any(benchmark) ) then
     write(*,'(a,tr1,"[",2(i0,":"),i0,"]")') "Running N in", N_min, N_max, N_step
@@ -3931,7 +4422,8 @@ contains
 
     t(:) = 0._dp
     open(iu, file="M.B1.timings", status="unknown", action="write")
-    write(iu, '(a,a7,tr1,a7,10(tr1,a12))') '#', 'N', 'B1', 'simple [s]', 'do [s]', 'manual [s]', 'task [s]', 'work [s]'
+    write(iu, '(a,a7,tr1,a7,10(tr1,a12))') '#', 'N', 'B1', 'simple [s]', 'do [s]', 'manual [s]', &
+        'task [s]', 'work [s]', 'task-bad [s]'
 
     B1 = 1
     do while ( B1 < 20 )
@@ -3997,6 +4489,16 @@ contains
           t1 = my_time()
           call cmp(zG1, zG2, "workshare")
           t(4) = (t1 - t0) / N_itt
+        end if
+
+        if ( run_methods(5) ) then
+          t0 = my_time()
+          do i = 1, N_itt
+            call bu%unfold_M_task_bad(k, N, zG, zG2)
+          end do
+          t1 = my_time()
+          call cmp(zG1, zG2, "taskbad")
+          t(5) = (t1 - t0) / N_itt
         end if
 
         ! Write out data
@@ -4202,6 +4704,8 @@ contains
           call cmp(zG1, zG2, "M[task]")
           call bu%unfold_M_workshare(k, N, zG, zG2)
           call cmp(zG1, zG2, "M[work]")
+          call bu%unfold_M_task_bad(k, N, zG, zG2)
+          call cmp(zG1, zG2, "M[taskbad]")
 
 
           ! HS_G
@@ -4249,7 +4753,8 @@ contains
     write(*,*) 'Benchmarking rank(B) == 2 [M] examples...'
 
     open(iu, file="M.B2.timings", status="unknown", action="write")
-    write(iu, '(a,a7,2(tr1,a7),10(tr1,a12))') '#', 'N', 'B1', 'B2', 'simple [s]', 'do [s]', 'manual [s]', 'task [s]', 'work [s]'
+    write(iu, '(a,a7,2(tr1,a7),10(tr1,a12))') '#', 'N', 'B1', 'B2', 'simple [s]', 'do [s]', 'manual [s]', &
+        'task [s]', 'work [s]', 'taskbad [s]'
 
     B2 = 2
     do while ( B2 <= 9 )
@@ -4319,6 +4824,16 @@ contains
             t1 = my_time()
             call cmp(zG1, zG2, "workshare")
             t(4) = (t1 - t0) / N_itt
+          end if
+
+          if ( run_methods(5) ) then
+            t0 = my_time()
+            do i = 1, N_itt
+              call bu%unfold_M_task_bad(k, N, zG, zG2)
+            end do
+            t1 = my_time()
+            call cmp(zG1, zG2, "taskbad")
+            t(5) = (t1 - t0) / N_itt
           end if
 
           ! Write out data
@@ -4543,6 +5058,8 @@ contains
           call cmp(zG1, zG2, "M[task]")
           call bu%unfold_M_workshare(k, N, zG, zG2)
           call cmp(zG1, zG2, "M[workshare]")
+          call bu%unfold_M_task_bad(k, N, zG, zG2)
+          call cmp(zG1, zG2, "M[taskbad]")
 
 
           ! HS_G

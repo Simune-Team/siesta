@@ -719,7 +719,7 @@ contains
       E(ntm(idir)) = 0.5_dp * (Vavg(1) - Vavg(ntm(idir)-1))
       dE(ntm(idir)) = Vavg(1) + Vavg(ntm(idir)-1) - 2 * Vavg(ntm(idir))
 
-      !$ DEBUG
+      !! DEBUG
       ! write out table with coordinate E and dE
       !rc = vnorm(cell(:,idir)) / ntm(idir)
       !do i = 1 , ntm(idir)
