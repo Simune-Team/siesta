@@ -715,8 +715,8 @@ diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
 die.o: parallel.o siesta_cml.o
 die.o: parallel.o
-dipole.o: intrinsic_missing.o m_char.o m_cite.o mesh.o parallel.o precision.o
-dipole.o: siesta_cml.o sys.o units.o
+dipole.o: atmfuncs.o intrinsic_missing.o m_char.o m_cite.o mesh.o parallel.o
+dipole.o: precision.o siesta_cml.o sys.o units.o
 dm_charge.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 dm_charge.o: class_Sparsity.o m_mpi_utils.o m_spin.o precision.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o

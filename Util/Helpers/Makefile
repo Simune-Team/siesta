@@ -180,9 +180,9 @@ densematrix.o: alloc.o precision.o
 detover.o: alloc.o linpack.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o local_sys.o mesh.o
 dfscf.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o
-dhscf.o: alloc.o atmfuncs.o delk.o dfscf.o doping_uniform.o files.o forhar.o
-dhscf.o: iogrid_netcdf.o local_sys.o m_charge_add.o m_efield.o m_hartree_add.o
-dhscf.o: m_iorho.o m_mesh_node.o m_ncdf_io.o m_ncdf_siesta.o
+dhscf.o: alloc.o atmfuncs.o delk.o dfscf.o dipole.o doping_uniform.o files.o
+dhscf.o: forhar.o iogrid_netcdf.o local_sys.o m_charge_add.o m_efield.o
+dhscf.o: m_hartree_add.o m_iorho.o m_mesh_node.o m_ncdf_io.o m_ncdf_siesta.o
 dhscf.o: m_partial_charges.o m_rhog.o m_spin.o m_ts_electype.o
 dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_voltage.o mesh.o
 dhscf.o: meshdscf.o meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
@@ -218,7 +218,8 @@ diagsprl.o: atomlist.o fermid.o local_sys.o parallel.o parallelsubs.o
 diagsprl.o: precision.o siesta_geom.o
 die.o: parallel.o siesta_cml.o
 die.o: parallel.o
-dipole.o: local_sys.o mesh.o parallel.o precision.o
+dipole.o: atmfuncs.o intrinsic_missing.o local_sys.o m_char.o m_cite.o mesh.o
+dipole.o: parallel.o precision.o siesta_cml.o units.o
 dm_charge.o: class_OrbitalDistribution.o class_SpData1D.o class_SpData2D.o
 dm_charge.o: class_Sparsity.o m_mpi_utils.o m_spin.o precision.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
@@ -338,8 +339,8 @@ m_dipol.o: precision.o
 m_dminim.o: densematrix.o files.o local_sys.o parallel.o parallelsubs.o
 m_dminim.o: precision.o siesta_options.o
 m_dscfcomm.o: alloc.o parallel.o parallelsubs.o precision.o schecomm.o
-m_efield.o: atmfuncs.o local_sys.o m_cite.o m_ts_global_vars.o mesh.o
-m_efield.o: parallel.o precision.o siesta_cml.o siesta_geom.o units.o
+m_efield.o: atmfuncs.o intrinsic_missing.o local_sys.o mesh.o parallel.o
+m_efield.o: precision.o siesta_cml.o siesta_geom.o units.o
 m_energies.o: m_ts_global_vars.o precision.o
 m_eo.o: precision.o
 m_exp_coord.o: files.o m_os.o parallel.o precision.o units.o
@@ -821,10 +822,10 @@ spinorbit.o: m_mpi_utils.o parallel.o parallelsubs.o precision.o
 spinorbit.o: pseudopotential.o
 state_analysis.o: atomlist.o born_charge.o flook_siesta.o m_energies.o
 state_analysis.o: m_fixed.o m_forces.o m_ntm.o m_spin.o m_stress.o
-state_analysis.o: m_ts_global_vars.o m_wallclock.o parallel.o
+state_analysis.o: m_ts_global_vars.o m_ts_options.o m_wallclock.o parallel.o
 state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
-state_analysis.o: siesta_options.o sparse_matrices.o units.o write_subs.o
-state_analysis.o: zmatrix.o
+state_analysis.o: siesta_options.o sparse_matrices.o ts_charge.o units.o
+state_analysis.o: write_subs.o zmatrix.o
 state_init.o: alloc.o atomlist.o class_Data2D.o
 state_init.o: class_Fstack_Pair_Geometry_SpData2D.o
 state_init.o: class_Pair_Geometry_SpData2D.o class_SpData1D.o class_SpData2D.o
@@ -948,6 +949,7 @@ class_zspdata1d.o: class_SpData1D.o
 class_zspdata2d.o: class_SpData2D.o
 class_ztrimat.o: class_TriMat.o
 diagmemory.o: memoryinfo.o
+dipole_m.o: dipole.o
 f90sockets.o: fsockets.o
 fsiesta.o: fsiesta_sockets.o
 iofa_m.o: iofa.o
