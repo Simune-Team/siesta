@@ -14,8 +14,7 @@ Release notes for siesta 4.1 version
        in the PS file. This may result in slight changes.
     Stress-tensor-voigt is now printing in the correct Voigt representation.
        prior versions of Siesta did not follow Voigt representation.
-       Currently we show old (wrong) and new (correct) Voigt representation, see
-       output for details as the directions are explicitly written.
+       Please see manual entry MD.RemoveIntramolecularPressure for a description.
 
 --- Siesta is now developed on the GitLab platform: www.gitlab.com/siesta-project/siesta
     Siesta's orphan packages are developed here: www.gitlab.com/siesta-project
