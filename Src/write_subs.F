@@ -102,11 +102,11 @@
 !
             ps = stress + kin_stress
             write(6,'(/,a,6f12.2)')
-     .           'Stress-tensor-Voigt (kbar):',
+     .           'Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):',
      .           (ps(jx,jx)/kbar,jx=1,3),
-     $            ps(1,2)/kbar,
      $            ps(2,3)/kbar,
-     $            ps(1,3)/kbar
+     $            ps(1,3)/kbar,
+     $            ps(1,2)/kbar
             Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
             write(6,"(a,f14.4)") "(Free)E + p*V (eV/cell)",
      $           (FreeE + Press*volume_of_some_cell)/eV
@@ -114,11 +114,12 @@
             if (RemoveIntraMolecularPressure) then
                ps = mstress + kin_stress
                write(6,'(/,a,6f12.2)')
-     .           'Inter-Molecular-Stress-Voigt (kbar):',
+     .   'Inter molecular stress Voigt[x,y,z,yz,xz,xy] (kbar):',
+     .           ' (kbar):',
      .           (ps(jx,jx)/kbar,jx=1,3),
-     $            ps(1,2)/kbar,
      $            ps(2,3)/kbar,
-     $            ps(1,3)/kbar
+     $            ps(1,3)/kbar,
+     $            ps(1,2)/kbar
                Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
                write(6,"(a,f14.4)")
      $              "(Free)E + p_inter_molec * V  (eV/cell)",
