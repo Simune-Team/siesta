@@ -22,6 +22,9 @@ Release notes for siesta 4.1 version
     TranSiesta equilibrium contours now default to using the "right" scheme
     Maximum l for KB projectors is now automatically set to the highest l
        in the PS file. This may result in slight changes.
+    Stress-tensor-voigt is now printing in the correct Voigt representation.
+       prior versions of Siesta did not follow Voigt representation.
+       Please see manual entry MD.RemoveIntramolecularPressure for a description.
 
 --- Siesta is now developed on the GitLab platform: www.gitlab.com/siesta-project/siesta
     Siesta's orphan packages are developed here: www.gitlab.com/siesta-project

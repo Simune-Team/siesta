@@ -88,7 +88,7 @@
 % will create additional information in the PDF with 
 % proper dependencies and hyperlinks to the fdf-flags.
 % To document a flag has replaced another flag, use
-%  \fdfreplace{...} in the same manner as \fdfdepend{...}.
+%  \fdfdeprecates{...} in the same manner as \fdfdepend{...}.
 %
 %
 % !!!IMPORTANT!!!
@@ -1180,7 +1180,7 @@ substitute spaces by \fdf*{:}.
   \option[-electrode|-elec]%
   \fdfindex*{Command line options:-electrode}%
   \fdfindex*{Command line options:-elec}%
-  \fdfreplace{TS!HS.Save,TS!DE.Save}
+  \fdfdeprecates{TS!HS.Save,TS!DE.Save}
   denote this as an electrode calculation which forces the
   \sysfile{TSHS} and \sysfile{TSDE} files to be saved.
 
@@ -1189,7 +1189,7 @@ substitute spaces by \fdf*{:}.
 
   \option[-V]%
   \fdfindex*{Command line options:-V}%
-  \fdfreplace{TS!Voltage}
+  \fdfdeprecates{TS!Voltage}
   specify the bias for the current \tsiesta\ run.
 
   \shell{siesta -V 0.25:eV} or \shell{siesta -V "0.25 eV"}
@@ -3765,6 +3765,7 @@ are always stored in the file \sysfile{KP}.
 
 
 \begin{fdfentry}{Spin}[string]<non-polarized>
+  \fdfdeprecates{SpinPolarized,NonCollinearSpin,SpinOrbit}
 
   Choose the spin-components in the simulation.
 
@@ -4120,7 +4121,7 @@ by potentially saving many self-consistency steps in production runs.
 
 \begin{fdflogicalT}{SCF.Mix!First}
   \fdfindex*{DM.MixSCF1}[|see SCF.Mix.First]
-  \fdfreplace{DM.MixSCF1}%
+  \fdfdeprecates{DM.MixSCF1}%
   \fdfdepend{SCF.Mix!First.Force}%
 
   This flag is used to decide whether mixing (of the DM or H) should
@@ -4278,7 +4279,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 \end{fdfentry}
 
 \begin{fdfentry}{SCF.Mixer!Weight}[real]<0.25>%
-  \fdfreplace{DM!MixingWeight}%
+  \fdfdeprecates{DM!MixingWeight}%
   \fdfindex*{DM!MixingWeight}[|see SCF.Mixer.Weight]
 
   The mixing weight used to mix the quantity.
@@ -4296,7 +4297,7 @@ $\RRes[i] = \Res[i] - \Res[i-1]$.
 
 
 \begin{fdfentry}{SCF.Mixer!History}[integer]<2>%
-  \fdfreplace{DM.NumberPulay,DM.NumberBroyden}%
+  \fdfdeprecates{DM.NumberPulay,DM.NumberBroyden}%
   \fdfindex*{DM.NumberPulay}[|see SCF.Mixer.History]%
   \fdfindex*{DM.NumberBroyden}[|see SCF.Mixer.History]
 
@@ -6050,7 +6051,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
 \begin{fdfentry}{Diag!WFS.Cache}[string]<none|cdf>
-  \fdfreplace{UseNewDiagk}
+  \fdfdeprecates{UseNewDiagk}
 
   Specify whether \siesta\ should cache wavefunctions in the
   diagonalization routine. Without a cache, a standard two-pass
@@ -8997,6 +8998,7 @@ an alternative way to plot the charge density (and wavefunctions).
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{SaveInitialChargeDensity}
+  \fdfdeprecatedby{AnalyzeChargeDensityOnly}
   \index{output!charge density}
 
   If \fdftrue, the program generates a \sysfile{RHOINIT}
@@ -9610,8 +9612,8 @@ misleading but kept for historical reasons.
   If \fdftrue, the lattice is relaxed together with the atomic
   coordinates. It allows to target hydrostatic pressures or arbitrary
   stress tensors. See \fdf{MD.MaxStressTol},
-  \fdf{MD.TargetPressure}, \fdf{MD.TargetStress},
-  \fdf{MD.ConstantVolume}, and
+  \fdf{Target!Pressure}, \fdf{Target!Stress.Voigt},
+  \fdf{Constant!Volume}, and
   \fdf{MD.PreconditionVariableCell}.
 
   \note only compatible with \fdf{MD.TypeOfRun:CG},
@@ -9620,7 +9622,9 @@ misleading but kept for historical reasons.
 \end{fdflogicalF}
 
 
-\begin{fdflogicalF}{MD.ConstantVolume}
+\begin{fdflogicalF}{Constant!Volume}
+  \fdfindex*{MD.ConstantVolume}
+  \fdfdeprecates{MD.ConstantVolume}%
   \index{constant-volume cell relaxation} 
 
   If \fdftrue, the cell volume is kept constant in a variable-cell
@@ -9628,7 +9632,7 @@ misleading but kept for historical reasons.
   allowed to change.  Note that it does not make much sense to specify
   a target stress or pressure in this case, except for anisotropic
   (traceless) stresses.  See \fdf{MD.VariableCell},
-  \fdf{MD.TargetStress}.
+  \fdf{Target.Stress.Voigt}.
 
   \note only compatible with \fdf{MD.TypeOfRun:CG},
   \fdf*{Broyden} or \fdf*{fire}.
@@ -9676,7 +9680,7 @@ misleading but kept for historical reasons.
 
 \begin{fdfentry}{MD.Steps}[integer]<0>
   \fdfindex*{MD.NumCGsteps}
-  \fdfreplace{MD.NumCGsteps}
+  \fdfdeprecates{MD.NumCGsteps}
   
   Maximum number of steps in a minimization routine
   (the minimization will stop if tolerance is reached before; see
@@ -9689,7 +9693,7 @@ misleading but kept for historical reasons.
 
 \begin{fdfentry}{MD.MaxDispl}[length]<$0.2\,\mathrm{Bohr}$>
   \fdfindex*{MD.MaxCGDispl}
-  \fdfreplace{MD.MaxCGDispl}
+  \fdfdeprecates{MD.MaxCGDispl}
   
   Maximum atomic displacements in an optimization move.
 
@@ -9903,7 +9907,9 @@ of MD steps requested (this is arguably a bug).
 Useful for structural optimizations and constant-pressure molecular
 dynamics.
 
-\begin{fdfentry}{MD.TargetPressure}[pressure]<$0\,\mathrm{GPa}$>
+\begin{fdfentry}{Target!Pressure}[pressure]<$0\,\mathrm{GPa}$>
+  \fdfindex*{MD.TargetPressure}
+  \fdfdeprecates{MD.TargetPressure}
   
   Target pressure for Parrinello-Rahman method, variable cell
   optimizations, and annealing options.
@@ -9916,22 +9922,32 @@ dynamics.
 \end{fdfentry}
 
 
-\begin{fdfentry}{MD.TargetStress}[block]<$-1 -1 -1 0 0 0$>
+\begin{fdfentry}{Target!Stress.Voigt}[block]<$-1$ $-1$ $-1$ $0$ $0$ $0$>
+  \fdfdeprecates{MD.TargetStress}
   
   External or target stress tensor for variable cell optimizations.
-  Stress components are given in a line, in the order \texttt{xx, yy,
-      zz, xy, xz, yz}. In units of \fdf{MD.TargetPressure}, but
+  Stress components are given in a line, in the Voigt order \texttt{xx, yy,
+      zz, yz, xz, xy}. In units of \fdf{Target!Pressure}, but
   with the opposite sign. For example, a uniaxial compressive stress
   of 2 GPa along the 100 direction would be given by
   \begin{fdfexample}
-     MD.TargetPressure  2. GPa
-     %block MD.TargetStress
+     Target.Pressure  2. GPa
+     %block Target.Stress.Voigt
          -1.0  0.0  0.0  0.0  0.0  0.0
-     %endblock MD.TargetStress
+     %endblock
   \end{fdfexample}
 
   Only used if \fdf{MD.TypeOfRun} is \fdf*{CG}, \fdf*{Broyden} or
   \fdf*{FIRE} and \fdf{MD.VariableCell} is \fdftrue.
+
+\end{fdfentry}
+
+\begin{fdfentry}{MD.TargetStress}[block]<$-1$ $-1$ $-1$ $0$ $0$ $0$>
+  \fdfdeprecatedby{Target!Stress.Voigt}
+
+  Same as \fdf{Target!Stress.Voigt} but the order is same as older
+  \siesta\ version (prior to 4.1). Order is \texttt{xx, yy, zz, xy,
+      xz, yz}.
 
 \end{fdfentry}
 
@@ -9953,6 +9969,11 @@ dynamics.
   If the intra-molecular stress is removed, the corrected static and
   total stresses are printed in addition to the uncorrected items.
   The corrected Voigt form is also printed.
+
+  \note versions prior to 4.1 (also 4.1-beta releases) printed the
+  Voigt stress-tensor in this format: \shell{[x, y, z, xy, yz,
+      xz]}. In 4.1 and later \siesta\ \emph{only} show the correct
+  Voigt representation: \shell{[x, y, z, yz, xz, xy]}.
 
 \end{fdflogicalF}
 
