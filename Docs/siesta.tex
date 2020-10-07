@@ -1180,7 +1180,7 @@ substitute spaces by \fdf*{:}.
   \option[-electrode|-elec]%
   \fdfindex*{Command line options:-electrode}%
   \fdfindex*{Command line options:-elec}%
-  \fdfdeprecates{TS!HS.Save,TS!DE.Save}
+  \fdfoverwrite{TS!HS.Save,TS!DE.Save}
   denote this as an electrode calculation which forces the
   \sysfile{TSHS} and \sysfile{TSDE} files to be saved.
 
@@ -1189,7 +1189,7 @@ substitute spaces by \fdf*{:}.
 
   \option[-V]%
   \fdfindex*{Command line options:-V}%
-  \fdfdeprecates{TS!Voltage}
+  \fdfoverwrite{TS!Voltage}
   specify the bias for the current \tsiesta\ run.
 
   \shell{siesta -V 0.25:eV} or \shell{siesta -V "0.25 eV"}
@@ -3778,10 +3778,12 @@ are always stored in the file \sysfile{KP}.
     Perform a calculation with spin-degeneracy (only one component).
 
     \option[polarized]%
+    \fdfindex*{SpinPolarized}%
     \fdfindex*{Spin:polarized}%
     Perform a calculation with colinear spin (two spin components).
 
     \option[non-colinear]%
+    \fdfindex*{NonCollinearSpin}%
     \fdfindex*{Spin:non-colinear}%
     Perform a calculation with non-colinear spin (4 spin components),
     up-down and angles.
@@ -3792,6 +3794,7 @@ are always stored in the file \sysfile{KP}.
     Phys: Cond. Matt \textbf{16}, 5453 (2004).
 
     \option[spin-orbit]%
+    \fdfindex*{SpinOrbit}%
     \fdfindex*{Spin:spin-orbit}%
     Perform a calculation with spin-orbit coupling.  This requires the
     pseudopotentials to be relativistic.
@@ -6139,6 +6142,7 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
 
 
 \begin{fdfentry}{Diag!Algorithm}[string]<Divide-and-Conquer|...>
+  \fdfdeprecates{Diag!DivideAndConquer,Diag!MRRR,Diag!ELPA,Diag!NoExpert}
 
   Select the algorithm when calculating the eigenvalues and/or
   eigenvectors.
