@@ -8412,6 +8412,9 @@ or interpolation of bands), can be downloaded from
   \textit{Use:} For example, the F$^-$ ion would have \fdf{NetCharge}
   \fdf*{-1} , and the Na$^+$ ion would have \fdf{NetCharge} \fdf*{1}.
   Fractional charges can also be used.
+
+  \note Doing non-neutral charge calculations with
+  \fdf{Slab.DipoleCorrection} is discouraged.
   
 \end{fdfentry}
 
@@ -8424,7 +8427,7 @@ or interpolation of bands), can be downloaded from
   charge of the system, and adds a compensating background charge that
   makes the system neutral. This background charge is constant at
   points of the mesh near the atoms, and zero at points far from the
-  atoms.  This simulates situations like doped slabs, where the extra
+  atoms. This simulates situations like doped slabs, where the extra
   electrons (holes) are compensated by oposite charges at the material
   (the ionized dopant impurities), but not at the vacuum.  This serves
   to simulate properly doped systems in which there are large portions
@@ -8451,24 +8454,65 @@ or interpolation of bands), can be downloaded from
 
   Starting with version 4.0, applying an electric field perpendicular
   to a slab will by default enable the slab dipole correction, see
-  \fdf{SlabDipoleCorrection}. To reproduce older calculations, set
+  \fdf{Slab.DipoleCorrection}. To reproduce older calculations, set
   this correction option explicitly to \fdffalse\ in the input file.
 
 \end{fdfentry}
 
-\begin{fdflogicalF}{SlabDipoleCorrection}
+\begin{fdfentry}{Slab.DipoleCorrection}[string]<?|\fdftrue|\fdffalse|charge|vacuum|none>
+  \fdfdepend{ExternalElectricField}%
   
-  If \fdftrue, \siesta\ calculates the electric field required to
+  If not \fdffalse, \siesta\ calculates the electric field required to
   compensate the dipole of the system at every iteration of the
-  self-consistent cycle. The potential added to the grid corresponds
-  to that of a dipole layer at the middle of the vacuum layer. For
-  slabs, this exactly compensates the electric field at the vacuum
-  created by the dipole moment of the system, thus allowing to treat
-  asymmetric slabs (including systems with an adsorbate on one
-  surface) and compute properties such as the work funcion of each of
-  the surfaces.
+  self-consistent cycle.
 
-  NOTE: If the program is fed a starting density matrix from an
+  The dipole correction only works for Fourier transformed Poisson
+  solutions of the Hartree potential since that will introduce a
+  compensating field in the vacuum region to counter any inherent
+  dipole in the system. Do not use this option together with
+  \fdf{NetCharge} (charged systems).
+
+  There are two ways of calculating the dipole of the system:
+  \begin{fdfoptions}
+
+    \option[charge|\fdftrue]%
+    \fdfindex*{Slab.DipoleCorrection:charge}%
+
+    The dipole of the system is calculated via
+    \begin{equation}
+      \mathbf D = - e \int(\mathbf r - \mathbf r_0) \delta\boldsymbol\rho(\mathbf r)
+    \end{equation}
+    where $\mathbf r_0$ is the dipole origin, see \fdf{Slab.DipoleCorrection!Origin},
+    and $\delta\boldsymbol\rho$ is valence pseudocharge density minus
+    the atomic valence pseudocharge densities.
+
+    \option[vacuum]%
+    \fdfindex*{Slab.DipoleCorrection:vacuum}%
+
+    The electric field of the system is calculated via
+    \begin{equation}
+      \mathbf E \propto \left.\iint \mathrm d \mathbf r_{\perp \mathbf D} V(\mathbf
+        r)\right|_{\mathbf r_{\mathrm{vacuum}}}
+    \end{equation}
+    where $\mathbf r_{\mathrm{vacuum}}$ is a point located in the
+    vacuum region, see \fdf{Slab.DipoleCorrection!Vacuum}. Once the field is
+    determined it is converted to an intrinsic system dipole.
+
+    This feature is mainly intended for \fdf{Geometry!Charge}
+    calculations where \fdf{Slab.DipoleCorrection:charge} may fail if the dipole
+    center is determined incorrectly.
+
+    For regular systems both this and \fdf*{charge} should yield
+    approximately (down to numeric precision) the same dipole moments.
+
+  \end{fdfoptions}
+
+  The dipole correction should exactly compensate the electric field
+  at the vacuum level thus allowing one to treat asymmetric slabs
+  (including systems with an adsorbate on one surface) and compute
+  properties such as the work funcion of each of the surfaces.
+
+  \note If the program is fed a starting density matrix from an
   uncorrected calculation (i.e., with an exagerated dipole), the first
   iteration might use a compensating field that is too big, with the
   risk of taking the system out of the convergence basin. In that
@@ -8476,12 +8520,96 @@ or interpolation of bands), can be downloaded from
   \fdf{SCF.Mix!First}\index{Slab dipole correction} option to request a mix of the input and
   output density matrices after that first iteration.
 
-  See \shell{Tests/sic-slab}.
+  \note \fdf*{charge} and \fdf*{vacuum} will for many systems yield
+  the same result. If in doubt try both and see which one gives the
+  best result.
+
+  See \shell{Tests/sic-slab}, \shell{Tests/h2o\_2\_dipol\_gate}.
 
   This will default to \fdftrue\ if an external field is applied to a
   slab calculation, otherwise it will default to \fdffalse.
 
-\end{fdflogicalF}
+\end{fdfentry}
+
+\begin{fdfentry}{Slab.DipoleCorrection!Origin}[block]
+  \fdfdepend{Slab.DipoleCorrection:charge}
+
+  Specify the origin of the dipole in the calculation of the dipole
+  from the charge distribution.
+
+  Its format is
+  \begin{fdfexample}
+     %block Slab.DipoleCorrection.Origin
+        0.000  10.000  0.500  Ang
+     %endblock
+  \end{fdfexample}
+
+  If this block is not specified the origin of the dipole will be the
+  average position of the atoms.
+
+  \note this will only be read if \fdf{Slab.DipoleCorrection:charge}
+  is used.
+  %
+  \note this should only affect calculations with
+  \fdf{Geometry!Charge} due to the non-trivial dipole origin, see
+  e.g. \shell{Tests/h2o\_2\_dipol\_gate} and try and see if you can
+  manually place the dipole origin to achieve similar results as the
+  vacuum method.
+
+\end{fdfentry}
+
+\begin{fdfentry}{Slab.DipoleCorrection!Vacuum}[block]
+  \fdfdepend{Slab.DipoleCorrection:vacuum}
+
+  Options for the vacuum field determination.
+
+  \begin{fdfoptions}
+
+    \option[direction]%
+
+    Mandatory input for chain and molecule calculations.
+
+    Specify along which direction we should determine the electric
+    field/dipole.
+
+    For slabs this defaults to the non-bulk direction.
+
+    \option[position]%
+
+    Specify a point in the vacuum region.
+
+    Defaults to the vacuum region based on the atomic coordinates.
+
+    \option[tolerance]%
+
+    Tolerance for determining whether we are in a vacuum region.
+    The premise of the electric field calculation in the vacuum region
+    is that the derivative of the potential ($\mathbf E$) is
+    flat. When the electric field changes by more than this tolerance
+    the region is not vacuum anymore and the point is disregarded.
+
+    Defaults to $10^{-4}\,\mathrm{eV/Ang/e}$.
+
+  \end{fdfoptions}
+
+  Its format is
+  \begin{fdfexample}
+     %block Slab.DipoleCorrection.Vacuum
+        # this is optional
+        # default position is the center of system + 0.5 lattice vector
+        # along 'direction'
+        position 0.000  10.000  0.500  Ang
+        # this is optional
+        # default is 1e-4 eV/Ang/e
+        tolerance 0.001 eV/Ang/e
+        # this is mandatory
+        direction 0.000  1.000  0.
+     %endblock
+  \end{fdfexample}
+
+  \note this will only be read if \fdf{Slab.DipoleCorrection:vacuum} is used.
+
+\end{fdfentry}
 
 
 \begin{fdfentry}{Geometry!Hartree}[block]%
@@ -8502,7 +8630,7 @@ or interpolation of bands), can be downloaded from
   \begin{fdfoptions}
     
 
-    \option[Infinite plane]%
+     \option[Infinite plane]%
     \index{Gate!infinite plane}%
 
     Define a geometry by an infinite plane which cuts the unit-cell.
@@ -8643,7 +8771,8 @@ or interpolation of bands), can be downloaded from
 
   To see how the input should be formatted, see
   \fdf{Geometry!Hartree} and remove the unit-specification. Note that
-  the input value is number of electrons (similar to \fdf{NetCharge}).
+  the input value is number of electrons (similar to \fdf{NetCharge},
+  however this method ensures charge-neutrality).
 
   Details regarding this implementation may be found in
   \citet{Papior2016a}.
