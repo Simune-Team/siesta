@@ -11607,6 +11607,34 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 
 \end{fdfentry}
 
+\begin{fdfentry}{TS!SCF!DM.Tolerance}[real]<\fdfvalue{SCF.DM!Tolerance}>%
+  \fdfdepend{SCF.DM!Tolerance}
+
+  The density matrix tolerance for the \tsiesta\ SCF cycle.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!SCF!H.Tolerance}[energy]<\fdfvalue{SCF.H!Tolerance}>%
+  \fdfdepend{SCF.H!Tolerance}
+
+  The Hamiltonian tolerance for the \tsiesta\ SCF cycle.
+
+\end{fdfentry}
+
+\begin{fdfentry}{TS!Q.Tolerance}[real]<$\mathrm{Q(device)}\cdot 10^{-3}$>%
+
+  Once the SCF is completed this is a final check that the charge is
+  within the specified tolerance.
+
+  The charge is not stable in \tsiesta\ calculations and this flag
+  ensures that one does not, by accident, do post-processing of files
+  where there charge distribution is completely wrong.
+
+  A too high tolerance may heavily influence the electrostatics of the
+  simulation.
+
+\end{fdfentry}
+
 \begin{fdfentry}{TS!SCF.Initialize}[string]<diagon|transiesta>%
 
   Control which initial guess should be used for \tsiesta. The general
