@@ -16,11 +16,23 @@ An overview changelog for Siesta.
 * Maximum l for KB projectors is now automatically set to the highest
   l in the PS file. This may result in slight changes.
 
+* Bug in Voigt representation output, !25
+  Users with scripts that parses stress-tensor-Voigt will
+  need to adapt.
+
 ### Changes
+
+* Added dipole calculation from vacuum region, !22
+  For gated calculations this is the preferred method.
+
+* Bug, fixed nnzs == nspin parallelization calculations which
+  could revert order of DM reads.
 
 * Removed some minor memory leaks in mesh-subs
 
-* Update and add .md extension to main README
+* Bug, fixed Ha/Bohr unit in fdf
+
+* Updated flook installation script to 0.8.1
 
 * Update Docs/REPORTING_BUGS
 
@@ -45,7 +57,7 @@ An overview changelog for Siesta.
 
 * Fixed cell transpose when using socket calculations (only important for skewed cells)
 
-* Added citation information to output (end of run)
+  * Added citation information to output (end of run)
 
 * Allowed Mesh.Sizes as list input so users can specify their own Mesh size
 
@@ -66,6 +78,14 @@ An overview changelog for Siesta.
 * Removed *ALL* OMP collapse statements, Intel 2019 is buggy.
 
 #### TranSiesta / TBtrans
+
+* Added charge tolerance after SCF to ensure TS didn't go out of the basin
+  This is basically to catch heavy losses of electrons/protons which results
+  in incorrect results.
+
+* TS.Elecs.DM.Init now defaults to diagon, while this yields worse results
+  it has little influence for correctly setup systems and it will generally
+  make SCF a little easier.
 
 * Much more efficient dq implementation for fixing charge fluctuations
 
