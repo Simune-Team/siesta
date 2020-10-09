@@ -165,7 +165,8 @@
 
         integer io_ps, i, j, ios
         character(len=70) dummy
-        real(dp) :: r2, gen_zval_inline
+        character(len=256) line
+        real(dp) :: r2
 
         call io_assign(io_ps)
         open(io_ps,file=fname,form='formatted',status='unknown')
@@ -175,32 +176,25 @@
  8000   format(1x,i2)
  8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
  8010   format(1x,6a10,/,1x,a70)
- 8015   format(1x,2i3,i5,4g20.12)
+ 8015   format(1x,2i3,i5,3g20.12)
  8030   format(4(g20.12))
  8040   format(1x,a)
 
         read(io_ps,8005) p%name, p%icorr, p%irel, p%nicore
         read(io_ps,8010) (p%method(i),i=1,6), p%text
-        read(io_ps,8015,iostat=ios)
-     $       p%npotd, p%npotu, p%nr, p%b, p%a, p%zval,
-     $       gen_zval_inline
-        if (ios < 0) gen_zval_inline = 0.0_dp
-        call read_ps_conf(p%irel,p%npotd-1,p%text,p%gen_zval)
-!
-!       (Some .psf files contain an extra field corresponding
-!       to the ps valence charge at generation time. If that
-!       field is not present, the information has to be decoded
-!       from the "text" variable.
-!
-!       "Zero" pseudos have gen_zval = 0, so they need a special case.
 
-        if (p%gen_zval == 0.0_dp) then
-           if (gen_zval_inline == 0.0_dp) then
-              if (p%method(1) /= "ZEROPSEUDO")
-     $             call die("Cannot get gen_zval")
-           else
-              p%gen_zval = gen_zval_inline
-           endif
+        read(io_ps,fmt="(a)") line
+        read(line,8015)  p%npotd, p%npotu, p%nr, p%b, p%a, p%zval
+
+        ! Above statement reads up to 72 chars
+        if (len_trim(line) >= 74) then
+           ! There is an explicit field for the total
+           ! generation valence charge
+           read(line(74:),fmt=*) p%gen_zval
+        else
+           ! Set total generation valence charge from the packed
+           ! information on pseudized shells
+           call read_ps_conf(p%irel,p%npotd-1,p%text,p%gen_zval)
         endif
 
         p%nrval = p%nr + 1
