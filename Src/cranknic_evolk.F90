@@ -159,9 +159,9 @@ CONTAINS
  IF(firsttime) THEN 
    deltat = (delt * Ryd_time) / dble(ntded_sub)
    IF (IOnode) THEN
-     WRITE(6,"(/a,f16.6)") 'cn_evolg: TDED time step (fs)       =', delt
+     WRITE(6,"(/a,f16.6)") 'cn_evolk: TDED time step (fs)       =', delt
      IF (extrapol_H_tdks) THEN
-       WRITE(6,"(a,f16.6)")'cn_evolg: TDED time sub-step (fs)   =', delt/ntded_sub
+       WRITE(6,"(a,f16.6)")'cn_evolk: TDED time sub-step (fs)   =', delt/ntded_sub
      END IF
    ENDIF
  
