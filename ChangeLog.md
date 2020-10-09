@@ -4,6 +4,8 @@
 
 ### Changes
 
+* Fix for honoring the 'gen_zval' field in psf files
+
 * Removed some minor memory leaks in mesh-subs
 
 * Update and add .md extension to main README

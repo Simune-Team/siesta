@@ -2813,7 +2813,8 @@ C
           
         chgvps = vp%gen_zval
 
-        write(6,'(a,f10.5)') 'Total valence charge: ', chgvps
+        write(6,'(a,f10.5)') 'Valence charge for ps generation: ',
+     $                       chgvps
 
         if (nicore.ne.'nc  ') then
           write(6,'(/,a)')
