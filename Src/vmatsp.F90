@@ -324,8 +324,8 @@ contains
 
           VClocal(1,isp) = V(isp,ip,1) * Clocal(isp,ic)
           VClocal(2,isp) = V(isp,ip,2) * Clocal(isp,ic)
-          VClocal(3,isp) = (V(isp,ip,3)*cqRdi + V(isp,ip,4)*sqRdi) * Clocal(isp,ic)
-          VClocal(4,isp) = (V(isp,ip,4)*cqRdi - V(isp,ip,3)*sqRdi) * Clocal(isp,ic)
+          VClocal(3,isp) = (V(isp,ip,3)*cqRdi - V(isp,ip,4)*sqRdi) * Clocal(isp,ic)
+          VClocal(4,isp) = (V(isp,ip,4)*cqRdi + V(isp,ip,3)*sqRdi) * Clocal(isp,ic)
         enddo
 
         ! Loop on second orbital of mesh point (NOT only for jc.le.ic)

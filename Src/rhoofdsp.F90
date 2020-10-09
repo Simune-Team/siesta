@@ -322,9 +322,9 @@ contains
             rhoscf(isp,ip,1) = rhoscf(isp,ip,1) + Dij(1)*Cij
             rhoscf(isp,ip,2) = rhoscf(isp,ip,2) + Dij(2)*Cij
             rhoscf(isp,ip,3) = rhoscf(isp,ip,3) + &
-                (Dij(3)*cqRdi(isp) - Dij(4)*sqRdi(isp))*Cij
+                (Dij(3)*cqRdi(isp) + Dij(4)*sqRdi(isp))*Cij
             rhoscf(isp,ip,4) = rhoscf(isp,ip,4) + &
-                (Dij(4)*cqRdi(isp) + Dij(3)*sqRdi(isp))*Cij
+                (Dij(4)*cqRdi(isp) - Dij(3)*sqRdi(isp))*Cij
           end do
 
         enddo
@@ -340,9 +340,9 @@ contains
           rhoscf(isp,ip,1) = rhoscf(isp,ip,1) + Dij(1)*Cij
           rhoscf(isp,ip,2) = rhoscf(isp,ip,2) + Dij(2)*Cij
           rhoscf(isp,ip,3) = rhoscf(isp,ip,3) + &
-              (Dij(3)*cqRdi(isp) - Dij(4)*sqRdi(isp))*Cij
+              (Dij(3)*cqRdi(isp) + Dij(4)*sqRdi(isp))*Cij
           rhoscf(isp,ip,4) = rhoscf(isp,ip,4) + &
-              (Dij(4)*cqRdi(isp) + Dij(3)*sqRdi(isp))*Cij
+              (Dij(4)*cqRdi(isp) - Dij(3)*sqRdi(isp))*Cij
         end do
 
         ! Loop on second orbital of mesh point (here only jc > ic)
@@ -354,9 +354,9 @@ contains
           do isp = 1, nsp
             Cij = Clocal(isp,ic) * Clocal(isp,jc)
             rhoscf(isp,ip,3) = rhoscf(isp,ip,3) + &
-                (Dij(3)*cqRdi(isp) - Dij(4)*sqRdi(isp))*Cij
+                (Dij(3)*cqRdi(isp) + Dij(4)*sqRdi(isp))*Cij
             rhoscf(isp,ip,4) = rhoscf(isp,ip,4) + &
-                (Dij(4)*cqRdi(isp) + Dij(3)*sqRdi(isp))*Cij
+                (Dij(4)*cqRdi(isp) - Dij(3)*sqRdi(isp))*Cij
           end do
         end do
 

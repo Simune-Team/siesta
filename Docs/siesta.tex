@@ -1262,7 +1262,7 @@ These are some examples:
 \begin{verbatim}
            SystemName      Water molecule  # This is a comment
            SystemLabel     h2o
-           SpinPolarized        yes
+           Spin polarized
            SaveRho
            NumberOfAtoms         64
            LatticeConstant       5.42 Ang
@@ -3847,9 +3847,14 @@ are always stored in the file \sysfile{KP}.
   \note this option only applies for non-collinear spin (not for
   spin-orbit).
 
+  \note this part of the code has not been tested, we would welcome
+  any person who could assert its correctness and provide tests. Use
+  with \emph{extreme} care.
+
 \end{fdfentry}
 
 \begin{fdfentry}{Spin!Spiral.Scale}[string]
+  \fdfdepend{Spin!Spiral}
 
   Specifies the scale of the spiral vector $q$ vectors given in \fdf{Spin!Spiral}.
   The options are:
