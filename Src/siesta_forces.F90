@@ -86,6 +86,7 @@ contains
 #endif
     use m_check_walltime
 
+    use m_ts_options, only : ts_qtol
     use m_ts_options, only : N_Elec, N_mu, mus
     use m_ts_method
     use m_ts_global_vars,      only: TSmode, TSinit, TSrun, onlyS
@@ -518,9 +519,15 @@ contains
 #endif
 
     ! Clean up the charge correction object
-      call ts_dq%delete()
+    call ts_dq%delete()
 
     if ( .not. SIESTA_worker ) return
+
+    if ( TSrun .and. SCFconverged ) then
+      ! Check we are still below the accepted loss of electrons
+      ! By default Q(dev) / 1000
+      SCFconverged = abs(Qcur - Qtot) <= ts_qtol
+    end if
 
     call end_of_cycle_save_operations(SCFconverged)
 
@@ -530,6 +537,11 @@ contains
                ' in maximum number of steps (required).')
           write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
           call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+          if ( TSrun ) then
+            write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, Qcur - Qtot
+            call message(' (info)',"Geom step, scf iteration, dq:"// &
+                trim(tmp_str))
+          end if
           call timer( 'all', 2 ) ! New call to close the tree
           call timer( 'all', 3 )
           call barrier()
@@ -539,6 +551,10 @@ contains
                'SCF_NOT_CONV: SCF did not converge  in maximum number of steps.')
           write(tmp_str,"(2(i5,tr1),f12.6)") istep, iscf, prevDmax
           call message(' (info)',"Geom step, scf iteration, dmax:"//trim(tmp_str))
+          if ( TSrun ) then
+            write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, Qcur - Qtot
+            call message(' (info)',"Geom step, scf iteration, dq:"//trim(tmp_str))
+          end if
        end if
     end if
 

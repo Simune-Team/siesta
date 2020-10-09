@@ -756,7 +756,7 @@ end subroutine timer_start
 
 !===============================================================================
 
-subroutine timer_stop( prog )   ! Stop counting time for a program
+recursive subroutine timer_stop( prog )   ! Stop counting time for a program
 #ifdef _OPENMP
   use omp_lib
 #endif
