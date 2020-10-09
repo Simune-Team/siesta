@@ -4,7 +4,7 @@
 
 ### Changes
 
-See Docs/CHANGES for more details
+* Removed some minor memory leaks in mesh-subs
 
 * Update and add .md extension to main README
 
@@ -15,6 +15,8 @@ See Docs/CHANGES for more details
 * Fixed cell transpose for socket communication, fixes lp:1835196
 
 * Make matel registry pool re-sizeable
+
+* Fixed grid output when using cell-sampling, lp:1799991
 
 * Fixed vibra utility precision issue, fixed lp:1816719
 
