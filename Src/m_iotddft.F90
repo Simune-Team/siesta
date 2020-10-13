@@ -128,7 +128,7 @@ SUBROUTINE ioeigenvalues (totime, eigen, lastistp, rstart_time, &
 
  INTEGER            :: maxo, nspin, nk, ik, ispin, ie
  INTEGER            :: nocc(nk,nspin)
- INTEGER, SAVE      :: iuu
+ INTEGER, SAVE      :: iu
  DOUBLE PRECISION   :: totime, rstart_time
  DOUBLE PRECISION   :: eigen(maxo,nspin,nk)
  LOGICAL            :: lastistp
@@ -139,36 +139,20 @@ SUBROUTINE ioeigenvalues (totime, eigen, lastistp, rstart_time, &
    IF (frstme) THEN
      eigenfile = trim(slabel) // '.TDEIG'
      fform = 'formatted'
-     call io_newunit(iuu)
-     OPEN (UNIT=iuu, FILE=eigenfile, FORM=fform, POSITION='APPEND',      &
+     call io_assign(iu)
+     OPEN (UNIT=iu, FILE=eigenfile, FORM=fform, POSITION='APPEND',      &
           STATUS='REPLACE')
-     WRITE(iuu,*) '#  ', nspin, nk
+     WRITE(iu,*) '#  ', nspin, nk
      frstme = .false.
    END IF
-     WRITE(iuu,"(f12.8,/)") totime
+     WRITE(iu,"(f12.8,/)") totime
      DO ik = 1, nk
-       WRITE(iuu,"(i5,10f12.5,/,(5x,10f12.5))")               &
+       WRITE(iu,"(i5,10f12.5,/,(5x,10f12.5))")               &
             ik, ((eigen(ie,ispin,ik)/eV,ie=1,(wavef_ms(ik,ispin)%dim2)),      &
             ispin=1,nspin)
      END DO
-   IF (lastistp) CLOSE (iuu)
+   IF (lastistp) call io_close(iu)
   END IF ! IONode
 END SUBROUTINE ioeigenvalues 
-
-  subroutine io_newunit(lun)
-      integer, intent(out) :: lun
-      logical used
-      integer iostat
-
-!     Looks for a free unit and assigns it to lun
-
-      do lun= 10, 99
-            inquire(unit=lun, opened=used, iostat=iostat)
-            if (iostat .ne. 0) used = .true.
-            if (.not. used) return
-      enddo
-  end subroutine io_newunit
-
-
 
        END MODULE m_iotddft

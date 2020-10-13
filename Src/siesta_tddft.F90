@@ -145,12 +145,12 @@ contains
 
        call setup_hamiltonian( itded )
 
-       call evolve(  td_dt )
+       call evolve( td_dt )
 
        ! The total simulation time mainly for plotting
        totime = (istep*dt - dt) + (itded*td_dt)
 
-       call compute_energies (itded)
+       call compute_energies(itded)
        call write_tddft(totime, istep, itded, ntded, rstart_time, &
             etot, eo, no_u,nspin,kpoint_scf%N)
 
