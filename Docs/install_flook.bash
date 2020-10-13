@@ -34,6 +34,29 @@ else
     ID=$PREFIX
 fi
 
+while [ $# -gt 0 ]; do
+    opt=$1 ; shift
+    case $opt in
+	--prefix|-p)
+	    ID=$1 ; shift
+	    ;;
+	--flook-version|-flook-v)
+	    f_v=$1 ; shift
+	    ;;
+	--help|-h)
+	    echo " $0 --help shows this message"
+	    echo ""
+	    echo "These options are available:"
+	    echo ""
+	    echo "  --prefix|-p <>: specify the installation directory of the library"
+	    echo "  --flook-version|-flook-v <>: specify the flook version (default: $f_v)"
+	    echo ""
+	    exit 0
+	    ;;
+    esac
+done
+
+
 echo "Installing libraries in folder: $ID"
 mkdir -p $ID
 
@@ -44,6 +67,29 @@ function file_exists {
 	echo "Please download the file and place it in this folder:"
 	echo " $(pwd)"
 	exit 1
+    fi
+}
+
+# Download a file, if able and the file does not exist
+which wget > /dev/null
+if [ $? -eq 0 ]; then
+    # success we can download using wget
+    function _dwn_file {
+	wget -O $1 $2
+    }
+else
+    function _dwn_file {
+	curl -o $1 $2
+    }
+fi
+
+# Use download function
+#  $1 is name of file
+#  $2 is URL
+function download_file {
+    if [ ! -e $(pwd)/$1 ] ; then
+	# Try and download
+	_dwn_file $1 $2
     fi
 }
 
@@ -59,6 +105,9 @@ function retval {
     fi
 }
 
+# Download files if they can
+download_file flook-${f_v}.tar.gz https://github.com/ElectronicStructureLibrary/flook/archive/v$f_v.tar.gz
+
 file_exists flook-${f_v}.tar.gz
 unset file_exists
 
@@ -71,7 +120,6 @@ if [ ! -d $ID/flook/${f_v}/$flook_lib ]; then
     cd flook-${f_v}
     mkdir -p obj ; cd obj
     {
-	echo TOP_DIR=..
 	[ "x$FC" != "x" ] && \
 	    echo FC = $FC
 	[ "x$FCFLAGS" != "x" ] && \
@@ -81,6 +129,10 @@ if [ ! -d $ID/flook/${f_v}/$flook_lib ]; then
 	[ "x$CFLAGS" != "x" ] && \
 	    echo CFLAGS = $CFLAGS
     } > setup.make
+    {
+	echo TOP_DIR=..
+	echo include ../Makefile
+    } > Makefile
     if [ "x$VENDOR" == "x" ]; then
 	make liball
     else
