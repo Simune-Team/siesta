@@ -12,7 +12,7 @@
 
 # VERY BASIC installation script of required libraries
 # for installing these packages:
-#   flook-0.8.1
+#   flook
 # If you want to change your compiler version you should define the
 # global variables that are used for the configure scripts to grab the
 # compiler, they should be CC and FC. Also if you want to compile with
@@ -50,6 +50,12 @@ while [ $# -gt 0 ]; do
 	    echo ""
 	    echo "  --prefix|-p <>: specify the installation directory of the library"
 	    echo "  --flook-version|-flook-v <>: specify the flook version (default: $f_v)"
+	    echo ""
+	    echo "To customize compilers and flags please export these environment variables:"
+	    echo "  CC"
+	    echo "  FC"
+	    echo "  CFLAGS"
+	    echo "  FFLAGS"
 	    echo ""
 	    exit 0
 	    ;;
@@ -116,18 +122,22 @@ unset file_exists
 #################
 [ -d $ID/flook/${f_v}/lib64 ] && flook_lib=lib64 || flook_lib=lib
 if [ ! -d $ID/flook/${f_v}/$flook_lib ]; then
+    rm -rf flook-${f_v}
     tar xfz flook-${f_v}.tar.gz
     cd flook-${f_v}
     mkdir -p obj ; cd obj
     {
+	echo "# Setup script creation of setup.make"
 	[ "x$FC" != "x" ] && \
-	    echo FC = $FC
+	    echo "FC = $FC"
 	[ "x$FCFLAGS" != "x" ] && \
-	    echo FFLAGS = $FCFLAGS
+	    echo "FFLAGS = $FCFLAGS"
+	[ "x$FFLAGS" != "x" ] && \
+	    echo "FFLAGS = $FFLAGS"
 	[ "x$CC" != "x" ] && \
-	    echo CC = $CC
+	    echo "CC = $CC"
 	[ "x$CFLAGS" != "x" ] && \
-	    echo CFLAGS = $CFLAGS
+	    echo "CFLAGS = $CFLAGS"
     } > setup.make
     {
 	echo TOP_DIR=..
