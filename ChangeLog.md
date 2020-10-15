@@ -22,6 +22,8 @@ An overview changelog for Siesta.
 
 ### Changes
 
+* Added final break-point for LUA, LUA_FINALIZE just before Siesta stops.
+
 * Added dipole calculation from vacuum region, !22
   For gated calculations this is the preferred method.
 

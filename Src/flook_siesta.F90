@@ -26,8 +26,10 @@ module flook_siesta
   integer, parameter, public :: LUA_FORCES = 4
   ! when moving the atoms, right after the FORCES step
   integer, parameter, public :: LUA_MOVE = 5
-  ! when SIESTA is complete, just before it exists
+  ! when Siesta is about to do analysis
   integer, parameter, public :: LUA_ANALYSIS = 6
+  ! when SIESTA is complete, just before it exists
+  integer, parameter, public :: LUA_FINALIZE = 7
 
 #ifdef SIESTA__FLOOK
 
@@ -63,6 +65,7 @@ siesta = { &
     FORCES = 4, &
     MOVE = 5, &
     ANALYSIS = 6, &
+    FINALIZE = 7, &
     state = 0, &
     IOprint = function(self, ...) &
        if self.IONode then &
@@ -256,6 +259,8 @@ siesta.Units.Kelvin = siesta.Units.eV / 11604.45'
        tmp = 'MOVE'
      case ( LUA_ANALYSIS )
        tmp = 'ANALYSIS'
+     case ( LUA_FINALIZE )
+       tmp = 'FINALIZE'
      end select
        
      write(*,'(/2a)') 'Entering Lua-interactive @ siesta.state = ', trim(tmp)
