@@ -331,7 +331,6 @@ contains
 
     end if
 
-
     if ( present(default_nspin) ) then
       default_nspin = spin%H
     end if
@@ -397,9 +396,14 @@ end subroutine init_spin
     write(*,'(a,t53,''= '',a)') 'redata: Spin configuration',trim(opt)
     write(*,'(a,t53,''= '',i0)')'redata: Number of spin components',spin%H
     write(*,'(a,t53,''= '',l1)')'redata: Time-Reversal Symmetry',TRSym
-    write(*,'(a,t53,''= '',l1)')'redata: Spin-spiral',Spiral
-    if ( Spiral .and. .not. spin%NCol ) then
-       write(*,'(a)') 'redata: WARNING: spin-spiral requires non-collinear spin'
+    write(*,'(a,t53,''= '',l1)')'redata: Spin spiral', Spiral
+    if ( Spiral ) then
+      write(*,'(a,t53,''='',3(tr1,e12.6))') &
+          'redata: Spin spiral pitch wave vector', qSpiral
+      if ( .not. spin%NCol ) then
+        write(*,'(a)') 'redata: WARNING: spin spiral requires non-collinear spin'
+        call die("Spin spiral requires non-collinear spin")
+      end if
     end if
 
     if ( spin%SO .and. spin%SO_onsite ) then
@@ -412,51 +416,45 @@ end subroutine init_spin
   
 
   subroutine init_spiral( ucell )
-    use fdf, only : fdf_get, leqi
+    use fdf, only: fdf_get
     use fdf, only: block_fdf, parsed_line
     use fdf, only: fdf_block, fdf_bline, fdf_bclose
-    use fdf, only: fdf_bnames, fdf_bvalues
-    use units, only: Pi
+    use fdf, only: fdf_bvalues
+    use m_get_kpoints_scale, only: get_kpoints_scale
 
     ! Unit cell lattice vectors
     real(dp), intent(in) :: ucell(3,3)
 
-    type(block_fdf)            :: bfdf
+    type(block_fdf) :: bfdf
     type(parsed_line), pointer :: pline
 
     ! Reciprocal cell vectors
-    real(dp) :: rcell(3,3), alat
-    character(len=30) :: lattice
-
-    ! read in lattice constant
-    alat = fdf_get('LatticeConstant',0.0_dp,'Bohr')
-
-    call reclat( ucell, rcell, 1 )
+    real(dp) :: rcell(3,3)
+    integer :: ierr
 
     Spiral = fdf_block('Spin.Spiral', bfdf)
 
     if ( .not. Spiral ) return
+    ! We cannot use TRS for spirals, regardless of user!
+    TRSym = .false.
+
+    ! Retrieve scale
+    call get_kpoints_scale('Spin.Spiral.Scale', rcell, ierr)
+
+    if ( ierr /= 0 ) then
+      call die('init_spiral: ERROR in Spin.Spiral.Scale, could &
+          &not find scale for spiral wave vector.')
+    end if
 
     if (.not. fdf_bline(bfdf,pline)) &
-         call die('init_spiral: ERROR in Spin.Spiral block')
+        call die('init_spiral: ERROR in Spin.Spiral block, could &
+        &not find spiral wave vector.')
 
-    ! Read lattice
-    lattice = fdf_bnames(pline,1)
     ! Read pitch wave-vector
     qSpiral(1) = fdf_bvalues(pline,1)
     qSpiral(2) = fdf_bvalues(pline,2)
     qSpiral(3) = fdf_bvalues(pline,3)
-
-    if ( leqi(lattice,'Cubic') ) then
-       qSpiral(1) = Pi * qSpiral(1) / alat
-       qSpiral(2) = Pi * qSpiral(2) / alat
-       qSpiral(3) = Pi * qSpiral(3) / alat
-    else if ( leqi(lattice,'ReciprocalLatticeVectors') ) then
-       qSpiral = matmul(rcell,qSpiral)
-    else
-       call die('init_spiral: ERROR: ReciprocalCoordinates must be' // &
-            ' ''Cubic'' or ''ReciprocalLatticeVectors''')
-    end if
+    qSpiral(:) = matmul(rcell, qSpiral)
 
     call fdf_bclose(bfdf)
 

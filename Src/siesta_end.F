@@ -50,6 +50,7 @@
 #endif
 
 #ifdef SIESTA__FLOOK
+      use flook_siesta,    only : slua_call, LUA_FINALIZE
       use flook_siesta,    only : slua_close
       use siesta_options,  only : LUA
 #endif
@@ -74,6 +75,8 @@
       if ( ionode ) call announce_citations()
 
 #ifdef SIESTA__FLOOK
+      ! Final call for the end-user
+      call slua_call(LUA,LUA_FINALIZE)
       ! Clean up the lua environment
       call slua_close(LUA)
 #endif

@@ -12,10 +12,10 @@
 
 # VERY BASIC installation script of required libraries
 # for installing these packages:
-#   zlib-1.2.11
-#   hdf5-1.12.0
-#   netcdf-c-4.7.2
-#   netcdf-fortran-4.5.2
+#   zlib
+#   hdf5
+#   netcdf-c
+#   netcdf-fortran
 # If you want to change your compiler version you should define the
 # global variables that are used for the configure scripts to grab the
 # compiler, they should be CC and FC. Also if you want to compile with
@@ -24,8 +24,8 @@
 # If you have downloaded other versions edit these version strings
 z_v=1.2.11
 h_v=1.12.0
-nc_v=4.7.2
-nf_v=4.5.2
+nc_v=4.7.4
+nf_v=4.5.3
 
 # Install path, change accordingly
 # You can change this variable to control the installation path
@@ -47,17 +47,11 @@ while [ $# -gt 0 ]; do
 	--prefix|-p)
 	    ID=$1 ; shift
 	    ;;
-	--libz-version|-libz-v)
+	--zlib-version|-zlib-v)
 	    z_v=$1 ; shift
 	    ;;
 	--hdf5-version|-hdf5-v)
 	    h_v=$1 ; shift
-	    ;;
-	--netcdf-c-version|-nc-v)
-	    nc_v=$1 ; shift
-	    ;;
-	--netcdf-f-version|-nf-v)
-	    nf_v=$1 ; shift
 	    ;;
 	--single-directory)
 	    _single_dir=1
@@ -65,7 +59,13 @@ while [ $# -gt 0 ]; do
 	--separate-directory)
 	    _single_dir=0
 	    ;;
-	--make-j)
+	--netcdf-version|--netcdf-c-version|-cdf-v|-nc-v)
+	    nc_v=$1 ; shift
+	    ;;
+	--netcdf-fortran-version|--netcdf-f-version|-cdff-v|-nf-v)
+	    nf_v=$1 ; shift
+	    ;;
+	--make-j|-j)
 	    _make_j=$1 ; shift
 	    ;;
 	--help|-h)
@@ -74,19 +74,24 @@ while [ $# -gt 0 ]; do
 	    echo "These options are available:"
 	    echo ""
 	    echo "  --prefix|-p <>: specify the installation directory of the libraries"
-	    echo "  --libz-version|-libz-v <>: specify the libz version (default: $z_v)"
+	    echo "  --zlib-version|-zlib-v <>: specify the libz version (default: $z_v)"
 	    echo "  --hdf5-version|-hdf5-v <>: specify the HDF5 version (default: $h_v)"
 	    echo "  --netcdf-c-version|-nc-v <>: specify the NetCDF-C version (default: $nc_v)"
 	    echo "  --netcdf-f-version|-nf-v <>: specify the NetCDF-fortran version (default: $nf_v)"
 	    echo "  --single-directory : all libraries are installed in --prefix/{bin,lib,include} (default: YES)"
 	    echo "  --separe-directory : all libraries are installed in --prefix/<package>/<version>/{bin,lib,include} (default: NO)"
-	    echo "  --make-j <>: run make in parallel using <> number of cores (default: $_make_j)"
+	    echo "  --make-j|-j <>: run make in parallel using <> number of cores (default: $_make_j)"
+	    echo ""
+	    echo "To customize compilers and flags please export these environment variables:"
+	    echo "  CC"
+	    echo "  FC"
+	    echo "  CFLAGS"
+	    echo "  FFLAGS"
 	    echo ""
 	    exit 0
 	    ;;
     esac
 done
-
 
 echo "Installing libraries in folder: $ID"
 echo ""
@@ -148,11 +153,10 @@ function retval {
     fi
 }
 
-# Download files if they can
-download_file zlib-${z_v}.tar.gz https://www.zlib.net/zlib-${z_v}.tar.gz
-download_file hdf5-${h_v}.tar.bz2 https://hdf-wordpress-1.s3.amazonaws.com/wp-content/uploads/manual/HDF5/HDF5_${h_v//./_}/source/hdf5-${h_v}.tar.bz2
-download_file netcdf-c-${nc_v}.tar.gz https://github.com/Unidata/netcdf-c/archive/v${nc_v}.tar.gz
-download_file netcdf-fortran-${nf_v}.tar.gz https://github.com/Unidata/netcdf-fortran/archive/v${nf_v}.tar.gz
+download_file zlib-${z_v}.tar.gz https://zlib.net/zlib-${z_v}.tar.gz
+download_file hdf5-${h_v}.tar.bz2 https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-${h_v%.*}/hdf5-${h_v}/src/hdf5-${h_v}.tar.bz2
+download_file netcdf-c-${nc_v}.tar.gz https://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-c-${nc_v}.tar.gz
+download_file netcdf-fortran-${nf_v}.tar.gz https://www.unidata.ucar.edu/downloads/netcdf/ftp/netcdf-fortran-${nf_v}.tar.gz
 
 file_exists zlib-${z_v}.tar.gz
 file_exists hdf5-${h_v}.tar.bz2
@@ -170,6 +174,7 @@ else
 fi
 [ -d $zlib_dir/lib64 ] && zlib_lib=lib64 || zlib_lib=lib
 if [ ! -e $zlib_dir/$zlib_lib/libz.a ]; then
+    rm -rf zlib-${z_v}
     tar xfz zlib-${z_v}.tar.gz
     cd zlib-${z_v}
     ./configure --prefix $zlib_dir/
@@ -208,7 +213,7 @@ if [ ! -e $hdf_dir/$hdf_lib/libhdf5.a ]; then
 	--enable-fortran --with-zlib=$zlib_dir \
 	LDFLAGS="-L$zlib_dir/$zlib_lib -Wl,-rpath,$zlib_dir/$zlib_lib"
     retval $? "hdf5 configure"
-    make -j 2
+    make -j $_make_j
     retval $? "hdf5 make"
     make check-s 2>&1 | tee hdf5.test
     retval $? "hdf5 make check-s"
@@ -244,7 +249,7 @@ if [ ! -e $cdfc_dir/$cdfc_lib/libnetcdf.a ]; then
 	LDFLAGS="-L$hdf_dir/$hdf_lib -Wl,-rpath,$hdf_dir/$hdf_lib \
 -L$zlib_dir/$zlib_lib -Wl,-rpath,$zlib_dir/$zlib_lib"
     retval $? "netcdf configure"
-    make -j 2
+    make -j $_make_j
     retval $? "netcdf make"
     make install
     retval $? "netcdf make install"
@@ -278,7 +283,7 @@ if [ ! -e $cdff_dir/$cdff_lib/libnetcdff.a ]; then
 	-lnetcdf -lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5 -lz" \
 	--prefix=$cdff_dir --enable-static --enable-shared
     retval $? "netcdf-fortran configure"
-    make -j 2
+    make -j $_make_j
     retval $? "netcdf-fortran make"
     make check 2>&1 | tee check.fortran.serial
     retval $? "netcdf-fortran make check"

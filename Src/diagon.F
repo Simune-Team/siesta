@@ -143,7 +143,7 @@ C
       logical, intent(in), optional :: dealloc_psi
       
       external
-     .  diag2g, diag2k, diagsprl
+     .  diag2g, diag2k, diag2kspiral
 #ifdef CDF
       external diagk_file
 #endif
@@ -278,14 +278,14 @@ C Call apropriate routine
      .               Dnew, Enew, ef, Entropy,
      .               Haux, Saux, psi, aux,
      .               nuotot, occtol, iscf, neigwanted )
-       elseif ( Spiral ) then
-        call diagsprl( nuo, no, maxnh, maxnd, maxo,
+      elseif ( Spiral ) then
+        call diag2kspiral( nuo, no, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
      .               xij, indxuo, nk, kpoint, wk, eo, qo,
      .               Dnew, Enew, ef, Entropy, qspiral, Haux,
      .               Saux, psi, Haux, Saux, aux, nuotot, occtol,
-     .               iscf )
+     .               iscf, neigwanted)
 #ifdef MPI
        else if ( ParallelOverK ) then
          call diag2kp( spin, maxuo, nuotot, no,

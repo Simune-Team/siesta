@@ -99,14 +99,13 @@ module m_initwf
       character          :: sname*30, fname*33, m_storage*5
       !
       logical            :: fixspin, ioifound, degen
-      logical, save      :: spiral
       logical, save      :: frstme = .true.
       !
       !
       integer            :: io, iuo, iu, nhs, npsi, nuo, nocc(2), ispin,ik,     &
                             i, j, sumqo,ikmax,iomax,ioi,iof,ispinmax
 
-      real(dp)           :: qspiral(3), ef, temp,nelect, entrp,qomax,qtol
+      real(dp)           :: ef, temp,nelect, entrp,qomax,qtol
 #ifdef MPI
       integer            :: MPIerror
 #endif
@@ -124,14 +123,6 @@ module m_initwf
           call die ('initwf: TDDFT is not parallelized over k-points.')
         end if
 #endif
-!       Read spin-spiral wavevector (if defined)
-        call readsp( qspiral, spiral )
-        if (spiral.and.Node.eq.0) then
-          if (gamma_scf) write(6,*) &
-            'diagon: WARNING: spin-spiral requires k sampling'
-          if (nspin.ne.4) write(6,*) &
-            'diagon: WARNING: spin-spiral requires nspin=4'
-        end if
         frstme = .false.
       end if
 !     Get Node number and calculate local orbital range

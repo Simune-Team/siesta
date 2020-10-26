@@ -12,7 +12,7 @@
 
 # VERY BASIC installation script of required libraries
 # for installing these packages:
-#   flook-0.8.1
+#   flook
 # If you want to change your compiler version you should define the
 # global variables that are used for the configure scripts to grab the
 # compiler, they should be CC and FC. Also if you want to compile with
@@ -34,6 +34,35 @@ else
     ID=$PREFIX
 fi
 
+while [ $# -gt 0 ]; do
+    opt=$1 ; shift
+    case $opt in
+	--prefix|-p)
+	    ID=$1 ; shift
+	    ;;
+	--flook-version|-flook-v)
+	    f_v=$1 ; shift
+	    ;;
+	--help|-h)
+	    echo " $0 --help shows this message"
+	    echo ""
+	    echo "These options are available:"
+	    echo ""
+	    echo "  --prefix|-p <>: specify the installation directory of the library"
+	    echo "  --flook-version|-flook-v <>: specify the flook version (default: $f_v)"
+	    echo ""
+	    echo "To customize compilers and flags please export these environment variables:"
+	    echo "  CC"
+	    echo "  FC"
+	    echo "  CFLAGS"
+	    echo "  FFLAGS"
+	    echo ""
+	    exit 0
+	    ;;
+    esac
+done
+
+
 echo "Installing libraries in folder: $ID"
 mkdir -p $ID
 
@@ -44,6 +73,29 @@ function file_exists {
 	echo "Please download the file and place it in this folder:"
 	echo " $(pwd)"
 	exit 1
+    fi
+}
+
+# Download a file, if able and the file does not exist
+which wget > /dev/null
+if [ $? -eq 0 ]; then
+    # success we can download using wget
+    function _dwn_file {
+	wget -O $1 $2
+    }
+else
+    function _dwn_file {
+	curl -o $1 $2
+    }
+fi
+
+# Use download function
+#  $1 is name of file
+#  $2 is URL
+function download_file {
+    if [ ! -e $(pwd)/$1 ] ; then
+	# Try and download
+	_dwn_file $1 $2
     fi
 }
 
@@ -59,6 +111,9 @@ function retval {
     fi
 }
 
+# Download files if they can
+download_file flook-${f_v}.tar.gz https://github.com/ElectronicStructureLibrary/flook/archive/v$f_v.tar.gz
+
 file_exists flook-${f_v}.tar.gz
 unset file_exists
 
@@ -67,20 +122,27 @@ unset file_exists
 #################
 [ -d $ID/flook/${f_v}/lib64 ] && flook_lib=lib64 || flook_lib=lib
 if [ ! -d $ID/flook/${f_v}/$flook_lib ]; then
+    rm -rf flook-${f_v}
     tar xfz flook-${f_v}.tar.gz
     cd flook-${f_v}
     mkdir -p obj ; cd obj
     {
-	echo TOP_DIR=..
+	echo "# Setup script creation of setup.make"
 	[ "x$FC" != "x" ] && \
-	    echo FC = $FC
+	    echo "FC = $FC"
 	[ "x$FCFLAGS" != "x" ] && \
-	    echo FFLAGS = $FCFLAGS
+	    echo "FFLAGS = $FCFLAGS"
+	[ "x$FFLAGS" != "x" ] && \
+	    echo "FFLAGS = $FFLAGS"
 	[ "x$CC" != "x" ] && \
-	    echo CC = $CC
+	    echo "CC = $CC"
 	[ "x$CFLAGS" != "x" ] && \
-	    echo CFLAGS = $CFLAGS
+	    echo "CFLAGS = $CFLAGS"
     } > setup.make
+    {
+	echo TOP_DIR=..
+	echo include ../Makefile
+    } > Makefile
     if [ "x$VENDOR" == "x" ]; then
 	make liball
     else

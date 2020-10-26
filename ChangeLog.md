@@ -62,6 +62,12 @@ An overview changelog for Siesta.
 
 ### Changes
 
+* Enabled the spin-spiral code, !20
+  Feedback is requested from expert users of spin-spiral systems.
+  _Not_ production stable.
+
+* Added final break-point for LUA, LUA_FINALIZE just before Siesta stops.
+
 * Added dipole calculation from vacuum region, !22
   For gated calculations this is the preferred method.
 
