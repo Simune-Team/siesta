@@ -86,7 +86,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	denmat.o denmatlomem.o detover.o dfscf.o diagon.o digcel.o \
         fft.o dhscf.o constr.o diagk_file.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diag2kp.o diag3g.o diag3k.o diag3kp.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
+	diag2kspiral.o dipole.o dismin.o dnaefs.o doping_uniform.o dot.o  \
 	m_efield.o egandd.o ener3.o ener3lomem.o errorf.o extrapolon.o \
 	m_fixed.o interpolation.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o inver.o iodm_netcdf.o \
@@ -104,7 +104,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	vmb.o vmat.o vmatsp.o volcel.o \
         cgvc.o cgvc_zmatrix.o m_convergence.o \
         iocg.o ioeig.o iofa.o iokp.o iomd.o kpoint_pdos.o typecell.o \
-        ofc.o poison.o readsp.o radfft.o \
+        ofc.o poison.o radfft.o \
 	write_md_record.o kpoint_grid.o find_kgrid.o proximity_check.o\
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
 	scfconvergence_test.o post_scf_work.o state_analysis.o write_subs.o \
@@ -341,7 +341,7 @@ dhscf.o iolwf.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
-readsp.o eggbox.o iopipes.o : $(FDF)
+eggbox.o iopipes.o : $(FDF)
 atom.o basis_io.o basis_specs.o: $(FDF)
 ldau_specs.o: $(FDF)
 
@@ -685,13 +685,15 @@ dhscf.o: m_iorho.o m_mesh_node.o m_ncdf_io.o m_ncdf_siesta.o
 dhscf.o: m_partial_charges.o m_rhog.o m_spin.o m_ts_electype.o
 dhscf.o: m_ts_global_vars.o m_ts_hartree.o m_ts_options.o m_ts_voltage.o mesh.o
 dhscf.o: meshdscf.o meshsubs.o moremeshsubs.o parallel.o parsing.o precision.o
-dhscf.o: rhofft.o rhoofd.o siesta_options.o sys.o units.o vmat.o
+dhscf.o: rhofft.o rhoofd.o rhoofdsp.o siesta_options.o sys.o units.o vmat.o
+dhscf.o: vmatsp.o
 diag.o: alloc.o diag_option.o parallel.o precision.o sys.o
 diag2g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
 diag2g.o: sys.o writewave.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
 diag2kp.o: alloc.o fermid.o intrinsic_missing.o m_spin.o parallel.o
 diag2kp.o: parallelsubs.o precision.o sys.o
+diag2kspiral.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag3g.o: fermid.o intrinsic_missing.o parallel.o parallelsubs.o precision.o
 diag3g.o: sys.o writewave.o
 diag3k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
@@ -711,8 +713,6 @@ diagonalizeHk.o: alloc.o atomlist.o densematrix.o m_orderbands.o m_spin.o
 diagonalizeHk.o: parallel.o parallelsubs.o precision.o siesta2wannier90.o
 diagonalizeHk.o: sparse_matrices.o units.o
 diagpol.o: parallel.o precision.o sys.o
-diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
-diagsprl.o: siesta_geom.o sys.o
 die.o: parallel.o siesta_cml.o
 die.o: parallel.o
 dipole.o: atmfuncs.o intrinsic_missing.o m_char.o m_cite.o mesh.o parallel.o
@@ -758,7 +758,7 @@ fsiesta_mpi.o: precision.o siesta_analysis.o siesta_end.o siesta_forces.o
 fsiesta_mpi.o: siesta_init.o siesta_master.o siesta_move.o sys.o
 fsiesta_sockets.o: fsockets.o
 geom_helper.o: intrinsic_missing.o
-get_kpoints_scale.o: parallel.o siesta_geom.o
+get_kpoints_scale.o: parallel.o siesta_geom.o units.o
 get_target_stress.o: parallel.o precision.o sys.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: alloc.o globalise.o m_mpi_utils.o onmod.o precision.o
@@ -935,7 +935,7 @@ m_sparsity_handling.o: class_OrbitalDistribution.o class_SpData1D.o
 m_sparsity_handling.o: class_SpData2D.o class_Sparsity.o geom_helper.o
 m_sparsity_handling.o: intrinsic_missing.o m_interpolate.o m_region.o
 m_sparsity_handling.o: precision.o
-m_spin.o: alloc.o m_cite.o parallel.o precision.o sys.o units.o
+m_spin.o: alloc.o get_kpoints_scale.o m_cite.o parallel.o precision.o sys.o
 m_stress.o: precision.o
 m_supercell.o: atom_graph.o class_OrbitalDistribution.o class_SpData2D.o
 m_supercell.o: parallel.o parallelsubs.o precision.o
@@ -1197,7 +1197,6 @@ read_options.o: files.o m_charge_add.o m_cite.o m_hartree_add.o m_mixing_scf.o
 read_options.o: m_spin.o m_target_stress.o parallel.o precision.o siesta_cml.o
 read_options.o: siesta_options.o sys.o units.o
 read_xc_info.o: parallel.o precision.o sys.o
-readsp.o: parallel.o precision.o sys.o
 redcel.o: parallel.o precision.o sys.o
 register_rfs.o: atm_types.o atmfuncs.o matel_registry.o parallel.o precision.o
 register_rfs.o: radial.o
@@ -1214,7 +1213,7 @@ rhooda.o: atmfuncs.o atomlist.o mesh.o meshphi.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 rhoofd.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o
-rhoofdsp.o: meshdscf.o meshphi.o precision.o sys.o
+rhoofdsp.o: meshdscf.o meshphi.o parallel.o precision.o sys.o
 save_density_matrix.o: atomlist.o class_SpData2D.o files.o iodm_netcdf.o
 save_density_matrix.o: m_energies.o m_iodm.o m_matio.o m_ncdf_siesta.o m_spin.o
 save_density_matrix.o: m_steps.o m_ts_global_vars.o m_ts_iodm.o m_ts_options.o
@@ -1355,7 +1354,7 @@ vacuum_level.o: moreParallelSubs.o precision.o
 vmat.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o m_spin.o mesh.o
 vmat.o: meshdscf.o meshphi.o parallel.o parallelsubs.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o mesh.o meshdscf.o
-vmatsp.o: meshphi.o precision.o
+vmatsp.o: meshphi.o parallel.o precision.o
 vmb.o: m_fixed.o parallel.o precision.o sys.o
 write_inp_wannier.o: alloc.o atmfuncs.o atomlist.o m_ntm.o m_orderbands.o
 write_inp_wannier.o: mneighb.o parallel.o parallelsubs.o precision.o
@@ -1502,6 +1501,7 @@ m_radfft.o: radfft.o
 m_restruct_spdata2d.o: restructSpData2D.o
 m_rhofft.o: rhofft.o
 m_rhoofd.o: rhoofd.o
+m_rhoofdsp.o: rhoofdsp.o
 m_rusage.o: rusage.o
 m_save_density_matrix.o: save_density_matrix.o
 m_scf_options.o: m_options.o
@@ -1521,6 +1521,7 @@ m_timer_tree.o: timer_tree.o
 m_timestamp.o: timestamp.o
 m_ts_init.o: ts_init.o
 m_vmat.o: vmat.o
+m_vmatsp.o: vmatsp.o
 m_zm_broyden_optim.o: zm_broyden_optim.o
 m_zm_fire_optim.o: zm_fire_optim.o
 mtprng.o: m_uuid.o

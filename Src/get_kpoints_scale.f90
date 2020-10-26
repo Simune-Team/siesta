@@ -11,6 +11,7 @@ CONTAINS
     use fdf,            only: leqi, fdf_get
     use parallel,       only: IOnode
     use siesta_geom,    only: ucell
+    use units,          only: Pi
 
     implicit none
 
@@ -21,7 +22,7 @@ CONTAINS
     integer,  intent(out)        :: ierr          ! Error code: 0: success
 
     character(len=30)  :: scale
-    real(dp)           :: pi, alat
+    real(dp)           :: alat
     integer            :: i
 
     ierr = 0
@@ -43,7 +44,6 @@ CONTAINS
                    trim(block_string) // ":", alat, " Bohr"
              write(6,'(a,f12.6,a)') 'Beware any cell changes by the end of the run'
           endif
-          pi = 4.0_dp * atan(1.0_dp)
           rcell(:,:) = 0.0_dp
           do i = 1, 3
              rcell(i,i) = pi/alat
