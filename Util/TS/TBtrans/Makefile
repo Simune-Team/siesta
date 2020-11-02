@@ -54,6 +54,9 @@ SIESTA_OBJS= precision.o local_sys.o m_io.o alloc.o memoryinfo.o memory.o pxf.o 
 # Siesta timings
 SIESTA_OBJS += m_walltime.o timer_tree.o m_timer.o timer.o
 
+# Siesta kpoint-scale
+SIESTA_OBJS += get_kpoints_scale.o siesta_geom.o
+
 # Add specific class objects
 # class Objects
 SIESTA_OBJS += class_OrbitalDistribution.o \
