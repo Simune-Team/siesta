@@ -104,8 +104,8 @@ C Local variables
       integer                 :: oldmaxclustersize
       integer                 :: pjlaenv
       integer                 :: sqnpc
-      integer,  pointer, save :: iclustr(:)
-      real(dp), pointer, save :: gap(:)
+      integer,  pointer :: iclustr(:) => null()
+      real(dp), pointer :: gap(:) => null()
       real(dp)                :: dscale
       logical                 :: BlacsOK
 C Additional variables for a 2D proc grid
@@ -115,7 +115,9 @@ C Additional variables for a 2D proc grid
       integer, dimension(9)   :: desc_h2d
       
 C Matrices for 2D
-      real(dp), pointer, save, dimension(:,:,:) ::  h2d, s2d, z2d
+      real(dp), pointer, dimension(:,:,:) :: h2d => null()
+      real(dp), pointer, dimension(:,:,:) :: s2d => null()
+      real(dp), pointer, dimension(:,:,:) :: z2d => null()
       integer ::  mat_2d_row, mat_2d_col
 #endif
       character               :: jobz
@@ -128,8 +130,8 @@ C Matrices for 2D
       integer                 :: lwork
       integer                 :: nb
       integer                 :: neigok
-      integer,  pointer, save :: ifail(:)
-      integer,  pointer, save :: iwork(:)
+      integer,  pointer :: ifail(:) => null()
+      integer,  pointer :: iwork(:) => null()
       logical,           save :: AllInOne = .false.
       logical,           save :: DivideConquer = .true.
       logical,           save :: DoRead = .true.
@@ -144,9 +146,9 @@ C Matrices for 2D
       real(dp)                :: orfac
       real(dp)                :: vl
       real(dp)                :: vu
-      real(dp), pointer, save :: rwork(:)
-      real(dp), pointer, save :: work(:)
-      real(dp), pointer, save :: Zsave(:,:,:)
+      real(dp), pointer :: rwork(:) => null()
+      real(dp), pointer :: work(:) => null()
+      real(dp), pointer, save :: Zsave(:,:,:) => null()
 
       complex(dp), parameter  :: 
      .             zero_z = (0.0_dp, 0.0_dp)
@@ -171,15 +173,6 @@ C Check whether first call needs to be reset due to a change of algorithm
         end if
         FirstCall = .true.
         ResetFirstCall = .false.
-      endif
-
-C Nullify pointers
-      if (FirstCall) then
-        nullify( ifail, iwork, rwork, work, Zsave )
-#ifdef MPI
-        nullify( gap, iclustr )
-        nullify( h2d, s2d, z2d )
-#endif
       endif
 
 C Get old allocation defaults and set new ones
@@ -704,12 +697,16 @@ C Common exit point
 
 C Deallocate workspace arrays
 #ifdef MPI
-      call de_alloc( iclustr, name='iclustr')
-      call de_alloc( gap,     name='gap'    )
+      call de_alloc( iclustr, name='iclustr', routine='cdiag')
+      call de_alloc( gap,     name='gap'    , routine='cdiag')
 #endif
-      call de_alloc( ifail,   name='ifail'  )
-      call de_alloc( iwork,   name='iwork'  )
-      call de_alloc( work,    name='work'   )
+      call de_alloc( ifail,   name='ifail'  , routine='cdiag')
+      call de_alloc( iwork,   name='iwork'  , routine='cdiag')
+      call de_alloc( work,    name='work'   , routine='cdiag')
+      call de_alloc( rwork,   name='rwork'  , routine='cdiag')
+      call de_alloc( h2d,   name='h2d'  , routine='cdiag')
+      call de_alloc( s2d,   name='s2d'  , routine='cdiag')
+      call de_alloc( z2d,   name='z2d'  , routine='cdiag')
 
 C  Exit point, excluding deallocations
 1000  continue

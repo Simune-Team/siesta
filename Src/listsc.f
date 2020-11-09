@@ -7,11 +7,13 @@
 !
       MODULE LISTSC_MODULE
 
-      private 
-      public :: LISTSC_INIT, LISTSC
+      implicit none
 
-      integer, pointer, save :: IND1(:), IND2(:)
-      logical, save          :: nullified_pointers = .false.
+      private 
+      public :: LISTSC_INIT, LISTSC, LISTSC_RESET
+
+      integer, pointer, save :: IND1(:) => null()
+      integer, pointer, save :: IND2(:) => null()
 
       CONTAINS
 
@@ -36,11 +38,6 @@ C *********************************************************************
      .        KUO, LASTIO, LASTJO, NCELLS, NO
       NCELLS = NSC(1) * NSC(2) * NSC(3)
       NO = NUO * NCELLS
-
-      if (.not. nullified_pointers) then
-         nullify(ind1, ind2)
-         nullified_pointers = .true.
-      endif
 
       call re_alloc(IND1,1,8*NO,name="ind1",routine="listsc_init")
       call re_alloc(IND2,1,NO,name="ind2",routine="listsc_init")
@@ -83,6 +80,15 @@ C       IND2 inserts the single supercell into the extended supercell
       END SUBROUTINE LISTSC_INIT
 
 
+      ! Reset the arrays allocated by LISTSC_INIT
+      subroutine LISTSC_RESET()
+
+      use alloc, only: de_alloc
+
+      call de_alloc(IND1,name="ind1",routine="listsc_init")
+      call de_alloc(IND2,name="ind2",routine="listsc_init")
+
+      end subroutine
 
       FUNCTION LISTSC( IO, IUO, JUO )
 C *********************************************************************
