@@ -21,9 +21,9 @@
       public :: rad_func
 
       type   :: rad_func
-         integer          n
-         real(dp) cutoff         
-         real(dp) delta
+         integer :: n
+         real(dp) :: cutoff
+         real(dp) :: delta
          real(dp), pointer :: f(:)=>null()   ! Actual data
          real(dp), pointer :: d2(:)=>null()  ! 2nd derivative
       end type rad_func
@@ -33,12 +33,14 @@
       CONTAINS
 
       subroutine reset_rad_func( func )
+      use alloc, only: de_alloc
       implicit none
       type(rad_func)   :: func
 
       func%n = 0
-      nullify(func%f)
-      nullify(func%d2)
+      call de_alloc(func%f, 'func%f', 'rad_alloc' )
+      call de_alloc(func%d2, 'func%d2', 'rad_alloc' )
+      nullify(func%f, func%d2)
       end subroutine reset_rad_func
 
       subroutine rad_alloc(func,n)
@@ -50,10 +52,8 @@
       type(rad_func), intent(inout)    :: func
       integer, intent(in)        :: n
       func%n = n
-      nullify(func%f,func%d2)
       call re_alloc( func%f, 1, n, 'func%f', 'rad_alloc' )
       call re_alloc( func%d2, 1, n, 'func%d2', 'rad_alloc' )
-!      allocate(func%f(n),func%d2(n))
       end subroutine rad_alloc
 
       subroutine rad_get(func,r,fr,dfdr)
