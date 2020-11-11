@@ -13,6 +13,7 @@
 
       subroutine siesta_end( )
       use fdf,             only : fdf_shutdown
+      use precision,       only : dp
       use alloc,           only : alloc_report
       use siesta_cml,      only : cml_p, mainXML, cmlEndModule
       use siesta_cmlsubs,  only : siesta_cml_exit
@@ -62,9 +63,13 @@
 #endif
       use m_io,            only : io_assign, io_close
       use m_cite, only: announce_citations
+      use atomlist,        only : reset_atomlists
+      use m_new_matel,     only : new_MATEL
+      use listsc_module,   only : LISTSC_RESET
 
       implicit none
 
+      real(dp) :: R12(3), S12, DSDR(3)
       integer :: iu
 #ifdef MPI
       integer MPIerror
@@ -82,6 +87,11 @@
 #endif
 
 !     Free allocated memory
+      ! Reset matrix element tables
+      R12 = 0._dp
+      call new_MATEL('S', 0, 0, R12, S12, DSDR)
+      call LISTSC_reset()
+      call reset_atomlists()
       call resetSparseMatrices( )
       call resetMeshDistr( )
       call resetdscfComm( )

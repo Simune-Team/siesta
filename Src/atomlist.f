@@ -18,7 +18,8 @@
 
       private
       public :: initatomlists, superc
-      public :: superx   ! for backwards compatibility
+      public :: superx          ! for backwards compatibility
+      public :: reset_atomlists
 
 !
 !     Instead of "generic" na, no, and nokb, we use:
@@ -41,21 +42,23 @@ C integer iza(na)           : Atomic number of each atom
 C real*8 amass(na)          : Atomic mass of each atom
 C real*8 qa(na)             : Neutral atom charge of each atom
 
-      character(len=2), pointer, save, public :: elem(:)
+      character(len=2), pointer, save, public :: elem(:) => null()
 ! elem will contain element names, so is 2 chars in length
-      integer, pointer, save, public  :: iza(:) ! 
-      integer, pointer, save, public  :: lasto(:) ! 
-      integer, pointer, save, public  :: lastkb(:)
-      real(dp), pointer, save, public :: amass(:), qa(:)
-      integer, pointer, save, public  :: indxua(:)
-      !
+
+      integer, pointer, save, public  :: iza(:) => null()
+      integer, pointer, save, public  :: lasto(:) => null()
+      integer, pointer, save, public  :: lastkb(:) => null()
+      real(dp), pointer, save, public :: amass(:) => null()
+      real(dp), pointer, save, public :: qa(:) => null()
+      integer, pointer, save, public  :: indxua(:) => null()
+
       ! This array depends on the actual geometry, so
       ! it does not properly belong here. It is used only
       ! for communication between nlefsm and hsparse.
       ! For safety, it is initialized in each invokation
       ! of hsparse.
-      logical, pointer, save, public  :: in_kb_orb_u_range(:)
-      
+      logical, pointer, save, public  :: in_kb_orb_u_range(:) => null()
+
 !     Index of equivalent atom in "u" cell
       real(dp), save, public          :: rmaxv    ! Max cutoff for Vna
       real(dp), save, public          :: rmaxo    ! Max cuoff for at. orb.
@@ -70,24 +73,24 @@ C real*8 qa(na)             : Neutral atom charge of each atom
                                          ! (excluding those of ghost atoms)
 
 
-      integer, pointer, save, public  :: iaorb(:)
+      integer, pointer, save, public  :: iaorb(:) => null()
                                 ! Atomic index of each orbital
-      integer, pointer, save, public  :: iphorb(:) 
+      integer, pointer, save, public  :: iphorb(:)  => null()
                          ! Orbital index of each  orbital in its atom
-      real(dp), pointer, save, public :: Datm(:) 
+      real(dp), pointer, save, public :: Datm(:) => null()
                          !  Neutral atom charge 
                          !  of each orbital
-      real(dp), pointer, save, public :: rco(:) 
+      real(dp), pointer, save, public :: rco(:) => null()
                          ! Cutoff radius of each orbital
 
-      integer, pointer, save, public           :: indxuo(:)
+      integer, pointer, save, public :: indxuo(:) => null()
                    !        Index of equivalent orbital in "u" cell
 
-      integer, pointer, save, public     :: iakb(:)
+      integer, pointer, save, public :: iakb(:) => null()
 !         Atomic index of each KB projector
-      integer, pointer, save, public     :: iphKB(:)
+      integer, pointer, save, public :: iphKB(:) => null()
 !         Index of each KB projector in its atom (negative)
-      real(dp), pointer, save, public   :: rckb(:)
+      real(dp), pointer, save, public :: rckb(:) => null()
 !         Cutoff radius of each KB projector
 !
 
@@ -106,8 +109,6 @@ C
       type(species_info), pointer :: spp
       type(rad_func), pointer :: pp
 
-      nullify(indxua,lastkb,lasto,qa,amass,xa_last)
-      nullify(in_kb_orb_u_range)
       call re_alloc( indxua, 1, na_u, 'indxua', 'atomlist' )
       call re_alloc( lastkb, 0, na_u, 'lastkb', 'atomlist' )
       call re_alloc( lasto, 0, na_u, 'lasto', 'atomlist' )
@@ -132,14 +133,11 @@ C
       no_s = no_u
       nokb_s = nokb_u
 
-      nullify(iaorb, indxuo, iphorb, Datm, rco)
       call re_alloc( iaorb, 1, no_u, 'iaorb', 'atomlist' )
       call re_alloc( indxuo, 1, no_u, 'indxuo', 'atomlist' )
       call re_alloc( iphorb, 1, no_u, 'iphorb', 'atomlist' )
       call re_alloc( Datm, 1, no_u, 'Datm', 'atomlist' )
       call re_alloc( rco, 1, no_u, 'rco', 'atomlist' )
-!
-      nullify(iaKB, iphKB, rckb)
       call re_alloc( iaKB, 1, nokb_u, 'iaKB', 'atomlist' )
       call re_alloc( iphKB, 1, nokb_u, 'iphKB', 'atomlist' )
       call re_alloc( rckb, 1, nokb_u, 'rckb', 'atomlist' )
@@ -213,6 +211,30 @@ c Initialize atomic lists
 
       end subroutine initatomlists
 
+      subroutine reset_atomlists()
+
+      use alloc, only: de_alloc
+
+      call de_alloc( indxua, 'indxua', 'atomlist' )
+      call de_alloc( isa, 'isa', 'atomlist')
+      call de_alloc( iza, 'iza', 'atomlist')
+      call de_alloc( lastkb, 'lastkb', 'atomlist' )
+      call de_alloc( lasto, 'lasto', 'atomlist' )
+      call de_alloc( qa, 'qa', 'atomlist' )
+      call de_alloc(xa_last,'xa_last','atomlist')
+      call de_alloc( amass, 'amass', 'atomlist' )
+      call de_alloc( in_kb_orb_u_range, 'in_kb', 'atomlist' )
+
+      call de_alloc( iaorb, 'iaorb', 'superc' )
+      call de_alloc( indxuo, 'indxuo', 'superc' )
+      call de_alloc( iphorb, 'iphorb', 'superc' )
+      call de_alloc( Datm, 'Datm', 'superc' )
+      call de_alloc( rco, 'rco', 'superc' )
+      call de_alloc( iaKB, 'iaKB', 'superc' )
+      call de_alloc( iphKB, 'iphKB', 'superc' )
+      call de_alloc( rckb, 'rckb', 'superc' )
+
+      end subroutine reset_atomlists
 
       subroutine superc( ucell, scell, nsc)
 
