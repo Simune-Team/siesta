@@ -11659,30 +11659,40 @@ One have to set \fdf{SolutionMethod} to \fdf*{transiesta} to enable
 \end{fdfentry}
 
 \begin{fdfentry}{TS!SCF!DM.Tolerance}[real]<\fdfvalue{SCF.DM!Tolerance}>%
-  \fdfdepend{SCF.DM!Tolerance}
+  \fdfdepend{SCF.DM!Tolerance,SCF.DM!Converge}
 
   The density matrix tolerance for the \tsiesta\ SCF cycle.
 
 \end{fdfentry}
 
 \begin{fdfentry}{TS!SCF!H.Tolerance}[energy]<\fdfvalue{SCF.H!Tolerance}>%
-  \fdfdepend{SCF.H!Tolerance}
+  \fdfdepend{SCF.H!Tolerance,SCF.H!Converge}
 
   The Hamiltonian tolerance for the \tsiesta\ SCF cycle.
 
 \end{fdfentry}
 
-\begin{fdfentry}{TS!Q.Tolerance}[real]<$\mathrm{Q(device)}\cdot 10^{-3}$>%
+\begin{fdflogicalT}{TS!SCF!dQ.Converge}
 
-  Once the SCF is completed this is a final check that the charge is
-  within the specified tolerance.
+  Whether \tsiesta\ should check whether the total charge is within a
+  provided tolerance, see \fdf{TS!SCF!dQ.Tolerance}.
+
+\end{fdflogicalT}
+
+\begin{fdfentry}{TS!SCF!dQ.Tolerance}[real]<$\mathrm{Q(device)}\cdot 10^{-3}$>%
+  \fdfdepend{TS!SCF!dQ.Converge}
+  
+  The charge tolerance during the SCF.
 
   The charge is not stable in \tsiesta\ calculations and this flag
   ensures that one does not, by accident, do post-processing of files
-  where there charge distribution is completely wrong.
+  where the charge distribution is completely wrong.
 
   A too high tolerance may heavily influence the electrostatics of the
   simulation.
+
+  \note Please see \fdf{TS!dQ} for ways to reduce charge loss in
+  equilibrium calculations.
 
 \end{fdfentry}
 
@@ -11886,6 +11896,9 @@ ts-q:   436.147   392.146     3.871   392.146     3.871  7.996E-3
   Any excess/deficiency of charge can be re-adjusted after each
   \tsiesta\ cycle to reduce charge fluctuations in the cell.
 
+  \note recommended to \emph{only} use charge corrections for
+  $0\,\mathrm{V}$ calculations.
+
   The non-neutral charge in \tsiesta\ cycles is an expression of one
   of the following things:
   \begin{enumerate}
@@ -11946,9 +11959,6 @@ Total charge                  [Q]  :   395.9995
 
     \item A combination of the above, this is the typical case.
   \end{enumerate}
-
-  \note we recommend only to use charge corrections for
-  $0\,\mathrm{V}$ calculations. 
 
   \begin{fdfoptions}
 

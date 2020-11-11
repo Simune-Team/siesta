@@ -85,7 +85,6 @@
       use m_pexsi, only: pexsi_finalize_scfloop
 #endif     
 
-      use m_ts_options, only : ts_qtol
       use m_ts_options, only : N_Elec
       use m_ts_method
       use m_ts_global_vars,      only: TSmode, TSinit, TSrun
@@ -113,6 +112,7 @@
       real(dp) :: dHmax     ! Max. change in H elements
       real(dp) :: dEmax     ! Max. change in EDM elements
       real(dp) :: drhog     ! Max. change in rho(G) (experimental)
+      real(dp) :: dQ        ! Change charge
       real(dp), target :: G2max      ! the actual mesh-cutoff used
       type(converger_t)  ::  conv_harris, conv_freeE
 !---------------------------------------------------------------------- BEGIN
@@ -248,6 +248,7 @@
       dDmax = -1._dp
       dHmax = -1._dp
       dEmax = -1._dp
+      dQ = 0._dp
 
       DO 
         ! Conditions of exit:
@@ -336,23 +337,27 @@
 
        if (SIESTA_worker) then
 
-          call compute_energies(iscf)
-          if (mix_charge) then
-             call compute_charge_diff(drhog)
-          endif
-        ! Note: For DM and H convergence checks. At this point: 
-        ! If mixing the DM:
-        !        Dscf=DM_out, Dold=DM_in(mixed), H=H_in, Hold=H_in(prev step)
-        !        dDmax=maxdiff(DM_out,DM_in)
-        !        dHmax=maxdiff(H_in - H_in(prev step))
-        ! If mixing the Hamiltonian:
-        !        Dscf=DM_out, Dold=DM_in, H=H_(DM_out), Hold=H_in(mixed)
-        !        dDmax=maxdiff(DM_out,DM_in)
-        !        dHmax=maxdiff(H(DM_out),H_in)
-        call scfconvergence_test( first, iscf, 
-     &                            dDmax, dHmax, dEmax,
-     &                            conv_harris, conv_freeE,
-     &                            SCFconverged )
+         ! Calculate current charge based on the density matrix
+         call dm_charge(spin, DM_2D, S_1D, Qcur)
+         dQ = Qcur - Qtot
+
+         call compute_energies(iscf)
+         if (mix_charge) then
+           call compute_charge_diff(drhog)
+         endif
+         ! Note: For DM and H convergence checks. At this point:
+         ! If mixing the DM:
+         !        Dscf=DM_out, Dold=DM_in(mixed), H=H_in, Hold=H_in(prev step)
+         !        dDmax=maxdiff(DM_out,DM_in)
+         !        dHmax=maxdiff(H_in - H_in(prev step))
+         ! If mixing the Hamiltonian:
+         !        Dscf=DM_out, Dold=DM_in, H=H_(DM_out), Hold=H_in(mixed)
+         !        dDmax=maxdiff(DM_out,DM_in)
+         !        dHmax=maxdiff(H(DM_out),H_in)
+         call scfconvergence_test( first, iscf, 
+     &                             dDmax, dHmax, dEmax, dQ,
+     &                             conv_harris, conv_freeE,
+     &                             SCFconverged )
         !
         ! ** Check this heuristic
         if ( MixH ) then
@@ -360,10 +365,6 @@
         else
            prevDmax = dDmax
         endif
-
-        ! Calculate current charge based on the density matrix
-        call dm_charge(spin, DM_2D, S_1D, Qcur)
-
         
         if (SCFconverged .and. (iscf < min_nscf)) then
            SCFconverged = .false.
@@ -388,7 +389,7 @@
           if ( converge_EDM )
      &        ts_dq%run = ts_dq%run .and.
      &        tolerance_EDM * TS_DQ_FERMI_SCALE > dEmax
-          if ( abs(Qcur - Qtot) > TS_DQ_FERMI_TOLERANCE ) then
+          if ( abs(dQ) > TS_DQ_FERMI_TOLERANCE ) then
             if ( IONode .and. SCFconverged ) then
               write(6,"(2a)") "SCF cycle continued due ",
      &            "to TranSiesta charge deviation"
@@ -507,10 +508,6 @@
       
       if (.not. SIESTA_worker) RETURN
 
-      if ( TSrun .and. SCFconverged ) then
-        SCFconverged = abs(Qcur - Qtot) <= ts_qtol
-      end if
-
       call end_of_cycle_save_operations(SCFconverged)
       
       if (.not.SCFconverged) then
@@ -521,7 +518,7 @@
             call message(' (info)',"Geom step, scf iteration, dmax:"
      $          //trim(tmp_str))
             if ( TSrun ) then
-              write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, Qcur - Qtot
+              write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, dQ
               call message(' (info)',"Geom step, scf iteration, dq:"
      $            //trim(tmp_str))
             end if
@@ -537,7 +534,7 @@
             call message(' (info)',"Geom step, scf iteration, dmax:"
      $                            //trim(tmp_str))
             if ( TSrun ) then
-              write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, Qcur - Qtot
+              write(tmp_str,"(i5,1x,i5,f12.6)") istep, iscf, dQ
               call message(' (info)',"Geom step, scf iteration, dq:"
      $            //trim(tmp_str))
             end if
@@ -724,7 +721,7 @@
       use m_ts_method
       use m_ts_options,          only: N_Elec, Elecs
       use m_ts_options,          only: val_swap
-      use m_ts_options,          only: ts_Dtol, ts_Htol, ts_qtol
+      use m_ts_options,          only: ts_Dtol, ts_Htol
       use m_ts_options,          only: ts_hist_keep
       use m_ts_options,          only: ts_siesta_stop
       use m_ts_options,          only: ts_scf_mixs

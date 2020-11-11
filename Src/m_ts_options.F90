@@ -27,8 +27,9 @@ module m_ts_options
 
   ! The tolerance
   real(dp) :: ts_Dtol ! = tolerance for density matrix
-  real(dp) :: ts_qtol ! = tolerance for charge in the device region (after SCF)
   real(dp) :: ts_Htol ! = tolerance for Hamiltonian
+  logical :: ts_converge_dQ = .true. ! whether we should converge the charge
+  real(dp) :: ts_dQtol ! = tolerance for charge in the device region (after SCF)
   integer :: ts_hist_keep = 0
 
   ! ###### end SIESTA-options #####
@@ -815,7 +816,8 @@ contains
         dev_q = dev_q + qa(i)
       end if
     end do
-    ts_qtol = fdf_get('TS.Q.Tolerance',dev_q / 1000._dp)
+    ts_dQtol = fdf_get('TS.SCF.dQ.Tolerance',dev_q / 1000._dp)
+    ts_converge_dQ = fdf_get('TS.SCF.dQ.Converge', .true.)
 
   end subroutine read_ts_after_Elec
 
@@ -968,7 +970,8 @@ contains
     end if
     write(*,f9) 'SCF DM tolerance',ts_Dtol
     write(*,f7) 'SCF Hamiltonian tolerance',ts_Htol/eV, 'eV'
-    write(*,f9) 'Charge tolerance',ts_qtol
+    write(*,f9) 'SCF converge charge',ts_converge_dQ
+    write(*,f9) 'SCF charge tolerance',ts_Dqtol
 
     select case ( TS_scf_mode )
     case ( 0 )
