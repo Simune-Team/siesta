@@ -141,6 +141,7 @@ contains
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
     integer :: n_nnzs, g_nzs
+    integer :: nb, ib
 
     ! Write the sparsity to the file...
     call attach(sp,nrows=no_l, nrows_g=no_u, &
@@ -167,7 +168,6 @@ contains
 
        ! we write it using MPI
        call ncdf_par_access(ncdf,name='n_col',access=NF90_INDEPENDENT)
-       call ncdf_par_access(ncdf,name='list_col',access=NF90_COLLECTIVE)
 
        allocate(ibuf(no_u))
        call Node_Sp_gncol(0,sp,dit,no_u,ibuf)
@@ -179,36 +179,47 @@ contains
           call ncdf_put_var(ncdf,'n_col',ibuf)
        end if
 
+       call ncdf_par_access(ncdf,name='list_col',access=NF90_COLLECTIVE)
+
+       ! Determine the number of blocks
+       nb = count_blocks(dit, no_u)
        ind = 1
        io = 1
-       do while ( io <= no_l )
+       do ib = 1 , nb
+         if ( io <= no_l ) then
+         
+           ! We loop on each segment until no more
+           ! segment exists
+           ! Get the current inset point
+           gio = index_local_to_global(dit,io)
 
-          ! We loop on each segment until no more
-          ! segment exists
-          ! Get the current inset point
-          gio = index_local_to_global(dit,io)
-
-          if ( gio > 1 ) then
+           if ( gio > 1 ) then
              gind = sum(ibuf(1:gio-1)) + 1
-          else
+           else
              gind = 1
-          end if
+           end if
 
-          ! count number of orbitals in this block
-          j = count_consecutive(dit,no_u,gio)
+           ! count number of orbitals in this block
+           j = count_consecutive(dit,no_u,gio)
           
-          ! Figure out how many this corresponds to in the 
-          ! list_col array
-          max_n = sum(ncol(io:io+j-1))
+           ! Figure out how many this corresponds to in the 
+           ! list_col array
+           max_n = sum(ncol(io:io+j-1))
           
-          call ncdf_put_var(ncdf,'list_col',l_col(ind:ind+max_n-1), &
+           call ncdf_put_var(ncdf,'list_col',l_col(ind:ind+max_n-1), &
                start=(/gind/), count=(/max_n/) )
 
-          ! Update sparse index
-          ind = ind + max_n
+           ! Update sparse index
+           ind = ind + max_n
 
-          ! Update row index
-          io = io + j
+           ! Update row index
+           io = io + j
+
+         else
+           ! Fake access
+           call ncdf_put_var(ncdf,'list_col',l_col(1:1), &
+               start=(/1/), count=(/0/) )
+         end if
 
        end do
 
@@ -571,6 +582,7 @@ contains
 #ifdef MPI
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
+    integer :: nb, ib
 
     dit => dist(dSp1D)
     sp => spar(dSp1D)
@@ -591,36 +603,45 @@ contains
        call MPI_Bcast(gcol,no_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
 #endif
 
+       ! Determine the number of blocks
+       nb = count_blocks(dit, no_u)
        ind = 1
        io = 1
-       do while ( io <= no_l )
+       do ib = 1 , nb
+         if ( io <= no_l ) then
 
-          ! We loop on each segment until no more
-          ! segment exists
-          ! Get the current inset point
-          gio = index_local_to_global(dit,io)
+           ! We loop on each segment until no more
+           ! segment exists
+           ! Get the current inset point
+           gio = index_local_to_global(dit,io)
 
-          if ( gio > 1 ) then
+           if ( gio > 1 ) then
              gind = sum(gcol(1:gio-1)) + 1
-          else
+           else
              gind = 1
-          end if
+           end if
 
-          ! count number of orbitals in this block
-          j = count_consecutive(dit,no_u,gio)
+           ! count number of orbitals in this block
+           j = count_consecutive(dit,no_u,gio)
           
-          ! Figure out how many this corresponds to in the 
-          ! list_col array
-          max_n = sum(ncol(io:io+j-1))
+           ! Figure out how many this corresponds to in the 
+           ! list_col array
+           max_n = sum(ncol(io:io+j-1))
           
-          call ncdf_put_var(ncdf,vname,a(ind:ind+max_n-1), &
+           call ncdf_put_var(ncdf,vname,a(ind:ind+max_n-1), &
                start=(/gind/), count=(/max_n/) )
 
-          ! Update sparse index
-          ind = ind + max_n
+           ! Update sparse index
+           ind = ind + max_n
 
-          ! Update row index
-          io = io + j
+           ! Update row index
+           io = io + j
+
+         else
+           ! Fake access
+           call ncdf_put_var(ncdf,vname,a(1:1), &
+               start=(/1/), count=(/0/) )
+         end if
           
        end do
 
@@ -869,6 +890,7 @@ contains
 #ifdef MPI
     integer :: BNode, MPIerror, MPIstatus(MPI_STATUS_SIZE)
 #endif
+    integer :: nb, ib
 
     dit => dist(dSp2D)
     sp => spar(dSp2D)
@@ -895,43 +917,59 @@ contains
        call MPI_Bcast(gcol,no_u,MPI_Integer,0,MPI_Comm_World,MPIerror)
 #endif
 
+       ! Determine the number of blocks
+       nb = count_blocks(dit, no_u)
        ind = 1
        io = 1
-       do while ( io <= no_l )
+       do ib = 1 , nb
+         if ( io <= no_l ) then
 
-          ! We loop on each segment until no more
-          ! segment exists
-          ! Get the current inset point
-          gio = index_local_to_global(dit,io)
+           ! We loop on each segment until no more
+           ! segment exists
+           ! Get the current inset point
+           gio = index_local_to_global(dit,io)
 
-          if ( gio > 1 ) then
+           if ( gio > 1 ) then
              gind = sum(gcol(1:gio-1)) + 1
-          else
+           else
              gind = 1
-          end if
+           end if
 
-          ! count number of orbitals in this block
-          j = count_consecutive(dit,no_u,gio)
+           ! count number of orbitals in this block
+           j = count_consecutive(dit,no_u,gio)
+
+           ! Figure out how many this corresponds to in the 
+           ! list_col array
+           max_n = sum(ncol(io:io+j-1))
           
-          ! Figure out how many this corresponds to in the 
-          ! list_col array
-          max_n = sum(ncol(io:io+j-1))
-          
-       if ( sp_dim == 1 ) then
-          do is = 1 , dim2
-             call ncdf_put_var(ncdf,vname,a(ind:ind+max_n-1,is), &
-                  start=(/gind,is/), count=(/max_n/))
-          end do
-       else
-          call ncdf_put_var(ncdf,vname,a(:,ind:ind+max_n-1), &
-               start=(/1,gind/), count=(/dim2,max_n/) )
-       end if
+           if ( sp_dim == 1 ) then
+             do is = 1 , dim2
+               call ncdf_put_var(ncdf,vname,a(ind:ind+max_n-1,is), &
+                   start=(/gind,is/), count=(/max_n/))
+             end do
+           else
+             call ncdf_put_var(ncdf,vname,a(:,ind:ind+max_n-1), &
+                 start=(/1,gind/), count=(/dim2,max_n/) )
+           end if
 
-          ! Update sparse index
-          ind = ind + max_n
+           ! Update sparse index
+           ind = ind + max_n
 
-          ! Update row index
-          io = io + j
+           ! Update row index
+           io = io + j
+
+         else
+           ! Fake access
+           if ( sp_dim == 1 ) then
+             do is = 1 , dim2
+               call ncdf_put_var(ncdf,vname,a(1:1,is), &
+                   start=(/1,is/), count=(/0/))
+             end do
+           else
+             call ncdf_put_var(ncdf,vname,a(:,1:1), &
+                 start=(/1,1/), count=(/dim2,0/) )
+           end if
+         end if
 
        end do
 

@@ -589,7 +589,7 @@ contains
 
     ! We just open it (prepending)
 #ifdef MPI
-    if ( Nodes > 1 .and. cdf_w_parallel ) then
+    if ( cdf_w_parallel ) then
        call ncdf_open(ncdf,fname, &
             mode=ior(NF90_WRITE,NF90_MPIIO), comm=MPI_Comm_World)
     else
@@ -666,7 +666,7 @@ contains
 
     ! We just open it (prepending)
 #ifdef MPI
-    if ( Nodes > 1 .and. cdf_w_parallel ) then
+    if ( cdf_w_parallel ) then
        call ncdf_open(ncdf,fname, group='GRID', &
             mode=ior(NF90_WRITE,NF90_MPIIO), &
             comm=MPI_Comm_World)
