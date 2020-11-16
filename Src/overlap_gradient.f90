@@ -63,6 +63,7 @@ contains
     s => spar(grS_2D)
     grS => val(grS_2D)
     call attach(s, nrows=no_l, nrows_g=no_u, n_col=ncol, list_ptr=l_ptr, list_col=col)
+    grS(:,:) = 0._dp
 
     do lio = 1, no_l
       io = index_local_to_global(dit, lio)
@@ -84,9 +85,9 @@ contains
         jg = orb_gindex(js,joa)
 
         call new_MATEL('S', ig, jg, xijo(:,ind), Sij, grSij )
-        grS(ind, 1) = grSij(1)
-        grS(ind, 2) = grSij(2)
-        grS(ind, 3) = grSij(3)
+        grS(ind, 1) = grS(ind, 1) + grSij(1)
+        grS(ind, 2) = grS(ind, 2) + grSij(2)
+        grS(ind, 3) = grS(ind, 3) + grSij(3)
         
       end do
       
