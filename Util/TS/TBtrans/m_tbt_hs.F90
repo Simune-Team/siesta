@@ -229,6 +229,8 @@ contains
       ! If there is only one spin, then
       ! we do not read in the option.
       spin_idx = 0
+    else if ( nspin > 2 ) then
+      call die("TBtrans is currently not implemented for non-collinear or spin-orbit")
     else
       spin_idx = fdf_get('TBT.Spin',0)
       if ( spin_idx > nspin ) then
