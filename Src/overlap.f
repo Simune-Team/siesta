@@ -29,7 +29,7 @@
 
       subroutine overlap(nua, na, no, scell, xa, indxua, rmaxo,
      &                   maxnh, lasto, iphorb, isa, 
-     &                   numh, listhptr, listh, S)
+     &                   numh, listhptr, listh, S, gradS)
 C *********************************************************************
 C Computes the overlap matrix
 C Energies in Ry. Lengths in Bohr.
@@ -55,6 +55,7 @@ C integer listh(maxnh)     : Column indexes of the nonzero elements
 C                            of each row of the overlap matrix
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
+C real*8  gradS(3,maxnh)  *: Gradient of overlap matrix
 
       integer, intent(in)   ::  maxnh, na, no, nua
       integer, intent(in)   :: indxua(na), iphorb(no), isa(na),
@@ -62,12 +63,14 @@ C real*8  S(maxnh)         : Sparse overlap matrix
      &                         listhptr(*)
       real(dp) , intent(in) :: scell(3,3), rmaxo, xa(3,na)
       real(dp), intent(out) :: S(maxnh)
+      real(dp), intent(out), optional :: gradS(3,maxnh)
 C Internal variables ......................................................
       integer               :: ia, ind, io, ioa, is,  iio, j, ja, jn,
      &                         jo, joa, js, jua, nnia, ig, jg
       real(dp)              :: grSij(3) , rij, Sij
-      real(dp),     pointer :: Si(:)
+      real(dp), pointer :: Si(:,:) => null()
       external  timer
+      logical :: has_grad
 
 C     Start timer
       call timer( 'overlap', 1 )
@@ -76,8 +79,12 @@ C     Initialize neighb subroutine
       call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia )
 
 C     Allocate local memory
-      nullify(Si)
-      call re_alloc( Si, 1, no, 'Si', 'overlap' )
+      has_grad = present(gradS)
+      if ( has_grad ) then
+        call re_alloc( Si, 0, 3, 1, no, 'Si', 'overlap' )
+      else
+        call re_alloc( Si, 0, 0, 1, no, 'Si', 'overlap' )
+      end if
 
       do ia = 1,nua
         is = isa(ia)
@@ -105,15 +112,19 @@ C           Valid orbital
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
                   call new_MATEL( 'S', ig, jg, xij(1:3,jn),
      &                        Sij, grSij )
-                  Si(jo) = Si(jo) + Sij
+                  Si(0,jo) = Si(0,jo) + Sij
+                  if ( has_grad )
+     &                Si(1:3,jo) = Si(1:3,jo) + grSij
                 endif
               enddo
             enddo
             do j = 1,numh(iio)
               ind = listhptr(iio)+j
               jo = listh(ind)
-              S(ind) = Si(jo)
-              Si(jo) = 0.0d0
+              S(ind) = Si(0,jo)
+              if ( has_grad )
+     &            gradS(:,ind) = Si(1:3,jo)
+              Si(:,jo) = 0.0d0
             enddo
           endif
         enddo
