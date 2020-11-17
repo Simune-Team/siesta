@@ -175,8 +175,8 @@ contains
         compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
 
     dic = dic//('info'.kv.'Overlap matrix gradient')//('unit'.kv.'1/Bohr')
-    call ncdf_def_var(grp,'S_gradient',NF90_DOUBLE,(/'nnzs', 'xyz '/), &
-        compress_lvl=cdf_comp_lvl,atts=dic,chunks=chks)
+    call ncdf_def_var(grp,'S_gradient',NF90_DOUBLE,(/'xyz ', 'nnzs'/), &
+        compress_lvl=cdf_comp_lvl,atts=dic,chunks=(/1,n_nzs/))
     call delete(dic)
 
     dic = dic//('info'.kv.'Density matrix')
