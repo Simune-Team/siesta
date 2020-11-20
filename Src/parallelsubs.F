@@ -739,15 +739,23 @@ C Initialise values
       subroutine factor_equal()
       ! We know that xovery is present
       real(dp) :: small
-      integer :: Nmax
+      integer :: Nmax, i
 
       ! Figure out the the upper bound of the division
       Nmax = nint(sqrt(xovery * Nodes) + 0.5_dp)
       Nmax = min(max(1, Nmax), Nodes)
 
-      do Nx = Nmax, 1, -1
-        Ny = Nodes / Nx
-        if ( Nx * Ny == Nodes ) exit
+      do i = 0, Nodes - Nmax
+        Nx = Nmax - i
+        if ( 1 <= Nx ) then
+          Ny = Nodes / Nx
+          if ( Nx * Ny == Nodes ) exit
+        end if
+        Nx = Nmax + i
+        if ( Nx <= Nodes ) then
+          Ny = Nodes / Nx
+          if ( Nx * Ny == Nodes ) exit
+        end if
       end do
 
       ! Order the divisions correctly
