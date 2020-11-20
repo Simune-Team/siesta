@@ -696,15 +696,19 @@ C  Get local mesh pointer by subtracting baseline
 
       end subroutine GlobalToLocalXYZMesh
 
-      subroutine set_processorYdefault(Nodes,procYdefault)
-C
+      subroutine set_processorYdefault(Nodes,procYdefault,xovery)
+      use precision,    only : dp
+
 C Finds a sensible default value for the processor grid in the Y
-C direction to try to get an equal split in X and Y. Currently only
-C looks for factors of 2, 3 and 5.
+C direction to try to get an equal split in X and Y.
+C If xovery is present, it will try and divide the lattice vectors
+C as evenly as possibly with the sizes taken into account.
+C If not provided, it will look for factors of 2, 3 and 5.
 C
 C Input :
 C
 C integer Nodes        : total number of processors
+C real xovery          : length fraction between the two vectors that should be divided
 C
 C Output :
 C
@@ -713,13 +717,58 @@ C
 C Written by Julian Gale, November 1999
 C
 C Passed arguments
-      integer
-     .  Nodes, procYdefault
+      integer :: Nodes, procYdefault
+      real(dp), optional :: xovery
+
 C Local variables
-      integer
-     .  Nx, Ny, Nrem
-      logical
-     .  factor
+      integer :: Nx, Ny
+
+C Initialise values
+      Nx = 1
+      Ny = 1
+
+      if ( present(xovery) ) then
+        call factor_equal()
+      else
+        ! We default to the old scheme
+        call factor_235()
+      end if
+
+      contains
+
+      subroutine factor_equal()
+      ! We know that xovery is present
+      real(dp) :: small
+      integer :: Nmax
+
+      ! Figure out the the upper bound of the division
+      Nmax = nint(sqrt(xovery * Nodes) + 0.5_dp)
+      Nmax = min(max(1, Nmax), Nodes)
+
+      do Nx = Nmax, 1, -1
+        Ny = Nodes / Nx
+        if ( Nx * Ny == Nodes ) exit
+      end do
+
+      ! Order the divisions correctly
+      if ( xovery > 1._dp ) then
+        ! lattice x > y, meaning fewer divisions along
+        ! the y direction than the x
+        Ny = min(Nx,Ny)
+      else
+        ! lattice x < y, meaning more divisions along
+        ! the y direction than the x
+        Ny = max(Nx,Ny)
+      end if
+
+      procYdefault = Ny
+
+      end subroutine
+
+      subroutine factor_235()
+C Local variables
+      integer :: Nx, Ny, Nrem
+      logical :: factor
 
 C Initialise values
       Nx = 1
@@ -760,11 +809,13 @@ C Loop looking for factors
       enddo
 
 C Choose default value as lowest of Nx and Ny
-      if (Nx.gt.Ny) then
+      if ( Nx > Ny ) then
         procYdefault = Ny
       else
         procYdefault = Nx
-      endif
+      end if
+
+      end subroutine
 
       end subroutine set_processorYdefault
 
