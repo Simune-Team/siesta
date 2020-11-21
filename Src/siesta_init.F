@@ -121,7 +121,7 @@
       integer :: ns           ! Number of species
       logical :: not_using_auxcell
       real(dp) :: walltime_m, walltime_s
-
+      integer :: nstates_spin(2)  ! dummy intermediate variable
       integer :: World_Group
       integer :: npSIESTA
       external :: read_options
@@ -498,9 +498,9 @@ C     Initialise MPI and set processor number
      &        qtots(2)
         end if
       else
-        ! Dummy variable, only used for calculating expected
-        ! number of states per spin channel # neigmin
-        qtots(:) = qtot / 2.0_dp
+        ! Distribute electrons equally per spin
+        ! (For spin%spinor = 1, qtots(2) should not be referenced)
+        qtots(:) = qtot / spin%spinor
       end if
 
       ! Get number of eigenstates that need to be calculated This
@@ -511,11 +511,15 @@ C     Initialise MPI and set processor number
       ! each, this number refers to half the number of spinors.
       neigwanted = fdf_get('NumberOfEigenStates',no_u)
 
+      ! This is the rough number of states to be occupied (per spin channel)
+      ! For spin%spinor=1, this is half the number of electrons
+      nstates_spin(1:2) = ceiling ( (qtots(1:2)/2.0_dp) *  spin%spinor )
+      
       ! Calculate the number of eigenstates
       ! dependent on the # of spin-components.
       neigmin = 0
       do is = 1 , spin%spinor
-        neigmin = max(neigmin, ceiling(qtots(is)))
+        neigmin = max(neigmin, nstates_spin(is))
       end do
       
       ! Always at least have one additional state per 200 K.  This

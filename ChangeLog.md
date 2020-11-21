@@ -62,6 +62,9 @@ An overview changelog for Siesta.
 
 ### Changes
 
+* Fixed regression in OMM routines due to resetting of qtots
+  (introduced when fixing the NC/SOC occupation problem)
+
 * Enabled the spin-spiral code, !20
   Feedback is requested from expert users of spin-spiral systems.
   _Not_ production stable.
