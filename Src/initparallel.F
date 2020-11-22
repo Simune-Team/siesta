@@ -121,9 +121,14 @@ C Processor grid
       npgrid(2) = fdf_integer('ProcessorGridY',1)
       npgrid(3) = fdf_integer('ProcessorGridZ',1)
 
+C Find cell parameters
+      degtorad = 4.0d0*atan(1.0d0)/180.0d0
+      call uncell(ucell,acell,bcell,ccell,alpha,bbeta,gamma,degtorad)
+
 C Set ProcessorY  
 #ifdef MPI
-      call set_processorYdefault(Nodes,procYdefault)
+      ! The divisions are along Y and Z.
+      call set_processorYdefault(Nodes,procYdefault,xovery=ccell/bcell)
       procYval = fdf_integer('processorY',procYdefault)
       ! Sanity check
       if (procYval > Nodes) then
@@ -167,9 +172,6 @@ C number of processors and if not then modify
         rcmaxopt = rcmax
       endif
 
-C Find cell parameters
-      degtorad = 4.0d0*atan(1.0d0)/180.0d0
-      call uncell(ucell,acell,bcell,ccell,alpha,bbeta,gamma,degtorad)
 
 C Check that cut-off is less than cell parameter
       cellmin = min(acell, bcell, ccell)
