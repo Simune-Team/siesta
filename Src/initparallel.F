@@ -128,7 +128,16 @@ C Find cell parameters
 C Set ProcessorY  
 #ifdef MPI
       ! The divisions are along Y and Z.
-      call set_processorYdefault(Nodes,procYdefault,xovery=ccell/bcell)
+
+      if (fdf_get('FFT.ProcessorY.traditional',.false.)) then
+         ! The traditional method based only on factors of 2,3,5
+         call set_processorYdefault(Nodes,procYdefault)
+      else
+         ! New method which takes into account relative cell vector sizes
+         call set_processorYdefault(Nodes,procYdefault,
+     $        xovery=ccell/bcell)
+      endif
+
       procYval = fdf_integer('processorY',procYdefault)
       ! Sanity check
       if (procYval > Nodes) then

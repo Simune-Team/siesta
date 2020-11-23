@@ -9584,9 +9584,24 @@ used for that.
   should be divided so that the number of mesh points per processor
   along each axis is as similar as possible.
 
-  Defaults to a multiple of number of processors.
+  Defaults to a value set automatically by the program. There are two
+  methods. The default is to set \fdf{ProcessorY} to a factor of the
+  number of processors which takes into account the relative sizes of
+  the second and third lattice vectors. An older method based only on
+  searching for factors of the number of processors in the set
+  \{2,3,5\} can be enabled by the following option.
 
 \end{fdfentry}
+
+\begin{fdflogicalF}{FFT!ProcessorY!Traditional}
+  \index{ProcessorY}  
+
+  If \fdftrue, the program sets the default value for the FFT
+  ProcessorY variable by searching for factors of the total number of
+  processors in the set \{2,3,5\}. Note that this default value can
+  still be overridden by setting \fdf{ProcessorY} explicitly.
+
+\end{fdflogicalF}
 
 
 \subsubsection{Parallel decompositions for O(N)}
