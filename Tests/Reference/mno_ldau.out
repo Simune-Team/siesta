@@ -672,6 +672,7 @@ siesta: Ena     =       194.465887
 siesta: Ekin    =      1001.475140
 siesta: Enl     =      -429.813753
 siesta: Eso     =         0.000000
+siesta: Edftu   =         0.542001
 siesta: Eldau   =         0.542001
 siesta: DEna    =       -21.331708
 siesta: DUscf   =         1.442028
@@ -691,6 +692,7 @@ siesta: Final energy (eV):
 siesta:  Band Struct. =     -99.503935
 siesta:       Kinetic =    1001.475140
 siesta:       Hartree =     189.216905
+siesta:       Edftu   =       0.542001
 siesta:       Eldau   =       0.542001
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000

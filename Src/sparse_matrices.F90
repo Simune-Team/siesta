@@ -145,7 +145,7 @@ module sparse_matrices
   ! Formerly there was a single array H0 for this
   type(dSpData1D), public :: H_vkb_1D, H_kin_1D
   ! LDA+U and spin-orbit coupling Hamiltonian
-  type(dSpData2D), public :: H_ldau_2D, H_so_2D
+  type(dSpData2D), public :: H_dftu_2D, H_so_2D
 
   !> Geometry density matrix history, see [here](|page|/implementation/1-auxiliary-supercell.html)
   type(Fstack_Pair_Geometry_dSpData2D), public :: DM_history
@@ -171,7 +171,7 @@ contains
 
     call delete( H_kin_1D )
     call delete( H_vkb_1D )
-    call delete( H_ldau_2D )
+    call delete( H_dftu_2D )
     call delete( H_so_2D )
 
     call delete( DM_2D )
