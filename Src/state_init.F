@@ -27,7 +27,7 @@
       use sparse_matrices, only: S, S_1D
 
       use sparse_matrices, only: H_kin_1D, H_vkb_1D
-      use sparse_matrices, only: H_ldau_2D, H_so_2D
+      use sparse_matrices, only: H_dftu_2D, H_so_2D
 
       use sparse_matrices, only: sparse_pattern
       use sparse_matrices, only: block_dist, single_dist
@@ -41,7 +41,7 @@
 
       use siesta_geom
       use atomlist,          only: iphorb, iphkb, indxua, iaorb,
-     &                             rmaxo, rmaxkb, rmaxv, rmaxldau,
+     &                             rmaxo, rmaxkb, rmaxv, rmaxdftu,
      &                             lastkb, lasto, superc, indxuo,
      &                             no_u, no_s, no_l, iza
       use alloc,             only: re_alloc, de_alloc, alloc_report
@@ -70,7 +70,7 @@
       use m_mpi_utils,       only: globalize_or
       use m_mpi_utils,       only: globalize_sum
       use domain_decom,      only: domainDecom, use_dd, use_dd_perm
-      use ldau_specs,        only: switch_ldau, ldau_init
+      use dftu_specs,        only: switch_dftu, dftu_init
       use fdf,               only: fdf_get
       use sys,               only: message, die, bye
       use m_sparse, only : xij_offset
@@ -323,9 +323,9 @@
 !     Use largest possible range in program, except hsparse...
 !     2 * rmaxv: Vna overlap
 !     rmaxo + rmaxkb: Non-local KB action
-!     2 * (rmaxo + rmaxldau): Interaction through LDAU projector
+!     2 * (rmaxo + rmaxdftu): Interaction through DFTU projector
 !     2.0_dp * (rmaxo+rmaxkb) : Orbital interaction through KB projectors
-      rmax = max( 2._dp*rmaxv, 2._dp*(rmaxo+rmaxldau), rmaxo+rmaxkb)
+      rmax = max( 2._dp*rmaxv, 2._dp*(rmaxo+rmaxdftu), rmaxo+rmaxkb)
 
       if ( .not. negl ) then
         rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
@@ -536,22 +536,22 @@
       call newdSpData1D(sparse_pattern,block_dist,H_kin_1D,name=oname)
       !if (ionode) call print_type(H_kin_1D)
 
-      if ( switch_ldau ) then
-         write(oname,"(a,i0)") "H_ldau at geom step ", istep
+      if ( switch_dftu ) then
+         write(oname,"(a,i0)") "H_dftu at geom step ", istep
          call newdSpData2D(sparse_pattern,spin%spinor,
-     &        block_dist,H_ldau_2D,name=oname)
+     &        block_dist,H_dftu_2D,name=oname)
          
          ! Initialize to 0, LDA+U may re-calculate
          !   this matrix sporadically doing the SCF.
          ! Hence initialization MUST be performed upon
          ! re-allocation.
-         call init_val(H_ldau_2D)
+         call init_val(H_dftu_2D)
          if ( inicoor /= istep ) then
             ! Force initialization of the LDA+U
             ! when changing geometry
             ! For the first geometry this is controlled
             ! by the user via an fdf-key
-            ldau_init = .true.
+            dftu_init = .true.
          end if
       end if
       

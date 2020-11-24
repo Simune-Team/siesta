@@ -23,7 +23,7 @@
     type(species_info), pointer        :: spp
     type(rad_func), pointer            :: func   
 !
-    integer :: is, io, ko, ldauo, l, m, gindex
+    integer :: is, io, ko, dftuo, l, m, gindex
 
     do is = 1, nspecies
        spp => species(is)
@@ -60,16 +60,16 @@
     ! LDA+U projectors
     do is = 1, nspecies
        spp => species(is)
-       do ldauo=1,spp%nprojsldau
-          func => spp%pjldau(spp%pjldau_index(ldauo))
-          l = spp%pjldau_l(ldauo)
-          m = spp%pjldau_m(ldauo)
+       do dftuo=1,spp%nprojsdftu
+          func => spp%pjdftu(spp%pjdftu_index(dftuo))
+          l = spp%pjdftu_l(dftuo)
+          m = spp%pjdftu_m(dftuo)
           io = -ko
-          call register_in_rf_pool(func,l,m,"ldauproj",(/is,io/),gindex)
-          spp%pjldau_gindex(ldauo) = gindex
+          call register_in_rf_pool(func,l,m,"dftuproj",(/is,io/),gindex)
+          spp%pjdftu_gindex(dftuo) = gindex
 #ifdef DEBUG_PAO
-          write(6,'(a20,a,3(tr1,i3))')'LDAU projectors ', &
-               'is, ldauo, gindex = ', is, ldauo, gindex 
+          write(6,'(a20,a,3(tr1,i3))')'DFTU projectors ', &
+               'is, dftuo, gindex = ', is, dftuo, gindex 
 #endif
        enddo
     enddo
@@ -107,7 +107,7 @@
     use atm_types, only: species_info, species, nspecies
     use atmfuncs, only: rcut, phiatm
     use atmfuncs, only: orb_gindex, kbproj_gindex, vna_gindex
-    use atmfuncs, only: ldau_gindex
+    use atmfuncs, only: dftu_gindex
 
     implicit none 
     !
@@ -149,15 +149,15 @@
           enddo
        enddo
 
-       ! LDAU
+       ! DFTU
 !!$       do is = 1, nspecies
-!!$          if ( IONode ) print *, "---IS ldau: ", is
+!!$          if ( IONode ) print *, "---IS dftu: ", is
 !!$          spp => species(is)
-!!$          do io=1,spp%nprojsldau
+!!$          do io=1,spp%nprojsdftu
 !!$             call phiatm(is,-io,r,phi,grad)
 !!$             if ( IONode ) print "(a,i3,f12.6,g20.10)", "io, rcut, phiatm_h:",   &
 !!$                  io, rcut(is,-io), phi
-!!$             gindex = ldau_gindex(is,-io)
+!!$             gindex = dftu_gindex(is,-io)
 !!$             call evaluate(gindex,r,phi,grad)
 !!$             if ( IONode ) print "(a,i3,f12.6,g20.10)", "ig, rcut, phiatm_h:",   &
 !!$                  gindex, cutoff(gindex), phi

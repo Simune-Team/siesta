@@ -47,8 +47,8 @@
       use electrostatic, only: elec_corr_setup
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
       use atom_options, only: get_atom_options
-      use ldau_specs, only: read_ldau_specs
-      use ldau_specs, only: ldau_proj_gen
+      use dftu_specs, only: read_dftu_specs
+      use dftu_specs, only: dftu_proj_gen
 
       use pseudopotential, only: pseudo_read
     
@@ -79,7 +79,8 @@
 
       ! Create list of options NOT compatible with psf/vps file
       ! reads.
-      req_init_setup = fdf_defined('LDAU.proj')
+      req_init_setup = fdf_defined('DFTU.proj') .or.
+     &    fdf_defined('LDAU.proj')
       ! Add any other dependencies here...
 
       ! Initialize all basis-parameters
@@ -96,7 +97,7 @@
      & ( user_basis_netcdf .or. user_basis )
       if ( req_init_setup ) then
          call die('Reading PAOs and KBs from NetCDF/ascii files '//
-     &'is not possible with LDAU.Proj')
+     &'is not possible with DFTU.Proj')
       end if
       
       if (user_basis_netcdf) then
@@ -123,7 +124,7 @@
         call basis_specs_transfer()
 
 !       Get the parameters for the generation of the LDA+U projectors
-        call read_ldau_specs()
+        call read_dftu_specs()
 
         nsmax = nsp             !! For old_atmfuncs
         call allocate_old_arrays()
@@ -148,7 +149,7 @@
      &                    split_norm(0:lmaxd,1:nsemx,is), 
      &                    filtercut(0:lmaxd,1:nsemx,is), basp)
 !         Generate the projectors for the LDA+U simulations (if requested)
-          call ldau_proj_gen(is)
+          call dftu_proj_gen(is)
         enddo 
 
         call prinput(nsp)

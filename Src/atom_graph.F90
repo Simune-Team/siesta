@@ -75,7 +75,7 @@ contains
     use sorting
     use neighbour, only: jna=>jan, xij, r2ij, maxna => maxnna
     use neighbour, only: mneighb
-    use ldau_specs, only: switch_ldau
+    use dftu_specs, only: switch_dftu
 
     use sys, only : die
     use alloc, only : re_alloc, de_alloc
@@ -95,10 +95,10 @@ contains
     
     real(dp), allocatable :: rorbmax(:)  ! maximum ORB radius of each species
     real(dp), allocatable :: rkbmax(:)   ! maximum KB radius of each species
-    real(dp), allocatable :: rldaumax(:) ! maximum LDAU radius of each species
+    real(dp), allocatable :: rdftumax(:) ! maximum DFTU radius of each species
     real(dp), allocatable :: rmax_projectors(:) ! maximum projector radius of each species
     integer :: maxnkb  = 500 ! max no. of atoms with
-                             ! KB (or LDAU) projectors which 
+                             ! KB (or DFTU) projectors which 
                              ! overlap another
                              ! atom's orbitals.
 
@@ -114,7 +114,7 @@ contains
     type(rad_func),     pointer :: pp
 
     real(dp) :: rci, rcj, rck, rij, rik, rjk
-    real(dp) :: rmax, rmaxo, rmaxkb, rmaxldau
+    real(dp) :: rmax, rmaxo, rmaxkb, rmaxdftu
 
     ! Local distribution used to
     type(OrbitalDistribution), pointer :: ldit
@@ -163,7 +163,7 @@ contains
     
     ! Find maximum radius of orbs and KB projectors of each specie
     allocate(rkbmax(nspecies), rorbmax(nspecies))
-    allocate(rldaumax(nspecies), rmax_projectors(nspecies))
+    allocate(rdftumax(nspecies), rmax_projectors(nspecies))
     do is = 1 , nspecies
        rorbmax(is) = 0.0_dp
        do io = 1 , nofis(is)
@@ -173,12 +173,12 @@ contains
        do ikb = 1 , nkbfis(is)
           rkbmax(is) = max(rkbmax(is),rcut(is,-ikb))
        end do
-       rldaumax(is) = 0.0_dp
-       if( switch_ldau ) then
+       rdftumax(is) = 0.0_dp
+       if( switch_dftu ) then
           spp => species(is)
-          do io = 1, spp%n_pjldaunl
-             pp => spp%pjldau(io)
-             rldaumax(is) = max( rldaumax(is), pp%cutoff )
+          do io = 1, spp%n_pjdftunl
+             pp => spp%pjdftu(io)
+             rdftumax(is) = max( rdftumax(is), pp%cutoff )
           enddo
        endif
     end do
@@ -186,21 +186,21 @@ contains
     ! Find maximum range of basis orbitals and KB projectors
     rmaxo    = maxval(rorbmax (1:nspecies))
     rmaxkb   = maxval(rkbmax  (1:nspecies))
-    rmaxldau = maxval(rldaumax(1:nspecies))
+    rmaxdftu = maxval(rdftumax(1:nspecies))
 
 
     if ( negl ) then
        ! If we neglect the KB projectors in the interaction scheme
-       ! we might still have to worry about the LDAU projectors
-       rmax = 2._dp * (rmaxo+rmaxldau)
+       ! we might still have to worry about the DFTU projectors
+       rmax = 2._dp * (rmaxo+rmaxdftu)
        do is = 1, nspecies
-          rmax_projectors(is) = rldaumax(is)
+          rmax_projectors(is) = rdftumax(is)
        enddo
-       third_centers = switch_ldau  
+       third_centers = switch_dftu  
     else
-       rmax = 2._dp * (rmaxo+max(rmaxkb,rmaxldau))
+       rmax = 2._dp * (rmaxo+max(rmaxkb,rmaxdftu))
        do is = 1, nspecies
-          rmax_projectors(is) = max(rldaumax(is),rkbmax(is))
+          rmax_projectors(is) = max(rdftumax(is),rkbmax(is))
        enddo
        third_centers = .true.
     end if
@@ -254,7 +254,7 @@ contains
        end if
 
        ! Find atoms connected by direct overlap or
-       ! through a KB projector or LDAU projector
+       ! through a KB projector or DFTU projector
        do jnat = 1 , nna
           connected_h = .false.
           ja = jna(jnat)
@@ -367,7 +367,7 @@ contains
              connected_s = .true.
              connected_h = .true.
           else 
-             ! Find if ja overlaps with a KB/LDAU projector in ia's list
+             ! Find if ja overlaps with a KB/DFTU projector in ia's list
              do inkb = 1 , nnkb
                 rck = rckb(inkb)
                 kna = knakb(inkb)
@@ -394,7 +394,7 @@ contains
     call de_alloc(index,name="index",routine="atom_graph")
     call de_alloc(knakb,name="knakb",routine="atom_graph")
     call de_alloc(rckb,name="rckb",routine="atom_graph")
-    deallocate(n_col,l_ptr,rkbmax,rorbmax,rldaumax,rmax_projectors)
+    deallocate(n_col,l_ptr,rkbmax,rorbmax,rdftumax,rmax_projectors)
 
     ! Clean up, if the distribution has not
     ! been supplied the local distribution 

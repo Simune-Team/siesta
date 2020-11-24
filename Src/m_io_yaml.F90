@@ -170,7 +170,7 @@ contains
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Ekin", Ekin
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Enl", Enl
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Eso", Eso
-    write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Eldau", Eldau
+    write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "Edftu", Edftu
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DEna", DEna
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DUscf", DUscf
     write(unit=yaml_fd, fmt='(2X,A,":",1X,E24.8)') "DUext", DUext

@@ -44,8 +44,8 @@ module m_energies
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
   real(dp):: Ebs        ! Band-structure energy, Tr(DM*H), calculated in compute_dm
   real(dp):: Eso        ! Spin-orbit energy
-  real(dp):: Eldau      
-  real(dp):: DEldau
+  real(dp):: Edftu      
+  real(dp):: DEdftu
 
   real(dp) :: NEGF_DE  ! NEGF total energy contribution = - e * \sum_i N_i \mu_i
   ! Generally we should only calculate energies in the regions where we are updating elements
@@ -93,8 +93,8 @@ contains
     Uscf = 0._dp
     Ebs = 0._dp
     Eso = 0._dp
-    Eldau = 0._dp      
-    DEldau = 0._dp
+    Edftu = 0._dp      
+    DEdftu = 0._dp
 
     ! NEGF part
     NEGF_DE = 0._dp
@@ -130,12 +130,12 @@ contains
     ! DUext (external electric field) -- should it be in or out?
     Etot = Ena + Ekin + Enl + Eso - Eions + &
         DEna + DUscf + DUext + Exc + &
-        Ecorrec + Emad + Emm + Emeta + Eldau
+        Ecorrec + Emad + Emm + Emeta + Edftu
 
     if ( TSrun ) then
       NEGF_Etot = Ena + NEGF_Ekin + NEGF_Enl - Eions + &
           DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm + Emeta + &
-          Eldau + NEGF_DE
+          Edftu + NEGF_DE
     end if
     
   end subroutine update_Etot

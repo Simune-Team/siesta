@@ -33,7 +33,7 @@
       use old_atmfuncs, only: lmxkbfis, nkbfis
 
 !----------------------------------------------------------------
-      use ldau_specs,     only: populate_species_info_ldau
+      use dftu_specs,     only: populate_species_info_dftu
 
       use periodic_table, only: symbol
       use sys,            only: die
@@ -285,7 +285,7 @@
 
       enddo
 
-      call populate_species_info_ldau
+      call populate_species_info_dftu
 
       end subroutine atm_transfer
 

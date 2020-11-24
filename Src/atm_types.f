@@ -98,35 +98,35 @@
 !        LDA+U Projectors
 !        Here we follow the scheme used for the KB projectors
 !        
-         integer                         ::  n_pjldaunl = 0
+         integer                         ::  n_pjdftunl = 0
                                              ! num of "nl" projs
                                              ! not counting the "m copies"
-         integer                         ::  lmax_ldau_projs = 0
+         integer                         ::  lmax_dftu_projs = 0
                                              ! l cutoff for LDA+U proj
-         integer, dimension(maxn_pjnl)   ::  pjldaunl_l ! l of each nl proj
-         integer, dimension(maxn_pjnl)   ::  pjldaunl_n ! n of each nl proj
+         integer, dimension(maxn_pjnl)   ::  pjdftunl_l ! l of each nl proj
+         integer, dimension(maxn_pjnl)   ::  pjdftunl_n ! n of each nl proj
                                              ! Here, n is not the principal
                                              ! quantum number, but a sequential
                                              ! index from 1 to the total 
                                              ! number of projectors for that l.
                                              ! In the case of LDA+U projectors,
                                              ! It is always equal to 1.
-         real(dp), dimension(maxn_pjnl)  ::  pjldaunl_U ! U of each nl projector
-         real(dp), dimension(maxn_pjnl)  ::  pjldaunl_J ! J of each nl projector
+         real(dp), dimension(maxn_pjnl)  ::  pjdftunl_U ! U of each nl projector
+         real(dp), dimension(maxn_pjnl)  ::  pjdftunl_J ! J of each nl projector
 
-         integer                         ::  nprojsldau = 0
+         integer                         ::  nprojsdftu = 0
                                              ! Total number of LDA+U proj.
                                              ! counting the "m copies"
                                              ! (including the (2l + 1) factor))
-         integer, dimension(maxnprojs)   ::  pjldau_index
-         integer, dimension(maxnprojs)   ::  pjldau_n
-         integer, dimension(maxnprojs)   ::  pjldau_l
-         integer, dimension(maxnprojs)   ::  pjldau_m
-         integer, dimension(maxnprojs)   ::  pjldau_gindex
+         integer, dimension(maxnprojs)   ::  pjdftu_index
+         integer, dimension(maxnprojs)   ::  pjdftu_n
+         integer, dimension(maxnprojs)   ::  pjdftu_l
+         integer, dimension(maxnprojs)   ::  pjdftu_m
+         integer, dimension(maxnprojs)   ::  pjdftu_gindex
 !
          type(rad_func), dimension(:), pointer       ::  orbnl
          type(rad_func), dimension(:), pointer       ::  pjnl
-         type(rad_func), dimension(:), pointer       ::  pjldau
+         type(rad_func), dimension(:), pointer       ::  pjdftu
          type(rad_func)                              ::  vna
          integer                                     ::  vna_gindex
          type(rad_func)                              ::  chlocal
