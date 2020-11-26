@@ -10,7 +10,7 @@
       use precision, only: dp
       use radial, only: rad_func
 !
-!     Derived types for orbitals,  KB projectors, and LDA+U projectors
+!     Derived types for orbitals,  KB projectors, and DFT+U projectors
 !
       implicit none
 !
@@ -95,27 +95,27 @@
          integer, dimension(maxnprojs)   ::  pj_m
          integer, dimension(maxnprojs)   ::  pj_gindex
 !
-!        LDA+U Projectors
+!        DFT+U Projectors
 !        Here we follow the scheme used for the KB projectors
 !        
          integer                         ::  n_pjdftunl = 0
                                              ! num of "nl" projs
                                              ! not counting the "m copies"
          integer                         ::  lmax_dftu_projs = 0
-                                             ! l cutoff for LDA+U proj
+                                             ! l cutoff for DFT+U proj
          integer, dimension(maxn_pjnl)   ::  pjdftunl_l ! l of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjdftunl_n ! n of each nl proj
                                              ! Here, n is not the principal
                                              ! quantum number, but a sequential
                                              ! index from 1 to the total 
                                              ! number of projectors for that l.
-                                             ! In the case of LDA+U projectors,
+                                             ! In the case of DFT+U projectors,
                                              ! It is always equal to 1.
          real(dp), dimension(maxn_pjnl)  ::  pjdftunl_U ! U of each nl projector
          real(dp), dimension(maxn_pjnl)  ::  pjdftunl_J ! J of each nl projector
 
          integer                         ::  nprojsdftu = 0
-                                             ! Total number of LDA+U proj.
+                                             ! Total number of DFT+U proj.
                                              ! counting the "m copies"
                                              ! (including the (2l + 1) factor))
          integer, dimension(maxnprojs)   ::  pjdftu_index

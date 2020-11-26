@@ -11,16 +11,16 @@
 ! Javier Junquera, January 2016, based on previous redftuproj
 ! 
 ! Processes the information in an fdf file 
-! to generate the projectors for the LDA+U simulations, 
+! to generate the projectors for the DFT+U simulations, 
 ! and populates the "projectors specifications" data structures.
 ! 
 ! Here is a guide to the behavior of the main routine "read_dftu_specs":
 ! 
 ! * Read the generation method of the projectors:
-!     The LDA+U projectors are the localized functions used
+!     The DFT+U projectors are the localized functions used
 !     to calculate the local populations used in a Hubbard-like term
 !     that modifies the LDA Hamiltonian and energy.
-!     It is important to recall that LDA+U projectors should be
+!     It is important to recall that DFT+U projectors should be
 !     quite localized functions.
 !     Otherwise the calculated populations loose their atomic character
 !     and physical meaning. Even more importantly,
@@ -44,7 +44,7 @@
 !          block DFTU.proj.
 !     The default value is method_gen_dftu_proj = 2
 !
-! * Read the energy shift to generate the LDA+U projectors
+! * Read the energy shift to generate the DFT+U projectors
 !     Energy increased used to define the localization radious
 !     of the DFTU projectors (similar to the parameter PAO.EnergyShift).
 !
@@ -167,7 +167,7 @@
                                                 !   information about the 
                                                 !   - basis set
                                                 !   - Kleinman-Bylander proj.
-                                                !   - LDA+U proj. 
+                                                !   - DFT+U proj. 
                                                 !   ...
                                                 !   for all the species 
                                                 !   are defined
@@ -176,7 +176,7 @@
                                                 !   types
       use basis_types, only: print_dftushell    ! Subroutine to print 
                                                 !   the values of the projectors
-                                                !   for LDA+U calculations
+                                                !   for DFT+U calculations
       use basis_types, only : nsp               ! Number of different 
                                                 !   chemical species
       use basis_types, only : charge            ! Ionic charge to generate the 
@@ -208,7 +208,7 @@
       use atm_types,   only : species_info      ! Derived type with all the info
                                                 !   about the radial functions
                                                 !   (PAOs, KB projectors, 
-                                                !   LDA+U proj,
+                                                !   DFT+U proj,
                                                 !   VNA potentials, etc)
                                                 !   for a given atomic specie
       use atm_types,   only : species           ! Actual array where the  
@@ -227,19 +227,19 @@
       implicit none
 
       integer :: method_gen_dftu_proj ! Method used to generate the 
-                                      !   LDA+U projectors
+                                      !   DFT+U projectors
                                       !   Default value: exact solution 
                                       !   of the pseudoatomic problem 
                                       !   cutted with a Fermi function
       real(dp) :: energy_shift_dftu   ! Energy increase used to define 
-                                      !   the localization radious of the LDA+U 
+                                      !   the localization radious of the DFT+U 
                                       !   projectors (similar to the parameter
                                       !   PAO.EnergyShift)
                                       !   Default value: 0.05 Ry
       real(dp) :: dnrm_rc             ! Parameter used to define the cutoff 
                                       !   radius that enters the 
                                       !   Fermi distribution to cut the 
-                                      !   LDA+U projectors. 
+                                      !   DFT+U projectors. 
                                       !   Only used if method_gen_dftu_proj = 2
                                       !   It is the norm of the original 
                                       !   pseudoatomic orbital contained in 
@@ -247,29 +247,29 @@
                                       !   Default value: 0.90
       real(dp) :: width_fermi_dftu    ! Parameter used to define the width of 
                                       !   Fermi distribution to cut the 
-                                      !   LDA+U projectors. 
+                                      !   DFT+U projectors. 
                                       !   Only used if method_gen_dftu_proj = 2
                                       !   Default value: 0.05
       real(dp) :: dtol_dftupop        ! Parameter that defines the 
                                       !   convergence criterium for the 
-                                      !   LDA+U local population
+                                      !   DFT+U local population
       real(dp) :: dDmax_threshold     ! Parameter that defines the 
                                       !   criterium required to start or update 
                                       !   the calculation of the populations of
-                                      !   the LDA+U projections
+                                      !   the DFT+U projections
       logical  :: dftu_init           ! Flag that determines whether the 
                                       !   local populations are calculated 
                                       !   on the first iteration
       logical  :: dftu_shift          ! Flag that determines whether the 
                                       !   parameter is interpreted
                                       !   as a local potential shift
-      real(dp), pointer :: projector(:,:,:) ! Radial part of the LDA+U projector
+      real(dp), pointer :: projector(:,:,:) ! Radial part of the DFT+U projector
       integer,  save, public, pointer  ::  nprojsdftu(:)
-                                      ! Total number of LDA+U projectors
+                                      ! Total number of DFT+U projectors
                                       !   (including the different angular 
                                       !   dependencies): i.e. a radial projector
                                       !   with d-character counts as 5 different
-                                      !   LDA+U projectors
+                                      !   DFT+U projectors
       real(dp), parameter :: rmax = 60.0_dp            
                                       ! Arbitrary long localization radius
       real(dp), parameter :: min_func_val = 1.e-6_dp
@@ -279,7 +279,7 @@
                                       !   considered
       logical,  save ::  switch_dftu = .false.
                                       ! Switch that determines whether  
-                                      ! and LDA+U simulation is required or not
+                                      ! and DFT+U simulation is required or not
 
       ! Routines
       public :: read_dftu_specs
@@ -299,21 +299,21 @@
 
 ! subroutine read_dftu_specs           : Subroutine that reads all the 
 !                                        info in the fdf file related with the
-!                                        LDA+U projectors and 
+!                                        DFT+U projectors and 
 !                                        allocate some space for 
 !                                        the projector pointer
 ! subroutine dftu_proj_gen             : Subroutine that solves the 
 !                                        Schrodinger equation for the 
 !                                        isolated atom and generates the
-!                                        LDA+U projectors 
+!                                        DFT+U projectors 
 ! subroutine fermicutoff               : Subroutine that computes the Fermi
 !                                        function used to cut the long 
 !                                        atomic wave functions and produce 
-!                                        the LDA+U projectors.
+!                                        the DFT+U projectors.
 !                                        only used if 
 !                                        method_gen_dftu_proj = 2
 ! subroutine populate_species_info_dftu: Subroutine that populates the 
-!                                        data structures related with the LDA+U
+!                                        data structures related with the DFT+U
 !                                        projectors in the species 
 !                                        derived types.
 !                                        Called from the atm_transfer subroutine
@@ -351,13 +351,13 @@
       real(dp), save  :: softRc, softPt
 
 !------------------------------------------------------------------------
-!     Read the generation method for the LDA+U projectors
+!     Read the generation method for the DFT+U projectors
       method_gen_dftu_proj = 
      &  fdf_get('LDAU.ProjectorGenerationMethod',2)
       method_gen_dftu_proj = 
      &  fdf_get('DFTU.ProjectorGenerationMethod',method_gen_dftu_proj)
 
-!     Read the energy-shift to define the cut-off radius of the LDA+U projectors
+!     Read the energy-shift to define the cut-off radius of the DFT+U projectors
       energy_shift_dftu = 
      &     fdf_get('LDAU.EnergyShift',0.05_dp,'Ry')
       energy_shift_dftu = 
@@ -380,12 +380,12 @@
 
 !     Read the parameter that defines the criterium required to start or update
 !     the calculation of the populations of
-!     the LDA+U projections
+!     the DFT+U projections
       dDmax_threshold = fdf_get('LDAU.ThresholdTol', 1.e-2_dp)
       dDmax_threshold = fdf_get('DFTU.ThresholdTol', dDmax_threshold)
 
 !     Read the parameter that defines the convergence criterium for the
-!     LDA+U local population
+!     DFT+U local population
       dtol_dftupop = fdf_get('LDAU.PopTol',1.e-3_dp)
       dtol_dftupop = fdf_get('DFTU.PopTol',dtol_dftupop)
 
@@ -400,7 +400,7 @@
       dftu_init = fdf_get('DFTU.FirstIteration', dftu_init )
       ! When the local potential shift is applied
       ! the initial iteration is forced to calculate
-      ! the LDA+U terms
+      ! the DFT+U terms
       if ( dftu_shift ) dftu_init = .true.
 
 !     Allocate and initialize the array with the number of projectors per 
@@ -558,7 +558,7 @@
             dftu%dnrm_rc = dnrm_rc
             if ( fdf_bvalues(pline,2) .lt. 1.d-4 ) then
 !             Default value of parameter used to define the width of
-!             the Fermi distribution to produce the LDA+U projectors
+!             the Fermi distribution to produce the DFT+U projectors
 !             (only used if method_gen = 2)
               dftu%width = 0.05_dp
             else
@@ -636,8 +636,8 @@
 
       subroutine dftu_proj_gen( isp )
 ! ---------------------------------------------------------------------
-!     Generation of LDA+U projectors
-!     LDA+U projectors are, basically, pseudo-atomic-orbitals 
+!     Generation of DFT+U projectors
+!     DFT+U projectors are, basically, pseudo-atomic-orbitals 
 !     with artificially small radii.
 !     Written by D. Sanchez-Portal, Aug. 2008 after module basis_gen
 !     Rewritten by Javier Junquera to merge with the top of the trunk
@@ -657,7 +657,7 @@
       integer  :: iproj       ! Counter for the loop on projectors
       integer  :: ir          ! Counter for the loop on points in the log grid
       integer  :: ndown       ! Counter for the loop on l for the pseudos
-      integer  :: ndftupj     ! Number of LDA+U projectors that will be computed
+      integer  :: ndftupj     ! Number of DFT+U projectors that will be computed
                               !    for a given specie (here we consider only
                               !    different radial parts)
       integer  :: nodd        ! Check whether we have and odd number of points
@@ -692,7 +692,7 @@
       real(dp) :: vsoft(nrmax)        ! Soft-confinement potential
       real(dp) :: fermi_func(nrmax)   ! Fermi function used to cut the 
                                       !    long pseudowave functions and 
-                                      !    produce the LDA+U projectors
+                                      !    produce the DFT+U projectors
 
 !
 !     Derived types where some information on the different shells are stored
@@ -700,10 +700,10 @@
 
       type(basis_def_t),       pointer :: basp  ! Parameters that define the
                                                 !   basis set, KB projectors,
-                                                !   LDA+U projectors, pseudopot
+                                                !   DFT+U projectors, pseudopot
                                                 !   etc for a given species
       type(dftushell_t),       pointer :: shell ! Information about 
-                                                !   LDA+U projectors
+                                                !   DFT+U projectors
       type(pseudopotential_t), pointer :: vps   ! Pseudopotential information
 
 !
@@ -831,7 +831,7 @@
                                              !   or no relativistic (irelt = 0)
       real(dp), parameter   :: eps  = 1.0e-4_dp  ! Epsilon value used to 
                                              !   determine the cutoff of
-                                             !   the LDA+U projector 
+                                             !   the DFT+U projector 
                                              !   if method = 2
 
 
@@ -840,16 +840,16 @@
       basp => basis_parameters(isp)
 
 !     Determine if something has to be done regarding the 
-!     generation of the LDA+U projectors.
-!     If LDA+U is not required (number of LDA+U projectors equal to zero), 
+!     generation of the DFT+U projectors.
+!     If DFT+U is not required (number of DFT+U projectors equal to zero), 
 !     then do nothing and return.
 
-!     Compute how many LDA+U projector we are going to compute
+!     Compute how many DFT+U projector we are going to compute
 !     for this species
       ndftupj = basp%ndftushells
 
 
-!     Determine whether the calculation of LDA+U projectors is required or not
+!     Determine whether the calculation of DFT+U projectors is required or not
 !     for this atomic species
       if( .not. ndftupj > 0 ) return 
 
@@ -931,7 +931,7 @@
 !     These are required to solve the Schrodinger equation for the isolated
 !     atoms.
 !     Here we read all the semilocal components of the pseudopotential
-!     independently of whether the LDA+U projector for a particular
+!     independently of whether the DFT+U projector for a particular
 !     angular momentum is required or not.
 !
       do 20 ndown = 1, basp%lmxdftupj+1
@@ -956,7 +956,7 @@
 
 !!     For debugging
 !!     Up to this point, these are the same pseudos as read in
-!!     Daniel's version of LDA+U
+!!     Daniel's version of DFT+U
 !!     The only difference might be at the number of points in
 !!     the log grid
 !      do lpseudo = 0, basp%lmxdftupj 
@@ -996,7 +996,7 @@
         ionic_charge = zval - chgvps
       endif
 
-!     For LDA+U projector calculations
+!     For DFT+U projector calculations
 !     We use the "scaled" charge density of an ion of total charge "charge"
 !     As seen above, this ion could be the one involved in ps generation,
 !     or another specified at the time of basis generation.
@@ -1132,7 +1132,7 @@
          if( shell%lambda .le. 0.0d0 ) shell%lambda=1.0d0
          lambda = shell%lambda
 
-!        Check whether the cutoff radius for the LDA+U projector
+!        Check whether the cutoff radius for the DFT+U projector
 !        is explicitly determined in the input file or automatically
 !        controlled by 
 !        - the EnergyShift parameter            (method_gen_dftu_proj = 1)
@@ -1203,7 +1203,7 @@
      .                      eigen(l), rphi(1,l) )
 
 !
-!            Compute the cutoff radius of the LDA+U projectors 
+!            Compute the cutoff radius of the DFT+U projectors 
 !            as given by energy_shift_dftu
 !
              if( eigen(l) .gt. 0.0_dp ) then
@@ -1238,12 +1238,12 @@
          endif     ! End if automatic determination of the rc
 
 !        At this point, independently of the method,
-!        we should now the cutoff radius of the LDA+U projector.
+!        we should now the cutoff radius of the DFT+U projector.
 !        Now, we compute it
          rco = shell%rc
 
 !        Store the radial point of the logarithmic grid where the
-!        LDA+U projector vanishes
+!        DFT+U projector vanishes
          nrc = nint(log(rco/b+1.0_dp)/a)+1
          shell%nrc = nrc
 
@@ -1453,7 +1453,7 @@
            dnorm = 0.0_dp
            do ir = 1, nrwf_new
 !            Here we have stored projector/r^l, where projector is the 
-!            radial part of the LDA+U projector.
+!            radial part of the DFT+U projector.
 !            To compute the norm in spherical coordinates,
 !            we have to integrate \int r^{2} projector^{2} dr,
 !            and this implies that we have to mutiply rphi**2 times r^(l+1)**2
@@ -1465,7 +1465,7 @@
            projector(isp,iproj,1) = projector(isp,iproj,2)
 
 !
-!          Set up the cutoff for the LDA+U projector
+!          Set up the cutoff for the DFT+U projector
 !
            do ir = nrwf_new, 1, -1
              if(dabs(projector(isp,iproj,ir)) .gt. eps) exit
@@ -1534,7 +1534,7 @@
      .                        dftushell, fermi_func )
 !
 ! This subroutine defines the fermi function used to cut the long 
-! atomic wave functions and produce the LDA+U projectors
+! atomic wave functions and produce the DFT+U projectors
 ! Only used if method_gen_dftu_proj = 2
 !
 
@@ -1630,7 +1630,7 @@
       subroutine populate_species_info_dftu
 !
 !     In this subroutine, we populate the variables in the species_info
-!     derived type related with the LDA+U projectors.
+!     derived type related with the DFT+U projectors.
 !     It is called from atm_transfer. 
 !
       use alloc, only : de_alloc
@@ -1644,7 +1644,7 @@
       integer  :: is      ! Counter for the loop on atomic species
       integer  :: iproj   ! Counter for the loop on projectors
       integer  :: ir      ! Counter for the loop on real space points
-      integer  :: l       ! Quantum angular momentum of a given LDA+U proj.
+      integer  :: l       ! Quantum angular momentum of a given DFT+U proj.
       integer  :: im      ! Counter for the loop magnetic quantum number
       integer  :: imcount ! 
       integer  :: nr      ! Point in the log. grid closest to the linear grid
@@ -1652,12 +1652,12 @@
                           !   for the interpolation
       integer  :: nmin    ! nr - npoint (see below for the meaning of npoint)
       integer  :: nmax    ! nr + npoint (see below for the meaning of npoint)
-      real(dp) :: rc      ! Cutoff radius of the different LDA+U proj.
-      integer  :: nrc     ! Point in the log. grid where the LDA+U proj. vanish
+      real(dp) :: rc      ! Cutoff radius of the different DFT+U proj.
+      integer  :: nrc     ! Point in the log. grid where the DFT+U proj. vanish
       real(dp) :: delta   ! Interval between consecutive points in the grid
-                          !   where the LDA+U projectors are stored
+                          !   where the DFT+U projectors are stored
       real(dp) :: rpoint  ! Coordinate of the real space points
-      real(dp) :: projint ! Interpolated value of the LDA+U projector at rpoint
+      real(dp) :: projint ! Interpolated value of the DFT+U projector at rpoint
       real(dp) :: dy      ! Function derivative at point rpoint
       real(dp) :: a       ! Parameters of the logarithmic grid
       real(dp) :: b       ! Parameters of the logarithmic grid
@@ -1687,16 +1687,16 @@
 !       Read the radial logarithmic mesh
         rofi(1:nr) = vps%r(1:nr)
 
-!       Store the total number of LDA+U projectors 
+!       Store the total number of DFT+U projectors 
 !       counting the "m copies"
 !       (including the (2l + 1) factor for each l).
         spp%nprojsdftu = nprojsdftu(is)
 
-!       Number of LDA+U projectors 
+!       Number of DFT+U projectors 
 !       not counting the "m copies"
         spp%n_pjdftunl = basp%ndftushells
 
-!       Store the maximum angular momentum of the LDA+U projectors
+!       Store the maximum angular momentum of the DFT+U projectors
 !       for each atomic specie
         spp%lmax_dftu_projs = basp%lmxdftupj
 
@@ -1722,12 +1722,12 @@
             spp%pjdftu_index(imcount) = iproj
           enddo 
         enddo loop_projectors ! End loop on projectors for a given specie
-        if( imcount .ne. spp%nprojsdftu ) call die('LDA+U indexing...')
+        if( imcount .ne. spp%nprojsdftu ) call die('DFT+U indexing...')
 
 !       Allocate the derived types pjdftu, of radial kind,
-!       where the radial components of the LDA+U projectors will be stored
+!       where the radial components of the DFT+U projectors will be stored
 !       There will be as many radial functions of this kind
-!       as different LDA+U projectors, without including the m copies.
+!       as different DFT+U projectors, without including the m copies.
         allocate ( spp%pjdftu(spp%n_pjdftunl) )
 
         do iproj = 1, spp%n_pjdftunl

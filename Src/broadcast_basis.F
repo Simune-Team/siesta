@@ -17,7 +17,7 @@
       ! We also need to broadcast the chemical list
       use chemical, only : chemical_list
       
-      ! Broadcast LDA+U variables
+      ! Broadcast DFT+U variables
       use dftu_specs, only: dTol_dftupop
       use dftu_specs, only: dDmax_threshold
       use dftu_specs, only: dftu_shift, dftu_init
@@ -137,7 +137,7 @@
         call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
 
-        ! LDA+U
+        ! DFT+U
         call MPI_Bcast(spp%n_pjdftunl,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(spp%lmax_dftu_projs,1,MPI_integer,
@@ -218,7 +218,7 @@
          call broadcast_radial(func,Node)
       enddo
 
-      ! Broadcast LDA+U
+      ! Broadcast DFT+U
       call broadcast( dTol_dftupop )
       call broadcast( dDmax_threshold )
       call broadcast( dftu_init )

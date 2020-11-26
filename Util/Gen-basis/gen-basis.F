@@ -36,8 +36,8 @@ C
       use atom,         only : atom_main, prinput
       use sys,          only : die
       use atom_options, only : get_atom_options, write_ion_plot_files
-      use ldau_specs, only: read_ldau_specs
-      use ldau_specs, only: ldau_proj_gen
+      use dftu_specs, only: read_dftu_specs
+      use dftu_specs, only: dftu_proj_gen
 
       implicit none
 
@@ -93,8 +93,8 @@ C
       call read_basis_specs()
       call basis_specs_transfer()
 
-!     Get the parameters for the generation of the LDA+U projectors
-      call read_ldau_specs()
+!     Get the parameters for the generation of the DFT+U projectors
+      call read_dftu_specs()
 
       nsmax = nsp               ! For old_atmfuncs
       call allocate_old_arrays
@@ -117,7 +117,7 @@ C
      $      split_norm(0:,1:,is),
      &      filtercut(0:,1:,is), basp)
 !       Generate the projectors for the LDA+U simulations (if requested)
-        call ldau_proj_gen(is)
+        call dftu_proj_gen(is)
       enddo 
 
       call prinput(nsp)

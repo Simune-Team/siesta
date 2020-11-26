@@ -16,18 +16,18 @@
 
       public :: hubbard_term
 
-      ! Last change in population of LDA+U occupations
+      ! Last change in population of DFT+U occupations
       real(dp), save, public :: DFTU_dPop = huge(1._dp)
       
       ! These are private variables that is used below
       integer, save :: DFTU_pop_iter = 0
 
-      ! Maximum number of LDA+U projectors
+      ! Maximum number of DFT+U projectors
       integer, save :: maxdftu = 0
       real(dp), dimension(:,:,:,:), pointer, save :: occu      ! Array used to 
                                                                ! store the 
                                                                ! occupations of
-                                                               ! the LDA+U proj.
+                                                               ! the DFT+U proj.
       real(dp), dimension(:,:,:,:), pointer, save :: occu_old  ! Same as occu
                                                                ! but in the 
                                                                ! previous step
@@ -89,7 +89,7 @@ C real*8 H(maxnh,nspin)    : NL Hamiltonian (added to input H)
 C **************************** OUTPUT *********************************
 C real*8 Edftu             : U-Hubbard energy 1 
 C real*8 DEdftu            : U-hubbard energy 2 
-C real*8 Hdftu(maxnh,nspin): Hamiltonian elements from LDA+U
+C real*8 Hdftu(maxnh,nspin): Hamiltonian elements from DFT+U
 C*********************************************************************
 C
 C  Modules
@@ -112,7 +112,7 @@ C
       use atm_types,     only : species_info    ! Derived type with all the info
                                                 !   about the radial functions
                                                 !   (PAOs, KB projectors,
-                                                !   LDA+U proj,
+                                                !   DFT+U proj,
                                                 !   VNA potentials, etc)
                                                 !   for a given atomic specie
       use atm_types,   only : species           ! Actual array where the
@@ -122,10 +122,10 @@ C
                                                 !   criterium required to start
                                                 !   or update the calculation of
                                                 !   the populations of
-                                                !   the LDA+U projections
+                                                !   the DFT+U projections
       use dftu_specs,  only : dtol_dftupop      ! Parameter that defines the
                                                 !   convergence criterium 
-                                                !   for the LDA+U local 
+                                                !   for the DFT+U local 
                                                 !   population
       use dftu_specs,  only : dftu_init         ! Flag that determines whether 
                                                 !   the local populations are 
@@ -216,7 +216,7 @@ C ......................
          
 !     Initialization and allocation of matrices
       if( firstime ) then 
-!       Find maximum number of LDA+U projectors on a given atom 
+!       Find maximum number of DFT+U projectors on a given atom 
         maxdftu = 0
         do ka = 1, na
           is  = isa(ka)
@@ -225,7 +225,7 @@ C ......................
         enddo
 
 !       Allocate local array to store the occupations of the 
-!       LDA+U projectors
+!       DFT+U projectors
         nullify( occu, occu_old )
         allocate( occu(maxdftu,maxdftu,nua,nspin) )
         call memory( 'A', 'D', size(occu), 'hubbard_term' )
@@ -259,7 +259,7 @@ C ......................
         volume = volcel( scell ) * nua / na
 
 !       Find maximum range of the atomic orbitals (rmaxo) 
-!       and of the LDA+U projectors (rmaxdftu)
+!       and of the DFT+U projectors (rmaxdftu)
         rmaxo    = 0.0_dp
         rmaxdftu = 0.0_dp
         do is = 1, nspecies
@@ -324,7 +324,7 @@ C ......................
      &                 name='grSki', routine='hubbard_term' )
       
 !       Counter for the SCF loops to converge the population of the 
-!       LDA+U projectors
+!       DFT+U projectors
         DFTU_pop_iter = DFTU_pop_iter + 1
         if( Node == 0 ) write(6,'(a,i4)')
      &   'hubbard_term: recalculating local occupations ', DFTU_pop_iter
@@ -335,7 +335,7 @@ C ......................
 !       Initialize neighb subroutine
         call mneighb( scell, rmax, na, xa, 0, 0, nna )
 
-!       Loop on atoms with LDA+U projectors      
+!       Loop on atoms with DFT+U projectors      
         do ka = 1, na
           kua = indxua(ka)
           ks = isa(ka)
@@ -369,7 +369,7 @@ C ......................
      &                 within = .true.
                 end do
 
-!               Find overlap between neighbour orbitals and LDA+U projectors
+!               Find overlap between neighbour orbitals and DFT+U projectors
                 if (within) then
 !                 Check maxno - if too small then increase array sizes
                   if (nno.eq.maxno) then
@@ -387,25 +387,25 @@ C ......................
      &                       copy=.true. )
                   endif
                   nno = nno + 1
-!                 The nno-eme neighbour orbital of the LDA+U projector is io,
+!                 The nno-eme neighbour orbital of the DFT+U projector is io,
 !                 where io runs between 1 and the total number of orbitals
 !                 in the supercell
                   iono(nno) = io
 
-!                 The nno-eme neighbour orbital of the LDA+U projector belongs
+!                 The nno-eme neighbour orbital of the DFT+U projector belongs
 !                 to atom ia,
 !                 where ia runs between 1 and the total number of atoms
 !                 in the supercell
                   iano(nno) = ia
 
-!                 The relative position between the center of the LDA+U proj.
+!                 The relative position between the center of the DFT+U proj.
 !                 and the center of the nno-eme neighbour orbital 
 !                 is xno 
                   do ix = 1,3
                     xno(ix,nno) = xki(ix,ina)
                   enddo
 
-!                 Here we compute the overlap between a LDA+U projector
+!                 Here we compute the overlap between a DFT+U projector
 !                 and a neighbour atomic orbital
                   do ko = 1, ndftuproj
                     kg  = dftu_gindex(ks,ko)
@@ -449,7 +449,7 @@ C ......................
               ja = iano(jno)
               if ( listed(jo) ) then
 
-!               Loop on LDA+U projectors
+!               Loop on DFT+U projectors
                 do ko = 1, ndftuproj
                   Sik = Ski(ko,ino)
                   do ikb = 1, ndftuproj
@@ -476,7 +476,7 @@ C ......................
 
           enddo            ! End loop on neighbour orbitals (ino)
 
-        enddo              ! End of the loop on atoms with LDA+U projectors
+        enddo              ! End of the loop on atoms with DFT+U projectors
      
 #ifdef MPI
 !       Global reduction of occupation
@@ -598,7 +598,7 @@ C ......................
      &                   within = .true.
                   end do
 
-!                 Find overlap between neighbour orbitals and LDA+U projectors
+!                 Find overlap between neighbour orbitals and DFT+U projectors
                   if (within) then
 !                   Check maxno - if too small then increase array sizes
                     if (nno.eq.maxno) then
@@ -664,7 +664,7 @@ C ......................
                 ja = iano(jno)
 
                 if ( listed(jo) ) then
-!                 Loop on LDA+U projectors
+!                 Loop on DFT+U projectors
                   do ko = 1, ndftuproj
                     lko      = spp%pjdftu_l(ko)
                     nprin_ko = spp%pjdftu_n(ko)
@@ -720,7 +720,7 @@ C ......................
                       endif
 
                     enddo        ! Enddo ispin
-                  enddo     ! Enddo ko, on LDA+U projectors
+                  enddo     ! Enddo ko, on DFT+U projectors
                 endif       ! Endif if the orbital jo is listed
               enddo         ! Enddo on neighbour orbitals jno
 
@@ -738,7 +738,7 @@ C ......................
               enddo
 
             enddo        ! enddo ino = 1,nno
-          enddo          ! enddo loop on orbitals with LDA+U projectors(ka=1,na)
+          enddo          ! enddo loop on orbitals with DFT+U projectors(ka=1,na)
 
         endif recalc_hamilt
 

@@ -51,7 +51,7 @@ OBJS_GEN-BASIS=m_io.o io.o alloc.o basis_types.o precision.o  parallel.o \
           atmparams.o old_atmfuncs.o radial.o interpolation.o \
 	      bessph.o radfft.o sorting.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
-          pseudopotential.o pxf.o dot.o  atom_options.o ldau_specs.o arw.o  \
+          pseudopotential.o pxf.o dot.o  atom_options.o dftu_specs.o arw.o  \
           timer.o  xml.o m_walltime.o read_xc_info.o gen-basis.o $(SYSOBJ) \
           m_cite.o
 
@@ -61,7 +61,7 @@ OBJS_IONCAT=f2kcli.o m_getopts.o basis_types.o precision.o  parallel.o \
 	      pseudopotential.o chemical.o m_filter.o \
           basis_specs.o atom.o memoryinfo.o  m_memory.o periodic_table.o pxf.o \
           atmfuncs.o spher_harm.o interpolation.o old_atmfuncs.o arw.o \
-          xml.o m_walltime.o ioncat.o ldau_specs.o m_cite.o $(SYSOBJ)
+          xml.o m_walltime.o ioncat.o dftu_specs.o m_cite.o $(SYSOBJ)
 
 
 #

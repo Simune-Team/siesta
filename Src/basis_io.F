@@ -924,25 +924,25 @@
             open(unit=lun_dftu,file=fileid,status='replace',
      $                     form='formatted')
             
-            write(lun_dftu,'(a)') "# LDA+U projectors:_____________"
+            write(lun_dftu,'(a)') "# DFT+U projectors:_____________"
             do i=1,spp%n_pjdftunl
                zeta = 1
                l = spp%pjdftunl_l(i)
                write(lun_dftu,'(2i3,2x,a)')
      $              spp%pjdftunl_l(i), spp%pjdftunl_n(i),
-     $              " #LDA+U projector l, n (sequence number)"
+     $              " #DFT+U projector l, n (sequence number)"
                call radial_dump_ascii(spp%pjdftu(i),lun_dftu)
 
                if (write_ion_plot_files) then
                   write(fileid,'(a,i1,a,i1,a,a)')
-     $                 "LDA+U.L", l , ".", zeta, ".", trim(spp%label)
+     $                 "DFT+U.L", l , ".", zeta, ".", trim(spp%label)
                   call io_assign(lun2)
                   open(unit=lun2,file=fileid,status='replace',
      $                 form='formatted')
                   write(lun2,'(2a,2i3)') "# ",trim(spp%label), 
      $                 spp%pjdftunl_l(i), spp%pjdftunl_n(i)
                   write(lun2,'(a)')
-     $                 "#LDA+U projector l, n (sequence number)"
+     $                 "#DFT+U projector l, n (sequence number)"
                   call radial_dump_ascii(spp%pjdftu(i),lun2,
      $                                   header=.false.)
                   call io_close(lun2)

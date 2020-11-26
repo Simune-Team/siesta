@@ -84,16 +84,16 @@
                                                    !   inner radius
           real(dp)                  ::  vcte       ! Soft confinement potential
                                                    !  prefactor of the potential
-          real(dp)                  ::  rc         ! rc's for LDA+U projectors
+          real(dp)                  ::  rc         ! rc's for DFT+U projectors
           integer                   ::  nrc        ! Point in the log grid where
-                                                   !  the LDA+U proj. vanishes
+                                                   !  the DFT+U proj. vanishes
           real(dp)                  ::  lambda     ! Contraction factors
           real(dp)                  ::  dnrm_rc    ! Parameter used to determine
                                                    !   the cutoff radius of the
                                                    !   Fermi distrib. used 
-                                                   !   to cut the LDA+U proj.
+                                                   !   to cut the DFT+U proj.
           real(dp)                  ::  width      ! Width of the Fermi distrib.
-                                                   !   to cut the LDA+U proj.
+                                                   !   to cut the DFT+U proj.
           real(dp)                  ::  u          ! Value of the U parameter
           real(dp)                  ::  j          ! Value of the J parameter
           !!! type(rad_func), pointer  ::  dftu_proj(:) => null() ! Actual projectors
@@ -112,7 +112,7 @@
           type(pseudopotential_t)   ::  pseudopotential
           integer                   ::  lmxo       ! Max l for basis
           integer                   ::  lmxkb      ! Max l for KB projs
-          integer                   ::  lmxdftupj  ! Max l for LDA+U projs
+          integer                   ::  lmxdftupj  ! Max l for DFT+U projs
           type(lshell_t), pointer   ::  lshell(:) => null() ! One shell per l 
           type(kbshell_t), pointer  ::  kbshell(:) => null() ! One KB shell per l
           real(dp)                  ::  ionic_charge
@@ -466,7 +466,7 @@
             call print_dftushell(p%dftushell(i))
          end do
       else
-         write(6,*) 'No LDA+U PROJECTORS, lmxdftupj=', p%ndftushells
+         write(6,*) 'No DFT+U PROJECTORS, lmxdftupj=', p%ndftushells
       end if
 
       write(6,*) '------------SPECIES'

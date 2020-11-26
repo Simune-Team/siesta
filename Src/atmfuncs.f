@@ -212,7 +212,7 @@ C Returns the global index of a KB projector
       integer, intent(in) :: is    ! Species index
       integer, intent(in) :: io    ! Orbital index (within atom)
 
-C Returns the global index of a LDA+U projector
+C Returns the global index of a DFT+U projector
 
       call chk('dftu_gindex',is)
       if ( (io .gt. species(is)%nprojsdftu) .or.
