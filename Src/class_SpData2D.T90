@@ -131,6 +131,10 @@
     else
        this%data%sp_dim = 1
     end if
+    if ( this%data%sp_dim < 1 .or. 2 < this%data%sp_dim ) then
+       call die('Supplying a sparsity dimension out-of-bounds &
+       	    &for SpData2D data is not allowed, range={1,2}')
+    end if
     
     if (present(name)) then
        this%data%name = trim(name)
