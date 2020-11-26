@@ -151,7 +151,6 @@ module sparse_matrices
   type(dSpData2D), public :: H_dftu_2D
   ! Spin-orbit (on-site) Hamiltonian
   type(dSpData2D), public :: H_so_on_2D
-  complex(dp), public, pointer :: H0_offsiteSO(:,:) => null()
   ! Spin-orbit (off-site) Hamiltonian
   type(zSpData2D), public :: H_so_off_2D
 
@@ -182,7 +181,6 @@ contains
     call delete( H_dftu_2D )
     call delete( H_so_on_2D )
     call delete( H_so_off_2D )
-    nullify(H0_offsiteSO)
 
     call delete( DM_2D )
     nullify(Dscf)
