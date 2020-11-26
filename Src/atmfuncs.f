@@ -42,7 +42,7 @@ C     different chemical species in the calculation:
       public  :: phiatm, all_phi
       public  :: pol   ! Added JMS Dec.2009
 
-      public  :: orb_gindex, kbproj_gindex, vna_gindex, ldau_gindex
+      public  :: orb_gindex, kbproj_gindex, vna_gindex, dftu_gindex
       private
       
       contains
@@ -209,19 +209,19 @@ C Returns the global index of a KB projector
       kbproj_gindex = species(is)%pj_gindex(ko)
       end function kbproj_gindex
 
-      FUNCTION ldau_gindex (IS,IO)
-      integer ldau_gindex
+      FUNCTION dftu_gindex (IS,IO)
+      integer dftu_gindex
       integer, intent(in) :: is    ! Species index
       integer, intent(in) :: io    ! Orbital index (within atom)
 
-C Returns the global index of a LDA+U projector
+C Returns the global index of a DFT+U projector
 
-      call chk('ldau_gindex',is)
-      if ( (io .gt. species(is)%nprojsldau) .or.
-     $     (io .lt. 1))   call die("ldau_gindex: Wrong io")
+      call chk('dftu_gindex',is)
+      if ( (io .gt. species(is)%nprojsdftu) .or.
+     $     (io .lt. 1))   call die("dftu_gindex: Wrong io")
 
-      ldau_gindex = species(is)%pjldau_gindex(io)
-      end function ldau_gindex
+      dftu_gindex = species(is)%pjdftu_gindex(io)
+      end function dftu_gindex
 
       FUNCTION vna_gindex (IS)
       integer vna_gindex

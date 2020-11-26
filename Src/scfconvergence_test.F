@@ -24,8 +24,8 @@
       use units, only: eV
       use m_convergence, only: converger_t, tolerance
       use m_convergence, only: add_value, is_converged
-      use ldau_specs,    only: switch_ldau, dTol_ldaupop
-      use m_ldau,        only: LDAU_dPop
+      use dftu_specs,    only: switch_dftu, dTol_dftupop
+      use m_dftu,        only: DFTU_dPop
 
       use m_ts_global_vars, only: TSrun
       use m_ts_options,  only: ts_dQtol, ts_converge_dQ
@@ -48,7 +48,7 @@
       type(converger_t), intent(inout)  :: conv_harris, conv_freeE
       logical, intent(out)              :: converged
 
-      logical :: is_LDAU_conv
+      logical :: is_DFTU_conv
       real(dp) :: dummy_qspin(8)
       character(len=64) :: conv_text
 
@@ -97,8 +97,8 @@
      &                 lasto, iaorb, iphorb )
       endif
 
-      is_LDAU_conv = switch_ldau .and.
-     &     LDAU_dPop < dTol_ldaupop
+      is_DFTU_conv = switch_dftu .and.
+     &     DFTU_dPop < dTol_dftupop
 
       ! Assume initial convergence
       ! Since 4.1 this logic has changed to be fully determined
@@ -173,12 +173,12 @@
      &         dQ
          end if
 
-         if ( is_LDAU_conv ) then
-           ! Inform of LDA+U population convergence
+	 if ( is_DFTU_conv ) then
+           ! Inform of DFT+U population convergence
            write(6,"(a)") 
-     &         "LDA+U population converged by dTol_pop criteria:"
-           write(6,"(a,f16.10)") 
-     &         "max |pop(LDA+U)_i - pop(LDA+U)_j|: ", LDAU_dPop
+     &         "DFT+U population converged by dTol_pop criteria:"
+           write(6,"(a,f16.10)")
+     &         "max |pop(DFT+U)_i - pop(DFT+U)_j|: ", DFTU_dPop
          end if
 
          write(6,"(a,i0,a)") "SCF cycle converged after ",

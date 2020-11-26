@@ -63,7 +63,7 @@ C real*8 qa(na)             : Neutral atom charge of each atom
       real(dp), save, public          :: rmaxv    ! Max cutoff for Vna
       real(dp), save, public          :: rmaxo    ! Max cuoff for at. orb.
       real(dp), save, public          :: rmaxkb   ! Max cuoff for KB proj.
-      real(dp), save, public          :: rmaxldau ! Max cuoff for LDAU proj.
+      real(dp), save, public          :: rmaxdftu ! Max cuoff for DFTU proj.
 
       real(dp), save, public          :: qtot ! Total number of elect.
       real(dp), save, public          :: qtots(2) ! Total number of electrons per spin
@@ -101,7 +101,7 @@ C real*8 qa(na)             : Neutral atom charge of each atom
 
       use atm_types, only: species_info
       use radial, only: rad_func
-      use ldau_specs, only: switch_ldau
+      use dftu_specs, only: switch_dftu
       
 C Routine to initialize the atomic lists.
 C
@@ -149,7 +149,7 @@ c Initialize atomic lists
       rmaxv  = 0._dp
       rmaxo  = 0._dp
       rmaxkb = 0._dp
-      rmaxldau = 0._dp
+      rmaxdftu = 0._dp
       lasto(0) = 0
       lastkb(0) = 0
       zvaltot = 0.0_dp
@@ -181,11 +181,11 @@ c Initialize atomic lists
           iaKB(nokbl) = ia
           iphKB(nokbl) = -io
         enddo
-        if( switch_ldau ) then
+        if( switch_dftu ) then
            spp => species(is)
-           do io = 1, spp%n_pjldaunl
-              pp => spp%pjldau(io)
-              rmaxldau = max( rmaxldau, pp%cutoff )
+           do io = 1, spp%n_pjdftunl
+              pp => spp%pjdftu(io)
+              rmaxdftu = max( rmaxdftu, pp%cutoff )
            enddo
         endif
       enddo

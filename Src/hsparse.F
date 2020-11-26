@@ -66,7 +66,7 @@ C
       use atomlist,        only : in_kb_orb_u_range
       use sparse_matrices, only : listhptr, numh, listh, xijo
       use radial,          only : rad_func
-      use ldau_specs, only  : switch_ldau       ! Switch that determines whether
+      use dftu_specs, only  : switch_dftu       ! Switch that determines whether
                                                 !   and LDA+U simulation is 
                                                 !   required or not
 
@@ -94,7 +94,7 @@ C
 
       real(dp), allocatable     :: rkbmax(:) ! maximum KB radius of each species
       real(dp), allocatable     :: rorbmax(:) ! maximum ORB radius of each species
-      real(dp), allocatable     :: rldaumax(:)! maximum LDA+U radius of each species
+      real(dp), allocatable     :: rdftumax(:)! maximum LDA+U radius of each species
       real(dp), allocatable     :: rmax_projectors(:) ! maximum projector radius of each species
       integer      :: maxnkb  = 500          ! max no. of atoms with
                                              ! KB projectors which 
@@ -109,7 +109,7 @@ C
 
       real(dp)
      &  rci, rcj, rck, rij, rik, rjk,
-     &  rmax, rmaxkb, rmaxo, rmaxldau, buffer_
+     &  rmax, rmaxkb, rmaxo, rmaxdftu, buffer_
 
       real(dp), dimension(:), pointer :: rckb
       logical, dimension(:),  pointer :: conect
@@ -163,11 +163,11 @@ C     Allocate local arrays that depend on parameters
 !     Find maximum radius of the KB and LDA+U projectors of each species (and total)
 !     Also for orbitals (for possible future extra optimizations)
 !     
-      allocate(rkbmax(nspecies),rorbmax(nspecies),rldaumax(nspecies))
+      allocate(rkbmax(nspecies),rorbmax(nspecies),rdftumax(nspecies))
       allocate(rmax_projectors(nspecies))
       rmaxo    = 0.0_dp
       rmaxkb   = 0.0_dp
-      rmaxldau = 0.0_dp
+      rmaxdftu = 0.0_dp
       do is = 1, nspecies
 
          ! Species orbital range
@@ -184,16 +184,16 @@ C     Allocate local arrays that depend on parameters
          enddo
          rmaxkb = max(rmaxkb, rkbmax(is))
          
-         ! Species LDAU range
-         rldaumax(is) = 0.0_dp
-         if ( switch_ldau ) then
+         ! Species DFTU range
+         rdftumax(is) = 0.0_dp
+         if ( switch_dftu ) then
            spp => species(is)
-           do io = 1, spp%n_pjldaunl
-             pp => spp%pjldau(io)
-             rldaumax(is) = max( rldaumax(is), pp%cutoff+buffer_ )
+           do io = 1, spp%n_pjdftunl
+             pp => spp%pjdftu(io)
+             rdftumax(is) = max( rdftumax(is), pp%cutoff+buffer_)
            enddo
          endif
-         rmaxldau = max(rmaxldau, rldaumax(is))
+         rmaxdftu = max(rmaxdftu, rdftumax(is))
 
       enddo
 
@@ -201,16 +201,16 @@ C     Allocate local arrays that depend on parameters
       ! Now calculate an approximate range for the neighbor search
       if ( negl ) then
          ! If we neglect the KB projectors in the interaction scheme
-         ! we might still have to worry about the LDAU projectors
-         rmax = rmaxo + rmaxldau
+         ! we might still have to worry about the DFTU projectors
+         rmax = rmaxo + rmaxdftu
          do is = 1, nspecies
-            rmax_projectors(is) = rldaumax(is)
+            rmax_projectors(is) = rdftumax(is)
          enddo
-         third_centers = switch_ldau  
+         third_centers = switch_dftu  
       else
-         rmax = rmaxo + max(rmaxkb, rmaxldau)
+         rmax = rmaxo + max(rmaxkb, rmaxdftu)
          do is = 1, nspecies
-            rmax_projectors(is) = max(rldaumax(is),rkbmax(is))
+            rmax_projectors(is) = max(rdftumax(is),rkbmax(is))
          enddo
          third_centers = .true.
       end if
@@ -306,7 +306,7 @@ C                 Find if there is direct overlap
                   if ( rci+rcj > rij ) then
                     conect(jo) = .true.
                   else
-C                   Find if jo overlaps with a KB/LDAU projector
+C                   Find if jo overlaps with a KB/DFTU projector
                     do inkb = 1,nnkb
                       rck = rckb(inkb)
                       kna = knakb(inkb)
@@ -427,7 +427,7 @@ C           through a KB or LDA+U projector
                 if ( .not. connected ) then
 
                    ! Find if jo overlaps with a projector
-                   ! nnkb is zero if no KB/LDAU projector exists
+                   ! nnkb is zero if no KB/DFTU projector exists
                    do inkb = 1,nnkb
                     rck = rckb(inkb)
                     kna = knakb(inkb)

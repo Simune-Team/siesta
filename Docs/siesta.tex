@@ -11051,32 +11051,37 @@ the forces in the $x$, $y$ and $z$ direction for one of the atoms.
 If constraints are used, the file \sysfile{FCC} is also written.
 
 
-\section{LDA+U}
+\section{DFT+U}
 \label{sec:lda+u}
 
-Important note: Current implementation is based on the simplified
-rotationally invariant LDA+U formulation of Dudarev and collaborators
-[see, Dudarev \textit{et al.}, Phys. Rev. B \textbf{57}, 1505 (1998)].
-Although the input allows to define independent values of the U and J
+\note This implementation works for both LDA and GGA, hence named
+DFT+U in the main text.
+
+\note Current implementation is based on the simplified rotationally
+invariant DFT+U formulation of Dudarev and collaborators [see, Dudarev
+\textit{et al.}, Phys. Rev. B \textbf{57}, 1505 (1998)].  Although the
+input allows to define independent values of the $U$ and $J$
 parameters for each atomic shell, in the actual calculation the two
 parameters are combined to produce an effective Coulomb repulsion
 $U_{\mathrm{eff}}=U-J$. $U_{\mathrm{eff}}$ is the parameter actually
 used in the calculations for the time being.
 
+
 For large or intermediate values of $U_{\mathrm{eff}}$ the convergence
 is sometimes difficult. A step-by-step increase of the
 value of $U_{\mathrm{eff}}$ can be advisable in such cases.
 
-Currently, the LDA+U implementation does not support non-collinear, nor
+Currently, the DFT+U implementation does not support non-collinear, nor
 spin-orbit coupling.
 
-\begin{fdfentry}{LDAU.ProjectorGenerationMethod}[integer]<2>
+\begin{fdfentry}{DFTU!ProjectorGenerationMethod}[integer]<2>
+  \fdfindex{LDAU!ProjectorGenerationMethod}%
   
-  Generation method of the LDA+U projectors. The LDA+U projectors are
+  Generation method of the DFT+U projectors. The DFT+U projectors are
   the localized functions used to calculate the local populations used
   in a Hubbard-like term that modifies the LDA Hamiltonian and
-  energy. It is important to recall that LDA+U projectors should be
-  quite localized functions.  Otherwise the calculated populations
+  energy. It is important to recall that DFT+U projectors should be
+  quite localized functions. Otherwise the calculated populations
   loose their atomic character and physical meaning. Even more
   importantly, the interaction range can increase so much that
   jeopardizes the efficiency of the calculation.
@@ -11087,53 +11092,56 @@ spin-orbit coupling.
     Projectors are slightly-excited numerical atomic orbitals similar
     to those used as an automatic basis set by \siesta.  The radii of
     these orbitals are controlled using the parameter
-    \fdf{LDAU.EnergyShift} and/or the data included in the block
-    \fdf{LDAU.Proj} (quite similar to the data block \fdf{PAO.Basis}
+    \fdf{DFTU!EnergyShift} and/or the data included in the block
+    \fdf{DFTU!Proj} (quite similar to the data block \fdf{PAO.Basis}
     used to specify the basis set, see below).
 
     \option[2]%
     Projectors are exact solutions of the pseudoatomic problem (and,
     in principle, are not strictly localized) which are cut using a
     Fermi function $1/\{1+\exp[(r-r_c)\omega]\}$.  The values of $r_c$
-    and $\omega$ are controlled using the parameter \fdf{LDAU.CutoffNorm}
-    and/or the data included in the block \fdf{LDAU.Proj}.
+    and $\omega$ are controlled using the parameter \fdf{DFTU!CutoffNorm}
+    and/or the data included in the block \fdf{DFTU!Proj}.
 
   \end{fdfoptions}
 
 \end{fdfentry}
 
-\begin{fdfentry}{LDAU.EnergyShift}[energy]<$0.05\,\mathrm{Ry}$>
-  
-  Energy increase used to define the localization radius of the LDA+U
+\begin{fdfentry}{DFTU!EnergyShift}[energy]<$0.05\,\mathrm{Ry}$>
+  \fdfindex{LDAU!EnergyShift}%
+
+  Energy increase used to define the localization radius of the DFT+U
   projectors (similar to the parameter \fdf{PAO.EnergyShift}).
 
-  \note only used when \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{1}.
+  \note only used when \fdf{DFTU!ProjectorGenerationMethod} is \fdf*{1}.
 
 \end{fdfentry}
 
-\begin{fdfentry}{LDAU.CutoffNorm}[real]<$0.9$>
-  
+\begin{fdfentry}{DFTU!CutoffNorm}[real]<$0.9$>
+  \fdfindex{LDAU!CutoffNorm}%
+
   Parameter used to define the value of $r_c$ used in the Fermi
-  distribution to cut the LDA+U projectors generated according to
-  generation method 2 (see above). \fdf{LDAU.CutoffNorm} is the norm of the
+  distribution to cut the DFT+U projectors generated according to
+  generation method 2 (see above). \fdf{DFTU!CutoffNorm} is the norm of the
   original pseudoatomic orbital contained inside a sphere of radius
   equal to $r_c$.
 
-  \note only used when \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{2}.
+  \note only used when \fdf{DFTU!ProjectorGenerationMethod} is \fdf*{2}.
 
 \end{fdfentry}
 
 
-\begin{fdfentry}{LDAU.Proj}[block]
+\begin{fdfentry}{DFTU!Proj}[block]
+  \fdfindex{LDAU!Proj}%
   
-  Data block used to specify the LDA+U projectors.
+  Data block used to specify the DFT+U projectors.
 
   \begin{itemize}
     \item%
-    If \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{1}, the
+    If \fdf{DFTU!ProjectorGenerationMethod} is \fdf*{1}, the
     syntax is as follows:
     \begin{fdfexample}
-%block LDAU.Proj      # Define LDA+U projectors
+%block DFTU.Proj      # Define DFT+U projectors
  Fe    2              # Label, l_shells
   n=3 2  E 50.0 2.5   # n (opt if not using semicore levels),l,Softconf(opt)
       5.00  0.35      # U(eV), J(eV) for this shell
@@ -11141,15 +11149,15 @@ spin-orbit coupling.
       0.95            # scaleFactor (opt)
       0               #    l
       1.00  0.05      # U(eV), J(eV) for this shell
-      0.00            # rc(Bohr) (if 0, automatic r_c from LDAU.EnergyShift)
-%endblock LDAU.Proj
+      0.00            # rc(Bohr) (if 0, automatic r_c from DFTU.EnergyShift)
+%endblock DFTU.Proj
    \end{fdfexample}
 
     \item%
-    If \fdf{LDAU.ProjectorGenerationMethod} is \fdf*{2}, the
+    If \fdf{DFTU!ProjectorGenerationMethod} is \fdf*{2}, the
     syntax is as follows:
     \begin{fdfexample}
-%block LDAU.Proj      # Define LDAU projectors
+%block DFTU.Proj      # Define DFTU projectors
  Fe    2              # Label, l_shells
   n=3 2  E 50.0 2.5   # n (opt if not using semicore levels),l,Softconf(opt)
       5.00  0.35      # U(eV), J(eV) for this shell
@@ -11157,27 +11165,28 @@ spin-orbit coupling.
       0.95            # scaleFactor (opt)
       0               #    l
       1.00  0.05      # U(eV), J(eV) for this shell
-      0.00  0.00      # rc(Bohr), \omega(Bohr) (if 0 r_c from LDAU.CutoffNorm
-%endblock LDAU.Proj   #                         and \omega from default value)
+      0.00  0.00      # rc(Bohr), \omega(Bohr) (if 0 r_c from DFTU.CutoffNorm
+%endblock DFTU.Proj   #                         and \omega from default value)
     \end{fdfexample}
   \end{itemize}
   
   Certain of the quantites have default values:
 
   \begin{tabular}{cc}
-    U & \fdf*{0.0 eV} \\
-    J & \fdf*{0.0 eV} \\
+    $U$ & \fdf*{0.0 eV} \\
+    $J$ & \fdf*{0.0 eV} \\
     $\omega$ & \fdf*{0.05 Bohr} \\
     Scale factor & \fdf*{1.0}
   \end{tabular}
 
-  $r_c$ depends on \fdf{LDAU.EnergyShift} or \fdf{LDAU.CutoffNorm}
+  $r_c$ depends on \fdf{DFTU!EnergyShift} or \fdf{DFTU!CutoffNorm}
   depending on the generation method.
 
 \end{fdfentry}
 
-\begin{fdflogicalF}{LDAU.FirstIteration}
-  
+\begin{fdflogicalF}{DFTU!FirstIteration}
+  \fdfindex{LDAU!FirstIteration}%
+
   If \fdftrue, local populations are calculated and Hubbard-like term
   is switch on in the first iteration.  Useful if restarting a
   calculation reading a converged or an almost converged density
@@ -11185,28 +11194,31 @@ spin-orbit coupling.
 
 \end{fdflogicalF}
 
-\begin{fdfentry}{LDAU.ThresholdTol}[real]<$0.01$>
+\begin{fdfentry}{DFTU!ThresholdTol}[real]<$0.01$>
+  \fdfindex{LDAU!ThresholdTol}%
   
   Local populations only calculated and/or updated if the change in the
-  density matrix elements (dDmax) is lower than \fdf{LDAU.ThresholdTol}.
+  density matrix elements (dDmax) is lower than \fdf{DFTU!ThresholdTol}.
 
 \end{fdfentry}
 
-\begin{fdfentry}{LDAU.PopTol}[real]<$0.001$>
-  
-  Convergence criterium for the LDA+U local populations.  In the
+\begin{fdfentry}{DFTU!PopTol}[real]<$0.001$>
+  \fdfindex{LDAU!PopTol}%
+
+  Convergence criterium for the DFT+U local populations. In the
   current implementation the Hubbard-like term of the Hamiltonian is
   only updated (except for the last iteration) if the variations of
   the local populations are larger than this value.
 
 \end{fdfentry}
 
-\begin{fdflogicalF}{LDAU.PotentialShift}
+\begin{fdflogicalF}{DFTU!PotentialShift}
+  \fdfindex{LDAU!PotentialShift}%
 
   If set to \fdftrue, the value given to the $U$ parameter in the
   input file is interpreted as a local potential shift. Recording the
   change of the local populations as a function of this potential
-  shift, we can calculate the appropriate value of U for the system
+  shift, we can calculate the appropriate value of $U$ for the system
   under study following the methology proposed by Cococcioni and
   Gironcoli in Phys. Rev. B \textbf{71}, 035105 (2005).
 
@@ -11360,6 +11372,7 @@ instantaneous time-dependent density is saved. May require a lot of
 disk space.
 
 \end{fdfentry}
+
 
 \section{External control of \texorpdfstring{\siesta}{SIESTA}}
 \label{sec:lua}

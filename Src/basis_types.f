@@ -71,7 +71,7 @@
           !!! type(rad_func), pointer  ::  proj(:) => null() ! Actual projectors
       end type kbshell_t
 
-      type, public :: ldaushell_t
+      type, public :: dftushell_t
           integer                   ::  n          ! principal quantum number
                                                    !   of the atomic orbital
                                                    !   where the U correction
@@ -84,24 +84,24 @@
                                                    !   inner radius
           real(dp)                  ::  vcte       ! Soft confinement potential
                                                    !  prefactor of the potential
-          real(dp)                  ::  rc         ! rc's for LDA+U projectors
+          real(dp)                  ::  rc         ! rc's for DFT+U projectors
           integer                   ::  nrc        ! Point in the log grid where
-                                                   !  the LDA+U proj. vanishes
+                                                   !  the DFT+U proj. vanishes
           real(dp)                  ::  lambda     ! Contraction factors
           real(dp)                  ::  dnrm_rc    ! Parameter used to determine
                                                    !   the cutoff radius of the
                                                    !   Fermi distrib. used 
-                                                   !   to cut the LDA+U proj.
+                                                   !   to cut the DFT+U proj.
           real(dp)                  ::  width      ! Width of the Fermi distrib.
-                                                   !   to cut the LDA+U proj.
+                                                   !   to cut the DFT+U proj.
           real(dp)                  ::  u          ! Value of the U parameter
           real(dp)                  ::  j          ! Value of the J parameter
-          !!! type(rad_func), pointer  ::  ldau_proj(:) => null() ! Actual projectors
+          !!! type(rad_func), pointer  ::  dftu_proj(:) => null() ! Actual projectors
                                                    !   all these radial function
                                                    !   are now defined in the 
                                                    !   derived type "species"
                                                    !   in module atm_types
-      end type ldaushell_t
+      end type dftushell_t
 !
 !     Main data structure
 !
@@ -112,7 +112,7 @@
           type(pseudopotential_t)   ::  pseudopotential
           integer                   ::  lmxo       ! Max l for basis
           integer                   ::  lmxkb      ! Max l for KB projs
-          integer                   ::  lmxldaupj  ! Max l for LDA+U projs
+          integer                   ::  lmxdftupj  ! Max l for DFT+U projs
           type(lshell_t), pointer   ::  lshell(:) => null() ! One shell per l 
           type(kbshell_t), pointer  ::  kbshell(:) => null() ! One KB shell per l
           real(dp)                  ::  ionic_charge
@@ -128,18 +128,18 @@
           logical                   ::  semic      ! 
           integer                   ::  nshells_tmp
           integer                   ::  nkbshells
-          integer                   ::  nldaushells      ! For a given atomic
+          integer                   ::  ndftushells      ! For a given atomic
                                                          !  species, on how many
                                                          !  orbitals we are 
                                                          !  going to apply the
                                                          !  U correction
-          integer                   ::  nldauprojs_lm    ! How many projectors
+          integer                   ::  ndftuprojs_lm    ! How many projectors
                                                          !  including angular 
                                                          !  dependencies.
           integer                   ::  lmxkb_requested
-          integer                   ::  lmxldaupj_requested
+          integer                   ::  lmxdftupj_requested
           type(shell_t), pointer    ::  tmp_shell(:) => null()
-          type(ldaushell_t), pointer::  ldaushell(:) => null()
+          type(dftushell_t), pointer::  dftushell(:) => null()
       end type basis_def_t
 
       integer, save, public              :: nsp  ! Number of species
@@ -182,7 +182,7 @@
      $                   destroy_lshell, destroy_basis_def
       end interface
       interface initialize
-        module procedure init_shell, init_kbshell, init_ldaushell,
+        module procedure init_shell, init_kbshell, init_dftushell,
      $                   init_lshell, init_basis_def
       end interface
 
@@ -190,7 +190,7 @@
       public  :: destroy, copy_shell, initialize
       public  :: write_basis_specs, basis_specs_transfer
       public  :: deallocate_spec_arrays
-      public  :: print_ldaushell
+      public  :: print_dftushell
 !---------------------------------------------------------
 
       PRIVATE
@@ -255,8 +255,8 @@
       end subroutine init_kbshell
 
 !-----------------------------------------------------------------------
-      subroutine init_ldaushell(p)
-      type(ldaushell_t)          :: p
+      subroutine init_dftushell(p)
+      type(dftushell_t)          :: p
       p%n       = -1
       p%l       = -1
       p%rinn    = 0.0_dp
@@ -268,7 +268,7 @@
       p%lambda  = 1.0_dp
       p%dnrm_rc = 0.9_dp
       p%width   = 0.5_dp
-      end subroutine init_ldaushell
+      end subroutine init_dftushell
 
 !-----------------------------------------------------------------------
       subroutine init_lshell(p)
@@ -285,12 +285,12 @@
 
       p%lmxo = -1
       p%lmxkb = -1
-      p%lmxldaupj = -1
+      p%lmxdftupj = -1
       p%lmxkb_requested = -1
-      p%lmxldaupj_requested = -1
+      p%lmxdftupj_requested = -1
       p%nkbshells = -1
-      p%nldaushells = -1
-      p%nldauprojs_lm = -1
+      p%ndftushells = -1
+      p%ndftuprojs_lm = -1
       p%nshells_tmp = -1
       p%label = 'Unknown'
       p%semic = .false.
@@ -299,7 +299,7 @@
       nullify(p%lshell)
       nullify(p%kbshell)
       nullify(p%tmp_shell)
-      nullify(p%ldaushell)
+      nullify(p%dftushell)
       end subroutine init_basis_def
 
 !-----------------------------------------------------------------------
@@ -334,18 +334,18 @@
       end subroutine destroy_lshell
 
       
-      subroutine destroy_ldaushell(p)
-      type(ldaushell_t), pointer   :: p(:)
+      subroutine destroy_dftushell(p)
+      type(dftushell_t), pointer   :: p(:)
 
       if (.not. associated(p)) return
       deallocate(p)
-      end subroutine destroy_ldaushell
+      end subroutine destroy_dftushell
 
 !-----------------------------------------------------------------------
       subroutine destroy_basis_def(p)
       type(basis_def_t)          :: p
 
-      call destroy_ldaushell(p%ldaushell)
+      call destroy_dftushell(p%dftushell)
       call destroy_lshell(p%lshell)
       call destroy_shell(p%tmp_shell)
 
@@ -396,10 +396,10 @@
       end subroutine print_kbshell
 
 !-----------------------------------------------------------------------
-      subroutine print_ldaushell(p)
-      type(ldaushell_t)            :: p
+      subroutine print_dftushell(p)
+      type(dftushell_t)            :: p
 
-      write(6,*) 'LDAUSHELL-------'
+      write(6,*) 'DFTUSHELL-------'
       write(6,'(5x,a25,i20)')   'Principal quantum number',  p%n
       write(6,'(5x,a25,i20)')   'Angular momentum',          p%l
       write(6,'(5x,a25,g20.5)') 'U parameter:', p%u
@@ -411,9 +411,9 @@
       write(6,'(5x,a25,g20.5)') 'dnrm_rc:',     p%dnrm_rc
       write(6,'(5x,a25,g20.5)') 'rc:',          p%rc
       write(6,'(5x,a25,i10)')   'nrc:',         p%nrc
-      write(6,*) '---------------------LDAUSHELL'
+      write(6,*) '---------------------DFTUSHELL'
 
-      end subroutine print_ldaushell
+      end subroutine print_dftushell
 
 !-----------------------------------------------------------------------
       subroutine print_lshell(p)
@@ -461,12 +461,12 @@
       else
          write(6,*) 'No KB SHELLS, lmxkb=', p%lmxkb
       end if
-      if ( associated(p%ldaushell) ) then
-         do i=1, p%nldaushells
-            call print_ldaushell(p%ldaushell(i))
+      if ( associated(p%dftushell) ) then
+         do i=1, p%ndftushells
+            call print_dftushell(p%dftushell(i))
          end do
       else
-         write(6,*) 'No LDA+U PROJECTORS, lmxldaupj=', p%nldaushells
+         write(6,*) 'No DFT+U PROJECTORS, lmxdftupj=', p%ndftushells
       end if
 
       write(6,*) '------------SPECIES'
@@ -715,7 +715,7 @@
 
       ! Pointer to basis specification
       type(basis_def_t), pointer :: basp
-      type(ldaushell_t), pointer :: ldau
+      type(dftushell_t), pointer :: dftu
 
       integer :: l, n, i
       integer :: nprin
@@ -775,28 +775,28 @@
      $           'erefs:  ', (erefkb(i,l,is),i=1,nkbl(l,is))
          end do
       end if
-      if ( associated(basp%ldaushell) ) then
+      if ( associated(basp%dftushell) ) then
          write(lun,'(79("-"))')
-         do l = 1 , basp%nldaushells
-            ldau => basp%ldaushell(l)
+         do l = 1 , basp%ndftushells
+            dftu => basp%dftushell(l)
             write(lun,'(a2,i1,2x,a2,i1)')
-     $           'L=', ldau%l, 'n=', ldau%n
+     $           'L=', dftu%l, 'n=', dftu%n
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'U:', ldau%U
+     $           'U:', dftu%U
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'J:', ldau%J
+     $           'J:', dftu%J
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'rinn:', ldau%rinn
+     $           'rinn:', dftu%rinn
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'vcte:', ldau%vcte
+     $           'vcte:', dftu%vcte
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'lambda:', ldau%lambda
+     $           'lambda:', dftu%lambda
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'width:', ldau%width
+     $           'width:', dftu%width
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'rc:', ldau%rc
+     $           'rc:', dftu%rc
             write(lun,'(10x,a10,2x,g12.5)') 
-     $           'dnrm_rc:', ldau%dnrm_rc
+     $           'dnrm_rc:', dftu%dnrm_rc
          end do
       end if
       write(lun,'(79("="))')

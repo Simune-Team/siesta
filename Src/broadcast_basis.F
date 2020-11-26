@@ -17,11 +17,11 @@
       ! We also need to broadcast the chemical list
       use chemical, only : chemical_list
       
-      ! Broadcast LDA+U variables
-      use ldau_specs, only: dTol_ldaupop
-      use ldau_specs, only: dDmax_threshold
-      use ldau_specs, only: ldau_shift, ldau_init
-      use ldau_specs, only: switch_ldau
+      ! Broadcast DFT+U variables
+      use dftu_specs, only: dTol_dftupop
+      use dftu_specs, only: dDmax_threshold
+      use dftu_specs, only: dftu_shift, dftu_init
+      use dftu_specs, only: switch_dftu
 
 #ifdef MPI
       use mpi_siesta
@@ -143,38 +143,38 @@
         call MPI_Bcast(spp%pj_m,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
 
-        ! LDA+U
-        call MPI_Bcast(spp%n_pjldaunl,1,MPI_integer,
+        ! DFT+U
+        call MPI_Bcast(spp%n_pjdftunl,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%lmax_ldau_projs,1,MPI_integer,
+        call MPI_Bcast(spp%lmax_dftu_projs,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldaunl_l,maxn_pjnl,MPI_integer,
+        call MPI_Bcast(spp%pjdftunl_l,maxn_pjnl,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldaunl_n,maxn_pjnl,MPI_integer,
+        call MPI_Bcast(spp%pjdftunl_n,maxn_pjnl,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldaunl_U,maxn_pjnl,MPI_double_precision,
+        call MPI_Bcast(spp%pjdftunl_U,maxn_pjnl,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldaunl_J,maxn_pjnl,MPI_double_precision,
+        call MPI_Bcast(spp%pjdftunl_J,maxn_pjnl,MPI_double_precision,
      $                 0,MPI_Comm_World,MPIerror)
 
-        call MPI_Bcast(spp%nprojsldau,1,MPI_integer,
+        call MPI_Bcast(spp%nprojsdftu,1,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
         
-        call MPI_Bcast(spp%pjldau_index,maxnprojs,MPI_integer,
+        call MPI_Bcast(spp%pjdftu_index,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldau_n,maxnprojs,MPI_integer,
+        call MPI_Bcast(spp%pjdftu_n,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldau_l,maxnprojs,MPI_integer,
+        call MPI_Bcast(spp%pjdftu_l,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldau_m,maxnprojs,MPI_integer,
+        call MPI_Bcast(spp%pjdftu_m,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(spp%pjldau_gindex,maxnprojs,MPI_integer,
+        call MPI_Bcast(spp%pjdftu_gindex,maxnprojs,MPI_integer,
      $                 0,MPI_Comm_World,MPIerror)
 
         if (Node.ne.0) then
            allocate(spp%orbnl(spp%n_orbnl))
            allocate(spp%pjnl(spp%n_pjnl))
-           allocate(spp%pjldau(spp%n_pjldaunl))
+           allocate(spp%pjdftu(spp%n_pjdftunl))
         endif
         
         do i=1,spp%n_orbnl
@@ -187,8 +187,8 @@
            call broadcast_radial(func,Node)
         enddo
 
-        do i=1,spp%n_pjldaunl
-           func=>spp%pjldau(i)
+        do i=1,spp%n_pjdftunl
+           func=>spp%pjdftu(i)
            call broadcast_radial(func,Node)
         enddo
 
@@ -224,12 +224,12 @@
          call broadcast_radial(func,Node)
       enddo
 
-      ! Broadcast LDA+U
-      call broadcast( dTol_ldaupop )
+      ! Broadcast DFT+U
+      call broadcast( dTol_dftupop )
       call broadcast( dDmax_threshold )
-      call broadcast( ldau_init )
-      call broadcast( ldau_shift )
-      call broadcast( switch_ldau )
+      call broadcast( dftu_init )
+      call broadcast( dftu_shift )
+      call broadcast( switch_dftu )
       
 #ifdef DEBUG
       call write_debug( '  POS broadcast_basis' )

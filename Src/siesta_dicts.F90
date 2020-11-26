@@ -315,7 +315,7 @@ contains
     variables = variables // &
          ('E.spin_orbit'.kvp.Eso)
     variables = variables // &
-         ('E.ldau'.kvp.Eldau)
+         ('E.dftu'.kvp.Edftu)
     
     variables = variables // &
          ('E.negf.dN'.kvp.NEGF_DE)

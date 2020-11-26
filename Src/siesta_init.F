@@ -29,7 +29,7 @@
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              qtots,
      &                              iza, rmaxo, zvaltot, superc,
-     &                              initatomlists, no_l, rmaxldau
+     &                              initatomlists, no_l, rmaxdftu
       use fdf
       use sys,                only: die, bye
       use molecularmechanics, only: inittwobody
@@ -553,9 +553,9 @@ C     Initialise MPI and set processor number
 
 !     Find maximum interaction range
       if ( negl ) then
-        rmaxh = 2.0_dp*(rmaxo + rmaxldau)
+        rmaxh = 2.0_dp*(rmaxo + rmaxdftu)
       else
-        rmaxh = 2.0_dp*(rmaxo + max(rmaxkb,rmaxldau))
+        rmaxh = 2.0_dp*(rmaxo + max(rmaxkb,rmaxdftu))
       endif
 
 !     Madelung correction for charged systems

@@ -812,7 +812,7 @@
       character*40 filename
       character*30 fileid
       integer i, l, ispol, lun, lun2, zeta, n_series
-      integer lun_ldau
+      integer lun_dftu
 
       spp => species(is)
       if (spp%read_from_file) return    !! Do not dump
@@ -950,43 +950,43 @@
          call io_close(lun)
 
          ! This section outputs to a different file, of the form
-         ! 'Label.ldau_proj' It should probably be moved to the LDAU
+         ! 'Label.dftu_proj' It should probably be moved to the DFTU
          ! modules, and made consistent with the full logic for writing
          ! and reading this information (to be implemented)
          
-         if (spp%n_pjldaunl > 0) then
-            call io_assign(lun_ldau)
-            write(fileid,"(a)") trim(spp%label) // ".ldau_proj"
-            open(unit=lun_ldau,file=fileid,status='replace',
+         if (spp%n_pjdftunl > 0) then
+            call io_assign(lun_dftu)
+            write(fileid,"(a)") trim(spp%label) // ".dftu_proj"
+            open(unit=lun_dftu,file=fileid,status='replace',
      $                     form='formatted')
             
-            write(lun_ldau,'(a)') "# LDA+U projectors:_____________"
-            do i=1,spp%n_pjldaunl
+            write(lun_dftu,'(a)') "# DFT+U projectors:_____________"
+            do i=1,spp%n_pjdftunl
                zeta = 1
-               l = spp%pjldaunl_l(i)
-               write(lun_ldau,'(2i3,2x,a)')
-     $              spp%pjldaunl_l(i), spp%pjldaunl_n(i),
-     $              " #LDA+U projector l, n (sequence number)"
-               call radial_dump_ascii(spp%pjldau(i),lun_ldau)
+               l = spp%pjdftunl_l(i)
+               write(lun_dftu,'(2i3,2x,a)')
+     $              spp%pjdftunl_l(i), spp%pjdftunl_n(i),
+     $              " #DFT+U projector l, n (sequence number)"
+               call radial_dump_ascii(spp%pjdftu(i),lun_dftu)
 
                if (write_ion_plot_files) then
                   write(fileid,'(a,i1,a,i1,a,a)')
-     $                 "LDA+U.L", l , ".", zeta, ".", trim(spp%label)
+     $                 "DFT+U.L", l , ".", zeta, ".", trim(spp%label)
                   call io_assign(lun2)
                   open(unit=lun2,file=fileid,status='replace',
      $                 form='formatted')
                   write(lun2,'(2a,2i3)') "# ",trim(spp%label), 
-     $                 spp%pjldaunl_l(i), spp%pjldaunl_n(i)
+     $                 spp%pjdftunl_l(i), spp%pjdftunl_n(i)
                   write(lun2,'(a)')
-     $                 "#LDA+U projector l, n (sequence number)"
-                  call radial_dump_ascii(spp%pjldau(i),lun2,
+     $                 "#DFT+U projector l, n (sequence number)"
+                  call radial_dump_ascii(spp%pjdftu(i),lun2,
      $                                   header=.false.)
                   call io_close(lun2)
                endif            ! (write_ion_plot_files)
                
             enddo 
-            call io_close(lun_ldau)
-         endif  ! there are LDAU projectors
+            call io_close(lun_dftu)
+         endif  ! there are DFTU projectors
 
 
          CONTAINS
