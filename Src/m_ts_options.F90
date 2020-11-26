@@ -970,8 +970,8 @@ contains
     end if
     write(*,f9) 'SCF DM tolerance',ts_Dtol
     write(*,f7) 'SCF Hamiltonian tolerance',ts_Htol/eV, 'eV'
-    write(*,f9) 'SCF converge charge',ts_converge_dQ
-    write(*,f9) 'SCF charge tolerance',ts_Dqtol
+    write(*,f1) 'SCF converge charge',ts_converge_dQ
+    write(*,f9) 'SCF charge tolerance',ts_dQtol
 
     select case ( TS_scf_mode )
     case ( 0 )
