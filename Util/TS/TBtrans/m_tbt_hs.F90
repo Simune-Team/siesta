@@ -337,7 +337,7 @@ contains
 !    call print_type(files(N_HS)%H_2D)
 
     ! Now we interpolate the 
-    call dSpData2D_interp(N_HS,files(:)%H_2D,tHS(:)%Volt,Volt)
+    call SpData_interp(N_HS,files(:)%H_2D,tHS(:)%Volt,Volt)
 
     ! Now files(1) contains the interpolated values
     ! copy files(1) to the original one...
