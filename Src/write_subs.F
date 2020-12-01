@@ -115,7 +115,6 @@
                ps = mstress + kin_stress
                write(6,'(/,a,6f12.2)')
      .   'Inter molecular stress Voigt[x,y,z,yz,xz,xy] (kbar):',
-     .           ' (kbar):',
      .           (ps(jx,jx)/kbar,jx=1,3),
      $            ps(2,3)/kbar,
      $            ps(1,3)/kbar,

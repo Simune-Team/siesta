@@ -312,10 +312,10 @@ subroutine tbt_init()
   end if
 
   ! Change the data 
-  call dSpData1D_to_Sp(TSHS%S_1D,tmp_sp,tmp_1D)
+  call SpData_to_Sp(TSHS%S_1D,tmp_sp,tmp_1D)
   TSHS%S_1D = tmp_1D
   call delete(tmp_1D)
-  call dSpData2D_to_Sp(TSHS%H_2D,tmp_sp,tmp_2D)
+  call SpData_to_Sp(TSHS%H_2D,tmp_sp,tmp_2D)
   TSHS%H_2D = tmp_2D
   call delete(tmp_2D)
   TSHS%sp = tmp_sp
