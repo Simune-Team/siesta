@@ -691,25 +691,26 @@ contains
 
       if ( calc_q .and. hasEDM ) then
 
-!$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H,s_ptr_begin,s_ptr_end,sin)
+!$OMP parallel do default(shared), &
+!$OMP&  private(ir,jo,ind,io,Hn,ind_H,s_ptr_begin,s_ptr_end,sin), &
+!$OMP&  reduction(-:q)
         do ir = 1 , mum%NRHS
           
           ! this is column index
-          jo = ts2s_orb(ir)
+          io = ts2s_orb(ir)
+          Hn = l_ncol(io)
+
+          s_ptr_begin = s_ptr(io) + 1
+          s_ptr_end = s_ptr(io) + s_ncol(io)
 
           ! The update region equivalent GF part
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
 
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
+            jo = ts2s_orb(mum%IRHS_SPARSE(ind))
 
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
             ! Requires that l_col is sorted
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+            ind_H = l_ptr(io) + SFIND(l_col(l_ptr(io)+1:l_ptr(io)+Hn),jo)
             if ( ind_H > l_ptr(io) ) then
-
-              s_ptr_begin = s_ptr(io) + 1
-              s_ptr_end = s_ptr(io) + s_ncol(io)
 
               ! Search for overlap index
               ! spS is transposed, so we have to conjugate the
@@ -729,12 +730,11 @@ contains
 
 !$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H)
         do ir = 1 , mum%NRHS
-          jo = ts2s_orb(ir)
+          io = ts2s_orb(ir)
+          Hn = l_ncol(io)
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+            jo = ts2s_orb(mum%IRHS_SPARSE(ind))
+            ind_H = l_ptr(io) + SFIND(l_col(l_ptr(io)+1:l_ptr(io)+Hn),jo)
             if ( ind_H > l_ptr(io) ) then
               D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
               E(ind_H,i2) = E(ind_H,i2) - aimag( GF(ind) * EDMfact )
@@ -747,15 +747,14 @@ contains
 
 !$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H,s_ptr_begin,s_ptr_end,sin)
         do ir = 1 , mum%NRHS
-          jo = ts2s_orb(ir)
+          io = ts2s_orb(ir)
+          Hn = l_ncol(io)
+          s_ptr_begin = s_ptr(io) + 1
+          s_ptr_end = s_ptr(io) + s_ncol(io)
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+            jo = ts2s_orb(mum%IRHS_SPARSE(ind))
+            ind_H = l_ptr(io) + SFIND(l_col(l_ptr(io)+1:l_ptr(io)+Hn),jo)
             if ( ind_H > l_ptr(io) ) then
-              s_ptr_begin = s_ptr(io) + 1
-              s_ptr_end = s_ptr(io) + s_ncol(io)
               sin = s_ptr_begin - 1 + SFIND(s_col(s_ptr_begin:s_ptr_end), jo)
               if ( sin >= s_ptr_begin ) q = q - aimag(GF(ind) * Sg(sin))
               D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
@@ -768,12 +767,11 @@ contains
 
 !$OMP parallel do default(shared), private(ir,jo,ind,io,Hn,ind_H)
         do ir = 1 , mum%NRHS
-          jo = ts2s_orb(ir)
+          io = ts2s_orb(ir)
+          Hn = l_ncol(io)
           do ind = mum%IRHS_PTR(ir) , mum%IRHS_PTR(ir+1)-1
-            io = ts2s_orb(mum%IRHS_SPARSE(ind))
-            Hn    = l_ncol(io)
-            ind_H = l_ptr(io)
-            ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
+            jo = ts2s_orb(mum%IRHS_SPARSE(ind))
+            ind_H = l_ptr(io) + SFIND(l_col(l_ptr(io)+1:l_ptr(io)+Hn),jo)
             if ( ind_H > l_ptr(io) ) then
               D(ind_H,i1) = D(ind_H,i1) - aimag( GF(ind) * DMfact  )
             end if
@@ -819,7 +817,7 @@ contains
         do ind = 1 , mum%NZ
           io = ts2s_orb(mum%JCN(ind))
           jo = ts2s_orb(mum%IRN(ind))
-          Hn    = l_ncol(io)
+          Hn = l_ncol(io)
           ind_H = l_ptr(io)
           ind_H = ind_H + SFIND(l_col(ind_H+1:ind_H+Hn),jo)
           if ( ind_H > l_ptr(io) ) then
@@ -905,8 +903,6 @@ contains
 
        if ( ind_H > l_ptr(io) ) then
        
-          ! Notice that we transpose S and H back here
-          ! See symmetrize_HS_Gamma (H is hermitian)
           iG(ind) = Z * S(ind_H) - H(ind_H)
 
        end if

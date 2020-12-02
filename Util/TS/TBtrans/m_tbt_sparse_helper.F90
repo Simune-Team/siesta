@@ -25,12 +25,7 @@
 !       that the sparsity pattern is a UC sparsity pattern
 !       NO dublicate entries. 
 !       REQUIREMENT: each row MUST be sorted in column index
-!    3. Creates the transposed matrix in the output matrix
-!       A simple argument is that any traversal in the sparsity
-!       pattern will be faster if it is following fortran order.
-!       This reduces cache-misses
-!    4. The matrix is forced Hermitian
-!    5. The k-points are based on the m_tbt_k 'kRegion' data-type.
+!    3. The k-points are based on the m_tbt_k 'kRegion' data-type.
 
 module m_tbt_sparse_helper
 
@@ -39,7 +34,6 @@ module m_tbt_sparse_helper
 #ifdef MPI
   use m_ts_sparse_helper, only: AllReduce_SpData
 #endif
-  use m_ts_sparse_helper, only: symmetrize_HS
 
   implicit none
 
@@ -111,13 +105,16 @@ contains
 ! *********************
     ! Create loop-variables for doing stuff
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: k_ncol(:), k_ptr(:), k_col(:)
+    integer, pointer :: k_ncol(:), k_ptr(:), k_col(:), kp_col(:)
     real(dp) :: bk(3), k(3), rcell(3,3)
     complex(dp), pointer :: zH(:), zS(:)
     complex(dp) :: ph(0:n_s-1)
     type(tRgn) :: ro
     type(Sparsity), pointer :: sp_k
-    integer :: no_l, lio, io, ind, jo, ind_k, kn, i, il
+    integer :: no_l, lio, io, ind, jo, ind_k, kp, i, il
+    integer :: io_T, jo_T
+    real(dp) :: E_Ef(0:N_Elec)
+    logical :: Bulk(0:N_Elec)
      
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -133,17 +130,26 @@ contains
     sp_k => spar(SpArrH)
     call attach(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
+    call reclat(cell,rcell,1)
+
+    ! create the overlap electrode fermi-level
+    ! Note that for bulk V_frac_CT will be set to 0.
+    E_Ef(0) = Ef
+    Bulk(0) = .false. ! value doesn't matter, this is to look it up
+    do i = 1, N_elec
+      E_Ef(i) = Ef - Elecs(i)%V_frac_CT * Elecs(i)%mu%mu
+      Bulk(i) = Elecs(i)%bulk
+    end do
+
     ! obtain the value arrays...
     zH => val(SpArrH)
     zS => val(SpArrS)
-
-    call reclat(cell,rcell,1)
 
     zH(:) = cmplx(0._dp,0._dp,dp)
     zS(:) = cmplx(0._dp,0._dp,dp)
 
 !$OMP parallel default(shared), &
-!$OMP&private(il,i,io,lio,kn,ind,jo,ind_k,bk,k,ro)
+!$OMP&private(il,i,io,io_T,lio,kp,kp_col,ind,jo,jo_T,ind_k,bk,k)
 
 ! No data race condition as each processor takes a separate row
     do il = 0 , n_k
@@ -157,33 +163,35 @@ contains
           call kregion_k(il,bk)
           call kpoint_convert(rcell,bk,k,-2)
        end if
-       
-!$OMP do 
-       do i = 0 , n_s - 1
-          ph(i) = exp(cmplx(0._dp, &
-               k(1) * sc_off(1,i) + &
-               k(2) * sc_off(2,i) + &
-               k(3) * sc_off(3,i), kind=dp))
-       end do
-!$OMP end do nowait
 
-!$OMP single
+!$OMP sections
+!$OMP section
+       do i = 0 , n_s - 1
+          ph(i) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,i)), dp))
+       end do
+!$OMP end section
+
+!$OMP section
        ! Convert to orbital space
        call rgn_Atom2Orb(r_k(il)%atm,na_u,lasto,ro)
-!$OMP end single
+!$OMP end section
+!$OMP end sections
 
 !$OMP do
     do i = 1 , ro%n
        io = ro%r(i)
        ! obtain the global index of the orbital.
-       if ( orb_type(io) /= TYP_BUFFER ) then
+       io_T = orb_type(io)
+       if ( io_T /= TYP_BUFFER ) then
 
        lio = index_global_to_local(dit,io,Node)
        if ( lio > 0 ) then
 
-       kn = k_ncol(io)
        ! if there is no contribution in this row
-       if ( kn /= 0 ) then
+       if ( k_ncol(io) /= 0 ) then
+
+       kp = k_ptr(io)
+       kp_col => k_col(kp+1:kp+k_ncol(io))
 
        ! Loop number of entries in the row... (index frame)
        do ind = l_ptr(lio) + 1 , l_ptr(lio) + l_ncol(lio)
@@ -193,29 +201,28 @@ contains
           jo = UCORB(l_col(ind),no_u)
 
           ! If we are in the buffer region, cycle (lup_DM(ind) =.false. already)
-          if ( orb_type(jo) == TYP_BUFFER ) cycle
+          jo_T = orb_type(jo)
+          if ( jo_T == TYP_BUFFER ) cycle
 
-          ! Do a check whether we have connections
-          ! across the junction...
-          ! This is the same as removing all electrode connections
-          if ( count(OrbInElec(Elecs,io) .neqv. OrbInElec(Elecs,jo)) > 1 ) cycle
+          if ( io_T > 0 .and. jo_T > 0 .and. io_T /= jo_T ) cycle
+          if ( io_T /= jo_T ) then
+            ! we definitely have Elec -> device
+            ! Choose the electrode fermi-level
+            jo_T = max(io_T, jo_T)
+          else if ( io_T == jo_T .and. Bulk(jo_T) ) then
+            ! no need to shift since we have a bulk H/S
+            jo_T = 0
+          end if
            
-          ! find the equivalent position in the sparsity pattern
-          ! of the full unit cell
-          ind_k = k_ptr(io)
-
           ! Notice that SFIND REQUIRES that the sparsity pattern
           ! is SORTED!
           ! Thus it will only work for UC sparsity patterns.
-          ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
-          ! if ( ind_k <= k_ptr(io) ) &
-          ! call die('Could not find k-point index')
-          if ( ind_k <= k_ptr(io) ) cycle
-
-          jo = (l_col(ind)-1) / no_u
-          
-          zH(ind_k) = zH(ind_k) + H(ind) * ph(jo)
-          zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
+          ind_k = kp + SFIND(kp_col,jo)
+          if ( kp < ind_k ) then
+            jo = (l_col(ind)-1) / no_u
+            zH(ind_k) = zH(ind_k) + (H(ind) - E_Ef(jo_T)*S(ind)) * ph(jo)
+            zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
+          end if
 
        end do
 
@@ -244,9 +251,6 @@ contains
     end if
 #endif
 
-    ! We symmetrize AND shift
-    call symmetrize_HS(N_Elec,Elecs,Ef,SpArrH,SpArrS)
-     
     ! It could be argued that MPI reduction provides
     ! numeric fluctuations.
     ! However, the block-cyclic distribution ensures that

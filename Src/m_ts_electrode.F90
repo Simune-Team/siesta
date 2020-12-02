@@ -1537,8 +1537,13 @@ contains
 
     ! The algorithm outside should take care of the
     ! nullification of the k-point in the semi-infinite direction
-    do i = 0 , n_s - 1
-       ph(i) = exp(cmplx(0._dp, sum(kq*sc_off(:,i)),kind=dp) )
+    ! While the Siesta convention matches xijg = R(j) - R(i)
+    ! and this means ij -> (i,j) we cannot simply take the negative phase here.
+    ! This is because the transfer matrix (H01) is not symmetric
+    ! and therefore we *must* setup the Hamiltonian in the
+    ! correct order (not relying on symmetries)
+    do is = 0 , n_s - 1
+       ph(is) = exp(cmplx(0._dp, dot_product(kq,sc_off(:,is))))
     end do
 
     ! Initialize arrays
@@ -1547,61 +1552,31 @@ contains
     Hk_T(:,:) = z_0
     Sk_T(:,:) = z_0
 
-!$OMP parallel default(shared), private(i,j,io,jo,ind,is)
+!$OMP parallel default(shared), private(io,jo,ind,is)
 
     ! We will not have any data-race condition here
 !$OMP do 
     do io = 1 , no
 
        ! Create 00
-       do j = 1 , ncol00(io)
-          ind = l_ptr00(io) + j
+       do ind = l_ptr00(io) + 1 , l_ptr00(io) + ncol00(io)
           jo = ucorb(l_col00(ind),no)
           is = (l_col00(ind)-1) / no
           
-          Hk(io,jo) = Hk(io,jo) + H00(ind,ispin) * ph(is)
-          Sk(io,jo) = Sk(io,jo) + S00(ind)       * ph(is)
-       enddo
+          Hk(io,jo) = Hk(io,jo) + (H00(ind,ispin) - Ef * S00(ind)) * ph(is)
+          Sk(io,jo) = Sk(io,jo) + S00(ind) * ph(is)
+       end do
 
        ! Create 01
-       do j = 1 , ncol01(io)
-          ind = l_ptr01(io) + j
+       do ind = l_ptr01(io) + 1 , l_ptr01(io) + ncol01(io)
           jo = ucorb(l_col01(ind),no)
           is = (l_col01(ind)-1) / no
 
-          Hk_T(io,jo) = Hk_T(io,jo) + H01(ind,ispin) * ph(is)
-          Sk_T(io,jo) = Sk_T(io,jo) + S01(ind)       * ph(is)
+          Hk_T(io,jo) = Hk_T(io,jo) + (H01(ind,ispin) - Ef * S01(ind)) * ph(is)
+          Sk_T(io,jo) = Sk_T(io,jo) + S01(ind) * ph(is)
           
        end do
 
-    end do
-!$OMP end do
-
-    ! Symmetrize 00 and make EF the energy-zero
-    ! We will not have any data-race condition here
-!$OMP do
-    do io = 1 , no
-       do jo = 1 , io - 1
-
-          Sk(io,jo) = 0.5_dp*( Sk(io,jo) + conjg(Sk(jo,io)) )
-          Sk(jo,io) = conjg(Sk(io,jo))
-
-          Hk(io,jo) = 0.5_dp*( Hk(io,jo) + conjg(Hk(jo,io)) ) - &
-               Ef * Sk(io,jo)
-          Hk(jo,io) = conjg(Hk(io,jo))
-
-          ! Transfer matrix is not symmetric, so do not symmetrize
-          Hk_T(jo,io) = Hk_T(jo,io) - Ef * Sk_T(jo,io)
-          Hk_T(io,jo) = Hk_T(io,jo) - Ef * Sk_T(io,jo)
-
-       end do
-       
-       Sk(io,io) = real(Sk(io,io),dp)
-       Hk(io,io) = real(Hk(io,io),dp) - Ef * Sk(io,io)
-       
-       ! Transfer matrix
-       Hk_T(io,io) = Hk_T(io,io) - Ef * Sk_T(io,io)
-       
     end do
 !$OMP end do nowait
 

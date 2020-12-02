@@ -308,7 +308,7 @@ contains
     
     ! The COOP calculation can be written as
     !
-    !   COOP(io,jo) = - Im{ [Gf - Gf^\dagger](io,jo) * S(jo,io) * e^(ik.R) } / 2Pi
+    !   COOP(io,jo) = - Im{ [Gf - Gf^\dagger](io,jo) * S(jo,io) * e^(-ik.R) } / 2Pi
     ! Here we want:
     !   DOS(io) = \sum_jo COOP(io,jo)
     ! since we know that COOP(io,jo) is the io -> jo DOS.
@@ -317,15 +317,8 @@ contains
     ! Note that this is not necessary if S is S(k). I.e. it is because
     ! we want the cross-cell COOP curves as well.
 
-    ! Create the phases
-    ! Since we have to do Gf.S we simply
-    ! create S(-k) (which is S^T)
-    ! and thus get the correct values.
     do io = 1 , size(sc_off, dim=2)
-      ph(io-1) = exp(cmplx(0._dp, - &
-          k(1) * sc_off(1,io) - &
-          k(2) * sc_off(2,io) - &
-          k(3) * sc_off(3,io), kind=dp)) / (2._dp * Pi)
+      ph(io-1) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,io)), dp)) / (Pi * 2._dp)
     end do
 
     call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
@@ -440,12 +433,8 @@ contains
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
 
     ! Create the phases
-    ! We are using the explicit H(j, i) and thus the phases are consistent with +
     do io = 1 , size(sc_off, dim=2)
-      ph(io-1) = exp(cmplx(0._dp, + &
-          k(1) * sc_off(1,io) + &
-          k(2) * sc_off(2,io) + &
-          k(3) * sc_off(3,io), kind=dp)) / (2._dp * Pi)
+      ph(io-1) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,io)), dp)) / (Pi * 2._dp)
     end do
 
     Gfd => val(Gfd_tri)
@@ -477,8 +466,7 @@ contains
 
             call calc_GfGfd(br, pvt%r(jo), GfGfd)
             ! COHP(iind) += - Im[ (G(io,jo) - G^\dagger(io,jo)) * dH(jo,io)] / 2Pi
-            C(iind) = C(iind) &
-                - aimag( GfGfd * dH(ind) * ph( (l_col(ind)-1)/no_u ))
+            C(iind) = C(iind) - aimag( GfGfd * dH(ind) * ph( (l_col(ind)-1)/no_u ))
 
           end if
 
@@ -597,10 +585,7 @@ contains
     ! create the S(-k) (which is S^T)
     ! and thus get the correct values.
     do io = 1 , size(sc_off, dim=2)
-      ph(io-1) = exp(cmplx(0._dp, - &
-          k(1) * sc_off(1,io) - &
-          k(2) * sc_off(2,io) - &
-          k(3) * sc_off(3,io), kind=dp)) / (2._dp * Pi)
+      ph(io-1) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,io)), dp)) / (Pi * 2._dp)
     end do
 
     call attach(sp,nrows_g=no_u, n_col=ncol,list_ptr=l_ptr,list_col=l_col)
@@ -690,12 +675,8 @@ contains
     call attach(c_sp, n_col=cncol, list_ptr=cptr, list_col=ccol)
     
     ! Create the phases
-    ! We are using the explicit H(j, i) and thus the phases are consistent with +
     do i = 1 , size(sc_off, dim=2)
-      ph(i-1) = exp(cmplx(0._dp, + &
-          k(1) * sc_off(1,i) + &
-          k(2) * sc_off(2,i) + &
-          k(3) * sc_off(3,i), kind=dp)) / (2._dp * Pi)
+      ph(i-1) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,i)), dp)) / (Pi * 2._dp)
     end do
 
     A => val(A_tri)
@@ -1581,10 +1562,7 @@ contains
     ! So since we are taking the complex part on the first entry we retrieve the H(j,i) (in k-space)
     ! component.
     do io = 1 , size(sc_off, dim=2)
-      ph(io-1) = exp(cmplx(0._dp, + &
-          k(1) * sc_off(1,io) + &
-          k(2) * sc_off(2,io) + &
-          k(3) * sc_off(3,io), kind=dp))
+      ph(io-1) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,io)), dp))
     end do
 
     A => val(A_tri)
@@ -1614,9 +1592,12 @@ contains
         ! of the device region
         if ( iind <= i_ptr(io) ) cycle
 
-        ! H_ind == H_ij
+        ! This is the full sparse matrix
+        ! We assume full TRS and H_ij == H_ji (when also taking into account
+        ! the supercell)
+        ! Hence H(ind) == H_ij
 
-        ! We may take the conjugate later as E is a real quantity
+        ! We may take the conjugate later as H - ES is a real quantity
         Hi = (H(ind) - E * S(ind)) * ph( (l_col(ind)-1)/no_u )
 
         ! J(iind) = J(io,jo)
@@ -1629,8 +1610,8 @@ contains
 
         ! We skip the pre-factors as the units are "never" used
 
-        ! Jij                Hji    * Aij    Hij * Aji
-        J(iind) = aimag( conjg(Hi) * A(jo) - Hi * A(ju) )
+        ! Jij             Aij    Hji  Aji     Hij
+        J(iind) = aimag( A(jo) * Hi - A(ju) * conjg(Hi) )
 
       end do
     end do
@@ -1666,7 +1647,6 @@ contains
     integer, pointer :: i_ncol(:), i_ptr(:), i_col(:)
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:), col(:)
 
-    complex(dp) :: p
     complex(dp), pointer :: A(:)
     real(dp), pointer :: J(:)
     integer :: no_u, iu, io, ind, iind, ju, jo, jj
@@ -1682,22 +1662,19 @@ contains
         n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     i_sp => spar(orb_J)
-    J    => val (orb_J)
+    J => val (orb_J)
     call attach(i_sp, n_col=i_ncol, list_ptr=i_ptr, list_col=i_col)
 
     ! Create the phases
     ! We are using the explicit H(j, i) and thus the phases are consistent with +
     do io = 1 , size(sc_off, dim=2)
-      ph(io-1) = exp(cmplx(0._dp, + &
-          k(1) * sc_off(1,io) + &
-          k(2) * sc_off(2,io) + &
-          k(3) * sc_off(3,io), kind=dp))
+      ph(io-1) = exp(cmplx(0._dp, -dot_product(j, sc_off(:,io)), dp))
     end do
 
     A => val(A_tri)
 
 !$OMP parallel do default(shared), &
-!$OMP&private(iu,io,iind,jo,ju,ind,col,jj,p)
+!$OMP&private(iu,io,iind,jo,ju,ind,col,jj)
     do iu = 1, r%n
       io = r%r(iu)
 
@@ -1711,50 +1688,38 @@ contains
         ! Get jo orbital
         jo = ucorb(i_col(iind), no_u)
         ju = pvt%r(jo) ! pivoted orbital index in tri-diagonal matrix
-
         
         ! Check if the jo, io orbital exists in dH
-        if ( l_ncol(jo) < 1 ) then
-          ind = -1
-        else
+        if ( l_ncol(jo) > 0 ) then
           col => l_col(l_ptr(jo)+1:l_ptr(jo)+l_ncol(jo))
           ! Get transpose element
           jj = TO(i_col(iind)) + io
           ind = l_ptr(jo) + SFIND(col, jj)
-        end if
 
-        if ( ind > l_ptr(jo) ) then
+          if ( ind > l_ptr(jo) ) then
 
-          ! Add orbital current from ji
-          p = ph( (l_col(ind)-1)/no_u )
+            ! Check for the Hamiltonian element H_ji
+            jj = index(A_tri,iu,ju) ! A_ij
 
-          ! Check for the Hamiltonian element H_ji
-          jj = index(A_tri,iu,ju) ! A_ij
+            ! Jij                      Aij   * Hji
+            J(iind) = J(iind) + aimag( A(jj) * dH(ind) * ph( (l_col(ind)-1)/no_u ) )
 
-          ! Jij                      Aij   * Hji
-          J(iind) = J(iind) + aimag( A(jj) * dH(ind) * p )
-
+          end if
         end if
 
         ! Check if the io, jo orbital exists in dH
-        if ( l_ncol(io) < 1 ) then
-          ind = -1
-        else
+        if ( l_ncol(io) > 0 ) then
           col => l_col(l_ptr(io)+1:l_ptr(io)+l_ncol(io))
           ind = l_ptr(io) + SFIND(col, i_col(iind))
-        end if
+          if ( ind > l_ptr(io) ) then
 
-        if ( ind > l_ptr(io) ) then
+            ! Check for the Hamiltonian element H_ij
+            jj = index(A_tri,ju,iu) ! A_ji
 
-          ! Add orbital current from ij
-          p = ph( (l_col(ind)-1)/no_u )
+            ! Jij -=                   Aji   * Hij
+            J(iind) = J(iind) - aimag( A(jj) * dH(ind) * ph( (l_col(ind)-1)/no_u ) )
 
-          ! Check for the Hamiltonian element H_ij
-          jj = index(A_tri,ju,iu) ! A_ji
-
-          ! Jij -=                   Aji   * Hij
-          J(iind) = J(iind) - aimag( A(jj) * dH(ind) * p )
-
+          end if
         end if
 
       end do
@@ -1832,10 +1797,7 @@ contains
     ! Since we have to do Gf.exp(ikR) we simply
     ! create exp(-ikR) for the supercell connections.
     do io = 1 , size(sc_off, dim=2)
-      ph(io-1) = exp(cmplx(0._dp, - &
-          k(1) * sc_off(1,io) - &
-          k(2) * sc_off(2,io) - &
-          k(3) * sc_off(3,io), kind=dp)) / (2._dp * Pi)
+      ph(io-1) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,io)), dp)) / (Pi * 2._dp)
     end do
 
     Gfd => val(Gfd_tri)
@@ -1928,10 +1890,7 @@ contains
     ! Since we have to do Gf.exp(ikR) we simply
     ! create exp(-ikR) for the supercell connections.
     do io = 1 , size(sc_off, dim=2)
-      ph(io-1) = exp(cmplx(0._dp, - &
-          k(1) * sc_off(1,io) - &
-          k(2) * sc_off(2,io) - &
-          k(3) * sc_off(3,io), kind=dp)) / (2._dp * Pi)
+      ph(io-1) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,io)), dp)) / (Pi * 2._dp)
     end do
 
     A => val(A_tri)

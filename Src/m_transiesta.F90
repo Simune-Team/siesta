@@ -50,6 +50,7 @@ contains
        H, S, DM, EDM, Ef, &
        Qtot)
 
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use units, only : eV
     use alloc, only : re_alloc, de_alloc
 
@@ -335,8 +336,7 @@ contains
 
         if ( i_F < 2 ) then
 
-          call ts_dq%calculate_dEf(Qtot, &
-              sp_dist, nspin, n_nzs, DM, S, dEf)
+          call ts_dq%calculate_dEf(Qtot, sp_dist, nspin, n_nzs, DM, S, dEf)
           ! In case the charge *is* converged
           ! Then we further reduce dEf since
           ! it causes SCF fluctuations
@@ -355,17 +355,27 @@ contains
           ! In case we have accumulated 2 or more points
           dEf = Ef
           call interp_spline(i_F,Q_Ef(1:i_F,1),Q_Ef(1:i_F,2),Qtot,Ef)
-          dEf = Ef - dEf
+          if ( ieee_is_nan(Ef) ) then
+            ! There was an error in the interpolation
+            ! So we'll stick with the current one and continue
+            ! It probably means we are close anyway.
+            Ef = dEf
+            converged = .true.
 
-          ! Truncate to the maximum allowed change in Fermi-level
-          call ts_dq_truncate(Q_Ef(i_F,2), &
-              TS_DQ_FERMI_MAX, Ef, truncated=truncated)
-          converged = converged .and. (.not. truncated)
+          else
+            dEf = Ef - dEf
 
-          if ( IONode ) then
-            write(*,'(a,es11.4)') 'ts-dq-iscf: cubic spline dq = ', &
-                Q_Ef(i_F,1) - qtot
+            ! Truncate to the maximum allowed change in Fermi-level
+            call ts_dq_truncate(Q_Ef(i_F,2), &
+                TS_DQ_FERMI_MAX, Ef, truncated=truncated)
+            converged = converged .and. (.not. truncated)
+
+            if ( IONode ) then
+              write(*,'(a,es11.4)') 'ts-dq-iscf: cubic spline dq = ', &
+                  Q_Ef(i_F,1) - qtot
+            end if
           end if
+
 
         end if
 
@@ -441,11 +451,16 @@ contains
         !
 
         ! Guess-stimate the actual Fermi-shift
-        ! typically will the above be "too" little
+        ! the above will typically be "too" little.
         ! So we interpolate between all previous
         ! estimations for this geometry...
-        call ts_dq_Fermi_file(Ef, dEf)
-        Ef = Ef + dEf
+        call ts_dq_Fermi_file(Q_Ef(1,2), dEf, dq=Q_Ef(1,1) - Qtot)
+        ! If the fermi-file extrapolation does not work
+        ! we get back a dEf == 0.
+        ! In this case we rely on the simpler dQ/dQ@Ef
+        if ( abs(dEf) > 1.e-11_dp ) then
+          Ef = Q_Ef(1,2) + dEf
+        end if
 
       end if
 

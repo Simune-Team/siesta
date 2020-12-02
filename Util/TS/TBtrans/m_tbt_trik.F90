@@ -151,7 +151,6 @@ contains
     ! A local orbital distribution class (this is "fake")
     type(OrbitalDistribution) :: fdist
     ! The Hamiltonian and overlap sparse matrices
-    ! Just as in transiesta, these matrices are transposed.
     type(zSpData1D) :: spH, spS
     type(Sparsity), pointer :: sp
     real(dp), pointer :: H2D(:,:), S(:), H(:)
@@ -214,7 +213,8 @@ contains
     integer :: nGFGGF ! For the triple-product
     complex(dp), pointer :: GFGGF_work(:) => null()
     integer :: ntt_work
-    complex(dp), pointer :: tt_work(:), eig(:), phase(:)
+    complex(dp), pointer :: tt_work(:), eig(:)
+    complex(dp), allocatable :: phase(:)
 ! ************************************************************
 
 ! ******************* Computational variables ****************
@@ -502,13 +502,6 @@ contains
     ! padding any-way.
     pad_RHS = max(pad_RHS,nGFGGF)
 
-    ! Ensure that at least one of the work arrays has
-    ! elements for the few supercells that we host
-    io = product(TSHS%nsc)
-    if ( pad_LHS < io .and. pad_RHS < io ) then
-      pad_LHS = io
-    end if
-    
     ! Note that padding is the extra size to be able to calculate
     ! the spectral function in the BTD format
 
@@ -536,14 +529,7 @@ contains
 
     ! Create phase array
     io = product(TSHS%nsc)
-    if ( pad_LHS >= io ) then
-      phase => zwork(nzwork-io+1:)
-    else if ( pad_RHS >= io ) then
-      phase => Gfwork(nGfwork-io+1:)
-    else
-      call die('Error in coding! Phase size!')
-    end if
-
+    allocate(phase(io))
 
     ! Point the work-array for eigenvalue calculation
     if ( N_eigen > 0 ) then
@@ -1608,7 +1594,7 @@ contains
     deallocate(allDOS)
 
     deallocate(part_cols)
-    deallocate(A_parts)
+    deallocate(A_parts, phase)
 
     call rgn_delete(pvt)
 
@@ -1799,11 +1785,10 @@ contains
           ! or fold down region.
           if ( ju > 0 ) then
           
-             ! Notice that we transpose back here...
-             ! See symmetrize_HS_kpt
-             idx = index(Gfinv_tri,ju,iu)
+            ! Transpose to match phase convention in ts_sparse_helper (- phase)
+            idx = index(Gfinv_tri,ju,iu)
              
-             GFinv(idx) = Z * S(ind) - H(ind)
+            GFinv(idx) = Z * S(ind) - H(ind)
           end if
           
        end do
@@ -2265,8 +2250,6 @@ contains
           if ( ind == 0 ) cycle
           ind = l_ptr(io) + ind
 
-          ! Notice that we transpose back here...
-          ! See symmetrize_HS_kpt
           M(ju,iu) = Z * S(ind) - H(ind)
 
         end do

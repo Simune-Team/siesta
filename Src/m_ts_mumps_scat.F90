@@ -27,7 +27,7 @@ module m_ts_mumps_scat
 contains
 
   subroutine GF_Gamma_GF(El, mum, no_u_TS, no, GF)
-
+    use iso_c_binding, only: c_loc, c_f_pointer
     use m_ts_electype
 
     implicit none
@@ -52,7 +52,7 @@ contains
     complex(dp), parameter :: z1 = cmplx(1._dp, 0._dp,dp)
     complex(dp), parameter :: zi = cmplx(0._dp, 1._dp,dp)
 
-    complex(dp), pointer :: rows(:), ztmp(:)
+    complex(dp), pointer :: rows(:,:), ztmp(:)
     integer :: io, jo, ind, indG, SB, CB
 
 #ifdef TRANSIESTA_DEBUG
@@ -70,32 +70,34 @@ contains
     ! The block must not be larger than no_u_TS
     ! MUMPS working array could be larger than the entire matrix :(
     SB = min(SB,no_u_TS)
-    if ( SB == 0 ) call die('We cannot calculate the Gf.G.Gf^\dagger &
+    if ( SB <= 0 ) call die('We cannot calculate the Gf.G.Gf^\dagger &
         &product for your system.')
 
     ! Setup the different segments
-    rows => mum%S(1:no_u_TS*SB) ! all the rows
+    call c_f_pointer(c_loc(mum%S),rows,[SB, no_u_TS])
     ztmp => mum%S(no_u_TS*SB+1:no_u_TS*SB+no*SB) ! Gf.Gamma
 
     ! Loop over rows
-    ind = 0
+    ind = 1
     CB = 1
     do while ( CB <= no_u_TS )
+      call c_f_pointer(c_loc(mum%S),rows,[SB, no_u_TS])
+
+      ! We will now the the MM of Gf[CB:CB-1+SB,<electrode>].Gamma.Gf^\dagger = A
+      ! with bounds A[CB:CB-1+SB,:]
 
       ! Copy over rows of Gf
-      indG = 1
       do jo = 1 , no
-        rows(indG:indG-1+SB) = Gf(CB:CB-1+SB,jo)
-        indG = indG + SB
+        rows(:,jo) = Gf(CB:CB-1+SB,jo)
       end do
-      ! now ztmp(1:no*SB) contains the Gf rows at CB:CB-1+SB
+      ! now rows(:,1:no) contains the Gf rows at CB:CB-1+SB
 
       ! This routine will save the transposed of: Gf.Gamma.Gf^\dagger
       ! as that fits with the siesta sparsity pattern
 
       ! Do Gf.Gamma for these rows
       call GEMM ('N','T',SB,no,no,z1, &
-          rows(1), SB, &
+          rows(1,1), SB, &
           El%Gamma, no, &
           z0, ztmp(1), SB)
 
@@ -103,31 +105,25 @@ contains
       call GEMM ('N','C',SB,no_u_TS,no,z1, &
           ztmp(1), SB, &
           Gf(1,1), no_u_TS, &
-          z0, rows(1),  SB)
+          z0, rows(1,1),  SB)
 
-      ! We now have the full Gf.G.Gf^\dagger rows
+      ! Backtrack until we have the correct row
+      do while ( CB <= mum%IRN(ind) )
+        ind = ind - 1
+        if ( ind == 0 ) exit
+      end do
 
-      do io = 1 , SB ! loop over block rows
-        cols: do jo = 1 , no_u_TS ! this will be the maximum size (columns)
+      ! We now have the full Gf.G.Gf^\dagger rows at CB:CB-1+SB
+      ind = ind + 1
+      do while ( mum%IRN(ind) <= CB + SB - 1)
+        io = mum%IRN(ind) - CB + 1
+        jo = mum%JCN(ind)
 
-          ind = ind + 1 ! update index
+        ! save the row
+        mum%A(ind) = rows(io,jo)
 
-          if ( ind > mum%NZ ) call die('Unforseen system, contact devs')
-
-          ! Check that the row is correct (remember this is transposed)
-          if ( mum%JCN(ind) /= CB - 1 + io ) then
-            ind = ind - 1
-            exit cols
-          end if
-
-          ! save the row
-          mum%A(ind) = rows(io + (mum%IRN(ind)-1) * SB)
-
-          if ( ind == mum%NZ ) exit
-
-        end do cols
-
-        if ( ind == mum%NZ ) exit
+        ind = ind + 1 ! update index
+        if ( ind > mum%NZ ) exit
 
       end do
 
@@ -139,6 +135,7 @@ contains
       ! we need fewer than SB rows
       if ( CB + SB - 1 > no_u_TS ) then
         SB = no_u_TS - CB + 1
+        call c_f_pointer(c_loc(mum%S),rows,[SB, no_u_TS])
       end if
 
     end do

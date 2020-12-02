@@ -685,11 +685,11 @@ contains
     ! Arrays needed for looping the sparsity
     type(Sparsity), pointer :: s
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: s_ncol(:), s_ptr(:), s_col(:)
+    integer, pointer :: s_ncol(:), s_ptr(:), s_col(:), sp_col(:)
     real(dp), pointer :: D(:,:), E(:,:), Sg(:)
     complex(dp), pointer :: Gf(:)
     integer :: io, ind, iu, idx, i1, i2
-    integer :: s_ptr_begin, s_ptr_end, sin
+    integer :: sp, sind
     logical :: hasEDM, lis_eq, calc_q
 
     lis_eq = .true.
@@ -721,24 +721,25 @@ contains
       if ( calc_q .and. hasEDM ) then
 
 !$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,idx,s_ptr_begin,s_ptr_end,sin) 
+!$OMP&  private(io,iu,sp,sp_col,ind,idx,sind), &
+!$OMP&  reduction(-:q)
         do iu = 1 , r%n
           io = r%r(iu)
           if ( l_ncol(io) /= 0 ) then
             
-            s_ptr_begin = s_ptr(io) + 1
-            s_ptr_end = s_ptr(io) + s_ncol(io)
+            sp = s_ptr(io)
+            sp_col => s_col(sp+1:sp+s_ncol(io))
 
             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-              idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+              idx = index(Gf_tri,pvt%r(l_col(ind)),iu)
 
               ! Search for overlap index
-              ! spS is transposed, so we have to conjugate the
-              ! S value, then we may take the imaginary part.
-              sin = s_ptr_begin - 1 + SFIND(s_col(s_ptr_begin:s_ptr_end), l_col(ind))
-
-              if ( sin >= s_ptr_begin ) q = q - aimag(GF(idx) * Sg(sin))
+              sind = sp + SFIND(sp_col, l_col(ind))
+              if ( sp < sind ) then
+                ! For gamma-point, we don't need any transpose/conjg
+                q = q - aimag(Gf(idx)) * Sg(sind)
+              end if
               D(ind,i1) = D(ind,i1) - aimag( GF(idx) * DMfact  )
               E(ind,i2) = E(ind,i2) - aimag( GF(idx) * EDMfact )
 
@@ -753,15 +754,14 @@ contains
 
 ! We will never loop the same element twice
 ! This is UC sparsity pattern
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,idx) 
+!$OMP parallel do default(shared), private(io,iu,ind,idx)
         do iu = 1 , r%n
           io = r%r(iu)
           if ( l_ncol(io) /= 0 ) then
             
             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
               
-              idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+              idx = index(Gf_tri,pvt%r(l_col(ind)),iu)
 
               D(ind,i1) = D(ind,i1) - aimag( GF(idx) * DMfact  )
               E(ind,i2) = E(ind,i2) - aimag( GF(idx) * EDMfact )
@@ -776,25 +776,24 @@ contains
       else if ( calc_q ) then
 
 !$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,idx,s_ptr_begin,s_ptr_end,sin) 
+!$OMP&  private(io,iu,sp,sp_col,ind,idx,sind), &
+!$OMP&  reduction(-:q)
         do iu = 1 , r%n
           io = r%r(iu)
           if ( l_ncol(io) /= 0 ) then
 
-            s_ptr_begin = s_ptr(io) + 1
-            s_ptr_end = s_ptr(io) + s_ncol(io)
+            sp = s_ptr(io)
+            sp_col => s_col(sp+1:sp+s_ncol(io))
 
             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-              idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+              idx = index(Gf_tri,pvt%r(l_col(ind)),iu)
 
-              ! Search for overlap index
-              ! spS is transposed, so we have to conjugate the
-              ! S value, then we may take the imaginary part.
-              sin = s_ptr_begin - 1 + SFIND(s_col(s_ptr_begin:s_ptr_end), l_col(ind))
-
-              if ( sin >= s_ptr_begin ) q = q - aimag(GF(idx) * Sg(sin))
-              D(ind,i1) = D(ind,i1) - aimag( GF(idx) * DMfact  )
+              sind = sp + SFIND(sp_col, l_col(ind))
+              if ( sp < sind ) then
+                q = q - aimag(Gf(idx)) * Sg(sind)
+              end if
+              D(ind,i1) = D(ind,i1) - aimag( GF(idx) * DMfact )
 
             end do
 
@@ -805,15 +804,14 @@ contains
 
       else
 
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,idx) 
+!$OMP parallel do default(shared), private(io,iu,ind,idx)
         do iu = 1 , r%n
           io = r%r(iu)
           if ( l_ncol(io) /= 0 ) then
 
             do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-              idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+              idx = index(Gf_tri,pvt%r(l_col(ind)),iu)
 
               D(ind,i1) = D(ind,i1) - aimag( GF(idx) * DMfact  )
 
@@ -830,21 +828,20 @@ contains
 
 ! We will never loop the same element twice
 ! This is UC sparsity pattern
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,idx) 
+!$OMP parallel do default(shared), private(io,iu,ind,idx)
        do iu = 1 , r%n
           io = r%r(iu)
           if ( l_ncol(io) /= 0 ) then
 
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
 
-             idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
-             
+             idx = index(Gf_tri,pvt%r(l_col(ind)),iu)
+
              D(ind,i1) = D(ind,i1) + real( GF(idx) * DMfact  ,dp)
              E(ind,i2) = E(ind,i2) + real( GF(idx) * EDMfact ,dp)
-             
+
           end do
-          
+
           end if
 
        end do
@@ -852,15 +849,14 @@ contains
 
      else
 
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iu,ind,idx) 
+!$OMP parallel do default(shared), private(io,iu,ind,idx)
        do iu = 1 , r%n
           io = r%r(iu)
           if ( l_ncol(io) /= 0 ) then
 
           do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
              
-             idx = index(Gf_tri,iu,pvt%r(l_col(ind)))
+             idx = index(Gf_tri,pvt%r(l_col(ind)),iu)
              
              D(ind,i1) = D(ind,i1) + real( GF(idx) * DMfact ,dp)
              
@@ -873,10 +869,6 @@ contains
     
     end if
 
-    ! For ts_dq we should not multiply by 2 since we don't do G + G^\dagger for Gamma-only
-    ! this is because G is ensured symmetric for Gamma-point and thus it is not needed.
-    ! So here the weights are not scaled
-    
   end subroutine add_DM
 
   ! creation of the GF^{-1}.
@@ -938,8 +930,6 @@ contains
 
        do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io) 
 
-          ! Notice that we transpose back here...
-          ! See symmetrize_HS_kpt
           idx = index(Gfinv_tri,pvt%r(l_col(ind)),iu)
 
           GFinv(idx) = Z * S(ind) - H(ind)

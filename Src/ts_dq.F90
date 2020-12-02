@@ -332,6 +332,7 @@ contains
 
   subroutine ts_dq_t_calculate_dEf(this, Qtot, dit, nspin, n_nzs, DM, S, dEf)
 
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use parallel, only: Node
     use units, only : eV
     use class_OrbitalDistribution
@@ -396,7 +397,6 @@ contains
     if ( Node == 0 ) then
       ! The additional charge
       dQ = dQ - Qtot
-      write(*,'(a,es11.4)') 'ts-dq: dq = ', dQ
 
       dQ_Ef = 0._dp
       
@@ -404,11 +404,14 @@ contains
         N_dq = size(this%mus(imu)%dq)
         ! Interpolate the charge at the given eta value
         call interp_spline(N_dq, this%mus(imu)%eta, this%mus(imu)%dq, TS_DQ_FERMI_ETA, tQ)
+        if ( ieee_is_nan(tQ) ) tQ = 0._dp
         dQ_Ef = dQ_Ef + tQ
       end do
 
       ! Average contribution from each chemical potential
       dQ_Ef = dQ_Ef / size(this%mus)
+
+      write(*,'(2(a,es11.4))') 'ts-dq: dq = ', dQ, " and Q(Ef) = ", dQ_Ef
 
       ! Now we have the difference in Q
       ! Correct the Fermi level so that a change dE DM would 
@@ -453,9 +456,9 @@ contains
 
   end function ts_dq_t_get_index
   
-  subroutine ts_dq_Fermi_file(Ef, dEf)
+  subroutine ts_dq_Fermi_file(Ef, dEf, dq)
 
-    USE, INTRINSIC :: IEEE_ARITHMETIC, ONLY: IEEE_IS_NAN
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use parallel, only : Node
     use units, only : eV
     use m_interpolate
@@ -463,14 +466,16 @@ contains
     use mpi_siesta
 #endif
     !< Ef is the -dq / dq@Ef corrected Fermi-level
-    real(dp), intent(inout) :: Ef
+    real(dp), intent(in) :: Ef
     !< The shift in the Fermi-level for this routine
     real(dp), intent(inout) :: dEf
+    !< Current change in charge, if this is negative, we only allow positive dEf
+    real(dp), intent(in) :: dq
     
     integer :: iu, ioerr, i
     real(dp) :: cur(2)
 
-    real(dp) :: Ef_new
+    real(dp) :: Ef_file
     real(dp), allocatable :: Q_Ef(:,:), first_Q(:)
     
     integer :: N, max_itt, tmp
@@ -553,15 +558,18 @@ contains
 
         if ( N - i_start > 1 ) then ! len(i_start:N) >= 2
           ! Interpolate the new fermi level by using first entry
-          call interp_spline(N-i_start+1,Q_Ef(i_start:N,2),Q_Ef(i_start:N,1),0._dp,Ef_new)
-          if ( IEEE_IS_NAN(Ef_new) ) Ef_new = Ef
-          dEf = TS_DQ_FACTOR * (Ef_new - Ef)
+          call interp_spline(N-i_start+1,Q_Ef(i_start:N,2),Q_Ef(i_start:N,1),0._dp,Ef_file)
+          if ( ieee_is_nan(Ef_file) ) Ef_file = Ef
+          dEf = TS_DQ_FACTOR * (Ef_file - Ef)
         end if
 
         deallocate(Q_Ef, first_Q)
 
         ! Truncate to the maximum allowed difference
         call ts_dq_truncate(0._dp, TS_DQ_FERMI_MAX, dEf)
+
+        ! Check that dEf matches the current charge difference
+        if ( (dq < 0._dp) .eqv. (dEf < 0._dp) ) dEf = 0._dp
 
       end if ! N > 1
 

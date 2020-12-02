@@ -1786,7 +1786,7 @@ contains
       if ( this%inf_dir == INF_NEGATIVE ) then
         tm(this%t_dir) = -1
       else if ( this%inf_dir == INF_POSITIVE ) then
-        tm(this%t_dir) =  1
+        tm(this%t_dir) = 1
       else
         call die('Electrode direction not recognized')
       end if

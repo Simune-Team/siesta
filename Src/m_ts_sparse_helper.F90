@@ -24,17 +24,11 @@
 !       that the sparsity pattern is a UC sparsity pattern
 !       NO dublicate entries. 
 !       REQUIREMENT: each row MUST be sorted in column index
-!    3. Creates the transposed matrix in the output matrix
-!       A simple argument is that any traversal in the sparsity
-!       pattern will be faster if it is following fortran order.
-!       This reduces cache-misses
-!    4. The matrix is forced Hermitian
 !  - create_U
 !    1. accepts a globalized sparsity pattern of a matrix
 !    2. Creates a matrix in Upper Triangular form
 !       which directly can be inserted in LAPACK [dz]spgvd/[dz]spev
 !       routines.
-!    3. Symmetrization is not enforced by this routine
 !  - create_Full
 !    1. accepts a globalized sparsity pattern of a matrix
 !    2. creates the full matrix (with all the zeroes) which can
@@ -71,12 +65,6 @@ module m_ts_sparse_helper
      module procedure create_HS_kpt
   end interface 
   public :: create_HS
-
-  interface symmetrize_HS
-     module procedure symmetrize_HS_Gamma
-     module procedure symmetrize_HS_kpt
-  end interface 
-  public :: symmetrize_HS
 
   interface create_U
      module procedure create_Gamma_U
@@ -142,12 +130,15 @@ contains
 ! *********************
     ! Create loop-variables for doing stuff
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer :: k_ncol(:), k_ptr(:), k_col(:)
+    integer, pointer :: k_ncol(:), k_ptr(:), k_col(:), kp_col(:)
     complex(dp), pointer :: zH(:), zS(:)
     complex(dp) :: ph(0:n_s-1)
     type(Sparsity), pointer :: sp_k
-    integer :: no_l, lio, io, io_T, ind, jo, jo_T, ind_k, kn
-     
+    integer :: no_l, lio, io, io_T, ind, jo, jo_T
+    integer :: ind_k, kp
+    real(dp) :: E_Ef(0:N_Elec)
+    logical :: Bulk(0:N_Elec)
+
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
     if ( no_u /= nrows_g(sp) ) then
@@ -162,39 +153,45 @@ contains
     sp_k => spar(SpArrH)
     call attach(sp_k, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
+    ! Pre-calculate phases
+    do jo = 0 , n_s - 1
+      ph(jo) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,jo)),dp))
+    end do
+
+    ! create the overlap electrode fermi-level
+    ! Note that for bulk V_frac_CT will be set to 0.
+    E_Ef(0) = Ef
+    Bulk(0) = .false. ! value doesn't matter, this is to look it up
+    do jo = 1, N_elec
+      E_Ef(jo) = Ef - Elecs(jo)%V_frac_CT * Elecs(jo)%mu%mu
+      Bulk(jo) = Elecs(jo)%bulk
+    end do
+
     ! obtain the value arrays...
     zH => val(SpArrH)
     zS => val(SpArrS)
-
-    ! Pre-calculate phases
-    do jo = 0 , n_s - 1
-       ph(jo) = exp(cmplx(0._dp, &
-            k(1) * sc_off(1,jo) + &
-            k(2) * sc_off(2,jo) + &
-            k(3) * sc_off(3,jo),kind=dp))
-    end do
 
     zH(:) = cmplx(0._dp,0._dp,dp)
     zS(:) = cmplx(0._dp,0._dp,dp)
 
 ! No data race condition as each processor takes a separate row
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,io_T,kn,ind,jo,jo_T,ind_k)
+!$OMP&private(lio,io,io_T,kp,kp_col,ind,jo,jo_T,ind_k)
     do lio = 1 , no_l
 
        ! obtain the global index of the orbital.
       io = index_local_to_global(dit,lio)
       io_T = orb_type(io)
-      kn = k_ncol(io)
       ! if there is no contribution in this row
-      if ( kn /= 0 ) then
-        
+      if ( k_ncol(io) /= 0 ) then
+        kp = k_ptr(io)
+        kp_col => k_col(kp+1:kp+k_ncol(io))
+
 #ifndef TS_NOCHECKS
        ! The io orbitals are in the range [1;no_u_TS]
-       ! This should be redundant as it is catched by kn==0
+       ! This should be redundant as it is catched by k_ncol(io)==0
        if ( io_T == TYP_BUFFER ) then
-         call die('Error in code, &
-             &please contact Nick Papior Andersen nickpapior@gmail.com')
+         call die('Error in code, please contact Nick Papior: nickpapior@gmail.com')
        end if
 #endif
 
@@ -214,23 +211,27 @@ contains
          ! across the junction...
          ! This is the same as removing all electrode connections
          if ( io_T > 0 .and. jo_T > 0 .and. io_T /= jo_T ) cycle
+         if ( io_T /= jo_T ) then
+           ! we definitely have Elec -> device
+           ! Choose the electrode fermi-level
+           jo_T = max(io_T, jo_T)
+         else if ( io_T == jo_T .and. Bulk(jo_T) ) then
+           ! no need to shift since we have a bulk H/S
+           jo_T = 0
+         end if
            
          ! find the equivalent position in the sparsity pattern
          ! of the full unit cell
-         ind_k = k_ptr(io)
-
          ! Notice that SFIND REQUIRES that the sparsity pattern
          ! is SORTED!
          ! Thus it will only work for UC sparsity patterns.
-         ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+kn),jo)
-         ! if ( ind_k <= k_ptr(io) ) &
-         ! call die('Could not find k-point index')
-         if ( ind_k <= k_ptr(io) ) cycle
+         ind_k = kp + SFIND(kp_col,jo)
+         if ( kp < ind_k ) then
+           jo = (l_col(ind)-1) / no_u
 
-         jo = (l_col(ind)-1) / no_u
-
-         zH(ind_k) = zH(ind_k) + H(ind) * ph(jo)
-         zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
+           zH(ind_k) = zH(ind_k) + (H(ind) - E_Ef(jo_T)*S(ind)) * ph(jo)
+           zS(ind_k) = zS(ind_k) + S(ind) * ph(jo)
+         end if
 
        end do
 
@@ -248,9 +249,6 @@ contains
     end if
 #endif
 
-    ! We symmetrize AND shift
-    call symmetrize_HS_kpt(N_Elec,Elecs,Ef,SpArrH,SpArrS)
-     
     ! It could be argued that MPI reduction provides
     ! numeric fluctuations.
     ! However, the block-cyclic distribution ensures that
@@ -260,126 +258,6 @@ contains
     ! on order of summation.
 
   end subroutine create_HS_kpt
-
-  subroutine symmetrize_HS_kpt(N_Elec, Elecs, Ef,SpArrH, SpArrS)
-    use class_Sparsity
-    use class_zSpData1D
-
-    use m_ts_electype
-
-    use intrinsic_missing, only : SFIND
-    use geom_helper,       only : UCORB
-
-! *********************
-! * INPUT variables   *
-! *********************
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
-    real(dp), intent(in) :: Ef
-    ! The arrays we will save in... these are the entire TS-region sparsity
-    type(zSpData1D), intent(inout) :: SpArrH, SpArrS
-
-! *********************
-! * LOCAL variables   *
-! *********************
-    ! Create loop-variables for doing stuff
-    type(Sparsity), pointer :: s
-    integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
-    complex(dp), pointer :: zH(:), zS(:)
-    integer :: iEl, jEl, nr, io, ind, jo, rin, rind
-    real(dp) :: E_Ef(0:N_Elec)
-
-    ! create the overlap electrode fermi-level
-    E_Ef(:) = Ef
-    do iEl = 1 , N_Elec
-      ! Note that for bulk V_frac_CT will be set to 0.
-      E_Ef(iEl) = Ef - Elecs(iEl)%V_frac_CT * Elecs(iEl)%mu%mu
-    end do
-
-    s  => spar(SpArrH)
-    call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows_g=nr)
-    zH => val(SpArrH)
-    zS => val(SpArrS)
-
-    ! This loop is across the local rows...
-! No data race condition as each processor takes a separate row
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iEl,jEl,ind,jo,rin,rind)
-    do io = 1 , nr
-
-       ! Quickly go past the empty regions... (we have nothing to update)
-       if ( l_ncol(io) /= 0 ) then
-
-       iEl = orb_type(io)
-       if ( iEl /= TYP_BUFFER ) then ! this means a buffer row
-       jEl = 0
-
-       ! Now we loop across the update region
-       ! This one must *per definition* have less elements.
-       ! Hence, we can exploit this, and find equivalent
-       ! super-cell orbitals.
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-          jo = l_col(ind)
-
-          ! As we symmetrize we do not need
-          ! to cycle all points through two times...
-          if ( jo < io ) cycle
-
-          ! an electrode will not connect with
-          ! other electrodes, hence, we only need to check
-          ! whether the electrode connects with itself
-          if ( iEl > 0 ) then
-             jEl = orb_type(jo)
-             if ( jEl /= iEl ) then
-                if ( jEl /= TYP_DEVICE ) &
-                     call die('Programming error, &
-                     &contact Nick Papior Andersen, nickpapior@gmail.com')
-             else if ( Elecs(jEl)%bulk ) then
-                ! we must refrain from shifting the fermi-level
-                ! it has already been done... This should never occur though
-                jEl = 0
-             end if
-          end if
-
-          ! We will find the Hermitian part:
-          ! The fact that we have a SYMMETRIC
-          ! update region makes this *tricky* part easy...
-          rin  = l_ptr(jo)
-          ! TODO, this REQUIRES that l_col(:) is sorted
-          rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
-#ifndef TS_NOCHECKS
-          ! We do a check, just to be sure...
-          if ( rind <= rin ) &
-               call die('ERROR symmetrization orbital does not &
-               &exist.')
-#endif
-
-          ! Symmetrize (notice that we transpose here!)
-          ! See prep_GF
-          zS(rind) = 0.5_dp * ( zS(ind) + conjg(zS(rind)) )
-          zS(ind)  = conjg(zS(rind))
-
-          zH(rind) = 0.5_dp * ( zH(ind) + conjg(zH(rind)) ) &
-               - E_Ef(jEl) * zS(rind)
-          zH(ind)  = conjg(zH(rind))
-
-          if ( ind == rind ) then
-             ! This is the diagonal matrix elements
-             zS(ind) = real(zS(ind),dp)
-             zH(ind) = real(zH(ind),dp)
-          end if
-                      
-       end do
-
-       end if
-       end if
-
-    end do
-!$OMP end parallel do
-
-  end subroutine symmetrize_HS_kpt
 
 
   ! Helper routine to create and distribute the sparse 
@@ -428,10 +306,13 @@ contains
 ! *********************
     ! Create loop-variables for doing stuff
     integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
-    integer, pointer  :: k_ncol(:), k_ptr(:), k_col(:)
+    integer, pointer  :: k_ncol(:), k_ptr(:), k_col(:), kp_col(:)
     real(dp), pointer :: dH(:), dS(:)
     type(Sparsity), pointer :: sp_G
-    integer :: no_l, lio, io, ind, jo, ind_k, io_T, jo_T
+    integer :: no_l, lio, io, io_T, ind, jo, jo_T
+    integer :: ind_k, kp
+    real(dp) :: E_Ef(0:N_Elec)
+    logical :: Bulk(0:N_Elec)
     
     ! obtain the local number of rows and the global...
     no_l = nrows(sp)
@@ -447,6 +328,15 @@ contains
     sp_G => spar(SpArrH)
     call attach(sp_G, n_col=k_ncol,list_ptr=k_ptr,list_col=k_col)
 
+    ! create the overlap electrode fermi-level
+    ! Note that for bulk V_frac_CT will be set to 0.
+    E_Ef(0) = Ef
+    Bulk(0) = .true. ! necessary to force using the fermi-level
+    do jo = 1, N_elec
+      E_Ef(jo) = Ef - Elecs(jo)%V_frac_CT * Elecs(jo)%mu%mu
+      Bulk(jo) = Elecs(jo)%bulk
+    end do
+
     ! obtain the value arrays...
     dH => val(SpArrH)
     dS => val(SpArrS)
@@ -455,7 +345,7 @@ contains
     dS(:) = 0._dp
 
 !$OMP parallel do default(shared), &
-!$OMP&private(lio,io,io_T,ind,jo,jo_T,ind_k)
+!$OMP&private(lio,io,io_T,kp,kp_col,ind,jo,jo_T,ind_k)
     do lio = 1 , no_l
 
       ! obtain the global index of the orbital.
@@ -463,12 +353,13 @@ contains
       io_T = orb_type(io)
       ! if there is no contribution in this row
       if ( k_ncol(io) /= 0 ) then
-        
+        kp = k_ptr(io)
+        kp_col => k_col(kp+1:kp+k_ncol(io))
+
 #ifndef TS_NOCHECKS
        ! The io orbitals are in the range [1;no_u]
        if ( io_T == TYP_BUFFER ) then
-         call die('Error in programming: Contact &
-             &Nick Papior Andersen: nickpapior@gmail.com')
+         call die('Error in code, please contact Nick Papior: nickpapior@gmail.com')
        end if
 #endif
 
@@ -488,17 +379,22 @@ contains
          ! across the junction...
          ! This is the same as removing all electrode connections
          if ( io_T > 0 .and. jo_T > 0 .and. io_T /= jo_T ) cycle
+         if ( io_T /= jo_T ) then
+           ! we definitely have Elec -> device
+           ! Choose the electrode fermi-level
+           jo_T = max(io_T, jo_T)
+         else if ( io_T == jo_T .and. Bulk(jo_T) ) then
+           ! no need to shift since we have a bulk H/S
+           jo_T = 0
+         end if
          
          ! find the equivalent position in the sparsity pattern
          ! of the full unit cell
-         ind_k = k_ptr(io)
-         ind_k = ind_k + SFIND(k_col(ind_k+1:ind_k+k_ncol(io)),jo)
-         ! if ( ind_k <= k_ptr(io) ) &
-         ! call die('Could not find k-point index')
-         if ( ind_k <= k_ptr(io) ) cycle
-         
-         dH(ind_k) = dH(ind_k) + H(ind)
-         dS(ind_k) = dS(ind_k) + S(ind)
+         ind_k = kp + SFIND(kp_col,jo)
+         if ( kp < ind_k ) then
+           dH(ind_k) = dH(ind_k) + H(ind) - E_Ef(jo_T) * S(ind)
+           dS(ind_k) = dS(ind_k) + S(ind)
+         end if
          
        end do
 
@@ -514,10 +410,6 @@ contains
     call AllReduce_SpData(SpArrS,nwork,work)
 #endif
 
-    ! We need to do symmetrization AFTER reduction as we need the full
-    ! Hamiltonian before we can do anything
-    call symmetrize_HS_Gamma(N_Elec,Elecs,Ef,SpArrH,SpArrS)
-
     ! It could be argued that MPI reduction provides
     ! numeric fluctuations.
     ! However, the block-cyclic distribution ensures that
@@ -527,120 +419,6 @@ contains
     ! on order of summation.
 
   end subroutine create_HS_Gamma
-
-  subroutine symmetrize_HS_Gamma(N_elec, Elecs, Ef, SpArrH, SpArrS)
-    use class_Sparsity
-    use class_dSpData1D
-
-    use m_ts_electype
-
-    use intrinsic_missing, only : SFIND
-    use geom_helper,       only : UCORB
-
-! *********************
-! * INPUT variables   *
-! *********************
-    integer, intent(in) :: N_Elec
-    type(Elec), intent(in) :: Elecs(N_Elec)
-    real(dp), intent(in) :: Ef
-    ! The arrays we will save in... these are the entire TS-region sparsity
-    type(dSpData1D), intent(inout) :: SpArrH, SpArrS
-
-! *********************
-! * LOCAL variables   *
-! *********************
-    ! Create loop-variables for doing stuff
-    type(Sparsity), pointer :: s
-    integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
-    real(dp), pointer :: dH(:), dS(:)
-    real(dp) :: E_Ef(0:N_Elec)
-    integer :: iEl, jEl, nr, io, ind, jo, rin, rind
-   
-    ! create the overlap electrode fermi-level
-    E_Ef(:) = Ef
-    do iEl = 1 , N_Elec
-      E_Ef(iEl) = Ef - Elecs(iEl)%V_frac_CT * Elecs(iEl)%mu%mu
-    end do
-    
-    s  => spar(SpArrH)
-    call attach(s, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows_g=nr)
-    dH => val(SpArrH)
-    dS => val(SpArrS)
-
-    ! This loop is across the local rows...
-!$OMP parallel do default(shared), &
-!$OMP&private(io,iEl,jEl,ind,jo,rin,rind)
-    do io = 1 , nr
-
-       ! Quickly go past the empty regions... (we have nothing to update)
-       if ( l_ncol(io) /= 0 ) then
-
-       iEl = orb_type(io)
-       if ( iEl /= TYP_BUFFER ) then ! this means a buffer row
-       jEl = 0
-
-       ! Now we loop across the update region
-       ! This one must *per definition* have less elements.
-       ! Hence, we can exploit this, and find equivalent
-       ! super-cell orbitals.
-       do ind = l_ptr(io) + 1 , l_ptr(io) + l_ncol(io)
-
-          jo = l_col(ind)
-
-          ! As we symmetrize we do not need
-          ! to cycle all points through two times...
-          if ( jo < io ) cycle
-
-          ! an electrode will not connect with
-          ! other electrodes, hence, we only need to check
-          ! whether the electrode connects with itself
-          if ( iEl > 0 ) then
-             jEl = orb_type(jo)
-             if ( jEl /= iEl ) then
-#ifndef TS_NOCHECKS
-                if ( jEl /= TYP_DEVICE ) &
-                     call die('Programming error, &
-                     &contact Nick Papior Andersen, nickpapior@gmail.com')
-#endif
-             else if ( Elecs(jEl)%bulk ) then
-                ! we must refrain from shifting the fermi-level
-                ! it has already been done... This should never occur though
-                jEl = 0
-             end if
-          end if
-
-          ! We will find the Hermitian part:
-          ! The fact that we have a SYMMETRIC
-          ! update region makes this *tricky* part easy...
-          rin  = l_ptr(jo)
-          ! TODO, this REQUIRES that l_col(:) is sorted
-          rind = rin + SFIND(l_col(rin+1:rin+l_ncol(jo)),io)
-#ifndef TS_NOCHECKS
-          ! We do a check, just to be sure...
-          if ( rind <= rin ) &
-               call die('ERROR symmetrization orbital does not &
-               &exist.')
-#endif
-
-          ! Symmetrize (for Gamma, transposed is the same!)
-          dS(ind) = 0.5_dp * ( dS(ind) + dS(rind) )
-          dH(ind) = 0.5_dp * ( dH(ind) + dH(rind) ) &
-               - E_Ef(jEl) * dS(ind)
-
-          ! we have a real Matrix
-          dH(rind) = dH(ind)
-          dS(rind) = dS(ind)
-
-       end do
-
-       end if
-       end if
-
-    end do
-!$OMP end parallel do
-    
-  end subroutine symmetrize_HS_Gamma
 
 
   ! Helper routine to create and distribute an upper
@@ -805,7 +583,7 @@ contains
 
           ! If the orbital is not in the region, we skip it
           jo = rgn_pivot(r,jo)
-          if ( jo <= 0  ) cycle
+          if ( jo <= 0 ) cycle
 
           ! Calculate position
           ! For Gamma, we do not need the complex conjugate...
@@ -858,20 +636,24 @@ contains
 ! * LOCAL variables   *
 ! *********************
     ! Create loop-variables for doing stuff
-    integer, pointer  :: l_ncol(:), l_ptr(:), l_col(:)
+    integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     integer :: no_l, no_u, lio, io, ind, j, i, idx, is
-    complex(dp) :: ph
-    real(dp) :: w
+    complex(dp) :: ph(0:n_s-1), p
     
     ! Create all the local sparsity super-cell
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
-         nrows=no_l,nrows_g=no_u)
+        nrows=no_l,nrows_g=no_u)
+
+    ! Pre-calculate phases
+    ! Note that we don't have a -, this is because we are populating correctly
+    do is = 0 , n_s - 1
+      ph(is) = exp(cmplx(0._dp, dot_product(k, sc_off(:,is)),dp)) * 0.5_dp
+    end do
 
     A_UT(:) = cmplx(0._dp,0._dp,dp)
-    w = log(0.5)
 
-!$OMP parallel do default(shared), firstprivate(w), &
-!$OMP&private(i,io,lio,ind,j,is,ph,idx)
+!$OMP parallel do default(shared), &
+!$OMP&private(i,io,lio,ind,j,is,idx,p)
     do i = 1 , no
        
        ! Global orbital
@@ -893,34 +675,27 @@ contains
 
           ! If the orbital is not in the region, we skip it
           j = rgn_pivot(r,is)
-          if ( j <= 0  ) cycle
+          if ( j <= 0 ) cycle
 
           is = (l_col(ind)-1)/no_u
 
           ! Calculate position
-          if ( i > j ) then
-             ph = exp(cmplx(w, - &
-                  k(1) * sc_off(1,is) - &
-                  k(2) * sc_off(2,is) - &
-                  k(3) * sc_off(3,is),kind=dp))
-             idx = j + (i - 1)* i/2
-          else if ( i < j ) then
-             ph = exp(cmplx(w, &
-                  k(1) * sc_off(1,is) + &
-                  k(2) * sc_off(2,is) + &
-                  k(3) * sc_off(3,is),kind=dp))
-             idx = i  + (j-1)*j/2
-          else
-             ! diagonal elements are not "double" counted
-             ph = exp(cmplx(0._dp, &
-                  k(1) * sc_off(1,is) + &
-                  k(2) * sc_off(2,is) + &
-                  k(3) * sc_off(3,is),kind=dp))
-             idx = i  + (j-1)*j/2
+          ! Excerpt from dspgvd.f
+          !          if UPLO = 'U', AP(i + (j-1)*j/2) = A(i,j) for 1<=i<=j;
+          !          if UPLO = 'L', AP(i + (j-1)*(2*n-j)/2) = A(i,j) for j<=i<=n.
+          if ( i < j ) then ! U
+            idx = i + (j-1)*j/2
+            p = ph(is)
+          else if ( j < i ) then ! L
+            idx = j + (i-1)*i/2
+            p = conjg(ph(is))
+          else ! i == j same as U, but we don't double count these
+            idx = i + (j-1)*j/2
+            p = ph(is) * 2
           end if
 
 !$OMP atomic
-          A_UT(idx) = A_UT(idx) + ph * A(ind)
+          A_UT(idx) = A_UT(idx) + p * A(ind)
 
        end do
 
@@ -977,11 +752,9 @@ contains
     call attach(sp, n_col=l_ncol,list_ptr=l_ptr,list_col=l_col, &
          nrows=no_l,nrows_g=no_u)
 
+    ! Pre-calculate phases
     do is = 0 , n_s - 1
-       ph(is) = exp(cmplx(0._dp, &
-            k(1) * sc_off(1,is) + &
-            k(2) * sc_off(2,is) + &
-            k(3) * sc_off(3,is),kind=dp))
+      ph(is) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,is)), dp))
     end do
 
     A_full(:,:) = cmplx(0._dp,0._dp,dp)
@@ -1009,11 +782,11 @@ contains
 
           ! If the orbital is not in the region, we skip it
           jo = rgn_pivot(r,jo)
-          if ( jo <= 0  ) cycle
+          if ( jo <= 0 ) cycle
 
           is = (l_col(ind)-1)/no_u
 
-          A_full(io,jo) = A_full(io,jo) + ph(is) * A(ind)
+          A_full(jo,io) = A_full(jo,io) + ph(is) * A(ind)
 
        end do
 

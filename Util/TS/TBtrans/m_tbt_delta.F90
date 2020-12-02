@@ -850,8 +850,8 @@ contains
 
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: d(:), GFinv(:)
+    complex(dp) :: ph(0:)
 
     integer :: idx, iu, ju, ind, jo, no
 
@@ -862,12 +862,10 @@ contains
          n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
+    ! Note the sign-change wrt. m_ts_sparse_helper. This
+    ! is because the latter stores the transpose matrix elements.
     do iu = 1 , size(sc_off, dim=2)
-       ph(iu-1) = exp(cmplx(0._dp, &
-            k(1) * sc_off(1,iu) + &
-            k(2) * sc_off(2,iu) + &
-            k(3) * sc_off(3,iu),kind=dp))
+       ph(iu-1) = exp(cmplx(0._dp, dot_product(k, sc_off(:,iu)), dp))
     end do
 
     Gfinv => val(Gfinv_tri)
@@ -892,8 +890,6 @@ contains
        end if
     end do
 !$OMP end parallel do
-
-    deallocate(ph)
     
   end subroutine add_zdelta_TriMat
   
@@ -916,8 +912,8 @@ contains
 
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
-    complex(dp), allocatable :: ph(:)
     complex(dp), pointer :: d(:)
+    complex(dp) :: ph(0:)
 
     integer :: iu, ju, ind, jo, no
 
@@ -928,12 +924,10 @@ contains
          n_col=l_ncol, list_ptr=l_ptr, list_col=l_col)
 
     ! Create the phases
-    allocate( ph(0:size(sc_off,dim=2)-1) )
+    ! Note the sign-change wrt. m_ts_sparse_helper. This
+    ! is because the latter stores the transpose matrix elements.
     do iu = 1 , size(sc_off, dim=2)
-       ph(iu-1) = exp(cmplx(0._dp, &
-            k(1) * sc_off(1,iu) + &
-            k(2) * sc_off(2,iu) + &
-            k(3) * sc_off(3,iu),kind=dp))
+       ph(iu-1) = exp(cmplx(0._dp, dot_product(k, sc_off(:,iu)), dp))
     end do
     
 !$OMP parallel do default(shared), private(iu,jo,ind,ju)
@@ -954,8 +948,6 @@ contains
     end do
 !$OMP end parallel do
 
-    deallocate(ph)
-    
   end subroutine add_zdelta_Mat
   
 end module m_tbt_delta
