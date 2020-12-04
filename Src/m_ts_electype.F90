@@ -152,7 +152,7 @@ module m_ts_electype
      ! --- --- completed the content of the TSHS file
      ! Below we create the content for the self-energy creation
      ! Notice that we can save some elements simply by extracting the 0-1 connections
-     ! for large systems this is a non-negligeble part of the memory...
+     ! for large systems this is a non-negligeable part of the memory...
      type(Sparsity)  :: sp00, sp01
      type(dSpData2D) :: H00, H01
      type(dSpData1D) :: S00, S01
@@ -1783,10 +1783,11 @@ contains
 
     ! Notice that we create the correct electrode transfer hamiltonian...
     if ( has_01 ) then
+      ! We use the *opposite* direction because of the order of io->jo
       if ( this%inf_dir == INF_NEGATIVE ) then
-        tm(this%t_dir) = -1
-      else if ( this%inf_dir == INF_POSITIVE ) then
         tm(this%t_dir) = 1
+      else if ( this%inf_dir == INF_POSITIVE ) then
+        tm(this%t_dir) = -1
       else
         call die('Electrode direction not recognized')
       end if
@@ -1965,10 +1966,11 @@ contains
     S => val(this%S)
 
     tm(:) = TM_ALL
+    ! We use the *opposite* direction because of the order of io->jo
     if ( this%inf_dir == INF_POSITIVE ) then
-       tm(this%t_dir) =  2
-    else
        tm(this%t_dir) = -2
+    else
+       tm(this%t_dir) = 2
     end if
     call crtSparsity_SC(this%sp,sp02, TM=tm, &
          ucell=this%cell, isc_off=this%isc_off)

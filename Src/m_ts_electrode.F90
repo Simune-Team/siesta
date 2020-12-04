@@ -1543,7 +1543,7 @@ contains
     ! and therefore we *must* setup the Hamiltonian in the
     ! correct order (not relying on symmetries)
     do is = 0 , n_s - 1
-       ph(is) = exp(cmplx(0._dp, dot_product(kq,sc_off(:,is))))
+       ph(is) = exp(cmplx(0._dp, -dot_product(kq,sc_off(:,is))))
     end do
 
     ! Initialize arrays
@@ -1563,8 +1563,8 @@ contains
           jo = ucorb(l_col00(ind),no)
           is = (l_col00(ind)-1) / no
           
-          Hk(io,jo) = Hk(io,jo) + (H00(ind,ispin) - Ef * S00(ind)) * ph(is)
-          Sk(io,jo) = Sk(io,jo) + S00(ind) * ph(is)
+          Hk(jo,io) = Hk(jo,io) + (H00(ind,ispin) - Ef * S00(ind)) * ph(is)
+          Sk(jo,io) = Sk(jo,io) + S00(ind) * ph(is)
        end do
 
        ! Create 01
@@ -1572,8 +1572,8 @@ contains
           jo = ucorb(l_col01(ind),no)
           is = (l_col01(ind)-1) / no
 
-          Hk_T(io,jo) = Hk_T(io,jo) + (H01(ind,ispin) - Ef * S01(ind)) * ph(is)
-          Sk_T(io,jo) = Sk_T(io,jo) + S01(ind) * ph(is)
+          Hk_T(jo,io) = Hk_T(jo,io) + (H01(ind,ispin) - Ef * S01(ind)) * ph(is)
+          Sk_T(jo,io) = Sk_T(jo,io) + S01(ind) * ph(is)
           
        end do
 
