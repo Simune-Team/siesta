@@ -772,7 +772,7 @@ contains
     function idx_k(bk,fbk) result(i)
       real(dp), intent(in) :: bk(3), fbk(:,:)
       integer :: i
-      do i = 1 , size(fbk,dim=2)
+      do i = 1 , size(fbk, 2)
          if ( abs( fbk(1,i) - bk(1) ) + &
               abs( fbk(2,i) - bk(2) ) + &
               abs( fbk(3,i) - bk(3) ) < 0.0001_dp ) then
@@ -851,7 +851,7 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: d(:), GFinv(:)
-    complex(dp) :: ph(0:)
+    complex(dp) :: ph(0:size(sc_off, 2)-1)
 
     integer :: idx, iu, ju, ind, jo, no
 
@@ -864,7 +864,7 @@ contains
     ! Create the phases
     ! Note the sign-change wrt. m_ts_sparse_helper. This
     ! is because the latter stores the transpose matrix elements.
-    do iu = 1 , size(sc_off, dim=2)
+    do iu = 1 , size(sc_off, 2)
        ph(iu-1) = exp(cmplx(0._dp, dot_product(k, sc_off(:,iu)), dp))
     end do
 
@@ -913,7 +913,7 @@ contains
     type(Sparsity), pointer :: sp
     integer, pointer :: l_ncol(:), l_ptr(:), l_col(:)
     complex(dp), pointer :: d(:)
-    complex(dp) :: ph(0:)
+    complex(dp) :: ph(0:size(sc_off, 2)-1)
 
     integer :: iu, ju, ind, jo, no
 
@@ -926,7 +926,7 @@ contains
     ! Create the phases
     ! Note the sign-change wrt. m_ts_sparse_helper. This
     ! is because the latter stores the transpose matrix elements.
-    do iu = 1 , size(sc_off, dim=2)
+    do iu = 1 , size(sc_off, 2)
        ph(iu-1) = exp(cmplx(0._dp, dot_product(k, sc_off(:,iu)), dp))
     end do
     
