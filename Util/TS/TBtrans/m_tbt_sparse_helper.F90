@@ -169,12 +169,10 @@ contains
        do i = 0 , n_s - 1
           ph(i) = exp(cmplx(0._dp, -dot_product(k, sc_off(:,i)), dp))
        end do
-!$OMP end section
 
 !$OMP section
        ! Convert to orbital space
        call rgn_Atom2Orb(r_k(il)%atm,na_u,lasto,ro)
-!$OMP end section
 !$OMP end sections
 
 !$OMP do
