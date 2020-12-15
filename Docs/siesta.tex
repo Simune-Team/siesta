@@ -585,6 +585,32 @@ Warning: Type mismatch between actual argument at (1) and actual argument at (2)
 % use. 
 
 
+\subsection{Debug options}
+\label{sec:build:debug}
+
+Being able to build \siesta\ in debug mode is crucial for finding bugs
+and debugging builds.
+
+When changing build flags in the \file{arch.make} file it is
+imperative to clean the build directory. Please do a \shell{make
+    clean} then do \shell{make}.
+
+For GFortran, use the following flags:
+\begin{shellexample}
+  FFLAGS = -Og -g -pedantic -Wall -fcheck=all -fbacktrace -Warray-bounds -Wunused -Wuninitialized
+\end{shellexample}
+
+For Intel, use the following flags:
+\begin{shellexample}
+  FFLAGS = -Og -g -check bounds -traceback -fp-model strict
+\end{shellexample}
+
+This will make \siesta\ run significantly slower. Please report any
+crashes to the developer team at
+\href{https://gitlab.com/siesta-project/siesta/-/issues}.
+
+
+
 
 \subsection{Parallel}
 \label{sec:parallel}
@@ -778,7 +804,7 @@ installation scripts finishes by telling \emph{what} to add to the
 
   Example variables
 \begin{shellexample}
-  # OpenBLAS (OpenBLAS will default to build in LAPACK 3.6)
+  # OpenBLAS (OpenBLAS will default to build in LAPACK)
   LIBS += -L/opt/openblas/lib -lopenblas
   # or for MKL
   LIBS += -L/opt/intel/.../mkl/lib/intel64 -lmkl_lapack95_lp64 ...
@@ -13279,10 +13305,11 @@ any problem, or would like to offer a suggestion for improvement,
 please follow the instructions in the file
 \texttt{Docs/REPORTING\_BUGS}. 
 
-Since \siesta\ has moved to Launchpad you are encouraged to follow the
-instructions presented at:
-\url{https://answers.launchpad.net/siesta/+faq/2779}.
-
+Since \siesta\ has moved to
+\href{https://gitlab.com/siesta-project/siesta} you are encouraged to
+follow the instructions by pressing ``New Issue'' and selecting
+``Bug'' in the Description drop-down. Also please follow the debug
+build options, see Sec.~\ref{sec:build:debug}
 
 
 \section{ACKNOWLEDGMENTS}
