@@ -21,7 +21,7 @@ module bloch_unfold_m
   integer, parameter :: dp = selected_real_kind(p=15)
 
   type bloch_unfold_t
-    
+
     !< Number of times a matrix is unfolded
     integer, public :: B(3) = 1
 
@@ -36,6 +36,7 @@ module bloch_unfold_m
     procedure, pass :: unfold_M_original => bloch_unfold_M_original
     procedure, pass :: unfold_M_do => bloch_unfold_M_do
     procedure, pass :: unfold_M_manual => bloch_unfold_M_manual
+    procedure, pass :: unfold_M_manual_simd => bloch_unfold_M_manual_simd
     procedure, pass :: unfold_M_task => bloch_unfold_M_task
     procedure, pass :: unfold_M_task_bad => bloch_unfold_M_task_bad
     procedure, pass :: unfold_M_workshare => bloch_unfold_M_workshare
@@ -99,9 +100,9 @@ contains
   pure function bloch_unfold_size(this) result(size)
     class(bloch_unfold_t), intent(in) :: this
     integer :: size
-    
+
     size = this%prod_B
-    
+
   end function bloch_unfold_size
 
 
@@ -192,7 +193,7 @@ contains
 
       call zcopy(N*N, M(1,1,1), 1, uM(1,1,1,1), 1)
       return
-      
+
     end if
 
     ! Now do the actual expansion
@@ -241,8 +242,7 @@ contains
 !$OMP& private(w,ph,cph)
 
 #ifdef __BLOCH_UNFOLD_M_DEBUG
-    write(*,'(/a,i0)') "Debugging M_do_1 = ", NA
-    call print_matrix(NA,0,0, init=.true.)
+    call print_matrix(NA,0,0, init="M_do")
 #endif
 
     ! Initialize un-folded matrix
@@ -286,7 +286,7 @@ contains
       ! (1, :, 1, :) = sum(M(1, 1, :))
 
       k_A = unfold_k2pi(kA, NA, TMA)
-      
+
       ! exp(2\pi k) where k == K/N
       phA_step = cmplx(cos(k_A), sin(k_A), dp)
 
@@ -380,8 +380,7 @@ contains
 !$OMP& private(w,ph,cph)
 
 #ifdef __BLOCH_UNFOLD_M_DEBUG
-    write(*,'(/a,2(tr1,i0))') "Debugging M_do_2 = ", NA, NB
-    call print_matrix(NA,0,0,NB,0,0, init=.true.)
+    call print_matrix(NA,0,0,NB,0,0, init="M_do")
 #endif
 
     ! Initialize un-folded matrix
@@ -455,11 +454,15 @@ contains
       end do
     end do
 
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+    call print_matrix(NA,0,0,NB,0,0, out=.true.)
+#endif
+
 !$OMP barrier
 
     ! Full weight
     w = 1._dp / real(NA*NB, dp)
-    
+
     ! TMB/A loop is over different matrices
     do TMB = 1, NB
 
@@ -516,7 +519,7 @@ contains
 #endif
           phA = phA * phA_step
         end do
-        
+
         ! Now handle all iMB > 1
         phB = w * phB_step
         do iMB = 2, NB
@@ -575,10 +578,10 @@ contains
             if ( TMA*TMB == 1 ) call print_matrix(NA,iMA,1,NB,1,iMB)
             if ( TMA*TMB == 1 ) call print_matrix(NA,1,iMA,NB,1,iMB)
 #endif
-            
+
             phA = phA * phA_step
           end do
-          
+
           phB = phB * phB_step
         end do
 
@@ -664,7 +667,7 @@ contains
 #ifdef __BLOCH_UNFOLD_M_DEBUG
             call print_matrix(NA,iMA,TMA,NB,iMB,TMB, c='-')
 #endif
-          end do 
+          end do
         end do
       end do
 !$OMP barrier
@@ -783,7 +786,7 @@ contains
       ! (1, :, 1, :) = sum(M(1, 1, :))
 
       k_A = unfold_k2pi(kA, NA, TMA)
-      
+
       ! exp(2\pi k) where k == K/N
       phA_step = cmplx(cos(k_A), sin(k_A), dp)
 
@@ -1738,7 +1741,7 @@ contains
       ! (1, :, 1, :) = sum(M(1, 1, :))
 
       k_A = unfold_k2pi(kA, NA, TMA)
-      
+
       ! exp(2\pi k) where k == K/N
       phA_step = cmplx(cos(k_A), sin(k_A), dp)
 
@@ -1871,7 +1874,7 @@ contains
             ph1 = phB * conjg(phA)
             ph2 = conjg(phB) * phA
             ph3 = conjg(phB * phA)
-                        
+
 !$OMP workshare
             uM(:,iMA,iMB,:,1,1) = uM(:,iMA,iMB,:,1,1) + M(:,:,TMA,TMB) * ph
             uM(:,1,iMB,:,iMA,1) = uM(:,1,iMB,:,iMA,1) + M(:,:,TMA,TMB) * ph1
@@ -1976,7 +1979,6 @@ contains
 
   !< Unfold a given matrix for only one un-fold point
   subroutine bloch_unfold_M_manual_1(N, M, kA, NA, uM)
-!$  use omp_lib
     integer, intent(in) :: N, NA
     complex(dp), intent(in) :: M(N,N,NA)
     real(dp), intent(in) :: kA
@@ -2071,7 +2073,6 @@ contains
 
   !< Unfold a given matrix for only one un-fold point
   subroutine bloch_unfold_M_manual_2(N, M, kA, NA, kB, NB, uM)
-!$  use omp_lib
     integer, intent(in) :: N, NA, NB
     complex(dp), intent(in) :: M(N,N,NA,NB)
     real(dp), intent(in) :: kA, kB
@@ -2096,8 +2097,7 @@ contains
     call bloch_unfold_openmp_loop_split(nt, it, N, jmin, jmax)
 
 #ifdef __BLOCH_UNFOLD_M_DEBUG
-    write(*,'(/a,2(tr1,i0))') "Debugging M_manual_2 = ", NA, NB
-    call print_matrix(NA,0,0,NB,0,0, init=.true.)
+    call print_matrix(NA,0,0,NB,0,0, init="M_manual")
 #endif
 
     ! Initialize
@@ -2131,15 +2131,6 @@ contains
           do i = 1, N
             uM(i,1,1,j,TMA,iMB) = cmplx(0._dp, 0._dp, dp)
           end do
-        end do
-#ifdef __BLOCH_UNFOLD_M_DEBUG
-        call print_matrix(NA,TMA,1,NB,iMB,1, c='0')
-        call print_matrix(NA,1,TMA,NB,1,iMB, c='0')
-#endif
-      end do
-
-      do TMA = 1, NA
-        do j = jmin, jmax
           do i = 1, N
             uM(i,TMA,1,j,1,iMB) = cmplx(0._dp, 0._dp, dp)
           end do
@@ -2148,6 +2139,8 @@ contains
           end do
         end do
 #ifdef __BLOCH_UNFOLD_M_DEBUG
+        call print_matrix(NA,TMA,1,NB,iMB,1, c='0')
+        call print_matrix(NA,1,TMA,NB,1,iMB, c='0')
         call print_matrix(NA,TMA,1,NB,1,iMB, c='0')
         call print_matrix(NA,1,TMA,NB,iMB,1, c='0')
 #endif
@@ -2287,6 +2280,7 @@ contains
       end do
     end do
 
+
     do TMA = 2, NA
       do j = jmin, jmax
         do iMA = 2, NA
@@ -2322,7 +2316,7 @@ contains
       end do
     end do
 
-    do TMB = 2, nb
+    do TMB = 2, NB
       do TMA = 1, NA
         do j = jmin, jmax
           do iMB = 2, NB
@@ -2347,6 +2341,445 @@ contains
 !$OMP end parallel
 
   end subroutine bloch_unfold_M_manual_2
+#endif
+
+#ifdef __BLOCH_UNFOLD_M_TEST
+  !< Unfold a specific index for the matrix unfold machinery from M -> uM
+  !!
+  !! This method is equivalent to `bloch_unfold_M_do` but uses
+  !! the manual parallelization constructs for OpenMP parallelization.
+  !! Currently, this method is faster.
+  subroutine bloch_unfold_M_manual_simd(this, bk, N, M, uM)
+    class(bloch_unfold_t), intent(in) :: this
+    real(dp), intent(in) :: bk(3)
+    integer, intent(in) :: N
+    complex(dp), intent(in) :: M(N,N,this%prod_B)
+    complex(dp), intent(inout) :: uM(N,this%prod_B,N,this%prod_B)
+
+    if ( this%prod_B == 1 ) then
+
+      call zcopy(N*N, M(1,1,1), 1, uM(1,1,1,1), 1)
+      return
+
+    end if
+
+    ! Now do the actual expansion
+    if ( this%B(1) == 1 ) then
+      if ( this%B(2) == 1 ) then
+        call bloch_unfold_M_manual_simd_1(N, M, bk(3), this%B(3), uM)
+      else if ( this%B(3) == 1 ) then
+        call bloch_unfold_M_manual_simd_1(N, M, bk(2), this%B(2), uM)
+      else
+        call bloch_unfold_M_manual_simd_2(N, M, &
+            bk(2), this%B(2), &
+            bk(3), this%B(3), uM)
+      end if
+    else if ( this%B(2) == 1 ) then
+      if ( this%B(3) == 1 ) then
+        call bloch_unfold_M_manual_simd_1(N, M, bk(1), this%B(1), uM)
+      else
+        call bloch_unfold_M_manual_simd_2(N, M, &
+            bk(1), this%B(1), &
+            bk(3), this%B(3), uM)
+      end if
+    else if ( this%B(3) == 1 ) then
+      call bloch_unfold_M_manual_simd_2(N, M, &
+          bk(1), this%B(1), &
+          bk(2), this%B(2), uM)
+    else
+      call die('currently not implemented')
+    end if
+
+  end subroutine bloch_unfold_M_manual_simd
+
+  !< Unfold a given matrix for only one un-fold point
+  subroutine bloch_unfold_M_manual_simd_1(N, M, kA, NA, uM)
+    integer, intent(in) :: N, NA
+    complex(dp), intent(in) :: M(N,N,NA)
+    real(dp), intent(in) :: kA
+    complex(dp), intent(inout) :: uM(N,NA,N,NA)
+
+    integer :: TMA, iMA
+    integer :: i, j
+    integer :: NT, IT
+    integer :: jmin, jmax
+    real(dp) :: w, k_A
+    complex(dp) :: ph, cph, phA_step
+
+!$OMP parallel default(shared) &
+!$OMP&   private(i,j,w,k_A,phA_step,ph,cph,TMA,iMA) &
+!$OMP&   private(NT,IT,jmin,jmax)
+
+    call bloch_unfold_openmp_init(nt, it)
+    call bloch_unfold_openmp_loop_split(nt, it, N, jmin, jmax)
+
+    ! Initialize
+    do j = jmin, jmax
+!$OMP simd collapse(2)
+      do TMA = 1, NA
+        do i = 1, N
+          uM(i,TMA,j,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+    end do
+    do TMA = 2 , NA
+      do j = jmin, jmax
+!$OMP simd
+        do i = 1, N
+          uM(i,1,j,TMA) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+    end do
+
+    w = 1._dp / real(NA, dp)
+
+    ! TMA loop is over different matrices
+    do TMA = 1, NA
+
+      ! The first diagonal part is *always* phase-less
+      ! So there is no reason to multiply with *extra* stuff
+      ! (1, :, 1, :) = sum(M(1, 1, :))
+
+      k_A = unfold_k2pi(kA, NA, TMA)
+
+      ! exp(2\pi k) where k == K/N
+      phA_step = cmplx(cos(k_A), sin(k_A), dp)
+
+      do j = jmin, jmax
+!$OMP simd
+        do i = 1, N
+          uM(i,1,j,1) = uM(i,1,j,1) + M(i,j,TMA) * w
+        end do
+      end do
+
+      ! perform average in this phase-factor
+      ph = w * phA_step
+      do iMA = 2, NA
+
+        cph = conjg(ph)
+        do j = jmin, jmax
+!$OMP simd
+          do i = 1, N
+            uM(i,iMA,j,1) = uM(i,iMA,j,1) + M(i,j,TMA) * ph
+          end do
+!$OMP simd
+          do i = 1, N
+            uM(i,1,j,iMA) = uM(i,1,j,iMA) + M(i,j,TMA) * cph
+          end do
+        end do
+
+        ph = ph * phA_step
+      end do
+
+    end do
+
+    ! At this point the following have been calculated:
+    !   uM(:,:,:,1)
+    !   uM(:,1,:,:)
+    ! Due to uM being a Toeplitz matrix, we simply copy around the data!
+    do iMA = 2, NA
+      do j = jmin, jmax
+!$OMP simd collapse(2)
+        do TMA = 2, NA
+          do i = 1, N
+            uM(i,TMA,j,iMA) = uM(i,TMA-1,j,iMA-1)
+          end do
+        end do
+      end do
+    end do
+
+!$OMP end parallel
+
+  end subroutine bloch_unfold_M_manual_simd_1
+
+  !< Unfold a given matrix for only one un-fold point
+  subroutine bloch_unfold_M_manual_simd_2(N, M, kA, NA, kB, NB, uM)
+    integer, intent(in) :: N, NA, NB
+    complex(dp), intent(in) :: M(N,N,NA,NB)
+    real(dp), intent(in) :: kA, kB
+    complex(dp), intent(inout) :: uM(N,NA,NB,N,NA,NB)
+
+    integer :: TMA, iMA, TMB, iMB
+    integer :: i, j
+    integer :: NT, IT
+    integer :: jmin, jmax
+    real(dp) :: w, k_A, k_B
+    complex(dp) :: phA, phA_step
+    complex(dp) :: phB, phB_step
+    complex(dp) :: ph
+
+!$OMP parallel default(shared) &
+!$OMP&   private(i,j,w,ph) &
+!$OMP&   private(k_A,phA_step,phA,TMA,iMA) &
+!$OMP&   private(k_B,phB_step,phB,TMB,iMB) &
+!$OMP&   private(NT,IT,jmin,jmax)
+
+    call bloch_unfold_openmp_init(nt, it)
+    call bloch_unfold_openmp_loop_split(nt, it, N, jmin, jmax)
+
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+    call print_matrix(NA,0,0,NB,0,0, init="M_manual")
+#endif
+
+    ! Initialize
+    do j = jmin, jmax
+!$OMP simd collapse(2)
+      do TMA = 1, NA
+        do i = 1, N
+          uM(i,TMA,1,j,1,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+        if ( j == jmin ) call print_matrix(NA,TMA,1,NB,1,1, c='0')
+#endif
+      end do
+    end do
+    do TMA = 2 , NA
+      do j = jmin, jmax
+!$OMP simd
+        do i = 1, N
+          uM(i,1,1,j,TMA,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+      call print_matrix(NA,1,TMA,NB,1,1, c='0')
+#endif
+    end do
+
+    do iMB = 2, NB
+      do TMA = 1, NA
+        do j = jmin, jmax
+!$OMP simd
+          do i = 1, N
+            uM(i,TMA,iMB,j,1,1) = cmplx(0._dp, 0._dp, dp)
+          end do
+!$OMP simd
+          do i = 1, N
+            uM(i,1,1,j,TMA,iMB) = cmplx(0._dp, 0._dp, dp)
+          end do
+!$OMP simd
+          do i = 1, N
+            uM(i,TMA,1,j,1,iMB) = cmplx(0._dp, 0._dp, dp)
+          end do
+!$OMP simd
+          do i = 1, N
+            uM(i,1,iMB,j,TMA,1) = cmplx(0._dp, 0._dp, dp)
+          end do
+        end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+        call print_matrix(NA,TMA,1,NB,iMB,1, c='0')
+        call print_matrix(NA,1,TMA,NB,1,iMB, c='0')
+        call print_matrix(NA,TMA,1,NB,1,iMB, c='0')
+        call print_matrix(NA,1,TMA,NB,iMB,1, c='0')
+#endif
+      end do
+    end do
+
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+    call print_matrix(NA,0,0,NB,0,0, out=.true.)
+#endif
+
+    ! Full weight
+    w = 1._dp / real(NA*NB, dp)
+
+    ! TMB/A loop is over different matrices
+    do TMB = 1, NB
+
+      k_B = unfold_k2pi(kB, NB, TMB)
+      phB_step = cmplx(cos(k_B), sin(k_B), dp)
+
+      do TMA = 1, NA
+
+        ! The first diagonal part is *always* phase-less
+        ! So there is no reason to multiply with *extra* stuff
+        ! (1, :, TMB, 1, :, TMB) = sum(M(1, 1, :, TMB))
+
+        k_A = unfold_k2pi(kA, NA, TMA)
+        phA_step = cmplx(cos(k_A), sin(k_A), dp)
+
+        do j = jmin, jmax
+!$OMP simd
+          do i = 1, N
+            uM(i,1,1,j,1,1) = uM(i,1,1,j,1,1) + M(i,j,TMA,TMB) * w
+          end do
+        end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+        if ( TMA*TMB == 1 ) call print_matrix(NA,1,1,NB,1,1)
+#endif
+
+        ! The Toeplitz nature of a double Bloch expanded matrix
+        ! makes this a bit more challenging
+        ! Within each sub-block where NA is expanded we find
+        ! the same structure as in the single Bloch expanded matrix
+
+        ! for iMB == 1 and iMA in [1...NA] we need phB == w
+        phA = w * phA_step
+
+        ! This is the first iMB == 1 sub-block
+        do iMA = 2, NA
+
+          ph = conjg(phA)
+
+          do j = jmin, jmax
+!$OMP simd
+            do i = 1, N
+              uM(i,iMA,1,j,1,1) = uM(i,iMA,1,j,1,1) + M(i,j,TMA,TMB) * phA
+            end do
+!$OMP simd
+            do i = 1, N
+              uM(i,1,1,j,iMA,1) = uM(i,1,1,j,iMA,1) + M(i,j,TMA,TMB) * ph
+            end do
+          end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+          if ( TMA*TMB == 1 ) call print_matrix(NA,iMA,1,NB,1,1)
+          if ( TMA*TMB == 1 ) call print_matrix(NA,1,iMA,NB,1,1)
+#endif
+
+          phA = phA * phA_step
+        end do
+
+        ! Now handle all iMB > 1
+        phB = w * phB_step
+        do iMB = 2, NB
+
+          ph = conjg(phB)
+          ! Diagonal B (A has zero phase)
+          do j = jmin, jmax
+!$OMP simd
+            do i = 1, N
+              uM(i,1,iMB,j,1,1) = uM(i,1,iMB,j,1,1) + M(i,j,TMA,TMB) * phB
+            end do
+!$OMP simd
+            do i = 1, N
+              uM(i,1,1,j,1,iMB) = uM(i,1,1,j,1,iMB) + M(i,j,TMA,TMB) * ph
+            end do
+          end do
+
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+          if ( TMA*TMB == 1 ) call print_matrix(NA,1,1,NB,iMB,1)
+          if ( TMA*TMB == 1 ) call print_matrix(NA,1,1,NB,1,iMB)
+#endif
+
+          ! Now do all A off-diagonals (phB has weight)
+          phA = phA_step
+          do iMA = 2, NA
+
+            ph = phB * phA
+            do j = jmin, jmax
+!$OMP simd
+              do i = 1, N
+                uM(i,iMA,iMB,j,1,1) = uM(i,iMA,iMB,j,1,1) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+            if ( TMA*TMB == 1 ) call print_matrix(NA,iMA,1,NB,iMB,1)
+#endif
+
+            ph = phB * conjg(phA)
+            do j = jmin, jmax
+!$OMP simd
+              do i = 1, N
+                uM(i,1,iMB,j,iMA,1) = uM(i,1,iMB,j,iMA,1) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+            if ( TMA*TMB == 1 ) call print_matrix(NA,1,iMA,NB,iMB,1)
+#endif
+
+            ph = conjg(phB) * phA
+            do j = jmin, jmax
+!$OMP simd
+              do i = 1, N
+                uM(i,iMA,1,j,1,iMB) = uM(i,iMA,1,j,1,iMB) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+            if ( TMA*TMB == 1 ) call print_matrix(NA,iMA,1,NB,1,iMB)
+#endif
+
+            ph = conjg(phB * phA)
+            do j = jmin, jmax
+!$OMP simd
+              do i = 1, N
+                uM(i,1,1,j,iMA,iMB) = uM(i,1,1,j,iMA,iMB) + M(i,j,TMA,TMB) * ph
+              end do
+            end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+            if ( TMA*TMB == 1 ) call print_matrix(NA,1,iMA,NB,1,iMB)
+#endif
+
+            phA = phA * phA_step
+          end do
+
+          phB = phB * phB_step
+        end do
+
+      end do
+    end do
+
+    do TMA = 2, NA
+      do j = jmin, jmax
+!$OMP simd collapse(2)
+        do iMA = 2, NA
+          do i = 1, N
+            uM(i,iMA,1,j,TMA,1) = uM(i,iMA-1,1,j,TMA-1,1)
+          end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+          if ( j == jmin ) call print_matrix(NA,iMA,TMA,NB,1,1, c='-')
+#endif
+        end do
+      end do
+    end do
+
+    do TMB = 2, NB
+      do TMA = 2, NA
+        do j = jmin, jmax
+          do iMA = 2, NA
+!$OMP simd
+            do i = 1, N
+              uM(i,iMA,TMB,j,TMA,1) = uM(i,iMA-1,TMB,j,TMA-1,1)
+            end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+            if ( j == jmin ) call print_matrix(NA,iMA,TMA,NB,TMB,1, c='-')
+#endif
+
+!$OMP simd
+            do i = 1, N
+              uM(i,iMA,1,j,TMA,TMB) = uM(i,iMA-1,1,j,TMA-1,TMB)
+            end do
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+            if ( j == jmin ) call print_matrix(NA,iMA,TMA,NB,1,TMB, c='-')
+#endif
+          end do
+        end do
+      end do
+    end do
+
+    do TMB = 2, NB
+      do TMA = 1, NA
+        do j = jmin, jmax
+!$OMP simd collapse(3)
+          do iMB = 2, NB
+            do iMA = 1, NA
+              do i = 1, N
+                uM(i,iMA,iMB,j,TMA,TMB) = uM(i,iMA,iMB-1,j,TMA,TMB-1)
+              end do
+
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+              if ( j == jmin ) call print_matrix(NA,iMA,TMA,NB,iMB,TMB, c='-')
+#endif
+            end do
+          end do
+        end do
+      end do
+    end do
+
+#ifdef __BLOCH_UNFOLD_M_DEBUG
+    call print_matrix(NA,0,0,NB,0,0, out=.true.)
+#endif
+
+!$OMP end parallel
+
+  end subroutine bloch_unfold_M_manual_simd_2
 #endif
 
 #ifdef __BLOCH_UNFOLD_M_TEST
@@ -2875,7 +3308,6 @@ contains
 
   !< Unfold a given matrix for only one un-fold point
   subroutine bloch_unfold_HS_G_manual_1(N, H, S, G, Z, kA, NA, uSZmH, uG)
-!$  use omp_lib
     integer, intent(in) :: N, NA
     complex(dp), dimension(N,N,NA), intent(in) :: H, S, G
     complex(dp), intent(in) :: Z
@@ -2995,7 +3427,6 @@ contains
 
   !< Unfold a given matrix for only one un-fold point
   subroutine bloch_unfold_HS_G_manual_2(N, H, S, G, Z, kA, NA, kB, NB, uSZmH, uG)
-!$  use omp_lib
     integer, intent(in) :: N, NA, NB
     complex(dp), dimension(N,N,NA,NB), intent(in) :: H, S, G
     complex(dp), intent(in) :: Z
@@ -3412,8 +3843,20 @@ contains
     ! Initialize un-folded matrix
 !$OMP do schedule(static)
     do j = 1, N
-      uSZmH(:,:,j,1) = cmplx(0._dp, 0._dp, dp)
-      uSZmH(:,1,j,2:) = cmplx(0._dp, 0._dp, dp)
+      do iMA = 1, NA
+        do i = 1, N
+          uSZmH(i,iMA,j,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+    end do
+!$OMP end do nowait
+!$OMP do schedule(static)
+    do j = 1, N
+      do iMA = 2, NA
+        do i = 1, N
+          uSZmH(i,1,j,iMA) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
     end do
 !$OMP end do
 
@@ -3497,12 +3940,66 @@ contains
     complex(dp) :: phB, phB_step
     complex(dp) :: ph, cph, phZ, cphZ
 
-    uSZmH(:,:,:,:,:,:) = cmplx(0._dp, 0._dp, dp)
-
 !$OMP parallel default(shared) private(i,j) &
 !$OMP& private(TMA,iMA,k_A,phA_step,phA) &
 !$OMP& private(TMB,iMB,k_B,phB_step,phB) &
 !$OMP& private(w,ph,cph,phZ,cphZ) firstprivate(Z)
+
+    ! Initialize un-folded matrix
+!$OMP do schedule(static)
+    do j = 1, N
+      do i = 1, N
+        uSZmH(i,1,1,j,1,1) = cmplx(0._dp, 0._dp, dp)
+      end do
+    end do
+!$OMP end do nowait
+
+    do iMA = 2, NA
+!$OMP do schedule(static)
+      do j = 1, N
+        do i = 1, N
+          uSZmH(i,iMA,1,j,1,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+        do i = 1, N
+          uSZmH(i,1,1,j,iMA,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end do nowait
+    end do
+
+    do iMB = 2, NB
+!$OMP do schedule(static)
+      do j = 1, N
+        do i = 1, N
+          uSZmH(i,1,iMB,j,1,1) = cmplx(0._dp, 0._dp, dp)
+        end do
+        do i = 1, N
+          uSZmH(i,1,1,j,1,iMB) = cmplx(0._dp, 0._dp, dp)
+        end do
+      end do
+!$OMP end do nowait
+
+      do iMA = 2, NA
+!$OMP do schedule(static)
+        do j = 1, N
+          do i = 1, N
+            uSZmH(i,iMA,iMB,j,1,1) = cmplx(0._dp, 0._dp, dp)
+          end do
+          do i = 1, N
+            uSZmH(i,iMA,1,j,1,iMB) = cmplx(0._dp, 0._dp, dp)
+          end do
+          do i = 1, N
+            uSZmH(i,1,iMB,j,iMA,1) = cmplx(0._dp, 0._dp, dp)
+          end do
+          do i = 1, N
+            uSZmH(i,1,1,j,iMA,iMB) = cmplx(0._dp, 0._dp, dp)
+          end do
+        end do
+!$OMP end do nowait
+      end do
+    end do
+
+!$OMP barrier
 
     ! Full weight
     w = 1._dp / real(NA*NB, dp)
@@ -3733,7 +4230,6 @@ contains
 
   !< Unfold a given matrix for only one un-fold point
   subroutine bloch_unfold_HS_manual_1(N, H, S, Z, kA, NA, uSZmH)
-!$  use omp_lib
     integer, intent(in) :: N, NA
     complex(dp), dimension(N,N,NA), intent(in) :: H, S
     complex(dp), intent(in) :: Z
@@ -3833,7 +4329,6 @@ contains
 
   !< Unfold a given matrix for only one un-fold point
   subroutine bloch_unfold_HS_manual_2(N, H, S, Z, kA, NA, kB, NB, uSZmH)
-!$  use omp_lib
     integer, intent(in) :: N, NA, NB
     complex(dp), dimension(N,N,NA,NB), intent(in) :: H, S
     complex(dp), intent(in) :: Z
@@ -3999,10 +4494,10 @@ contains
                 uSZmH(i,1,1,j,iMA,iMB) = uSZmH(i,1,1,j,iMA,iMB) + S(i,j,TMA,TMB) * cphZ - H(i,j,TMA,TMB) * cph
               end do
             end do
-            
+
             phA = phA * phA_step
           end do
-          
+
           phB = phB * phB_step
         end do
 
@@ -4068,20 +4563,21 @@ contains
     bk(1) = real(iA - 1, dp) / real(this%B(1), dp)
     bk(2) = real(iB - 1, dp) / real(this%B(2), dp)
     bk(3) = real(iC - 1, dp) / real(this%B(3), dp)
-    
+
   end function bloch_unfold_get_k
 
   pure function unfold_k2pi(bk, Nk, ik) result(k)
 #ifdef __BLOCH_UNFOLD_M_TEST
-    real(dp), parameter :: pi = 3.14159265358979323846264338327950288419716939937510_dp
+    real(dp), parameter :: pi2 = 6.28318530717958623199592693708837032318115234375_dp
 #else
     use units, only: Pi
+    real(dp), parameter :: pi2 = Pi * 2._dp
 #endif
     real(dp), intent(in) :: bk
     integer, intent(in) :: Nk, ik
     real(dp) :: k
     ! bk should already be in *local* coordinates
-    k = 2._dp * Pi * (bk + real(ik - 1, dp) / real(Nk, dp))
+    k = Pi2 * (bk + real(ik - 1, dp) / real(Nk, dp))
   end function unfold_k2pi
 
   subroutine bloch_unfold_openmp_init(nt, it)
@@ -4178,38 +4674,83 @@ contains
 
 #ifdef __BLOCH_UNFOLD_M_DEBUG
   subroutine print_matrix(B1,i1,j1,B2,i2,j2, init, out, column, c)
+!$  use omp_lib
     integer, intent(in) :: B1, i1, j1
     integer, intent(in), optional :: B2, i2, j2
-    logical, intent(in), optional :: init, out
+    character(len=*), optional :: init
+    logical, intent(in), optional :: out
     integer, intent(in), optional :: column
     character(len=1), intent(in), optional :: c
 
-    character(len=1), save, allocatable :: stars(:,:,:,:)
     character(len=1) :: lc
     character(len=64) :: fmt_v, fmt
 
     logical :: linit, lout
-    integer :: i, j, lcolumn
+    integer :: lcolumn
+
+    ! Quick return if not printing thread
+!$ if ( omp_get_thread_num() > 0 ) return
 
     lc = '*'
     if ( present(c) ) lc = c
-    linit = .false.
-    if ( present(init) ) linit = init
+    linit = present(init)
     lout = .false.
     if ( present(out) ) lout = out
 
     lcolumn = 1
     if ( present(column) ) lcolumn = column
     write(fmt, '("(t",i0,",a)")') lcolumn
-    if ( linit .and. allocated(stars) ) deallocate(stars)
 
     ! Clean
     if ( present(B2) ) then
-      ! A 2D structure
+      call print_2D()
+    else
+      call print_1D()
+    end if
+
+  contains
+
+    subroutine print_1d()
+      character(len=1), save, allocatable :: stars(:,:)
+      integer :: i
+
+      ! A 1D structure
       if ( linit ) then
-        allocate(stars(B1,B2,B1,B2))
+        write(*,'(/3a,tr1,i0)') "Debugging ", init, "_1 = ", B1
+        if ( allocated(stars) ) deallocate(stars)
+        allocate(stars(B1,B1))
         stars = ' '
       else if ( lout ) then
+        ! Print out matrix
+        write(*,fmt) repeat('-', B1 + 2)
+        do i = 1, B1
+          write(*,'(1000a)') '|', stars(i,:), '|'
+        end do
+        write(*,fmt) repeat('-', B1 + 2)
+      else
+        if ( stars(i1,j1) /= ' ' .and. &
+            (stars(i1,j1) /= '0' .and. lc /= '0') ) then
+          write(*,'(2a," -> ",a,4(tr1,i0))') "DOUBLE WRITING ",stars(i1,j1),lc,i1,j1
+        end if
+        stars(i1,j1) = lc
+      end if
+
+    end subroutine print_1d
+
+    subroutine print_2d()
+      character(len=1), save, allocatable :: stars(:,:,:,:)
+      integer :: i, j
+
+      ! A 2D structure
+      if ( linit ) then
+        write(*,'(/3a,2(tr1,i0))') "Debugging ", init, "_2 = ", B1, B2
+        if ( allocated(stars) ) deallocate(stars)
+        allocate(stars(B1,B2,B1,B2))
+        ! Ensure everything has nothing
+        stars = ' '
+
+      else if ( lout ) then
+
         ! Clarify format
         !"|",B2("|",B1A,"|"),"|"
         write(fmt_v,'("(t",i0,",''|'',",i0,"(''|'',",i0,"a),''|'',''|'')")') lcolumn, B2, B1
@@ -4224,34 +4765,18 @@ contains
           end do
           write(*,fmt) repeat('-', B2 * (B1 + 1) + 3)
         end do
+
       else
         if ( stars(i1,i2,j1,j2) /= ' ' .and. &
             (stars(i1,i2,j1,j2) /= '0' .and. lc /= '0') ) then
           write(*,'(2a," -> ",a,4(tr1,i0))') "DOUBLE WRITING ",stars(i1,i2,j1,j2),lc,i1,j1
         end if
         stars(i1,i2,j1,j2) = lc
+
       end if
 
-    else
-      ! A 1D structure
-      if ( linit ) then
-        allocate(stars(B1,B1,1,1))
-        stars = ' '
-      else if ( lout ) then
-        ! Print out matrix
-        write(*,fmt) repeat('-', B1 + 2)
-        do i = 1, B1
-          write(*,'(1000a)') '|', stars(i,:,1,1), '|'
-        end do
-        write(*,fmt) repeat('-', B1 + 2)
-      else
-        if ( stars(i1,j1,1,1) /= ' ' .and. &
-            (stars(i1,j1,1,1) /= '0' .and. lc /= '0') ) then
-          write(*,'(2a," -> ",a,4(tr1,i0))') "DOUBLE WRITING ",stars(i1,j1,1,1),lc,i1,j1
-        end if
-        stars(i1,j1,1,1) = lc
-      end if
-    end if
+    end subroutine print_2d
+
 
   end subroutine print_matrix
 #endif
@@ -4276,12 +4801,13 @@ program bloch_unfold
   integer :: N_itt
 
   ! arguments
+  integer :: single_B = 0
   logical :: run_B(3) = .true.
   logical :: benchmark(3) = .false.
   logical :: in_check = .false.
 
   ! Different methods and their timing
-  integer, parameter :: N_methods = 5
+  integer, parameter :: N_methods = 6
   logical :: run_methods(N_METHODS)
   real(dp) :: t(0:N_METHODS)
 
@@ -4316,7 +4842,7 @@ program bloch_unfold
     end if
   case ( OMP_SCHED_GUIDED )
     write(*,'(a,i0)') '* OpenMP runtime schedule GUIDED, chunks ',N
-  case ( OMP_SCHED_AUTO ) 
+  case ( OMP_SCHED_AUTO )
     write(*,'(a,i0)') '* OpenMP runtime schedule AUTO, chunks ',N
   case default
     write(*,'(a,i0)') '* OpenMP runtime schedule UNKNOWN, chunks ',N
@@ -4344,6 +4870,7 @@ program bloch_unfold
   run_methods(3) = .true. ! task
   run_methods(4) = .true. ! workshare
   run_methods(5) = .true. ! task-bad
+  run_methods(6) = .true. ! manual-simd
 
   if ( any(benchmark) ) then
     write(*,'(a,tr1,"[",2(i0,":"),i0,"]")') "Running N in", N_min, N_max, N_step
@@ -4409,6 +4936,10 @@ contains
         call get_command_argument(iarg, arg)
         read(arg, *) trun
         iarg = iarg + 1
+      case default
+        call get_command_argument(iarg, arg)
+        write(*,*) "Unknown option: ", arg
+        stop
       end select
 
     end do
@@ -4423,7 +4954,7 @@ contains
     t(:) = 0._dp
     open(iu, file="M.B1.timings", status="unknown", action="write")
     write(iu, '(a,a7,tr1,a7,10(tr1,a12))') '#', 'N', 'B1', 'simple [s]', 'do [s]', 'manual [s]', &
-        'task [s]', 'work [s]', 'task-bad [s]'
+        'task [s]', 'work [s]', 'task-bad [s]', 'man-simd [s]'
 
     B1 = 1
     do while ( B1 < 20 )
@@ -4501,6 +5032,16 @@ contains
           t(5) = (t1 - t0) / N_itt
         end if
 
+        if ( run_methods(6) ) then
+          t0 = my_time()
+          do i = 1, N_itt
+            call bu%unfold_M_manual_simd(k, N, zG, zG2)
+          end do
+          t1 = my_time()
+          call cmp(zG1, zG2, "man-simd")
+          t(6) = (t1 - t0) / N_itt
+        end if
+
         ! Write out data
         write(iu, '(2(tr1,i7),10(tr1,e12.7))') N, B1, t
 
@@ -4521,7 +5062,7 @@ contains
 
     t(:) = 0._dp
     open(iu, file="HS.B1.timings", status="unknown", action="write")
-    write(iu, '(a,a7,tr1,a7,10(tr1,a12))') '#', 'N', 'B1', 'simple [s]', 'do [s]', 'manual [s]', 'task [s]', 'work [s]'
+    write(iu, '(a,a7,tr1,a7,10(tr1,a12))') '#', 'N', 'B1', 'simple [s]', 'do [s]', 'manual [s]'
 
     B1 = 1
     do while ( B1 < 20 )
@@ -4572,7 +5113,7 @@ contains
         end if
 
         ! Write out data
-        write(iu, '(2(tr1,i7),10(tr1,e12.7))') N, B1, t
+        write(iu, '(2(tr1,i7),10(tr1,e12.7))') N, B1, t(:2)
 
         deallocate(zH, zS, zHS1, zHS2)
       end do
@@ -4591,7 +5132,7 @@ contains
 
     t(:) = 0._dp
     open(iu, file="HSG.B1.timings", status="unknown", action="write")
-    write(iu, '(a,a7,tr1,a7,10(tr1,a12))') '#', 'N', 'B1', 'simple [s]', 'do [s]', 'manual [s]', 'task [s]', 'share [s]'
+    write(iu, '(a,a7,tr1,a7,10(tr1,a12))') '#', 'N', 'B1', 'simple [s]', 'do [s]', 'manual [s]'
 
     B1 = 1
     do while ( B1 < 20 )
@@ -4650,7 +5191,7 @@ contains
         end if
 
         ! Write out data
-        write(iu, '(2(tr1,i7),10(tr1,e12.7))') N, B1, t
+        write(iu, '(2(tr1,i7),10(tr1,e12.7))') N, B1, t(:2)
 
         deallocate(zH, zS, zG, zHS1, zHS2, zG1, zG2)
       end do
@@ -4663,23 +5204,28 @@ contains
   end subroutine benchmark_HS_G_b1
 
   subroutine check_b1()
-    integer :: maxB(3)
+    integer, parameter :: max_N = 300
+    integer :: maxB(3), startB(3)
     write(*,'(a)') 'Checking rank(B) == 1 examples...'
+    startB(:) = 1
 #ifdef __BLOCH_UNFOLD_M_DEBUG
     maxB(:) = 3
 #else
     maxB(:) = 20
 #endif
 
-    B3 = 1
+    B3 = startB(3)
     do while ( B3 <= maxB(3) )
-      B2 = 1
+      B2 = startB(2)
       do while ( B2 <= maxB(2) )
-        B1 = 1
+        B1 = startB(1)
         do while ( B1 <= maxB(1) )
           write(*,'(tr2,i0)', advance='no') B1*B2*B3
           ! Just have an N different from B
-          N = B1 * B2 * B3 + 4
+          ! Just have an N different from B
+          N = max_N / B1
+          N = N / B2
+          N = N / B3
           call bu%initialize([B1,B2,B3])
           allocate(zH(N, N, bu%size()))
           allocate(zS(N, N, bu%size()))
@@ -4706,6 +5252,8 @@ contains
           call cmp(zG1, zG2, "M[work]")
           call bu%unfold_M_task_bad(k, N, zG, zG2)
           call cmp(zG1, zG2, "M[taskbad]")
+          call bu%unfold_M_manual_simd(k, N, zG, zG2)
+          call cmp(zG1, zG2, "M[man-simd]")
 
 
           ! HS_G
@@ -4754,7 +5302,7 @@ contains
 
     open(iu, file="M.B2.timings", status="unknown", action="write")
     write(iu, '(a,a7,2(tr1,a7),10(tr1,a12))') '#', 'N', 'B1', 'B2', 'simple [s]', 'do [s]', 'manual [s]', &
-        'task [s]', 'work [s]', 'taskbad [s]'
+        'task [s]', 'work [s]', 'taskbad [s]', 'man-simd [s]'
 
     B2 = 2
     do while ( B2 <= 9 )
@@ -4836,6 +5384,16 @@ contains
             t(5) = (t1 - t0) / N_itt
           end if
 
+          if ( run_methods(6) ) then
+            t0 = my_time()
+            do i = 1, N_itt
+              call bu%unfold_M_manual_simd(k, N, zG, zG2)
+            end do
+            t1 = my_time()
+            call cmp(zG1, zG2, "man-simd")
+            t(6) = (t1 - t0) / N_itt
+          end if
+
           ! Write out data
           write(iu, '(3(tr1,i7),10(tr1,e12.7))') N, B1, B2, t
 
@@ -4858,7 +5416,7 @@ contains
     write(*,*) 'Benchmarking rank(B) == 2 [HS] examples...'
 
     open(iu, file="HS.B2.timings", status="unknown", action="write")
-    write(iu, '(a,a7,2(tr1,a7),10(tr1,a12))') '#', 'N', 'B1', 'B2', 'simple [s]', 'do [s]', 'manual [s]', 'task [s]', 'work [s]'
+    write(iu, '(a,a7,2(tr1,a7),10(tr1,a12))') '#', 'N', 'B1', 'B2', 'simple [s]', 'do [s]', 'manual [s]'
 
     B2 = 2
     do while ( B2 <= 9 )
@@ -4913,7 +5471,7 @@ contains
           end if
 
           ! Write out data
-          write(iu, '(3(tr1,i7),10(tr1,e12.7))') N, B1, B2, t
+          write(iu, '(3(tr1,i7),10(tr1,e12.7))') N, B1, B2, t(:2)
 
           deallocate(zH, zS, zHS1, zHS2)
         end do
@@ -4934,7 +5492,7 @@ contains
     write(*,*) 'Benchmarking rank(B) == 2 [HS_G] examples...'
 
     open(iu, file="HSG.B2.timings", status="unknown", action="write")
-    write(iu, '(a,a7,2(tr1,a7),10(tr1,a12))') '#', 'N', 'B1', 'B2', 'simple [s]', 'do [s]', 'manual [s]', 'task [s]', 'work [s]'
+    write(iu, '(a,a7,2(tr1,a7),10(tr1,a12))') '#', 'N', 'B1', 'B2', 'simple [s]', 'do [s]', 'manual [s]'
 
     B2 = 2
     do while ( B2 <= 9 )
@@ -4997,7 +5555,7 @@ contains
           end if
 
           ! Write out data
-          write(iu, '(3(tr1,i7),10(tr1,e12.7))') N, B1, B2, t
+          write(iu, '(3(tr1,i7),10(tr1,e12.7))') N, B1, B2, t(:2)
 
           deallocate(zH, zS, zG, zHS1, zHS2, zG1, zG2)
         end do
@@ -5012,28 +5570,32 @@ contains
   end subroutine benchmark_HS_G_b2
 
   subroutine check_b2()
-    integer :: maxB(3)
+    integer, parameter :: max_N = 1000
+    integer :: maxB(3), startB(3)
     write(*,'(a)') 'Checking rank(B) == 2 examples...'
+    startB(:) = 1
 #ifdef __BLOCH_UNFOLD_M_DEBUG
     maxB(:) = 3
 #else
     maxB(:) = 9
 #endif
 
-    B3 = 1
+    B3 = startB(3)
     do while ( B3 <= maxB(3) )
-      B2 = 1
+      B2 = startB(2)
       do while ( B2 <= maxB(2) )
         if ( B2 == 1 .or. B3 == 1 ) then
           B1 = 2
         else
-          B1 = 1
+          B1 = startB(1)
         end if
         do while ( B1 <= maxB(1) .and. (B2 > 1 .or. B3 > 1) )
           write(*,'(tr2,"[",2(i0,","),i0,"]")', advance='no') B1,B2,B3
 
           ! Just have an N different from B
-          N = B1 * B2 * B3 + 4
+          N = max_N / B1
+          N = N / B2
+          N = N / B3
           call bu%initialize([B1,B2,B3])
           allocate(zH(N, N, bu%size()))
           allocate(zS(N, N, bu%size()))
@@ -5060,7 +5622,8 @@ contains
           call cmp(zG1, zG2, "M[workshare]")
           call bu%unfold_M_task_bad(k, N, zG, zG2)
           call cmp(zG1, zG2, "M[taskbad]")
-
+          call bu%unfold_M_manual_simd(k, N, zG, zG2)
+          call cmp(zG1, zG2, "M[man-simd]")
 
           ! HS_G
           call bu%unfold_HS_G_original(k, N, zH, zS, zG, Z, zHS1, zG1)
