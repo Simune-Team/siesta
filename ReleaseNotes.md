@@ -1,8 +1,12 @@
-An overview changelog for Siesta.
+# Release Notes for Siesta
+
+This file contains, in an expanded ChangeLog style, notes
+regarding the evolution of the Siesta code. The changes are
+grouped under headings representing past (and upcoming) releases.
 
 # 4.1.X versions
 
-## 4.1 (2020-   )   FUTURE Feature release
+## 4.1 (2021-   )   FUTURE Feature release
 
 ### Backward compatibility issues
 
@@ -446,9 +450,12 @@ Please see the Manual for full details
 
 # 4.0.X versions
 
-## 4.0.3 (2020- ) FUTURE Bug fix release
+
+## 4.0.3 (2021- ) FUTURE Bug fix release
 
 ### Changes
+
+* Remove some more memory leaks when using k-point sampling.
 
 * Fix for honoring the 'gen_zval' field in psf files
 
