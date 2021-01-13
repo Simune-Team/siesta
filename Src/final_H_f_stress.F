@@ -289,7 +289,7 @@
         if ( idyn == 6 ) then
           call cdf_save_fc(trim(slabel)//'.nc', istep)
           if ( istep == 0 ) then
-            dic_save = ('fa'.kv.1)//('stress'.kv.1)
+            dic_save = ('fa'.kv.1)//('stress'.kv.1)//('Ef'.kv.1)
             if ( savehs .or. TS_HS_save )
      &          dic_save = dic_save//('H'.kv.1)
             call cdf_save_state(trim(slabel)//'.nc',dic_save)
@@ -298,7 +298,7 @@
         else if ( idyn /=0 .or. nmove /= 0 ) then
           !call cdf_save_md(trim(slabel)//'.nc')
         else
-          dic_save = ('fa'.kv.1)//('stress'.kv.1)
+          dic_save = ('fa'.kv.1)//('stress'.kv.1)//('Ef'.kv.1)
           if ( savehs .or. TS_HS_save ) dic_save = dic_save //('H'.kv.1)
           call cdf_save_state(trim(slabel)//'.nc',dic_save)
           call delete(dic_save)
