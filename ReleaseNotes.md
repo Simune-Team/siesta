@@ -26,6 +26,12 @@ grouped under headings representing past (and upcoming) releases.
 
 ### Changes
 
+* Removed memory leaks for k-point samplings in MD runs, #58
+
+* If compiling with Gfortran 10, there will be lots of errors, please see manual
+
+* Changed LDA+U to DFT+U to clarify its usage is not restricted to LDA
+
 * Fixed regression in OMM routines due to resetting of qtots
   (introduced when fixing the NC/SOC occupation problem)
 
@@ -52,7 +58,8 @@ grouped under headings representing past (and upcoming) releases.
 * Document the setting of 'neigwanted' and print them if the diag solver allows it.
 
 * Fix computation of NC/SOC occupations when the (optional) number of
-  eigenstates handled ('neigwanted') is less than the number of orbitals.
+  eigenstates handled ('neigwanted') is less than the number of orbitals, and
+  enabled parallel k calculations !9
 
 * Fix reading of wave-functions in Util/COOP/fat.f90
 
