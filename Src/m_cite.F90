@@ -406,14 +406,17 @@ contains
   end subroutine write_citation
 
   subroutine announce_citations()
+    use version_info, only: version_str
     type(citation) :: cit
     integer :: ID
 
     ! Notify the user about which citations needs to be taken care of
     write(*,'(/,3a)')'cite: Please see "', trim(cite_file), &
         '" for an exhaustive BiBTeX file.'
-    write(*,'(a)') 'cite: This calculation has made use of the following articles.'
-    write(*,'(a)') 'cite: Articles are encouraged to be cited in a published work.'
+    write(*,'(2a)') 'cite: Please clearly indicate Siesta version in published work: ', &
+        trim(version_str)
+    write(*,'(a)') 'cite: This calculation has made use of the following articles'
+    write(*,'(a)') 'cite: which are encouraged to be cited in a published work.'
 
     do ID = 1, N_citations
       if ( used(ID) == 1 ) then ! has been used

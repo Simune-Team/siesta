@@ -556,7 +556,7 @@ contains
     use mpi_siesta
 #endif
     use units, only: Pi, eV, Ang
-    use intrinsic_missing, only: MODP, vnorm
+    use intrinsic_missing, only: MODULOP, vnorm
 
     real(dp), intent(in) :: cell(3,3)
     integer, intent(in) :: na_u, isa(na_u)
@@ -626,13 +626,14 @@ contains
     if ( dip_vacuum%use_xyz ) then
       ! Find vacuum position
       rc = dot_product(dip_vacuum%xyz, rcell(:,idir))
+      rc = modulo(rc, 1._dp)
       if ( xmin <= rc .and. rc <= xmax ) then
         call die("dipole_potential: Vacuum point lies in atomic range.")
       end if
     else
       rc = (xmin + xmax) / 2 - 0.5_dp
     end if
-    i0 = MODP(nint(rc*ntm(idir)) + 10 * ntm(idir), ntm(idir))
+    i0 = MODULOP(nint(rc*ntm(idir)), ntm(idir))
 
     ! Initialize calculated field
     ! We will finally convert to dipole
@@ -702,7 +703,7 @@ contains
     deallocate(E)
 #endif
 
-    ! Now perform average calcualtion of field along idir
+    ! Now perform average calculation of field along idir
     ! This is a 3-point stencil
     if ( Node == 0 ) then
 
