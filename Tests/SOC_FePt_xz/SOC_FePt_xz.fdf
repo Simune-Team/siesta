@@ -42,24 +42,25 @@ LatticeConstant  1.0 Ang
    1.896000000   0.000000000    0.000000000    2
 %endblock AtomicCoordinatesAndAtomicSpecies
 
+# Original test had: 20 41 41
 %block kgrid_Monkhorst_Pack
-  20   0   0    0.5
-   0  41   0    0.0
-   0   0  41    0.0
+   8   0   0    0.5
+   0  12   0    0.0
+   0   0  12    0.0
 %endblock kgrid_Monkhorst_Pack
 
 XC.functional           GGA
 XC.authors              PBE
 
-MeshCutoff              2200. Ry
+# Original test had: 2200 Ry
+MeshCutoff              350. Ry
 
 SolutionMethod          diagon
 
 ElectronicTemperature   50 meV
 
-DM.Tolerance            0.2E-4
-
-MaxSCFIterations        1000
+MaxSCFIterations        15
+SCF.MustConverge false
 
 DM.MixingWeight         0.01
 DM.NumberPulay          6
