@@ -1,17 +1,18 @@
-Siesta Version  : siesta-4.1-1033
-Architecture    : x86_64-linux-n-62-18-18
-Compiler version: GNU Fortran (GCC) 7.3.0
+Siesta Version  : v4.1-b4-351
+Architecture    : x86_64-linux-n-62-26-19
+Compiler version: GNU Fortran (GCC) 9.3.0
 Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
-Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PP flags        : -I/dtu/sw/dcc/SL73/2020-aug/generic/build-tools/1.0/include -I/dtu/sw/dcc/SL773/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/numactl/2.0.12/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/libxml2/2.9.10/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hwloc/2.2.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/knem/1.1.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/ucx/1.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/openmpi/4.0.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/szip/2.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hdf5/1.12.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/pnetcdf/1.12.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gen-zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/openssl/1.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/libssh2/1.8.2/include -I/dtu/sw/dcc/SL73/2020-aug/generic/curl/7.65.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/netcdf/4.7.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/fftw/3.3.8/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/parmetis/4.0.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scalapack/2.1.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/lapack/3.9.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/blis/0.7.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scotch/6.0.9/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/mumps/5.3.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include -DSIESTA__ELPA -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DTS_NOCHECKS -DSIESTA__METIS -DSIESTA__MUMPS -DSIESTA__MRRR -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include/elpa
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -llapack -lblis  -L/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -Wl,-rpath=/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
+Lua support
 
 * Running on 2 nodes in parallel
->> Start of run:   5-NOV-2018   9:19:10
+>> Start of run:  22-JAN-2021  21:01:21
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -45,7 +46,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 Si                   Z=  14    Mass=  28.090        Charge= 0.17977+309
 Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (3s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -55,7 +56,7 @@ L=0  Nsemic=0  Cnfigmx=3
                 rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (3p)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -75,7 +76,7 @@ atom: Called for Si                    (Z =  14)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    4.00000
+Valence charge for ps generation:    4.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -186,7 +187,7 @@ siesta:
 redata: Spin configuration                          = none
 redata: Number of spin components                   = 1
 redata: Time-Reversal Symmetry                      = T
-redata: Spin-spiral                                 = F
+redata: Spin spiral                                 = F
 redata: Long output                                 =   T
 redata: Number of Atomic Species                    =        1
 redata: Charge density info will appear in .RHO file
@@ -202,7 +203,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: New DM Mixing Weight                        =     0.2500
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
@@ -289,7 +289,6 @@ superc: Number of atoms, orbitals, and projectors:    250   1000   2250
 ts: **************************************************************
 ts: Save H and S matrices                           =    F
 ts: Save DM and EDM matrices                        =    F
-ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
 
@@ -359,11 +358,10 @@ siesta: Ena     =       115.502488
 siesta: Ekin    =       115.572468
 siesta: Enl     =        29.933002
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =        -8.119944
 siesta: DUscf   =         1.765371
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =       -68.547556
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -376,7 +374,7 @@ siesta: FreeEng =      -194.696296
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
    scf:    1     -173.640155     -194.696296     -194.696296  1.452350 -2.698949  1.168372
-timer: Routine,Calls,Time,% = IterSCF        1       0.060  18.63
+timer: Routine,Calls,Time,% = IterSCF        1       0.046  17.91
    scf:    2     -194.696296     -194.696296     -194.696296  0.000000 -2.361454  0.876279
    scf:    3     -194.696296     -194.696296     -194.696296  0.000000 -1.348968  0.000000
 
@@ -403,7 +401,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):     -515.35     -515.35     -515.35       -0.00       -0.00       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -515.35     -515.35     -515.35       -0.00       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -181.8218
 Target enthalpy (eV/cell)     -194.6963
 
@@ -515,7 +513,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795796    constrained
 
-Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00       23.80       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.03     -518.41     -518.41       23.80       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -614,7 +612,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795797    constrained
 
-Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00      -23.80       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.03     -518.41     -518.41      -23.80       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -726,7 +724,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795796    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00       23.80
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.03     -518.41       -0.00       23.80       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -825,7 +823,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795797    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00      -23.80
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.03     -518.41       -0.00      -23.80       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -937,7 +935,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795796    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03       23.80       -0.00       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.41     -518.03       -0.00       -0.00       23.80
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1036,7 +1034,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795797    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03      -23.80       -0.00       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.41     -518.03       -0.00       -0.00      -23.80
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1148,7 +1146,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795797    constrained
 
-Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00      -23.80       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.03     -518.41     -518.41      -23.80       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1247,7 +1245,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795796    constrained
 
-Stress-tensor-Voigt (kbar):     -518.03     -518.41     -518.41       -0.00       23.80       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.03     -518.41     -518.41       23.80       -0.00       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1359,7 +1357,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795797    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00      -23.80
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.03     -518.41       -0.00      -23.80       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1458,7 +1456,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795796    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.03     -518.41       -0.00       -0.00       23.80
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.03     -518.41       -0.00       23.80       -0.00
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1570,7 +1568,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795797    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03      -23.80       -0.00       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.41     -518.03       -0.00       -0.00      -23.80
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1669,7 +1667,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.795796    constrained
 
-Stress-tensor-Voigt (kbar):     -518.41     -518.41     -518.03       23.80       -0.00       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):     -518.41     -518.41     -518.03       -0.00       -0.00       23.80
 (Free)E + p*V (eV/cell)     -181.7416
 Target enthalpy (eV/cell)     -194.6893
 
@@ -1697,8 +1695,8 @@ obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr):
 obc:   21.767212   21.767212    7.255862
 
 siesta: Eigenvalues (eV):
-  ik is    eps
-   1  1 -15.24  -2.84  -2.71  -2.58  -0.33  -0.23  -0.12   0.52
+  ik is       eps
+   1  1  -15.2439   -2.8414   -2.7070   -2.5760   -0.3292   -0.2290   -0.1207    0.5194
 siesta: Fermi energy =      -1.349113 eV
 
 siesta: Program's energy decomposition (eV):
@@ -1708,11 +1706,10 @@ siesta: Ena     =       115.501633
 siesta: Ekin    =       115.577679
 siesta: Enl     =        29.935837
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =        -8.120435
 siesta: DUscf   =         1.765883
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =       -68.547791
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -1727,10 +1724,9 @@ siesta: Final energy (eV):
 siesta:  Band Struct. =     -46.736530
 siesta:       Kinetic =     115.577679
 siesta:       Hartree =      23.678106
-siesta:       Eldau   =       0.000000
+siesta:       Edftu   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:       Enegf   =       0.000000
 siesta:   Exch.-corr. =     -68.547791
 siesta:  Ion-electron =    -120.258465
 siesta:       Ion-ion =    -145.138846
@@ -1755,8 +1751,16 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00352315          0.00362201  Ry/Bohr**3
 siesta:           0.32348384          0.33256093  eV/Ang**3
-siesta:         518.28385970        532.82711011  kBar
+siesta:         518.28385971        532.82711017  kBar
 (Free)E+ p_basis*V_orbitals  =        -194.112618
 (Free)Eharris+ p_basis*V_orbitals  =        -194.112618
->> End of run:   5-NOV-2018   9:19:16
+
+cite: Please see "born.bib" for an exhaustive BiBTeX file.
+cite: Please clearly indicate Siesta version in published work: v4.1-b4-351
+cite: This calculation has made use of the following articles
+cite: which are encouraged to be cited in a published work.
+        Primary SIESTA paper
+          DOI: www.doi.org/10.1088/0953-8984/14/11/302
+
+>> End of run:  22-JAN-2021  21:01:26
 Job completed

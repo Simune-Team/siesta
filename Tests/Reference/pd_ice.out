@@ -1,17 +1,18 @@
-Siesta Version  : siesta-4.1-1033
-Architecture    : x86_64-linux-n-62-18-18
-Compiler version: GNU Fortran (GCC) 7.3.0
+Siesta Version  : v4.1-b4-351
+Architecture    : x86_64-linux-n-62-26-19
+Compiler version: GNU Fortran (GCC) 9.3.0
 Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
-Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PP flags        : -I/dtu/sw/dcc/SL73/2020-aug/generic/build-tools/1.0/include -I/dtu/sw/dcc/SL773/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/numactl/2.0.12/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/libxml2/2.9.10/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hwloc/2.2.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/knem/1.1.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/ucx/1.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/openmpi/4.0.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/szip/2.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hdf5/1.12.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/pnetcdf/1.12.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gen-zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/openssl/1.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/libssh2/1.8.2/include -I/dtu/sw/dcc/SL73/2020-aug/generic/curl/7.65.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/netcdf/4.7.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/fftw/3.3.8/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/parmetis/4.0.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scalapack/2.1.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/lapack/3.9.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/blis/0.7.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scotch/6.0.9/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/mumps/5.3.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include -DSIESTA__ELPA -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DTS_NOCHECKS -DSIESTA__METIS -DSIESTA__MUMPS -DSIESTA__MRRR -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include/elpa
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -llapack -lblis  -L/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -Wl,-rpath=/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
+Lua support
 
 * Running on 8 nodes in parallel
->> Start of run:   5-NOV-2018  10:58:43
+>> Start of run:  22-JAN-2021  23:17:27
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -71,7 +72,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 Pd_wc                Z=  46    Mass=  106.42        Charge=-0.91860E-01
 Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=5
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (5s)
             splnorm:   0.15000    
                vcte:    81.710    
                rinn:    6.4220    
@@ -81,7 +82,7 @@ L=0  Nsemic=0  Cnfigmx=5
                 rcs:    8.3137      7.1304    
             lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=5
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (5p)
             splnorm:   0.15000    
                vcte:    153.67    
                rinn:    6.0555    
@@ -91,7 +92,7 @@ L=1  Nsemic=0  Cnfigmx=5
                 rcs:    8.4177    
             lambdas:    1.0000    
 L=2  Nsemic=0  Cnfigmx=4
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (4d)
             splnorm:   0.15000    
                vcte:    32.819    
                rinn:    3.5076    
@@ -112,7 +113,7 @@ atom: Called for Pd_wc                 (Z =  46)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM 3.2.2 Troullier-Martins                       
-Total valence charge:   10.00000
+Valence charge for ps generation:   10.00000
 
 read_vps: Pseudopotential includes a core correction:
 read_vps: Pseudo-core for xc-correction
@@ -220,7 +221,7 @@ atom: _________________________________________________________________________
 O_wc                 Z=   8    Mass=  16.000        Charge=-0.24233    
 Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (2s)
             splnorm:   0.15000    
                vcte:    23.361    
                rinn:    3.3972    
@@ -230,7 +231,7 @@ L=0  Nsemic=0  Cnfigmx=2
                 rcs:    4.5077      2.6407    
             lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (2p)
             splnorm:   0.15000    
                vcte:    2.7833    
                rinn:    5.1425    
@@ -240,7 +241,7 @@ L=1  Nsemic=0  Cnfigmx=2
                 rcs:    6.1500      2.5936    
             lambdas:    1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (3d)
             splnorm:   0.15000    
                vcte:    63.982    
                rinn:   0.16104    
@@ -261,7 +262,7 @@ atom: Called for O_wc                  (Z =   8)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM 3.2.2 Troullier-Martins                       
-Total valence charge:    6.00000
+Valence charge for ps generation:    6.00000
 
 read_vps: Pseudopotential includes a core correction:
 read_vps: Pseudo-core for xc-correction
@@ -369,7 +370,7 @@ atom: _________________________________________________________________________
 H.pbe                Z=   1    Mass=  1.0100        Charge= 0.46527    
 Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=1
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (1s)
             splnorm:   0.15000    
                vcte:    99.931    
                rinn:    2.5993    
@@ -379,7 +380,7 @@ L=0  Nsemic=0  Cnfigmx=1
                 rcs:    4.2036      1.8446    
             lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2p)
             splnorm:   0.15000    
                vcte:    24.565    
                rinn:    2.2023    
@@ -399,7 +400,7 @@ atom: Called for H.pbe                 (Z =   1)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM 3.2.2 Troullier-Martins                       
-Total valence charge:    1.00000
+Valence charge for ps generation:    1.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: GGA Wu-Cohen
@@ -559,7 +560,7 @@ siesta:
 redata: Spin configuration                          = none
 redata: Number of spin components                   = 1
 redata: Time-Reversal Symmetry                      = T
-redata: Spin-spiral                                 = F
+redata: Spin spiral                                 = F
 redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        3
 redata: Charge density info will appear in .RHO file
@@ -575,7 +576,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: New DM Mixing Weight                        =     0.0350
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
@@ -661,7 +661,6 @@ siesta: Constraint (9): pos
 ts: **************************************************************
 ts: Save H and S matrices                           =    F
 ts: Save DM and EDM matrices                        =    F
-ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
 
@@ -740,17 +739,16 @@ PhiOnMesh: nlist on node 0 =               756087
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -1105.971020
+siesta: Ebs     =     -1105.971043
 siesta: Eions   =     16510.412427
 siesta: Ena     =      1096.509986
-siesta: Ekin    =     10831.901169
-siesta: Enl     =     -4875.651557
+siesta: Ekin    =     10831.901168
+siesta: Enl     =     -4875.651556
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
-siesta: DEna    =      -247.266119
+siesta: Edftu   =         0.000000
+siesta: DEna    =      -247.266118
 siesta: DUscf   =        32.485189
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =     -6918.689416
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -763,47 +761,47 @@ siesta: FreeEng =    -16591.219251
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
    scf:    1   -16579.625054   -16591.123173   -16591.219251  0.976697 -7.577080 16.079668
-timer: Routine,Calls,Time,% = IterSCF        1       8.671  27.02
-   scf:    2   -16595.608472   -16593.640235   -16593.732528  0.046159 -7.455335 14.240568
-   scf:    3   -16592.547562   -16593.109355   -16593.201395  0.007044 -7.480448 14.600986
-   scf:    4   -16569.941912   -16587.687755   -16587.778543  0.157958 -7.016601 23.490508
-   scf:    5   -16606.900360   -16606.422150   -16606.508196  0.332705 -6.156993  2.503158
+timer: Routine,Calls,Time,% = IterSCF        1       5.746  22.11
+   scf:    2   -16595.608472   -16593.640235   -16593.732528  0.046159 -7.455335 14.240567
+   scf:    3   -16592.547563   -16593.109355   -16593.201396  0.007044 -7.480448 14.600985
+   scf:    4   -16569.941920   -16587.687762   -16587.778550  0.157958 -7.016601 23.490502
+   scf:    5   -16606.900356   -16606.422150   -16606.508196  0.332705 -6.156993  2.503158
    scf:    6   -16606.635158   -16606.598346   -16606.686096  0.026352 -6.202954  1.251970
    scf:    7   -16606.810449   -16606.745931   -16606.834590  0.044422 -6.113445  1.763567
-   scf:    8   -16606.673491   -16606.733721   -16606.823617  0.031113 -6.050009  2.223531
-   scf:    9   -16606.871687   -16606.811005   -16606.902033  0.010034 -6.051815  1.552295
-   scf:   10   -16606.888988   -16606.864902   -16606.958145  0.016816 -6.017775  0.570943
-   scf:   11   -16606.860515   -16606.864155   -16606.957694  0.006587 -5.985258  0.573952
+   scf:    8   -16606.673491   -16606.733720   -16606.823617  0.031113 -6.050009  2.223531
+   scf:    9   -16606.871687   -16606.811004   -16606.902032  0.010034 -6.051815  1.552294
+   scf:   10   -16606.888988   -16606.864901   -16606.958145  0.016816 -6.017775  0.570943
+   scf:   11   -16606.860515   -16606.864155   -16606.957693  0.006587 -5.985258  0.573952
    scf:   12   -16606.874508   -16606.872889   -16606.967650  0.007425 -5.963089  0.141287
    scf:   13   -16606.868209   -16606.872304   -16606.967666  0.003691 -5.943536  0.208912
-   scf:   14   -16606.873686   -16606.873769   -16606.969062  0.001282 -5.951753  0.068996
-   scf:   15   -16606.874006   -16606.873918   -16606.969350  0.001318 -5.949566  0.057788
+   scf:   14   -16606.873685   -16606.873769   -16606.969062  0.001282 -5.951754  0.068996
+   scf:   15   -16606.874005   -16606.873918   -16606.969350  0.001318 -5.949566  0.057788
    scf:   16   -16606.873776   -16606.873871   -16606.969508  0.001543 -5.947517  0.059801
    scf:   17   -16606.873825   -16606.873851   -16606.969562  0.000573 -5.947207  0.048322
-   scf:   18   -16606.873716   -16606.873793   -16606.969658  0.001287 -5.947968  0.027382
+   scf:   18   -16606.873716   -16606.873793   -16606.969657  0.001287 -5.947968  0.027382
    scf:   19   -16606.873829   -16606.873821   -16606.969714  0.000773 -5.948925  0.013115
-   scf:   20   -16606.873846   -16606.873835   -16606.969725  0.000201 -5.949451  0.009304
-   scf:   21   -16606.873895   -16606.873868   -16606.969740  0.000439 -5.951286  0.007437
-   scf:   22   -16606.873871   -16606.873870   -16606.969741  0.000082 -5.951481  0.007342
+   scf:   20   -16606.873846   -16606.873834   -16606.969725  0.000201 -5.949451  0.009304
+   scf:   21   -16606.873895   -16606.873867   -16606.969739  0.000439 -5.951286  0.007437
+   scf:   22   -16606.873871   -16606.873869   -16606.969741  0.000082 -5.951481  0.007342
    scf:   23   -16606.873817   -16606.873844   -16606.969745  0.000291 -5.951597  0.003787
    scf:   24   -16606.873832   -16606.873838   -16606.969746  0.000084 -5.951603  0.003995
    scf:   25   -16606.873816   -16606.873827   -16606.969747  0.000137 -5.951590  0.002682
-   scf:   26   -16606.873807   -16606.873817   -16606.969748  0.000140 -5.951631  0.001762
+   scf:   26   -16606.873807   -16606.873817   -16606.969747  0.000140 -5.951631  0.001762
    scf:   27   -16606.873812   -16606.873814   -16606.969748  0.000052 -5.951692  0.002619
    scf:   28   -16606.873810   -16606.873812   -16606.969748  0.000051 -5.951757  0.001978
-   scf:   29   -16606.873808   -16606.873810   -16606.969748  0.000051 -5.951856  0.002121
+   scf:   29   -16606.873807   -16606.873810   -16606.969748  0.000051 -5.951856  0.002121
    scf:   30   -16606.873806   -16606.873808   -16606.969748  0.000035 -5.951919  0.001886
-   scf:   31   -16606.873803   -16606.873805   -16606.969748  0.000033 -5.951916  0.001856
+   scf:   31   -16606.873802   -16606.873805   -16606.969748  0.000033 -5.951916  0.001856
    scf:   32   -16606.873804   -16606.873805   -16606.969748  0.000017 -5.951901  0.001586
    scf:   33   -16606.873805   -16606.873805   -16606.969748  0.000011 -5.951885  0.001291
    scf:   34   -16606.873805   -16606.873805   -16606.969748  0.000003 -5.951888  0.001275
    scf:   35   -16606.873803   -16606.873804   -16606.969748  0.000022 -5.951906  0.001358
-   scf:   36   -16606.873805   -16606.873805   -16606.969748  0.000011 -5.951911  0.001211
-   scf:   37   -16606.873811   -16606.873808   -16606.969748  0.000029 -5.951934  0.000866
+   scf:   36   -16606.873805   -16606.873804   -16606.969748  0.000011 -5.951911  0.001211
+   scf:   37   -16606.873811   -16606.873807   -16606.969748  0.000029 -5.951934  0.000866
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|         :     0.0000287370
-max |H_out - H_in|      (eV) :     0.0008663704
+max |DM_out - DM_in|         :     0.0000287392
+max |H_out - H_in|      (eV) :     0.0008663759
 SCF cycle converged after 37 iterations
 
 Using DM_out to compute the final energy and forces
@@ -822,22 +820,21 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.450462    constrained
 
-Stress-tensor-Voigt (kbar):       15.43       15.73       -1.08       -0.04       -0.64       -0.00
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):       15.43       15.73       -1.08       -0.64       -0.00       -0.04
 (Free)E + p*V (eV/cell)   -16610.6198
 Target enthalpy (eV/cell)   -16606.9697
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -1494.877806
+siesta: Ebs     =     -1494.877812
 siesta: Eions   =     16510.412427
 siesta: Ena     =      1096.509986
-siesta: Ekin    =     10439.557625
+siesta: Ekin    =     10439.557626
 siesta: Enl     =     -4693.303851
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =       -91.784955
 siesta: DUscf   =         5.787768
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =     -6853.227955
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -845,27 +842,26 @@ siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =    -16606.873811
-siesta: Etot    =    -16606.873808
+siesta: Etot    =    -16606.873807
 siesta: FreeEng =    -16606.969748
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =   -1494.877806
-siesta:       Kinetic =   10439.557625
-siesta:       Hartree =   96844.556536
-siesta:       Eldau   =       0.000000
+siesta:  Band Struct. =   -1494.877812
+siesta:       Kinetic =   10439.557626
+siesta:       Hartree =   96844.556529
+siesta:       Edftu   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:       Enegf   =       0.000000
 siesta:   Exch.-corr. =   -6853.227955
-siesta:  Ion-electron = -202154.854560
+siesta:  Ion-electron = -202154.854554
 siesta:       Ion-ion =   85117.094546
 siesta:       Ekinion =       0.000000
-siesta:         Total =  -16606.873808
+siesta:         Total =  -16606.873807
 siesta:         Fermi =      -5.951934
 
 siesta: Atomic forces (eV/Ang):
 siesta:      1    0.192453    0.003631   -0.107939
-siesta:      2   -0.109606    0.002251   -0.109078
+siesta:      2   -0.109606    0.002251   -0.109079
 siesta:      3   -0.105789   -0.005167   -0.109100
 siesta:      4    0.015740   -0.011448    0.124821
 siesta:      5    0.013903    0.010103    0.083907
@@ -923,12 +919,24 @@ siesta: Cell volume =        583.283500 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00006816         -0.00006640  Ry/Bohr**3
-siesta:          -0.00625778         -0.00609675  eV/Ang**3
-siesta:         -10.02617109         -9.76817044  kBar
-(Free)E+ p_basis*V_orbitals  =      -16584.675884
-(Free)Eharris+ p_basis*V_orbitals  =      -16584.675887
+siesta:          -0.00625777         -0.00609675  eV/Ang**3
+siesta:         -10.02616883         -9.76816911  kBar
+(Free)E+ p_basis*V_orbitals  =      -16584.675883
+(Free)Eharris+ p_basis*V_orbitals  =      -16584.675886
 
 siesta: Electric dipole (a.u.)  =    0.000000    0.000000    0.172466
 siesta: Electric dipole (Debye) =    0.000000    0.000000    0.438364
->> End of run:   5-NOV-2018  11:03:07
+
+cite: Please see "pd_ice.bib" for an exhaustive BiBTeX file.
+cite: Please clearly indicate Siesta version in published work: v4.1-b4-351
+cite: This calculation has made use of the following articles
+cite: which are encouraged to be cited in a published work.
+        Primary SIESTA paper
+          DOI: www.doi.org/10.1088/0953-8984/14/11/302
+
+>> End of run:  22-JAN-2021  23:20:42
 Job completed
+[1611354042.828314] [n-62-21-35:20438:0]          mpool.c:42   UCX  WARN  object 0x4031540 was not returned to mpool ucp_requests
+[1611354042.834452] [n-62-21-35:20444:0]          mpool.c:42   UCX  WARN  object 0x36c1380 was not returned to mpool ucp_requests
+[1611354042.834811] [n-62-21-35:20442:0]          mpool.c:42   UCX  WARN  object 0x307f700 was not returned to mpool ucp_requests
+[1611354042.836305] [n-62-21-35:20447:0]          mpool.c:42   UCX  WARN  object 0x4533700 was not returned to mpool ucp_requests

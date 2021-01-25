@@ -1,17 +1,18 @@
-Siesta Version  : siesta-4.1-1033
-Architecture    : x86_64-linux-n-62-18-18
-Compiler version: GNU Fortran (GCC) 7.3.0
+Siesta Version  : v4.1-b4-351
+Architecture    : x86_64-linux-n-62-26-19
+Compiler version: GNU Fortran (GCC) 9.3.0
 Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
-Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PP flags        : -I/dtu/sw/dcc/SL73/2020-aug/generic/build-tools/1.0/include -I/dtu/sw/dcc/SL773/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/numactl/2.0.12/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/libxml2/2.9.10/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hwloc/2.2.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/knem/1.1.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/ucx/1.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/openmpi/4.0.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/szip/2.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hdf5/1.12.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/pnetcdf/1.12.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gen-zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/openssl/1.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/libssh2/1.8.2/include -I/dtu/sw/dcc/SL73/2020-aug/generic/curl/7.65.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/netcdf/4.7.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/fftw/3.3.8/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/parmetis/4.0.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scalapack/2.1.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/lapack/3.9.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/blis/0.7.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scotch/6.0.9/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/mumps/5.3.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include -DSIESTA__ELPA -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DTS_NOCHECKS -DSIESTA__METIS -DSIESTA__MUMPS -DSIESTA__MRRR -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include/elpa
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -llapack -lblis  -L/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -Wl,-rpath=/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
+Lua support
 
 * Running on 8 nodes in parallel
->> Start of run:   5-NOV-2018  10:52:34
+>> Start of run:  22-JAN-2021  23:13:02
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -68,7 +69,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 Mg                   Z=  12    Mass=  24.310        Charge= 0.17977+309
 Lmxo=0 Lmxkb= 1    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (3s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -87,7 +88,7 @@ atom: Called for Mg                    (Z =  12)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    2.00000
+Valence charge for ps generation:    2.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -144,7 +145,7 @@ atom: _________________________________________________________________________
 C                    Z=   6    Mass=  12.010        Charge= 0.17977+309
 Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -154,7 +155,7 @@ L=0  Nsemic=0  Cnfigmx=2
                 rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2p)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -174,7 +175,7 @@ atom: Called for C                     (Z =   6)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    4.00000
+Valence charge for ps generation:    4.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -248,7 +249,7 @@ atom: _________________________________________________________________________
 O                    Z=   8    Mass=  16.000        Charge= 0.17977+309
 Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -258,7 +259,7 @@ L=0  Nsemic=0  Cnfigmx=2
                 rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2p)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -278,7 +279,7 @@ atom: Called for O                     (Z =   8)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    6.00000
+Valence charge for ps generation:    6.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -412,7 +413,7 @@ siesta:
 redata: Spin configuration                          = none
 redata: Number of spin components                   = 1
 redata: Time-Reversal Symmetry                      = T
-redata: Spin-spiral                                 = F
+redata: Spin spiral                                 = F
 redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        3
 redata: Charge density info will appear in .RHO file
@@ -428,7 +429,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: New DM Mixing Weight                        =     0.2500
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
@@ -512,7 +512,6 @@ diag: Memory factor                                 =  1.0000
 ts: **************************************************************
 ts: Save H and S matrices                           =    F
 ts: Save DM and EDM matrices                        =    F
-ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
 
@@ -601,17 +600,16 @@ PhiOnMesh: nlist on node 0 =                12062
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -542.323387
+siesta: Ebs     =      -542.323388
 siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.439512
 siesta: Ekin    =      2394.980038
 siesta: Enl     =      -404.754677
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =      -100.729490
 siesta: DUscf   =        23.831104
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =      -722.928690
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -624,7 +622,7 @@ siesta: FreeEng =     -2945.836294
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
    scf:    1    -2887.353881    -2945.836294    -2945.836294  1.599341 -2.635148  5.355129
-timer: Routine,Calls,Time,% = IterSCF        1       0.027   3.80
+timer: Routine,Calls,Time,% = IterSCF        1       0.023   4.03
    scf:    2    -2959.192645    -2953.287500    -2953.287500  0.204428 -2.990508  2.382441
    scf:    3    -2955.900777    -2955.249509    -2955.249509  0.212254 -3.212197  0.592819
    scf:    4    -2955.318734    -2955.286173    -2955.286173  0.011036 -3.138546  0.336410
@@ -650,8 +648,8 @@ siesta: E_KS(eV) =            -2955.3098
 siesta: E_KS - E_eggbox =     -2955.3098
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000   -0.000000   -0.000000
-     2    0.000000    0.000000    0.000000
+     1    0.000000   -0.000000    0.000000
+     2   -0.000000    0.000000    0.000000
      3    0.000000   -0.000000    0.000000
      4   -0.000000    0.000000   -0.000000
      5    3.186657   -7.127364   -0.000000
@@ -661,14 +659,14 @@ siesta: Atomic forces (eV/Ang):
      9   -0.000000   -4.276062    6.532182
     10    3.186657   -2.851303   -6.532181
 ----------------------------------------
-   Tot    0.000000   -0.000000    0.000000
+   Tot    0.000000    0.000000    0.000000
 ----------------------------------------
    Max    7.127364
    Res    3.491536    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    7.127364    constrained
 
-Stress-tensor-Voigt (kbar):      120.20     -280.35     -340.85      224.19       61.34      146.11
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):      120.20     -280.35     -340.85       61.34      146.11      224.19
 (Free)E + p*V (eV/cell)    -2945.5989
 Target enthalpy (eV/cell)    -2955.3098
 
@@ -677,14 +675,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.138372   -0.170029    0.040499
          0.090580    0.040499   -0.205384
 
-siesta: Pressure (static):        159.05587273  kBar
+siesta: Pressure (static):        159.05587244  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.075021    0.139925    0.091192
          0.139925   -0.174979    0.038284
          0.091192    0.038284   -0.212739
 
-siesta: Pressure (total):        167.00030020  kBar
+siesta: Pressure (total):        167.00029992  kBar
 
 siesta: Temp_ion =     600.000 K
 
@@ -780,7 +778,7 @@ PhiOnMesh: nlist on node 0 =                12098
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0000371307
-max |H_out - H_in|      (eV) :     0.0004590580
+max |H_out - H_in|      (eV) :     0.0004590579
 SCF cycle converged after 7 iterations
 
 Using DM_out to compute the final energy and forces
@@ -807,7 +805,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    7.623466    constrained
 
-Stress-tensor-Voigt (kbar):      121.82     -299.90     -338.33      226.59       80.67      137.45
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):      121.82     -299.90     -338.33       80.67      137.45      226.59
 (Free)E + p*V (eV/cell)    -2945.2230
 Target enthalpy (eV/cell)    -2955.2328
 
@@ -816,14 +814,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.139873   -0.182231    0.052565
          0.085179    0.052566   -0.203814
 
-siesta: Pressure (static):        164.19491933  kBar
+siesta: Pressure (static):        164.19491892  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.076031    0.141426    0.085790
          0.141426   -0.187181    0.050350
          0.085790    0.050351   -0.211169
 
-siesta: Pressure (total):        172.13934680  kBar
+siesta: Pressure (total):        172.13934639  kBar
 
 siesta: Temp_ion =     535.247 K
 
@@ -919,7 +917,7 @@ PhiOnMesh: nlist on node 0 =                12112
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0000911174
-max |H_out - H_in|      (eV) :     0.0005617032
+max |H_out - H_in|      (eV) :     0.0005617033
 SCF cycle converged after 7 iterations
 
 Using DM_out to compute the final energy and forces
@@ -946,7 +944,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    7.608481    constrained
 
-Stress-tensor-Voigt (kbar):      126.56     -297.15     -308.91      220.31       94.40      123.75
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):      126.56     -297.15     -308.91       94.40      123.75      220.31
 (Free)E + p*V (eV/cell)    -2946.0585
 Target enthalpy (eV/cell)    -2955.3527
 
@@ -955,14 +953,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.135300   -0.180254    0.061378
          0.076979    0.061379   -0.187763
 
-siesta: Pressure (static):        152.74623887  kBar
+siesta: Pressure (static):        152.74623860  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.078992    0.137503    0.077240
          0.137503   -0.185462    0.058920
          0.077240    0.058920   -0.192807
 
-siesta: Pressure (total):        159.83328526  kBar
+siesta: Pressure (total):        159.83328500  kBar
 
 siesta: Temp_ion =     637.413 K
 
@@ -1086,7 +1084,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    7.348164    constrained
 
-Stress-tensor-Voigt (kbar):      131.47     -281.29     -269.04      210.25      100.30      109.96
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):      131.47     -281.29     -269.04      100.30      109.96      210.25
 (Free)E + p*V (eV/cell)    -2947.5333
 Target enthalpy (eV/cell)    -2955.6523
 
@@ -1095,14 +1093,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.127654   -0.168154    0.064739
          0.068412    0.064739   -0.163411
 
-siesta: Pressure (static):        131.18383293  kBar
+siesta: Pressure (static):        131.18383285  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.082054    0.131229    0.068628
          0.131229   -0.175568    0.062604
          0.068628    0.062603   -0.167922
 
-siesta: Pressure (total):        139.62363786  kBar
+siesta: Pressure (total):        139.62363777  kBar
 
 siesta: Temp_ion =     891.758 K
 
@@ -1198,7 +1196,7 @@ PhiOnMesh: nlist on node 0 =                12138
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0000969388
-max |H_out - H_in|      (eV) :     0.0006896492
+max |H_out - H_in|      (eV) :     0.0006896493
 SCF cycle converged after 7 iterations
 
 Using DM_out to compute the final energy and forces
@@ -1211,21 +1209,21 @@ siesta: Atomic forces (eV/Ang):
      2    0.073323   -0.012782    0.039184
      3   -1.231379    1.129528    2.727752
      4    0.929957   -1.084730   -1.804837
-     5    2.720985   -6.301739    0.446203
+     5    2.720985   -6.301739    0.446204
      6    0.147474    3.743545   -6.647478
      7   -1.625293    0.950613    3.550383
      8   -2.437412    5.680562    0.324160
      9   -0.114536   -2.982935    5.349131
-    10    1.760537   -1.714262   -3.891949
+    10    1.760537   -1.714261   -3.891949
 ----------------------------------------
-   Tot    0.046848   -0.276440    0.022665
+   Tot    0.046848   -0.276440    0.022666
 ----------------------------------------
    Max    6.647478
    Res    2.795169    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    6.647478    constrained
 
-Stress-tensor-Voigt (kbar):      138.94     -239.74     -218.92      190.81       97.49       96.15
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):      138.94     -239.74     -218.92       97.49       96.15      190.81
 (Free)E + p*V (eV/cell)    -2949.8792
 Target enthalpy (eV/cell)    -2956.0763
 
@@ -1234,14 +1232,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.113567   -0.138283    0.062062
          0.059589    0.062061   -0.130921
 
-siesta: Pressure (static):         94.76564547  kBar
+siesta: Pressure (static):         94.76564546  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.086717    0.119094    0.060013
          0.119094   -0.149630    0.060850
          0.060013    0.060849   -0.136638
 
-siesta: Pressure (total):        106.57315681  kBar
+siesta: Pressure (total):        106.57315678  kBar
 
 siesta: Temp_ion =    1248.963 K
 
@@ -1252,11 +1250,10 @@ siesta: Ena     =      1093.768139
 siesta: Ekin    =      2293.584861
 siesta: Enl     =      -369.923692
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =       -47.914791
 siesta: DUscf   =         7.739401
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =      -704.656164
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -1271,10 +1268,9 @@ siesta: Final energy (eV):
 siesta:  Band Struct. =    -604.881834
 siesta:       Kinetic =    2293.584861
 siesta:       Hartree =    1016.775134
-siesta:       Eldau   =       0.000000
+siesta:       Edftu   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:       Enegf   =       0.000000
 siesta:   Exch.-corr. =    -704.656164
 siesta:  Ion-electron =   -4008.590329
 siesta:       Ion-ion =   -1553.189839
@@ -1287,14 +1283,14 @@ siesta:      1   -0.176808    0.315760   -0.069885
 siesta:      2    0.073323   -0.012782    0.039184
 siesta:      3   -1.231379    1.129528    2.727752
 siesta:      4    0.929957   -1.084730   -1.804837
-siesta:      5    2.720985   -6.301739    0.446203
+siesta:      5    2.720985   -6.301739    0.446204
 siesta:      6    0.147474    3.743545   -6.647478
 siesta:      7   -1.625293    0.950613    3.550383
 siesta:      8   -2.437412    5.680562    0.324160
 siesta:      9   -0.114536   -2.982935    5.349131
-siesta:     10    1.760537   -1.714262   -3.891949
+siesta:     10    1.760537   -1.714261   -3.891949
 siesta: ----------------------------------------
-siesta:    Tot    0.046848   -0.276440    0.022665
+siesta:    Tot    0.046848   -0.276440    0.022666
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:     0.091762    0.113567    0.059588
@@ -1307,8 +1303,16 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00064419         -0.00113428  Ry/Bohr**3
 siesta:           0.05914742         -0.10414548  eV/Ang**3
-siesta:          94.76564547       -166.86125043  kBar
+siesta:          94.76564546       -166.86125166  kBar
 (Free)E+ p_basis*V_orbitals  =       -2954.882040
 (Free)Eharris+ p_basis*V_orbitals  =       -2954.882041
->> End of run:   5-NOV-2018  10:52:36
+
+cite: Please see "md_nose.bib" for an exhaustive BiBTeX file.
+cite: Please clearly indicate Siesta version in published work: v4.1-b4-351
+cite: This calculation has made use of the following articles
+cite: which are encouraged to be cited in a published work.
+        Primary SIESTA paper
+          DOI: www.doi.org/10.1088/0953-8984/14/11/302
+
+>> End of run:  22-JAN-2021  23:13:04
 Job completed
