@@ -197,18 +197,25 @@ if [ $_head -eq 1 ]; then
     _out=siesta-$_tag
 fi
 
+_tag_no_v=${_tag//v/}
+
 
 # Get default output file (siesta-<>.tar.gz)
 if [ -z "$_out" ]; then
-    _out=siesta-${_tag//v/}
+    _out=siesta-${_tag_no_v}
     _out=${_out//-release/}
     _out=${_out//-rel/}
     _out=${_out//release-/}
     _out=${_out//rel-/}
 fi
 
+# Extract the release date for the tag
+# Have to do this while in a git repository
+_date=$(date -d "$(git log -n1 --format='%ci' $_tag)" +"%B %d, %Y")
+
 echo "Chosen release tag is: $_tag"
 echo "Creating out file: $_out.tar.gz"
+echo "Release date: $_date"
 echo ""
 echo "Waiting 1 second before creating release... (Ctrl^C kills the sequence)"
 sleep 1
@@ -262,17 +269,15 @@ pushd $_reldir
 pushd $_out
 
 # Update the version.info file
-printf "%s" "$_tag" > version.info
+printf "%s" "${_tag_no_v}" > version.info
 
 # Create documentation
 pushd Docs
 
 # Update manual information that is version/date dependent
-# Here we select the date of the tag which is the appropriate thing.
-_date=$(date -d "$(git log -n1 --format="%ci" v4.1-b2)" +"%B %d, %Y")
 sed -s -i -e "s/\\date{.*}/\\date{$_date}/" siesta.tex tbtrans.tex
 # Version tags in the pdf-title
-sed -s -i -e "s/\\providecommand\\softwareversion{.*}/\\providecommand\\softwareversion{$_tag}/" siesta.tex tbtrans.tex
+sed -s -i -e "s/\\providecommand\\softwareversion{.*}/\\providecommand\\softwareversion{$_tag_no_v}/" siesta.tex tbtrans.tex
 
 # First create the screen variants...
 make final-screen
