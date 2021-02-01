@@ -294,6 +294,9 @@ rm -rf .git*
 
 # Create signatures and move files
 for f in *.pdf ; do
+    nopdf=${f//.pdf}
+    mv $f $nopdf-${_tag_no_v}.pdf
+    f=$nopdf-${_tag_no_v}.pdf
     sign $f
     store $f
     checksums $f
