@@ -51,7 +51,10 @@ c Internal variables ...
       integer maxlin, maxk, maxnq
       parameter (maxlin =  1000)
       parameter (maxk   =  5000)
-      parameter (maxnq  =  1000)
+!     maxnq is the maximum number of different q-points for
+!     the Wiegner-Sietz cells. Due to the loop it will never be more
+!     than 27 (3 x -1:1)
+      parameter (maxnq = 27)
      
       integer 
      .  in, neq, nk, nlines, lastk(maxlin)
@@ -577,6 +580,9 @@ c form because hermdp.f wants input this way.
 c Loop over k points 
 
       do ik=1,nk
+#ifdef VIBRA_DEBUG
+        print "(a,i0)", "running ik == ", ik
+#endif
 
         q(1) = kpoint(1,ik)
         q(2) = kpoint(2,ik)
@@ -629,7 +635,8 @@ c Loop over k points
             enddo
             enddo
 #ifdef VIBRA_DEBUG
-            print "(a,3(tr1,i4))", "i, j, neq", i, j, neq
+      print "(a,'(',i2,',',i2,')',tr2,'[',2(i0,','),i0,']',tr2,i4)",
+     &          "(i,j) [x,y,z] neq     ",i, j, lx, ly, lz, neq
 #endif
 c           qr = q(1)*r(1) + q(2)*r(2) + q(3)*r(3)
             do in = 1,neq
