@@ -1053,6 +1053,11 @@
       call xml_dump_element(lun,'norbs_nl',str(spp%n_orbnl))
       call xml_dump_element(lun,'lmax_projs',str(spp%lmax_projs))
       call xml_dump_element(lun,'nprojs_nl',str(spp%n_pjnl))
+      if (spp%lj_projs) then
+         call xml_dump_element(lun,'lj_projs','true')
+      else
+         call xml_dump_element(lun,'lj_projs','false')
+      endif
 
       write(lun,'(a)') '<preamble>'
       call write_basis_specs(lun,is)
@@ -1087,6 +1092,9 @@
       do i=1,spp%n_pjnl
          write(lun,'(a)') "<projector "
          call xml_dump_attribute(lun,'l',str(spp%pjnl_l(i)))
+         if (spp%lj_projs) then
+            call xml_dump_attribute(lun,'j',str(spp%pjnl_j(i)))
+         endif
          call xml_dump_attribute(lun,'n',str(spp%pjnl_n(i)))
          call xml_dump_attribute(lun,'ref_energy',
      $                                   str(spp%pjnl_ekb(i)))
