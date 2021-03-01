@@ -1,4 +1,8 @@
-An overview changelog for Siesta.
+# Release Notes for Siesta
+
+This file contains, in an expanded ChangeLog style, notes
+regarding the evolution of the Siesta code. The changes are
+grouped under headings representing past (and upcoming) releases.
 
 
 # Development version
@@ -47,7 +51,7 @@ An overview changelog for Siesta.
 
 # 4.1.X versions
 
-## 4.1 (2020-   )   FUTURE Feature release
+## 4.1 (2021-   )   FUTURE Feature release
 
 ### Backward compatibility issues
 
@@ -66,6 +70,12 @@ An overview changelog for Siesta.
   need to adapt.
 
 ### Changes
+
+* Removed memory leaks for k-point samplings in MD runs, #58
+
+* If compiling with Gfortran 10, there will be lots of errors, please see manual
+
+* Changed LDA+U to DFT+U to clarify its usage is not restricted to LDA
 
 * Fixed regression in OMM routines due to resetting of qtots
   (introduced when fixing the NC/SOC occupation problem)
@@ -93,7 +103,8 @@ An overview changelog for Siesta.
 * Document the setting of 'neigwanted' and print them if the diag solver allows it.
 
 * Fix computation of NC/SOC occupations when the (optional) number of
-  eigenstates handled ('neigwanted') is less than the number of orbitals.
+  eigenstates handled ('neigwanted') is less than the number of orbitals, and
+  enabled parallel k calculations !9
 
 * Fix reading of wave-functions in Util/COOP/fat.f90
 
@@ -491,9 +502,12 @@ Please see the Manual for full details
 
 # 4.0.X versions
 
-## 4.0.3 (2020- ) FUTURE Bug fix release
+
+## 4.0.3 (2021- ) FUTURE Bug fix release
 
 ### Changes
+
+* Remove some more memory leaks when using k-point sampling.
 
 * Fix for honoring the 'gen_zval' field in psf files
 

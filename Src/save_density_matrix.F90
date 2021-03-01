@@ -95,8 +95,7 @@ contains
       if ( (idyn == 0 .and. nmove == 0) .or. &
           (idyn == 6 .and. istp == 1 ) ) then
         
-        dic_save = ('Ef'.kv.1)
-        dic_save = dic_save//('DM'.kv.1)//('EDM'.kv.1)
+        dic_save = ('Ef'.kv.1)//('DM'.kv.1)//('EDM'.kv.1)
         call cdf_save_state(trim(slabel)//'.nc',dic_save)
         
         call delete(dic_save)

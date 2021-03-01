@@ -300,7 +300,7 @@ C     Vscf and Vaux are not used here
      &    .false., .false. )
         call reord( rhopcc, rhopcc, nml, nsm, TO_SEQUENTIAL )
         if ( debug_dhscf ) then
-           write(*,debug_fmt) Node,'rhopcc',sqrt(sum(rhopcc**2))
+           write(*,debug_fmt) Node,'rhopcc',sum(rhopcc)*dvol
         end if
       endif
 
@@ -378,7 +378,7 @@ C     Create Rhoatm using UNIFORM distr, in sequential form
      &     UNIFORM, rhoatm, TO_SEQUENTIAL )
 
       if ( debug_dhscf ) then
-         write(*,debug_fmt) Node,'rhoatm', sqrt(sum(rhoatm**2))
+         write(*,debug_fmt) Node,'rhoatm', sum(rhoatm)*dvol
       end if
 
 !
@@ -944,7 +944,7 @@ C       Set the UNIFORM distribution again and copy DRho to it
 
         if ( debug_dhscf ) then
            write(*,debug_fmt) Node,'Rho',
-     &          (sqrt(sum(DRho(:,ispin)**2)),ispin=1,nspin)
+     &          (sum(DRho(:,ispin))*dvol,ispin=1,nspin)
         end if
 
         if (save_initial_charge_density) then
@@ -1061,7 +1061,7 @@ C       Find diffuse ionic charge on mesh
         call reord( Chlocal, Chlocal, nml, nsm, TO_SEQUENTIAL )
 
         if ( debug_dhscf ) then
-           write(*,debug_fmt) Node,'Chlocal',sqrt(sum(Chlocal**2))
+           write(*,debug_fmt) Node,'Chlocal',sum(Chlocal)*dvol
         end if
 
 C       Save diffuse ionic charge 
@@ -1147,11 +1147,6 @@ C Find difference between selfconsistent and atomic densities
       enddo
 !$OMP end parallel
 
-      if ( debug_dhscf ) then
-        write(*,debug_fmt) Node,'DRho',
-     &      (sqrt(sum(DRho(:,ispin)**2)),ispin=1,nspin)
-      end if
-
 C ----------------------------------------------------------------------
 C Save electron density difference
 C ----------------------------------------------------------------------
@@ -1207,6 +1202,11 @@ C     Transform spin density into sum and difference
 !$OMP end parallel do
       endif
 
+      if ( debug_dhscf ) then
+        write(*,debug_fmt) Node,'DRho-clean',
+     &      (sum(DRho(:,ispin))*dvol,ispin=1,nspin)
+      end if
+
 C Add a background charge to neutralize the net charge, to
 C model doped systems. It only adds the charge at points
 C where there are atoms (i.e., not in vacuum).          
@@ -1217,6 +1217,11 @@ C First, call with 'task=0' to add background charge
       ! Add doping in cell (from ChargeGeometries/Geometry.Charge)
       ! Note that this routine will return immediately if no dopant is present
       call charge_add('+',cell, ntpl, DRho(:,1) )
+
+      if ( debug_dhscf ) then
+        write(*,debug_fmt) Node,'DRho-doped',
+     &      (sum(DRho(:,ispin))*dvol,ispin=1,nspin)
+      end if
 
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
@@ -1321,6 +1326,7 @@ C ----------------------------------------------------------------------
 !$OMP end parallel do
       Enaatm = Enaatm * dVol
       Enascf = Enaatm + Enascf * dVol
+
 
       if ( SLABDIPOLECORR == SLABDIPOLECORR_VACUUM ) then
         ! In case the user requested a vacuum dipole, calculate it here

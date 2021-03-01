@@ -39,10 +39,17 @@ module dipole_m
   public :: get_dipole_from_field
 
   type :: dipole_vacuum_dir_t
+    !< Whether `xyz` is a fixed user defined coordinate in the unit cell
+    !!
+    !! If this is `.false.` it means that the coordinate will be
+    !! in the vacuum region.
     logical :: use_xyz = .false.
+    !< User defined coordinate, only used if `%use_xyz` is true.
     real(dp) :: xyz(3) = 0._dp
+    !< Dipole direction
     real(dp) :: dir(3) = 0._dp
-    real(dp) :: dE_tol = 0._dp
+    !< dE tolerance for determining a flat dE/dr = constant, default 1e-4 eV/Ang/e
+    real(dp) :: dE_tol = 3.88937962930779e-6_dp
   end type dipole_vacuum_dir_t
 
   !< Determine position for vacuum dipole
@@ -82,18 +89,19 @@ contains
     end if
 
     select case ( trim(dipole_str) )
-    case ( "true", "t", ".true.", "yes", "charge" )
+    case ( "true", "t", ".true.", "yes", "charge", "" )
       ! All these options reflect a dipole correction
       ! based on the original implementation
       ! One *may* use the Slab.DipoleCorrection.Origin block to specify the
       ! origin of the dipole
+      ! An empty string is equivalent to a "true"
       SLABDIPOLECORR = SLABDIPOLECORR_CHARGE
     case ( "none", "no", "n", "false", "f", ".false." )
       SLABDIPOLECORR = SLABDIPOLECORR_NONE
     case ( "vacuum" )
       SLABDIPOLECORR = SLABDIPOLECORR_VACUUM
     case default
-      print *, trim(dipole_str)
+      write(*,'(2a)') "Dipole option: ", trim(dipole_str)
       call die("init_dipole: Could not determine the dipole option &
           &[charge, vacuum, none]")
     end select
@@ -258,17 +266,13 @@ contains
     logical :: found_block
     real(dp) :: cfactor
     integer :: ix
-    ! The vacuum information has 3 quantities
-    !  direction
-    !  tolerance (have a default)
-    ! all must be found, otherwise we die
-    logical :: found(2)
+    logical :: found_direction
     external :: cross
 
     found_block = fdf_block("Slab.DipoleCorrection.Vacuum", bfdf)
 
     dip_vacuum%use_xyz = .false.
-    found(:) = .false.
+    found_direction = .false.
 
     if ( found_block ) then
 
@@ -280,7 +284,7 @@ contains
         select case ( trim(name) )
         case ( "direction" )
 
-          found(1) = .true.
+          found_direction = .true.
 
           do ix = 1 , 3
             dip_vacuum%dir(ix) = fdf_bvalues(pline,ix)
@@ -298,7 +302,6 @@ contains
 
         case ( "tolerance", "tol" )
 
-          found(2) = .true.
           unit = fdf_bnames(pline, 2)
           cfactor = fdf_convfac(unit, "Ry/Bohr/e")
           dip_vacuum%dE_tol = fdf_bvalues(pline, 1) * cfactor
@@ -311,11 +314,11 @@ contains
 
     end if
 
-    if ( .not. found(1) ) then
+    if ( .not. found_direction ) then
       if ( nbcell == 2 ) then
         ! we can actually figure out the direction our selves
         call cross(bcell(1,1), bcell(1,2), dip_vacuum%dir)
-        found(1) = .true.
+        found_direction = .true.
       else
         call die("dipole: Slab.DipoleCorrection.Vacuum not present but necessary, &
             &please fix input.")
@@ -325,14 +328,8 @@ contains
     ! Normalize direction
     dip_vacuum%dir(:) = dip_vacuum%dir(:) / vnorm(dip_vacuum%dir)
 
-    if ( .not. found(2) ) then
-      ! Assign default value of tolerance
-      ! This is equivalent to 1e-4 eV/Ang/e
-      dip_vacuum%dE_tol = 3.88937962930779e-6_dp
-    end if
-
-    ! Check if all are found
-    if ( .not. found(1) ) then
+    ! Check if the direction has been specified
+    if ( .not. found_direction ) then
       call die("dipole: Slab.DipoleCorrection.Vacuum did not contain direction")
     end if
 
@@ -559,7 +556,7 @@ contains
     use mpi_siesta
 #endif
     use units, only: Pi, eV, Ang
-    use intrinsic_missing, only: MODP, vnorm
+    use intrinsic_missing, only: MODULOP, vnorm
 
     real(dp), intent(in) :: cell(3,3)
     integer, intent(in) :: na_u, isa(na_u)
@@ -629,13 +626,14 @@ contains
     if ( dip_vacuum%use_xyz ) then
       ! Find vacuum position
       rc = dot_product(dip_vacuum%xyz, rcell(:,idir))
+      rc = modulo(rc, 1._dp)
       if ( xmin <= rc .and. rc <= xmax ) then
         call die("dipole_potential: Vacuum point lies in atomic range.")
       end if
     else
       rc = (xmin + xmax) / 2 - 0.5_dp
     end if
-    i0 = MODP(nint(rc*ntm(idir)) + 10 * ntm(idir), ntm(idir))
+    i0 = MODULOP(nint(rc*ntm(idir)), ntm(idir))
 
     ! Initialize calculated field
     ! We will finally convert to dipole
@@ -705,7 +703,7 @@ contains
     deallocate(E)
 #endif
 
-    ! Now perform average calcualtion of field along idir
+    ! Now perform average calculation of field along idir
     ! This is a 3-point stencil
     if ( Node == 0 ) then
 

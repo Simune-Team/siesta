@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# Script for preparing a release
-# of SIESTA.
+# Script for preparing a release of SIESTA.
 # Script-author:
 #  Nick R. Papior, 2016
 #
@@ -12,7 +11,7 @@
 #   ./release.sh --prev-tag v3.2 --tag v4.0 \
 #      --out siesta-4.0
 # which creates the file:
-#   siesta-releases/siesta-4.0.tar.gz
+#   ../siesta-releases/siesta-4.0.tar.gz
 #
 # We encourage that the prev-tag is ALWAYS the previous
 # stable release tag (also for beta releases!).
@@ -65,19 +64,18 @@ pushd $main_dir
 # repository (or at least it should be)
 _reldir=$(dirname $main_dir)/siesta-releases
 _sign=1
+_head=0
+_tag=
+# Get default output file (siesta-<>.tar.gz)
+_out=
 
 function _git_tag_cmd {
     git tag --list 'v*' --sort=-v:refname
 }
 
-# Get the previous major release tag
-_prev_tag=$(_git_tag_cmd | head -2 | tail -1)
-# Get the latest tag
-_tag=$(_git_tag_cmd | head -1)
-
-# Get default output file (siesta-<>.tar.gz)
-_out=
-
+# Default to latest tag
+_def_tag=$(_git_tag_cmd | head -1)
+_tag=$_def_tag
 
 function has_tag {
     local tag=$1
@@ -98,12 +96,13 @@ function help {
 
     echo "$0 creates a release of the SIESTA code at the tip-tag"
     echo ""
-    echo "The following options may be used to control the archive."
+    echo "The following options may be used to control the release archive."
     echo ""
-    echo "  --prev-tag instead of selecting the second-latest tag, choose this tag as the"
-    echo "             reference tag for creating a diff with regards to the --tag tag [git tag --list 'v*' --sort=-v:refname]"
     echo "  --tag      instead of selecting the latest tag, choose this tag as the"
-    echo "             reference tag for creating a release archive [git tag --list 'v*' --sort=-v:refname]"
+    echo "             reference tag for creating a release archive [$_def_tag]"
+    echo "  --head     creates a release without signing, and sets tag to HEAD and out to"
+    echo "             a unique identifier [git describe --abbrev], useful for making release for"
+    echo "             sample groups or individuals without a proper release"
     echo "  --out      the default output file is siesta-<tag>.tar.gz. Do *not* specify tar.gz, "
     echo "  --no-sign  do not sign the output files (useful for test-runs)"
     echo "  --help|-h  show this help."
@@ -171,18 +170,9 @@ while [ $# -gt 0 ]; do
 	    fi
 	    shift
 	    ;;
-	--prev-tag)
-	    _prev_tag=$1
-	    # Check that the tag exists
-	    if [ $(has_tag $_prev_tag) -eq 1 ]; then
-		echo ""
-		echo "$0 could not find tag: '$_prev_tag' in the tags list."
-		echo ""
-		echo "The available tags are:"
-		_git_tag_cmd | sed 's/^\(.*\)/  \1/g'
-		exit 1
-	    fi
-	    shift
+
+	--head)
+	    _head=1
 	    ;;
 
 	--no-sign)
@@ -201,6 +191,12 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+if [ $_head -eq 1 ]; then
+    _tag=$(git describe --abbrev)
+    _sign=0
+    _out=siesta-$_tag
+fi
+
 
 # Get default output file (siesta-<>.tar.gz)
 if [ -z "$_out" ]; then
@@ -211,11 +207,8 @@ if [ -z "$_out" ]; then
     _out=${_out//rel-/}
 fi
 
-echo "Chosen tags are:"
-echo "  previous tag: $_prev_tag"
-echo "  release tag : $_tag"
-echo "Creating out file:"
-echo "  $_out.tar.gz"
+echo "Chosen release tag is: $_tag"
+echo "Creating out file: $_out.tar.gz"
 echo ""
 echo "Waiting 1 second before creating release... (Ctrl^C kills the sequence)"
 sleep 1
@@ -262,18 +255,6 @@ pushd $_reldir
 tar xfz $_out.tar.gz ; rm $_out.tar.gz
 popd
 
-# Create the changes files
-# This is necessary to do here as the previous
-# siesta versions may not have the tags related.
-{
-    echo "##############################################"
-    echo " Detailed Changes between $_prev_tag and $_tag"
-    echo "##############################################"
-    echo ""
-    git log --first-parent --pretty="   commit: %H%n   Author [Date]: %an [%ad]%n   Title: %s%n%b" v4.1-b4...v4.1-rc1 | sed -e '/Signed-off-by/{d;d;}'
-} > $_reldir/$_out/CHANGES_DETAILED
-
-
 # Go into the release directory where all work will be done
 pushd $_reldir
 
@@ -287,7 +268,8 @@ printf "%s" "$_tag" > version.info
 pushd Docs
 
 # Update manual information that is version/date dependent
-_date=$(date +"%B %d, %Y")
+# Here we select the date of the tag which is the appropriate thing.
+_date=$(date -d "$(git log -n1 --format="%ci" v4.1-b2)" +"%B %d, %Y")
 sed -s -i -e "s/\\date{.*}/\\date{$_date}/" siesta.tex tbtrans.tex
 # Version tags in the pdf-title
 sed -s -i -e "s/\\providecommand\\softwareversion{.*}/\\providecommand\\softwareversion{$_tag}/" siesta.tex tbtrans.tex
@@ -303,7 +285,7 @@ make clean
 # Also do not ship the release script
 rm release.sh
 # Remove all .git related files
-rm -f .git*
+rm -rf .git*
 
 # Create signatures and move files
 for f in *.pdf ; do

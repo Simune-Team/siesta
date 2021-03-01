@@ -42,6 +42,8 @@
 !             * NEAREST= 0: if not found, returns -1 (NORMAL behaviour)
 !  - MODP : Returns "FORTRAN" indexed MOD, i.e. if MOD would return 0,
 !           MODP returns the divisor.
+!  - MODULOP : Returns "FORTRAN" indexed MODULO, i.e. if MODULO would return 0,
+!           MODULOP returns the divisor.
 !  - EYE  : a routine to generate identity matrices
 !           this is a subroutine as I think a function would produce
 !           a large memory foot-print before it actually saves to the array.
@@ -95,7 +97,7 @@ module intrinsic_missing
 
 
 ! Elemental functions (can be called on arrays)
-  public :: MODP
+  public :: MODP, MODULOP
 
 ! Missing matrix stuff
   public :: EYE
@@ -233,6 +235,19 @@ contains
     integer :: MODP
     MODP = MOD(a-1,p) + 1
   end function MODP
+
+! A MODULO function which behaves differently on the edge.
+! It will NEVER return 0, but instead return the divisor.
+! This makes it useful in FORTRAN do-loops which are not zero-based
+! but 1-based.
+! Thus we have the following scheme:
+!  MODULOP(x',x) == x         for x' == x
+!  MODULOP(x',x) == MODULOP(x',x) for x' /= x
+  elemental function MODULOP(a,p)
+    integer, intent(in) :: a,p
+    integer :: MODULOP
+    MODULOP = MODULO(a-1,p) + 1
+  end function MODULOP
 
 ! Function to return the unique COUNT of an integer array.
 ! Thus will return how many DIFFERENT entries there exists.
