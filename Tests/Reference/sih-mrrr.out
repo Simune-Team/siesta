@@ -1,17 +1,18 @@
-Siesta Version  : siesta-4.1-1033
-Architecture    : x86_64-linux-n-62-18-18
-Compiler version: GNU Fortran (GCC) 7.3.0
+Siesta Version  : v4.1-b4-351
+Architecture    : x86_64-linux-n-62-26-19
+Compiler version: GNU Fortran (GCC) 9.3.0
 Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
-Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PP flags        : -I/dtu/sw/dcc/SL73/2020-aug/generic/build-tools/1.0/include -I/dtu/sw/dcc/SL773/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/numactl/2.0.12/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/libxml2/2.9.10/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hwloc/2.2.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/knem/1.1.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/ucx/1.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/openmpi/4.0.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/szip/2.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hdf5/1.12.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/pnetcdf/1.12.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gen-zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/openssl/1.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/libssh2/1.8.2/include -I/dtu/sw/dcc/SL73/2020-aug/generic/curl/7.65.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/netcdf/4.7.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/fftw/3.3.8/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/parmetis/4.0.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scalapack/2.1.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/lapack/3.9.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/blis/0.7.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scotch/6.0.9/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/mumps/5.3.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include -DSIESTA__ELPA -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DTS_NOCHECKS -DSIESTA__METIS -DSIESTA__MUMPS -DSIESTA__MRRR -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include/elpa
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -llapack -lblis  -L/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -Wl,-rpath=/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
+Lua support
 
 * Running on 8 nodes in parallel
->> Start of run:   5-NOV-2018  11:14:05
+>> Start of run:  22-JAN-2021  23:27:28
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -57,7 +58,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 Si                   Z=  14    Mass=  28.090        Charge= 0.17977+309
 Lmxo=1 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=3  polorb=0
+          i=1  nzeta=3  polorb=0  (3s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -67,7 +68,7 @@ L=0  Nsemic=0  Cnfigmx=3
                 rcs:    0.0000      0.0000      0.0000    
             lambdas:    1.0000      1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=3  polorb=1
+          i=1  nzeta=3  polorb=1  (3p)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -88,7 +89,7 @@ atom: Called for Si                    (Z =  14)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    4.00000
+Valence charge for ps generation:    4.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -214,7 +215,7 @@ atom: _________________________________________________________________________
 H                    Z=   1    Mass=  1.0100        Charge= 0.17977+309
 Lmxo=0 Lmxkb= 1    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=1
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (1s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -233,7 +234,7 @@ atom: Called for H                     (Z =   1)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    1.00000
+Valence charge for ps generation:    1.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -394,7 +395,7 @@ siesta:
 redata: Spin configuration                          = none
 redata: Number of spin components                   = 1
 redata: Time-Reversal Symmetry                      = T
-redata: Spin-spiral                                 = F
+redata: Spin spiral                                 = F
 redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        2
 redata: Charge density info will appear in .RHO file
@@ -410,7 +411,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: New DM Mixing Weight                        =     0.3000
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
@@ -483,12 +483,12 @@ diag: Used triangular part                          = Lower
 diag: Absolute tolerance                            =  0.100E-15
 diag: Orthogonalization factor                      =  0.100E-05
 diag: Memory factor                                 =  1.0000
+diag: Number of calculated states [no_calc / no_u]  = 140 / 1089
 
 
 ts: **************************************************************
 ts: Save H and S matrices                           =    F
 ts: Save DM and EDM matrices                        =    F
-ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
 
@@ -566,48 +566,47 @@ PhiOnMesh: nlist on node 0 =               176828
 stepf: Fermi-Dirac step function
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -2358.927109
+siesta: Ebs     =     -2358.927107
 siesta: Eions   =     12205.375277
 siesta: Ena     =      3677.559531
-siesta: Ekin    =      2677.429385
-siesta: Enl     =       930.107881
+siesta: Ekin    =      2677.429389
+siesta: Enl     =       930.107883
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
-siesta: DEna    =       117.458053
+siesta: Edftu   =         0.000000
+siesta: DEna    =       117.458048
 siesta: DUscf   =        11.107812
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
-siesta: Exc     =     -2104.223514
+siesta: Exc     =     -2104.223515
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -6919.570748
+siesta: Eharris =     -6919.570749
 siesta: Etot    =     -6895.936128
 siesta: FreeEng =     -6896.019465
 
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
-   scf:    1    -6919.570748    -6895.936128    -6896.019465  1.780553 -3.559264  3.612698
+   scf:    1    -6919.570749    -6895.936128    -6896.019465  1.780553 -3.559264  3.612698
              Section          Calls    Walltime % sect.
- IterSCF                          1       1.323  100.00
-  setup_H                         2       0.900   68.05
-  compute_dm                      1       0.320   24.16
+ IterSCF                          1       1.017  100.00
+  setup_H                         2       0.635   62.46
+  compute_dm                      1       0.281   27.66
   MIXER                           1       0.002    0.17
-timer: Routine,Calls,Time,% = IterSCF        1       1.243  29.20
+timer: Routine,Calls,Time,% = IterSCF        1       0.931  27.18
    scf:    2    -6894.999145    -6896.343723    -6896.418863  0.035997 -3.595433  2.117608
    scf:    3    -6896.805870    -6896.791366    -6896.869448  0.014750 -3.559953  0.305294
    scf:    4    -6896.842525    -6896.821183    -6896.898503  0.012981 -3.553742  0.080163
-   scf:    5    -6896.842924    -6896.833100    -6896.909902  0.013916 -3.545342  0.101408
+   scf:    5    -6896.842924    -6896.833101    -6896.909902  0.013916 -3.545342  0.101408
    scf:    6    -6896.835833    -6896.834598    -6896.911353  0.006933 -3.540883  0.022221
-   scf:    7    -6896.834765    -6896.834688    -6896.911442  0.001727 -3.539891  0.004900
+   scf:    7    -6896.834766    -6896.834689    -6896.911443  0.001727 -3.539891  0.004900
    scf:    8    -6896.834705    -6896.834698    -6896.911458  0.000399 -3.539652  0.002954
    scf:    9    -6896.834720    -6896.834709    -6896.911462  0.000105 -3.539636  0.001161
-   scf:   10    -6896.834723    -6896.834716    -6896.911464  0.000112 -3.539583  0.000561
+   scf:   10    -6896.834723    -6896.834716    -6896.911465  0.000112 -3.539583  0.000561
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0001124414
-max |H_out - H_in|      (eV) :     0.0005612260
+max |H_out - H_in|      (eV) :     0.0005612258
 SCF cycle converged after 10 iterations
 
 Using DM_out to compute the final energy and forces
@@ -619,30 +618,29 @@ siesta: E_KS - E_eggbox =     -6896.8347
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000000
+   Tot    0.000000    0.000000   -0.000000
 ----------------------------------------
    Max    7.952278
    Res    1.397216    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    7.952278    constrained
 
-Stress-tensor-Voigt (kbar):       -2.59       -2.59       -2.59      -13.52      -13.52      -13.52
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):       -2.59       -2.59       -2.59      -13.52      -13.52      -13.52
 (Free)E + p*V (eV/cell)    -6894.8399
 Target enthalpy (eV/cell)    -6896.9115
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -2366.199000
+siesta: Ebs     =     -2366.198999
 siesta: Eions   =     12205.375277
 siesta: Ena     =      3677.559531
-siesta: Ekin    =      2664.705403
-siesta: Enl     =       928.542279
+siesta: Ekin    =      2664.705406
+siesta: Enl     =       928.542281
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
-siesta: DEna    =       128.846103
+siesta: Edftu   =         0.000000
+siesta: DEna    =       128.846099
 siesta: DUscf   =         9.386758
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
-siesta: Exc     =     -2100.499514
+siesta: Exc     =     -2100.499515
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
@@ -650,18 +648,17 @@ siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
 siesta: Eharris =     -6896.834723
 siesta: Etot    =     -6896.834716
-siesta: FreeEng =     -6896.911464
+siesta: FreeEng =     -6896.911465
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =   -2366.199000
-siesta:       Kinetic =    2664.705403
-siesta:       Hartree =     496.789233
-siesta:       Eldau   =       0.000000
+siesta:  Band Struct. =   -2366.198999
+siesta:       Kinetic =    2664.705406
+siesta:       Hartree =     496.789235
+siesta:       Edftu   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:       Enegf   =       0.000000
-siesta:   Exch.-corr. =   -2100.499514
-siesta:  Ion-electron =   -3285.534099
+siesta:   Exch.-corr. =   -2100.499515
+siesta:  Ion-electron =   -3285.534103
 siesta:       Ion-ion =   -4672.295739
 siesta:       Ekinion =       0.000000
 siesta:         Total =   -6896.834716
@@ -732,9 +729,9 @@ siesta:     61   -0.052954   -0.339778   -0.052954
 siesta:     62   -0.038765    0.207933   -0.038765
 siesta:     63   -0.052954   -0.052954   -0.339778
 siesta:     64   -0.038765   -0.038765    0.207933
-siesta:     65   -0.000000    0.000000    0.000000
+siesta:     65   -0.000000   -0.000000    0.000000
 siesta: ----------------------------------------
-siesta:    Tot    0.000000    0.000000    0.000000
+siesta:    Tot    0.000000    0.000000   -0.000000
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:    -0.001617   -0.008439   -0.008439
@@ -747,80 +744,96 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00001761         -0.00007189  Ry/Bohr**3
 siesta:           0.00161734         -0.00660049  eV/Ang**3
-siesta:           2.59129622        -10.57525841  kBar
-(Free)E+ p_basis*V_orbitals  =       -6850.287418
+siesta:           2.59129419        -10.57526069  kBar
+(Free)E+ p_basis*V_orbitals  =       -6850.287419
 (Free)Eharris+ p_basis*V_orbitals  =       -6850.287425
 
+cite: Please see "sih-mrrr.bib" for an exhaustive BiBTeX file.
+cite: Please clearly indicate Siesta version in published work: v4.1-b4-351
+cite: This calculation has made use of the following articles
+cite: which are encouraged to be cited in a published work.
+        Primary SIESTA paper
+          DOI: www.doi.org/10.1088/0953-8984/14/11/302
+
+
              Section          Calls    Walltime       %
- global_section                   1      14.735  100.00
-  siesta                          1      14.735  100.00
-   Setup                          1       0.283    1.92
+ global_section                   1      11.869  100.00
+  siesta                          1      11.869  100.00
+   Setup                          1       0.241    2.03
     bands                         1       0.000    0.00
     KSV_init                      1       0.000    0.00
-   IterGeom                       1      14.432   97.94
-    state_init                    1       0.490    3.33
-     hsparse                      1       0.044    0.30
-     overlap                      1       0.418    2.84
-    Setup_H0                      1       2.298   15.59
+   IterGeom                       1      11.609   97.81
+    state_init                    1       0.385    3.25
+     hsparse                      1       0.033    0.27
+     overlap                      1       0.312    2.63
+    Setup_H0                      1       1.924   16.21
      naefs                        1       0.002    0.01
      MolMec                       1       0.000    0.00
-     kinefsm                      1       0.408    2.77
-     nlefsm                       1       1.605   10.89
-     DHSCF_Init                   1       0.281    1.91
-      DHSCF1                      1       0.006    0.04
+     kinefsm                      1       0.303    2.55
+     nlefsm                       1       1.300   10.95
+     DHSCF_Init                   1       0.319    2.69
+      DHSCF1                      1       0.003    0.03
        INITMESH                   1       0.000    0.00
-      DHSCF2                      1       0.275    1.86
-       REMESH                     1       0.023    0.16
-        INITMESH                  2       0.004    0.03
-         SPLOAD                   2       0.004    0.03
+      DHSCF2                      1       0.315    2.66
+       REMESH                     1       0.069    0.58
+        INITMESH                  2       0.053    0.45
+         SPLOAD                   2       0.053    0.44
        REORD                      1       0.000    0.00
-       PHION                      1       0.216    1.46
-       COMM_BSC                   1       0.001    0.01
+       PHION                      1       0.194    1.63
+       COMM_BSC                   1       0.000    0.00
        POISON                     1       0.003    0.02
         fft                       2       0.003    0.02
-    IterSCF                      10       9.050   61.42
-     setup_H                     11       4.894   33.22
-      DHSCF                      11       4.876   33.09
-       DHSCF3                    11       4.876   33.09
-        rhoofd                   11       3.194   21.67
-        COMM_BSC                 22       0.055    0.37
-        POISON                   11       0.028    0.19
-         fft                     22       0.024    0.16
-        CellXC                   11       0.072    0.49
-        vmat                     11       1.524   10.34
-     compute_dm                  10       3.162   21.46
-      diagon                     10       3.141   21.32
-       r-eigvec                  10       2.202   14.94
-        r-buildHS                10       0.017    0.12
-        rdiag                    10       2.184   14.82
-         rdiag1                  10       0.117    0.79
-         rdiag2                  10       0.348    2.36
-         rdiag3                  10       1.595   10.83
-         rdiag4                  10       0.059    0.40
-       r-buildD                  10       0.923    6.26
-     MIXER                        9       0.051    0.35
-    PostSCF                       1       2.485   16.86
-     naefs                        1       0.002    0.01
-     kinefsm                      1       0.086    0.58
-     nlefsm                       1       0.553    3.75
-     DHSCF                        1       1.755   11.91
-      DHSCF3                      1       0.443    3.01
-       rhoofd                     1       0.294    2.00
-       COMM_BSC                   2       0.002    0.01
-       POISON                     1       0.002    0.02
-        fft                       2       0.002    0.01
-       CellXC                     1       0.006    0.04
-       vmat                       1       0.138    0.94
-      DHSCF4                      1       1.311    8.90
+    IterSCF                      10       7.103   59.84
+     setup_H                     11       3.438   28.96
+      DHSCF                      11       3.419   28.81
+       DHSCF3                    11       3.419   28.80
+        rhoofd                   11       1.932   16.28
+        COMM_BSC                 22       0.056    0.47
+        POISON                   11       0.121    1.02
+         fft                     22       0.118    0.99
+        XC                       11       0.044    0.37
+         COMM_BSC                22       0.005    0.04
+         GXC-CellXC              11       0.039    0.32
+        vmat                     11       1.260   10.62
+     compute_dm                  10       2.706   22.80
+      diagon                     10       2.691   22.67
+       r-eigvec                  10       1.939   16.34
+        r-buildHS                10       0.012    0.10
+        rdiag                    10       1.927   16.23
+         rdiag1                  10       0.123    1.04
+         rdiag2                  10       0.349    2.94
+         rdiag3                  10       1.337   11.27
+         rdiag4                  10       0.058    0.49
+       r-buildD                  10       0.738    6.22
+     MIXER                        9       0.040    0.34
+    PostSCF                       1       2.090   17.60
+     naefs                        1       0.001    0.01
+     kinefsm                      1       0.045    0.38
+     nlefsm                       1       0.263    2.21
+     DHSCF                        1       1.562   13.16
+      DHSCF3                      1       0.308    2.59
+       rhoofd                     1       0.175    1.47
+       COMM_BSC                   2       0.006    0.05
+       POISON                     1       0.011    0.09
+        fft                       2       0.010    0.09
+       XC                         1       0.004    0.03
+        COMM_BSC                  2       0.000    0.00
+        GXC-CellXC                1       0.003    0.03
+       vmat                       1       0.112    0.94
+      DHSCF4                      1       1.254   10.57
        REORD                      4       0.000    0.00
        COMM_BSC                   2       0.001    0.01
-       dfscf                      1       1.289    8.75
-     overfsm                      1       0.085    0.58
+       dfscf                      1       1.240   10.45
+     overfsm                      1       0.044    0.37
      MolMec                       1       0.000    0.00
-    state_analysis                1       0.006    0.04
+    state_analysis                1       0.006    0.05
     siesta_move                   1       0.000    0.00
-   Analysis                       1       0.018    0.12
-    siesta_analysis               1       0.018    0.12
+   Analysis                       1       0.017    0.14
+    siesta_analysis               1       0.017    0.14
      optical                      1       0.000    0.00
->> End of run:   5-NOV-2018  11:14:19
+>> End of run:  22-JAN-2021  23:27:39
 Job completed
+[1611354459.972373] [n-62-21-35:27761:0]          mpool.c:42   UCX  WARN  object 0x31e8540 was not returned to mpool ucp_requests
+[1611354459.975127] [n-62-21-35:27770:0]          mpool.c:42   UCX  WARN  object 0x3eae700 was not returned to mpool ucp_requests
+[1611354459.976107] [n-62-21-35:27768:0]          mpool.c:42   UCX  WARN  object 0x3f3a540 was not returned to mpool ucp_requests
+[1611354459.976505] [n-62-21-35:27764:0]          mpool.c:42   UCX  WARN  object 0x3868540 was not returned to mpool ucp_requests

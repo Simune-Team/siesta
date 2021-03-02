@@ -1,17 +1,18 @@
-Siesta Version  : siesta-4.1-1033
-Architecture    : x86_64-linux-n-62-18-18
-Compiler version: GNU Fortran (GCC) 7.3.0
+Siesta Version  : v4.1-b4-351
+Architecture    : x86_64-linux-n-62-26-19
+Compiler version: GNU Fortran (GCC) 9.3.0
 Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
-Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PP flags        : -I/dtu/sw/dcc/SL73/2020-aug/generic/build-tools/1.0/include -I/dtu/sw/dcc/SL773/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/numactl/2.0.12/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/libxml2/2.9.10/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hwloc/2.2.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/knem/1.1.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/ucx/1.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/openmpi/4.0.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/szip/2.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hdf5/1.12.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/pnetcdf/1.12.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gen-zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/openssl/1.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/libssh2/1.8.2/include -I/dtu/sw/dcc/SL73/2020-aug/generic/curl/7.65.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/netcdf/4.7.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/fftw/3.3.8/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/parmetis/4.0.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scalapack/2.1.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/lapack/3.9.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/blis/0.7.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scotch/6.0.9/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/mumps/5.3.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include -DSIESTA__ELPA -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DTS_NOCHECKS -DSIESTA__METIS -DSIESTA__MUMPS -DSIESTA__MRRR -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include/elpa
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -llapack -lblis  -L/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -Wl,-rpath=/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
+Lua support
 
 * Running on 8 nodes in parallel
->> Start of run:   5-NOV-2018  10:57:31
+>> Start of run:  22-JAN-2021  23:16:08
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -58,7 +59,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 O                    Z=   8    Mass=  16.000        Charge=-0.24233    
 Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (2s)
             splnorm:   0.15000    
                vcte:    23.361    
                rinn:    3.3972    
@@ -68,7 +69,7 @@ L=0  Nsemic=0  Cnfigmx=2
                 rcs:    4.5077      2.6407    
             lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (2p)
             splnorm:   0.15000    
                vcte:    2.7833    
                rinn:    5.1425    
@@ -78,7 +79,7 @@ L=1  Nsemic=0  Cnfigmx=2
                 rcs:    6.1500      2.5936    
             lambdas:    1.0000      1.0000    
 L=2  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (3d)
             splnorm:   0.15000    
                vcte:    63.982    
                rinn:   0.16104    
@@ -99,7 +100,7 @@ atom: Called for O                     (Z =   8)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    6.00000
+Valence charge for ps generation:    6.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: GGA Perdew, Burke & Ernzerhof 1996
@@ -204,7 +205,7 @@ atom: _________________________________________________________________________
 H                    Z=   1    Mass=  2.0000        Charge= 0.46527    
 Lmxo=1 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=1
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (1s)
             splnorm:   0.15000    
                vcte:    99.931    
                rinn:    2.5993    
@@ -214,7 +215,7 @@ L=0  Nsemic=0  Cnfigmx=1
                 rcs:    4.2036      1.8446    
             lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2p)
             splnorm:   0.15000    
                vcte:    24.565    
                rinn:    2.2023    
@@ -234,7 +235,7 @@ atom: Called for H                     (Z =   1)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    1.00000
+Valence charge for ps generation:    1.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: GGA Perdew, Burke & Ernzerhof 1996
@@ -436,7 +437,7 @@ siesta:
 redata: Spin configuration                          = none
 redata: Number of spin components                   = 1
 redata: Time-Reversal Symmetry                      = T
-redata: Spin-spiral                                 = F
+redata: Spin spiral                                 = F
 redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        2
 redata: Charge density info will appear in .RHO file
@@ -452,7 +453,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: New DM Mixing Weight                        =     0.3000
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
@@ -533,7 +533,6 @@ diag: Memory factor                                 =  1.0000
 ts: **************************************************************
 ts: Save H and S matrices                           =    F
 ts: Save DM and EDM matrices                        =    F
-ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
 
@@ -612,14 +611,13 @@ siesta: Program's energy decomposition (eV):
 siesta: Ebs     =     -1386.284344
 siesta: Eions   =     20396.361970
 siesta: Ena     =      4788.977978
-siesta: Ekin    =     10534.033421
-siesta: Enl     =     -2018.931060
+siesta: Ekin    =     10534.033422
+siesta: Enl     =     -2018.931061
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =     -1645.950175
 siesta: DUscf   =       312.373037
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =     -3170.973665
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -633,7 +631,7 @@ siesta: FreeEng =    -11596.832434
 siesta: iscf =    1
 Eharris(eV) =     -11358.8737  E_KS(eV) =     -11596.8324  dDmax =   0.953436
 
-timer: Routine,Calls,Time,% = IterSCF        1       0.808  19.78
+timer: Routine,Calls,Time,% = IterSCF        1       0.546  16.47
 
 siesta: iscf =    2
 Eharris(eV) =     -11823.7434  E_KS(eV) =     -11735.3733  dDmax =   0.521214
@@ -648,13 +646,13 @@ Eharris(eV) =     -11823.7434  E_KS(eV) =     -11735.3733  dDmax =   0.521214
 |     1     4 -1.1158140E+002  1.5304785E-005 |
 |     1     5 -1.1158171E+002  2.7175151E-006 |
 |     1     6 -1.1158181E+002  9.3648034E-007 |
-|     1     7 -1.1158185E+002  3.8471871E-007 |
-|     1     8 -1.1158186E+002  9.6203423E-008 |
+|     1     7 -1.1158185E+002  3.8471870E-007 |
+|     1     8 -1.1158186E+002  9.6203422E-008 |
 |     1     9 -1.1158187E+002  2.9743452E-008 |
-|     1    10 -1.1158187E+002  9.0254477E-009 |
-|     1    11 -1.1158187E+002  4.0747814E-009 |
-|     1    12 -1.1158187E+002  1.2993641E-009 |
-|     1    13 -1.1158187E+002  3.8206436E-010 |
+|     1    10 -1.1158187E+002  9.0254479E-009 |
+|     1    11 -1.1158187E+002  4.0747811E-009 |
+|     1    12 -1.1158187E+002  1.2993644E-009 |
+|     1    13 -1.1158187E+002  3.8206411E-010 |
 +---------------------------------------------+
 | minim: icg             =    13              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -671,11 +669,11 @@ Eharris(eV) =     -11748.5177  E_KS(eV) =     -11745.2235  dDmax =   0.206142
 |     1     2 -1.1261653E+002  3.8572802E-006 |
 |     1     3 -1.1261666E+002  1.1887157E-006 |
 |     1     4 -1.1261670E+002  3.6361455E-007 |
-|     1     5 -1.1261671E+002  9.0976907E-008 |
+|     1     5 -1.1261671E+002  9.0976908E-008 |
 |     1     6 -1.1261672E+002  2.0915845E-008 |
-|     1     7 -1.1261672E+002  6.8060241E-009 |
-|     1     8 -1.1261672E+002  2.7207938E-009 |
-|     1     9 -1.1261672E+002  6.3679369E-010 |
+|     1     7 -1.1261672E+002  6.8060243E-009 |
+|     1     8 -1.1261672E+002  2.7207933E-009 |
+|     1     9 -1.1261672E+002  6.3679419E-010 |
 +---------------------------------------------+
 | minim: icg             =     9              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -693,9 +691,9 @@ Eharris(eV) =     -11745.2725  E_KS(eV) =     -11745.2931  dDmax =   0.044534
 |     1     3 -1.1218127E+002  1.8814052E-007 |
 |     1     4 -1.1218128E+002  7.5280500E-008 |
 |     1     5 -1.1218128E+002  1.7677855E-008 |
-|     1     6 -1.1218128E+002  5.0900675E-009 |
-|     1     7 -1.1218128E+002  2.1396096E-009 |
-|     1     8 -1.1218128E+002  7.9446395E-010 |
+|     1     6 -1.1218128E+002  5.0900668E-009 |
+|     1     7 -1.1218128E+002  2.1396100E-009 |
+|     1     8 -1.1218128E+002  7.9446370E-010 |
 +---------------------------------------------+
 | minim: icg             =     8              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -708,10 +706,10 @@ Eharris(eV) =     -11745.3572  E_KS(eV) =     -11745.3390  dDmax =   0.012232
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1217598E+002  6.9674619E-008 |
-|     1     2 -1.1217598E+002  6.7799476E-009 |
-|     1     3 -1.1217598E+002  1.9627971E-009 |
-|     1     4 -1.1217598E+002  9.0279609E-010 |
+|     1     1 -1.1217598E+002  6.9674618E-008 |
+|     1     2 -1.1217598E+002  6.7799478E-009 |
+|     1     3 -1.1217598E+002  1.9627967E-009 |
+|     1     4 -1.1217598E+002  9.0279659E-010 |
 +---------------------------------------------+
 | minim: icg             =     4              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -724,11 +722,11 @@ Eharris(eV) =     -11745.3408  E_KS(eV) =     -11745.3399  dDmax =   0.003344
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1215683E+002  6.8162706E-008 |
-|     1     2 -1.1215683E+002  6.5286464E-009 |
-|     1     3 -1.1215683E+002  1.8469705E-009 |
-|     1     4 -1.1215683E+002  1.0176401E-009 |
-|     1     5 -1.1215683E+002  3.2080632E-010 |
+|     1     1 -1.1215683E+002  6.8162707E-008 |
+|     1     2 -1.1215683E+002  6.5286461E-009 |
+|     1     3 -1.1215683E+002  1.8469716E-009 |
+|     1     4 -1.1215683E+002  1.0176395E-009 |
+|     1     5 -1.1215683E+002  3.2080657E-010 |
 +---------------------------------------------+
 | minim: icg             =     5              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -742,7 +740,7 @@ Eharris(eV) =     -11745.3407  E_KS(eV) =     -11745.3403  dDmax =   0.003215
 +---------------------------------------------+
 |             E_OMM            E_diff         |
 |     1     1 -1.1214158E+002  7.7714431E-009 |
-|     1     2 -1.1214158E+002  9.4804100E-010 |
+|     1     2 -1.1214158E+002  9.4804126E-010 |
 +---------------------------------------------+
 | minim: icg             =     2              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -799,7 +797,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    1.215661    constrained
 
-Stress-tensor-Voigt (kbar):        6.12       10.20       15.85        1.36        6.61        1.27
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):        6.12       10.20       15.85        6.61        1.27        1.36
 (Free)E + p*V (eV/cell)   -11750.9076
 Target enthalpy (eV/cell)   -11745.3404
 
@@ -808,14 +806,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.000849    0.006367    0.004128
          0.000793    0.004128    0.009892
 
-siesta: Pressure (static):        -10.72185430  kBar
+siesta: Pressure (static):        -10.72185427  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.003817    0.000848    0.000793
          0.000849    0.006367    0.004128
          0.000793    0.004128    0.009892
 
-siesta: Pressure (total):        -10.72185430  kBar
+siesta: Pressure (total):        -10.72185427  kBar
 
 siesta: Temp_ion =       0.000 K
 
@@ -894,9 +892,9 @@ Eharris(eV) =     -11745.3355  E_KS(eV) =     -11745.3538  dDmax =   0.006729
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1213115E+002  1.1149908E-008 |
-|     1     2 -1.1213115E+002  2.1781043E-009 |
-|     1     3 -1.1213115E+002  6.2166433E-010 |
+|     1     1 -1.1213115E+002  1.1149903E-008 |
+|     1     2 -1.1213115E+002  2.1781038E-009 |
+|     1     3 -1.1213115E+002  6.2166395E-010 |
 +---------------------------------------------+
 | minim: icg             =     3              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -909,8 +907,8 @@ Eharris(eV) =     -11745.3538  E_KS(eV) =     -11745.3538  dDmax =   0.001421
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1213960E+002  3.5918073E-009 |
-|     1     2 -1.1213960E+002  5.8180275E-010 |
+|     1     1 -1.1213960E+002  3.5918066E-009 |
+|     1     2 -1.1213960E+002  5.8180212E-010 |
 +---------------------------------------------+
 | minim: icg             =     2              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -923,7 +921,7 @@ Eharris(eV) =     -11745.3539  E_KS(eV) =     -11745.3539  dDmax =   0.000787
 | OMM (sparse algebra+preconditioning)        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1214185E+002  5.1470285E-010 |
+|     1     1 -1.1214185E+002  5.1470260E-010 |
 +---------------------------------------------+
 | minim: icg             =     1              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -936,7 +934,7 @@ Eharris(eV) =     -11745.3539  E_KS(eV) =     -11745.3539  dDmax =   0.000097
 | OMM (sparse algebra)                        |
 +---------------------------------------------+
 |             E_OMM            E_diff         |
-|     1     1 -1.1214111E+002  1.3471856E-010 |
+|     1     1 -1.1214111E+002  1.3471843E-010 |
 +---------------------------------------------+
 | minim: icg             =     1              |
 | minim: 2*Tr[(2*I-S)*S] =   200.0000000      |
@@ -961,7 +959,7 @@ Eharris(eV) =     -11745.3539  E_KS(eV) =     -11745.3539  dDmax =   0.000009
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0000086897
-max |H_out - H_in|      (eV) :     0.0001574005
+max |H_out - H_in|      (eV) :     0.0001574011
 SCF cycle converged after 6 iterations
 
 Using DM_out to compute the final energy and forces
@@ -978,7 +976,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    1.197307    constrained
 
-Stress-tensor-Voigt (kbar):        6.09       10.11       15.63        1.32        6.50        1.26
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):        6.09       10.11       15.63        6.50        1.26        1.32
 (Free)E + p*V (eV/cell)   -11750.8635
 Target enthalpy (eV/cell)   -11745.3539
 
@@ -987,29 +985,28 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.000826    0.006309    0.004059
          0.000788    0.004060    0.009757
 
-siesta: Pressure (static):        -10.61089037  kBar
+siesta: Pressure (static):        -10.61089033  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.003802    0.000826    0.000788
          0.000826    0.006309    0.004059
          0.000788    0.004060    0.009757
 
-siesta: Pressure (total):        -10.61089037  kBar
+siesta: Pressure (total):        -10.61089033  kBar
 
 siesta: Temp_ion =       1.396 K
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =     -2851.515265
+siesta: Ebs     =     -2851.515266
 siesta: Eions   =     20396.361970
 siesta: Ena     =      4788.977822
-siesta: Ekin    =      8837.073416
+siesta: Ekin    =      8837.073417
 siesta: Enl     =     -1599.577760
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =      -547.663469
 siesta: DUscf   =        58.712236
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =     -2886.514134
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -1021,15 +1018,14 @@ siesta: Etot    =    -11745.340502
 siesta: FreeEng =    -11745.340502
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =   -2851.515265
-siesta:       Kinetic =    8837.073416
-siesta:       Hartree =    5978.058577
-siesta:       Eldau   =       0.000000
+siesta:  Band Struct. =   -2851.515266
+siesta:       Kinetic =    8837.073417
+siesta:       Hartree =    5978.058576
+siesta:       Edftu   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:       Enegf   =       0.000000
 siesta:   Exch.-corr. =   -2886.514134
-siesta:  Ion-electron =  -19899.901122
+siesta:  Ion-electron =  -19899.901123
 siesta:       Ion-ion =   -3774.070595
 siesta:       Ekinion =       0.013357
 siesta:         Total =  -11745.340502
@@ -1125,8 +1121,16 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00007213         -0.00006325  Ry/Bohr**3
 siesta:          -0.00662273         -0.00580703  eV/Ang**3
-siesta:         -10.61089037         -9.30398442  kBar
+siesta:         -10.61089033         -9.30398433  kBar
 (Free)E+ p_basis*V_orbitals  =      -11732.330732
 (Free)Eharris+ p_basis*V_orbitals  =      -11732.330732
->> End of run:   5-NOV-2018  10:57:45
+
+cite: Please see "OMM_h2o.bib" for an exhaustive BiBTeX file.
+cite: Please clearly indicate Siesta version in published work: v4.1-b4-351
+cite: This calculation has made use of the following articles
+cite: which are encouraged to be cited in a published work.
+        Primary SIESTA paper
+          DOI: www.doi.org/10.1088/0953-8984/14/11/302
+
+>> End of run:  22-JAN-2021  23:16:19
 Job completed

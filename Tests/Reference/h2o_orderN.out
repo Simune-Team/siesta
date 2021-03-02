@@ -1,17 +1,18 @@
-Siesta Version  : siesta-4.1-1033
-Architecture    : x86_64-linux-n-62-18-18
-Compiler version: GNU Fortran (GCC) 7.3.0
+Siesta Version  : v4.1-b4-351
+Architecture    : x86_64-linux-n-62-26-19
+Compiler version: GNU Fortran (GCC) 9.3.0
 Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
-Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PP flags        : -I/dtu/sw/dcc/SL73/2020-aug/generic/build-tools/1.0/include -I/dtu/sw/dcc/SL773/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/numactl/2.0.12/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/libxml2/2.9.10/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hwloc/2.2.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/knem/1.1.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/ucx/1.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/openmpi/4.0.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/szip/2.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hdf5/1.12.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/pnetcdf/1.12.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gen-zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/openssl/1.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/libssh2/1.8.2/include -I/dtu/sw/dcc/SL73/2020-aug/generic/curl/7.65.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/netcdf/4.7.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/fftw/3.3.8/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/parmetis/4.0.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scalapack/2.1.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/lapack/3.9.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/blis/0.7.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scotch/6.0.9/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/mumps/5.3.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include -DSIESTA__ELPA -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DTS_NOCHECKS -DSIESTA__METIS -DSIESTA__MUMPS -DSIESTA__MRRR -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include/elpa
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -llapack -lblis  -L/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -Wl,-rpath=/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
+Lua support
 
 * Running on 8 nodes in parallel
->> Start of run:   5-NOV-2018  10:50:08
+>> Start of run:  22-JAN-2021  23:10:43
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -57,7 +58,7 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 O                    Z=   8    Mass=  16.000        Charge= 0.17977+309
 Lmxo=1 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=0
+          i=1  nzeta=2  polorb=0  (2s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -67,7 +68,7 @@ L=0  Nsemic=0  Cnfigmx=2
                 rcs:    0.0000      0.0000    
             lambdas:    1.0000      1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=1
+          i=1  nzeta=2  polorb=1  (2p)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -88,7 +89,7 @@ atom: Called for O                     (Z =   8)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    6.00000
+Valence charge for ps generation:    6.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -193,7 +194,7 @@ atom: _________________________________________________________________________
 H                    Z=   1    Mass=  1.0100        Charge= 0.17977+309
 Lmxo=0 Lmxkb= 2    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=1
-          n=1  nzeta=2  polorb=1
+          i=1  nzeta=2  polorb=1  (1s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -213,7 +214,7 @@ atom: Called for H                     (Z =   1)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    1.00000
+Valence charge for ps generation:    1.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: Ceperley-Alder
@@ -339,7 +340,7 @@ siesta:
 redata: Spin configuration                          = none
 redata: Number of spin components                   = 1
 redata: Time-Reversal Symmetry                      = T
-redata: Spin-spiral                                 = F
+redata: Spin spiral                                 = F
 redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        2
 redata: Charge density info will appear in .RHO file
@@ -355,7 +356,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: New DM Mixing Weight                        =     0.2500
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
@@ -438,7 +438,6 @@ diag: Memory factor                                 =  1.0000
 ts: **************************************************************
 ts: Save H and S matrices                           =    F
 ts: Save DM and EDM matrices                        =    F
-ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
 
@@ -558,7 +557,7 @@ cgwf: iter =   43      grad =          -0.012142      Eb(Ry) =      -4.503499
 cgwf: iter =   44      grad =          -0.006251      Eb(Ry) =      -4.503857
 cgwf: iter =   45      grad =          -0.012422      Eb(Ry) =      -4.504306
 cgwf: iter =   46      grad =          -0.021134      Eb(Ry) =      -4.504853
-cgwf: iter =   47      grad =          -0.013641      Eb(Ry) =      -4.505311
+cgwf: iter =   47      grad =          -0.013641      Eb(Ry) =      -4.505310
 cgwf: iter =   48      grad =          -0.007398      Eb(Ry) =      -4.505663
 cgwf: iter =   49      grad =          -0.005109      Eb(Ry) =      -4.505988
 cgwf: iter =   50      grad =          -0.003427      Eb(Ry) =      -4.506131
@@ -641,11 +640,10 @@ siesta: Ena     =       175.155695
 siesta: Ekin    =       370.734199
 siesta: Enl     =       -67.177314
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
+siesta: Edftu   =         0.000000
 siesta: DEna    =       -13.595790
 siesta: DUscf   =         1.704926
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =      -116.210758
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -659,7 +657,7 @@ siesta: FreeEng =      -465.243521
 siesta: iscf =    1
 Eharris(eV) =       -467.6452  E_KS(eV) =       -465.2435  dDmax =   1.437841
 
-timer: Routine,Calls,Time,% = IterSCF        1       0.035   2.16
+timer: Routine,Calls,Time,% = IterSCF        1       0.038   2.83
 
 ordern: enum =      8.0000
 cgwf: iter =    1      grad =          -0.024958      Eb(Ry) =      -4.175415
@@ -718,40 +716,40 @@ Eharris(eV) =       -466.1226  E_KS(eV) =       -465.7620  dDmax =   0.047228
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.009723      Eb(Ry) =      -3.939617
-cgwf: iter =    2      grad =          -0.009939      Eb(Ry) =      -3.940623
-cgwf: iter =    3      grad =          -0.002332      Eb(Ry) =      -3.940737
+cgwf: iter =    1      grad =          -0.009723      Eb(Ry) =      -3.939618
+cgwf: iter =    2      grad =          -0.009934      Eb(Ry) =      -3.940623
+cgwf: iter =    3      grad =          -0.002332      Eb(Ry) =      -3.940738
 cgwf: iter =    4      grad =          -0.001748      Eb(Ry) =      -3.940857
 cgwf: iter =    5      grad =          -0.000362      Eb(Ry) =      -3.940908
 cgwf: iter =    6      grad =          -0.000093      Eb(Ry) =      -3.940920
 cgwf: iter =    7      grad =          -0.000045      Eb(Ry) =      -3.940925
-cgwf: iter =    8      grad =          -0.000069      Eb(Ry) =      -3.940926
-cgwf: iter =    9      grad =          -0.000027      Eb(Ry) =      -3.940929
-cgwf: iter =   10      grad =          -0.000041      Eb(Ry) =      -3.940932
-cgwf: iter =   11      grad =          -0.000036      Eb(Ry) =      -3.940933
-cgwf: iter =   12      grad =          -0.000084      Eb(Ry) =      -3.940938
-cgwf: iter =   13      grad =          -0.000034      Eb(Ry) =      -3.940940
-cgwf: iter =   14      grad =          -0.000030      Eb(Ry) =      -3.940940
-cgwf: iter =   15      grad =          -0.000012      Eb(Ry) =      -3.940942
-cgwf: iter =   16      grad =          -0.000026      Eb(Ry) =      -3.940943
-cgwf: iter =   17      grad =          -0.000010      Eb(Ry) =      -3.940944
-cgwf: iter =   18      grad =          -0.000022      Eb(Ry) =      -3.940945
+cgwf: iter =    8      grad =          -0.000069      Eb(Ry) =      -3.940927
+cgwf: iter =    9      grad =          -0.000027      Eb(Ry) =      -3.940930
+cgwf: iter =   10      grad =          -0.000041      Eb(Ry) =      -3.940933
+cgwf: iter =   11      grad =          -0.000035      Eb(Ry) =      -3.940934
+cgwf: iter =   12      grad =          -0.000084      Eb(Ry) =      -3.940939
+cgwf: iter =   13      grad =          -0.000034      Eb(Ry) =      -3.940941
+cgwf: iter =   14      grad =          -0.000030      Eb(Ry) =      -3.940941
+cgwf: iter =   15      grad =          -0.000012      Eb(Ry) =      -3.940943
+cgwf: iter =   16      grad =          -0.000026      Eb(Ry) =      -3.940944
+cgwf: iter =   17      grad =          -0.000010      Eb(Ry) =      -3.940945
+cgwf: iter =   18      grad =          -0.000022      Eb(Ry) =      -3.940946
 cgwf: iter =   19      grad =          -0.000015      Eb(Ry) =      -3.940946
-cgwf: iter =   20      grad =          -0.000007      Eb(Ry) =      -3.940946
-cgwf: iter =   21      grad =          -0.000017      Eb(Ry) =      -3.940947
-cgwf: iter =   22      grad =          -0.000008      Eb(Ry) =      -3.940948
-cgwf: iter =   23      grad =          -0.000004      Eb(Ry) =      -3.940948
+cgwf: iter =   20      grad =          -0.000007      Eb(Ry) =      -3.940947
+cgwf: iter =   21      grad =          -0.000017      Eb(Ry) =      -3.940948
+cgwf: iter =   22      grad =          -0.000008      Eb(Ry) =      -3.940949
+cgwf: iter =   23      grad =          -0.000004      Eb(Ry) =      -3.940949
 cgwf: iter =   24      grad =          -0.000008      Eb(Ry) =      -3.940949
 cgwf: iter =   25      grad =          -0.000002      Eb(Ry) =      -3.940949
-cgwf: iter =   26      grad =          -0.000006      Eb(Ry) =      -3.940949
-cgwf: iter =   27      grad =          -0.000002      Eb(Ry) =      -3.940949
-cgwf: iter =   28      grad =          -0.000001      Eb(Ry) =      -3.940949
-cgwf: iter =   29      grad =          -0.000003      Eb(Ry) =      -3.940949
-cgwf: iter =   30      grad =          -0.000002      Eb(Ry) =      -3.940949
+cgwf: iter =   26      grad =          -0.000006      Eb(Ry) =      -3.940950
+cgwf: iter =   27      grad =          -0.000002      Eb(Ry) =      -3.940950
+cgwf: iter =   28      grad =          -0.000001      Eb(Ry) =      -3.940950
+cgwf: iter =   29      grad =          -0.000003      Eb(Ry) =      -3.940950
+cgwf: iter =   30      grad =          -0.000002      Eb(Ry) =      -3.940950
 cgwf: iter =   31      grad =          -0.000004      Eb(Ry) =      -3.940950
-cgwf: iter =   32      grad =          -0.000001      Eb(Ry) =      -3.940950
-cgwf: iter =   33      grad =          -0.000003      Eb(Ry) =      -3.940950
-cgwf: iter =   34      grad =          -0.000002      Eb(Ry) =      -3.940950
+cgwf: iter =   32      grad =          -0.000001      Eb(Ry) =      -3.940951
+cgwf: iter =   33      grad =          -0.000003      Eb(Ry) =      -3.940951
+cgwf: iter =   34      grad =          -0.000002      Eb(Ry) =      -3.940951
 
 cgwf:  CG tolerance reached
 
@@ -764,8 +762,8 @@ Eharris(eV) =       -465.8480  E_KS(eV) =       -465.8349  dDmax =   0.024875
 
 ordern: enum =      8.0000
 cgwf: iter =    1      grad =          -0.000091      Eb(Ry) =      -3.915115
-cgwf: iter =    2      grad =          -0.000197      Eb(Ry) =      -3.915122
-cgwf: iter =    3      grad =          -0.000027      Eb(Ry) =      -3.915125
+cgwf: iter =    2      grad =          -0.000196      Eb(Ry) =      -3.915122
+cgwf: iter =    3      grad =          -0.000027      Eb(Ry) =      -3.915124
 cgwf: iter =    4      grad =          -0.000027      Eb(Ry) =      -3.915126
 cgwf: iter =    5      grad =          -0.000012      Eb(Ry) =      -3.915127
 cgwf: iter =    6      grad =          -0.000007      Eb(Ry) =      -3.915127
@@ -773,15 +771,14 @@ cgwf: iter =    7      grad =          -0.000005      Eb(Ry) =      -3.915128
 cgwf: iter =    8      grad =          -0.000004      Eb(Ry) =      -3.915128
 cgwf: iter =    9      grad =          -0.000003      Eb(Ry) =      -3.915128
 cgwf: iter =   10      grad =          -0.000002      Eb(Ry) =      -3.915128
-cgwf: iter =   11      grad =          -0.000003      Eb(Ry) =      -3.915129
+cgwf: iter =   11      grad =          -0.000003      Eb(Ry) =      -3.915128
 cgwf: iter =   12      grad =          -0.000001      Eb(Ry) =      -3.915129
 cgwf: iter =   13      grad =          -0.000003      Eb(Ry) =      -3.915129
 cgwf: iter =   14      grad =          -0.000002      Eb(Ry) =      -3.915129
 cgwf: iter =   15      grad =          -0.000004      Eb(Ry) =      -3.915129
 cgwf: iter =   16      grad =          -0.000003      Eb(Ry) =      -3.915129
-cgwf: iter =   17      grad =          -0.000003      Eb(Ry) =      -3.915129
-cgwf: iter =   18      grad =          -0.000006      Eb(Ry) =      -3.915129
-cgwf: iter =   19      grad =          -0.000001      Eb(Ry) =      -3.915130
+cgwf: iter =   17      grad =          -0.000002      Eb(Ry) =      -3.915129
+cgwf: iter =   18      grad =          -0.000002      Eb(Ry) =      -3.915129
 
 cgwf:  CG tolerance reached
 
@@ -789,32 +786,47 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    4
-Eharris(eV) =       -465.8398  E_KS(eV) =       -465.8375  dDmax =   0.009126
+Eharris(eV) =       -465.8397  E_KS(eV) =       -465.8374  dDmax =   0.009455
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000392      Eb(Ry) =      -3.845452
-cgwf: iter =    2      grad =          -0.000658      Eb(Ry) =      -3.845484
-cgwf: iter =    3      grad =          -0.000130      Eb(Ry) =      -3.845492
-cgwf: iter =    4      grad =          -0.000129      Eb(Ry) =      -3.845500
-cgwf: iter =    5      grad =          -0.000051      Eb(Ry) =      -3.845505
-cgwf: iter =    6      grad =          -0.000034      Eb(Ry) =      -3.845507
-cgwf: iter =    7      grad =          -0.000016      Eb(Ry) =      -3.845509
-cgwf: iter =    8      grad =          -0.000038      Eb(Ry) =      -3.845510
-cgwf: iter =    9      grad =          -0.000014      Eb(Ry) =      -3.845512
-cgwf: iter =   10      grad =          -0.000032      Eb(Ry) =      -3.845513
-cgwf: iter =   11      grad =          -0.000008      Eb(Ry) =      -3.845513
-cgwf: iter =   12      grad =          -0.000011      Eb(Ry) =      -3.845515
-cgwf: iter =   13      grad =          -0.000029      Eb(Ry) =      -3.845516
-cgwf: iter =   14      grad =          -0.000009      Eb(Ry) =      -3.845517
-cgwf: iter =   15      grad =          -0.000011      Eb(Ry) =      -3.845518
-cgwf: iter =   16      grad =          -0.000004      Eb(Ry) =      -3.845518
-cgwf: iter =   17      grad =          -0.000008      Eb(Ry) =      -3.845518
-cgwf: iter =   18      grad =          -0.000001      Eb(Ry) =      -3.845519
-cgwf: iter =   19      grad =          -0.000001      Eb(Ry) =      -3.845519
-cgwf: iter =   20      grad =          -0.000001      Eb(Ry) =      -3.845519
-cgwf: iter =   21      grad =          -0.000000      Eb(Ry) =      -3.845519
-cgwf: iter =   22      grad =          -0.000002      Eb(Ry) =      -3.845519
+cgwf: iter =    1      grad =          -0.000420      Eb(Ry) =      -3.845416
+cgwf: iter =    2      grad =          -0.000964      Eb(Ry) =      -3.845444
+cgwf: iter =    3      grad =          -0.000095      Eb(Ry) =      -3.845455
+cgwf: iter =    4      grad =          -0.000401      Eb(Ry) =      -3.845456
+cgwf: iter =    5      grad =          -0.000175      Eb(Ry) =      -3.845461
+cgwf: iter =    6      grad =          -0.000037      Eb(Ry) =      -3.845469
+cgwf: iter =    7      grad =          -0.000044      Eb(Ry) =      -3.845471
+cgwf: iter =    8      grad =          -0.000042      Eb(Ry) =      -3.845474
+cgwf: iter =    9      grad =          -0.000039      Eb(Ry) =      -3.845475
+cgwf: iter =   10      grad =          -0.000037      Eb(Ry) =      -3.845476
+cgwf: iter =   11      grad =          -0.000008      Eb(Ry) =      -3.845478
+cgwf: iter =   12      grad =          -0.000010      Eb(Ry) =      -3.845479
+cgwf: iter =   13      grad =          -0.000007      Eb(Ry) =      -3.845479
+cgwf: iter =   14      grad =          -0.000005      Eb(Ry) =      -3.845479
+cgwf: iter =   15      grad =          -0.000011      Eb(Ry) =      -3.845480
+cgwf: iter =   16      grad =          -0.000012      Eb(Ry) =      -3.845480
+cgwf: iter =   17      grad =          -0.000012      Eb(Ry) =      -3.845481
+cgwf: iter =   18      grad =          -0.000011      Eb(Ry) =      -3.845481
+cgwf: iter =   19      grad =          -0.000010      Eb(Ry) =      -3.845482
+cgwf: iter =   20      grad =          -0.000012      Eb(Ry) =      -3.845482
+cgwf: iter =   21      grad =          -0.000006      Eb(Ry) =      -3.845482
+cgwf: iter =   22      grad =          -0.000005      Eb(Ry) =      -3.845483
+cgwf: iter =   23      grad =          -0.000005      Eb(Ry) =      -3.845483
+cgwf: iter =   24      grad =          -0.000006      Eb(Ry) =      -3.845483
+cgwf: iter =   25      grad =          -0.000002      Eb(Ry) =      -3.845483
+cgwf: iter =   26      grad =          -0.000002      Eb(Ry) =      -3.845483
+cgwf: iter =   27      grad =          -0.000001      Eb(Ry) =      -3.845483
+cgwf: iter =   28      grad =          -0.000003      Eb(Ry) =      -3.845483
+cgwf: iter =   29      grad =          -0.000005      Eb(Ry) =      -3.845483
+cgwf: iter =   30      grad =          -0.000004      Eb(Ry) =      -3.845484
+cgwf: iter =   31      grad =          -0.000003      Eb(Ry) =      -3.845484
+cgwf: iter =   32      grad =          -0.000001      Eb(Ry) =      -3.845484
+cgwf: iter =   33      grad =          -0.000002      Eb(Ry) =      -3.845484
+cgwf: iter =   34      grad =          -0.000003      Eb(Ry) =      -3.845484
+cgwf: iter =   35      grad =          -0.000004      Eb(Ry) =      -3.845485
+cgwf: iter =   36      grad =          -0.000003      Eb(Ry) =      -3.845485
+cgwf: iter =   37      grad =          -0.000001      Eb(Ry) =      -3.845485
 
 cgwf:  CG tolerance reached
 
@@ -822,15 +834,15 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    5
-Eharris(eV) =       -465.8395  E_KS(eV) =       -465.8390  dDmax =   0.026150
+Eharris(eV) =       -465.8395  E_KS(eV) =       -465.8389  dDmax =   0.027086
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000007      Eb(Ry) =      -3.844117
-cgwf: iter =    2      grad =          -0.000006      Eb(Ry) =      -3.844117
-cgwf: iter =    3      grad =          -0.000010      Eb(Ry) =      -3.844118
-cgwf: iter =    4      grad =          -0.000001      Eb(Ry) =      -3.844118
-cgwf: iter =    5      grad =          -0.000001      Eb(Ry) =      -3.844118
+cgwf: iter =    1      grad =          -0.000007      Eb(Ry) =      -3.843772
+cgwf: iter =    2      grad =          -0.000018      Eb(Ry) =      -3.843773
+cgwf: iter =    3      grad =          -0.000002      Eb(Ry) =      -3.843773
+cgwf: iter =    4      grad =          -0.000001      Eb(Ry) =      -3.843773
+cgwf: iter =    5      grad =          -0.000000      Eb(Ry) =      -3.843773
 
 cgwf:  CG tolerance reached
 
@@ -838,13 +850,13 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    6
-Eharris(eV) =       -465.8392  E_KS(eV) =       -465.8391  dDmax =   0.000382
+Eharris(eV) =       -465.8392  E_KS(eV) =       -465.8391  dDmax =   0.000421
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.844576
-cgwf: iter =    2      grad =          -0.000004      Eb(Ry) =      -3.844576
-cgwf: iter =    3      grad =          -0.000001      Eb(Ry) =      -3.844576
+cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.844312
+cgwf: iter =    2      grad =          -0.000003      Eb(Ry) =      -3.844312
+cgwf: iter =    3      grad =          -0.000001      Eb(Ry) =      -3.844312
 
 cgwf:  CG tolerance reached
 
@@ -852,13 +864,14 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    7
-Eharris(eV) =       -465.8392  E_KS(eV) =       -465.8391  dDmax =   0.000221
+Eharris(eV) =       -465.8392  E_KS(eV) =       -465.8391  dDmax =   0.000225
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.845602
-cgwf: iter =    2      grad =          -0.000002      Eb(Ry) =      -3.845602
-cgwf: iter =    3      grad =          -0.000001      Eb(Ry) =      -3.845602
+cgwf: iter =    1      grad =          -0.000002      Eb(Ry) =      -3.845578
+cgwf: iter =    2      grad =          -0.000004      Eb(Ry) =      -3.845578
+cgwf: iter =    3      grad =          -0.000000      Eb(Ry) =      -3.845578
+cgwf: iter =    4      grad =          -0.000001      Eb(Ry) =      -3.845578
 
 cgwf:  CG tolerance reached
 
@@ -866,11 +879,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    8
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000169
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000325
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.846284
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.845468
 
 cgwf:  CG tolerance reached
 
@@ -878,13 +891,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =    9
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000016
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000022
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.849233
-cgwf: iter =    2      grad =          -0.000003      Eb(Ry) =      -3.849233
-cgwf: iter =    3      grad =          -0.000000      Eb(Ry) =      -3.849233
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.846760
 
 cgwf:  CG tolerance reached
 
@@ -892,11 +903,13 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   10
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000274
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000027
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.848463
+cgwf: iter =    1      grad =          -0.000003      Eb(Ry) =      -3.849493
+cgwf: iter =    2      grad =          -0.000006      Eb(Ry) =      -3.849494
+cgwf: iter =    3      grad =          -0.000000      Eb(Ry) =      -3.849494
 
 cgwf:  CG tolerance reached
 
@@ -904,11 +917,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   11
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000028
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000333
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.848332
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.848890
 
 cgwf:  CG tolerance reached
 
@@ -916,11 +929,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   12
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000021
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000069
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.848378
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.848664
 
 cgwf:  CG tolerance reached
 
@@ -928,11 +941,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   13
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000016
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000033
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.848406
+cgwf: iter =    1      grad =          -0.000001      Eb(Ry) =      -3.848709
 
 cgwf:  CG tolerance reached
 
@@ -940,11 +953,11 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   14
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000014
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000018
 
 
 ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.848376
+cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.848802
 
 cgwf:  CG tolerance reached
 
@@ -952,37 +965,13 @@ denmat: qtot (before DM normalization) =       8.0000
 ordern: qtot (after  DM normalization) =       8.0000
 
 siesta: iscf =   15
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000011
-
-
-ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.848489
-
-cgwf:  CG tolerance reached
-
-denmat: qtot (before DM normalization) =       8.0000
-ordern: qtot (after  DM normalization) =       8.0000
-
-siesta: iscf =   16
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000011
-
-
-ordern: enum =      8.0000
-cgwf: iter =    1      grad =          -0.000000      Eb(Ry) =      -3.849056
-
-cgwf:  CG tolerance reached
-
-denmat: qtot (before DM normalization) =       8.0000
-ordern: qtot (after  DM normalization) =       8.0000
-
-siesta: iscf =   17
-Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000015
+Eharris(eV) =       -465.8391  E_KS(eV) =       -465.8391  dDmax =   0.000014
 
 
 SCF Convergence by DM+H criterion
-max |DM_out - DM_in|         :     0.0000152969
-max |H_out - H_in|      (eV) :     0.0006903604
-SCF cycle converged after 17 iterations
+max |DM_out - DM_in|         :     0.0000140833
+max |H_out - H_in|      (eV) :     0.0007153330
+SCF cycle converged after 15 iterations
 
 Using DM_out to compute the final energy and forces
 No. of atoms with KB's overlaping orbs in proc 0. Max # of overlaps:       3      23
@@ -993,77 +982,83 @@ siesta: E_KS - E_eggbox =      -465.8391
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000012    0.055294    0.000107
+   Tot   -0.000007    0.055230    0.000087
 ----------------------------------------
-   Max    0.689710
-   Res    0.378986    sqrt( Sum f_i^2 / 3N )
+   Max    0.689562
+   Res    0.378698    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.689710    constrained
+   Max    0.689562    constrained
 
-Stress-tensor-Voigt (kbar):      -19.91       -3.50       22.44        0.00       -0.00       -0.00
-(Free)E + p*V (eV/cell)     -465.7917
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):      -19.91       -3.50       22.45       -0.00        0.00       -0.00
+(Free)E + p*V (eV/cell)     -465.7922
 Target enthalpy (eV/cell)     -465.8391
 
 siesta: Program's energy decomposition (eV):
-siesta: Ebs     =      -104.734579
+siesta: Ebs     =      -104.736779
 siesta: Eions   =       815.854478
 siesta: Ena     =       175.155695
-siesta: Ekin    =       350.810600
-siesta: Enl     =       -61.968427
+siesta: Ekin    =       350.809235
+siesta: Enl     =       -61.968912
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.000000
-siesta: DEna    =        -1.793174
-siesta: DUscf   =         0.727194
+siesta: Edftu   =         0.000000
+siesta: DEna    =        -1.791718
+siesta: DUscf   =         0.727220
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
-siesta: Exc     =      -112.916552
+siesta: Exc     =      -112.916185
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -465.839143
-siesta: Etot    =      -465.839143
-siesta: FreeEng =      -465.839143
+siesta: Eharris =      -465.839144
+siesta: Etot    =      -465.839144
+siesta: FreeEng =      -465.839144
 
 siesta: Final energy (eV):
-siesta:  Band Struct. =    -104.734579
-siesta:       Kinetic =     350.810600
-siesta:       Hartree =     382.630203
-siesta:       Eldau   =       0.000000
+siesta:  Band Struct. =    -104.736779
+siesta:       Kinetic =     350.809235
+siesta:       Hartree =     382.627886
+siesta:       Edftu   =       0.000000
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:       Enegf   =       0.000000
-siesta:   Exch.-corr. =    -112.916552
-siesta:  Ion-electron =   -1072.858892
+siesta:   Exch.-corr. =    -112.916185
+siesta:  Ion-electron =   -1072.855579
 siesta:       Ion-ion =     -13.504501
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -465.839143
+siesta:         Total =    -465.839144
 siesta:         Fermi =       0.000000
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.000003   -0.457859    0.000050
-siesta:      2    0.689695    0.256553    0.000030
-siesta:      3   -0.689710    0.256601    0.000027
+siesta:      1   -0.000034   -0.456801    0.000042
+siesta:      2    0.689562    0.256028    0.000023
+siesta:      3   -0.689536    0.256003    0.000023
 siesta: ----------------------------------------
-siesta:    Tot   -0.000012    0.055294    0.000107
+siesta:    Tot   -0.000007    0.055230    0.000087
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.012427    0.000000    0.000000
-siesta:     0.000000   -0.002184    0.000000
-siesta:    -0.000000   -0.000000    0.014007
+siesta:    -0.012426   -0.000000    0.000000
+siesta:    -0.000000   -0.002181    0.000000
+siesta:     0.000000   -0.000000    0.014010
 
 siesta: Cell volume =        235.378012 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00000219         -0.00001822  Ry/Bohr**3
-siesta:           0.00020143         -0.00167260  eV/Ang**3
-siesta:           0.32273287         -2.67982467  kBar
-(Free)E+ p_basis*V_orbitals  =        -465.253975
-(Free)Eharris+ p_basis*V_orbitals  =        -465.253975
+siesta:           0.00000217         -0.00001823  Ry/Bohr**3
+siesta:           0.00019939         -0.00167341  eV/Ang**3
+siesta:           0.31946535         -2.68113046  kBar
+(Free)E+ p_basis*V_orbitals  =        -465.253976
+(Free)Eharris+ p_basis*V_orbitals  =        -465.253976
 
-siesta: Electric dipole (a.u.)  =   -0.000001    0.557481   -0.000005
-siesta: Electric dipole (Debye) =   -0.000003    1.416975   -0.000012
->> End of run:   5-NOV-2018  10:50:10
+siesta: Electric dipole (a.u.)  =   -0.000001    0.557634   -0.000004
+siesta: Electric dipole (Debye) =   -0.000001    1.417366   -0.000010
+
+cite: Please see "h2o_orderN.bib" for an exhaustive BiBTeX file.
+cite: Please clearly indicate Siesta version in published work: v4.1-b4-351
+cite: This calculation has made use of the following articles
+cite: which are encouraged to be cited in a published work.
+        Primary SIESTA paper
+          DOI: www.doi.org/10.1088/0953-8984/14/11/302
+
+>> End of run:  22-JAN-2021  23:10:45
 Job completed

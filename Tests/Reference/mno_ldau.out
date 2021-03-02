@@ -1,17 +1,18 @@
-Siesta Version  : siesta-4.1-1033
-Architecture    : x86_64-linux-n-62-18-18
-Compiler version: GNU Fortran (GCC) 7.3.0
+Siesta Version  : v4.1-b4-351
+Architecture    : x86_64-linux-n-62-26-19
+Compiler version: GNU Fortran (GCC) 9.3.0
 Compiler flags  : mpifort -m64 -fPIC -O3 -march=native -ftree-vectorize -fexpensive-optimizatioons -funroll-loops -fprefetch-loop-arrays -fno-second-underscore  -flto
-PP flags        : -I/zdata/groups/common/nicpa/2018-feb/generic/build-tools/1.0/include -I/zdatta/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/gcc/7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/zlib/1.2.11/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/generic/numactl/2.0.11/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/libxml2/2.9.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hwloc/1.11.9/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openmpi/3.0.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/szip/2.1.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/hdf5/1.8.18/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/pnetcdf/1.8.1/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/netcdf/4.6.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/parmetis/4.0.3/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scalapack/204/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/openblas/0.2.20/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/scotch/6.0.4/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/mumps/5.1.2/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/fftw/3.3.7/gnu-7.3.0/include -I/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/elpa/2017.05.003/gnu-7.3.0/include/elpa -DSIESTA__ELPA -DMPI -D1 -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DSIESTA__METIS -DSIESTA__MUMPS -DTS_NOCHECKS -DSIESTA__MRRR
-Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -lopenblas  -L/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -Wl,-rpath=/zdata/groups/common/nicpa/2018-feb/XeonE5-2665/flook/0.7.0/gnu-7.3.0/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
+PP flags        : -I/dtu/sw/dcc/SL73/2020-aug/generic/build-tools/1.0/include -I/dtu/sw/dcc/SL773/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gcc/9.3.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/numactl/2.0.12/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/libxml2/2.9.10/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hwloc/2.2.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/knem/1.1.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/ucx/1.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/openmpi/4.0.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/szip/2.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/hdf5/1.12.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/pnetcdf/1.12.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/gen-zlib/1.2.11/include -I/dtu/sw/dcc/SL73/2020-aug/generic/openssl/1.1.1/include -I/dtu/sw/dcc/SL73/2020-aug/generic/libssh2/1.8.2/include -I/dtu/sw/dcc/SL73/2020-aug/generic/curl/7.65.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/netcdf/4.7.4/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/fftw/3.3.8/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/parmetis/4.0.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scalapack/2.1.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/lapack/3.9.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/blis/0.7.0/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/scotch/6.0.9/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/mumps/5.3.3/include -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include -DSIESTA__ELPA -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT -DCDF -DCDF4 -DSIESTA__FLOOK  -DNCDF -DNCDF_4 -DNCDF_PARALLEL -DTS_NOCHECKS -DSIESTA__METIS -DSIESTA__MUMPS -DSIESTA__MRRR -I/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/elpa/2020.05.001/include/elpa
+Libraries       : libncdf.a libfdict.a -lnetcdff -lnetcdf -lpnetcdf -lhdf5_hl -lhdf5 -lz  -lzmuumps -lmumps_common -lesmumps -lscotch -lscotcherr -lpord -lparmetis -lmetis -lelpa -lscalapack -llapack -lblis  -L/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -Wl,-rpath=/dtu/sw/dcc/SL73/2020-aug/XeonE5-2660v3/gnu/9.3.0/flook/0.8.1/lib -lflookall -ldl  -flto -fuse-linker-plugin  -lmetis
 PARALLEL version
 NetCDF support
 NetCDF-4 support
 NetCDF-4 MPI-IO support
 METIS ordering support
+Lua support
 
 * Running on 8 nodes in parallel
->> Start of run:   7-NOV-2018   8:58:53
+>> Start of run:  22-JAN-2021  23:15:28
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -57,7 +58,7 @@ relmxkb: Read Max KB Ang. Momentum=    3 for species O_ldau
 Mn_ldau              Z=  25    Mass=  54.940        Charge= 0.17977+309
 Lmxo=2 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=4
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (4s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -68,7 +69,7 @@ L=0  Nsemic=0  Cnfigmx=4
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=4
 L=2  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (3d)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -99,7 +100,7 @@ atom: Called for Mn_ldau               (Z =  25)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    7.00000
+Valence charge for ps generation:    7.00000
 
 read_vps: Pseudopotential includes a core correction:
 read_vps: Pseudo-core for xc-correction
@@ -176,28 +177,28 @@ comcore: Pseudo-core radius Rcore=  3.929841
 
 atom: _________________________________________________________________________
 
-LDAUprojs with principal quantum number n =  4
-LDAUprojs with angular momentum l =  0
-LDAUprojs with U        =      0.22049
-LDAUprojs with J        =      0.00000
-LDAUprojs with lambda   =      1.00000
-LDAUprojs with rc       =      0.00000
-LDAUprojs with nnodes   =     1
-LDAUprojs with nprin    =     1
-LDAUprojs with nrval    =  1121
-LDAUprojs with nrwf     =  1067
-LDAUprojs with nrmax    = 20000
-LDAUprojs with zval     =      7.00000
-LDAUprojs with a        =      0.01250
-LDAUprojs with b        =      0.00010
-ldau_proj_gen: updating the rc to     26.275065289100 Bohr
+DFTUprojs with principal quantum number n =  4
+DFTUprojs with angular momentum l =  0
+DFTUprojs with U        =      0.22049
+DFTUprojs with J        =      0.00000
+DFTUprojs with lambda   =      1.00000
+DFTUprojs with rc       =      0.00000
+DFTUprojs with nnodes   =     1
+DFTUprojs with nprin    =     1
+DFTUprojs with nrval    =  1121
+DFTUprojs with nrwf     =  1067
+DFTUprojs with nrmax    = 20000
+DFTUprojs with zval     =      7.00000
+DFTUprojs with a        =      0.01250
+DFTUprojs with b        =      0.00010
+dftu_proj_gen: updating the rc to     26.275065289100 Bohr
 
 <basis_specs>
 ===============================================================================
 O_ldau               Z=   8    Mass=  16.000        Charge= 0.17977+309
 Lmxo=1 Lmxkb= 3    BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2s)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -207,7 +208,7 @@ L=0  Nsemic=0  Cnfigmx=2
                 rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=1  polorb=0
+          i=1  nzeta=1  polorb=0  (2p)
             splnorm:   0.15000    
                vcte:    0.0000    
                rinn:    0.0000    
@@ -228,7 +229,7 @@ atom: Called for O_ldau                (Z =   8)
 
 read_vps: Pseudopotential generation method:
 read_vps: ATM3      Troullier-Martins                       
-Total valence charge:    6.00000
+Valence charge for ps generation:    6.00000
 
 xc_check: Exchange-correlation functional:
 xc_check: GGA Perdew, Burke & Ernzerhof 1996
@@ -350,7 +351,7 @@ siesta:
 redata: Spin configuration                          = collinear
 redata: Number of spin components                   = 2
 redata: Time-Reversal Symmetry                      = T
-redata: Spin-spiral                                 = F
+redata: Spin spiral                                 = F
 redata: Long output                                 =   F
 redata: Number of Atomic Species                    =        2
 redata: Charge density info will appear in .RHO file
@@ -366,7 +367,6 @@ redata: Mix DM or H after convergence               =   F
 redata: Recompute H after scf cycle                 =   F
 redata: Mix DM in first SCF step                    =   T
 redata: Write Pulay info on disk                    =   F
-redata: New DM Mixing Weight                        =     0.2000
 redata: New DM Occupancy tolerance                  = 0.000000000001
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks                  =     0.5000
@@ -449,7 +449,6 @@ superc: Number of atoms, orbitals, and projectors:   1458   7290  23328
 ts: **************************************************************
 ts: Save H and S matrices                           =    F
 ts: Save DM and EDM matrices                        =    F
-ts: Fix Hartree potential                           =    F
 ts: Only save the overlap matrix S                  =    F
 ts: **************************************************************
 
@@ -539,11 +538,10 @@ siesta: Ena     =       194.465887
 siesta: Ekin    =      1000.552567
 siesta: Enl     =      -420.113286
 siesta: Eso     =         0.000000
-siesta: Eldau   =         0.591545
+siesta: Edftu   =         0.591545
 siesta: DEna    =       -30.286428
 siesta: DUscf   =         4.221502
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =      -455.149895
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -557,7 +555,7 @@ siesta: FreeEng =     -1038.960207
         iscf     Eharris(eV)        E_KS(eV)     FreeEng(eV)     dDmax    Ef(eV) dHmax(eV)
    scf:    1    -1030.434374    -1038.955367    -1038.960207  0.759554 -3.376772  8.127585
      spin moment: S , {S} =    4.93750       0.0       0.0   4.93750
-timer: Routine,Calls,Time,% = IterSCF        1       0.460  20.50
+timer: Routine,Calls,Time,% = IterSCF        1       0.562  27.86
    scf:    2    -1040.969529    -1040.057961    -1040.062468  0.055154 -3.005193  4.875409
      spin moment: S , {S} =    4.96283       0.0       0.0   4.96283
    scf:    3    -1040.377839    -1040.477400    -1040.479976  0.084489 -1.934797  1.800162
@@ -604,7 +602,7 @@ hubbard_term: maximum change in local occup.    0.000042
 
 SCF Convergence by DM+H criterion
 max |DM_out - DM_in|         :     0.0000585070
-max |H_out - H_in|      (eV) :     0.0007204875
+max |H_out - H_in|      (eV) :     0.0007204876
 LDA+U population converged by dTol_pop criteria:
 max |pop(LDA+U)_i - pop(LDA+U)_j|:     0.0000415073
 SCF cycle converged after 13 iterations
@@ -629,7 +627,7 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Max    0.000000    constrained
 
-Stress-tensor-Voigt (kbar):      138.19      138.19      138.19       -0.54       -0.54       -0.54
+Stress tensor Voigt[x,y,z,yz,xz,xy] (kbar):      138.19      138.19      138.19       -0.54       -0.54       -0.54
 (Free)E + p*V (eV/cell)    -1042.4480
 Target enthalpy (eV/cell)    -1040.5733
 
@@ -673,11 +671,9 @@ siesta: Ekin    =      1001.475140
 siesta: Enl     =      -429.813753
 siesta: Eso     =         0.000000
 siesta: Edftu   =         0.542001
-siesta: Eldau   =         0.542001
 siesta: DEna    =       -21.331708
 siesta: DUscf   =         1.442028
 siesta: DUext   =         0.000000
-siesta: Enegf   =         0.000000
 siesta: Exc     =      -454.112958
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
@@ -693,10 +689,8 @@ siesta:  Band Struct. =     -99.503935
 siesta:       Kinetic =    1001.475140
 siesta:       Hartree =     189.216905
 siesta:       Edftu   =       0.542001
-siesta:       Eldau   =       0.542001
 siesta:       Eso     =       0.000000
 siesta:    Ext. field =       0.000000
-siesta:       Enegf   =       0.000000
 siesta:   Exch.-corr. =    -454.112958
 siesta:  Ion-electron =   -1183.748843
 siesta:       Ion-ion =    -593.942867
@@ -719,5 +713,15 @@ siesta:        -138.18980049       -138.18980049  kBar
 (Free)E+ p_basis*V_orbitals  =       -1040.233971
 (Free)Eharris+ p_basis*V_orbitals  =       -1040.233963
      spin moment: S , {S} =    5.00000       0.0       0.0   5.00000
->> End of run:   7-NOV-2018   8:59:00
+
+cite: Please see "mno_ldau.bib" for an exhaustive BiBTeX file.
+cite: Please clearly indicate Siesta version in published work: v4.1-b4-351
+cite: This calculation has made use of the following articles
+cite: which are encouraged to be cited in a published work.
+        Primary SIESTA paper
+          DOI: www.doi.org/10.1088/0953-8984/14/11/302
+        LDA+U implementation
+          DOI: www.doi.org/10.1103/PhysRevB.57.1505
+
+>> End of run:  22-JAN-2021  23:15:36
 Job completed
