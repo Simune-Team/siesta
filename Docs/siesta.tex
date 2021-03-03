@@ -458,7 +458,7 @@ Extensive review of applications as of summer 2003.
 
 \item
  ``Improvements on non-equilibrium and transport Green function techniques: The next-generation TranSIESTA'',
- Nick Papior, Nicolas Lorente, Thomas Frederiksen, Alberto García and
+ Nick Papior, Nicolas Lorente, Thomas Frederiksen, Alberto Garc\'{\i}a and
  Mads Brandbyge, Computer Physics Communications, \textbf{212}, 8--24 (2017).
 
  Description of the \tsiesta\ method.
@@ -472,7 +472,7 @@ Extensive review of applications as of summer 2003.
 
  \item
  ``Siesta: Recent developments and applications'',
- Alberto Garc\'\ia, \emph{et al.}, J. Chem. Phys. \textbf{152}, 204108
+ Alberto Garc\'{\i}a, \emph{et al.}, J. Chem. Phys. \textbf{152}, 204108
  (2020).
 
  Extensive review of applications and developments as of 2020.
@@ -968,17 +968,22 @@ libraries
   \item[\href{http://pexsi.org}{PEXSI}]%
   \index{PEXSI}%
   \index{External library!PEXSI}%
-  The PEXSI library may be used with \siesta\ for exa-scale
-  calculations, see Sec.~\ref{SolverPEXSI}. Currently the interface is
-  implemented (tested) as in PEXSI version 0.8.0, 0.9.0 and 0.9.2. If
-  newer versions retain the same interface they may also be used.
+  The PEXSI library may be used with this version of \siesta\ for massively-parallel
+  calculations, see Sec.~\ref{SolverPEXSI}. Note however that the
+  PEXSI interface in this version is the original one, corresponding
+  to PEXSI versions 0.8.X and 0.9.X. In particular, it has been tested
+  for 0.8.0, 0.9.0 and 0.9.2. It is possible that it might work for 
+  newer versions of the form 0.9.X, but, beginning with version 1.0,
+  the PEXSI library is no longer compatible with this interface. Newer
+  versions of \siesta\ (in the Gitlab development site) can use
+  the current PEXSI library through the ELSI library interface.
 
   To successfully compile \siesta\ with PEXSI support one require the
   PEXSI fortran interface. When installing PEXSI copy the
   \shell{f\_interface.f90} file to the include directory of
   PEXSI such that the module may be found\footnote{Optionally the file
       may be copied to the \shell{Obj} directory where the compilation
-      takes place.} when compiling \siesta.
+      takes place} when compiling \siesta.
 
   Add these flags to your \file{arch.make} file to enable PEXSI
 \begin{shellexample}
@@ -4044,27 +4049,31 @@ are always stored in the file \sysfile{KP}.
 \subsection{Spin-Orbit coupling}
 \label{sec:spin-orbit}
 
-\siesta\ includes the posibility to perform fully relativistic
-calculations by means of the inclusion in the total Hamiltonian not
+\siesta\ includes the possibility to perform fully relativistic
+calculations by including in the total Hamiltonian not
 only the Darwin and velocity correction terms~(Scalar--Relativistic
 calculations), but also the spin-orbit~(SO) contribution. There are
-two approaches regarding the SO formalism: on-site and off-site.
+two approaches regarding the SO formalism: the ``on-site''
+approximation and the full treatment (sometimes called ``off-site'').
 Within the on-site approximation only the intra-atomic SO
-contribution is taken into account. In the off-site scheme additional
+contribution is taken into account. In the full scheme, additional
 neighboring interactions are also included in the SO term. By default,
-the off-site SO formalism is switched on, being necessary to change
+the full (``off-site'')  SO formalism is switched on, being necessary to change
 the \fdf{Spin} flag in the input file if the on-site approximation
 wants to be used. See \fdf{Spin} on how to handle the spin-orbit
 coupling.
 
 The on-site spin-orbit scheme in this version of \siesta\ has been implemented by
-Dr. Ram\'on Cuadrado based on the original on-site SO formalism and
-implementation developed by Prof. Jaime Ferrer and his collaborators \textit{et al}~(L
+Dr. Ram\'on Cuadrado based on the original formalism and implementation
+developed by Prof. Jaime Ferrer and his collaborators (L
 Fern\'andez--Seivane, M Oliveira, S Sanvito, and J Ferrer, Journal of
 Physics: Condensed Matter, \textbf{18}, 7999 (2006); L Fern\'andez--Seivane 
 and Jaime Ferrer, Phys. Rev. Lett. \textbf{99}, 183401 (2007)).
+183401). It should be noted that this approximation, while based on
+the physically reasonable idea of the short-range of the SO
+interaction, might not be completely appropriate in all cases.
 
-The off-site scheme has been implemented by
+The ``off-site'' scheme has been implemented by
 Dr. Ram\'on Cuadrado and Dr. Jorge I. Cerd\'a based on their initial 
 work~(R. Cuadrado and J. I. Cerd\'a ``Fully relativistic pseudopotential 
 formalism under an atomic orbital basis: spin-orbit splittings and 
@@ -4090,54 +4099,39 @@ dimensions are twice as large as for the collinear (unmixed) spin
 problem. Due to this, we advise to take special
 attention to the memory needed to perform a spin-orbit calculation.
 
+Apart from the study of effects of the spin--orbit interaction in the
+band structure, a feature enabled by a SO formalism is the computation
+of the Magnetic Anisotropy Energy~(MAE): it can be obtained as the
+difference in the total selfconsistent energy in two different spin
+orientations, usually along the easy axis and the hard axis. In
+\siesta\ it is possible to perform calculations for different
+magnetization orientations using the block \fdf{DM.InitSpin} in the
+fdf file. In doing so one will be able to include the initial
+orientation angles of the magnetization for each atom, as well as an
+initial value of their net magnetic moments. See
+also the recent review~\cite{doi:10.1063/5.0005077}.
 
-Unless explicitly advised the following type of calculation can be carried out 
-regardless of whether on-site or off-site approximation is employed: 
-\begin{itemize}
-  % 
-  \item Selfconsistent calculations for gamma point as well as for
-  bulks.
-  %
-  \item Structure optimizations 
-  %
-  %%% *** Incompatible... \item LDA+U calculations~(See Sect.\ref{sec:lda+u} for further info).
-  % 
-  \item Magnetic Anisotropy Energy~(MAE) can be easily
-    calculated. From first principles it is obtained after subtracting
-    the total selfconsistent energy calculated for two different
-    magnetic orientations. In \siesta\ it is possible to perform
-    calculations with different initial magnetic orderings
-    by means of the use of the block \fdf{DM.InitSpin} in the fdf
-    file. In doing so one will be able to include the initial
-    orientation angles of the magnetization for each atom, as well as
-    an initial value of its net magnetic moments.
-  % 
-  \item By means of Mulliken analysis, after the selfconsistent
-  procedure, local spin and orbital moments can be calculated by means
-  of the flags \fdf{WriteMullikenPop} and \fdf{WriteOrbMom}.
-  % 
-\end{itemize}
+%%% *** Incompatible... \item LDA+U calculations~(See Sect.\ref{sec:lda+u} for further info).
 
-Note: Due to the small SO contribution to the total energy, the level
-of precision required to perform a proper fully relativistic
-calculation during the selfconsistent process is quite demanding. The
-following values must be carefully converged and checked for each
-specific system to assure that the results are accurate enough:
-\fdf{SCF.H!Tolerance} during the selfconsistency (typically between
-$10^{-3}\,\mathrm{eV}$ -- $10^{-4}\,\mathrm{eV}$),
-\fdf{ElectronicTemperature}, \textbf{k}--point sampling and high
-values of \fdf{MeshCutoff}~(specifically for extended solids). In
-general, one can say that a good calculation will have high number of
-\textbf{k}--points, low \fdf{ElectronicTemperature}, extremely small
-\fdf{SCF.H!Tolerance} and high values of \fdf{MeshCutoff}.  We
-encourage the user to test carefully these options for each system. An
-additional point to take into account is the mixing scheme
-employed. You are encouraged to use \fdf{SCF.Mix:Hamiltonian}
-(currently this is the default) instead of density matrix mixing,
-since it speeds up the convergence.  The pseudopotentials have to be
-properly generated and tested for each specific system and they have
-to be in their fully relativistic form, together with the non-linear
-core corrections. Finally it is worth to mention that the
+Note: Due to the small contribution of the spin--orbit interaction to
+the total energy, the level of precision required is quite high. The
+following parameters should be carefully checked for each
+specific system to assure that the results are converged and accurate enough:
+\fdf{SCF.H!Tolerance} during the selfconsistency~(typically
+<10$^{-4}$eV), \fdf{ElectronicTemperature}, \textbf{k}-point sampling,
+and \fdf{Mesh!Cutoff}~(specifically for extended
+solids). In general, one can say that a good calculation will have
+a high number of k--points, low \fdf{ElectronicTemperature}, very
+small \fdf{SCF.H!Tolerance} and high values of \fdf{Mesh!Cutoff}.  We
+encourage the user to test carefully these options for each system.
+
+An additional point to take into account when the spin--orbit
+contribution is included is the mixing scheme to use. You are
+encouraged to use the option to mix the Hamiltonian (\fdf{SCF.Mix} \fdf*{hamiltonian}) instead of the
+density matrix to speed up convergence. In addition, the pseudopotentials
+have to be well tested for each specific system. They 
+have to be generated in their fully relativistic form, and should use
+non-linear core corrections. Finally it is worth to mention that the
 selfconsistent convergence for some non-highly symmetric
 magnetizations directions with respect to the physical symmetry axis
 could still be difficult.
@@ -4236,7 +4230,7 @@ The current version introduces several changes:
   value of the changes in the entries of H, but its actual meaning
   depends on whether DM or H mixing is in effect: if mixing the DM,
   dHmax refers to the change in H(in) with respect to the previous
-  step; if mixing H, dHmax refers to H(out)-H(in) in the previous(?)
+  step; if mixing H, dHmax refers to H(out)-H(in) in the current
   step.
 
   \item When achieving convergence, the loop might be exited without a
@@ -6592,10 +6586,6 @@ system sizes) would not benefit from the O(N) or PEXSI solvers.
   support in the code is not fool-proof, so this flag should only be
   enabled if GPU support is indeed available.
 
-  At present, ELPA offers GPU support in the 'elpa-1' solver in
-  released versions, whereas GPU support for the 'elpa-2' solver has
-  not been released officially.
-
 \end{fdflogicalF}
 
 \begin{fdflogicalF}{Diag!ParallelOverK}
@@ -7263,17 +7253,22 @@ large systems has a much lower computational complexity than that
 associated with the matrix diagonalization procedure. It is also
 highly scalable.
 
-The PEXSI technique can be used to evaluate the electron density, free
+The PEXSI technique can be used in this version of \siesta\ to evaluate the electron density, free
 energy, atomic forces, density of states and local density of states
 without computing any eigenvalue or eigenvector of the Kohn-Sham
 Hamiltonian. It can achieve accuracy fully comparable to that obtained
 from a matrix diagonalization procedure for general systems, including
 metallic systems at low temperature.  
 
-The current implementation of the PEXSI solver in \siesta\ makes
-use of the full fine-grained-level interface in the PEXSI library
-(\url{http://pexsi.org}), and can deal with spin-polarization, but it
-is still restricted to $\Gamma$-point calculations. 
+The current implementation of the PEXSI solver in \siesta\ makes use
+of a full fine-grained-level interface to earlier versions (0.8.X and
+0.9.X) of the PEXSI library (\url{http://pexsi.org}), and can deal
+with spin-polarization, but it is still restricted to $\Gamma$-point
+calculations.  Newer versions of \siesta\ (in the Gitlab development
+site) can use the current PEXSI library through the ELSI library
+interface, which offers some more options, although not currently the
+density-of-states calculation.
+
 
 The following is a brief description of the input-file parameters
 relevant to the workings of the PEXSI solver. For more background,

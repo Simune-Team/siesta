@@ -79,7 +79,9 @@ PyAtom: Python scripts for plotting and data extraction (by A. Garcia)
 
 SCF: Python scripts for smaller stuff (by A. Garcia)
 
-Scripting: Experimental scripting modules in Python (by A. Garcia)
+Scripting: Some information about options available, including the use of
+           Lua and the interface to the AiiDA framework, as well as some
+	   (old) experimental scripting modules in Python (by A. Garcia)
 
 sies2arc: Converts output coordinates to the arc movie format (by
 	  J. Gale)

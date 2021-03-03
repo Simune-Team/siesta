@@ -51,7 +51,7 @@ grouped under headings representing past (and upcoming) releases.
 
 # 4.1.X versions
 
-## 4.1 (2021-   )   FUTURE Feature release
+## 4.1.5 (2021-01-27)  Feature release
 
 ### Backward compatibility issues
 

@@ -1982,13 +1982,13 @@ C
         rc=rofi(nrc)
       
         if (rc.lt.0.5d0) then
-          write(6,"('KBproj: WARNING: Rc(',i2,')=',f12.4)")l,rc
+          write(6,"('KBproj: WARNING: Rc(',i0,')=',f12.4)")l,rc
           write(6,"(2a)") 'KBproj: WARNING: ',
-     .            'Cut of radius for the KB projector too small' 
+     .            'Cut off radius for the KB projector too small'
         elseif(rc.gt.4.5d0) then
-          write(6,"('KBproj: WARNING: Rc(',i2,')=',f12.4)")l,rc
+          write(6,"('KBproj: WARNING: Rc(',i0,')=',f12.4)")l,rc
           write(6,"(2a)") 'KBproj: WARNING: ',
-     .            'Cut of radius for the KB projector too big'
+     .            'Cut off radius for the KB projector too big'
           write(6,"(2a)") 'KBproj: WARNING: ',
      .            'Increasing the tolerance parameter eps'
           write(6,"(a)") 'KBproj: WARNING: might be a good idea'
