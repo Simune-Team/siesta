@@ -40,6 +40,7 @@ fi
 # Decide whether everything is installed in 1 directory
 _single_dir=1
 _make_j=2
+_test=1
 
 while [ $# -gt 0 ]; do
     opt=$1 ; shift
@@ -55,6 +56,9 @@ while [ $# -gt 0 ]; do
 	    ;;
 	--single-directory)
 	    _single_dir=1
+	    ;;
+	--no-tests)
+	    _test=0
 	    ;;
 	--separate-directory)
 	    _single_dir=0
@@ -74,6 +78,7 @@ while [ $# -gt 0 ]; do
 	    echo "These options are available:"
 	    echo ""
 	    echo "  --prefix|-p <>: specify the installation directory of the libraries"
+	    echo "  --no-tests: do not run any of the library tests (not recommended)"
 	    echo "  --zlib-version|-zlib-v <>: specify the libz version (default: $z_v)"
 	    echo "  --hdf5-version|-hdf5-v <>: specify the HDF5 version (default: $h_v)"
 	    echo "  --netcdf-c-version|-nc-v <>: specify the NetCDF-C version (default: $nc_v)"
@@ -181,11 +186,15 @@ if [ ! -e $zlib_dir/$zlib_lib/libz.a ]; then
     retval $? "zlib config"
     make -j 2
     retval $? "zlib make"
-    make test 2>&1 | tee zlib.test
-    retval $? "zlib make test"
+    if [ $_test -eq 1 ]; then
+	make test 2>&1 | tee zlib.test
+	retval $? "zlib make test"
+    fi
     make install
     retval $? "zlib make install"
-    mv zlib.test $zlib_dir/
+    if [ $_test -eq 1 ]; then
+	mv zlib.test $zlib_dir/
+    fi
     cd ../
     rm -rf zlib-${z_v}
     echo "Completed installing zlib"
@@ -215,11 +224,15 @@ if [ ! -e $hdf_dir/$hdf_lib/libhdf5.a ]; then
     retval $? "hdf5 configure"
     make -j $_make_j
     retval $? "hdf5 make"
-    make check-s 2>&1 | tee hdf5.test
-    retval $? "hdf5 make check-s"
+    if [ $_test -eq 1 ]; then
+	make check-s 2>&1 | tee hdf5.test
+	retval $? "hdf5 make check-s"
+    fi
     make install
     retval $? "hdf5 make install"
-    mv hdf5.test $hdf_dir/
+    if [ $_test -eq 1 ]; then
+	mv hdf5.test $hdf_dir/
+    fi
     cd ../../
     rm -rf hdf5-${h_v}
     echo "Completed installing hdf5"
@@ -285,11 +298,15 @@ if [ ! -e $cdff_dir/$cdff_lib/libnetcdff.a ]; then
     retval $? "netcdf-fortran configure"
     make -j $_make_j
     retval $? "netcdf-fortran make"
-    make check 2>&1 | tee check.fortran.serial
-    retval $? "netcdf-fortran make check"
+    if [ $_test -eq 1 ]; then
+	make check 2>&1 | tee check.fortran.serial
+	retval $? "netcdf-fortran make check"
+    fi
     make install
     retval $? "netcdf-fortran make install"
-    mv check.fortran.serial $cdff_dir/
+    if [ $_test -eq 1 ]; then
+	mv check.fortran.serial $cdff_dir/
+    fi
     cd ../../
     rm -rf netcdf-fortran-$nf_v
     echo "Completed installing Fortran NetCDF library"
