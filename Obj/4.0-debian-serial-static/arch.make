@@ -8,13 +8,12 @@
 # Use of this software constitutes agreement with the full conditions
 # given in the SIESTA license, as signed by all legitimate users.
 #
-# module add mkl/10.1 gcc/4.6.1 scalapack/1.8.0_mpibull2-1.3.9 mpich2/1.4.1-gcc-4.6.1 blacs/1.1-mpibull2-1.3.9
 #
 
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 
-SIESTA_ARCH=x86_64-mkl_mpi
+SIESTA_ARCH=x86_64-gcc-8.3.0_serial_static
 
 FPP=
 FPP_OUTPUT= 
